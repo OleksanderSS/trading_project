@@ -1,0 +1,240 @@
+rss:
+  # 📰 Фінансові та політичні медіа (важливо для трейдингу)
+  bloomberg_markets: "https://feeds.bloomberg.com/markets/news.rss"
+  bloomberg_tech: "https://feeds.bloomberg.com/technology/news.rss"
+  bloomberg_economics: "https://feeds.bloomberg.com/economics/news.rss"
+  bloomberg_business: "https://feeds.bloomberg.com/business/news.rss"
+  bloomberg_politics: "https://feeds.bloomberg.com/politics/news.rss"
+  cnbc_earnings: "https://www.cnbc.com/id/10000664/device/rss/rss.html"
+  cnbc_world: "https://www.cnbc.com/id/10000664/device/rss/rss.html"
+  yahoo_finance_general: "https://finance.yahoo.com/news/rssindex"
+  bbc_business: "http://feeds.bbci.co.uk/news/business/rss.xml"
+  financial_times: "https://www.ft.com/rss/home/uk"
+  wsj: "https://feeds.a.dj.com/rss/RSSMarketsMain.xml"
+  wsj_markets: "https://feeds.a.dj.com/rss/WSJcomUSMarkets.xml"
+  marketwatch: "https://www.marketwatch.com/rss/topstories"
+  seeking_alpha: "https://seekingalpha.com/feed.xml"
+  investing_com: "https://www.investing.com/rss/news_301.rss"
+  benzinga: "https://www.benzinga.com/feed"
+  # the_street: "https://www.thestreet.com/rss/topic/top-stories" # This feed is not working
+  business_insider: "https://www.businessinsider.com/rss"
+  ft_markets: "https://www.ft.com/companies/markets/rss"
+  zerohedge: "https://feeds.feedburner.com/zerohedge/feed"
+  cointelegraph_crypto: "https://cointelegraph.com/rss"
+  npr_business: "https://feeds.npr.org/1006/rss.xml"
+
+web_sources:
+  # finviz_news: "https://finviz.com/news.ashx"
+
+twitter_accounts_official:
+  - Bloomberg
+  - Reuters
+  - CNBC
+  - FinancialTimes
+  - MarketWatch
+  - businessinsider
+  - WSJmarkets
+  - Forbes
+  - Investingcom
+  - NYSE
+  - Nasdaq
+  - CMEGroup
+  - SEC_News
+  - federalreserve
+  - ecb
+  - Tesla
+  - elonmusk
+  - nvidia
+  - Microsoft
+  - Google
+  - Apple
+  - Meta
+  - MorningstarInc
+  - ZacksResearch
+  - FactSet
+  - SPGlobal
+  - MoodysInvSvc
+  - OPECSecretariat
+  - IEA
+  - WorldBank
+  - IMFNews
+
+keywords:
+  tickers:
+    SPY: [ "spy", "s&p 500"]
+    QQQ: [ "qqq"]
+    TSLA: [ "tsla", "tesla"]
+    NVDA: [ "nvda", "nvidia"]
+
+  market_terms:
+    - etf
+    - index
+    - nasdaq
+    - s&p 500
+    - earnings
+    - earnings report
+    - quarterly results
+    - financial results
+    - merger
+    - m&a
+    - acquisition
+    - lawsuit
+    - regulation
+    - downgrade
+    - upgrade
+    - buyback
+    - dividend
+    - guidance
+    - forecast
+    - ipo
+    - bankruptcy
+    - restructuring
+
+  finance_economy:
+    - inflation
+    - interest rates
+    - federal reserve
+    - gdp
+    - unemployment
+    - recession
+    - stimulus
+    - bond yields
+    - market
+    - economy
+    - economic
+    - financial
+    - stocks
+    - trading
+    - investors
+    - analysis
+    - forecast
+    - outlook
+    - report
+
+  sectors_tech:
+    - ai
+    - ev
+    - semiconductor
+    - chips
+    - cloud
+    - tech
+    - quantum computing
+    - cybersecurity
+    - data breach
+    - robotics
+    - automation
+    - battery
+    - charging
+
+  healthcare_biotech:
+    - fda approval
+    - clinical trial
+    - biotech
+    - pharmaceutical
+    - medical device
+
+  financial_services:
+    - banking
+    - insurance
+    - fintech
+    - payments
+    - lending
+
+  energy_commodities:
+    - oil
+    - crude
+    - brent
+    - energy
+    - commodities
+    - opec
+    - gas
+    - renewables
+
+  geopolitics:
+    - sanctions
+    - tariffs
+    - trade war
+    - conflict
+    - china
+    - eu
+    - us fed
+    - antitrust
+
+  huggingface_models:
+    - transformers
+    - bert
+    - gpt
+    - classification
+    - sentiment
+    - nlp
+    - model
+    - huggingface
+    - tokenizer
+    - finetuned
+
+  professional_indicators:
+    - "ted spread"
+    - "yield curve inversion"
+    - "high yield spreads"
+    - "credit spreads"
+    - "repo rates"
+    - "libor"
+    - "commercial paper"
+    - "money market"
+    - "liquidity crisis"
+    - "margin calls"
+    - "volatility spike"
+    - "risk parity"
+    - "carry trade"
+    - "currency intervention"
+    - "central bank swap"
+    
+  leading_indicators:
+    - "industrial production"
+    - "capacity utilization"
+    - "consumer sentiment"
+    - "housing starts"
+    - "building permits"
+    - "nonfarm payrolls"
+    - "initial claims"
+    - "continuing claims"
+    - "retail sales"
+    - "personal income"
+    - "durable goods"
+    - "factory orders"
+    - "ism manufacturing"
+    - "ism services"
+    - "philadelphia fed"
+    
+  gdelt_themes:
+    - ai
+    - etf
+    - ev
+    - gdp
+    - nasdaq
+    - s&p 500
+    - acquisition
+    - chips
+    - cloud
+    - commodities
+    - earnings
+    - earnings report
+    - elon musk
+    - energy
+    - federal reserve
+    - gpu
+    - inflation
+    - interest rates
+    - lawsuit
+    - merger
+    - nvidia
+    - nvda
+    - oil
+    - qqq
+    - regulation
+    - semiconductor
+    - spy
+    - spdr
+    - tech
+    - tesla
+    - tsla
