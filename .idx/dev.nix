@@ -2,45 +2,22 @@
   channel = "unstable";
 
   packages = [
+    pkgs.python311
+    pkgs.python311Packages.pip
     pkgs.gcc
     pkgs.gfortran
     pkgs.pkg-config
     pkgs.git
-    
-    (pkgs.python312.withPackages (ps: with ps; [
-      # Базові пакети
-      pandas
-      numpy
-
-      # Основні бібліотеки
-      "scikit-learn"
-      lightgbm
-      xgboost
-      matplotlib
-      seaborn
-      requests
-      joblib
-
-      # Джерела даних
-      yfinance
-      "pandas-datareader"
-      "google-cloud-bigquery"
-      "pandas-gbq"
-
-      # Залежності, що виявились
-      holidays
-      transformers
-      torch
-      "python-dotenv"
-      "feedparser"
-      "fredapi"
-
-      pip
-    ]))
   ];
 
   idx = {
     extensions = [ "ms-python.python" ];
-    workspace = {};
+    workspace = {
+      # Use onCreate for initial setup
+      onCreate = {
+        # Install ONLY light dependencies for development
+        install-deps = "pip install pandas numpy requests feedparser fredapi yfinance scikit-learn";
+      };
+    };
   };
 }

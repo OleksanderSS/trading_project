@@ -2,13 +2,19 @@
 """
 Stage 1: Data Collection Layer
 
-This stage is responsible for collecting raw data from various sources.
+This stage's sole responsibility is to produce a clean, deduplicated list of
+financially-relevant news articles. It filters out junk and semantic duplicates.
 """
 
 import logging
 import pandas as pd
-from datetime import datetime, timedelta
+import numpy as np
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+import re
+from typing import List
+import yaml 
+from sentence_transformers import SentenceTransformer, util
 
 # --- Local Imports ---
 from collectors.fred_collector import FREDCollector
@@ -19,103 +25,128 @@ from collectors.google_news_collector import GoogleNewsCollector
 from utils.config_manager import get_secret
 from utils.cache_utils import CacheManager
 from config.config_loader import load_yaml_config
-from config.source_quality import load_source_quality_config, get_google_news_keywords
-from config.tickers_config import TICKERS, KEYWORDS
-from config.config import (
-    PATHS, USE_MEMORY_DB, TIME_FRAMES, YF_MAX_PERIODS, DATA_INTERVALS,
-    START_FINANCIAL, END_FINANCIAL, START_NEWS_INTRADAY, END_NEWS_INTRADAY
-)
+from config.config import START_FINANCIAL, END_FINANCIAL
 
 logger = logging.getLogger(__name__)
 
+# --- Semantic Deduplication Setup ---
+try:
+    dedup_model = SentenceTransformer('all-MiniLM-L6-v2')
+    logger.info("SentenceTransformer model for deduplication loaded successfully.")
+except Exception as e:
+    logger.error(f"Failed to load SentenceTransformer model: {e}")
+    dedup_model = None
+
 def _normalize_date_column(df: pd.DataFrame, col: str = "published_at") -> pd.DataFrame:
-    """Ensures a column is a timezone-naive datetime object."""
     if col in df.columns:
         df[col] = pd.to_datetime(df[col], errors="coerce")
         if hasattr(df[col].dt, "tz") and df[col].dt.tz is not None:
             df[col] = df[col].dt.tz_localize(None)
     return df
 
-def _extract_ticker_from_text(text: str, tickers: list) -> str or None:
-    """Extracts the first ticker found in the text."""
+def _is_news_relevant(text: str, relevance_keywords: List[str]) -> bool:
     if not isinstance(text, str):
-        return None
-    for ticker in tickers:
-        # Use word boundaries to avoid matching parts of words
-        if pd.Series(text).str.contains(f'\\b{ticker}\\b', case=False, regex=True).any():
-            return ticker
-    return None
+        return False
+    pattern = r'\b(' + '|'.join(re.escape(k) for k in relevance_keywords) + r')\b'
+    return bool(re.search(pattern, text, re.IGNORECASE))
 
-def _collect_price_data(tickers: list) -> pd.DataFrame:
-    """Collects raw OHLCV price data."""
-    logger.info(f"Collecting price data for tickers: {tickers}")
-    db_path = PATHS["db"] if not USE_MEMORY_DB else ":memory:"
+def _deduplicate_news_semantically(df: pd.DataFrame, threshold: float = 0.85) -> pd.DataFrame:
+    """Removes semantically similar news titles using vector embeddings."""
+    if df.empty or 'title' not in df.columns:
+        logger.warning("Deduplication skipped: DataFrame is empty or 'title' column missing.")
+        return df
 
-    timeframes_with_dates = {}
-    for tf in TIME_FRAMES:
-        period = YF_MAX_PERIODS.get(tf)
-        interval = DATA_INTERVALS.get(tf)
-        start_date = (datetime.now() - timedelta(days=60)) if tf in ["15m", "60m"] else START_FINANCIAL
-        end_date = datetime.now() if tf in ["15m", "60m"] else END_FINANCIAL
-        timeframes_with_dates[tf] = {"period": period, "interval": interval, "start_date": start_date, "end_date": end_date}
+    if dedup_model is None:
+        logger.warning("Semantic model not loaded. Falling back to title-based deduplication.")
+        deduplicated_df = df.drop_duplicates(subset=['title'], keep='first')
+        logger.info(f"Fallback deduplication complete. Kept {len(deduplicated_df)} of {len(df)} articles.")
+        return deduplicated_df.reset_index(drop=True)
 
-    yf_collector = YFCollector(tickers=tickers, timeframes=timeframes_with_dates, db_path=db_path)
+    logger.info(f"Starting semantic deduplication on {len(df)} articles with threshold {threshold}...")
+    titles = df['title'].tolist()
+    embeddings = dedup_model.encode(titles, convert_to_tensor=True, show_progress_bar=False)
+    cosine_scores = util.pytorch_cos_sim(embeddings, embeddings)
+    df['cluster_id'] = -1
+    cluster_id_counter = 0
+    for i in range(len(titles)):
+        if df.at[i, 'cluster_id'] == -1:
+            similar_indices = np.where(cosine_scores[i] > threshold)[0]
+            df.loc[similar_indices, 'cluster_id'] = cluster_id_counter
+            cluster_id_counter += 1
+    deduplicated_df = df.drop_duplicates(subset=['cluster_id'], keep='first')
+    logger.info(f"Semantic deduplication complete. Kept {len(deduplicated_df)} unique articles.")
+    return deduplicated_df.drop(columns=['cluster_id']).reset_index(drop=True)
+
+def _collect_price_data() -> pd.DataFrame:
+    logger.info("Collecting price data for all configured tickers.")
+    yf_collector = YFCollector()
     price_df = yf_collector.fetch()
-
     if price_df.empty:
+        logger.error("Price data collection failed critically.")
         return pd.DataFrame()
-
-    price_df.ffill(inplace=True)
-    price_df.reset_index(drop=True, inplace=True)
-    
-    if "date" in price_df.columns and "datetime" not in price_df.columns:
-        price_df.rename(columns={"date": "datetime"}, inplace=True)
-
-    price_df = _normalize_date_column(price_df, "datetime")
     logger.info(f"Successfully collected price data. Shape: {price_df.shape}")
     return price_df
 
-def _collect_news_data(tickers: list, keyword_dict: dict, rss_feeds: dict, cache_path: str) -> pd.DataFrame:
-    """Collects and aggregates news from RSS and Google News."""
-    logger.info("Collecting news data...")
+def _collect_news_data(cache_path: str, config_path: str) -> pd.DataFrame:
+    logger.info("Collecting and processing news data...")
     cache_manager = CacheManager(base_path=cache_path)
-    
-    rss_collector = RSSCollector(rss_feeds=rss_feeds, keyword_dict=keyword_dict, cache_manager=cache_manager)
-    
-    source_quality_config = load_source_quality_config()
-    google_keywords_config = get_google_news_keywords()
-    all_google_keywords = [kw for kws in google_keywords_config.values() for kw in kws]
+    config = load_yaml_config(config_path)
 
-    google_news_collector = GoogleNewsCollector(keywords=all_google_keywords, source_quality_config=source_quality_config, cache_manager=cache_manager, days_back=60)
+    # --- Gemini's Unified Keyword Loading ---
+    unified_keywords = []
+    if 'keywords' in config and isinstance(config['keywords'], dict):
+        for category, terms in config['keywords'].items():
+            if isinstance(terms, list):
+                unified_keywords.extend(terms)
+            elif isinstance(terms, dict):
+                for ticker, ticker_kws in terms.items():
+                    unified_keywords.extend(ticker_kws)
+    unified_keywords = list(set(map(str, unified_keywords)))
+    logger.info(f"Loaded {len(unified_keywords)} unique keywords from YAML for all collectors.")
+    # --- End of Unified Keyword Loading ---
+
+    rss_feeds = {k: v for key in ["rss", "rss_main", "rss_alt"] if key in config and isinstance(config[key], dict) for k, v in config[key].items()}
+    rss_collector = RSSCollector(rss_feeds=rss_feeds, keywords=unified_keywords)
+    
+    # Modified by Gemini: Use the same unified keywords for Google News
+    google_news_collector = GoogleNewsCollector(keywords=unified_keywords, source_quality_config={}, cache_manager=cache_manager, days_back=60)
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        future_rss = executor.submit(rss_collector.fetch, start_date=START_NEWS_INTRADAY, end_date=END_NEWS_INTRADAY)
+        future_rss = executor.submit(rss_collector.fetch)
         future_google = executor.submit(google_news_collector.fetch)
         news_sources = [future_rss.result(), future_google.result()]
 
     valid_news_dfs = [df for df in news_sources if isinstance(df, pd.DataFrame) and not df.empty]
     if not valid_news_dfs:
-        logger.warning("No news data collected.")
+        logger.warning("No news data collected from any source.")
         return pd.DataFrame()
 
     all_news = pd.concat(valid_news_dfs, ignore_index=True)
+    all_news.dropna(subset=["title"], inplace=True)
     all_news = _normalize_date_column(all_news, "published_at")
 
-    # --- Ticker Extraction --- 
-    all_news['ticker'] = all_news['title'].apply(lambda x: _extract_ticker_from_text(x, tickers))
-    logger.info(f"Assigned tickers to {all_news['ticker'].notna().sum()} news articles.")
+    # The relevance filter is now implicit in the collectors, but we can keep it as a safeguard.
+    all_news['is_relevant'] = all_news.apply(lambda row: _is_news_relevant(f"{row['title']} {row.get('description', '')}", unified_keywords), axis=1)
+    relevant_news = all_news[all_news['is_relevant']].copy()
+    if len(relevant_news) < len(all_news):
+         logger.info(f"{len(relevant_news)} of {len(all_news)} news articles passed the safeguard relevance filter.")
 
-    if 'title' in all_news.columns:
-        all_news.sort_values('published_at', ascending=True, inplace=True)
-        all_news.drop_duplicates(subset=['title'], keep='first', inplace=True)
+    if relevant_news.empty:
+        return pd.DataFrame()
 
-    all_news['description'] = all_news.get('description', pd.Series(dtype=str)).fillna("")
+    final_news = _deduplicate_news_semantically(relevant_news)
+    logger.info(f"Stage 1 news processing complete. Produced {len(final_news)} final articles.")
+    
+    required_columns = ['title', 'link', 'published_at', 'source', 'description']
+    available_columns = [col for col in required_columns if col in final_news.columns]
+    
+    if len(available_columns) < len(required_columns):
+        missing = set(required_columns) - set(available_columns)
+        logger.warning(f"Final news DataFrame is missing expected columns: {missing}.")
 
-    logger.info(f"Deduplicated news. Final shape: {all_news.shape}")
-    return all_news
+    return final_news[available_columns]
 
 def _collect_macro_data(cache_path: str) -> pd.DataFrame:
-    """Collects macroeconomic data from FRED."""
     logger.info("Collecting FRED data...")
     fred_api_key = get_secret("FRED_API_KEY", "demo")
     fred_collector = FREDCollector(api_key=fred_api_key, start_date=START_FINANCIAL, end_date=END_FINANCIAL, cache_path=cache_path)
@@ -126,21 +157,14 @@ def _collect_macro_data(cache_path: str) -> pd.DataFrame:
     return macro_df
 
 def run_stage_1(config_path: str = "config/news_sources.yaml") -> dict:
-    """Executes the data collection stage."""
-    logger.info("--- Starting Stage 1: Data Collection ---")
+    logger.info("--- Starting Stage 1: Data Collection & Filtering ---")
     cache_path = "./data/cache/stage_1"
-    config = load_yaml_config(config_path)
-    tickers = list(TICKERS.keys())
-    rss_feeds = {k: v for key in ["rss", "rss_main", "rss_alt"] if key in config and isinstance(config[key], dict) for k, v in config[key].items()}
-
-    if not tickers:
-        logger.error("No tickers found. Aborting.")
-        return {}
 
     with ThreadPoolExecutor(max_workers=3) as executor:
-        future_prices = executor.submit(_collect_price_data, tickers)
-        future_news = executor.submit(_collect_news_data, tickers, KEYWORDS, rss_feeds, cache_path)
+        future_prices = executor.submit(_collect_price_data)
+        future_news = executor.submit(_collect_news_data, cache_path, config_path)
         future_macro = executor.submit(_collect_macro_data, cache_path)
+        
         prices_df = future_prices.result()
         news_df = future_news.result()
         macro_df = future_macro.result()

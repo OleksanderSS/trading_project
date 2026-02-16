@@ -115,8 +115,8 @@ class ConfigManager:
             Secret value
         """
         try:
-            from config.config import secrets
-            secret = secrets.get(secret_key, default)
+            from config import config
+            secret = getattr(config, secret_key, default)
             if secret is None:
                 raise KeyError(f"Secret key '{secret_key}' not found")
             
@@ -197,10 +197,10 @@ class ConfigManager:
         
         # Validate secrets
         try:
-            from config.config import secrets
+            from config import config
             critical_secrets = ['FRED_API_KEY']
             for secret_key in critical_secrets:
-                secret_value = secrets.get(secret_key)
+                secret_value = getattr(config, secret_key, None)
                 results[f'secrets.{secret_key}'] = secret_value is not None and len(secret_value) > 0
         except Exception as e:
             logger.error(f"Secrets validation failed: {e}")

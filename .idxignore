@@ -1,0 +1,4 @@
+venv_final/
+.venv/
+.git/
+data/

@@ -1,175 +1,194 @@
 #!/usr/bin/env python3
 """
-Stage 2: Event Context Enrichment Layer (v3 - "Ironclad" Quality Filter)
+Stage 2: Data Factory (v7 - Context-Aware)
 
-This version completely overhauls the logic to enforce data quality at the source,
-as per user feedback. It ensures that only complete, verifiable, and meaningful
-events are passed to subsequent stages. The principle is: "Garbage in, garbage out."
-We stop garbage from ever getting in.
+This version enhances the Data Factory by enriching the final dataset with two
+new classes of features, as per the modular research plan:
 
-Key Principles:
-1.  **Market-Aware Timing:** Integrates an exchange calendar (NYSE) to understand
-    trading hours, weekends, and holidays. News published during non-trading
-    hours is correctly anchored to the next market open.
-2.  **Uncompromising Data Completeness:** Before an event is created, it undergoes
-    rigorous checks to ensure all required data points exist.
-3.  **Pre-Event Context Check:** Verifies there is a sufficient historical window
-    of price data *before* the event to calculate all necessary technical indicators.
-    (e.g., enough data for a 200-period moving average).
-4.  **Post-Event Outcome Check:** Verifies that two full candle intervals exist *after*
-    the event for *each* required timeframe. This guarantees that target variables
-    can be calculated. Events that are too recent are temporarily discarded.
-5.  **Zero-Tolerance for NaNs:** As a result of the above, this stage produces a
-    perfectly clean dataset. No more `NaN` values in features or targets will
-    propagate to the modeling stage.
+1.  **Granular Features:** Simple, universal indicators calculated for each ticker,
+    such as basic price momentum (`feature_close_momentum`).
+2.  **Contextual Features:** High-level indicators describing the overall market
+    state. These are prefixed with `context_` and are intended exclusively for
+    the meta-learning stage (`run_context_analysis.py`).
 """
 
 import logging
 import pandas as pd
+import numpy as np
 import pandas_market_calendars as mcal
+import pandas_ta as ta
 from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
-from functools import lru_cache
+from functools import lru_cache, partial
+from typing import Optional, Dict, Tuple
+from itertools import product
 
+# --- Model Imports ---
 from enrichment.roberta_sentiment import RobertaSentimentAnalyzer
+
+# --- Local Imports ---
 from utils.cache_utils import CacheManager
-from config.config import TIME_FRAMES, REQUIRED_TA_WINDOW, POST_EVENT_HORIZON
+from config.config import TIME_FRAMES
+from config.tickers_config import TICKERS
+from config.adaptive_targets import AdaptiveTargetsSystem, TimeframeType
+from config.technical_config import TECHNICAL_INDICATORS
 
+# --- Setup & Configuration ---
 logger = logging.getLogger(__name__)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
-@lru_cache(maxsize=None)
-def get_sentiment_analyzer():
-    logger.info("Initializing and loading sentiment analyzer model...")
-    analyzer = RobertaSentimentAnalyzer()
-    analyzer._load_model()
-    return analyzer
+@lru_cache(maxsize=1)
+def get_enrichment_models() -> Tuple[RobertaSentimentAnalyzer, None]:
+    logger.info("Initializing and loading enrichment models (Sentiment)...")
+    sentiment_analyzer = RobertaSentimentAnalyzer()
+    logger.info("Enrichment models loaded successfully.")
+    return sentiment_analyzer, None
 
 @lru_cache(maxsize=1)
 def get_market_calendar(start_date, end_date):
-    """Caches the NYSE market calendar for the required date range."""
     nyse = mcal.get_calendar('NYSE')
-    return nyse.schedule(start_date=start_date, end_date=end_date)
+    return nyse.schedule(start_date=start_date.date(), end_date=end_date.date())
 
-def _enrich_news_with_sentiment(news_df: pd.DataFrame, cache_manager: CacheManager) -> pd.DataFrame:
-    # (Code remains the same as before)
-    if news_df.empty or 'title' not in news_df.columns:
-        return news_df
-    logger.info(f"Starting sentiment analysis for {len(news_df)} articles...")
-    sentiment_analyzer = get_sentiment_analyzer()
-    news_df['text_for_sentiment'] = news_df['title'].fillna('') + " " + news_df.get('description', '').fillna('')
-    texts = news_df['text_for_sentiment'].tolist()
-
-    def analyze_text(text: str) -> dict:
-        label, score = sentiment_analyzer.predict(text)
-        return {"label": label, "score": score}
-
+def _enrich_news_with_sentiment(news_df: pd.DataFrame) -> pd.DataFrame:
+    if news_df.empty: return news_df
+    sentiment_analyzer, _ = get_enrichment_models()
+    texts = (news_df['title'].fillna('') + " - " + news_df.get('description', pd.Series(dtype=str)).fillna('')).tolist()
     with ThreadPoolExecutor() as executor:
-        results = list(executor.map(analyze_text, texts))
-    sentiment_df = pd.DataFrame(results, index=news_df.index)
-    news_df['sentiment_score'] = sentiment_df['score']
+        sentiment_results = list(executor.map(sentiment_analyzer.predict, texts))
+    sentiment_df = pd.DataFrame(sentiment_results, index=news_df.index, columns=['label', 'score'])
     news_df['sentiment_label'] = sentiment_df['label']
-    news_df.drop(columns=['text_for_sentiment'], inplace=True)
-    logger.info("Sentiment analysis complete.")
+    news_df['sentiment_score'] = sentiment_df['score']
     return news_df
 
-def get_effective_event_time(publish_time, market_schedule):
-    """Anchors a publish time to the next market open if it's off-hours."""
-    # Find the next market open time after the news was published.
-    next_market_open = market_schedule[market_schedule['market_open'] > publish_time]
-    if not next_market_open.empty:
-        return next_market_open.iloc[0]['market_open']
-    return None # If no future market open is found in the schedule
+def get_effective_event_time(publish_time: pd.Timestamp, market_schedule: pd.DataFrame) -> Optional[pd.Timestamp]:
+    if publish_time.tzinfo is None: publish_time = publish_time.tz_localize('UTC')
+    next_market_opens = market_schedule[market_schedule['market_open'] > publish_time]
+    return next_market_opens.iloc[0]['market_open'] if not next_market_opens.empty else None
 
-def _create_event_context_v3(news_df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.DataFrame:
-    if news_df.empty or prices_df.empty:
-        return pd.DataFrame()
-
-    logger.info("Starting event creation with v3 'Ironclad' filter...")
-    market_schedule = get_market_calendar(prices_df['datetime'].min(), prices_df['datetime'].max())
+def _calculate_technical_indicators(price_data: pd.DataFrame) -> pd.DataFrame:
+    """Calculates standard TA indicators and new granular features."""
+    # Standard TA-Lib/Pandas-TA indicators
+    all_indicators = TECHNICAL_INDICATORS['base'] + TECHNICAL_INDICATORS['short_term'] + TECHNICAL_INDICATORS['long_term']
+    strategy = ta.Strategy(name="Research_Strategy", ta=all_indicators)
+    price_data.ta.strategy(strategy)
     
-    prices_df = prices_df.sort_values('datetime')
-    price_groups = {group: data for group, data in prices_df.groupby(['ticker', 'interval'])}
+    # New Granular Features
+    price_data['feature_close_momentum'] = (price_data['close'] > price_data['close'].shift(1)).astype(int)
     
-    total_news = len(news_df)
-    rejected_count = 0
-    event_contexts = []
+    return price_data
 
-    for _, news_item in news_df.iterrows():
-        ticker = news_item.get('ticker')
-        if not ticker: continue
+def _process_event_pair(
+    pair_data: Dict,
+    price_groups_with_ta: Dict,
+    market_schedule: pd.DataFrame,
+    target_system: AdaptiveTargetsSystem
+) -> Optional[Dict]:
+    news_item = pair_data['news']
+    ticker = pair_data['ticker']
 
-        publish_time = news_item['published_at']
-        effective_time = get_effective_event_time(publish_time, market_schedule)
+    effective_time = get_effective_event_time(news_item['published_at'], market_schedule)
+    if not effective_time: return None
+
+    feature_row = {
+        'event_time': effective_time,
+        'news_published_at': news_item['published_at'],
+        'news_sentiment_label': news_item['sentiment_label'],
+        'news_sentiment_score': news_item['sentiment_score'],
+        'ticker': ticker
+    }
+
+    # Feature Aggregation from All Timeframes
+    for interval in TIME_FRAMES.keys():
+        price_group = price_groups_with_ta.get((ticker, interval))
+        if price_group is None: continue
+        pre_event_data = price_group[price_group['datetime'] < effective_time]
+        if pre_event_data.empty: continue
+        latest_indicators = pre_event_data.iloc[-1]
         
-        if effective_time is None:
-            rejected_count += 1
-            continue
+        # Add prefix to all columns except identifiers
+        id_cols = ['open', 'high', 'low', 'close', 'volume', 'datetime', 'ticker', 'interval']
+        feature_cols = {f"{col}_{interval}": val for col, val in latest_indicators.items() if col not in id_cols}
+        feature_row.update(feature_cols)
 
-        is_valid_event = True
-        context_data = {
-            'event_time': effective_time,
-            'ticker': ticker,
-            **{f'news_{col}': val for col, val in news_item.items()}
-        }
+    # Adaptive Target Calculation
+    primary_timeframe_key = '1d'
+    primary_price_group = price_groups_with_ta.get((ticker, primary_timeframe_key))
+    if primary_price_group is None: return None
 
-        for interval, frame_mins in TIME_FRAMES.items():
-            price_group = price_groups.get((ticker, interval))
-            if price_group is None: is_valid_event = False; break
+    try:
+        target_matrix = target_system.generate_target_matrix(df=primary_price_group, timeframe=TimeframeType.DAILY)
+        event_targets = target_matrix[target_matrix['datetime'] < effective_time]
+        if event_targets.empty: return None
+        latest_targets = event_targets.iloc[-1]
+        feature_row.update({col: val for col, val in latest_targets.items() if col.startswith('target_')})
+    except Exception: return None
 
-            # 1. Pre-event check: Ensure enough history for TAs
-            pre_event_window_start = effective_time - timedelta(minutes=REQUIRED_TA_WINDOW[interval])
-            pre_data = price_group[price_group['datetime'] < effective_time]
-            if pre_data.empty or pre_data.iloc[0]['datetime'] > pre_event_window_start:
-                is_valid_event = False; break
-            context_data[f'pre_event_{interval}_candle'] = pre_data.iloc[-1].to_dict()
-
-            # 2. Post-event check: Ensure the future outcome is known
-            post_event_window_end = effective_time + timedelta(minutes=frame_mins * POST_EVENT_HORIZON)
-            post_data = price_group[price_group['datetime'] > effective_time]
-            if len(post_data) < POST_EVENT_HORIZON or post_data.iloc[POST_EVENT_HORIZON-1]['datetime'] > post_event_window_end + timedelta(minutes=frame_mins):
-                 is_valid_event = False; break
-
-            context_data[f'post_event_1_{interval}_candle'] = post_data.iloc[0].to_dict()
-            context_data[f'post_event_2_{interval}_candle'] = post_data.iloc[1].to_dict()
-
-        if is_valid_event:
-            event_contexts.append(context_data)
-        else:
-            rejected_count += 1
-
-    logger.warning(f"[Quality Filter] Rejected {rejected_count}/{total_news} news items due to incomplete data.")
-    if not event_contexts:
-        return pd.DataFrame()
-
-    # Flatten the nested dictionary structure
-    flat_events = []
-    for event in event_contexts:
-        flat_event = {}
-        for k, v in event.items():
-            if isinstance(v, dict):
-                for sub_k, sub_v in v.items():
-                    flat_event[f"{k}_{sub_k}"] = sub_v
-            else:
-                flat_event[k] = v
-        flat_events.append(flat_event)
-
-    result_df = pd.DataFrame(flat_events)
-    logger.info(f"Successfully created {len(result_df)} high-quality event contexts.")
-    return result_df
+    if not any(col.startswith('target_') for col in feature_row.keys()): return None
+    return feature_row
 
 def run_stage_2(stage1_data: dict) -> pd.DataFrame:
-    """Orchestrates the enrichment stage with the v3 ironclad filter."""
-    logger.info("--- Starting Stage 2: Event Context Enrichment (v3 - Ironclad) ---")
+    logger.info("--- Starting Stage 2: Data Factory (v7 - Context-Aware) ---")
     prices_df = stage1_data.get('prices')
     news_df = stage1_data.get('news')
-    if news_df is None or news_df.empty or prices_df is None or prices_df.empty:
-        logger.warning("Prices or news data from Stage 1 is missing or empty. Skipping enrichment.")
+    macro_df = stage1_data.get('macro') # VIX, Bonds, etc.
+
+    if news_df is None or prices_df is None or news_df.empty or prices_df.empty:
+        logger.warning("Prices or news data is missing. Skipping.")
         return pd.DataFrame()
 
-    cache_manager = CacheManager(base_path="./data/cache/stage_2")
-    enriched_news_df = _enrich_news_with_sentiment(news_df.copy(), cache_manager)
+    enriched_news_df = _enrich_news_with_sentiment(news_df.copy())
     
-    event_context_df = _create_event_context_v3(enriched_news_df, prices_df)
+    logger.info("Pre-calculating technical and granular features...")
+    prices_df_with_ta = prices_df.groupby(['ticker', 'interval'], group_keys=False).apply(_calculate_technical_indicators)
+    logger.info("Features calculated.")
 
-    logger.info("--- Stage 2: Event Context Enrichment (v3) Finished ---")
-    return event_context_df
+    all_pairs = [{'news': news_item, 'ticker': ticker} for news_item, ticker in product(enriched_news_df.to_dict('records'), list(TICKERS.keys()))]
+    target_system = AdaptiveTargetsSystem()
+
+    prices_df_with_ta['datetime'] = pd.to_datetime(prices_df_with_ta['datetime'], utc=True)
+    market_schedule = get_market_calendar(prices_df_with_ta['datetime'].min(), prices_df_with_ta['datetime'].max())
+    price_groups_with_ta = {group: data.sort_values('datetime') for group, data in prices_df_with_ta.groupby(['ticker', 'interval'])}
+    
+    logger.info(f"Processing {len(all_pairs)} pairs to generate featureset...")
+    with ThreadPoolExecutor() as executor:
+        process_func = partial(_process_event_pair, price_groups_with_ta=price_groups_with_ta, market_schedule=market_schedule, target_system=target_system)
+        results = list(executor.map(process_func, all_pairs))
+
+    valid_events = [res for res in results if res is not None]
+    if not valid_events: return pd.DataFrame()
+
+    events_df = pd.DataFrame(valid_events)
+
+    # Merge with Macro Data
+    if macro_df is not None and not macro_df.empty:
+        logger.info("Merging with macro data...")
+        events_df['event_time'] = pd.to_datetime(events_df['event_time'], utc=True)
+        macro_df.index = pd.to_datetime(macro_df.index, utc=True)
+        events_df = pd.merge_asof(events_df.sort_values('event_time'), macro_df, left_on='event_time', right_index=True, direction='backward')
+
+    # --- Add Contextual Features ---
+    logger.info("Adding final contextual features...")
+    events_df.set_index('event_time', inplace=True, drop=False)
+    events_df.index = pd.to_datetime(events_df.index, utc=True)
+
+    events_df['context_day_of_week'] = events_df.index.dayofweek
+    events_df['context_month_of_year'] = events_df.index.month
+    events_df['context_is_month_end'] = events_df.index.is_month_end.astype(int)
+
+    # Safely add context features from macro data if they exist
+    macro_context_map = {
+        'vix_close': 'context_vix_close',
+        'bond_10y_yield': 'context_bond_10y_yield_change'
+    }
+    for raw_col, ctx_col in macro_context_map.items():
+        if raw_col in events_df.columns:
+            if 'change' in ctx_col:
+                events_df[ctx_col] = events_df[raw_col].diff()
+            else:
+                events_df[ctx_col] = events_df[raw_col]
+        else:
+            events_df[ctx_col] = np.nan # Fill with NaN if not available
+            logger.warning(f"Macro column '{raw_col}' not found. '{ctx_col}' will be empty.")
+
+    logger.info(f"--- Stage 2 Finished --- Created master featureset with shape {events_df.shape} ---")
+    return events_df.reset_index(drop=True)

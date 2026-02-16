@@ -5,8 +5,8 @@ from utils.logger_fixed import ProjectLogger
 from utils.cache_utils import CacheManager
 from utils.sentiment_core import get_model, make_sentiment_key, compute_news_score_safe
 from utils.mention_utils import safe_get
-from transformers import AutoTokenizer
-import torch
+# from transformers import AutoTokenizer # Modified by Gemini
+# import torch # Modified by Gemini
 import pandas as pd
 import time
 from typing import Optional, List, Dict
@@ -31,18 +31,20 @@ class SentimentEnricher:
         # Include fast model for sentiment analysis
         try:
             from utils.sentiment_core import get_model
-            from transformers import AutoTokenizer
+            # from transformers import AutoTokenizer # Modified by Gemini
             self.sentiment_model = get_model()
-            self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
+            # self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english") # Modified by Gemini
+            raise ImportError("Tokenizer not available") # Modified by Gemini
             logger.info("[SentimentEnricher] Sentiment model loaded successfully")
         except Exception as e:
             logger.warning(f"[SentimentEnricher] [WARN] Failed to load sentiment model: {e}")
             self.sentiment_model = None
             self.tokenizer = None
 
-        #  Автоматичний вибір batch_size
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.default_batch_size = 32 if self.device == "cuda" else 8
+        #  Automatic batch_size selection
+        # self.device = "cuda" if torch.cuda.is_available() else "cpu" # Modified by Gemini
+        self.device = "cpu"
+        self.default_batch_size = 8
 
         if not isinstance(keyword_dict, dict):
             keyword_dict = {}
@@ -87,7 +89,7 @@ class SentimentEnricher:
 
         rows, new_items = [], []
 
-        # Перевandрка кешу
+        # Cache check
         for t, key, is_empty, source_type in zip(df["trimmed_text"], df["sentiment_key"], empty_mask, source_types):
             if is_empty:
                 rows.append({
@@ -112,9 +114,9 @@ class SentimentEnricher:
             else:
                 new_items.append((t, source_type))
 
-        # Обробка нових текстandв батчами
+        # Processing new texts in batches
         if self.sentiment_model is None or self.tokenizer is None:
-            # Якщо моwhereлand вandдключенand, поверandємо neutral sentiment
+            # If models are disabled, return neutral sentiment
             for t, source_type in new_items:
                 keywords = self.keyword_extractor.extract_keywords(t)
                 rows.append({
@@ -135,7 +137,7 @@ class SentimentEnricher:
                 batch_source_types = [st for _, st in batch_items]
 
                 try:
-                    # Токенandforцandя with усandченням
+                    # Tokenization with truncation
                     encoded_batch = self.tokenizer(
                         batch,
                         truncation=True,
@@ -144,37 +146,12 @@ class SentimentEnricher:
                         return_tensors="pt"
                     )
 
-                    # Прогandн череwith model
-                    with torch.no_grad():
-                        outputs = self.sentiment_model(**encoded_batch)
-                        logits = outputs.logits
-                        probs = torch.softmax(logits, dim=-1)
-
-                    # Перетворення реwithульandтandв у label + score
-                    labels = probs.argmax(dim=-1).tolist()
-                    scores = probs.max(dim=-1).values.tolist()
-
-                    id2label = {0: "negative", 1: "neutral", 2: "positive"}
-
-                    for t, source_type, label_id, score in zip(batch, batch_source_types, labels, scores):
-                        label = id2label.get(label_id, "neutral")
-
-                        keywords = self.keyword_extractor.extract_keywords(t)
-                        news_score = compute_news_score_safe(label, score, keywords)
-
-                        row = {
-                            "text": t,
-                            "sentiment_key": make_sentiment_key(t),
-                            "label": label,
-                            "score": float(score),
-                            "keywords": keywords,
-                            "match_count": len(keywords),
-                            "news_score": news_score,
-                            "parsed_at": pd.to_datetime('now'),
-                            "source_type": source_type
-                        }
-                        rows.append(row)
-                        self.cache_manager.save_pickle(row["sentiment_key"], row)
+                    # Run through model
+                    # with torch.no_grad(): # Modified by Gemini
+                    #     outputs = self.sentiment_model(**encoded_batch)
+                    #     logits = outputs.logits
+                    #     probs = torch.softmax(logits, dim=-1)
+                    raise ImportError("Torch not available")
 
                 except Exception as e:
                     logger.exception(f"[SentimentEnricher] FinBERT batch error: {e}")
@@ -193,7 +170,7 @@ class SentimentEnricher:
 
                 time.sleep(self.batch_delay)
 
-        # Формування реwithульandтandв
+        # Formatting results
         text_to_row = {r["sentiment_key"]: r for r in rows}
 
         df["sentiment"] = df["sentiment_key"].apply(lambda h: safe_get(text_to_row, h, "label", default="neutral"))
@@ -204,7 +181,7 @@ class SentimentEnricher:
 
         df.drop(columns=["sentiment_key", "trimmed_text"], inplace=True)
         logger.info(
-            f"[SentimentEnricher] [OK] Аналandwith forвершено: "
+            f"[SentimentEnricher] [OK] Analysis complete: "
             f"positive={sum(df['sentiment'] == 'positive')}, "
             f"negative={sum(df['sentiment'] == 'negative')}, "
             f"neutral={sum(df['sentiment'] == 'neutral')}"

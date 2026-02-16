@@ -7,17 +7,12 @@ from typing import List, Dict, Optional
 from collectors.base_collector import BaseCollector
 import logging
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 from utils.technical_features import add_all_technical_features
 from config.config import YF_MAX_PERIODS, DATA_INTERVALS, TICKERS
 
-logger = logging.getLogger("trading_project.yf_collector")
-logger.setLevel(logging.INFO)
-if not logger.handlers:
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-    logger.addHandler(ch)
-logger.propagate = False
-
+# Configure logger
+logger = logging.getLogger(__name__)
 
 class YFCollector(BaseCollector):
     def __init__(
@@ -32,160 +27,181 @@ class YFCollector(BaseCollector):
             **kwargs
     ):
         super().__init__(db_path=db_path, table_name=table_name, **kwargs)
-
-        if isinstance(tickers, dict):
-            self.tickers = list(tickers.keys())
-        elif isinstance(tickers, (list, set, tuple)):
-            self.tickers = [str(t).strip().upper() for t in tickers]
-        elif isinstance(tickers, str):
-            self.tickers = [tickers.strip().upper()]
-        else:
-            self.tickers = list(TICKERS.keys())
-
-        if not timeframes:
-            timeframes = {}
-            for tf in DATA_INTERVALS.keys():
-                timeframes[tf] = {"interval": DATA_INTERVALS[tf], "period": YF_MAX_PERIODS.get(tf, "1d")}
-        self.timeframes = timeframes
-
-        if isinstance(end_date, datetime):
-            current_end_date = end_date
-        elif isinstance(end_date, date):
-            current_end_date = datetime.combine(end_date, time.max)
-        else:
-            current_end_date = datetime.now()
-
-        self.end_date = current_end_date.astimezone(timezone.utc).replace(tzinfo=None)
-        self.start_date = start_date or (self.end_date - timedelta(days=lookback_days))
-        if self.start_date.tzinfo is not None:
-            self.start_date = self.start_date.astimezone(timezone.utc).replace(tzinfo=None)
-
+        self.tickers = [str(t).strip().upper() for t in tickers] if tickers else list(TICKERS.keys())
+        self.timeframes = timeframes or {
+            tf: {"interval": interval, "period": YF_MAX_PERIODS.get(tf, "1d")} 
+            for tf, interval in DATA_INTERVALS.items()
+        }
+        self.end_date = self._ensure_utc(end_date) if end_date else datetime.now(timezone.utc)
+        self.start_date = self._ensure_utc(start_date) if start_date else self.end_date - timedelta(days=lookback_days)
         self.hash_keys = ["datetime", "ticker", "interval"]
-
         logger.info(
-            f"[YFCollector] Ініціалізовано: {len(self.tickers)} тікерів, "
-            f"{self.start_date.strftime('%Y-%m-%d')} - {self.end_date.strftime('%Y-%m-%d')}, "
-            f"таймфрейми: {list(self.timeframes.keys())}"
+            f"[YFCollector] Initialized: {len(self.tickers)} tickers, "
+            f"{self.start_date.strftime('%Y-%m-%d')} to {self.end_date.strftime('%Y-%m-%d')}, "
+            f"Timeframes: {list(self.timeframes.keys())}"
         )
 
-    def fetch_prices(self,
-        ticker: str,
-        tf: str,
-        period: str,
-        start_date: datetime = None,
-        end_date: datetime = None) -> pd.DataFrame:
-        """Отримує історичні ціни для одного тікера та таймфрейму."""
+    def _ensure_utc(self, dt: Optional[datetime]) -> datetime:
+        if isinstance(dt, date) and not isinstance(dt, datetime):
+            dt = datetime.combine(dt, time.min)
+        if dt.tzinfo is None:
+            return dt.tz_localize('UTC')
+        return dt.astimezone(timezone.utc)
+
+    def _validate_batch_data(self, df: pd.DataFrame, tickers: List[str]) -> bool:
+        """Validates the structure of the dataframe downloaded from yfinance."""
+        if df.empty:
+            logger.warning("Batch download returned an empty dataframe.")
+            return False
+        if not isinstance(df.columns, pd.MultiIndex):
+            logger.warning(f"Batch download returned a single-level index, which is unexpected. Columns: {df.columns}")
+            return False
+        
+        # Check if all tickers are present in the top level of the columns
+        downloaded_tickers = df.columns.get_level_values(0).unique().tolist()
+        if not all(ticker in downloaded_tickers for ticker in tickers):
+            logger.warning(f"Batch download is missing tickers. Requested: {tickers}, Got: {downloaded_tickers}")
+            return False
+            
+        logger.info("Batch data validation successful.")
+        return True
+
+    def _process_batch_df(self, df: pd.DataFrame, tf: str) -> pd.DataFrame:
+        """Processes the batch-downloaded dataframe to the required format."""
+        df_list = []
+        # The dataframe has a multi-index: ('TICKER', 'PriceMetric')
+        for ticker in self.tickers:
+            if ticker in df.columns:
+                ticker_df = df[ticker].copy()
+                ticker_df.reset_index(inplace=True)
+                ticker_df.columns = [str(col).lower().replace(' ', '_') for col in ticker_df.columns]
+                
+                date_col_name = next((col for col in ticker_df.columns if 'date' in col), None)
+                if date_col_name:
+                    ticker_df.rename(columns={date_col_name: 'datetime'}, inplace=True)
+                
+                if 'datetime' in ticker_df.columns:
+                    ticker_df['datetime'] = pd.to_datetime(ticker_df['datetime'], utc=True)
+                    ticker_df['ticker'] = ticker
+                    ticker_df['interval'] = tf
+                    df_list.append(ticker_df)
+        
+        if not df_list:
+            return pd.DataFrame()
+            
+        return pd.concat(df_list, ignore_index=True)
+
+
+    def _fetch_single_ticker_tf(self, ticker: str, tf: str) -> Optional[pd.DataFrame]:
+        """Fetches a single ticker and timeframe, used as a fallback."""
         try:
-            yf_interval = DATA_INTERVALS.get(tf, tf)
+            yf_interval = self.timeframes[tf]["interval"]
+            start_date_for_fetch = self.start_date
+            if yf_interval in ['1m', '2m', '5m', '15m', '30m', '60m', '90m']:
+                limit_date = datetime.now(timezone.utc) - timedelta(days=59)
+                if start_date_for_fetch < limit_date:
+                    start_date_for_fetch = limit_date
 
-            actual_start_date = start_date or self.start_date
-            actual_end_date = end_date or self.end_date
-
-            if actual_start_date.tzinfo is not None:
-                actual_start_date = actual_start_date.astimezone(timezone.utc).replace(tzinfo=None)
-            if actual_end_date.tzinfo is not None:
-                actual_end_date = actual_end_date.astimezone(timezone.utc).replace(tzinfo=None)
-
-            if yf_interval in ['1m', '5m', '15m', '30m', '60m', '90m']:
-                max_start_date = datetime.now() - timedelta(days=59)
-                if actual_start_date < max_start_date:
-                    actual_start_date = max_start_date
-
-            self.logger.info(
-                f"[YFCollector] Завантаження {ticker} ({tf}) "
-                f"з {actual_start_date.strftime('%Y-%m-%d')} по {actual_end_date.strftime('%Y-%m-%d')}"
-            )
-            df = yf.download(
-                ticker,
-                start=actual_start_date.strftime('%Y-%m-%d'),
-                end=actual_end_date.strftime('%Y-%m-%d'),
-                interval=yf_interval,
-                progress=False,
-                auto_adjust=False,
-                group_by='column'  # Helps ensure single-level columns
+            logger.info(f"Fallback: Fetching {ticker} ({tf}) from {start_date_for_fetch:%Y-%m-%d} to {self.end_date:%Y-%m-%d}")
+            
+            ticker_obj = yf.Ticker(ticker)
+            df = ticker_obj.history(
+                start=start_date_for_fetch, end=self.end_date, interval=yf_interval,
+                auto_adjust=False, progress=False
             )
 
             if df.empty:
-                self.logger.warning(f"[YFCollector] ⚠️ Немає даних для {ticker} ({tf})")
-                return pd.DataFrame()
+                return None
 
-            # Flatten MultiIndex columns if they exist, which can happen unexpectedly
-            if isinstance(df.columns, pd.MultiIndex):
-                self.logger.warning(f"[YFCollector] Виявлено несподіваний MultiIndex для {ticker} ({tf}). Вирівнювання колонок.")
-                df.columns = df.columns.get_level_values(0)
-
-            df = df.reset_index()
-
-            # Standardize all column names
+            df.reset_index(inplace=True)
             df.columns = [str(col).lower().replace(' ', '_') for col in df.columns]
-
-            # Robustly find and rename the date column
-            date_col_name = None
-            if 'datetime' in df.columns:
-                date_col_name = 'datetime'
-            elif 'date' in df.columns:
-                date_col_name = 'date'
             
-            if date_col_name and date_col_name != 'datetime':
-                df.rename(columns={date_col_name: 'datetime'}, inplace=True)
-
-            if 'datetime' not in df.columns:
-                self.logger.error(f"[YFCollector] 🚨 ФАТАЛЬНА ПОМИЛКА: колонка 'datetime' НЕ ЗНАЙДЕНА для {ticker} ({tf}) після всіх перетворень. Колонки: {df.columns.tolist()}")
-                return pd.DataFrame()
-
-            if hasattr(df["datetime"].dt, "tz") and df["datetime"].dt.tz is not None:
-                df["datetime"] = df["datetime"].dt.tz_localize(None)
-
-            df["ticker"] = ticker
-            df["interval"] = tf
-
-            self.logger.info(f"[YFCollector] ✅ {ticker} {tf} завантажено: {df.shape}")
+            date_col_name = next((col for col in df.columns if 'date' in col), 'datetime')
+            df.rename(columns={date_col_name: 'datetime'}, inplace=True)
+            df['datetime'] = pd.to_datetime(df['datetime'], utc=True)
+            df['ticker'] = ticker
+            df['interval'] = tf
             return df
-
         except Exception as e:
-            self.logger.error(f"[YFCollector] Помилка завантаження {ticker} ({tf}): {e}\n{traceback.format_exc()}")
-            return pd.DataFrame()
+            logger.error(f"Error in fallback fetch for {ticker} ({tf}): {e}")
+            return None
 
     def fetch(self) -> pd.DataFrame:
         all_dfs = []
-        for ticker in self.tickers:
-            for tf, params in self.timeframes.items():
-                period = params.get("period", YF_MAX_PERIODS.get(tf, "1y"))
-                start_date = params.get("start_date", self.start_date)
-                end_date = params.get("end_date", self.end_date)
+        for tf in self.timeframes.keys():
+            yf_interval = self.timeframes[tf]["interval"]
+            start_date_for_fetch = self.start_date
+            if yf_interval in ['1m', '2m', '5m', '15m', '30m', '60m', '90m']:
+                limit_date = datetime.now(timezone.utc) - timedelta(days=59)
+                if start_date_for_fetch < limit_date:
+                    start_date_for_fetch = limit_date
+
+            # --- Fast Path: Batch Download ---
+            logger.info(f"Attempting fast batch download for timeframe: {tf}")
+            try:
+                batch_df = yf.download(
+                    tickers=self.tickers,
+                    start=start_date_for_fetch,
+                    end=self.end_date,
+                    interval=yf_interval,
+                    progress=False,
+                    auto_adjust=False,
+                    group_by='ticker'
+                )
                 
-                df = self.fetch_prices(ticker, tf, period, start_date, end_date)
-                
-                if not df.empty:
-                    all_dfs.append(df)
+                # Check if some tickers failed, which results in a single-level index
+                if not isinstance(batch_df.columns, pd.MultiIndex) and not batch_df.empty:
+                     # This indicates that download for some tickers might have failed.
+                     logger.warning(f"Batch download for {tf} resulted in a single-level index. Switching to reliable fallback.")
+                     raise ValueError("Partial failure in batch download")
+
+                processed_df = self._process_batch_df(batch_df, tf)
+                all_dfs.append(processed_df)
+                logger.info(f"Fast path successful for timeframe: {tf}")
+                continue # Move to next timeframe
+
+            except Exception as e:
+                logger.warning(f"Fast path failed for timeframe {tf} with error: {e}. Switching to reliable fallback.")
+
+            # --- Reliable Fallback Path ---
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = {executor.submit(self._fetch_single_ticker_tf, ticker, tf): ticker for ticker in self.tickers}
+                for future in futures:
+                    try:
+                        result_df = future.result()
+                        if result_df is not None:
+                            all_dfs.append(result_df)
+                    except Exception as exc:
+                        logger.error(f'{futures[future]} generated an exception in fallback: {exc}')
 
         if not all_dfs:
-            logger.warning("[YFCollector] Жоден тікер не повернув дані")
+            logger.error("Data collection failed for all tickers. No data to process.")
             return pd.DataFrame()
 
-        df_all = pd.concat(all_dfs, ignore_index=True)
+        df_all = pd.concat(all_dfs, ignore_index=True).drop_duplicates(subset=['datetime', 'ticker', 'interval'])
+        logger.info(f"Combined data shape: {df_all.shape}")
 
-        # Add technical features to the entire concatenated dataframe
-        df_all = add_all_technical_features(df_all)
-
-        # Fill NA values for indicator columns
-        indicator_cols = [c for c in df_all.columns if c not in ['open', 'high', 'low', 'close', 'volume', 'ticker', 'interval', 'datetime', 'adj_close']]
-        df_all[indicator_cols] = df_all[indicator_cols].ffill().bfill().fillna(0)
+        df_all.dropna(subset=['open', 'high', 'low', 'close', 'volume'], inplace=True)
         
-        if 'datetime' not in df_all.columns:
-            logger.error("[YFCollector] 致命的なエラー: 'datetime' column is missing after technical feature calculation.")
-            return pd.DataFrame()
+        logger.info("Applying technical analysis features...")
+        df_all[['open', 'high', 'low', 'close', 'volume']] = df_all[['open', 'high', 'low', 'close', 'volume']].apply(pd.to_numeric, errors='coerce')
+        df_with_ta = add_all_technical_features(df_all)
 
-        df_all["published_at"] = pd.to_datetime(df_all["datetime"])
-        if hasattr(df_all["published_at"].dt, "tz") and df_all["published_at"].dt.tz is not None:
-            df_all["published_at"] = df_all["published_at"].dt.tz_localize(None)
+        logger.info("Imputing any remaining NaNs in indicator columns...")
+        indicator_cols = [c for c in df_with_ta.columns if c not in ['open', 'high', 'low', 'close', 'volume', 'ticker', 'interval', 'datetime', 'adj_close', 'dividends', 'stock_splits']]
+        if indicator_cols:
+             df_with_ta[indicator_cols] = df_with_ta.groupby(['ticker', 'interval'])[indicator_cols].transform(lambda x: x.ffill().bfill())
+        df_with_ta[indicator_cols] = df_with_ta[indicator_cols].fillna(0)
+        
+        logger.info("Finalizing data and saving to database...")
+        self._save_batch(df_with_ta)
+        return df_with_ta
 
-        self._save_batch(df_all)
-        return df_all
-
-    def _save_batch(self, df_all: pd.DataFrame):
-        records = df_all.to_dict(orient="records")
-        self.save(records, strict=self.strict)
+    def _save_batch(self, df: pd.DataFrame):
+        df_to_save = df.copy()
+        df_to_save['datetime'] = df_to_save['datetime'].dt.tz_localize(None)
+        records = df_to_save.to_dict(orient="records")
+        self.save(records, strict=False)
 
     def collect(self) -> pd.DataFrame:
         return self.fetch()

@@ -2,7 +2,7 @@
 
 import hashlib
 import pandas as pd
-from transformers import AutoModelForSequenceClassification
+# from transformers import AutoModelForSequenceClassification # Modified by Gemini
 from utils.sentiment.news_score import compute_news_score
 from utils.logger import ProjectLogger
 from config.sentiment_config import SENTIMENT_DEFAULTS
@@ -16,12 +16,14 @@ def make_sentiment_key(text: str) -> str:
 
 def get_model():
     """
-    Заванandжує FinBERT як чисту model (AutoModelForSequenceClassification),
-    so that її can було викликати with токенandwithованими тенwithорами.
+    Loads FinBERT as a pure model (AutoModelForSequenceClassification),
+    so that it can be called with tokenized tensors.
     """
-    model_name = SENTIMENT_DEFAULTS.get("model_name", "yiyanghkust/finbert-tone")
-    logger.info(f"[sentiment_score] Loading model: {model_name}")
-    return AutoModelForSequenceClassification.from_pretrained(model_name)
+    # Modified by Gemini to fail gracefully
+    raise ImportError("Transformers not available")
+    # model_name = SENTIMENT_DEFAULTS.get("model_name", "yiyanghkust/finbert-tone")
+    # logger.info(f"[sentiment_score] Loading model: {model_name}")
+    # return AutoModelForSequenceClassification.from_pretrained(model_name)
 
 def compute_score(label: str, score: float) -> dict:
     label = label.lower()

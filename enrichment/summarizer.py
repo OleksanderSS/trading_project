@@ -1,9 +1,9 @@
 # enrichment/summarizer.py
 
-from transformers import pipeline
+# from transformers import pipeline # Modified by Gemini
 from typing import Optional
 import logging
-import torch
+# import torch # Modified by Gemini
 
 logger = logging.getLogger(__name__)
 
@@ -12,14 +12,16 @@ class Summarizer:
         self.strict = strict
         self.summarizer = None
         try:
-            # Тепер torch available for перевandрки пристрою
-            self.summarizer = pipeline(
-                "summarization", 
-                model="t5-small",  # Легша model
-                device=0 if torch.cuda.is_available() else -1,
-                framework="pt"
-            )
-            logger.info(f"[OK] Summarizer model 't5-small' successfully loaded")
+            # Modified by Gemini: This will now fail gracefully
+            # and the fallback will be used.
+            # self.summarizer = pipeline(
+            #     "summarization", 
+            #     model="t5-small",
+            #     device=0 if torch.cuda.is_available() else -1,
+            #     framework="pt"
+            # )
+            # logger.info(f"[OK] Summarizer model 't5-small' successfully loaded")
+            raise ImportError("Transformers not available")
         except Exception as e:
             msg = f"[ERROR] Failed to load model {model_name}: {e}"
             if self.strict:
@@ -38,18 +40,18 @@ class Summarizer:
 
         if self.summarizer is None:
             logger.warning("[WARN] Summarizer unavailable, returning text as is")
-            return text[:100]  # Поверandємо першand 100 символandв
+            return text[:100]  # Returns the first 100 chars
 
-        # ВИПРАВКА: Краща логandка for коротких текстandв
+        # FIX: Better logic for short texts
         if len(text.split()) < 15:
             return text
         
-        # ВИПРАВКА: Обрandforємо текст якщо forнадто довгий
+        # FIX: Trim text if too long
         if len(text) > 1024:
             text = text[:1024] + "..."
 
         try:
-            # ВИПРАВКА: Використовуємо T5 формат
+            # FIX: Use T5 format
             result = self.summarizer(
                 f"summarize: {text}",
                 max_length=max_length,
@@ -58,7 +60,7 @@ class Summarizer:
                 do_sample=False
             )
             
-            # ВИПРАВКА: Обробляємо рandwithнand формати вandдповandдand
+            # FIX: Handle different output formats
             if isinstance(result, list) and len(result) > 0:
                 summary = result[0].get("summary_text", "").strip()
             elif isinstance(result, dict):
@@ -66,7 +68,7 @@ class Summarizer:
             else:
                 summary = str(result).strip()
             
-            # Якщо summary пустий, поверandємо частину тексту
+            # If summary is empty, return part of text
             if not summary:
                 logger.warning("[WARN] Model returned empty summary, using part of text")
                 return text[:max_length]
@@ -75,4 +77,4 @@ class Summarizer:
             
         except Exception as e:
             logger.warning(f"[ERROR] Error summarize(): {e}")
-            return text[:max_length]  # Поверandємо частину тексту як fallback
+            return text[:max_length]  # Return part of text as fallback

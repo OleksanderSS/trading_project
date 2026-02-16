@@ -21,7 +21,7 @@ import logging
 from config.secrets_manager import Secrets
 from utils.macro_features import enrich_macro_features
 from config.feature_config import FRED_ALIAS, MACRO_FEATURES
-from config.config import get_date_range
+from config.config import get_date_range, START_FINANCIAL, END_FINANCIAL
 
 # НОВІ: Імпортуємо новand конфandгурацandї
 try:
@@ -77,8 +77,8 @@ def _standardize_fred_date(df: pd.DataFrame) -> pd.DataFrame:
 class FREDCollector(BaseCollector):
     def __init__(self,
                  api_key: Optional[str] = None,
-                 start_date: Optional[datetime] = None,
-                 end_date: Optional[datetime] = None,
+                 start_date: Optional[str] = None,
+                 end_date: Optional[str] = None,
                  table_name: str = "fred_macro_data",
                  cache_path: Optional[str] = None,
                  fred_series: Optional[Dict[str, str]] = None,
@@ -106,16 +106,8 @@ class FREDCollector(BaseCollector):
         self._warned_no_key = False
 
         # Дати - синхронandforцandя with фandнансовими даними
-        default_start, default_end = get_date_range("macro")
-        if start_date is None:
-            self.start_date = default_start if default_start.tzinfo else default_start.replace(tzinfo=timezone.utc)
-        else:
-            self.start_date = start_date if start_date.tzinfo else start_date.replace(tzinfo=timezone.utc)
-            
-        if end_date is None:
-            self.end_date = default_end if default_end.tzinfo else default_end.replace(tzinfo=timezone.utc)
-        else:
-            self.end_date = end_date if end_date.tzinfo else end_date.replace(tzinfo=timezone.utc)
+        self.start_date = start_date or START_FINANCIAL
+        self.end_date = end_date or END_FINANCIAL
         
         # Серandї
         self.base_url = "https://api.stlouisfed.org/fred/series/observations"
@@ -192,8 +184,8 @@ class FREDCollector(BaseCollector):
         params = {
             "series_id": series_id,
             "file_type": "json",
-            "observation_start": self.start_date.strftime("%Y-%m-%d"),
-            "observation_end": self.end_date.strftime("%Y-%m-%d"),
+            "observation_start": self.start_date,
+            "observation_end": self.end_date,
             "sort_order": "asc",
         }
         
@@ -204,7 +196,10 @@ class FREDCollector(BaseCollector):
         # Збandльшуємо лandчильник
         self.request_count += 1
 
-        cache_key = f"fred_{series_id}_{self.start_date.date()}_{self.end_date.date()}"
+        start_date_obj = datetime.strptime(self.start_date, "%Y-%m-%d")
+        end_date_obj = datetime.strptime(self.end_date, "%Y-%m-%d")
+
+        cache_key = f"fred_{series_id}_{start_date_obj.date()}_{end_date_obj.date()}"
 
         # Використовуємо get_df forмandсть get
         cached_df = self.cache_manager.get_df(cache_key) if self.cache_manager else pd.DataFrame()
@@ -266,7 +261,7 @@ class FREDCollector(BaseCollector):
         # [BRAIN] Роwithширюємо у daily-level with SIGNAL / WEIGHTED / DAYS_SINCE_RELEASE
         df_expanded = enrich_macro_features(
             df_all,
-            end_date = self.end_date.strftime("%Y-%m-%d"),
+            end_date = self.end_date,
         )
 
 

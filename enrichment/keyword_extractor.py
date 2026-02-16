@@ -37,19 +37,20 @@ ALL_NOISE_WORDS = COMMON_STOP_WORDS.union(FINANCIAL_NOISE_WORDS)
 # =========================================================================
 
 class KeywordExtractor:
-    def __init__(self, keywords: Optional[Union[List[str], Dict[str, List[str]]]] = None):
+    def __init__(self, keyword_dict: Optional[Union[List[str], Dict[str, List[str]]]] = None):
         """
         Initializes extractor, filtering tickers and keywords.
         """
         self.keywords: List[str] = []
         self.tickers: List[str] = []
+        self.keyword_dict = keyword_dict or {}
 
-        if not isinstance(keywords, dict):
+        if not isinstance(self.keyword_dict, dict):
             logger.warning("[WARN] Initialized without keywords dictionary. Extraction will be empty.")
             return
 
         # 1. Process Tickers
-        tickers_dict = keywords.get("tickers", {})
+        tickers_dict = self.keyword_dict.get("tickers", {})
         if isinstance(tickers_dict, dict):
             # Filter keys (typical tickers)
             raw_tickers = list(tickers_dict.keys())
@@ -60,7 +61,7 @@ class KeywordExtractor:
 
             # 2. Process Keywords (groups and aliases)
             flat_values = []
-            for group_vals in keywords.values():
+            for group_vals in self.keyword_dict.values():
                 if isinstance(group_vals, dict):  # for tickers: dict of lists
                     for vals in group_vals.values():
                         flat_values.extend(vals if isinstance(vals, list) else [vals])
@@ -81,6 +82,9 @@ class KeywordExtractor:
             logger.warning("[WARN] Initialized without relevant keywords - filtering will be empty.")
         else:
             logger.info(f"[OK] Initialized with {len(self.keywords)} keywords and {len(self.tickers)} tickers (after filtering).")
+
+    def count(self) -> int:
+        return len(self.keyword_dict)
 
     def extract_keywords(self, text: str, **kwargs) -> List[str]:
         """
@@ -110,3 +114,10 @@ class KeywordExtractor:
 
         logger.debug(f"[SEARCH] Found {len(matched)} matches in text: {matched}")
         return matched
+
+    def calculate_relevance(self, text: str) -> Dict[str, Union[float, List[str]]]:
+        extracted = self.extract_keywords(text)
+        return {
+            "score": len(extracted),
+            "keywords": extracted
+        }
