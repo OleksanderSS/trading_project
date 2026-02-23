@@ -1,0 +1,143 @@
+{
+  "batch_id": 3,
+  "state": {
+    "processed_tickers": [
+      "GOOGL",
+      "AAPL",
+      "PFE",
+      "META",
+      "QQQ",
+      "MSFT",
+      "JPM",
+      "DIA",
+      "GS",
+      "JNJ",
+      "IWM",
+      "TSLA",
+      "BAC",
+      "SPY",
+      "WFC",
+      "UNH",
+      "NVDA",
+      "AMZN"
+    ],
+    "successful_tickers": [
+      "GOOGL",
+      "AAPL",
+      "PFE",
+      "META",
+      "QQQ",
+      "MSFT",
+      "JPM",
+      "DIA",
+      "GS",
+      "JNJ",
+      "IWM",
+      "TSLA",
+      "BAC",
+      "SPY",
+      "WFC",
+      "UNH",
+      "NVDA",
+      "AMZN"
+    ],
+    "failed_tickers": [],
+    "current_batch_size": 5,
+    "total_batches_processed": 3
+  },
+  "analytics": {
+    "batch_results": [
+      {
+        "batch_id": 1,
+        "status": "completed",
+        "tickers": [
+          "SPY",
+          "QQQ",
+          "IWM",
+          "DIA",
+          "AAPL"
+        ],
+        "difficulty": {
+          "base_difficulty": 5,
+          "category_difficulty": 5.5,
+          "estimated_time_hours": 2.75,
+          "estimated_memory_gb": 2.0,
+          "success_probability": 0.725
+        },
+        "training_time": 1.050109624862671,
+        "accuracy": 0.7803937673493199,
+        "loss": 0.3911589072561415,
+        "memory_used": 2.0,
+        "models_trained": 15,
+        "success_rate": 0.725
+      },
+      {
+        "batch_id": 2,
+        "status": "completed",
+        "tickers": [
+          "MSFT",
+          "GOOGL",
+          "AMZN",
+          "META",
+          "NVDA",
+          "TSLA"
+        ],
+        "difficulty": {
+          "base_difficulty": 6,
+          "category_difficulty": 9.0,
+          "estimated_time_hours": 4.5,
+          "estimated_memory_gb": 2.4000000000000004,
+          "success_probability": 0.55
+        },
+        "training_time": 1.0021629333496094,
+        "accuracy": 0.8995340467346389,
+        "loss": 0.14710475563437408,
+        "memory_used": 2.4000000000000004,
+        "models_trained": 18,
+        "success_rate": 0.55
+      },
+      {
+        "batch_id": 3,
+        "status": "completed",
+        "tickers": [
+          "JPM",
+          "BAC",
+          "WFC",
+          "GS",
+          "JNJ",
+          "PFE",
+          "UNH"
+        ],
+        "difficulty": {
+          "base_difficulty": 7,
+          "category_difficulty": 8.2,
+          "estimated_time_hours": 4.1,
+          "estimated_memory_gb": 2.8000000000000003,
+          "success_probability": 0.5900000000000001
+        },
+        "training_time": 1.0002820491790771,
+        "accuracy": 0.7884934494267152,
+        "loss": 0.0709773206819555,
+        "memory_used": 2.8000000000000003,
+        "models_trained": 21,
+        "success_rate": 0.5900000000000001
+      }
+    ],
+    "success_rate": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "accuracy": [
+      0.7803937673493199,
+      0.8995340467346389,
+      0.7884934494267152
+    ],
+    "loss": [
+      0.3911589072561415,
+      0.14710475563437408,
+      0.0709773206819555
+    ]
+  },
+  "timestamp": "2026-01-31T01:00:55.027074"
+}

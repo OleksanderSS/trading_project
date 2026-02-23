@@ -1,0 +1,241 @@
+# 🚀 Pipeline Configuration File
+# Глобальна конфігурація для всього пайплайну
+
+# 🎯 ОСНОВНІ НАЛАШТУВАННЯ
+pipeline:
+  name: "trading_pipeline_v2"
+  version: "2.0.0"
+  description: "Intelligent trading pipeline with pattern-aware features"
+  
+# 🎯 ТІКЕРИ - ГНУЧКИЙ ВИБІР
+tickers:
+  # 🏛️ LARGE CAP (основні)
+  large_cap:
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - META
+    - NVDA
+    - TSLA
+  
+  # 📊 ETF (важливі для диверсифікації)
+  etfs:
+    - SPY
+    - QQQ
+    - IWM
+    - DIA
+    - VTI
+    - VOO
+  
+  # 🏦️ FINANCIAL (фінансовий сектор)
+  financial:
+    - JPM
+    - BAC
+    - WFC
+    - GS
+    - MS
+    - C
+  
+  # 🛢️ TECHNOLOGY (технологічний сектор)
+  technology:
+    - INTC
+    - AMD
+    - NFLX
+    - CRM
+    - ORCL
+    - ADBE
+  
+  # 🏥️ HEALTHCARE (медичний сектор)
+  healthcare:
+    - JNJ
+    - PFE
+    - UNH
+    - ABT
+    - MRK
+    - T
+  
+  # 🛢️ ENERGY (енергетичний сектор)
+  energy:
+    - XOM
+    - CVX
+    - COP
+    - EOG
+    - SLB
+    - BP
+  
+  # 🎯 ГНУЧКІ ВИБІРКИ
+  default_selection: ["large_cap"]  # За замовчуванням
+  all_tickers: "all"  # Всі тікери
+  custom: []  # Користувацькі тікери
+  
+  # 🎯 ПРЕСЕТИ ДЛЯ РІЗНИХ СЦЕНАРІВ
+  presets:
+    conservative: ["large_cap", "etfs"]
+    aggressive: ["large_cap", "technology", "financial"]
+    diversified: ["large_cap", "etfs", "financial", "technology", "healthcare", "energy"]
+    quick_test: ["AAPL", "MSFT", "GOOGL"]
+
+# 🎯 ТАЙМФРЕЙМИ - ВИПРАВЛЕНО: тепер використовує unified_config.py
+# Цей файл залишається для зворотної сумісності
+timeframes:
+  default: ["5m", "15m", "60m", "1d"]
+  intraday: ["5m", "15m", "60m"]
+  daily: ["1d"]
+  all: ["5m", "15m", "60m", "1d"]
+  # ⚠️ Примітка: всі таймфрейми тепер в config/unified_config.py
+
+# 🎯 ЕТАПИ ПАЙПЛАЙНУ
+stages:
+  stage1:
+    name: "Data Collection & Pattern Classification"
+    enabled: true
+    retry_attempts: 3
+    timeout_seconds: 300
+    cache_enabled: true
+    cache_ttl_hours: 24
+    
+  stage2:
+    name: "Data Enrichment & Quality Analysis"
+    enabled: true
+    retry_attempts: 2
+    timeout_seconds: 600
+    quality_threshold: 0.7
+    
+  stage3:
+    name: "Intelligent Feature Engineering"
+    enabled: true
+    retry_attempts: 2
+    timeout_seconds: 900
+    max_features: 100
+    pattern_aware: true
+    
+  stage4:
+    name: "Model Training (Local + Colab)"
+    enabled: true
+    retry_attempts: 1
+    timeout_seconds: 3600
+    local_models: ["linear", "ridge", "random_forest", "lightgbm"]
+    colab_models: ["lstm", "gru", "cnn", "transformer", "deep_mlp"]
+
+# 🎯 ДЖЕРЕЛА ДАНИХ
+data_sources:
+  yahoo_finance:
+    enabled: true
+    rate_limit: 2000  # requests per hour
+    
+  news_api:
+    enabled: true
+    rate_limit: 1000
+    api_key_env: "NEWS_API_KEY"
+    
+  google_trends:
+    enabled: true
+    rate_limit: 100
+    
+  reddit:
+    enabled: true
+    rate_limit: 60
+    client_id_env: "REDDIT_CLIENT_ID"
+    client_secret_env: "REDDIT_CLIENT_SECRET"
+
+# 🎯 НАЛАШТУВАННЯ МОДЕЛЕЙ
+models:
+  local_training:
+    batch_size: 16
+    epochs: 25
+    validation_split: 0.2
+    early_stopping: true
+    patience: 10
+    
+  colab_training:
+    batch_size: 8
+    epochs: 50
+    save_frequency: 5
+    gpu_required: true
+    checkpoint_interval: 300  # seconds
+
+# 🎯 ЗБЕРЕЖЕННЯ РЕЗУЛЬТАТІВ
+storage:
+  base_path: "results/"
+  cache_path: "cache/"
+  models_path: "models/trained/"
+  colab_path: "colab_preparation/"
+  reports_path: "reports/"
+  
+  # 🎯 Автоматичне очищення
+  cleanup:
+    enabled: true
+    keep_days: 30
+    max_size_gb: 10
+
+# 🎯 МОНІТОРИНГ ТА ЛОГУВАННЯ
+monitoring:
+  enabled: true
+  log_level: "INFO"
+  log_file: "logs/pipeline.log"
+  progress_tracking: true
+  real_time_updates: true
+  
+  # 🎯 Метрики для моніторингу
+  metrics:
+    - data_quality_score
+    - feature_count
+    - model_performance
+    - execution_time
+    - memory_usage
+    - error_rate
+
+# 🎯 ВІДНОВЛЕННЯ ПОСЛЯ ЗБОЮВ
+recovery:
+  enabled: true
+  checkpoint_frequency: "stage"  # after each stage
+  auto_retry: true
+  max_retries: 3
+  retry_delay: 60  # seconds
+  
+  # 🎯 Стратегії відновлення
+  strategies:
+    - "retry_from_failed_stage"
+    - "use_cached_data"
+    - "skip_optional_stages"
+
+# 🎯 ОПТИМІЗАЦІЯ
+optimization:
+  parallel_processing: true
+  max_workers: 4
+  memory_limit_gb: 8
+  gpu_memory_limit_gb: 4
+  
+  # 🎯 Кешування
+  cache_strategies:
+    - "data_collection"
+    - "feature_engineering"
+    - "model_training"
+
+# 🎯 ІНТЕРАКТИВНІ НАЛАШТУВАННЯ
+interactive:
+  pauses_enabled: false
+  confirm_before_stage: false
+  show_progress: true
+  allow_stage_skip: false
+  
+# 🎯 РОЗГОРТАННЯ
+deployment:
+  environment: "development"  # development, staging, production
+  auto_scale: false
+  health_check_interval: 300  # seconds
+  
+# 🎯 БЕЗПЕКА
+security:
+  encrypt_sensitive_data: true
+  api_keys_in_env: true
+  audit_logging: true
+
+# 🎯 ТЕСТУВАННЯ
+testing:
+  enabled: false
+  mock_data: false
+  test_tickers: ["AAPL", "MSFT"]
+  test_timeframes: ["5m", "15m"]
+  fast_mode: true

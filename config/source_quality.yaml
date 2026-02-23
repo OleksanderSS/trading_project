@@ -1,0 +1,347 @@
+# config/source_quality.yaml
+# Source quality weighting for news sources
+# Higher weights indicate more reliable/important sources
+
+# Tier 1 - Highest quality (1.0x weight)
+tier_1_sources:
+  bloomberg: 1.0
+  reuters: 1.0
+  wall street journal: 1.0
+  wsj: 1.0
+  financial times: 1.0
+  ft: 1.0
+  the wall street journal: 1.0
+
+# Tier 2 - High quality (0.8x weight)
+tier_2_sources:
+  cnbc: 0.8
+  bbc: 0.8
+  marketwatch: 0.8
+  business insider: 0.8
+  fortune: 0.8
+  forbes: 0.8
+  money: 0.8
+  cnn: 0.8
+
+# Tier 3 - Medium quality (0.6x weight)
+tier_3_sources:
+  yahoo finance: 0.6
+  yahoo: 0.6
+  investing.com: 0.6
+  the motley fool: 0.6
+  morningstar: 0.6
+  zacks: 0.6
+  factset: 0.6
+  sp global: 0.6
+
+# Tier 4 - Lower quality (0.4x weight)
+tier_4_sources:
+  seeking alpha: 0.4
+  benzinga: 0.4
+  investor's business daily: 0.4
+  the street: 0.4
+  marketwatch: 0.4
+  finance yahoo: 0.6
+
+# Додаємо вагу за замовчуванням для невідомих джерел
+default_source_weight: 0.3
+
+# News classification thresholds
+classification_thresholds:
+  # Змінено з 0.6 на 0.85: видаляємо тільки явні копіпасти
+  trash_similarity_threshold: 0.85  
+  importance_threshold: 0.3
+
+# Tier 5 - Lowest quality (0.2x weight)
+tier_5_sources:
+  unknown: 0.2
+  local news: 0.2
+  blogs: 0.2
+  forums: 0.2
+  social media: 0.2
+
+# Consolidated source quality mapping
+source_weights:
+  # Default weight for unknown sources
+  default_weight: 0.3
+  
+  # Tier 1 - Highest quality
+  bloomberg: 1.0
+  reuters: 1.0
+  wall street journal: 1.0
+  wsj: 1.0
+  financial times: 1.0
+  ft: 1.0
+  the wall street journal: 1.0
+  the washington post: 1.0
+  washington post: 1.0
+  
+  # Tier 1 - Highest quality (moved up)
+  cnbc: 1.0
+  bbc: 1.0
+  the economist: 0.8
+  politico: 0.8
+  
+  # Tier 2 - High quality
+  marketwatch: 0.6
+  business insider: 0.6
+  fortune: 0.6
+  forbes: 0.6
+  money: 0.6
+  cnn: 0.6
+  the motley fool: 0.4
+  motley fool: 0.4
+  
+  # Specialized sources
+  electrek: 0.6
+  insideevs: 0.6
+  not a tesla app: 0.5
+  automotive news: 0.6
+  cbt news: 0.4
+  
+  # Additional recognized sources
+  tipranks: 0.4
+  barron's: 0.6
+  thestreet.com: 0.4
+  techcrunch: 0.6
+  politico: 0.6
+  benzinga: 0.4
+  the verge: 0.6
+  ibd: 0.4
+  investor's business daily: 0.4
+  economist: 0.8
+  
+  # Tier 3 - Medium quality
+  yahoo finance: 0.6
+  yahoo: 0.6
+  investing.com: 0.6
+  the motley fool: 0.6
+  morningstar: 0.6
+  zacks: 0.6
+  factset: 0.6
+  sp global: 0.6
+  
+  # Tier 4 - Lower quality
+  seeking alpha: 0.4
+  benzinga: 0.4
+  investor's business daily: 0.4
+  the street: 0.4
+  
+  # Tier 5 - Lowest quality
+  unknown: 0.2
+  local news: 0.2
+  blogs: 0.2
+  forums: 0.2
+  social media: 0.2
+
+# Additional source name variants for better recognition
+source_variants:
+  # Financial Times variants
+  financial times: 1.0
+  ft.com: 1.0
+  
+  # Wall Street Journal variants
+  wall street journal: 1.0
+  wsj.com: 1.0
+  
+  # CNBC variants
+  cnbc: 0.8
+  cnbc.com: 0.8
+  
+  # Common short names and variants
+  ft: 1.0
+  cnbc_world: 0.8
+  marketwatch: 0.8
+  marketwatch.com: 0.8
+  yahoo finance: 0.6
+  finance.yahoo.com: 0.6
+  investing.com: 0.6
+  the motley fool: 0.6
+  motley_fool: 0.6
+  seeking alpha: 0.4
+  seekingalpha.com: 0.4
+  benzinga: 0.4
+  benzinga.com: 0.4
+  
+  # BBC variants
+  bbc: 0.8
+  bbc.com: 0.8
+  
+  # Yahoo Finance variants
+  yahoo finance: 0.6
+  finance.yahoo.com: 0.6
+  
+  # Business Insider variants
+  business insider: 0.8
+  businessinsider.com: 0.8
+  
+  # The Motley Fool variants
+  the motley fool: 0.6
+  fool.com: 0.6
+  
+  # Seeking Alpha variants
+  seeking alpha: 0.4
+  seekingalpha.com: 0.4
+  
+  # Benzinga variants
+  benzinga: 0.4
+  benzinga.com: 0.4
+  
+  # Morningstar variants
+  morningstar: 0.6
+  morningstar.com: 0.6
+  
+  # Forbes variants
+  forbes: 0.8
+  forbes.com: 0.8
+  
+  # Fortune variants
+  fortune: 0.8
+  fortune.com: 0.8
+  
+  # Money variants
+  money: 0.8
+  money.com: 0.8
+  
+  # Investing.com variants
+  investing.com: 0.6
+  
+  # MarketWatch variants
+  marketwatch: 0.8
+  marketwatch.com: 0.8
+  
+  # Investor's Business Daily variants
+  investor's business daily: 0.4
+  investors.com: 0.4
+
+# Google News RSS keywords configuration
+google_news_keywords:
+  # Single keywords for RSS feeds (optimized for broad coverage)
+  stock_keywords:
+    - "tesla"
+    - "tsla"
+    - "nvidia"
+    - "nvda"
+    - "apple"
+    - "aapl"
+    - "microsoft"
+    - "msft"
+    - "google"
+    - "googl"
+    - "meta"
+    - "amazon"
+    - "amzn"
+    - "intel"
+    - "intc"
+    - "ibm"
+    - "oracle"
+    - "orcl"
+    - "amd"
+    - "qualcomm"
+    - "qcom"
+    - "adobe"
+    - "adbe"
+    - "salesforce"
+    - "crm"
+    - "netflix"
+    - "nflx"
+    - "spotify"
+    - "spot"
+    - "fed"
+    - "inflation"
+    - "recession"
+    - "economy"
+    - "oil"
+    - "gas"
+    - "energy"
+    - "bitcoin"
+    - "crypto"
+    - "etf"
+    - "nasdaq"
+    - "hurricane"
+    - "tornado"
+    - "earthquake"
+    - "flood"
+    - "wildfire"
+    - "nfl"
+    - "nba"
+    - "disney"
+    - "warner"
+    - "sony"
+    - "universal"
+  
+  # Market keywords
+  market_keywords:
+    - "etf"
+    - "s&p 500"
+    - "nasdaq"
+    - "quarterly results"
+    - "earnings report"
+    - "financial results"
+    - "m&a"
+    - "buyback"
+    - "dividend"
+    - "guidance"
+    - "ipo"
+    - "sec filing"
+    - "regulation"
+    - "lawsuit"
+  
+  # Tech keywords
+  tech_keywords:
+    - "quantum computing"
+    - "cybersecurity"
+    - "data breach"
+    - "robotics"
+    - "automation"
+    - "battery"
+    - "artificial intelligence"
+    - "ai"
+    - "machine learning"
+    - "semiconductor"
+    - "chip"
+  
+  # Economic keywords
+  economic_keywords:
+    - "inflation"
+    - "interest rates"
+    - "federal reserve"
+    - "fed"
+    - "central bank"
+    - "economy"
+    - "gdp"
+    - "unemployment"
+    - "recession"
+    - "yield curve inversion"
+    - "credit spreads"
+    - "volatility spike"
+    - "oil prices"
+    - "crude oil"
+    - "brent crude"
+    - "opec"
+    - "energy prices"
+    - "commodities"
+    - "gold prices"
+    - "silver prices"
+  
+  # People keywords
+  people_keywords:
+    - "elon musk"
+    - "tim cook"
+    - "satya nadella"
+    - "jensen huang"
+    - "mark zuckerberg"
+    - "jeff bezos"
+
+# News classification thresholds
+classification_thresholds:
+  trash_similarity_threshold: 0.85  # For duplicate removal
+  importance_threshold: 0.7       # For important news
+  neutral_important_threshold: 0.5  # For neutral but important news
+  
+# Reverse impact analysis settings
+reverse_impact:
+  price_threshold: 0.02          # 2% price change threshold
+  sentiment_threshold: 0.1        # ±0.1 sentiment threshold for neutral
+  min_signals_for_analysis: 5     # Minimum signals for meaningful analysis
+  impact_strength_cap: 3.0        # Maximum impact strength multiplier
