@@ -1,0 +1,62 @@
+enrichment:
+  # Налаштування для аналізу сентименту
+  sentiment:
+    # Конфігурація для єдиної, основної моделі сентименту
+    default_model:
+      name: "DistilBERT SST-2"
+      confidence_threshold: 0.75 
+      
+  # Налаштування для видобування сутностей
+  entity_extraction:
+    spacy_model: "en_core_web_sm"
+    disable_components: ["parser", "lemmatizer", "attribute_ruler"]
+    ticker_patterns:
+      'TSLA': '\b(tesla|tsla|musk|gigafactory)\b'
+      'NVDA': '\b(nvidia|nvda|jensen|huang|blackwell|h100)\b'
+      # ... (інші тікери, як і раніше)
+
+  # Налаштування для створення коротких зведень (Summarization)
+  summarization:
+    model_name: "t5-small"
+    max_length: 150
+    min_length: 30
+
+  # Фільтрація новин за ключовими словами (Рівень 2)
+  keyword_filter_micro:
+    - "buyback"
+    - "dividend"
+    - "earnings"
+    - "guidance"
+    - "acquisition"
+    - "partnership"
+    - "product launch"
+    - "fda approval"
+    - "upgrade"
+    - "downgrade"
+    - "rating"
+    
+  keyword_filter_macro:
+    - "interest rate"
+    - "inflation"
+    - "unemployment"
+    - "gdp"
+    - "federal reserve"
+    - "ecb"
+    - "trade deal"
+    - "stimulus"
+    - "regulation"
+    - "cpi"
+    - "ppi"
+
+  significance_features:
+    module: "src.features.enrichers.significance_features_enricher"
+    class: "SignificanceAnalyzer"
+    params:
+      significance_col: "is_significant"
+      mode: "feature_engineering"
+
+  time_features:
+    module: "src.features.enrichers.time_features_enricher"
+    class: "TimeFeaturesEnricher"
+
+  # ... (інші збагачувачі, як і раніше)

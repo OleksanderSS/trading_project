@@ -1,0 +1,36 @@
+
+generated_context_rules:
+  - indicator: VIX
+    condition: '>'
+    value: 25
+    event_count: 312
+    effects_on_target:
+      1d:
+        mean_return: -0.00125
+        median_return: -0.0015
+        win_rate: 0.45
+      5d:
+        mean_return: -0.0055
+        median_return: -0.006
+        win_rate: 0.42
+      20d:
+        mean_return: -0.012
+        median_return: -0.015
+        win_rate: 0.38
+  - indicator: VIX
+    condition: '<'
+    value: 15
+    event_count: 250
+    effects_on_target:
+      1d:
+        mean_return: 0.0008
+        median_return: 0.001
+        win_rate: 0.55
+      5d:
+        mean_return: 0.004
+        median_return: 0.0045
+        win_rate: 0.58
+      20d:
+        mean_return: 0.015
+        median_return: 0.016
+        win_rate: 0.62

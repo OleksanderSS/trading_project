@@ -1,0 +1,5 @@
+{
+    "python.defaultInterpreterPath": "python",
+    "python.terminal.activateEnvironment": false,
+    "git.ignoreLimitWarning": true
+}

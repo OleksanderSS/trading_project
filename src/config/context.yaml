@@ -1,0 +1,373 @@
+
+calendar:
+  country: US
+  default_year: 2026
+  max_shift_days: 30
+
+visualization:
+  figsize: [12, 6]
+  bins: 30
+  colors_map:
+    bull: "#e0ffe0"
+    bear: "#ffe0e0"
+    sideways: "#f0f0f0"
+    unknown: "#ffffff"
+  trend_colors:
+    aligned: "green"
+    divergent: "red"
+  macro_bias_fontsize: 8
+  macro_bias_color: "gray"
+
+historical_events:
+  crisis_similarity_2008:
+    name: 'Фінансова криза 2008'
+    start_date: '2008-09-15'
+    end_date: '2009-03-09'
+    type: 'crisis'
+    severity: 10
+    key_indicators:
+      - 'bank_failures'
+      - 'credit_freeze'
+      - 'housing_collapse'
+    market_impact:
+      sp500_drop: -57
+      vix_spike: 80
+    duration_days: 176
+    recovery_time: '4+ years'
+  covid_crash_2020:
+    name: 'COVID-19 крах 2020'
+    start_date: '2020-02-20'
+    end_date: '2020-03-23'
+    type: 'crisis'
+    severity: 9
+    key_indicators:
+      - 'pandemic'
+      - 'lockdown'
+      - 'supply_chain_disruption'
+    market_impact:
+      sp500_drop: -34
+      vix_spike: 82
+    duration_days: 32
+    recovery_time: '5 months'
+  dot_com_bubble:
+    name: 'Dot-com бульбашка'
+    start_date: '2000-03-10'
+    end_date: '2002-10-09'
+    type: 'bubble_burst'
+    severity: 8
+    key_indicators:
+      - 'tech_overvaluation'
+      - 'nasdaq_crash'
+      - 'speculation'
+    market_impact:
+      nasdaq_drop: -78
+      sp500_drop: -49
+    duration_days: 943
+    recovery_time: '7+ years'
+  black_monday:
+    name: 'Чорний понеділок 1987'
+    start_date: '1987-10-19'
+    end_date: '1987-10-20'
+    type: 'crash'
+    severity: 9
+    key_indicators:
+      - 'program_trading'
+      - 'market_mechanism_failure'
+    market_impact:
+      sp500_drop: -20.5
+      vix_spike: 150
+    duration_days: 1
+    recovery_time: '2 years'
+  great_recession:
+    name: 'Велика рецесія'
+    start_date: '2007-12-01'
+    end_date: '2009-06-01'
+    type: 'recession'
+    severity: 8
+    key_indicators:
+      - 'housing_crisis'
+      - 'unemployment_spike'
+      - 'gdp_contraction'
+    market_impact:
+      sp500_drop: -57
+      unemployment_rate: 10
+    duration_days: 548
+    recovery_time: '4+ years'
+  inflation_spike_2022:
+    name: 'Інфляційний спайк 2022'
+    start_date: '2021-12-01'
+    end_date: '2022-11-01'
+    type: 'inflation'
+    severity: 7
+    key_indicators:
+      - 'cpi_spike'
+      - 'supply_chain'
+      - 'wage_pressure'
+    market_impact:
+      inflation_rate: 9.1
+      rate_hikes: 4
+    duration_days: 335
+    recovery_time: '2+ years'
+  rate_hike_cycle_2022:
+    name: 'Цикл підвищення ставок 2022'
+    start_date: '2022-03-01'
+    end_date: '2023-07-01'
+    type: 'monetary_policy'
+    severity: 6
+    key_indicators:
+      - 'fed_rate_hikes'
+      - 'tightening_cycle'
+      - 'yield_curve_inversion'
+    market_impact:
+      rate_hikes: 11
+      terminal_rate: 5.5
+    duration_days: 488
+    recovery_time: '1+ years'
+  banking_crisis_2023:
+    name: 'Банківська криза 2023'
+    start_date: '2023-03-08'
+    end_date: '2023-05-01'
+    type: 'banking_crisis'
+    severity: 7
+    key_indicators:
+      - 'regional_bank_failures'
+      - 'credit_contraction'
+      - 'depositor_runs'
+    market_impact:
+      bank_failures: 3
+      credit_contraction: 15
+    duration_days: 54
+    recovery_time: '6 months'
+  tech_bubble_2021:
+    name: 'Технологічна бульбашка 2021'
+    start_date: '2020-11-01'
+    end_date: '2022-12-31'
+    type: 'bubble_burst'
+    severity: 6
+    key_indicators:
+      - 'tech_valuation'
+      - 'growth_stocks'
+      - 'speculation'
+    market_impact:
+      nasdaq_drop: -35
+      tech_etf_decline: -40
+    duration_days: 425
+    recovery_time: '2+ years'
+  crypto_crash_2022:
+    name: 'Крипто крах 2022'
+    start_date: '2022-04-01'
+    end_date: '2022-12-31'
+    type: 'crash'
+    severity: 5
+    key_indicators:
+      - 'crypto_liquidations'
+      - 'defi_crisis'
+      - 'stablecoin_failure'
+    market_impact:
+      bitcoin_drop: -65
+      crypto_market_cap_loss: -70
+    duration_days: 274
+    recovery_time: '1+ years'
+  geopolitical_crisis:
+    name: 'Геополітична криза'
+    start_date: '2022-02-24'
+    end_date: '2022-12-31'
+    type: 'geopolitical'
+    severity: 6
+    key_indicators:
+      - 'war_impact'
+      - 'sanctions'
+      - 'energy_crisis'
+    market_impact:
+      commodity_spike: 50
+      energy_prices: 200
+    duration_days: 310
+    recovery_time: '2+ years'
+  energy_crisis:
+    name: 'Енергетична криза'
+    start_date: '2021-09-01'
+    end_date: '2022-12-31'
+    type: 'energy'
+    severity: 7
+    key_indicators:
+      - 'oil_prices'
+      - 'gas_prices'
+      - 'energy_shortage'
+    market_impact:
+      oil_price_spike: 120
+      energy_inflation: 40
+    duration_days: 486
+    recovery_time: '2+ years'
+  supply_chain_crisis:
+    name: 'Криза ланцюгів постачання'
+    start_date: '2020-03-01'
+    end_date: '2022-06-01'
+    type: 'supply_chain'
+    severity: 6
+    key_indicators:
+      - 'shipping_costs'
+      - 'inventory_shortages'
+      - 'production_delays'
+    market_impact:
+      shipping_cost_spike: 300
+      inventory_shortages: 25
+    duration_days: 823
+    recovery_time: '2+ years'
+  housing_crisis:
+    name: 'Житлова криза'
+    start_date: '2006-07-01'
+    end_date: '2009-03-01'
+    type: 'housing'
+    severity: 8
+    key_indicators:
+      - 'mortgage_crisis'
+      - 'foreclosure_wave'
+      - 'housing_price_decline'
+    market_impact:
+      housing_price_drop: -30
+      foreclosure_rate: 5
+    duration_days: 974
+    recovery_time: '5+ years'
+  flash_crash_2010:
+    name: 'Flash crash 2010'
+    start_date: '2010-05-06'
+    end_date: '2010-05-06'
+    type: 'flash_crash'
+    severity: 7
+    key_indicators:
+      - 'high_frequency_trading'
+      - 'market_mechanism'
+      - 'liquidity_evaporation'
+    market_impact:
+      sp500_drop: -9
+      recovery_time: '20 minutes'
+    duration_days: 0.01
+    recovery_time: 'hours'
+  european_debt_crisis:
+    name: 'Європейська боргова криза'
+    start_date: '2010-01-01'
+    end_date: '2012-07-01'
+    type: 'debt_crisis'
+    severity: 7
+    key_indicators:
+      - 'sovereign_debt'
+      - 'euro_crisis'
+      - 'austerity'
+    market_impact:
+      euro_decline: -20
+      bond_spreads: 400
+    duration_days: 912
+    recovery_time: '3+ years'
+  asian_financial_crisis:
+    name: 'Азійська фінансова криза'
+    start_date: '1997-07-01'
+    end_date: '1998-12-31'
+    type: 'currency_crisis'
+    severity: 8
+    key_indicators:
+      - 'currency_devaluation'
+      - 'contagion'
+      - 'imf_intervention'
+    market_impact:
+      currency_decline: -50
+      regional_market_drop: -60
+    duration_days: 548
+    recovery_time: '2+ years'
+
+impact_analysis:
+  linguistic_patterns:
+    high_impact:
+      - "crash"
+      - "collapse"
+      - "crisis"
+      - "bubble"
+      - "recession"
+      - "depression"
+      - "war"
+      - "sanctions"
+      - "default"
+      - "bankruptcy"
+      - "shutdown"
+    low_impact:
+      - "rally"
+      - "recovery"
+      - "growth"
+      - "expansion"
+      - "bull market"
+      - "optimistic"
+      - "positive"
+      - "improving"
+      - "stabilizing"
+      - "support"
+    neutral:
+      - "mixed"
+      - "flat"
+      - "unchanged"
+      - "steady"
+      - "stable"
+      - "holding"
+      - "cautious"
+      - "uncertain"
+      - "waiting"
+      - "monitoring"
+  impact_weights:
+    monetary_policy: 1.0
+    banking_crisis: 1.0
+    market_crash: 1.0
+    pandemic: 1.0
+    trade_policy: 0.9
+    bubble_burst: 0.9
+    housing_crisis: 0.9
+    energy_crisis: 0.8
+    currency_crisis: 0.8
+    sovereign_debt: 0.8
+    flash_crash: 0.8
+    geopolitical: 0.8
+    political: 0.7
+    natural_disaster: 0.7
+    retail_trading: 0.7
+    quantitative: 0.6
+
+fred_mapping:
+  indicators:
+    ism_services_pmi: 'SRV_PMI'
+    consumer_confidence_index: 'CONS_SENT'
+    adp_employment_change: 'EMP_CHANGE'
+  priorities:
+    ism_services_pmi: 9
+    consumer_confidence_index: 8
+    adp_employment_change: 8
+  components:
+    ism_services_pmi:
+      business_activity: 'Business Activity Index'
+      new_orders: 'New Orders Index'
+      employment: 'Employment Index'
+      prices: 'Prices Index'
+    consumer_confidence_index:
+      present_situation: 'Present Situation Index'
+      expectations: 'Expectations Index'
+    adp_employment_change:
+      private_sector: 'Total Private Sector'
+      small_business: 'Small Business (1-49 employees)'
+      medium_business: 'Medium Business (50-499 employees)'
+      large_business: 'Large Business (500+ employees)'
+  dataset_integration:
+    column_mappings:
+      ism_services_pmi: 'services_pmi_value'
+      consumer_confidence_index: 'consumer_confidence_level'
+      adp_employment_change: 'adp_jobs_change'
+    feature_engineering:
+      services_expansion_feature: 'services_pmi_value > 50.0'
+      consumer_optimism_feature: 'consumer_confidence_level > 100.0'
+      employment_growth_feature: 'adp_jobs_change > 100000'
+  module_integration:
+    context_builder:
+      enabled: true
+      categories:
+        ism_services_pmi: 'services_activity'
+        consumer_confidence_index: 'consumer_sentiment'
+        adp_employment_change: 'employment_change'
+    noise_filter:
+      enabled: true
+    adaptive_filter:
+      enabled: true

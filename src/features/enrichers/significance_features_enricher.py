@@ -1,0 +1,106 @@
+
+import logging
+import pandas as pd
+from typing import Dict, Any, Optional
+
+from src.features.enrichers.base import BaseEnricher
+
+logger = logging.getLogger(__name__)
+
+class SignificanceFeaturesEnricher(BaseEnricher):
+    """
+    An analyzer that filters, balances, or engineers features based on the 
+    significance of events. It identifies important data points to focus the
+    modeling process.
+    """
+
+    def __init__(self, significance_col: str = 'is_significant', min_events_per_ticker: int = 10, mode: str = 'feature_engineering'):
+        """
+        Initializes the SignificanceAnalyzer.
+
+        Args:
+            significance_col (str): The name of the boolean column indicating event significance.
+            min_events_per_ticker (int): The minimum number of significant events required for a ticker to be included in 'filter' mode.
+            mode (str): The operational mode. Can be 'filter', 'balance', or 'feature_engineering'.
+        """
+        self.significance_col = significance_col
+        self.min_events_per_ticker = min_events_per_ticker
+        self.mode = mode
+        logger.info(f"SignificanceAnalyzer initialized in '{self.mode}' mode.")
+
+    def enrich(self, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+        """
+        Analyzes the data to filter, balance, or create features based on event significance.
+
+        Args:
+            data (pd.DataFrame): The input data with a significance column.
+            **kwargs: Not used in this implementation.
+
+        Returns:
+            pd.DataFrame: The processed DataFrame.
+        """
+        if self.significance_col not in data.columns:
+            logger.warning(f"Significance column '{self.significance_col}' not found in data. Skipping analysis.")
+            return data
+
+        if self.mode == 'filter':
+            return self._filter_significant_events(data)
+        elif self.mode == 'feature_engineering':
+            return self._create_significance_features(data)
+        elif self.mode == 'balance':
+            logger.warning("Mode 'balance' is not implemented. A dedicated preprocessor should be used.")
+            return data
+        else:
+            logger.warning(f"Unknown mode '{self.mode}'. Returning original data.")
+            return data
+
+    def _filter_significant_events(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Filters the DataFrame, keeping only significant events and tickers with enough data.
+        """
+        logger.debug(f"Original size for filtering: {len(df)}")
+        
+        filtered_df = df[df[self.significance_col] == True].copy()
+        
+        if 'ticker' in filtered_df.columns:
+            ticker_counts = filtered_df['ticker'].value_counts()
+            valid_tickers = ticker_counts[ticker_counts >= self.min_events_per_ticker].index
+            
+            if len(valid_tickers) < len(ticker_counts.index):
+                removed_tickers = set(ticker_counts.index) - set(valid_tickers)
+                logger.info(f"Removing tickers with insufficient significant events: {removed_tickers}")
+                filtered_df = filtered_df[filtered_df['ticker'].isin(valid_tickers)]
+
+        logger.info(f"Filtered from {len(df)} to {len(filtered_df)} rows based on significance.")
+        return filtered_df
+
+    def _create_significance_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Creates new features based on the significance column.
+        """
+        df_out = df.copy()
+
+        # Ensure there's a 'ticker' column for correct grouping
+        if 'ticker' not in df_out.columns:
+            logger.warning("No 'ticker' column found. Treating data as a single entity.")
+            df_out['ticker'] = 'default'
+
+        # Rolling count of significant events
+        df_out['significant_events_7d'] = df_out.groupby('ticker')[self.significance_col].rolling(window=7, min_periods=1).sum().reset_index(level=0, drop=True)
+        df_out['significant_events_30d'] = df_out.groupby('ticker')[self.significance_col].rolling(window=30, min_periods=1).sum().reset_index(level=0, drop=True)
+
+        # Days since the last significant event
+        def _days_since_last_event(series):
+            return series.groupby((series != series.shift()).cumsum()).cumcount()
+
+        df_out['days_since_last_significant'] = df_out.groupby('ticker')[self.significance_col].transform(_days_since_last_event)
+
+        # Significance intensity
+        df_out['significance_intensity_7d'] = df_out['significant_events_7d'] / 7.0
+
+        logger.info("Created new features based on event significance.")
+        # If a default ticker was added, remove it before returning
+        if 'ticker' in df_out.columns and df_out['ticker'].nunique() == 1 and df_out['ticker'].iloc[0] == 'default':
+            df_out = df_out.drop(columns=['ticker'])
+            
+        return df_out

@@ -1,0 +1,138 @@
+# src/models/neural/cnn_model.py
+
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Input, Conv1D, MaxPooling1D, Flatten, Dense, Dropout
+from typing import Dict, Any, Optional
+
+from src.models.neural.base_neural import BaseNeuralModel
+from src.core.logging.logger import ProjectLogger
+
+class CNNModel(BaseNeuralModel):
+    """
+    Уніфікована модель згорткової нейронної мережі (CNN) для фінансових часових рядів.
+    """
+
+    def __init__(self, task_type: str = "regression", epochs: int = 40, batch_size: int = 32, random_state: int = 42):
+        super().__init__(model_type="cnn", task_type=task_type)
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.random_state = random_state
+        self.logger = ProjectLogger.get_logger("CNNModel")
+
+    @property
+    def name(self) -> str:
+        """Повертає ім'я моделі."""
+        return "cnn"
+
+    def _build_architecture(self, input_shape: tuple) -> Sequential:
+        """
+        Визначає архітектуру CNN для обробки послідовностей даних.
+        """
+        timesteps, n_features = input_shape
+        
+        layers = [
+            Input(shape=(timesteps, n_features)),
+            Conv1D(filters=64, kernel_size=3, activation="relu"),
+            MaxPooling1D(pool_size=2),
+            Conv1D(filters=32, kernel_size=3, activation="relu"),
+            Flatten(),
+            Dense(64, activation="relu"),
+            Dropout(0.2)
+        ]
+
+        if self.task_type == "regression":
+            layers.append(Dense(1, activation="linear"))
+            loss = "mse"
+            metrics = ["mae"]
+        else:
+            # Для класифікації використовуємо 2 виходи (Sparse Categorical Crossentropy)
+            layers.append(Dense(2, activation="softmax"))
+            loss = "sparse_categorical_crossentropy"
+            metrics = ["accuracy"]
+
+        model = Sequential(layers)
+        model.compile(optimizer="adam", loss=loss, metrics=metrics)
+        return model
+
+    def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> Dict[str, Any]:
+        """
+        Навчає модель CNN на вхідних даних.
+        """
+        try:
+            # Фіксація seed для відтворюваності
+            np.random.seed(self.random_state)
+            tf.random.set_seed(self.random_state)
+
+            # Підготовка та нормалізація даних
+            X_norm, y_norm = self._normalize_data(X, y)
+            
+            # Визначення вхідної форми
+            if len(X_norm.shape) == 2:
+                # Якщо дані плоскі, перетворюємо в 3D (samples, timesteps=1, features)
+                X_norm = X_norm.reshape((X_norm.shape[0], 1, X_norm.shape[1]))
+            
+            input_shape = (X_norm.shape[1], X_norm.shape[2])
+            self.model = self._build_architecture(input_shape)
+
+            # Навчання
+            self.logger.info(f"Початок навчання CNN ({self.task_type}). Форма: {X_norm.shape}")
+            self.model.fit(
+                X_norm, 
+                y_norm, 
+                epochs=kwargs.get('epochs', self.epochs), 
+                batch_size=kwargs.get('batch_size', self.batch_size), 
+                verbose=0
+            )
+            
+            self.is_trained = True
+            self.logger.info(f"[OK] CNN успішно натренований.")
+            
+            return self.get_model_info()
+
+        except Exception as e:
+            self.logger.error(f"[ERROR] Помилка під час навчання CNN: {e}", exc_info=True)
+            raise
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """
+        Генерує прогнози на основі вхідних даних.
+        """
+        if not self.is_trained or self.model is None:
+            raise ValueError("Модель повинна бути навчена перед виконанням прогнозів.")
+
+        try:
+            X_norm, _ = self._normalize_data(X)
+            
+            if len(X_norm.shape) == 2:
+                X_norm = X_norm.reshape((X_norm.shape[0], 1, X_norm.shape[1]))
+
+            predictions = self.model.predict(X_norm, verbose=0)
+            
+            if self.task_type == "classification":
+                # Повертаємо індекс класу з найвищою ймовірністю
+                return np.argmax(predictions, axis=1)
+            
+            return predictions.flatten()
+
+        except Exception as e:
+            self.logger.error(f"[ERROR] Помилка під час виконання прогнозу CNN: {e}")
+            raise
+
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        """
+        Повертає ймовірності класів для задач класифікації.
+        """
+        if self.task_type != "classification":
+            raise ValueError("Метод predict_proba доступний тільки для задач класифікації.")
+        
+        if not self.is_trained or self.model is None:
+            raise ValueError("Модель повинна бути навчена.")
+
+        X_norm, _ = self._normalize_data(X)
+        if len(X_norm.shape) == 2:
+            X_norm = X_norm.reshape((X_norm.shape[0], 1, X_norm.shape[1]))
+            
+        return self.model.predict(X_norm, verbose=0)

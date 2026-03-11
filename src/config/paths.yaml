@@ -1,0 +1,14 @@
+
+paths:
+  root: /home/user/1/data
+  raw_data: /home/user/1/data/raw
+  raw_db: /home/user/1/data/raw_data.duckdb
+  duckdb_path: /home/user/1/data/raw_data.duckdb
+  processed_data: /home/user/1/data/processed
+  features: /home/user/1/data/features
+  scalers: /home/user/1/data/scalers
+  models: /home/user/1/trained_models
+  logs: /home/user/1/logs
+  outputs: /home/user/1/outputs
+  reports: /home/user/1/reports
+  temp: /home/user/1/data/temp

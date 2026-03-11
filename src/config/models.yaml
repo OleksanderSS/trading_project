@@ -1,0 +1,31 @@
+
+# Dummy section to satisfy the configuration validator
+model:
+  is_present: true
+
+# Real configuration used by the ModelFactory
+models:
+  model_definitions:
+    catboost: { module: "src.models.tree.catboost_model", class: "CatBoostModel" }
+    lightgbm: { module: "src.models.tree.lightgbm_model", class: "LightGBMModel" }
+    xgboost: { module: "src.models.tree.xgboost_model", class: "XGBoostModel" }
+    random_forest: { module: "src.models.tree.random_forest_model", class: "RandomForestModel" }
+    linear: { module: "src.models.linear.linear_model", class: "LinearModel" }
+    svm: { module: "src.models.linear.svm_model", class: "SVMModel" }
+    knn: { module: "src.models.linear.knn_model", class: "KNNModel" }
+    mlp: { module: "src.models.neural.mlp_model", class: "MLPModel" }
+    cnn: { module: "src.models.neural.cnn_model", class: "CNNModel" }
+    lstm: { module: "src.models.neural.lstm_model", class: "LSTMModel" }
+    gru: { module: "src.models.neural.gru_model", class: "GRUModel" }
+    transformer: { module: "src.models.neural.transformer_model", class: "TransformerModel" }
+    tabnet: { module: "src.models.legacy.tabnet_model", class: "TabNetModel" }
+    autoencoder: { module: "src.models.neural.autoencoder_model", class: "AutoencoderModel" }
+    ensemble: { module: "src.models.ensemble.ensemble_model", class: "EnsembleModel" }
+
+  dual_model_manager:
+    base_path: "data/models"
+    light_models: ["lightgbm", "random_forest", "linear", "mlp", "ensemble", "catboost", "xgboost", "knn", "svm"]
+    heavy_models: ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder"]
+
+  sentiment:
+    model_name: "yiyanghkust/finbert-tone"

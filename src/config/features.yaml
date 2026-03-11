@@ -1,0 +1,59 @@
+
+features:
+  # This section controls which feature enrichment modules are active.
+  # Each key corresponds to an enricher's 'name' property.
+  # Set to 'true' to enable an enricher, 'false' to disable.
+  enabled_enrichers:
+    time_features: true             # Creates time-based features (e.g., day of week, month)
+    technical_analysis: true        # Calculates a suite of technical indicators
+    derived_features: false         # Calculates features from existing ones (e.g., price ratios)
+    macro_features: false           # Fetches and integrates macroeconomic data
+    sentiment_features: false       # Analyzes sentiment from news or social media
+    nlp_features: false             # Extracts features from text using NLP
+    hype_features: false            # Measures market hype or attention
+    significance_features: false    # Evaluates the statistical significance of events
+    decay_features: false           # Applies decay functions to features over time
+    context_map: true               # Generates a dynamic context fingerprint for each data point
+
+# Detailed configuration for the Technical Analysis enricher.
+# This corresponds to the 'technical_analysis' key in enabled_enrichers.
+technical_analysis:
+  sma:
+    enabled: true
+    window: 20
+  
+  ema:
+    enabled: true
+    window: 20
+
+  rsi:
+    enabled: true
+    period: 14
+
+  macd:
+    enabled: true
+    fast: 12
+    slow: 26
+    signal: 9
+
+  bollinger_bands:
+    enabled: false
+    period: 20
+    std: 2
+
+  atr:
+    enabled: false
+    period: 14
+
+  stochastic:
+    enabled: false
+    k_period: 14
+    d_period: 3
+
+  williams_r:
+    enabled: false
+    period: 14
+
+  cci:
+    enabled: false
+    period: 20

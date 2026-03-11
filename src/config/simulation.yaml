@@ -1,0 +1,35 @@
+
+# Configuration for the Simulation Engine
+
+# Optimization settings for the simulation engine
+optimization:
+  enable_monte_carlo: True
+  enable_parallel_processing: True
+  use_historical_bootstrap: True
+  # Student's t-distribution degrees of freedom for generating returns with fat tails.
+  # Lower values result in fatter tails. Recommended range: 3-5.
+  t_distribution_df: 3.0
+  # The engine will clear the cache if the hit rate falls below this threshold.
+  min_cache_hit_rate: 0.1
+
+# Predefined stress test scenarios
+stress_tests:
+  - name: "COVID-like crash"
+    mu: -0.05
+    sigma: 0.08
+    label: "extreme_bear"
+  - name: "Rate hike shock"
+    mu: -0.02
+    sigma: 0.04
+    label: "monetary_tightening"
+  - name: "Short squeeze"
+    mu: 0.10
+    sigma: 0.15
+    label: "volatility_spike"
+
+# Default settings for simulations
+defaults:
+  # Number of runs for Monte Carlo simulations
+  monte_carlo_runs: 1000
+  # Default time horizons (in days) for simulation analysis
+  time_horizons: [1, 5, 10, 20]

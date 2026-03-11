@@ -1,0 +1,140 @@
+collectors:
+  yahoo_finance:
+    enabled: true
+    type: "yahoo_finance"
+    critical: true
+    cache_duration_minutes: 15
+    timeframes:
+      "15m":
+        period: "60d"
+      "60m":
+        period: "60d"
+      "1d":
+        period: "2y"
+
+  fred:
+    enabled: true
+    type: "fred"
+    critical: false
+    cache_duration_minutes: 1440 # 24 hours
+    hash_keys: ["series_id", "date"]
+    params:
+      period: "1y"  # Limit to 1 year
+      series_ids:
+        - "FEDFUNDS"
+        - "T10Y2Y"
+        - "CPIAUCSL"
+        - "UNRATE"
+        - "GS10"
+        - "GS2"
+        - "VIXCLS"
+        - "DGS10"
+        - "GDP"
+        - "PPIACO"
+        - "DGORDER"
+        - "UMCSENT"
+        - "PCEPILFE"
+        - "CCSA"
+        - "PCEPI"
+        - "WALCL"
+        - "MANEMP"
+        - "DEXUSEU"
+        - "DEXCHUS"
+        - "DCOILWTICO"
+        - "BAMLH0A0HYM2"
+        - "TOTALSA"
+        - "INDPRO"
+      max_retries: 3
+
+  google_news:
+    enabled: true
+    type: "google_news"
+    critical: false
+    cache_duration_minutes: 60
+    params:
+      period: "60d" # Limit to 60 days
+      language: "en"
+      country: "US"
+      max_results: 150
+    deduplication:
+      n_clusters: 20
+      max_features: 1000
+
+  rss:
+    enabled: true
+    type: "rss"
+    critical: false
+    cache_duration_minutes: 60
+    params:
+      period: "60d" # Limit to 60 days
+      limit_per_feed: 100
+    deduplication:
+      n_clusters: 15
+      max_features: 500
+
+  newsapi:
+    enabled: false
+    type: "newsapi"
+    critical: false
+    cache_duration_minutes: 60
+    requires_api_key: true
+    api_key_env: "NEWS_API_KEY"
+    base_url: "https://newsapi.org/v2/everything"
+    language: "en"
+    page_size: 100
+
+  economic_calendar:
+    enabled: false
+    type: "economic_calendar"
+    critical: false
+    cache_duration_minutes: 1440 # 24 hours
+    api_url: "https://sb-inv-prod.investing.com/api/economic-calendar/v1/events"
+    days_back: 7
+    days_ahead: 30
+    countries: ["us", "eu", "gb", "cn", "jp", "de"]
+    importance: ["medium", "high"]
+
+  free_google_trends:
+    enabled: false
+    type: "free_google_trends"
+    critical: false
+    cache_duration_minutes: 120
+    geo: 'US'
+    timeframe: 'today 1-m' # Default to 1 month
+    language: 'en-US'
+
+  sec_filings:
+    enabled: true
+    type: "sec_filings"
+    critical: false
+    cache_duration_minutes: 240 # 4 hours
+    submissions_url_template: "https://data.sec.gov/submissions/CIK{cik}.json"
+    hash_keys: ["accessionNumber", "cik"]
+    params:
+      period: "60d" # Limit to 60 days
+
+  insider:
+    enabled: false
+    type: "insider"
+    critical: false
+    cache_duration_minutes: 240 # 4 hours
+
+  hugging_face:
+    enabled: false
+    type: "hugging_face"
+    critical: false
+    cache_duration_minutes: 10080 # 1 week
+    params:
+      dataset_name: "financial_news"
+      split: "train"
+      max_samples: 1000
+
+  bigquery:
+    enabled: false
+    type: "bigquery"
+    critical: false
+
+  custom_csv:
+    enabled: false
+    type: "custom_csv"
+    critical: false

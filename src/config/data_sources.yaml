@@ -1,0 +1,13 @@
+
+data_sources:
+  # Configuration for loading data from a local file
+  - name: "local_file_source"
+    type: "local"
+    module: "src.data_sources.local_file_data_source.LocalFileDataSource"
+    class: "LocalFileDataSource"
+    params:
+      # Default path to the data file. This can be overridden at runtime.
+      file_path: "data/raw/market_data.csv"
+      file_type: "csv" # Can be 'csv' or 'parquet'
+      # Specify the date column to be used as the DataFrame index. If null, no index is set.
+      date_col: "date"
