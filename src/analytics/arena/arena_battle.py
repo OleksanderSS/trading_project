@@ -64,7 +64,7 @@ class TradingModelArena:
     Включає етап 'The Reveal' (Blinded Simulation) для причинно-наслідкового аналізу.
     """
     
-    def __init__(self, champion_dir: str = "src/trained_models", safety_margin: float = 0.05):
+    def __init__(self, champion_dir: str = "trained_models", safety_margin: float = 0.05):
         self.models = {}
         self.battle_history = []
         self.leaderboard = {}

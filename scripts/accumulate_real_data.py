@@ -112,29 +112,58 @@ class RealDataAccumulator:
         logger.info(f"  Enrichers: {', '.join(enricher_names)}")
     
     def _stage_1_collection(self, tickers: list, days_back: int) -> pd.DataFrame:
-        """Stage 1: Collect real data"""
+        """Stage 1: Collect real data using PipelineOrchestrator"""
         logger.info(f"Collecting data for {len(tickers)} tickers (last {days_back} days)...")
         
         try:
-            # Use PipelineOrchestrator to run Stage 1
-            # This will collect market, macro, and news data
-            collection_result = self.orchestrator.run_stage(
-                stage_num=1,
-                tickers=tickers,
-                days_back=days_back
-            )
+            # Run Stage 1 through PipelineOrchestrator to collect fresh data
+            import asyncio
             
-            if collection_result is None or collection_result.empty:
-                logger.warning("⚠️  Stage 1 returned empty data")
+            # Run collection stage
+            result = asyncio.run(self.orchestrator.run_stage(
+                stage_name='collection',
+                tickers=tickers
+            ))
+            
+            if not result or 'raw_data' not in result:
+                logger.warning("⚠️  No data collected from Stage 1")
                 return None
             
-            logger.info(f"✓ Collected {len(collection_result)} rows")
-            logger.info(f"✓ Columns: {list(collection_result.columns)[:10]}... ({len(collection_result.columns)} total)")
+            raw_data = result['raw_data']
             
-            return collection_result
+            # Extract market data
+            market_df = None
+            if 'market_data_raw' in raw_data:
+                market_df = raw_data['market_data_raw']
+            elif 'market_data' in raw_data:
+                market_df = raw_data['market_data']
+            elif 'yf_collector' in raw_data:
+                market_df = raw_data['yf_collector']
+            
+            if market_df is None or market_df.empty:
+                logger.warning("⚠️  No market data in collected data")
+                # Try to fetch from DuckDB as fallback
+                market_df = self.data_manager.fetch_data_from_table('market_data_raw')
+                if market_df is None or market_df.empty:
+                    logger.error("❌ No market data available")
+                    return None
+            
+            # Filter by tickers
+            if 'ticker' in market_df.columns:
+                market_df = market_df[market_df['ticker'].isin(tickers)]
+            
+            # Sort by timestamp
+            if 'timestamp' in market_df.columns:
+                market_df = market_df.sort_values('timestamp')
+            
+            logger.info(f"✓ Collected {len(market_df)} rows")
+            logger.info(f"✓ Columns: {list(market_df.columns)[:10]}... ({len(market_df.columns)} total)")
+            
+            return market_df
             
         except Exception as e:
             logger.error(f"❌ Stage 1 collection failed: {e}")
+            logger.exception(e)
             return None
     
     def _stage_2_processing(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -142,21 +171,21 @@ class RealDataAccumulator:
         logger.info(f"Processing {len(df)} rows...")
         
         try:
-            # Use PipelineOrchestrator to run Stage 2
-            # This will clean, normalize, and identify market regime
-            processing_result = self.orchestrator.run_stage(
-                stage_num=2,
-                data=df
-            )
+            # Simple processing - just ensure required columns exist
+            if 'timestamp' not in df.columns and 'datetime' in df.columns:
+                df = df.rename(columns={'datetime': 'timestamp'})
             
-            if processing_result is None or processing_result.empty:
-                logger.warning("⚠️  Stage 2 returned empty data")
-                return None
+            # Remove duplicates
+            if 'ticker' in df.columns and 'timestamp' in df.columns:
+                df = df.drop_duplicates(subset=['ticker', 'timestamp'], keep='last')
             
-            logger.info(f"✓ Processed {len(processing_result)} rows")
-            logger.info(f"✓ Removed {len(df) - len(processing_result)} rows (duplicates/anomalies)")
+            # Sort by timestamp
+            if 'timestamp' in df.columns:
+                df = df.sort_values('timestamp')
             
-            return processing_result
+            logger.info(f"✓ Processed {len(df)} rows")
+            
+            return df
             
         except Exception as e:
             logger.error(f"❌ Stage 2 processing failed: {e}")
@@ -188,6 +217,7 @@ class RealDataAccumulator:
             
         except Exception as e:
             logger.error(f"❌ Stage 3 enrichment failed: {e}")
+            logger.exception(e)
             return None
     
     def _store_in_duckdb(self, enriched_data: pd.DataFrame, raw_data: pd.DataFrame):
@@ -266,12 +296,12 @@ def main():
     parser = argparse.ArgumentParser(description='Accumulate real data without training')
     parser.add_argument('--tickers', nargs='+', default=['AMD', 'NVDA'], help='Tickers to accumulate')
     parser.add_argument('--days', type=int, default=30, help='Days of history to collect')
-    parser.add_argument('--config-path', default='src/config', help='Path to config directory')
+    parser.add_argument('--config-dir', default='src/config', help='Path to config directory')
     
     args = parser.parse_args()
     
     # Initialize config
-    config_manager = UnifiedConfigManager(config_path=args.config_path)
+    config_manager = UnifiedConfigManager(config_dir=args.config_dir)
     
     # Run accumulation
     accumulator = RealDataAccumulator(config_manager)

@@ -10,7 +10,7 @@ import logging
 import importlib
 
 from src.config.unified_config_manager import UnifiedConfigManager
-from src.models.model_interface import BaseModel
+from src.models.interfaces import BaseModel
 
 logger = logging.getLogger(__name__)
 

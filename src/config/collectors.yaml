@@ -78,6 +78,7 @@ collectors:
   google_news:
     enabled: true
     type: "google_news"
+    data_type: "news"
     critical: false
     table_name: "google_news"
     cache_ttl: 3600
@@ -85,7 +86,7 @@ collectors:
     max_concurrent_terms: 5
     delay: 0.3
     filter:
-      min_source_quality: 0.4
+      min_source_quality: 0.0
       require_keywords_in_title: false
       exclude_title_keywords:
         - "horoscope"
@@ -95,7 +96,7 @@ collectors:
         - "recipe"
       allowed_domains: []
     params:
-      period: "7d"
+      period: "60d"  # Increased from 7d to match market data period
       language: "en"
       country: "US"
       max_results: 10
@@ -106,19 +107,20 @@ collectors:
   rss:
     enabled: true
     type: "rss"
+    data_type: "news"
     critical: false
     table_name: "rss_news"
     cache_ttl: 3600
     cache_duration_minutes: 60
     filter:
-      min_source_quality: 0.4
+      min_source_quality: 0.0
       require_keywords_in_title: false
       exclude_title_keywords:
         - "horoscope"
         - "celebrity"
         - "sports"
     params:
-      period: "7d"
+      period: "60d"  # Increased from 7d to match market data period
       limit_per_feed: 20
     deduplication:
       n_clusters: 10
@@ -127,6 +129,7 @@ collectors:
   newsapi:
     enabled: true
     type: "newsapi"
+    data_type: "news"
     critical: false
     table_name: "newsapi_articles"
     cache_ttl: 3600
@@ -182,24 +185,35 @@ collectors:
       period: "60d"
 
   insider:
-    enabled: false
+    enabled: true
     type: "insider"
     critical: false
     table_name: "insider_trades"
     cache_ttl: 14400
     cache_duration_minutes: 240
     hash_keys: ["filing_date", "ticker", "insider_name"]
+    urls:
+      - "https://openinsider.com/screener"
+    column_mapping:
+      col_0: "filing_date"
+      col_1: "ticker"
+      col_2: "insider_name"
+      col_3: "transaction_type"
+      col_4: "shares"
+      col_5: "price"
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
   hugging_face:
-    enabled: false
-    type: "hugging_face"
+    enabled: true
+    type: "huggingface"
     critical: false
     table_name: "huggingface_data"
     cache_ttl: 604800
     cache_duration_minutes: 10080
-    dataset_name: "financial_news"
-    subset_name: null
+    dataset_name: "wikitext"
+    subset_name: "wikitext-103-v1"
     split: "train"
+    hash_keys: ["text"]
 
   bigquery:
     enabled: false

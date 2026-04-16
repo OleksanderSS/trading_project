@@ -18,7 +18,26 @@ class XGBoostModel(BaseModel):
         self.learning_rate = learning_rate
         self.random_state = random_state
         self.logger = ProjectLogger.get_logger("XGBoostModel")
-        self.model = None
+        
+        # ✅ ІНІЦІАЛІЗАЦІЯ МОДЕЛІ В __INIT__ (для Ансамблю)
+        import xgboost as xgb
+        if self.task_type == "classification":
+            self.model = xgb.XGBClassifier(
+                n_estimators=self.n_estimators,
+                max_depth=self.max_depth,
+                learning_rate=self.learning_rate,
+                random_state=self.random_state,
+                eval_metric='logloss',
+                use_label_encoder=False
+            )
+        else:
+            self.model = xgb.XGBRegressor(
+                n_estimators=self.n_estimators,
+                max_depth=self.max_depth,
+                learning_rate=self.learning_rate,
+                random_state=self.random_state,
+                eval_metric='rmse'
+            )
         
     @property
     def name(self) -> str:
@@ -26,30 +45,13 @@ class XGBoostModel(BaseModel):
 
     def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> Dict[str, Any]:
         """Trains the XGBoost model."""
-        import xgboost as xgb  # Dynamic import
         try:
             if isinstance(X, pd.DataFrame):
                 self.feature_cols = X.columns.tolist()
             
-            if self.task_type == "classification":
-                self.model = xgb.XGBClassifier(
-                    n_estimators=self.n_estimators,
-                    max_depth=self.max_depth,
-                    learning_rate=self.learning_rate,
-                    random_state=self.random_state,
-                    eval_metric='logloss',
-                    use_label_encoder=False,
-                    **kwargs
-                )
-            else:
-                self.model = xgb.XGBRegressor(
-                    n_estimators=self.n_estimators,
-                    max_depth=self.max_depth,
-                    learning_rate=self.learning_rate,
-                    random_state=self.random_state,
-                    eval_metric='rmse',
-                    **kwargs
-                )
+            # Оновлюємо параметри, якщо вони передані
+            if kwargs:
+                self.model.set_params(**kwargs)
             
             self.model.fit(X, y)
             self.is_trained = True

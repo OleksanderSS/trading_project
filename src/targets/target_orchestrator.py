@@ -2,7 +2,9 @@
 import pandas as pd
 import yaml
 from typing import List, Dict, Any
+from pathlib import Path
 from src.core.logging.logger import ProjectLogger
+from src.config.unified_config_manager import get_current_config
 from src.targets.calculators.regression_calculator import RegressionCalculator
 from src.targets.calculators.classification_calculator import ClassificationCalculator
 from src.targets.calculators.indicator_prediction_calculator import IndicatorPredictionCalculator
@@ -27,8 +29,52 @@ class TargetOrchestrator:
         "classification_multiclass": "calculate_multiclass",
     }
 
-    def __init__(self, targets_list: List[Dict[str, Any]]):
-        self.targets = targets_list
+    def __init__(self, targets_list):
+        """
+        Initialize with targets in either dict or list format.
+        
+        Args:
+            targets_list: Either a dict {target_name: config} or list [{name: ..., type: ..., params: ...}]
+        """
+        # Convert dict format to list format if needed
+        if isinstance(targets_list, dict):
+            self.targets = [
+                {'name': name, **config}
+                for name, config in targets_list.items()
+            ]
+        else:
+            self.targets = targets_list
+        
+        # ✅ ФІЛЬТРАЦІЯ ТАРГЕТІВ: Якщо прописано test_target, береться ТІЛЬКИ він
+        import json
+        runtime_params = {}
+        config_manager = get_current_config()
+        params_path = config_manager.get_runtime_params_path()
+        if params_path.exists():
+            try:
+                with open(params_path, 'r') as f:
+                    runtime_params = json.load(f)
+            except Exception as e:
+                logger.warning(f"Could not load runtime_params.json: {e}")
+        
+        test_target = runtime_params.get('test_mode', {}).get('test_target')
+        if test_target:
+            # Фільтруємо: залишаємо ТІЛЬКИ обраний таргет
+            original_count = len(self.targets)
+            self.targets = [t for t in self.targets if t['name'] == test_target]
+            if self.targets:
+                logger.info(f"🎯 ФІЛЬТРАЦІЯ ТАРГЕТІВ: {test_target} (було {original_count}, залишилось {len(self.targets)})")
+            else:
+                logger.warning(f"⚠️ test_target '{test_target}' не знайдено в конфігурації! Використовуємо всі таргети.")
+                # Відновлюємо всі таргети, якщо обраний не знайдено
+                if isinstance(targets_list, dict):
+                    self.targets = [
+                        {'name': name, **config}
+                        for name, config in targets_list.items()
+                    ]
+                else:
+                    self.targets = targets_list
+        
         logger.info(f"TargetOrchestrator initialized with {len(self.targets)} target configurations.")
 
     def generate_targets(self, df: pd.DataFrame) -> pd.DataFrame:

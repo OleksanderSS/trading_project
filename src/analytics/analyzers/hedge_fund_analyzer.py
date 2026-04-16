@@ -118,11 +118,39 @@ class HedgeFundAnalyzer(IAnalyzer):
     def calculate_factor_exposures(self, returns: pd.Series, model_name: str = 'carhart') -> Dict[str, Any]:
         """Calculates exposure to Fama-French factors using statsmodels."""
         try:
-            start_date = returns.index.min().strftime('%Y-%m-%d')
-            end_date = returns.index.max().strftime('%Y-%m-%d')
+            # ✅ FIX: Convert to datetime if needed (handles numpy.int64 case)
+            min_idx = returns.index.min()
+            max_idx = returns.index.max()
             
-            factors_df = self.factor_provider.get_factors(start_date, end_date)
+            # Convert to datetime if not already
+            if not isinstance(min_idx, (pd.Timestamp, datetime)):
+                try:
+                    min_idx = pd.to_datetime(min_idx)
+                except (ValueError, TypeError):
+                    # Якщо не вдається конвертувати, використовуємо поточну дату мінус 1 рік
+                    min_idx = pd.Timestamp.now() - pd.Timedelta(days=365)
+                    logger.warning(f"Could not convert min_idx to datetime, using fallback: {min_idx}")
+            
+            if not isinstance(max_idx, (pd.Timestamp, datetime)):
+                try:
+                    max_idx = pd.to_datetime(max_idx)
+                except (ValueError, TypeError):
+                    # Якщо не вдається конвертувати, використовуємо поточну дату
+                    max_idx = pd.Timestamp.now()
+                    logger.warning(f"Could not convert max_idx to datetime, using fallback: {max_idx}")
+            
+            start_date = min_idx.strftime('%Y-%m-%d')
+            end_date = max_idx.strftime('%Y-%m-%d')
+            
+            # ✅ FIX: Додаємо try-except для завантаження факторів
+            try:
+                factors_df = self.factor_provider.get_factors(start_date, end_date)
+            except Exception as e:
+                logger.warning(f"⚠️ Не вдалося завантажити Fama-French фактори: {e}")
+                return {"error": "Factor data not available for the given date range."}
+            
             if factors_df is None or factors_df.empty:
+                logger.warning(f"⚠️ Fama-French фактори порожні для {start_date} - {end_date}")
                 return {"error": "Factor data not available for the given date range."}
 
             model_factors = self.factor_models.get(model_name, self.factor_models['carhart'])

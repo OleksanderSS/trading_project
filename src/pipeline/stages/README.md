@@ -2,6 +2,8 @@
 
 This directory contains the core logic of the data processing pipeline, broken down into sequential "stages." Each stage is a self-contained module responsible for a specific part of the data transformation process, from initial collection to final prediction.
 
+> NOTE: Legacy duplicate pipeline helpers `stage_manager.py`, `stage_config.py`, and `incremental_pipeline.py` have been removed. The canonical pipeline now runs through `PipelineOrchestrator` and stage modules in this directory.
+
 ---
 
 ## 🏛️ Architecture: A Shift Towards Asynchronicity and Dynamic Configuration

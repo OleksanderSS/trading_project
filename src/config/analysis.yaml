@@ -40,6 +40,8 @@ engine:
       module: "src.analytics.context.macro_context_analyzer"
       class: "MacroContextAnalyzer"
       data_mapping: ["macro_data"]
+      params:
+        context_features: []
     - name: "critical_signals"
       module: "src.analytics.detectors.critical_signal_detector"
       class: "CriticalSignalDetector"

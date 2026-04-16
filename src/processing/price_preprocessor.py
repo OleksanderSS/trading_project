@@ -11,11 +11,15 @@ logger = ProjectLogger.get_logger("PricePreprocessor")
 
 def normalize_price_df(df: pd.DataFrame, price_metrics: Optional[List[str]] = None) -> pd.DataFrame:
     """
-    Normalizes a price DataFrame into a consistent schema: [datetime, ticker, ohlcv].
+    Normalizes a price DataFrame into a consistent schema: [datetime, ticker, ohlcv, interval].
     Handles raw data from collectors or already partially processed data.
+    CRITICAL: Preserves 'interval' column to prevent timeframe mixing.
     """
     metrics = price_metrics or DEFAULT_PRICE_METRICS
     target_columns = ["datetime", "ticker"] + metrics
+    
+    # CRITICAL: Preserve interval column if it exists
+    preserve_columns = ["interval", "hash"]  # Columns to preserve if they exist
 
     if df is None or df.empty:
         logger.warning("Empty DataFrame provided to price preprocessor.")
@@ -27,7 +31,12 @@ def normalize_price_df(df: pd.DataFrame, price_metrics: Optional[List[str]] = No
     current_cols = set(df.columns)
     if all(col in current_cols for col in target_columns):
         logger.debug("DataFrame is already in normalized format. Validating metrics...")
-        processed_df = df[target_columns]
+        # Preserve interval and other metadata columns
+        columns_to_keep = target_columns.copy()
+        for col in preserve_columns:
+            if col in current_cols and col not in columns_to_keep:
+                columns_to_keep.append(col)
+        processed_df = df[columns_to_keep]
     else:
         # 2. Handle MultiIndex columns (flattening) if present
         if isinstance(df.columns, pd.MultiIndex):
@@ -75,10 +84,18 @@ def normalize_price_df(df: pd.DataFrame, price_metrics: Optional[List[str]] = No
             logger.warning(f"Missing metric column '{m}' in processed data. Adding as NaN.")
             processed_df[m] = pd.NA
 
-    # Enforce strict schema and order
-    final_df = processed_df[target_columns].dropna(subset=['datetime', 'ticker'])
+    # Enforce strict schema and order, but preserve interval if it exists
+    columns_to_keep = target_columns.copy()
+    for col in preserve_columns:
+        if col in processed_df.columns and col not in columns_to_keep:
+            columns_to_keep.append(col)
+    
+    final_df = processed_df[columns_to_keep].dropna(subset=['datetime', 'ticker'])
     
     tickers_count = final_df["ticker"].nunique()
-    logger.info(f"Price normalization complete: {len(final_df)} rows, {tickers_count} tickers.")
+    if 'interval' in final_df.columns:
+        logger.info(f"Price normalization complete: {len(final_df)} rows, {tickers_count} tickers, interval column PRESERVED.")
+    else:
+        logger.warning(f"Price normalization complete: {len(final_df)} rows, {tickers_count} tickers, interval column MISSING!")
 
     return final_df

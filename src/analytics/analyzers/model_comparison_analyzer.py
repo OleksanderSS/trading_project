@@ -128,3 +128,108 @@ class ModelComparisonAnalyzer(IAnalyzer):
             })
         
         return comparison
+
+    def compare_models(self, training_results: Dict[str, Any], market_context: str = 'neutral') -> Dict[str, Any]:
+        """
+        Порівнює моделі з training_results та вибирає чемпіона.
+        
+        Логіка:
+        1. Важкі моделі порівнюються між собою
+        2. Легкі моделі порівнюються між собою
+        3. Найкраща важка vs найкраща легка → чемпіон
+        
+        Args:
+            training_results: Результати тренування з UnifiedTrainingManager
+            market_context: Контекст ринку (для майбутньої логіки)
+            
+        Returns:
+            Dict з champion_model, selection_reason, heavy_best, light_best
+        """
+        logger.info("🏆 Порівняння моделей для вибору чемпіона...")
+        
+        # Витягуємо результати по тікерам
+        tickers_results = training_results.get('tickers_results', {})
+        
+        if not tickers_results:
+            logger.warning("⚠️ Немає результатів тренування для порівняння")
+            return {
+                'champion_model': 'unknown',
+                'selection_reason': 'No training results available',
+                'heavy_best': None,
+                'light_best': None
+            }
+        
+        # Збираємо всі моделі з метриками
+        all_models = []
+        
+        for ticker, ticker_data in tickers_results.items():
+            if ticker_data.get('status') != 'success':
+                continue
+            
+            winner = ticker_data.get('winner', 'unknown')
+            metrics = ticker_data.get('metrics', {})
+            
+            # Визначаємо тип моделі
+            model_type = 'heavy' if winner.lower() in [m.lower() for m in self.heavy_models] else 'light'
+            
+            # Витягуємо accuracy (може бути в різних місцях)
+            accuracy = metrics.get('accuracy', metrics.get('test_accuracy', metrics.get('r2', 0.0)))
+            
+            all_models.append({
+                'model_name': winner,
+                'model_type': model_type,
+                'accuracy': accuracy,
+                'metrics': metrics,
+                'ticker': ticker
+            })
+        
+        if not all_models:
+            logger.warning("⚠️ Не знайдено жодної успішної моделі")
+            return {
+                'champion_model': 'unknown',
+                'selection_reason': 'No successful models',
+                'heavy_best': None,
+                'light_best': None
+            }
+        
+        # Розділяємо на важкі та легкі
+        heavy_models = [m for m in all_models if m['model_type'] == 'heavy']
+        light_models = [m for m in all_models if m['model_type'] == 'light']
+        
+        # Знаходимо найкращі в кожній категорії
+        best_heavy = max(heavy_models, key=lambda x: x['accuracy']) if heavy_models else None
+        best_light = max(light_models, key=lambda x: x['accuracy']) if light_models else None
+        
+        logger.info(f"📊 Важкі моделі: {len(heavy_models)}, Легкі моделі: {len(light_models)}")
+        if best_heavy:
+            logger.info(f"🏆 Найкраща важка: {best_heavy['model_name']} (accuracy: {best_heavy['accuracy']:.4f})")
+        if best_light:
+            logger.info(f"💡 Найкраща легка: {best_light['model_name']} (accuracy: {best_light['accuracy']:.4f})")
+        
+        # Вибираємо чемпіона
+        if best_heavy and best_light:
+            if best_heavy['accuracy'] >= best_light['accuracy']:
+                champion = best_heavy['model_name']
+                reason = f"Heavy model wins: {best_heavy['accuracy']:.4f} vs {best_light['accuracy']:.4f}"
+            else:
+                champion = best_light['model_name']
+                reason = f"Light model wins: {best_light['accuracy']:.4f} vs {best_heavy['accuracy']:.4f}"
+        elif best_heavy:
+            champion = best_heavy['model_name']
+            reason = "Only heavy model available"
+        elif best_light:
+            champion = best_light['model_name']
+            reason = "Only light model available"
+        else:
+            champion = 'unknown'
+            reason = "No models available"
+        
+        logger.info(f"🏆 ЧЕМПІОН: {champion} ({reason})")
+        
+        return {
+            'champion_model': champion,
+            'selection_reason': reason,
+            'heavy_best': best_heavy,
+            'light_best': best_light,
+            'all_models': all_models
+        }

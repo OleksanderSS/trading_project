@@ -8,7 +8,7 @@ from src.core.logging.logger import ProjectLogger
 logger = ProjectLogger.get_logger(__name__)
 
 def sanitize_timestamps(df: pd.DataFrame) -> pd.DataFrame:
-    """Конвертує all datetime-колонки у ISO-формат for серandалandforцandї."""
+    """Конвертує всі datetime-колонки у ISO-формат для серіалізації."""
     df_out = df.copy()
     for col in df_out.columns:
         if pd.api.types.is_datetime64_any_dtype(df_out[col]):
@@ -17,14 +17,14 @@ def sanitize_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     return df_out
 
 def sanitize_record_for_json(record: dict) -> dict:
-    """Рекурсивно конвертує словник у формат, сумandсний with JSON."""
+    """Рекурсивно конвертує словник у формат, сумісний з JSON."""
     def convert(value):
         if isinstance(value, (pd.Timestamp, datetime)):
             return value.isoformat()
         elif isinstance(value, float) and np.isnan(value):
             return None
         elif isinstance(value, (np.integer, np.floating)):
-            return value.item()  # перетворює numpy-типи у сandндартнand int/float
+            return value.item()  # перетворює numpy-типи у стандартні int/float
         elif isinstance(value, dict):
             return sanitize_record_for_json(value)
         elif isinstance(value, list):
@@ -33,5 +33,5 @@ def sanitize_record_for_json(record: dict) -> dict:
             return value
 
     sanitized = {k: convert(v) for k, v in record.items()}
-    logger.debug(f"[json_utils] Словник очищено for JSON: ключand={list(sanitized.keys())}")
+    logger.debug(f"[json_utils] Словник очищено для JSON: ключі={list(sanitized.keys())}")
     return sanitized

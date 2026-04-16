@@ -321,9 +321,12 @@ class EnrichedDatasetVerifier:
             summary['recommendations'].append("Handle missing values: null percentage is high")
         
         enricher_coverage = self.verification_report.get('enricher_coverage', {})
-        missing_enrichers = [name for name, info in enricher_coverage.items() if not info.get('found')]
-        if missing_enrichers:
-            summary['recommendations'].append(f"Missing enrichers: {missing_enrichers}")
+        # Only check for missing enrichers if enricher_coverage is a proper dict (not {'status': 'no_data'})
+        if enricher_coverage.get('status') != 'no_data':
+            missing_enrichers = [name for name, info in enricher_coverage.items() 
+                               if isinstance(info, dict) and not info.get('found')]
+            if missing_enrichers:
+                summary['recommendations'].append(f"Missing enrichers: {missing_enrichers}")
         
         return summary
 
@@ -339,7 +342,7 @@ def main():
     args = parser.parse_args()
     
     # Initialize config
-    config_manager = UnifiedConfigManager(config_path=args.config_path)
+    config_manager = UnifiedConfigManager(config_dir=args.config_path)
     
     # Run verification
     verifier = EnrichedDatasetVerifier(config_manager)

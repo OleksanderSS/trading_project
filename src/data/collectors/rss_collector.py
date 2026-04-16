@@ -5,7 +5,7 @@ import hashlib
 import pandas as pd
 import feedparser
 from typing import List, Dict, Optional, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .base_collector import BaseCollector
 from src.core.logging.logger import ProjectLogger
@@ -157,29 +157,55 @@ class RSSCollector(BaseCollector):
 
             feed_data = feedparser.parse(response.text)
             limit = self.configs.get("params", {}).get("limit_per_feed", 20)
-            cutoff = datetime.now().astimezone() - timedelta(days=self.period_days)
+            # Використовуємо UTC для порівняння з UTC датами з RSS
+            cutoff = datetime.now(timezone.utc) - timedelta(days=self.period_days)
+
+            # ЛОГУВАННЯ: Кількість записів у фіді
+            self.logger.info(f"[RSS] Feed '{name}': {len(feed_data.entries)} entries found")
 
             articles = []
-            for entry in feed_data.entries[:limit]:
+            skipped_no_date = 0
+            skipped_old = 0
+            skipped_filter = 0
+            
+            for i, entry in enumerate(feed_data.entries[:limit]):
                 processed = self._process_entry(entry, name)
-                if processed and processed["published_date"] >= cutoff:
-                    articles.append(processed)
+                
+                if not processed:
+                    skipped_filter += 1
+                    continue
+                
+                if processed["published_date"] < cutoff:
+                    skipped_old += 1
+                    self.logger.debug(f"[RSS] Entry {i} skipped (too old: {processed['published_date']} < {cutoff})")
+                    continue
+                
+                articles.append(processed)
 
+            # ЛОГУВАННЯ: Результати фільтрації
+            self.logger.info(
+                f"[RSS] Feed '{name}': {len(articles)} articles after filtering "
+                f"(skipped: {skipped_filter} filter, {skipped_old} old)"
+            )
+            
             return articles
 
         except Exception as e:
-            self.logger.error(f"Error fetching feed '{name}' ({url}): {e}")
+            self.logger.error(f"Error fetching feed '{name}' ({url}): {e}", exc_info=True)
             return []
 
     def _process_entry(self, entry: Dict, source_name: str) -> Optional[Dict]:
         """Обробляє один запис RSS з фільтрацією по якості."""
         published_str = entry.get("published")
         if not published_str:
+            self.logger.debug(f"[RSS] Entry skipped: no 'published' field")
             return None
 
         try:
-            published_date = pd.to_datetime(published_str).astimezone()
-        except (ValueError, TypeError):
+            # Парсуємо дату без .astimezone() - це викликає помилку
+            published_date = pd.to_datetime(published_str, utc=True)
+        except (ValueError, TypeError) as e:
+            self.logger.debug(f"[RSS] Entry skipped: date parse error '{published_str}' - {e}")
             return None
 
         title = entry.get("title", "") or ""
@@ -187,6 +213,7 @@ class RSSCollector(BaseCollector):
         # Фільтр по стоп-словах
         title_lower = title.lower()
         if any(kw in title_lower for kw in self.exclude_title_keywords):
+            self.logger.debug(f"[RSS] Entry skipped: excluded keyword in title '{title}'")
             return None
 
         # Фільтр по якості джерела
@@ -194,6 +221,7 @@ class RSSCollector(BaseCollector):
             source_lower = source_name.lower()
             quality = self._quality_weights.get(source_lower, self._quality_weights.get("default_weight", 0.3))
             if quality < self.min_source_quality:
+                self.logger.debug(f"[RSS] Entry skipped: quality {quality} < {self.min_source_quality}")
                 return None
 
         return {

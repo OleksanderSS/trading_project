@@ -37,6 +37,10 @@ class NormalizationManager:
             features_to_normalize (List[Dict[str, Any]]): A list of dictionaries, 
                 each specifying a 'feature' name and 'scaler_type' ('min_max' or 'standard').
         """
+        if not features_to_normalize:
+            logger.info("No features to normalize. Skipping scaler fitting.")
+            return
+
         logger.info(f"Fitting scalers for {len(features_to_normalize)} features...")
         for config in features_to_normalize:
             feature = config['feature']

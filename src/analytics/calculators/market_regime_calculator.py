@@ -11,21 +11,31 @@ class MarketRegimeCalculator:
     The goal is to identify the dominant market state (e.g., Bull, Bear, Consolidation).
     """
 
+    # Regime encoding map: текст → число
+    REGIME_ENCODING = {
+        'High Volatility': 2,    # Найагресивніший, найбільший ризик
+        'Bullish': 1,            # Агресивний ріст
+        'Consolidation': 0,      # Нейтральний, бічний рух
+        'Bearish': -1,           # Агресивне падіння
+        'Low Volatility': -2     # Пасивний, низький ризик
+    }
+    
     @staticmethod
-    def calculate_regime(price_series: pd.Series, window: int = 20) -> pd.Series:
+    def calculate_regime(price_series: pd.Series, window: int = 20, return_encoded: bool = False) -> pd.Series:
         """
         Determines the market regime for each point in a time series.
 
         Args:
             price_series (pd.Series): Series of prices.
             window (int): Rolling window for calculations.
+            return_encoded (bool): If True, returns numeric encoding instead of text labels.
 
         Returns:
-            pd.Series: A series of strings representing the market regime.
+            pd.Series: A series of strings (or numbers if return_encoded=True) representing the market regime.
         """
         if not isinstance(price_series, pd.Series) or price_series.empty:
             logger.warning("Price series is empty or not a Series. Returning empty Series.")
-            return pd.Series(dtype=str)
+            return pd.Series(dtype=str if not return_encoded else float)
 
         logger.info(f"Calculating market regime with window size {window}...")
 
@@ -39,15 +49,23 @@ class MarketRegimeCalculator:
         trend_threshold_positive = rolling_mean.quantile(0.7)
         trend_threshold_negative = rolling_mean.quantile(0.3)
 
-        # Classify regime
+        # Classify regime (text labels)
         regime = pd.Series('Consolidation', index=price_series.index)
         regime[ (rolling_mean > trend_threshold_positive) & (rolling_std > volatility_threshold_low) ] = 'Bullish'
         regime[ (rolling_mean < trend_threshold_negative) & (rolling_std > volatility_threshold_low) ] = 'Bearish'
         regime[ rolling_std > volatility_threshold_high ] = 'High Volatility'
         regime[ rolling_std < volatility_threshold_low ] = 'Low Volatility'
         
-        logger.info("Market regime calculation completed.")
-        return regime.fillna('Consolidation')
+        regime = regime.fillna('Consolidation')
+        
+        # Convert to numeric encoding if requested
+        if return_encoded:
+            regime = regime.map(MarketRegimeCalculator.REGIME_ENCODING).fillna(0)
+            logger.info("Market regime calculation completed (numeric encoding).")
+        else:
+            logger.info("Market regime calculation completed (text labels).")
+        
+        return regime
 
     @staticmethod
     def calculate_entropy(price_series: pd.Series, window: int = 50, num_bins: int = 10) -> pd.Series:

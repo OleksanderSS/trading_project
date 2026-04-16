@@ -16,8 +16,8 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
         self.logger = ProjectLogger.get_logger("PortfolioMetrics")
         
         # Отримання параметрів з конфігурації
-        self._trading_days_per_year = self.config.get_setting('metrics.trading_days_per_year', 252)
-        self._risk_free_rate = self.config.get_setting('metrics.risk_free_rate', 0.02) # Default to 2%
+        self._trading_days_per_year = self.config.get('metrics.trading_days_per_year', 252)
+        self._risk_free_rate = self.config.get('metrics.risk_free_rate', 0.02) # Default to 2%
 
     @property
     def category(self) -> str:

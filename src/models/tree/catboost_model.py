@@ -13,15 +13,31 @@ class CatBoostModel(BaseModel):
     CatBoost model implementation for trading tasks, following the unified BaseModel interface.
     """
     
-    def __init__(self, task_type: str = "classification", iterations: int = 200, depth: int = 6, 
-                 learning_rate: float = 0.1, random_state: int = 42):
-        super().__init__(model_type="catboost", task_type=task_type)
+    def __init__(self, task_type: str = "regression", iterations: int = 100, 
+                 depth: int = 6, learning_rate: float = 0.03, random_state: int = 42, **kwargs):
+        super().__init__(task_type=task_type, random_state=random_state, **kwargs)
         self.iterations = iterations
         self.depth = depth
         self.learning_rate = learning_rate
-        self.random_state = random_state
-        self.model = None
         self.logger = ProjectLogger.get_logger("CatBoostModel")
+        
+        # ✅ ІНІЦІАЛІЗАЦІЯ МОДЕЛІ В __INIT__ (для Ансамблю)
+        if self.task_type == "classification":
+            self.model = CatBoostClassifier(
+                iterations=self.iterations,
+                depth=self.depth,
+                learning_rate=self.learning_rate,
+                random_seed=self.random_state,
+                verbose=False
+            )
+        else:
+            self.model = CatBoostRegressor(
+                iterations=self.iterations,
+                depth=self.depth,
+                learning_rate=self.learning_rate,
+                random_seed=self.random_state,
+                verbose=False
+            )
 
     @property
     def name(self) -> str:
@@ -45,24 +61,10 @@ class CatBoostModel(BaseModel):
             if isinstance(X_clean, pd.DataFrame):
                 self.feature_cols = X_clean.columns.tolist()
 
-            if self.task_type == "classification":
-                self.model = CatBoostClassifier(
-                    iterations=self.iterations,
-                    depth=self.depth,
-                    learning_rate=self.learning_rate,
-                    random_seed=self.random_state,
-                    verbose=False,
-                    **kwargs
-                )
-            else:
-                self.model = CatBoostRegressor(
-                    iterations=self.iterations,
-                    depth=self.depth,
-                    learning_rate=self.learning_rate,
-                    random_seed=self.random_state,
-                    verbose=False,
-                    **kwargs
-                )
+            # Оновлюємо параметри, якщо вони передані
+            if kwargs:
+                # CatBoost set_params uses separate logic for some params, but for standard ones it works
+                self.model.set_params(**kwargs)
             
             self.model.fit(X_clean, y)
             self.is_trained = True

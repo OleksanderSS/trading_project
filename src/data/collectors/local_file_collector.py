@@ -13,14 +13,14 @@ class LocalFileCollector(BaseCollector):
     """
     collector_type = "local_file"
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.file_path = self.config.get('file_path')
-        self.file_type = self.config.get('file_type', 'csv').lower()
-        self.date_col = self.config.get('date_col')
+    def __init__(self, configs: Dict[str, Any], http_client_factory, db_manager, cache_manager=None, **kwargs):
+        super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
+        self.file_path = self.configs.get('file_path')
+        self.file_type = self.configs.get('file_type', 'csv').lower()
+        self.date_col = self.configs.get('date_col')
         
         if not self.file_path:
-            self.logger.error(f"Collector '{self.collector_name}' initialized without 'file_path' in config.")
+            self.logger.error(f"Collector '{self.collector_type}' initialized without 'file_path' in config.")
 
     async def fetch_raw_data(self, **kwargs) -> List[Dict[str, Any]]:
         """
@@ -32,13 +32,11 @@ class LocalFileCollector(BaseCollector):
         self.logger.info(f"Fetching raw data from local {self.file_type} file: {self.file_path}")
         
         try:
-            # Wrap synchronous pandas calls in an executor to avoid blocking the event loop
-            loop = asyncio.get_event_loop()
-            
+            # Use asyncio.to_thread instead of deprecated asyncio.get_event_loop()
             if self.file_type == 'csv':
-                df = await loop.run_in_executor(None, lambda: pd.read_csv(self.file_path))
+                df = await asyncio.to_thread(pd.read_csv, self.file_path)
             elif self.file_type == 'parquet':
-                df = await loop.run_in_executor(None, lambda: pd.read_parquet(self.file_path))
+                df = await asyncio.to_thread(pd.read_parquet, self.file_path)
             else:
                 raise ValueError(f"Unsupported file type: {self.file_type}")
 

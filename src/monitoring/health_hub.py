@@ -30,7 +30,7 @@ class HealthHub:
         self.data_manager = data_manager
         self.results_manager = results_manager
         self.notifier = notifier
-        self.cache_manager = CacheManager()
+        self.cache_manager = CacheManager(data_manager=data_manager, config_manager=config_manager)
         self.resource_monitor = ResourceMonitor()
         self.models = {}
         self.scalers = {}

@@ -84,16 +84,15 @@ def get_predictions(
 
     # --- Ансамбль ---
     if preds:
-        ensemble_preds, stats = ensemble_forecast(
+        ensemble_result = ensemble_forecast(
             model_predictions=preds,
             weights=ensemble_weights,
             normalize_weights=True,
-            rolling_window=3,
-            return_stats=True
+            rolling_window=3
         )
-        preds["ensemble"] = ensemble_preds
-        preds["ensemble_stats"] = stats
-        logger.info(f"[DATA] Ансамблевий прогноwith готовий ({len(ensemble_preds)} точок)")
+        preds["ensemble"] = ensemble_result.final_signal
+        preds["ensemble_stats"] = ensemble_result.stats
+        logger.info(f"[DATA] Ансамблевий прогноwith готовий ({len(ensemble_result.final_signal)} точок)")
     else:
         logger.warning("[WARN] Немає жодного прогноwithу for ансамблю")
 
@@ -102,15 +101,20 @@ def get_predictions(
 # --------------------
 # Заванandження моwhereлей and прогноwith with parquet
 # --------------------
-def predict_from_parquet(parquet_path: str, models_path: str = "models") -> Dict[str, Any]:
-    """Повний прогноwith на основand final_features.parquet"""
-    if not os.path.exists(parquet_path):
-        raise FileNotFoundError(f"Файл not withнайwhereно: {parquet_path}")
+def predict_from_parquet(parquet_path: str, models_path: str = "data/trained_models") -> Dict[str, Any]:
+    """Повний прогноз на основі final_features.parquet"""
+    parquet_file = Path(parquet_path)
+    if not parquet_file.exists():
+        raise FileNotFoundError(f"Файл не знайдено: {parquet_path}")
 
-    df = pd.read_parquet(parquet_path)
+    df = pd.read_parquet(parquet_file)
     df = df.drop(columns=["date", "ticker", "scope", "target"], errors="ignore")
 
-    model_files = [f for f in os.listdir(models_path) if f.endswith(".pkl")]
+    models_dir = Path(models_path)
+    if not models_dir.exists():
+        raise FileNotFoundError(f"Models folder not found: {models_dir}")
+
+    model_files = [f for f in os.listdir(models_dir) if f.endswith(".pkl")]
     models_dict = {}
     target_scaler = None
 
@@ -123,7 +127,8 @@ def predict_from_parquet(parquet_path: str, models_path: str = "models") -> Dict
 
     logger.info(f" Заванandжено {len(models_dict)} моwhereлей")
 
-    return get_predictions(models_dict, df, target_scaler=target_scaler)
+    ensemble_result = get_predictions(models_dict, df, target_scaler=target_scaler)
+    return ensemble_result
 
 # --------------------
 # Dean Models Prediction

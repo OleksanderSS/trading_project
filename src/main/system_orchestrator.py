@@ -5,6 +5,7 @@ Ensures resource initialization and launches the appropriate scenarios (modes).
 
 import os
 import asyncio
+import inspect
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Optional, Dict, Any
@@ -12,6 +13,7 @@ from typing import List, Optional, Dict, Any
 from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
 from src.data.management.data_manager import DataManager # <<< IMPORT
+from src.pipeline.hybrid_orchestrator import HybridOrchestrator
 from src.main.modes.train import TrainMode
 from src.main.modes.backtest import BacktestMode
 from src.main.modes.predict import PredictMode
@@ -49,6 +51,9 @@ class SystemOrchestrator:
             
             elif mode == 'backtest':
                 return self._dispatch(BacktestMode, tickers, timeframes, parallel, **kwargs)
+
+            elif mode == 'hybrid':
+                return await self._run_hybrid_mode(tickers, timeframes, **kwargs)
 
             elif mode == 'training_data_pipeline':
                 # FIX: Instantiate DataManager and pass it to the pipeline
@@ -88,7 +93,7 @@ class SystemOrchestrator:
             
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
                 futures = {
-                    executor.submit(self._run_single_instance, mode_class, [ticker], timeframes, **kwargs): ticker 
+                    executor.submit(self._run_single_instance_sync, mode_class, [ticker], timeframes, **kwargs): ticker 
                     for ticker in tickers
                 }
                 for future in as_completed(futures):
@@ -100,15 +105,43 @@ class SystemOrchestrator:
                     except Exception as e:
                         self.logger.error(f"Error processing ticker {ticker}: {e}")
         else:
-            self._run_single_instance(mode_class, tickers, timeframes, **kwargs)
-            results["tickers_processed"] = tickers if tickers else ["all_configured"]
-            
+            # Run within the current event loop if the mode returns a coroutine.
+            result = asyncio.run(self._run_single_instance(mode_class, tickers, timeframes, **kwargs))
+            if result is not None:
+                results["tickers_processed"] = tickers if tickers else ["all_configured"]
+        
         return results
 
-    def _run_single_instance(self, mode_class: Any, tickers: Optional[List[str]], timeframes: Optional[List[str]], **kwargs):
-        """Initializes and runs a single mode instance."""
+    def _run_single_instance_sync(self, mode_class: Any, tickers: Optional[List[str]], timeframes: Optional[List[str]], **kwargs):
+        """Sync helper for parallel execution in ProcessPoolExecutor."""
         instance = mode_class(self.config_manager)
-        return instance.run(tickers=tickers, timeframes=timeframes, **kwargs)
+        result = instance.run(tickers=tickers, timeframes=timeframes, **kwargs)
+        if inspect.isawaitable(result):
+            return asyncio.run(result)
+        return result
+
+    async def _run_single_instance(self, mode_class: Any, tickers: Optional[List[str]], timeframes: Optional[List[str]], **kwargs):
+        """Initializes and runs a single mode instance in the current event loop."""
+        instance = mode_class(self.config_manager)
+        result = instance.run(tickers=tickers, timeframes=timeframes, **kwargs)
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    async def _run_hybrid_mode(self, tickers: Optional[List[str]], timeframes: Optional[List[str]], **kwargs) -> Dict[str, Any]:
+        """Runs the hybrid pipeline via HybridOrchestrator."""
+        self.logger.info("🚀 Running hybrid pipeline mode...")
+        batch_name = kwargs.pop('batch_name', 'main_database')
+        orchestrator = HybridOrchestrator(self.config_manager, batch_name=batch_name)
+        return await orchestrator.run_full_hybrid_pipeline(
+            tickers=tickers,
+            timeframes=timeframes,
+            run_colab=kwargs.pop('run_colab', False),
+            accumulate=kwargs.pop('accumulate', True),
+            force_training=kwargs.pop('force_training', False),
+            skip_colab=kwargs.pop('skip_colab', False),
+            force_feature_selection=kwargs.pop('force_feature_selection', False)
+        )
 
     def _run_web_ui(self) -> Dict[str, Any]:
         """Launches the Streamlit Dashboard."""

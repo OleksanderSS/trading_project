@@ -46,6 +46,16 @@ class MarketPhaseAnalyzer(IAnalyzer):
             # Get the very last row of data for evaluation
             latest_data_point = market_data.iloc[-1]
             
+            # ✅ FIX: Перевіряємо чи є необхідні індикатори
+            required_columns = set(self.indicators.values())
+            available_columns = set(market_data.columns)
+            missing_columns = required_columns - available_columns
+            
+            if missing_columns:
+                logger.warning(f"Missing required columns for market phase analysis: {missing_columns}")
+                logger.warning(f"Available columns: {list(available_columns)}")
+                return {"market_phase": "neutral", "reason": f"Missing indicators: {missing_columns}"}
+            
             # Map the required indicator values from the data
             latest_values = {key: latest_data_point[val] for key, val in self.indicators.items() if val in latest_data_point}
 

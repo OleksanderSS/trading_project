@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple, Any
 import logging
 
 from ..interfaces import IAnalyzer
-from ..knn_similarity_finder import KnnSimilarityFinder
+from ..analyzers.knn_similarity_finder import KnnSimilarityFinder
 
 logger = logging.getLogger(__name__)
 

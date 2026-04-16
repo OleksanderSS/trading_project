@@ -1,5 +1,6 @@
 
 import asyncio
+import inspect
 import logging
 import time
 from typing import List, Dict, Optional, Any
@@ -19,11 +20,16 @@ class PipelineOrchestrator:
     Orchestrates the execution of pipeline stages, managing data flow and dependencies.
     """
 
-    def __init__(self, config_manager: UnifiedConfigManager, stages_to_run: Optional[List[int]] = None):
+    def __init__(
+        self,
+        config_manager: UnifiedConfigManager,
+        brain: Optional[Dict[str, Any]] = None,
+        stages_to_run: Optional[List[int]] = None
+    ):
         self.config_manager = config_manager
         self.logger = ProjectLogger.get_logger(__name__)
+        self.brain = brain or {}
         self.stages_to_run = stages_to_run
-        self.brain = {}
         self.error_handler = ErrorHandler(config_manager)
 
         # --- Diagnostic Change ---
@@ -40,7 +46,7 @@ class PipelineOrchestrator:
              self.logger.error("Failed to resolve scaler_path, it is None.")
         # --- End Diagnostic Change ---
 
-        self.data_manager = DataManager(db_path)
+        self.data_manager = DataManager(self.config_manager)
         self.results_manager = ModelResultsManager(models_path)
         self.http_client_factory = HttpClientFactory(self.config_manager, self.error_handler)
         self.normalizer = NormalizationManager(scaler_dir=scaler_path)
@@ -76,28 +82,104 @@ class PipelineOrchestrator:
         
         return loaded_stages
 
-    async def run(self):
+    def _execute_sync(self, coro: Any) -> Any:
+        if inspect.isawaitable(coro):
+            return asyncio.run(coro)
+        return coro
+
+    def execute_full_pipeline(
+        self,
+        tickers: Optional[List[str]] = None,
+        timeframes: Optional[List[str]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        return self._execute_sync(
+            self.run(tickers=tickers, timeframes=timeframes, run_mode='predict', **kwargs)
+        )
+
+    def execute_training_pipeline(
+        self,
+        tickers: Optional[List[str]] = None,
+        timeframes: Optional[List[str]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        return self._execute_sync(
+            self.run(tickers=tickers, timeframes=timeframes, run_mode='train', **kwargs)
+        )
+
+    def run_incremental_pipeline(
+        self,
+        tickers: Optional[List[str]] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        feature_layers: Optional[List[str]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Legacy compatibility wrapper for older experiments.
+
+        This method delegates to the modern async pipeline and preserves
+        backward compatibility for scripts that still call the old interface.
+        """
+        params = {
+            'tickers': tickers,
+            'start_date': start_date,
+            'end_date': end_date,
+            'feature_layers': feature_layers,
+            **kwargs
+        }
+        return self._execute_sync(self.run(**params))
+
+    async def run(self, tickers: Optional[List[str]] = None, timeframes: Optional[List[str]] = None, run_mode: str = 'train', **kwargs):
         """Runs the entire pipeline or specific stages if provided."""
+        # ✅ FIX: Дозволяємо перевизначити stages_to_run через kwargs
+        stages_to_run = kwargs.pop('stages_to_run', self.stages_to_run)
+        
         num_stages = len(self.stages)
         self.logger.info(f"Starting pipeline with {num_stages} stages...")
+        self.logger.info(f"Stages to run: {stages_to_run}")
 
-        stage_outputs: Dict[str, Any] = {}
+        stage_outputs: Dict[str, Any] = {
+            'tickers': tickers,
+            'timeframes': timeframes,
+            'run_mode': run_mode
+        }
+        
+        # ✅ FIX: Додаємо всі kwargs в stage_outputs
+        stage_outputs.update(kwargs)
+        
+        # ✅ DEBUG: Логуємо що передається в stage_outputs
+        self.logger.info(f"📊 Initial stage_outputs keys: {list(stage_outputs.keys())}")
+        if 'models_metadata' in stage_outputs:
+            self.logger.info(f"📊 models_metadata count: {len(stage_outputs['models_metadata'])}")
+            self.logger.info(f"📊 models_metadata keys (first 3): {list(stage_outputs['models_metadata'].keys())[:3]}")
 
         for i, stage in enumerate(self.stages):
-            if self.stages_to_run and i not in self.stages_to_run:
-                self.logger.info(f"Skipping Stage: {type(stage).__name__} as it is not in the list of stages to run.")
+            stage_name = type(stage).__name__
+            self.logger.info(f"DEBUG: Checking stage {i}: {stage_name}. stages_to_run: {stages_to_run}")
+
+            if stages_to_run and i not in stages_to_run:
+                self.logger.info(f"Skipping Stage {i}: {stage_name} as it is not in the list of stages to run ({stages_to_run}).")
                 continue
 
-            stage_name = type(stage).__name__
-            self.logger.info(f"===== Executing Stage: {stage_name} =====")
+            self.logger.info(f"===== Executing Stage {i}: {stage_name} =====")
             start_time = time.time()
             initial_mem = self.health_hub.resource_monitor.get_health_status()['system']['memory']['used_gb'] * 1024
+
 
             try:
                 stage_output = await stage.run(**stage_outputs)
                 
+                self.logger.info(f"Stage output type: {type(stage_output)}, keys: {stage_output.keys() if stage_output else 'None'}")
+                
                 if stage_output:
                     stage_outputs.update(stage_output)
+                    self.logger.info(f"Updated stage_outputs with {len(stage_output)} keys")
+                    
+                    # ✅ DEBUG: Логуємо models_metadata після кожної стадії
+                    if 'models_metadata' in stage_outputs:
+                        self.logger.info(f"📊 models_metadata still present: {len(stage_outputs['models_metadata'])} моделей")
+                    else:
+                        self.logger.warning(f"⚠️ models_metadata NOT in stage_outputs after {stage_name}")
 
                 end_time = time.time()
                 final_mem = self.health_hub.resource_monitor.get_health_status()['system']['memory']['used_gb'] * 1024
@@ -110,3 +192,4 @@ class PipelineOrchestrator:
                 break
         
         self.logger.info("Pipeline execution completed successfully.")
+        return stage_outputs

@@ -15,6 +15,22 @@ class DerivedFeaturesEnricher(BaseEnricher):
 
     def __init__(self, target_column: str = 'close', returns_column: str = 'returns'):
         self.config = get_current_config().get('derived_features', {})
+        # Default configuration if not found
+        if not self.config:
+            self.config = {
+                'lags': [1, 5, 10, 20],
+                'velocity': [1, 5, 10],
+                'acceleration': [5, 10],
+                'rolling_skew': [10, 20],
+                'rolling_kurtosis': [10, 20],
+                'rolling_volatility': [10, 20],
+                'forward_targets': {
+                    'periods': [1, 5, 10],
+                    'include_returns': True,
+                    'include_direction': True
+                }
+            }
+            logger.info("Using default configuration for derived features.")
         self.target_column = target_column # Used for price-based features
         self.returns_column = returns_column # Used for returns-based features
         self.periods_per_year = get_current_config().get('market_data', {}).get('trading_days_per_year', 252)
@@ -29,7 +45,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
     @property
     def priority(self) -> int:
         """Execution order (Lower = earlier, Higher = later)."""
-        return 100
+        return 25  # After technical (20), before NLP (30)
 
     def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
@@ -43,9 +59,20 @@ class DerivedFeaturesEnricher(BaseEnricher):
         """
         df_enriched = df.copy()
         
+        # Use 'close' as default if not provided
         price_target_col = kwargs.get('target_column', self.target_column)
-        if price_target_col in df_enriched.columns:
+        if not isinstance(price_target_col, str) or price_target_col not in df_enriched.columns:
+            # Fallback to 'close' if target_column is invalid
+            price_target_col = 'close' if 'close' in df_enriched.columns else None
+        
+        if price_target_col and price_target_col in df_enriched.columns:
             logger.info(f"Generating price-based derived features on column '{price_target_col}'...")
+            
+            # ✅ Calculate returns if missing
+            if self.returns_column not in df_enriched.columns:
+                df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change()
+                logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
+            
             if 'lags' in self.config:
                 self._add_lags(df_enriched, price_target_col, self.config['lags'])
             if 'velocity' in self.config:
@@ -60,7 +87,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
             logger.warning(f"Target column '{price_target_col}' not found. Skipping price-based derived features.")
 
         returns_col = kwargs.get('returns_column', self.returns_column)
-        if returns_col in df_enriched.columns:
+        if isinstance(returns_col, str) and returns_col in df_enriched.columns:
             logger.info(f"Generating returns-based derived features on column '{returns_col}'...")
             if 'rolling_volatility' in self.config:
                 self._add_rolling_stat(df_enriched, returns_col, 'rolling_volatility', self.config['rolling_volatility'])
@@ -69,7 +96,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
         else:
             logger.warning(f"Returns column '{returns_col}' not found. Skipping returns-based features and targets.")
 
-        logger.info("Derived features enrichment complete.")
+        logger.info(f"Derived features enrichment complete. Added {len(df_enriched.columns) - len(df.columns)} features.")
         return df_enriched
 
     def _add_lags(self, df: pd.DataFrame, target_col: str, lags: List[int]):

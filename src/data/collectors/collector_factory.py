@@ -4,7 +4,7 @@ import inspect
 import pkgutil
 import importlib
 import os
-from typing import List, Dict, Type, Optional
+from typing import List, Dict, Type, Optional, Any
 
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.logging.logger import ProjectLogger
@@ -23,6 +23,7 @@ class CollectorFactory:
         http_client_factory: Optional[HttpClientFactory] = None,
         config_manager: Optional[UnifiedConfigManager] = None,
         db_manager: Optional[DataManager] = None,
+        cache_manager: Optional[Any] = None,
     ):
         self.logger = ProjectLogger.get_logger("CollectorFactory")
         self.collectors_config = configs or {}
@@ -35,7 +36,7 @@ class CollectorFactory:
             try:
                 self.cache_manager = CacheManager(
                     data_manager=self.db_manager,
-                    config_manager=self.config_manager,
+                    config_manager=self.config_manager
                 )
                 self.logger.info("CacheManager initialized successfully.")
             except Exception as e:

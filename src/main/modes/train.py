@@ -3,6 +3,8 @@
 Train mode - training models based on the new PipelineOrchestrator architecture.
 """
 
+import asyncio
+import inspect
 from typing import Dict, Any, Optional, List
 
 from src.core.logging.logger import ProjectLogger
@@ -25,7 +27,7 @@ class TrainMode(BaseMode):
         self.logger.info("--- Starting Model Training Mode ---")
         try:
             # 1. INITIALIZE THE ORCHESTRATOR
-            orchestrator = PipelineOrchestrator(self.config_manager, self.brain)
+            orchestrator = PipelineOrchestrator(self.config_manager, brain=self.brain)
 
             # 2. RUN THE PIPELINE
             self.logger.info("Running the training pipeline...")
@@ -37,6 +39,8 @@ class TrainMode(BaseMode):
             }
             
             final_results = orchestrator.run(**initial_data)
+            if inspect.isawaitable(final_results):
+                final_results = asyncio.run(final_results)
 
             if not final_results:
                 raise RuntimeError("Training pipeline did not return any results.")

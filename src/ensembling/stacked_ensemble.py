@@ -6,7 +6,7 @@ from sklearn.linear_model import Ridge
 import pickle
 from pathlib import Path
 
-from src.meta_learning.memory.diary_engine import ExperienceDiaryEngine
+from src.meta_learning.memory.diary_engine import DiaryEngine
 
 logger = getLogger(__name__)
 
@@ -26,7 +26,7 @@ class StackedEnsemble:
     def __init__(self, meta_model=None, config_manager=None):
         self.meta_model = meta_model or Ridge(alpha=1.0)
         self.config_manager = config_manager
-        self.diary_engine = ExperienceDiaryEngine()
+        self.diary_engine = DiaryEngine()
         self.is_trained = False
         self.feature_names = []
 

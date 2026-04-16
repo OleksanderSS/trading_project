@@ -6,8 +6,11 @@ import argparse
 import os
 import sys
 
-# Додаємо кореневий каталог проєкту до sys.path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# Додаємо кореневий каталог проєкту до sys.path.
+# Для забезпечення стабільності динамічного завантаження використовуйте повні шляхи
+# з префіксом 'src.' (наприклад, from src.core...).
+project_root = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, project_root)
 
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
@@ -18,7 +21,7 @@ async def main():
     # Setup argparse
     parser = argparse.ArgumentParser(description="Run the data processing pipeline.")
     parser.add_argument('--stages', nargs='*', type=int, help='Optional list of stage indices to run.')
-    parser.add_argument("--mode", type=str, default="training_data_pipeline", help="Operating mode (e.g., train, predict, backtest, training_data_pipeline)")
+    parser.add_argument("--mode", type=str, default="training_data_pipeline", help="Operating mode (e.g., train, predict, backtest, hybrid, training_data_pipeline)")
     parser.add_argument("--tickers", type=str, nargs='+', help="List of tickers to process")
     args = parser.parse_args()
 

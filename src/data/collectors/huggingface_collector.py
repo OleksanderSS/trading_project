@@ -1,55 +1,124 @@
-from typing import List, Dict, Any
-import asyncio
-import functools
+# src/data/collectors/huggingface_collector.py
 
-from src.data.collectors.base_collector import BaseCollector
+import pandas as pd
+import hashlib
+from typing import List, Dict, Any, Optional
 
-class HuggingFaceCollector(BaseCollector):
-    """Колектор для завантаження датасетів з Hugging Face Hub."""
-    collector_type = "hugging_face"
-    data_type = "market_sentiment" # Або інший відповідний тип
+from .base_collector import BaseCollector
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+from src.core.cache.cache_manager import CacheManager
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Специфічна конфігурація для Hugging Face
-        self.dataset_name = self.config.get("dataset_name")
-        self.subset_name = self.config.get("subset_name")
-        self.split = self.config.get("split", "train")
 
-        if not self.dataset_name:
-            self.logger.error("Не вказано 'dataset_name' для HuggingFaceCollector.")
+class HuggingfaceCollector(BaseCollector):
+    """Колектор для завантаження фінансових даних з HuggingFace."""
+    collector_type = "huggingface"
+    data_type = "alternative"
 
-    async def fetch_raw_data(self, **kwargs) -> List[Dict[str, Any]]:
-        """Завантажує датасет з Hugging Face Hub."""
-        if not self.dataset_name:
-            return []
+    def __init__(
+        self,
+        configs: Dict[str, Any],
+        http_client_factory: HttpClientFactory,
+        db_manager: DataManager,
+        cache_manager: Optional[CacheManager] = None,
+        **kwargs,
+    ):
+        super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
+        self.dataset_name = self.configs.get("dataset_name", "financial_news")
+        self.subset_name = self.configs.get("subset_name")
+        self.split = self.configs.get("split", "train")
+        self.hash_keys = self.configs.get("hash_keys", ["text", "timestamp"])
+
+    async def run(self, tickers: Optional[List[str]] = None, **kwargs) -> Optional[pd.DataFrame]:
+        """Завантажує дані з HuggingFace, фільтрує нові, зберігає в БД."""
+        table_name = self.configs.get("table_name", "huggingface_data")
         
-        # Lazy import datasets, оскільки це важка залежність
+        cache_key = f"{self.__class__.__name__}_run"
+        cache_params = {
+            "dataset": self.dataset_name,
+            "split": self.split,
+        }
+
+        # 1. Кеш
+        if self.cache_manager:
+            cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+            if cached is not None:
+                self.logger.info("[HuggingFace] Cache hit — нових записів немає.")
+                return None
+
+        # 2. Збір
+        self.logger.info(f"[HuggingFace] Loading dataset '{self.dataset_name}'...")
+        try:
+            raw_data = await self._fetch_from_huggingface()
+        except Exception as e:
+            self.logger.error(f"[HuggingFace] Помилка при завантаженні: {e}")
+            return None
+
+        if not raw_data:
+            self.logger.info("[HuggingFace] Записів не знайдено.")
+            return None
+
+        self.logger.info(f"[HuggingFace] Завантажено {len(raw_data)} записів. Обробка...")
+        df = pd.DataFrame(raw_data)
+
+        # 3. Оптимізований Hash (vectorized)
+        self.logger.info("[HuggingFace] Розраховуємо хеші...")
+        df["hash"] = df[self.hash_keys].astype(str).agg("|".join, axis=1).apply(
+            lambda x: hashlib.sha256(x.encode()).hexdigest()
+        )
+
+        # 4. Фільтрація через БД (більш ефективна)
+        self.logger.info("[HuggingFace] Фільтруємо нові записи...")
+        new_df = self.db_manager.filter_new_records(table_name, df)
+        if new_df.empty:
+            self.logger.info("[HuggingFace] Нових записів не знайдено в БД.")
+            if self.cache_manager:
+                self.cache_manager.set(
+                    cache_key, True, cache_params, namespace="collectors", ttl=604800
+                )
+            return None
+
+        # 5. Збереження
+        self.logger.info(f"[HuggingFace] Зберігаємо {len(new_df)} нових записів...")
+        self.db_manager.upsert(table_name, new_df, unique_on=["hash"])
+
+        if self.cache_manager:
+            self.cache_manager.set(
+                cache_key, True, cache_params, namespace="collectors", ttl=604800
+            )
+
+        self.logger.info(f"[HuggingFace] ✅ Збережено {len(new_df)} нових записів.")
+        return new_df
+
+    async def _fetch_from_huggingface(self) -> List[Dict[str, Any]]:
+        """Завантажує дані з HuggingFace Datasets."""
         try:
             from datasets import load_dataset
-            from dotenv import load_dotenv
-            import os
         except ImportError:
-            self.logger.error("Для роботи з HuggingFaceCollector необхідно встановити бібліотеку 'datasets'.")
+            self.logger.error("[HuggingFace] Бібліотека 'datasets' не встановлена. Встановіть: pip install datasets")
             return []
 
         try:
-            self.logger.info(f"Завантаження датасету '{self.dataset_name}' (підмножина: {self.subset_name}, частина: {self.split})...")
-            
-            # Force loading of the .env file
-            load_dotenv()
-            hf_token = os.getenv("HF_TOKEN")
-            if not hf_token:
-                 self.logger.error("Could not find HuggingFace token in the .env file.")
+            # Завантажуємо датасет
+            if self.subset_name:
+                dataset = load_dataset(self.dataset_name, self.subset_name, split=self.split)
+            else:
+                dataset = load_dataset(self.dataset_name, split=self.split)
 
-            # Виконуємо синхронну функцію в окремому потоці, щоб не блокувати asyncio loop
-            loop = asyncio.get_running_loop()
-            load_func = functools.partial(load_dataset, self.dataset_name, self.subset_name, split=self.split, token=hf_token)
-            dataset = await loop.run_in_executor(None, load_func)
-            
-            self.logger.info("Датасет успішно завантажено.")
-            return dataset.to_list()
+            # Оптимізована конвертація: використовуємо to_pandas() якщо доступно
+            self.logger.info(f"[HuggingFace] Конвертуємо датасет в DataFrame...")
+            try:
+                # Спроба використати to_pandas() - набагато швидше
+                df = dataset.to_pandas()
+                records = df.to_dict('records')
+            except Exception:
+                # Fallback на ручну конвертацію
+                self.logger.warning("[HuggingFace] to_pandas() не доступна, використовуємо ручну конвертацію...")
+                records = [dict(item) for item in dataset]
+
+            self.logger.info(f"[HuggingFace] ✅ Завантажено {len(records)} записів.")
+            return records
 
         except Exception as e:
-            self.handle_error(e, {"message": f"Помилка під час завантаження датасету '{self.dataset_name}'"})
+            self.logger.error(f"[HuggingFace] Помилка при завантаженні датасету: {e}")
             return []

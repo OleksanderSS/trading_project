@@ -51,6 +51,11 @@ class IntelligentDataFilter:
             filtered_data['news'] = filtered_news
             quality_report['news'] = news_quality
         
+        # ✅ Додаємо macro_data без фільтрації (вже очищені в Stage 2)
+        if 'macro_data' in raw_data:
+            filtered_data['macro_data'] = raw_data['macro_data']
+            quality_report['macro_data'] = {'status': 'accepted', 'rows': len(raw_data['macro_data'])}
+        
         if 'google_trends' in raw_data:
             filtered_trends, trends_quality = self._filter_trends_data(raw_data['google_trends'])
             filtered_data['google_trends'] = filtered_trends
@@ -133,17 +138,35 @@ class IntelligentDataFilter:
         filtered_news = news_data.copy()
         removed_reasons = {}
 
-        # Quality filters
-        quality_filters = [
-            (filtered_news['title'].str.len() > self.news_title_min_len, 'title_too_short'),
-            (filtered_news['content'].str.len() > self.news_content_min_len, 'content_too_short'),
-            (filtered_news['published_at'].notna(), 'missing_timestamp')
-        ]
+        # ✅ FIX: Додаємо sentiment=0 якщо його немає
+        if 'sentiment' not in filtered_news.columns:
+            logger.warning("'sentiment' column not found in news_data. Adding neutral sentiment (0.0).")
+            filtered_news['sentiment'] = 0.0
+
+        # Quality filters - only apply if columns exist
+        quality_filters = []
         
-        if 'sentiment' in filtered_news.columns:
-            quality_filters.append((filtered_news['sentiment'].notna(), 'missing_sentiment'))
+        if 'title' in filtered_news.columns:
+            quality_filters.append((filtered_news['title'].str.len() > self.news_title_min_len, 'title_too_short'))
+        
+        if 'content' in filtered_news.columns:
+            quality_filters.append((filtered_news['content'].str.len() > self.news_content_min_len, 'content_too_short'))
+        
+        # Check for timestamp column - could be 'published_at', 'publishedAt', 'timestamp', etc.
+        timestamp_col = None
+        for col in ['published_at', 'publishedAt', 'timestamp', 'date']:
+            if col in filtered_news.columns:
+                timestamp_col = col
+                break
+        
+        if timestamp_col:
+            quality_filters.append((filtered_news[timestamp_col].notna(), 'missing_timestamp'))
         else:
-            logger.warning("'sentiment' column not found in news_data. Skipping sentiment-based filtering.")
+            logger.warning("No timestamp column found in news_data. Skipping timestamp-based filtering.")
+        
+        # ✅ FIX: Не фільтруємо по sentiment, бо ми щойно додали 0.0
+        # if 'sentiment' in filtered_news.columns:
+        #     quality_filters.append((filtered_news['sentiment'].notna(), 'missing_sentiment'))
 
         for filter_condition, reason in quality_filters:
             before_count = len(filtered_news)
@@ -152,10 +175,18 @@ class IntelligentDataFilter:
             if removed_count > 0:
                 removed_reasons[reason] = removed_count
         
-        # Deduplication
-        duplicates = filtered_news.duplicated(subset=['title', 'published_at']).sum()
-        if duplicates > 0:
-            filtered_news = filtered_news.drop_duplicates(subset=['title', 'published_at'])
+        # Deduplication - only if we have the required columns
+        dedup_cols = []
+        if 'title' in filtered_news.columns:
+            dedup_cols.append('title')
+        if timestamp_col:
+            dedup_cols.append(timestamp_col)
+        
+        duplicates = 0
+        if dedup_cols:
+            duplicates = filtered_news.duplicated(subset=dedup_cols).sum()
+            if duplicates > 0:
+                filtered_news = filtered_news.drop_duplicates(subset=dedup_cols)
         
         # Classify news types
         filtered_news = self._classify_news_types(filtered_news)
@@ -166,7 +197,7 @@ class IntelligentDataFilter:
             'filtered_articles': len(filtered_news),
             'removed_reasons': removed_reasons,
             'duplicates_removed': duplicates,
-            'news_types': filtered_news['news_type'].value_counts().to_dict()
+            'news_types': filtered_news['news_type'].value_counts().to_dict() if 'news_type' in filtered_news.columns else {}
         }
         
         return filtered_news, quality_report

@@ -30,15 +30,22 @@ class BacktestMode(BaseMode):
             # UnifiedConfigManager вже доступний як self.config_manager з BaseMode
             orchestrator = PipelineOrchestrator(self.config_manager)
 
-            # 2. ЗАПУСК ПОВНОГО ПАЙПЛАЙНУ ДЛЯ ГЕНЕРАЦІЇ СИГНАЛІВ
+            # 2. ЗАПУСК ПОВНОГО ПАЙПЛАЙНУ ДЛЯ ГЕНЕРАЦІЇ ПРОГНОЗІВ
             self.logger.info("[Backtest] Running the full data and prediction pipeline...")
-            # execute_full_pipeline має повертати фінальний датафрейм з прогнозами/сигналами
             final_data = orchestrator.execute_full_pipeline()
 
-            if final_data.get('signals') is None or final_data['signals'].empty:
-                raise ValueError("Pipeline did not generate any signals. Backtesting cannot proceed.")
+            predictions = final_data.get('prediction_results') or final_data.get('predictions')
+            if predictions is None or (hasattr(predictions, 'empty') and predictions.empty):
+                raise ValueError("Pipeline did not generate any predictions. Backtesting cannot proceed.")
 
-            signals_df = final_data['signals']
+            signals_df = final_data.get('signals')
+            if signals_df is None:
+                signals_df = final_data.get('prediction_results') or final_data.get('predictions')
+                if isinstance(signals_df, dict):
+                    signals_df = pd.DataFrame(signals_df)
+
+            if signals_df is None or (hasattr(signals_df, 'empty') and signals_df.empty):
+                raise ValueError("Pipeline did not generate any signal data for backtesting.")
 
             # 3. ПІДГОТОВКА ДО БЕКТЕСТИНГУ
             # Отримання потрібних даних з результатів пайплайну

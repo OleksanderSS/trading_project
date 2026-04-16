@@ -1,3 +1,34 @@
 system:
   storage:
-    db_path: /home/user/1/data/test_main.duckdb
+    db_path: data/test_main.duckdb
+  
+  accumulation:
+    output_dir: data/colab/accumulated
+  
+  google_drive:
+    enabled: false
+    folder_id: null
+  
+  # ✅ Fallback storage options
+  storage_fallback:
+    s3:
+      enabled: false
+      access_key: null
+      secret_key: null
+      region: us-east-1
+      bucket: null
+    gcs:
+      enabled: false
+      project_id: null
+      bucket: null
+  
+  # ✅ Fallback storage options
+  storage_fallback:
+    s3:
+      enabled: false
+      bucket: null
+      region: null
+    gcs:
+      enabled: false
+      bucket: null
+      project_id: null

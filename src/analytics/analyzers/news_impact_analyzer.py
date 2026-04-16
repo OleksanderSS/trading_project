@@ -75,15 +75,20 @@ class NewsImpactAnalyzer(IAnalyzer):
 
         # 3. Aggregate scores per timestamp (if multiple news items have the same timestamp)
         # Resample to the original frequency to ensure all time points are kept
-        if len(news_data.index) > 1:
-            inferred_freq = pd.infer_freq(news_data.index)
-        else:
-            inferred_freq = None # Cannot infer with one point
+        try:
+            if len(news_data.index) > 1:
+                inferred_freq = pd.infer_freq(news_data.index)
+            else:
+                inferred_freq = None # Cannot infer with one point
 
-        if inferred_freq:
-            aggregated_scores = sentiment_results['weighted_score'].resample(inferred_freq).sum()
-        else:
-            # If frequency cannot be inferred, group by timestamp
+            if inferred_freq:
+                aggregated_scores = sentiment_results['weighted_score'].resample(inferred_freq).sum()
+            else:
+                # If frequency cannot be inferred (sparse data), group by timestamp
+                logger.warning("Cannot infer frequency from sparse data, grouping by timestamp instead")
+                aggregated_scores = sentiment_results['weighted_score'].groupby(sentiment_results.index).sum()
+        except Exception as e:
+            logger.warning(f"Error inferring frequency: {e}, falling back to timestamp grouping")
             aggregated_scores = sentiment_results['weighted_score'].groupby(sentiment_results.index).sum()
 
 

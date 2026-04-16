@@ -12,8 +12,22 @@ class TimeFeaturesEnricher(BaseEnricher):
     """
     
     def __init__(self):
-        self.config = get_current_config().get_config('time_features') or {}
-        logger.info("TimeFeaturesEnricher initialized.")
+        # TimeFeaturesEnricher is enabled via enabled_enrichers, not separate config
+        self.config = {
+            'enabled': True,
+            'timestamp_col': 'datetime',
+            'enabled_features': [
+                'hour', 'day_of_week', 'day_of_month', 'day_of_year',
+                'week_of_year', 'month_of_year', 'quarter',
+                'is_weekend', 'is_month_start', 'is_month_end',
+                'is_quarter_start', 'is_quarter_end',
+                'is_year_start', 'is_year_end',
+                'market_session',
+                'hour_sin', 'hour_cos',
+                'day_of_week_sin', 'day_of_week_cos'
+            ]
+        }
+        logger.info(f"TimeFeaturesEnricher initialized with {len(self.config['enabled_features'])} features.")
 
     @property
     def name(self) -> str:

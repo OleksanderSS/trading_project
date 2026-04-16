@@ -68,6 +68,21 @@ class ModelFactory:
 
         try:
             logger.info(f"Creating instance of model: {model_name}")
+            
+            # ✅ СПЕЦІАЛЬНА ОБРОБКА ДЛЯ АНСАМБЛЮ
+            if model_name == "Ensemble" and config:
+                base_models_names = config.get('models', [])
+                if not base_models_names:
+                    # Fallback to default if no models specified
+                    base_models_names = ["XGBoost", "LightGBM"]
+                
+                resolved_models = []
+                for m_name in base_models_names:
+                    m_instance = ModelFactory.create_model(m_name, config=config.get('per_model', {}).get(m_name, {}))
+                    resolved_models.append((m_name, m_instance.model))
+                
+                return EnsembleModel(models=resolved_models, task_type=kwargs.get('task_type', 'classification'))
+
             return model_class(config=config, **kwargs)
         except Exception as e:
             logger.error(f"Error creating model '{model_name}': {e}", exc_info=True)

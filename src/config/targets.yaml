@@ -9,7 +9,7 @@ targets:
   # ===================================================================
 
   # --- Binary Classification Targets ---
-  - name: "TARGET_CLASS_BINARY_UP_1_0.005"
+  target_up_1d:
     type: "classification_binary"
     params:
       description: "Price goes up by > 0.5% in the next 1 period? (0=No, 1=Yes)"
@@ -17,7 +17,7 @@ targets:
       shift: -1
       threshold: 0.005
 
-  - name: "TARGET_CLASS_BINARY_UP_5_0.02"
+  target_up_5d:
     type: "classification_binary"
     params:
       description: "Price goes up by > 2% in the next 5 periods? (0=No, 1=Yes)"
@@ -26,7 +26,7 @@ targets:
       threshold: 0.02
 
   # --- Multiclass Classification Targets ---
-  - name: "TARGET_CLASS_MULTI_1_0.01"
+  target_multi_1d:
     type: "classification_multiclass"
     params:
       description: "Price movement in 1 period vs 1% thold (0=Down, 1=Flat, 2=Up)"
@@ -34,7 +34,7 @@ targets:
       shift: -1
       thresholds: [-0.01, 0.01]
 
-  - name: "TARGET_CLASS_MULTI_5_0.03"
+  target_multi_5d:
     type: "classification_multiclass"
     params:
       description: "Price movement in 5 periods vs 3% thold (0=Down, 1=Flat, 2=Up)"
@@ -48,64 +48,76 @@ targets:
   # ===================================================================
 
   # --- Regression (Price-based) ---
-  - name: "TARGET_REG_RETURN_1"
+  target_return_1d:
     type: "regression"
     params:
       description: "Future return over the next 1 period."
       base_col: "close"
       shift: -1
+      # ✅ Врахування маржі (комісії) в target
+      adjust_for_costs: true
+      transaction_costs:
+        commission_pct: 0.001  # 0.1% комісія
+        spread_pct: 0.0005     # 0.05% спред
+        slippage_pct: 0.001    # 0.1% slippage
+        # Загальна маржа: ~0.25% на операцію (buy+sell = 0.5%)
 
-  - name: "TARGET_REG_RETURN_5"
+  target_return_5d:
     type: "regression"
     params:
       description: "Future return over the next 5 periods."
       base_col: "close"
       shift: -5
+      adjust_for_costs: true
+      transaction_costs:
+        commission_pct: 0.001
+        spread_pct: 0.0005
+        slippage_pct: 0.001
 
   # --- Indicator Prediction ---
-  - name: "TARGET_INDICATOR_RSI_14_F1"
+  target_rsi_14_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of RSI(14) in 1 period."
       indicator_col: "RSI_14"
       shift: -1
 
-  - name: "TARGET_INDICATOR_SMA_20_F1"
+  target_sma_20_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of SMA(20) in 1 period."
       indicator_col: "SMA_20"
       shift: -1
 
-  - name: "TARGET_INDICATOR_EMA_20_F1"
+  target_ema_20_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of EMA(20) in 1 period."
       indicator_col: "EMA_20"
       shift: -1
 
-  - name: "TARGET_INDICATOR_MACD_HIST_F1"
+  target_macd_hist_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of MACD Histogram in 1 period."
       indicator_col: "MACD_Histogram"
       shift: -1
 
-  - name: "TARGET_INDICATOR_ATR_14_F5"
+  target_atr_14_f5:
     type: "indicator_prediction"
     params:
       description: "Predict future value of ATR(14) in 5 periods."
       indicator_col: "ATR_14"
       shift: -5
 
-  - name: "TARGET_INDICATOR_BB_UPPER_F1"
+  target_bb_upper_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of Upper Bollinger Band in 1 period."
       indicator_col: "BB_Upper"
       shift: -1
 
-  - name: "TARGET_INDICATOR_VOLUME_RATIO_F1"
+  target_volume_ratio_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future Volume Ratio in 1 period."

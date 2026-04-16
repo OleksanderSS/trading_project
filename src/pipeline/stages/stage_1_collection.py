@@ -42,19 +42,26 @@ class CollectionStage(BaseStage):
         self.logger.info("Starting data collection stage...")
 
         # --- Тікери ---
-        assets_config = self.config_manager.get_config('assets')
-        active_preset = assets_config.get('active_preset')
-        # ФІКС: правильно дістаємо список тікерів з пресету
-        tickers = (
-            assets_config
-            .get('presets', {})
-            .get(active_preset, {})
-            .get('tickers', [])
-        )
+        # ✅ ПРІОРИТЕТ: якщо тікери передані явно (наприклад, через CLI), використовуємо їх
+        tickers = kwargs.get('tickers')
+        
+        if tickers:
+            self.logger.info(f"🧪 Використання переданих тікерів: {tickers}")
+        else:
+            assets_config = self.config_manager.get_config('assets')
+            active_preset = assets_config.get('active_preset')
+            # Завантажуємо з пресету лише якщо нічого не передано явно
+            tickers = (
+                assets_config
+                .get('presets', {})
+                .get(active_preset, {})
+                .get('tickers', [])
+            )
+            self.logger.info(f"Loaded {len(tickers)} tickers from preset '{active_preset}'.")
+
         if not tickers:
-            self.logger.error(f"No tickers found for preset '{active_preset}'. Aborting collection.")
+            self.logger.error("No tickers available. Aborting collection.")
             return {'raw_data': {}}
-        self.logger.info(f"Loaded {len(tickers)} tickers from preset '{active_preset}'.")
 
         # --- Keywords: flatten словника категорій ---
         knowledge_base = self.config_manager.get_config('knowledge_base')
@@ -79,10 +86,35 @@ class CollectionStage(BaseStage):
             tasks_to_run.append(task)
 
         if tasks_to_run:
-            results = await asyncio.gather(*tasks_to_run, return_exceptions=True)
-            self.process_and_save_results(results, self.collectors)
+            try:
+                # Add timeout to prevent hanging
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks_to_run, return_exceptions=True),
+                    timeout=300  # 5 minutes timeout
+                )
+                self.process_and_save_results(results, self.collectors)
+            except asyncio.TimeoutError:
+                self.logger.warning("Collection timeout after 5 minutes, processing partial results")
+                # Cancel remaining tasks
+                for task in tasks_to_run:
+                    if not task.done():
+                        task.cancel()
+                # Wait for tasks to finish cancellation
+                await asyncio.gather(*tasks_to_run, return_exceptions=True)
+            except Exception as e:
+                self.logger.error(f"Collection failed: {e}")
+                # Cancel remaining tasks
+                for task in tasks_to_run:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*tasks_to_run, return_exceptions=True)
         else:
             self.logger.info("No collectors were configured to run.")
+
+        # CRITICAL FIX: Clear cache before fetching to ensure fresh data
+        if hasattr(self.fetch_all_data_from_db, 'cache_clear'):
+            self.fetch_all_data_from_db.cache_clear()
+            self.logger.info("Cleared fetch_all_data_from_db cache to ensure fresh data")
 
         self.logger.info("Collection stage finished.")
         return {'raw_data': self.fetch_all_data_from_db()}
@@ -97,7 +129,7 @@ class CollectionStage(BaseStage):
         from src.data.collectors.sec_filings_collector import SECFilingsCollector
         from src.data.collectors.insider_collector import InsiderCollector
         from src.data.collectors.free_google_trends_collector import FreeGoogleTrendsCollector
-        from src.data.collectors.huggingface_collector import HuggingFaceCollector
+        from src.data.collectors.huggingface_collector import HuggingfaceCollector
         from src.data.collectors.bigquery_collector import BigQueryCollector
         from src.data.collectors.economic_calendar_collector import EconomicCalendarCollector
         from datetime import datetime
@@ -120,7 +152,7 @@ class CollectionStage(BaseStage):
                 )
             elif isinstance(collector, FreeGoogleTrendsCollector):
                 return await collector.run(tickers=tickers, keywords=keywords)
-            elif isinstance(collector, HuggingFaceCollector):
+            elif isinstance(collector, HuggingfaceCollector):
                 return await collector.run()
             elif isinstance(collector, (FredCollector, EconomicCalendarCollector, BigQueryCollector)):
                 return await collector.run()

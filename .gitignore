@@ -15,6 +15,13 @@ logs/
 cache/
 backups/
 results/
+monitoring_reports/
+src/trained_models/
+
+# Local runtime/config caches
+src/config/runtime_params.json
+src/config/selected_features_cache.json
+src/config/selected_features.json
 
 # Python
 __pycache__/

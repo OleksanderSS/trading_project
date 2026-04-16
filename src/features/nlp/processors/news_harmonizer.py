@@ -7,13 +7,18 @@ from src.config.unified_config_manager import UnifiedConfigManager
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
-# Get the unified config to access news fields
-config = UnifiedConfigManager().get_config()
-NEWS_FIELDS = config.get('news_fields', {})
+def _get_news_fields():
+    """Lazy load news fields configuration."""
+    try:
+        config = UnifiedConfigManager().get_config('enrichment')
+        return config.get('news_fields', {})
+    except:
+        return {}
 
 def detect_news_format(entry: dict) -> dict:
-    date_fields = NEWS_FIELDS.get("date", [])
-    text_fields = NEWS_FIELDS.get("text", [])
+    news_fields = _get_news_fields()
+    date_fields = news_fields.get("date", [])
+    text_fields = news_fields.get("text", [])
 
     date_field = next((f for f in date_fields if f in entry and entry[f]), None)
     text_field = next((f for f in text_fields if f in entry and entry[f]), None)

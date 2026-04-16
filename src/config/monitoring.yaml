@@ -1,0 +1,139 @@
+# Monitoring System Configuration
+# Конфігурація системи моніторингу
+
+# Основні налаштування / Main settings
+collection_interval: 30  # Інтервал збірки метрик (секунди) / Metrics collection interval (seconds)
+enabled_monitors:  # Увімкнені монітори / Enabled monitors
+  - system_health
+  - model_performance
+  - data_quality
+
+# Моніторинг системного здоров'я / System health monitoring
+system_health:
+  cpu_threshold: 80.0      # Поріг CPU (%) / CPU threshold (%)
+  memory_threshold: 85.0   # Поріг пам'яті (%) / Memory threshold (%)
+  disk_threshold: 90.0     # Поріг диска (%) / Disk threshold (%)
+  network_timeout: 30      # Таймаут мережі (секунди) / Network timeout (seconds)
+  history_size: 100        # Розмір історії / History size
+  enabled_metrics:         # Увімкнені метрики / Enabled metrics
+    - cpu
+    - memory
+    - disk
+    - network
+    - processes
+
+# Моніторинг продуктивності моделей / Model performance monitoring
+model_performance:
+  accuracy_threshold: 0.7    # Мінімальна точність / Minimum accuracy
+  mae_threshold: 0.1         # Максимальна MAE / Maximum MAE
+  drift_threshold: 0.05      # Поріг дрейфу / Drift threshold
+  performance_window: 100    # Вікно продуктивності / Performance window
+  baseline_period_days: 30   # Період baseline (дні) / Baseline period (days)
+  enabled_metrics:           # Увімкнені метрики / Enabled metrics
+    - accuracy
+    - mae
+    - drift
+    - latency
+
+# Моніторинг якості даних / Data quality monitoring
+data_quality:
+  missing_threshold: 0.05      # Поріг пропущених значень / Missing values threshold
+  outlier_threshold: 0.1       # Поріг викидів / Outlier threshold
+  consistency_threshold: 0.95  # Поріг консистентності / Consistency threshold
+  duplicate_threshold: 0.02    # Поріг дублікатів / Duplicate threshold
+  enabled_checks:              # Увімкнені перевірки / Enabled checks
+    - completeness
+    - consistency
+    - outliers
+    - duplicates
+
+# Система сповіщень / Alert system
+alerts:
+  channels:           # Канали сповіщень / Alert channels
+    - log
+  auto_resolve_hours: 24     # Авто-вирішення (години) / Auto-resolve (hours)
+  max_alerts_per_hour: 10    # Макс. сповіщень за годину / Max alerts per hour
+  severity_levels:           # Рівні критичності / Severity levels
+    - info
+    - warning
+    - error
+    - critical
+
+  # Email конфігурація / Email configuration
+  email:
+    smtp_server: smtp.gmail.com
+    smtp_port: 587
+    username: ${MONITORING_EMAIL_USER}    # Змінна середовища / Environment variable
+    password: ${MONITORING_EMAIL_PASS}    # Змінна середовища / Environment variable
+    recipients:
+      - admin@example.com
+
+  # Slack конфігурація / Slack configuration
+  slack:
+    webhook_url: ${MONITORING_SLACK_WEBHOOK}  # Змінна середовища / Environment variable
+    channel: '#monitoring'
+    username: 'Trading Monitor'
+
+# Дашборд / Dashboard
+dashboard:
+  refresh_interval: 5000    # Інтервал оновлення (ms) / Refresh interval (ms)
+  history_days: 7           # Дні історії / History days
+  auto_save: true           # Автозбереження / Auto-save
+  save_interval: 3600       # Інтервал збереження (секунди) / Save interval (seconds)
+  save_path: monitoring_reports  # Шлях збереження / Save path
+
+  # Веб-дашборд / Web dashboard
+  web:
+    port: 8050
+    host: localhost
+    debug: false
+    update_interval: 5000
+
+  # Текстовий дашборд / Text dashboard
+  text:
+    max_lines: 1000
+    include_timestamps: true
+
+# Логування / Logging
+logging:
+  level: INFO
+  file: monitoring.log
+  max_file_size: 10485760    # 10MB
+  backup_count: 5
+
+# Продуктивність / Performance
+performance:
+  max_workers: 4
+  queue_size: 1000
+  batch_size: 100
+  cache_size: 1000
+
+# Специфічні налаштування для різних середовищ / Environment-specific settings
+environments:
+  development:
+    collection_interval: 10
+    system_health:
+      cpu_threshold: 90.0
+      memory_threshold: 90.0
+      disk_threshold: 95.0
+    dashboard:
+      web:
+        debug: true
+
+  staging:
+    collection_interval: 20
+    alerts:
+      channels:
+        - log
+        - email
+
+  production:
+    collection_interval: 60
+    alerts:
+      channels:
+        - log
+        - email
+        - slack
+    dashboard:
+      auto_save: true
+      save_interval: 1800  # 30 хвилин / 30 minutes

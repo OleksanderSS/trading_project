@@ -168,3 +168,31 @@ class ModelResultsManager:
         except Exception as e:
             logger.warning(f"Error reading Experience Diary for {model_id}: {e}")
             return 0.5
+
+    def get_cached_analysis(self, data_hash: str) -> Optional[Dict[str, Any]]:
+        """
+        Отримує кешовані результати аналізу за хешем даних.
+        
+        Args:
+            data_hash (str): Хеш вхідних даних
+            
+        Returns:
+            Optional[Dict[str, Any]]: Кешовані результати або None
+        """
+        cache_key = f"analysis_cache_{data_hash}"
+        if cache_key in self._cache:
+            logger.debug(f"Повернення кешованих результатів аналізу для {data_hash}")
+            return self._cache[cache_key]
+        return None
+
+    def cache_analysis(self, data_hash: str, results: Dict[str, Any]) -> None:
+        """
+        Кешує результати аналізу за хешем даних.
+        
+        Args:
+            data_hash (str): Хеш вхідних даних
+            results (Dict[str, Any]): Результати аналізу для кешування
+        """
+        cache_key = f"analysis_cache_{data_hash}"
+        self._cache[cache_key] = results
+        logger.debug(f"Кешовано результати аналізу для {data_hash}")

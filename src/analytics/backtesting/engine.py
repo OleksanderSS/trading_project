@@ -4,7 +4,7 @@ import logging
 import copy
 from typing import Dict, List, Optional, Any, Union
 
-from src.metrics.financial_metrics import calculate_performance_metrics
+from src.metrics.financial.portfolio_metrics import PortfolioMetricsCalculator
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
 
@@ -26,9 +26,9 @@ class AdvancedBacktester:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.config_manager = UnifiedConfigManager()
         
-        # Load configs using get_specific_config for better granularity
-        backtesting_config = self.config_manager.get_specific_config('strategy', 'backtesting') or {}
-        risk_config = self.config_manager.get_specific_config('strategy', 'risk_management') or {}
+        # Load configs using get for better granularity
+        backtesting_config = self.config_manager.get('strategy.backtesting', {})
+        risk_config = self.config_manager.get('strategy.risk_management', {})
 
         # Fallback to defaults if keys are missing
         self.transaction_costs = transaction_costs or backtesting_config.get('transaction_costs', {})
@@ -148,6 +148,15 @@ class AdvancedBacktester:
             for ticker in tickers:
                 signal = combined_data.iloc[i-1][f'{ticker}_signal']
                 
+                # ✅ FIX: Конвертуємо signal в числове значення
+                if isinstance(signal, str):
+                    # Конвертуємо string сигнали в числові
+                    signal_map = {'BUY': 1.0, 'SELL': -1.0, 'HOLD': 0.0}
+                    signal = signal_map.get(signal.upper(), 0.0)
+                else:
+                    # Вже числовий сигнал
+                    signal = float(signal) if pd.notna(signal) else 0.0
+                
                 # Apply adaptive filtering if thresholds were passed in advance or via pre-run analysis (conceptual)
                 if abs(signal) < min_signal_threshold:
                     signal = 0.0
@@ -194,7 +203,8 @@ class AdvancedBacktester:
             portfolio.iloc[i, portfolio.columns.get_loc('total_value')] = final_total
 
         # 3. Comprehensive Analytics
-        full_performance = calculate_performance_metrics(portfolio['returns'])
+        metrics_calculator = PortfolioMetricsCalculator(config_manager=self.config_manager)
+        full_performance = metrics_calculator.calculate(portfolio['total_value'])
         
         # Enhanced data_map with news, macro, and events for analyzers
         data_map = {

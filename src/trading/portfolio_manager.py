@@ -36,7 +36,7 @@ class PortfolioManager:
         
         # Load risk parameters from config or use defaults
         risk_config = config if config is not None else {}
-        self.risk_per_trade_pct = risk_config.get('risk_per_trade_pct', 0.01) # 1% of total equity per trade
+        self.risk_per_trade_pct = risk_config.get('risk_per_trade_pct', 0.03) # 3% of total equity per trade (збільшено для дорогих акцій)
         self.max_position_size_pct = risk_config.get('max_position_size_pct', 0.10) # Max 10% of equity in one asset
         self.max_daily_drawdown_pct = risk_config.get('max_daily_drawdown_pct', 0.05) # 5% max daily loss
         
@@ -46,6 +46,9 @@ class PortfolioManager:
         """
         Primary gatekeeper. Checks if any risk rule prevents trading.
         """
+        # ✅ DEBUG: Логуємо перед перевіркою
+        self.logger.info(f"[PORTFOLIO] is_trading_allowed called with {len(current_prices)} prices")
+        
         if self.kill_switch_active:
             self.logger.critical("Trading blocked: KILL SWITCH IS ACTIVE.")
             return False
@@ -58,6 +61,7 @@ class PortfolioManager:
             self.kill_switch_active = True
             return False
         
+        self.logger.info("[PORTFOLIO] is_trading_allowed: TRUE")
         return True
 
     def generate_orders_from_signals(self, 
@@ -66,9 +70,15 @@ class PortfolioManager:
         """
         Processes signals from the ConsensusEngine and generates executable TradeOrders.
         """
+        # ✅ DEBUG: Логуємо перед перевіркою trading_allowed
+        self.logger.info(f"[PORTFOLIO] generate_orders_from_signals called with {len(signals)} signals")
+        
         if not self.is_trading_allowed(current_prices):
+            self.logger.warning("[PORTFOLIO] Trading is NOT allowed!")
             return []
 
+        self.logger.info("[PORTFOLIO] Trading is allowed, processing signals...")
+        
         orders = []
         for signal in signals:
             action = signal.get('final_signal')
@@ -76,8 +86,12 @@ class PortfolioManager:
             confidence = signal.get('confidence', 0.5)
             price = current_prices.get(ticker)
 
+            # ✅ DEBUG: Логуємо сигнал для розуміння проблеми
+            self.logger.info(f"[PORTFOLIO] Processing signal: ticker={ticker}, action={action}, confidence={confidence}, price={price}")
+
             if not all([action, ticker, price]):
                 self.logger.warning(f"Skipping invalid signal: {signal}")
+                self.logger.warning(f"  - action={action}, ticker={ticker}, price={price}")
                 continue
 
             if action == 'BUY':
@@ -148,8 +162,10 @@ class PortfolioManager:
         """
         total_equity = self.portfolio.get_total_value({ticker: price}) # Approximate value
         
-        # 1. Determine max capital for this single trade
-        capital_at_risk = total_equity * self.risk_per_trade_pct * confidence
+        # ✅ FIX: Не множимо risk_per_trade_pct на confidence
+        # confidence вже враховується в сигналі (тільки сильні сигнали генерують ордери)
+        # Використовуємо фіксований risk_per_trade_pct для всіх ордерів
+        capital_at_risk = total_equity * self.risk_per_trade_pct
 
         # Simple assumption: risk is the full amount. A better way involves stop-loss.
         # For now, shares are based on capital at risk.
@@ -170,6 +186,12 @@ class PortfolioManager:
 
         # The final number of shares is the minimum of all constraints
         final_shares = min(shares_from_risk, shares_from_exposure, shares_from_cash)
+
+        # ✅ DEBUG: Логуємо розрахунки
+        self.logger.info(f"[POSITION_SIZE] ticker={ticker}, price={price:.2f}")
+        self.logger.info(f"  total_equity={total_equity:.2f}, capital_at_risk={capital_at_risk:.2f}")
+        self.logger.info(f"  shares_from_risk={shares_from_risk:.2f}, shares_from_exposure={shares_from_exposure:.2f}, shares_from_cash={shares_from_cash:.2f}")
+        self.logger.info(f"  final_shares={final_shares:.2f} -> int={int(final_shares)}")
 
         if final_shares <= 0:
             return 0

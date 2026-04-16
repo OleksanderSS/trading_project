@@ -9,13 +9,13 @@ from pathlib import Path
 from typing import Dict, Any, Union, Optional, Callable
 from functools import wraps
 from src.data.management.data_manager import DataManager
-from src.config.unified_config_manager import get_current_config
+from src.config.unified_config_manager import get_current_config, UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 
 class CacheManager:
     """Централізоване кешування з підтримкою DuckDB метаданих, стиснення та просторів імен."""
 
-    def __init__(self, cache_dir: Union[str, Path] = None, data_manager: Optional[DataManager] = None):
+    def __init__(self, cache_dir: Union[str, Path] = None, data_manager: Optional[DataManager] = None, config_manager: Optional[UnifiedConfigManager] = None):
         self.config = get_current_config()
         self.logger = ProjectLogger.get_logger("CacheManager")
         
@@ -28,11 +28,17 @@ class CacheManager:
         self.lock = threading.Lock()
         
         # Integration with DataManager for Meta-Storage
-        self.db = data_manager or DataManager(self.config.get('paths.raw_db', 'data/raw_data.duckdb'))
+        if data_manager is None:
+            if config_manager:
+                self.db = DataManager(config_manager)
+            else:
+                self.db = None
+        else:
+            self.db = data_manager
         self._init_db()
         
         # Salt based on table states
-        self.db_salt = self._get_db_salt()
+        self.db_salt = self._get_db_salt() if self.db else None
 
     def _get_db_salt(self) -> str:
         """
@@ -78,6 +84,10 @@ class CacheManager:
 
     def _init_db(self):
         """Ініціалізація таблиці метаданих у DuckDB."""
+        if not self.db:
+            self.logger.warning("Database not initialized. Skipping cache metadata table creation.")
+            return
+        
         query = """
         CREATE TABLE IF NOT EXISTS cache_metadata (
             key_hash VARCHAR PRIMARY KEY,

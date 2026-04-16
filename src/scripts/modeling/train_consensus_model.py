@@ -130,7 +130,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output",
         type=str,
-        default="src/trained_models/consensus_meta_model.pkl",
+        default="data/trained_models/consensus_meta_model.pkl",
         help="Path to save the trained model file."
     )
     args = parser.parse_args()

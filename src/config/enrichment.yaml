@@ -6,6 +6,22 @@ enrichment:
       name: "DistilBERT SST-2"
       confidence_threshold: 0.75 
       
+  # Налаштування для макроекономічних показників з FRED
+  macro_features:
+    macro_fred_series:
+      fed_funds_rate: "FEDFUNDS"
+      treasury_10y: "DGS10"
+      treasury_2y: "GS2"
+      yield_curve: "T10Y2Y"
+      cpi: "CPIAUCSL"
+      core_pce: "PCEPILFE"
+      unemployment: "UNRATE"
+      payrolls: "PAYEMS"
+      gdp: "GDP"
+      industrial_production: "INDPRO"
+      vix: "VIXCLS"
+      consumer_sentiment: "UMCSENT" 
+      
   # Налаштування для видобування сутностей
   entity_extraction:
     spacy_model: "en_core_web_sm"
@@ -54,6 +70,31 @@ enrichment:
     params:
       significance_col: "is_significant"
       mode: "feature_engineering"
+
+  nlp_features:
+    n_clusters: 5
+    max_features: 1000
+    text_column: "title"
+    date_column: "publishedAt"
+
+  keyword_entity:
+    keywords:
+      tickers: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "AMD", "INTC"]
+      technologies: ["ai", "artificial intelligence", "machine learning", "blockchain", "cloud", "quantum"]
+      financial: ["earnings", "revenue", "profit", "loss", "dividend", "buyback", "merger", "acquisition"]
+    entities:
+      spacy_model: "en_core_web_sm"
+      disable_components: ["parser", "lemmatizer", "attribute_ruler"]
+
+  news_impact:
+    sentiment_weights:
+      positive: 1.0
+      negative: -1.5  # Negative news has stronger impact
+      neutral: 0.0
+    half_life_hours: 48  # News impact decays with 48h half-life
+    significance_thresholds:
+      high_impact: 0.8
+      medium_impact: 0.3
 
   time_features:
     module: "src.features.enrichers.time_features_enricher"

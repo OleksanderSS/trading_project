@@ -25,7 +25,45 @@ models:
   dual_model_manager:
     base_path: "data/models"
     light_models: ["lightgbm", "random_forest", "linear", "mlp", "ensemble", "catboost", "xgboost", "knn", "svm"]
-    heavy_models: ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder"]
+    heavy_models: ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder", "mlp", "neural_network", "base_neural"]
+
+  categories:
+    light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]
+    heavy: ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]
+
+  # ✅ Кількість фіч для кожної моделі
+  per_model:
+    # Легкі моделі: 20-60 фіч
+    catboost:
+      max_features: 45
+    lightgbm:
+      max_features: 50
+    xgboost:
+      max_features: 48
+    random_forest:
+      max_features: 40
+    linear:
+      max_features: 35
+    svm:
+      max_features: 42
+    knn:
+      max_features: 38
+    
+    # Важкі моделі: 80-120 фіч
+    mlp:
+      max_features: 100
+    cnn:
+      max_features: 95
+    lstm:
+      max_features: 110
+    gru:
+      max_features: 105
+    transformer:
+      max_features: 115
+    tabnet:
+      max_features: 90
+    autoencoder:
+      max_features: 100
 
   sentiment:
     model_name: "yiyanghkust/finbert-tone"

@@ -14,6 +14,14 @@ class SignificanceFeaturesEnricher(BaseEnricher):
     modeling process.
     """
 
+    @property
+    def name(self) -> str:
+        return "significance_features"
+    
+    @property
+    def priority(self) -> int:
+        return 70
+
     def __init__(self, significance_col: str = 'is_significant', min_events_per_ticker: int = 10, mode: str = 'feature_engineering'):
         """
         Initializes the SignificanceAnalyzer.
@@ -23,6 +31,10 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             min_events_per_ticker (int): The minimum number of significant events required for a ticker to be included in 'filter' mode.
             mode (str): The operational mode. Can be 'filter', 'balance', or 'feature_engineering'.
         """
+        # Ensure significance_col is a string, not a dict
+        if isinstance(significance_col, dict):
+            significance_col = significance_col.get('name', 'is_significant')
+        
         self.significance_col = significance_col
         self.min_events_per_ticker = min_events_per_ticker
         self.mode = mode
@@ -39,9 +51,18 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         Returns:
             pd.DataFrame: The processed DataFrame.
         """
-        if self.significance_col not in data.columns:
-            logger.warning(f"Significance column '{self.significance_col}' not found in data. Skipping analysis.")
-            return data
+        # Ensure significance_col is a string for column check
+        col_name = self.significance_col
+        if isinstance(col_name, dict):
+            col_name = col_name.get('name', 'is_significant')
+        
+        # ✅ Якщо колонка відсутня, створюємо її на основі волатильності або інших метрик
+        if col_name not in data.columns:
+            logger.info(f"Significance column '{col_name}' not found. Creating it based on volatility...")
+            data = self._create_significance_column(data, col_name)
+            if col_name not in data.columns:
+                logger.warning(f"Failed to create significance column. Skipping analysis.")
+                return data
 
         if self.mode == 'filter':
             return self._filter_significant_events(data)
@@ -103,4 +124,34 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         if 'ticker' in df_out.columns and df_out['ticker'].nunique() == 1 and df_out['ticker'].iloc[0] == 'default':
             df_out = df_out.drop(columns=['ticker'])
             
+        return df_out
+
+    def _create_significance_column(self, df: pd.DataFrame, col_name: str) -> pd.DataFrame:
+        """
+        Creates is_significant column based on volatility or price movements.
+        An event is significant if it's in the top 20% of volatility or price changes.
+        """
+        df_out = df.copy()
+        
+        # Try to calculate significance based on available columns
+        if 'returns' in df_out.columns:
+            # Use returns volatility
+            threshold = df_out['returns'].abs().quantile(0.80)  # Top 20%
+            df_out[col_name] = df_out['returns'].abs() >= threshold
+            logger.info(f"Created '{col_name}' based on returns (threshold: {threshold:.4f})")
+        elif 'close' in df_out.columns:
+            # Calculate returns from close price
+            df_out['_temp_returns'] = df_out['close'].pct_change()
+            threshold = df_out['_temp_returns'].abs().quantile(0.80)
+            df_out[col_name] = df_out['_temp_returns'].abs() >= threshold
+            df_out = df_out.drop(columns=['_temp_returns'])
+            logger.info(f"Created '{col_name}' based on price changes (threshold: {threshold:.4f})")
+        elif 'VOLATILITY_20' in df_out.columns:
+            # Use existing volatility feature
+            threshold = df_out['VOLATILITY_20'].quantile(0.80)
+            df_out[col_name] = df_out['VOLATILITY_20'] >= threshold
+            logger.info(f"Created '{col_name}' based on VOLATILITY_20 (threshold: {threshold:.4f})")
+        else:
+            logger.warning("Cannot create significance column: no suitable columns found (returns, close, or VOLATILITY_20)")
+        
         return df_out

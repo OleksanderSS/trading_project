@@ -113,6 +113,26 @@ class DataManager(IDatabaseManager):
         if df.empty:
             return
 
+        # ✅ Перевірка на NaN та Inf перед збереженням
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        if len(numeric_cols) > 0:
+            # Перевіряємо NaN
+            nan_count = df[numeric_cols].isna().sum().sum()
+            if nan_count > 0:
+                nan_pct = (nan_count / (len(df) * len(numeric_cols))) * 100
+                logger.warning(f"⚠️ Таблиця '{table_name}' містить {nan_count} NaN значень ({nan_pct:.2f}%)")
+                if nan_pct > 10:
+                    logger.error(f"❌ Критично: >10% NaN значень в '{table_name}'")
+            
+            # Перевіряємо Inf
+            import numpy as np
+            inf_count = np.isinf(df[numeric_cols].values).sum()
+            if inf_count > 0:
+                logger.warning(f"⚠️ Таблиця '{table_name}' містить {inf_count} Inf значень")
+                # Замінюємо Inf на NaN для безпеки
+                df[numeric_cols] = df[numeric_cols].replace([np.inf, -np.inf], np.nan)
+                logger.info(f"✅ Замінено {inf_count} Inf значень на NaN")
+
         try:
             self.con.register('df_to_upsert', df)
             if not self.table_exists(table_name):
@@ -134,12 +154,38 @@ class DataManager(IDatabaseManager):
                         SELECT * FROM df_to_upsert 
                         WHERE hash NOT IN (SELECT hash FROM "{table_name}")
                     """)
+                elif 'key_hash' in df.columns:
+                    # For cache_metadata table
+                    self.con.execute(f"""
+                        INSERT INTO "{table_name}" BY NAME 
+                        SELECT * FROM df_to_upsert 
+                        WHERE key_hash NOT IN (SELECT key_hash FROM "{table_name}")
+                    """)
                 else:
                     self.con.execute(f'INSERT INTO "{table_name}" BY NAME SELECT * FROM df_to_upsert')
                 logger.info(f"Upserted records into '{table_name}'.")
             
             self.con.execute('CHECKPOINT;')
             logger.debug(f"Database checkpoint forced after upsert into '{table_name}'.")
+            
+            # ✅ Перевірка дублікатів після upsert
+            if unique_on:
+                try:
+                    cols_str = ", ".join([f'"{c}"' for c in unique_on])
+                    duplicate_check_query = f"""
+                        SELECT {cols_str}, COUNT(*) as cnt
+                        FROM "{table_name}"
+                        GROUP BY {cols_str}
+                        HAVING COUNT(*) > 1
+                    """
+                    duplicates = self.con.execute(duplicate_check_query).fetchdf()
+                    if not duplicates.empty:
+                        logger.error(f"❌ Знайдено {len(duplicates)} дублікатів в '{table_name}' після upsert!")
+                        logger.error(f"   Перші 5 дублікатів: {duplicates.head().to_dict('records')}")
+                    else:
+                        logger.debug(f"✅ Немає дублікатів в '{table_name}' після upsert")
+                except Exception as check_e:
+                    logger.warning(f"⚠️ Не вдалося перевірити дублікати: {check_e}")
 
         except Exception as e:
             self.error_handler.handle_error(e, {"table": table_name, "dataframe_columns": list(df.columns)})

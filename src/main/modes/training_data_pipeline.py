@@ -45,8 +45,8 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
     logger.info(f"Successfully collected data. Types: {list(raw_data.keys())}")
 
     # 2. Feature Engineering Stage
-    feature_orchestrator = FeatureOrchestrator.create_from_config(config_manager, raw_data)
-    features_df = feature_orchestrator.run(market_data)
+    feature_orchestrator = FeatureOrchestrator.create_from_config(config_manager)
+    features_df = feature_orchestrator.run(market_data, **raw_data)
     logger.info(f"Feature engineering complete. DataFrame shape: {features_df.shape}")
 
     # 3. Target Generation Stage

@@ -190,20 +190,28 @@ data:
     preparation:
       test_size: 0.2
       seq_len: 20 # For heavy models
-      # feature_columns has been removed to allow dynamic feature selection per model/strategy.
-      # The system will now use the flexible feature engineering pipeline.
-      # targets_config has been removed from the global scope.
-      # Targets are now defined within each specific strategy in the 'strategy' section.
-
+    
+    # Settings for normalization
+    normalization:
+      features:
+        - {feature: 'close', scaler_type: 'standard'}
+        - {feature: 'volume', scaler_type: 'min_max'}
+    
     # Modular Enrichers Configuration
-    hype_enricher: {enabled: true}
-    macro_features_enricher: {enabled: true}
-    nlp_features_enricher: {enabled: true}
-    sentiment_features_enricher: {enabled: true}
-    decay_features_enricher: {enabled: true}
-    significance_features_enricher: {enabled: true}
-    technical_analysis_enricher: {enabled: true}
-    time_features_enricher: {enabled: true}
+
+    # ---------------------------------
+    # Modular Enrichers Configuration (Centralized for FeatureOrchestrator)
+    # ---------------------------------
+    enrichers:
+      hype: {enabled: true}
+      macro_features: {enabled: true}
+      nlp_features: {enabled: true}
+      sentiment_features: {enabled: true}
+      decay_features: {enabled: true}
+      significance_features: {enabled: true}
+      technical_analysis: {enabled: true}
+      time_features: {enabled: true}
+      context_map: {enabled: true}
 
 # ---------------------------------
 # Analysis Section
@@ -233,6 +241,27 @@ analysis:
       - name: "market_context_analyzer"
         module: "src.analytics.context.market_context_analyzer"
         class: "MarketContextAnalyzer"
+        params:
+          context_features:
+            - "volatility_5d"
+            - "volatility_20d"
+            - "volatility_ratio"
+            - "trend_5d"
+            - "trend_20d"
+            - "trend_alignment"
+            - "rsi_current"
+            - "volume_ratio"
+            - "price_to_ma20"
+            - "hour_of_day"
+            - "day_of_week"
+            # ✅ НОВІ КОНТЕКСТНІ ПОКАЗНИКИ (з CONTEXT_FEATURES_RECOMMENDATIONS.md)
+            - "yield_curve_slope"        # Нахил кривої дохідності (10Y - 2Y)
+            - "yield_curve_inverted"     # Прапорець інверсії (0/1)
+            - "fed_funds_trend"          # Тренд ставки Fed Funds (3 місяці)
+            - "fed_funds_velocity"       # Швидкість зміни ставки (1 місяць)
+            - "market_breadth"           # Ширина ринку (advance/decline)
+            - "dollar_strength"          # Сила долара (DXY)
+            - "put_call_ratio"           # Put/Call ratio (страх на ринку)
         data_mapping:
           - "price_data"
           - "market_indicators"
@@ -262,6 +291,10 @@ analysis:
       - name: "causal_events"
         module: "src.analytics.analyzers.causal_event_finder"
         class: "CausalEventFinder"
+        params:
+          treatment: "event_detected"
+          outcome: "future_return"
+          common_causes: ["volatility", "volume"]
         data_mapping:
           - "macro_data"
           - "price_data"
@@ -430,14 +463,14 @@ training_pipeline:
     enabled: true
     class_path: "src.pipeline.stages.stage_3_feature_engineering.FeatureEngineeringStage"
   - name: "Stage_4_Modeling"
-    enabled: false
+    enabled: true
     class_path: "src.pipeline.stages.stage_4_modeling.ModelingStage"
   - name: "Stage_5_Prediction"
-    enabled: false
+    enabled: true
     class_path: "src.pipeline.stages.stage_5_prediction.PredictionStage"
   - name: "Stage_6_Trading_Execution"
-    enabled: false
+    enabled: true
     class_path: "src.pipeline.stages.stage_6_trading_execution.TradingExecutionStage"
   - name: "Stage_7_Evaluation"
-    enabled: false
+    enabled: true
     class_path: "src.pipeline.stages.stage_7_evaluation.EvaluationStage"

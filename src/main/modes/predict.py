@@ -4,6 +4,8 @@ Predict mode - inference mode for generating real-time signals.
 Uses the PipelineOrchestrator to run only the prediction and signal generation stages.
 """
 
+import asyncio
+import inspect
 from typing import List, Dict, Any, Optional
 from src.main.modes.base import BaseMode
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
@@ -54,6 +56,8 @@ class PredictMode(BaseMode):
                 timeframes=timeframes, 
                 run_mode='predict'
             )
+            if inspect.isawaitable(results):
+                results = asyncio.run(results)
 
             if not results:
                 self.logger.warning("Pipeline completed but returned no results.")

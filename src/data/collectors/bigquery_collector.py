@@ -3,7 +3,7 @@
 
 import asyncio
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from .base_collector import BaseCollector
 from ..management.connectors.bigquery_connector import BigQueryConnector
@@ -17,20 +17,20 @@ class BigQueryCollector(BaseCollector):
     collector_type = "bigquery"
     data_type = "generic"
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # Ініціалізація спрощена. Клієнт створюється в `fetch_raw_data`.
+    def __init__(self, configs: Dict[str, Any], http_client_factory, db_manager, cache_manager=None, **kwargs):
+        super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
+        # Initialization simplified. Client created on demand in fetch_raw_data.
 
     async def fetch_raw_data(self, **kwargs) -> List[Dict[str, Any]]:
         """
         Асинхронно виконує запит до BigQuery.
         """
-        query = self.config.get("query")
+        query = self.configs.get("query")
         if not query:
-            self.logger.error(f"Конфігурація для '{self.collector_name}' повинна містити 'query'.")
+            self.logger.error(f"Конфігурація для '{self.collector_type}' повинна містити 'query'.")
             return []
 
-        project_id = self.config.get("project_id")
+        project_id = self.configs.get("project_id")
 
         try:
             # Виконуємо блокуючі операції в окремому потоці

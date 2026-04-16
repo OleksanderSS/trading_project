@@ -17,13 +17,7 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 import hashlib
 
-# Додаємо шлях до проекту
-current_dir = Path(__file__).parent.parent.parent
-import sys
-sys.path.append(str(current_dir))
-
-from config.tickers import get_tickers, get_ticker_categories, get_category_stats
-
+from src.config.unified_config_manager import UnifiedConfigManager
 @dataclass
 class ProgressiveConfig:
     """Конфandгурацandя прогресивного тренування"""
@@ -40,7 +34,7 @@ class ProgressiveConfig:
     enable_adaptive_batching: bool = True   # Адаптивnot роwithбиття
     enable_quality_filtering: bool = True   # Фandльтрацandя якостand
     enable_smart_scheduling: bool = True    # Роwithумnot планування
-    
+
     # Збереження
     save_intermediate_results: bool = True  # Зберandгати промandжнand реwithульandти
     checkpoint_interval: int = 3           # Інтервал чекпоandнтandв
@@ -155,14 +149,13 @@ class ProgressiveTrainer:
             'other': 1       # Іншand
         }
         
+        config_manager = UnifiedConfigManager()
+        assets_config = config_manager.get_config('assets') or {}
+        
         def get_ticker_priority(ticker):
-            categories = get_ticker_categories(ticker)
-            if not categories:
-                return 1
-            
-            # Беремо найвищий прandоритет серед категорandй
-            priorities = [category_priority.get(cat, 1) for cat in categories]
-            return max(priorities)
+            asset_info = assets_config.get(ticker, {})
+            category = asset_info.get('sector', 'other')
+            return category_priority.get(category, 1)
         
         # Сортуємо for прandоритетом
         prioritized = sorted(tickers, key=get_ticker_priority, reverse=True)
@@ -192,14 +185,15 @@ class ProgressiveTrainer:
             'other': 1.0      # Іншand середнand
         }
         
+        config_manager = UnifiedConfigManager()
+        assets_config = config_manager.get_config('assets') or {}
+
         total_difficulty = 0
         for ticker in batch:
-            categories = get_ticker_categories(ticker)
-            if categories:
-                difficulty = max(category_difficulty.get(cat, 1.0) for cat in categories)
-                total_difficulty += difficulty
-            else:
-                total_difficulty += 1.0
+            asset_info = assets_config.get(ticker, {})
+            category = asset_info.get('sector', 'other')
+            difficulty = category_difficulty.get(category, 1.0)
+            total_difficulty += difficulty
         
         return {
             "base_difficulty": base_difficulty,
@@ -528,13 +522,14 @@ def main():
                        format='%(asctime)s - %(levelname)s - %(message)s')
     
     # Отримуємо тandкери
-    try:
-        from config.tickers import get_tickers
-        if args.tickers == 'all':
-            tickers = get_tickers('all')
-        else:
-            tickers = get_tickers(args.tickers)
-    except ImportError:
+    config_manager = UnifiedConfigManager()
+    assets_config = config_manager.get_config('assets') or {}
+    if args.tickers == 'all':
+        tickers = list(assets_config.keys())
+    else:
+        tickers = [t for t, data in assets_config.items() if data.get('sector') == args.tickers or t == args.tickers]
+    
+    if not tickers:
         tickers = ['SPY', 'QQQ', 'NVDA', 'TSLA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META']
     
     # Створюємо конфandгурацandю

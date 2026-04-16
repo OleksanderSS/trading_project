@@ -406,7 +406,7 @@ def main():
     args = parser.parse_args()
     
     # Initialize config
-    config_manager = UnifiedConfigManager(config_path=args.config_path)
+    config_manager = UnifiedConfigManager(config_dir=args.config_path)
     
     # Run generation
     generator = SyntheticDataGenerator(config_manager)

@@ -119,7 +119,7 @@ class DiaryEngine(BaseMetaComponent):
         # Ensured context_fingerprint is VARCHAR to handle long strings (30+ drivers)
         query = f"""
         CREATE TABLE IF NOT EXISTS {self.table_name} (
-            id SEQUENCE PRIMARY KEY,
+            id INTEGER PRIMARY KEY,
             agent_id VARCHAR NOT NULL,
             decision_timestamp BIGINT NOT NULL,
             ticker VARCHAR NOT NULL,
@@ -320,3 +320,64 @@ class DiaryEngine(BaseMetaComponent):
     def close(self):
         """DataManager handles lifecycle."""
         pass
+
+    def get_contextual_model_weights(self, context_fingerprint: str) -> Dict[str, float]:
+        """
+        Повертає ваги моделей на основі їх історичної ефективності в даному контексті.
+        
+        Args:
+            context_fingerprint: Fingerprint контексту
+            
+        Returns:
+            Dict з вагами моделей (model_name -> weight)
+        """
+        # Запит для отримання історичної ефективності моделей в цьому контексті
+        query = f"""
+        SELECT 
+            agent_id,
+            COUNT(*) as total_decisions,
+            AVG(CASE WHEN outcome = '{DecisionOutcome.PROFITABLE.value}' THEN 1.0 ELSE 0.0 END) as win_rate,
+            AVG(profit_loss) as avg_pnl
+        FROM {self.table_name}
+        WHERE context_fingerprint = '{context_fingerprint}'
+        GROUP BY agent_id
+        HAVING total_decisions >= 2
+        ORDER BY win_rate DESC, avg_pnl DESC
+        """
+        
+        try:
+            # Виконуємо запит через DuckDB
+            result_df = self.data_manager.con.execute(query).fetchdf()
+            
+            if result_df.empty:
+                # Якщо немає історії для цього контексту, повертаємо рівні ваги
+                self.logger.debug(f"No historical data for context {context_fingerprint}, using equal weights")
+                return {}
+            
+            # Розраховуємо ваги на основі win_rate та avg_pnl
+            weights = {}
+            total_score = 0.0
+            
+            for _, row in result_df.iterrows():
+                agent_id = row['agent_id']
+                win_rate = row['win_rate']
+                avg_pnl = row['avg_pnl']
+                
+                # Комбінована метрика: win_rate * (1 + normalized_pnl)
+                # Нормалізуємо avg_pnl до діапазону [0, 1]
+                normalized_pnl = max(0, min(1, (avg_pnl + 1) / 2))  # Припускаємо pnl в діапазоні [-1, 1]
+                score = win_rate * (1 + normalized_pnl)
+                
+                weights[agent_id] = score
+                total_score += score
+            
+            # Нормалізуємо ваги до суми 1.0
+            if total_score > 0:
+                weights = {k: v / total_score for k, v in weights.items()}
+            
+            self.logger.debug(f"Contextual weights for {context_fingerprint}: {weights}")
+            return weights
+            
+        except Exception as e:
+            self.logger.error(f"Error getting contextual model weights: {e}")
+            return {}

@@ -13,7 +13,7 @@ from pathlib import Path
 from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.factories.model_factory import ModelFactory
-from src.meta_learning.memory.diary_engine import ExperienceDiaryEngine
+from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.metrics.model.ml_evaluator import MLEvaluator
 
 logger = ProjectLogger.get_logger("BatchTrainer")
@@ -31,10 +31,11 @@ class BatchTrainer:
         self.config = config or BatchConfig()
         self.config_manager = UnifiedConfigManager()
         self.model_factory = ModelFactory()
-        self.diary = ExperienceDiaryEngine()
+        self.diary = DiaryEngine()
         self.evaluator = MLEvaluator()
         
-        self.output_dir = Path(self.config_manager.get_config('system', {}).get('models_path', 'src/trained_models'))
+        models_path = self.config_manager.get('paths.models', None) or self.config_manager.get_config('system', {}).get('models_path', 'data/trained_models')
+        self.output_dir = Path(models_path)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def execute_batch_training(self, plan: Dict[str, Any], data_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -68,7 +69,7 @@ class BatchTrainer:
 
     def _train_ticker_suite(self, ticker: str, data: Dict[str, Any], plan: Dict) -> Dict:
         """Trains all configured models and targets for a specific ticker using prepared data."""
-        ticker_results = {"status": "success", "models": []}
+        ticker_results = {"status": "success", "models": [], "metrics": {}}
         
         X_train = data.get('X_train')
         y_train = data.get('y_train')
@@ -99,6 +100,25 @@ class BatchTrainer:
                 predictions = model_instance.predict(X_test)
                 score = self.evaluator.evaluate(y_test, predictions, is_classification)
                 
+                # ✅ Зберігаємо metrics для кожної моделі
+                # Для regression: accuracy = -mse (чим менше mse, тим краще)
+                # Для classification: accuracy = accuracy_score
+                if is_classification:
+                    metrics_dict = {
+                        'score': float(score),
+                        'accuracy': float(score),
+                        'mse': None
+                    }
+                else:
+                    # For regression, use -mse as accuracy (higher is better)
+                    metrics_dict = {
+                        'score': float(score),
+                        'accuracy': float(-score),  # -(-mse) = mse
+                        'mse': float(score)
+                    }
+                
+                ticker_results['metrics'][m_type] = metrics_dict
+                
                 if score > best_score:
                     best_score = score
                     winner_name = m_type
@@ -117,6 +137,8 @@ class BatchTrainer:
 
         ticker_results['winner'] = winner_name
         ticker_results['best_score'] = best_score
+        # ✅ Додаємо metrics чемпіона
+        ticker_results['winner_metrics'] = ticker_results['metrics'].get(winner_name, {})
         
         return ticker_results
 

@@ -1,0 +1,64 @@
+# Risk Management Configuration
+# Налаштування системи управління ризиками
+
+strategy:
+  risk_management:
+    # VaR Settings
+    var_confidence_levels: [0.95, 0.99]
+    var_time_horizon_days: 1
+    annual_trading_days: 252
+
+    # Risk Limits
+    max_portfolio_var_pct: 0.05      # 5% max portfolio VaR
+    max_single_position_pct: 0.10    # 10% max single position
+    max_daily_loss_pct: 0.03         # 3% max daily loss
+    max_drawdown_pct: 0.15           # 15% max drawdown
+    max_leverage: 2.0                # 2x max leverage
+
+    # Stress Testing Scenarios
+    stress_scenarios:
+      market_crash:
+        shock: -0.15
+        description: "15% market crash scenario"
+      volatility_spike:
+        volatility_multiplier: 3.0
+        description: "3x volatility increase"
+      liquidity_crisis:
+        liquidity_dryup: 0.8
+        description: "80% liquidity reduction"
+      interest_rate_shock:
+        rate_change: 0.025
+        description: "2.5% interest rate increase"
+
+    # Liquidity Risk Settings
+    liquidity_risk:
+      min_volume_threshold: 1000000    # $1M minimum daily volume
+      max_market_impact_pct: 0.10      # 10% max market impact
+      spread_multiplier: 0.01          # Spread estimation multiplier
+
+    # Risk Monitoring
+    monitoring:
+      alert_thresholds:
+        var_warning: 0.03               # 3% VaR warning
+        drawdown_warning: 0.10          # 10% drawdown warning
+        concentration_warning: 0.15     # 15% concentration warning
+
+      # Alert Channels
+      alerts:
+        email: true
+        slack: false
+        telegram: false
+        log: true
+
+# Integration with other modules
+analytics:
+  risk_integration:
+    enable_var_in_signals: true
+    enable_stress_tests: true
+    risk_adjusted_returns: true
+
+trading:
+  risk_controls:
+    pre_trade_var_check: true
+    position_size_limits: true
+    portfolio_rebalancing: true

@@ -45,7 +45,7 @@ class UnifiedAnalyticsEngine:
 
     def _load_config(self):
         """Завантажує конфігурацію рушія з UnifiedConfigManager."""
-        engine_config = self.config_manager.get_specific_config('analysis', 'engine') or {}
+        engine_config = self.config_manager.get('analysis.engine', {})
         self.max_workers = engine_config.get('max_workers', 4)
         self.analyzer_configs = engine_config.get('analyzers', [])
         logger.debug(f"Конфігурацію аналітичного рушія завантажено: max_workers={self.max_workers}")
@@ -82,20 +82,37 @@ class UnifiedAnalyticsEngine:
         """
         Генерує стабільний хеш для вхідних даних, що використовується як ключ для кешу.
         """
-        # Спрощена версія хешування; для реальних умов може знадобитися більш надійний підхід.
-        # Залежить від стабільного порядку та представлення даних.
         try:
-            # Використовуємо json для серіалізації, але з обробкою несеріалізованих об'єктів.
-            deterministic_json = json.dumps(data_map, sort_keys=True, default=str)
+            stable_repr = {}
+            for key in sorted(data_map.keys()):
+                value = data_map[key]
+                if isinstance(value, pd.DataFrame):
+                    sample = value.head(10).tail(5)
+                    stable_repr[key] = {
+                        'shape': value.shape,
+                        'columns': list(value.columns),
+                        'sample_hash': hashlib.md5(sample.to_json(date_format='iso', orient='split').encode()).hexdigest()
+                    }
+                elif isinstance(value, pd.Series):
+                    sample = value.head(10)
+                    stable_repr[key] = {
+                        'shape': value.shape,
+                        'name': value.name,
+                        'sample_hash': hashlib.md5(sample.to_json(date_format='iso', orient='split').encode()).hexdigest()
+                    }
+                else:
+                    stable_repr[key] = str(value)
+            deterministic_json = json.dumps(stable_repr, sort_keys=True)
             return hashlib.md5(deterministic_json.encode()).hexdigest()
-        except Exception:
-             # Fallback для складних об'єктів
+        except Exception as e:
             hash_input = ""
             for key, value in sorted(data_map.items()):
                 if isinstance(value, pd.DataFrame):
-                    hash_input += f"{key}_{value.shape}_{pd.util.hash_pandas_object(value).sum()}"
+                    sample = value.head(3)
+                    hash_input += f"{key}_{value.shape}_{hash(sample.to_json(date_format='iso', orient='split'))}"
                 elif isinstance(value, pd.Series):
-                    hash_input += f"{key}_{len(value)}_{pd.util.hash_pandas_object(value).sum()}"
+                    sample = value.head(3)
+                    hash_input += f"{key}_{value.shape}_{hash(sample.to_json(date_format='iso', orient='split'))}"
                 else:
                     hash_input += f"{key}_{str(value)}"
             return hashlib.md5(hash_input.encode()).hexdigest()

@@ -108,19 +108,41 @@ class FamaFrenchFactors:
     def _download_data(self, start_date: str, end_date: str) -> pd.DataFrame:
         """Downloads historical price data for all benchmark tickers."""
         tickers = list(set(self.benchmark_tickers.values()))
+        
+        # ✅ FIX: Спочатку перевіряємо кеш перед завантаженням
+        cache_key = f"raw_{start_date}_{end_date}"
+        if self.use_cache and cache_key in self.cache:
+            if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
+                logger.info(f"✅ Використовуємо кешовані дані для {start_date} - {end_date}")
+                return self.cache[cache_key]
+        
         try:
+            logger.info(f"📥 Завантаження даних з Yahoo Finance для {len(tickers)} тікерів...")
             data = yf.download(tickers, start=start_date, end=end_date, progress=False, auto_adjust=True, group_by='ticker')
             
             # If only one ticker, yf doesn't return a multi-level column header.
             if len(tickers) == 1:
-                return data[['Close']].rename(columns={'Close': tickers[0]})
+                result = data[['Close']].rename(columns={'Close': tickers[0]})
+            else:
+                # Extract 'Close' price for each ticker
+                close_prices = pd.DataFrame({ticker: data[ticker]['Close'] for ticker in tickers if ticker in data.columns.get_level_values(0) and not data[ticker].empty})
+                result = close_prices.dropna(how='all')
             
-            # Extract 'Close' price for each ticker
-            close_prices = pd.DataFrame({ticker: data[ticker]['Close'] for ticker in tickers if not data[ticker].empty})
+            # ✅ Зберігаємо в кеш
+            if self.use_cache and not result.empty:
+                self.cache[cache_key] = result
+                self.last_cache_time = datetime.now()
+                logger.info(f"✅ Дані збережено в кеш")
             
-            return close_prices.dropna(how='all')
+            return result
         except Exception as e:
             logger.error(f"yfinance download failed for tickers {tickers}: {e}")
+            
+            # ✅ FALLBACK: Спробуємо повернути старі кешовані дані якщо є
+            if self.use_cache and cache_key in self.cache:
+                logger.warning(f"⚠️ Використовуємо старі кешовані дані (можливо застарілі)")
+                return self.cache[cache_key]
+            
             return pd.DataFrame()
 
     def analyze_factor_performance(self, factors: pd.DataFrame) -> Dict[str, Dict[str, float]]:

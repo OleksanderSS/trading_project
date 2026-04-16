@@ -74,15 +74,20 @@ class TradingCalendar:
         dt = pd.to_datetime(from_date).normalize()
         
         try:
-            loc = self.trading_days.get_loc(dt, method='pad')
-        except KeyError:
+            # Pandas 2.0+ не підтримує method='pad', використовуємо searchsorted
+            loc = self.trading_days.searchsorted(dt, side='right') - 1
+            if loc < 0:
+                logger.warning(f"Date {dt} is before the start of the calendar.")
+                return []
+        except Exception as e:
+            logger.error(f"Error finding location for {dt}: {e}")
             if dt < self.trading_days[0]:
                 logger.warning(f"Date {dt} is before the start of the calendar.")
                 return []
             loc = len(self.trading_days) - 1
 
         # Adjust indices to exclude current day if it matches dt
-        if self.trading_days[loc] >= dt:
+        if loc >= 0 and self.trading_days[loc] >= dt:
             end_index = loc
         else:
             end_index = loc + 1

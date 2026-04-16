@@ -13,28 +13,36 @@ class GCSManager:
     """A manager to handle all interactions with Google Cloud Storage."""
 
     def __init__(self, config: Optional[dict] = None):
-        if config is None:
-            config = get_current_config()
+        self.client = None
+        self.bucket = None
+        self.bucket_name = None
         
-        self.cloud_storage_config = config.get('cloud_storage')
-        if not self.cloud_storage_config:
-            raise ValueError("Cloud Storage configuration is missing.")
-
-        self.bucket_name = self.cloud_storage_config.get('bucket_name')
-        if not self.bucket_name:
-            raise ValueError("GCS bucket name is not configured.")
-
         try:
+            if config is None:
+                config = get_current_config()
+            
+            self.cloud_storage_config = config.get('cloud_storage')
+            if not self.cloud_storage_config:
+                logger.warning("Cloud Storage configuration is missing. GCS disabled.")
+                return
+
+            self.bucket_name = self.cloud_storage_config.get('bucket_name')
+            if not self.bucket_name:
+                logger.warning("GCS bucket name is not configured. GCS disabled.")
+                return
+
             self.client = storage.Client()
             self.bucket = self.client.get_bucket(self.bucket_name)
             logger.info(f"Successfully connected to GCS bucket: '{self.bucket_name}'")
         except Exception as e:
-            logger.error(f"Failed to connect to GCS bucket '{self.bucket_name}'. "
-                         f"Ensure you have authenticated with `gcloud auth application-default login`. Error: {e}", exc_info=True)
-            raise
+            logger.warning(f"Failed to initialize GCS: {e}. Continuing without cloud storage.")
 
     def upload_file(self, source_file_path: str, destination_blob_name: str) -> bool:
         """Uploads a file to the GCS bucket."""
+        if not self.client or not self.bucket:
+            logger.warning("GCS not initialized. Cannot upload file.")
+            return False
+        
         try:
             logger.info(f"Uploading '{source_file_path}' to GCS path '{destination_blob_name}'...")
             blob = self.bucket.blob(destination_blob_name)
@@ -47,6 +55,10 @@ class GCSManager:
 
     def upload_blob_from_memory(self, file_obj, destination_blob_name: str) -> bool:
         """Uploads a file-like object to the GCS bucket."""
+        if not self.client or not self.bucket:
+            logger.warning("GCS not initialized. Cannot upload blob.")
+            return False
+        
         try:
             logger.info(f"Uploading from memory to GCS path '{destination_blob_name}'...")
             blob = self.bucket.blob(destination_blob_name)
@@ -83,6 +95,10 @@ class GCSManager:
 
     def file_exists(self, blob_name: str) -> bool:
         """Checks if a file exists in the GCS bucket."""
+        if not self.client or not self.bucket:
+            logger.warning("GCS not initialized. Cannot check file existence.")
+            return False
+        
         try:
             blob = self.bucket.blob(blob_name)
             return blob.exists()
@@ -92,6 +108,10 @@ class GCSManager:
 
     def wait_for_blob(self, blob_name: str, timeout: int = 300) -> Optional[storage.Blob]:
         """Waits for a blob to exist in GCS, with a timeout."""
+        if not self.client or not self.bucket:
+            logger.warning("GCS not initialized. Cannot wait for blob.")
+            return None
+        
         start_time = time.time()
         while time.time() - start_time < timeout:
             if self.file_exists(blob_name):

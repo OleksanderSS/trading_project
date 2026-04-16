@@ -9,14 +9,14 @@ logger = ProjectLogger.get_logger(__name__)
 
 _FINBERT_PIPELINE = None
 _TOKENIZER = None
-_CACHE: Dict[str, Dict[str, str]] = {}  # кеш реwithульandтandв по хешу тексту
+_CACHE: Dict[str, Dict[str, str]] = {}  # кеш результатів по хешу тексту
 
 def _stable_hash(text: str) -> str:
-    """Короткий хеш тексту for кешування"""
+    """Короткий хеш тексту для кешування"""
     return hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
 
 def get_finbert_pipeline(device: int = None):
-    """Поверandє глобальний пайплайн FinBERT. Заванandжує один раwith."""
+    """Повертає глобальний пайплайн FinBERT. Завантажує один раз."""
     global _FINBERT_PIPELINE, _TOKENIZER
     if _FINBERT_PIPELINE is not None:
         return _FINBERT_PIPELINE
@@ -25,37 +25,62 @@ def get_finbert_pipeline(device: int = None):
         # --- DYNAMIC IMPORTS ---
         import torch
         from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+        import os
         # ----------------------
 
+        # ✅ Налаштування timeout для HuggingFace
+        # Збільшуємо timeout для завантаження моделі
+        os.environ.setdefault('HF_HUB_DOWNLOAD_TIMEOUT', '300')  # 5 хвилин
+        
+        # Використовуємо токен якщо є
+        hf_token = os.getenv('HF_TOKEN')
+        if hf_token:
+            logger.info("✅ Using HF_TOKEN for authentication")
+        
         if device is None:
             device = 0 if torch.cuda.is_available() else -1
-        _TOKENIZER = AutoTokenizer.from_pretrained("ProsusAI/finbert")
-        model = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
+        
+        logger.info("📥 Завантаження FinBERT tokenizer...")
+        _TOKENIZER = AutoTokenizer.from_pretrained(
+            "ProsusAI/finbert",
+            token=hf_token,
+            timeout=300  # 5 хвилин
+        )
+        
+        logger.info("📥 Завантаження FinBERT model...")
+        model = AutoModelForSequenceClassification.from_pretrained(
+            "ProsusAI/finbert",
+            token=hf_token,
+            timeout=300  # 5 хвилин
+        )
+        
+        logger.info("🔧 Створення pipeline...")
         _FINBERT_PIPELINE = pipeline(
             "sentiment-analysis",
             model=model,
             tokenizer=_TOKENIZER,
             device=device
         )
-        logger.info(f"[OK] FinBERT forванandжено ({'cuda' if device == 0 else 'cpu'})")
+        logger.info(f"✅ FinBERT завантажено успішно ({'cuda' if device == 0 else 'cpu'})")
     except ImportError:
-        logger.warning("[WARN] Libraries 'torch' or 'transformers' not found. Sentiment analysis will be disabled.")
+        logger.warning("⚠️ Libraries 'torch' or 'transformers' not found. Sentiment analysis will be disabled.")
         _FINBERT_PIPELINE = "disabled" # Mark as checked and disabled
     except Exception as e:
-        logger.exception(f"[ERROR] Error forванandження FinBERT: {e}")
+        logger.error(f"❌ Error завантаження FinBERT: {e}", exc_info=True)
+        logger.warning("⚠️ FinBERT disabled. Sentiment analysis will return neutral for all texts.")
         _FINBERT_PIPELINE = "disabled"
 
     return _FINBERT_PIPELINE
 
 def analyze_sentiment(texts: List[str], batch_size: int = 16, device: int = None, **kwargs) -> pd.DataFrame:
     """
-    Аналandwithує сентимент списку текстandв батчами.
-    Використовує кешування for повторних текстandв.
-    Поверandє DataFrame: text, label, score.
+    Аналізує сентимент списку текстів батчами.
+    Використовує кешування для повторних текстів.
+    Повертає DataFrame: text, label, score.
     """
     pipe = get_finbert_pipeline(device=device)
     if pipe is None or pipe == "disabled":
-        # logger.warning("[WARN] FinBERT unavailable, all тексти будуть neutral")
+        # logger.warning("[WARN] FinBERT unavailable, всі тексти будуть neutral")
         return pd.DataFrame([{"text": t, "label": "neutral", "score": 0.0} for t in texts])
 
     rows = []
@@ -65,7 +90,7 @@ def analyze_sentiment(texts: List[str], batch_size: int = 16, device: int = None
         batch = texts[i:i + batch_size]
         batch_safe = [t if t.strip() else "neutral" for t in batch]
 
-        # Перевandрка кешу
+        # Перевірка кешу
         uncached, uncached_idx = [], []
         for idx, t in enumerate(batch):
             h = _stable_hash(t)
@@ -96,9 +121,9 @@ def analyze_sentiment(texts: List[str], batch_size: int = 16, device: int = None
 
 def aggregate_sentiment(df: pd.DataFrame, normalize: bool = True, method: str = "mean") -> Dict[str, float]:
     """
-    Обчислює агрегований сентимент по allх новинах.
+    Обчислює агрегований сентимент по всіх новинах.
     method: "mean" | "sum" | "count"
-    Якщо normalize=True, сума трьох категорandй = 1.
+    Якщо normalize=True, сума трьох категорій = 1.
     """
     if not isinstance(df, pd.DataFrame) or df.empty:
         return {"positive": 0.0, "negative": 0.0, "neutral": 0.0}
@@ -123,6 +148,6 @@ def aggregate_sentiment(df: pd.DataFrame, normalize: bool = True, method: str = 
     if normalize and total > 0:
         res = {k: v / total for k, v in res.items()}
     elif normalize and total == 0:
-        logger.warning("[WARN] Усand оцandнки сентименту = 0, поверandємо 0 for allх категорandй")
+        logger.warning("[WARN] Усі оцінки сентименту = 0, повертаємо 0 для всіх категорій")
 
     return res

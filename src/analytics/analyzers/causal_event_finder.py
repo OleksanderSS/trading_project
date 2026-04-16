@@ -1,9 +1,126 @@
 import pandas as pd
 import numpy as np
 import logging
+from typing import Dict, Any
 from dowhy import CausalModel
 
+from ..interfaces import IAnalyzer
+
 logger = logging.getLogger(__name__)
+
+class CausalEventFinder(IAnalyzer):
+    """
+    Wrapper for CausalEngine that implements IAnalyzer interface.
+    Detects causal events and estimates their effects on outcomes.
+    """
+    
+    def __init__(self, treatment: str = "event_detected", outcome: str = "future_return", 
+                 common_causes: list = None):
+        """
+        Initialize the CausalEventFinder.
+        
+        Args:
+            treatment: Column name for treatment variable
+            outcome: Column name for outcome variable
+            common_causes: List of confounding variables
+        """
+        self.treatment = treatment
+        self.outcome = outcome
+        self.common_causes = common_causes or []
+        logger.info(f"CausalEventFinder initialized: treatment={treatment}, outcome={outcome}")
+    
+    def analyze(self, data: Any, **kwargs) -> Dict[str, Any]:
+        """
+        Analyze data to find causal effects.
+        
+        Args:
+            data: Can be DataFrame or dict with 'macro_data' and 'price_data'
+            **kwargs: Additional parameters
+            
+        Returns:
+            Dict with causal analysis results
+        """
+        try:
+            # Handle dict input (multiple data sources)
+            if isinstance(data, dict):
+                # Merge macro and price data if both provided
+                if 'price_data' in data and 'macro_data' in data:
+                    df = pd.merge(data['price_data'], data['macro_data'], 
+                                left_index=True, right_index=True, how='left')
+                elif 'price_data' in data:
+                    df = data['price_data']
+                else:
+                    df = data.get('macro_data', pd.DataFrame())
+            else:
+                df = data
+            
+            if df.empty or len(df) < 10:
+                logger.warning("Insufficient data for causal analysis")
+                return {"causal_effect": 0.0, "status": "insufficient_data"}
+            
+            # ⚠️ CRITICAL FIX: Check if required columns exist
+            # Do NOT create synthetic dummy columns - instead skip analysis if missing
+            if self.treatment not in df.columns:
+                logger.warning(f"Treatment column '{self.treatment}' not found in data - skipping causal analysis")
+                return {"causal_effect": 0.0, "status": "missing_treatment_column", "treatment": self.treatment}
+            
+            if self.outcome not in df.columns:
+                logger.warning(f"Outcome column '{self.outcome}' not found in data - skipping causal analysis")
+                return {"causal_effect": 0.0, "status": "missing_outcome_column", "outcome": self.outcome}
+            
+            # Filter common causes to only existing columns
+            available_causes = [c for c in self.common_causes if c in df.columns]
+            
+            if not available_causes:
+                logger.warning("No common causes available, skipping causal analysis")
+                return {"causal_effect": 0.0, "status": "no_confounders"}
+            
+            # Validate treatment and outcome have sufficient variance
+            if df[self.treatment].nunique() < 2:
+                logger.warning(f"Treatment '{self.treatment}' has no variance - cannot estimate causal effect")
+                return {"causal_effect": 0.0, "status": "no_treatment_variance"}
+            
+            if df[self.outcome].nunique() < 2:
+                logger.warning(f"Outcome '{self.outcome}' has no variance - cannot estimate causal effect")
+                return {"causal_effect": 0.0, "status": "no_outcome_variance"}
+            
+            # Use CausalModel from DoWhy instead of undefined CausalEngine
+            try:
+                from dowhy import CausalModel
+                
+                # Create graphical model with common causes
+                gml_graph = f"digraph {{{';'.join(available_causes)}->{self.treatment}->{self.outcome}}}"
+                
+                model = CausalModel(
+                    data=df,
+                    treatment=self.treatment,
+                    outcome=self.outcome,
+                    common_causes=available_causes,
+                    graphs=gml_graph
+                )
+                
+                # Identify causal effect
+                identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
+                
+                # Estimate using OLS
+                estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
+                effect = estimate.value if hasattr(estimate, 'value') else 0.0
+                
+                return {
+                    "causal_effect": float(effect) if not np.isnan(effect) else 0.0,
+                    "treatment": self.treatment,
+                    "outcome": self.outcome,
+                    "common_causes": available_causes,
+                    "status": "success"
+                }
+            except ImportError:
+                logger.error("DoWhy library not available for causal analysis")
+                return {"causal_effect": 0.0, "status": "dowhy_not_available"}
+            
+        except Exception as e:
+            logger.error(f"Causal analysis failed: {e}", exc_info=True)
+            return {"causal_effect": 0.0, "status": "error", "error": str(e)}
+
 
 class CausalEngine:
     """

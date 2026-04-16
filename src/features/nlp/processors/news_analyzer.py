@@ -37,6 +37,11 @@ class QuickNewsAnalyzer:
             return self._add_empty_cols(df)
 
         df_copy = df.copy()
+        
+        # ✅ ЗБЕРІГАЄМО ІНДЕКС (може бути DatetimeIndex)
+        original_index = df_copy.index
+        logger.info(f"[QuickNewsAnalyzer] Input index type: {type(original_index)}")
+        
         texts = df_copy[text_column].fillna('').astype(str)
         nonempty_idx = texts.str.strip() != ""
         texts_nonempty = texts[nonempty_idx]
@@ -53,10 +58,22 @@ class QuickNewsAnalyzer:
             self.kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
             df_copy.loc[nonempty_idx, 'cluster'] = self.kmeans.fit_predict(tfidf_matrix)
 
+            # Use existing sentiment from FinBERT if available, otherwise use TextBlob
+            if 'sentiment' in df_copy.columns:
+                logger.info("[QuickNewsAnalyzer] Using existing FinBERT sentiment scores")
+                df_copy['sentiment_score'] = df_copy['sentiment']
+            else:
+                logger.info("[QuickNewsAnalyzer] Computing sentiment with TextBlob")
+                sentiments = [TextBlob(t).sentiment for t in texts_nonempty]
+                df_copy.loc[nonempty_idx, 'sentiment_score'] = [s.polarity for s in sentiments]
+            
+            # Always compute subjectivity with TextBlob
             sentiments = [TextBlob(t).sentiment for t in texts_nonempty]
-            df_copy.loc[nonempty_idx, 'sentiment_score'] = [s.polarity for s in sentiments]
             df_copy.loc[nonempty_idx, 'subjectivity_score'] = [s.subjectivity for s in sentiments]
 
+            # ✅ ВІДНОВЛЮЄМО ОРИГІНАЛЬНИЙ ІНДЕКС
+            df_copy.index = original_index
+            
             self.clustered_df = df_copy
             logger.info(f"[QuickNewsAnalyzer] [OK] Clustering complete: {len(texts_nonempty)} news in {n_clusters} clusters")
             return df_copy
@@ -108,11 +125,26 @@ class NewsAnalyzer:
                 logger.warning("[WARN] DataFrame is empty after date check")
                 self.clustered_df = self._analyzer._add_empty_cols(df_copy)
                 return self.clustered_df
+            logger.info(f"[NewsAnalyzer] Set DatetimeIndex from '{date_column}' column. Index type: {type(df_copy.index)}")
 
         # Combine title + summary into content for clustering
-        df_copy['content'] = df_copy.get('title', '').fillna('') + '. ' + df_copy.get('summary', '').fillna('')
+        if 'title' in df_copy.columns:
+            title_series = df_copy['title'].fillna('')
+        else:
+            title_series = pd.Series('', index=df_copy.index)
+        
+        if 'summary' in df_copy.columns:
+            summary_series = df_copy['summary'].fillna('')
+        else:
+            summary_series = pd.Series('', index=df_copy.index)
+        
+        df_copy['content'] = title_series.astype(str) + '. ' + summary_series.astype(str)
 
         self.clustered_df = self._analyzer.cluster_and_analyze(df_copy, text_column='content')
+        
+        # ✅ VERIFY: Check if index is preserved
+        logger.info(f"[NewsAnalyzer] Returning DataFrame with index type: {type(self.clustered_df.index)}")
+        
         return self.clustered_df
 
     def get_latest_news_sentiment(self, date: Optional[pd.Timestamp] = None) -> Dict[str, float]:

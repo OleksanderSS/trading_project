@@ -19,7 +19,24 @@ class LightGBMModel(BaseModel):
         self.num_leaves = num_leaves
         self.random_state = random_state
         self.logger = ProjectLogger.get_logger("LightGBMModel")
-        self.model = None
+        
+        # ✅ ІНІЦІАЛІЗАЦІЯ МОДЕЛІ В __INIT__ (для Ансамблю)
+        if self.task_type == "classification":
+            self.model = lgb.LGBMClassifier(
+                n_estimators=self.n_estimators,
+                max_depth=self.max_depth,
+                learning_rate=self.learning_rate,
+                num_leaves=self.num_leaves,
+                random_state=self.random_state
+            )
+        else:
+            self.model = lgb.LGBMRegressor(
+                n_estimators=self.n_estimators,
+                max_depth=self.max_depth,
+                learning_rate=self.learning_rate,
+                num_leaves=self.num_leaves,
+                random_state=self.random_state
+            )
 
     @property
     def name(self) -> str:
@@ -28,25 +45,10 @@ class LightGBMModel(BaseModel):
     def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> Dict[str, Any]:
         """Trains the LightGBM model."""
         try:
-            if self.task_type == "classification":
-                self.model = lgb.LGBMClassifier(
-                    n_estimators=self.n_estimators,
-                    max_depth=self.max_depth,
-                    learning_rate=self.learning_rate,
-                    num_leaves=self.num_leaves,
-                    random_state=self.random_state,
-                    **kwargs
-                )
-            else:
-                self.model = lgb.LGBMRegressor(
-                    n_estimators=self.n_estimators,
-                    max_depth=self.max_depth,
-                    learning_rate=self.learning_rate,
-                    num_leaves=self.num_leaves,
-                    random_state=self.random_state,
-                    **kwargs
-                )
-            
+            # Оновлюємо параметри, якщо вони передані
+            if kwargs:
+                self.model.set_params(**kwargs)
+                
             self.model.fit(X, y)
             self.is_trained = True
             self.logger.info(f"LightGBM model trained successfully (task: {self.task_type})")

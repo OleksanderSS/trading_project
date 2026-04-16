@@ -14,19 +14,21 @@ from enum import Enum
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.training.batch_trainer import BatchTrainer, BatchConfig
 from src.training.progressive_trainer import ProgressiveTrainer, ProgressiveConfig
-from src.scripts.colab.auto_colab_sync import ColabOptimizer, ColabConfig
-from src.analytics.context.contextual_model_selector import ContextSubModelSelector
-from src.analytics.arena.arena_battle import ArenaBattle, get_trading_arena
+
+# Dummy classes to replace missing ColabOptimizer removed
+from src.analytics.context.contextual_model_selector import ContextualModelSelector
+from src.analytics.arena.arena_battle import get_trading_arena
 
 logger = ProjectLogger.get_logger("UnifiedTrainingManager")
 
 class TrainingStrategy(Enum):
     BATCH = "batch"
     PROGRESSIVE = "progressive"
-    COLAB = "colab"
+    # COLAB removed
     HYBRID = "hybrid"
 
 @dataclass
@@ -61,7 +63,7 @@ class UnifiedTrainingManager:
             dir_path.mkdir(parents=True, exist_ok=True)
         
         self.trainers = {}
-        self.context_selector = ContextSubModelSelector()
+        self.context_selector = ContextualModelSelector(['LSTM', 'RandomForest'])
         self.arena = get_trading_arena()
         self._initialize_trainers()
     
@@ -79,12 +81,7 @@ class UnifiedTrainingManager:
         )
         self.trainers[TrainingStrategy.PROGRESSIVE] = ProgressiveTrainer(progressive_config)
         
-        colab_config = ColabConfig(
-            max_tickers_per_run=self.config.max_tickers_per_run,
-            max_memory_usage_gb=self.config.max_memory_gb,
-            cleanup_memory=True
-        )
-        self.trainers[TrainingStrategy.COLAB] = ColabOptimizer(colab_config)
+        # Colab strategy replaced by external orchestrator
     
     def execute_unified_training(self, tickers: List[str], data_context: Dict[str, Any]) -> Dict[str, Any]:
         self.logger.info(f"Starting unified DEAN-aware training for {len(tickers)} tickers")
@@ -104,8 +101,7 @@ class UnifiedTrainingManager:
             results.update(self.trainers[strategy].execute_batch_training(plan, data_context=data_context))
         elif strategy == TrainingStrategy.PROGRESSIVE:
             results.update(self.trainers[strategy].execute_progressive_training(tickers, data_context=data_context))
-        elif strategy == TrainingStrategy.COLAB:
-            results.update(self._execute_colab_training(plan))
+        # Removed Colab training fallback
         elif strategy == TrainingStrategy.HYBRID:
             results.update(self._execute_hybrid_training(plan, data_context=data_context))
         
@@ -140,8 +136,7 @@ class UnifiedTrainingManager:
             plan = self.trainers[strategy].create_batch_plan(tickers, "balanced")
         elif strategy == TrainingStrategy.PROGRESSIVE:
             plan = self._create_progressive_plan(tickers)
-        elif strategy == TrainingStrategy.COLAB:
-            plan = self.trainers[strategy].create_colab_training_plan(tickers)
+        # Removed Colab plan logic
         else:
             plan = self._create_hybrid_plan(tickers, analysis)
         
@@ -175,9 +170,7 @@ class UnifiedTrainingManager:
             "phases": []
         }
 
-    def _execute_colab_training(self, plan: Dict[str, Any]) -> Dict[str, Any]:
-        notebook_path = self.trainers[TrainingStrategy.COLAB].create_colab_notebook(plan)
-        return {"strategy": "colab", "notebook_path": notebook_path, "plan": plan, "status": "notebook_created"}
+        pass
 
     def _execute_hybrid_training(self, plan: Dict[str, Any], data_context: Dict[str, Any]) -> Dict[str, Any]:
         # This is a placeholder for a more complex execution

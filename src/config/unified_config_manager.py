@@ -1,5 +1,6 @@
 import os
 import re
+import threading
 from enum import Enum
 from pathlib import Path
 from typing import Dict, Any, Union, Optional, List
@@ -192,6 +193,30 @@ class UnifiedConfigManager:
                         logger.error(f"Failed to process path for '{key}' ('{path_str}'): {e}", exc_info=True)
         logger.info("Path check complete.")
 
+    def get_runtime_params_path(self, default: Optional[str] = None) -> Path:
+        """
+        Return the resolved runtime_params.json path.
+        Priority:
+        1. config paths.runtime_params or system.runtime_params_path
+        2. data/runtime/runtime_params.json
+        3. src/config/runtime_params.json (backward compatibility)
+        """
+        runtime_path = default or self.get('paths.runtime_params', None)
+        if not runtime_path:
+            runtime_path = self.get('system.runtime_params_path', 'data/runtime/runtime_params.json')
+
+        if isinstance(runtime_path, str) and not os.path.isabs(runtime_path):
+            runtime_path = self.project_root / runtime_path
+        else:
+            runtime_path = Path(runtime_path)
+
+        fallback = self.project_root / 'src' / 'config' / 'runtime_params.json'
+        if runtime_path.exists():
+            return runtime_path
+        if fallback.exists():
+            return fallback
+        return runtime_path
+
     def _generate_feature_lists(self) -> Dict[str, List[str]]:
         return {}
 
@@ -223,10 +248,26 @@ class UnifiedConfigManager:
         return self.merged_config.get(name, default)
 
 _config_instance: Optional["UnifiedConfigManager"] = None
+_config_lock = threading.Lock()
 
 def get_current_config(config_dir: Optional[str] = None) -> "UnifiedConfigManager":
+    """
+    ✅ Thread-safe singleton для UnifiedConfigManager.
+    
+    Використовує double-checked locking для оптимальної продуктивності.
+    """
     global _config_instance
-    if _config_instance is None:
+    
+    # Перша перевірка (без блокування)
+    if _config_instance is not None:
+        return _config_instance
+    
+    # Друга перевірка (з блокуванням)
+    with _config_lock:
+        # Перевіряємо ще раз, бо інший потік міг ініціалізувати під час очікування
+        if _config_instance is not None:
+            return _config_instance
+        
         # Передаємо правильний шлях до папки з конфігураціями
         effective_config_dir = config_dir or str(Path(__file__).parent)
         env_str = os.getenv('TRADING_ENV', Environment.DEVELOPMENT.value).lower()
@@ -235,5 +276,6 @@ def get_current_config(config_dir: Optional[str] = None) -> "UnifiedConfigManage
         except ValueError:
             logger.warning(f"Invalid TRADING_ENV value \'{env_str}\'. Falling back to development.")
             env = Environment.DEVELOPMENT
+        
         _config_instance = UnifiedConfigManager(env, effective_config_dir)
-    return _config_instance
+        return _config_instance

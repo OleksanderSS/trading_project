@@ -1,14 +1,16 @@
+# Paths configuration - relative to project root
+# UnifiedConfigManager automatically converts to absolute paths
 
 paths:
-  root: /home/user/1/data
-  raw_data: /home/user/1/data/raw
-  raw_db: /home/user/1/data/raw_data.duckdb
-  duckdb_path: /home/user/1/data/raw_data.duckdb
-  processed_data: /home/user/1/data/processed
-  features: /home/user/1/data/features
-  scalers: /home/user/1/data/scalers
-  models: /home/user/1/trained_models
-  logs: /home/user/1/logs
-  outputs: /home/user/1/outputs
-  reports: /home/user/1/reports
-  temp: /home/user/1/data/temp
+  root: data
+  raw_data: data/raw
+  raw_db: data/raw_data.duckdb
+  duckdb_path: data/raw_data.duckdb
+  processed_data: data/processed
+  features: data/processed/features
+  scalers: data/scalers
+  models: data/trained_models
+  logs: logs
+  outputs: outputs
+  reports: reports
+  temp: data/temp
