@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from src.core.logging.logger import ProjectLogger
+from src.core.utils.prediction_utils import normalize_prediction
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.analytics.analyzers.adaptive_confidence_analyzer import AdaptiveConfidenceAnalyzer
 from src.models.dean.dean_bootstrap_system import get_dean_system
@@ -101,15 +102,11 @@ class ConsensusEngine:
             total_weight = 0.0
 
             for model_id, pred in model_predictions.items():
-                # ✅ Конвертуємо pred в число якщо це array/list
-                if isinstance(pred, (list, tuple)):
-                    pred_value = float(pred[-1]) if len(pred) > 0 else 0.0
-                elif hasattr(pred, 'item'):  # numpy scalar
-                    pred_value = float(pred.item())
-                elif isinstance(pred, (int, float)):
-                    pred_value = float(pred)
-                else:
-                    self.logger.warning(f"Unknown prediction type for {model_id}: {type(pred)}")
+                # ✅ Use centralized prediction normalization utility
+                try:
+                    pred_value = normalize_prediction(pred)
+                except TypeError as e:
+                    self.logger.warning(f"Failed to normalize prediction for {model_id}: {e}. Using 0.0")
                     pred_value = 0.0
                 
                 w = weights.get(model_id, 1.0)

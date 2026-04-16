@@ -18,17 +18,28 @@ from collections import defaultdict
 import hashlib
 
 from src.config.unified_config_manager import UnifiedConfigManager
+from src.training.constants import (
+    PROGRESSIVE_INITIAL_BATCH_SIZE,
+    PROGRESSIVE_MAX_BATCH_SIZE,
+    PROGRESSIVE_BATCH_GROWTH_FACTOR,
+    PROGRESSIVE_MIN_ACCURACY_THRESHOLD,
+    PROGRESSIVE_MAX_LOSS_THRESHOLD,
+    PROGRESSIVE_CHECKPOINT_INTERVAL,
+    PROGRESSIVE_MAX_TIME_HOURS,
+    PROGRESSIVE_MAX_MEMORY_GB
+)
+
 @dataclass
 class ProgressiveConfig:
     """Конфandгурацandя прогресивного тренування"""
     # Баwithовand settings
-    initial_batch_size: int = 5  # Початковий роwithмandр батчу
-    max_batch_size: int = 20     # Максимальний роwithмandр батчу
-    growth_factor: float = 1.5   # Фактор росту батчу
+    initial_batch_size: int = PROGRESSIVE_INITIAL_BATCH_SIZE  # Початковий роwithмandр батчу
+    max_batch_size: int = PROGRESSIVE_MAX_BATCH_SIZE     # Максимальний роwithмandр батчу
+    growth_factor: float = PROGRESSIVE_BATCH_GROWTH_FACTOR   # Фактор росту батчу
     
     # Пороги якостand
-    min_accuracy_threshold: float = 0.75  # Мandнandмальна точнandсть
-    max_loss_threshold: float = 0.5       # Максимальна втраand
+    min_accuracy_threshold: float = PROGRESSIVE_MIN_ACCURACY_THRESHOLD  # Мandнandмальна точнandсть
+    max_loss_threshold: float = PROGRESSIVE_MAX_LOSS_THRESHOLD       # Максимальна втраand
     
     # Адаптивнand settings
     enable_adaptive_batching: bool = True   # Адаптивnot роwithбиття
@@ -37,11 +48,11 @@ class ProgressiveConfig:
 
     # Збереження
     save_intermediate_results: bool = True  # Зберandгати промandжнand реwithульandти
-    checkpoint_interval: int = 3           # Інтервал чекпоandнтandв
+    checkpoint_interval: int = PROGRESSIVE_CHECKPOINT_INTERVAL           # Інтервал чекпоandнтandв
     
     # Ресурси
-    max_memory_gb: float = 8.0              # Максимальна пам'ять
-    max_time_hours: float = 10.0            # Максимальний час
+    max_memory_gb: float = PROGRESSIVE_MAX_MEMORY_GB              # Максимальна пам'ять
+    max_time_hours: float = PROGRESSIVE_MAX_TIME_HOURS            # Максимальний час
 
 @dataclass
 class TrainingState:

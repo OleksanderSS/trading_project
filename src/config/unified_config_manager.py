@@ -217,6 +217,64 @@ class UnifiedConfigManager:
             return fallback
         return runtime_path
 
+    def get_models_path(self) -> Path:
+        """
+        Return the resolved models directory path.
+        Priority:
+        1. paths.models
+        2. system.models_path
+        3. data/trained_models (default)
+        """
+        models_path = self.get('paths.models', None)
+        if not models_path:
+            models_path = self.get('system.models_path', 'data/trained_models')
+        
+        if isinstance(models_path, str) and not os.path.isabs(models_path):
+            models_path = self.project_root / models_path
+        else:
+            models_path = Path(models_path)
+        
+        return models_path
+
+    def get_cache_path(self) -> Path:
+        """
+        Return the resolved feature cache directory path.
+        Default: data/cache/
+        """
+        cache_path = self.get('paths.cache', 'data/cache')
+        
+        if isinstance(cache_path, str) and not os.path.isabs(cache_path):
+            cache_path = self.project_root / cache_path
+        else:
+            cache_path = Path(cache_path)
+        
+        return cache_path
+
+    def get_selected_features_cache_path(self) -> Path:
+        """
+        Return the resolved selected features cache file path.
+        Default: data/cache/selected_features.json
+        """
+        cache_dir = self.get_cache_path()
+        return cache_dir / 'selected_features.json'
+
+    def get_accumulation_output_dir(self) -> Path:
+        """
+        Return the resolved accumulation output directory.
+        Priority:
+        1. system.accumulation.output_dir
+        2. data/colab/accumulated (default)
+        """
+        output_dir = self.get('system.accumulation.output_dir', 'data/colab/accumulated')
+        
+        if isinstance(output_dir, str) and not os.path.isabs(output_dir):
+            output_dir = self.project_root / output_dir
+        else:
+            output_dir = Path(output_dir)
+        
+        return output_dir
+
+
     def _generate_feature_lists(self) -> Dict[str, List[str]]:
         return {}
 

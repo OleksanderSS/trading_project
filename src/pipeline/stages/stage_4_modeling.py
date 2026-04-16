@@ -23,6 +23,11 @@ from src.training.unified_training_manager import UnifiedTrainingManager, Unifie
 from src.models.adapters.data_preparation import prepare_data_for_models
 from src.analytics.analyzers.model_comparison_analyzer import ModelComparisonAnalyzer
 from src.features.utils.datetime_utils import ensure_datetime_column, normalize_metadata_columns
+from src.training.constants import (
+    BATCH_TRAINER_DEFAULT_BATCH_SIZE,
+    BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB,
+    DEFAULT_TEST_SIZE
+)
 
 logger = ProjectLogger.get_logger("ModelingStage")
 
@@ -43,16 +48,15 @@ class ModelingStage(BaseStage):
         
         training_config = UnifiedConfig(
             strategy=strategy,
-            batch_size=self.modeling_config.get('batch_size', 10),
-            max_memory_gb=self.modeling_config.get('max_memory_gb', 12.0)
+            batch_size=self.modeling_config.get('batch_size', BATCH_TRAINER_DEFAULT_BATCH_SIZE),
+            max_memory_gb=self.modeling_config.get('max_memory_gb', BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB)
         )
         
         self.training_manager = UnifiedTrainingManager(training_config)
         self.comparison_analyzer = ModelComparisonAnalyzer()
         
-        # Get paths from config
-        models_path = self.config_manager.get('paths.models', None) or self.system_config.get('models_path', 'data/trained_models')
-        self.models_dir = Path(models_path)
+        # Get paths from config using centralized getters
+        self.models_dir = self.config_manager.get_models_path()
         self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
 
         self._init_infrastructure()
@@ -100,7 +104,7 @@ class ModelingStage(BaseStage):
                         ticker=ticker,
                         timeframe=timeframe,
                         target_cols=[target_name],
-                        test_size=self.modeling_config.get('test_size', 0.2)
+                        test_size=self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
                     )
 
                     if not prepared_data:

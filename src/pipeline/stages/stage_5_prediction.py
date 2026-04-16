@@ -22,7 +22,6 @@ from src.analytics.context.prediction_adjuster import PredictionAdjuster
 from src.models.model_selector.smart_selector import SmartModelSelector
 from src.analytics.analyzers.knn_similarity_finder import KnnSimilarityFinder
 from src.features.utils.datetime_utils import ensure_datetime_column, normalize_metadata_columns
-from scipy import stats
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 
@@ -35,8 +34,9 @@ class PredictionStage(BaseStage):
         super().__init__(config_manager, error_handler, **kwargs)
         self.logger = ProjectLogger.get_logger("PredictionStage")
         self.prediction_config = self.config_manager.get_config('prediction', {})
-        models_path = self.config_manager.get('paths.models', None) or self.config_manager.get_config('system', {}).get('models_path', 'data/trained_models')
-        self.models_path = Path(models_path)
+        
+        # Use centralized path getter method
+        self.models_path = self.config_manager.get_models_path()
         
         self.diary = DiaryEngine()
         self.adjuster = PredictionAdjuster(config=self.config_manager.get('analysis.prediction_adjustment', {}))

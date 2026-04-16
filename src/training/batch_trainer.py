@@ -15,12 +15,20 @@ from src.config.unified_config_manager import UnifiedConfigManager
 from src.factories.model_factory import ModelFactory
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.metrics.model.ml_evaluator import MLEvaluator
+from src.training.constants import (
+    BATCH_TRAINER_DEFAULT_BATCH_SIZE,
+    BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
+)
 
 logger = ProjectLogger.get_logger("BatchTrainer")
 
 class BatchConfig:
     """Configuration for Batch Training"""
-    def __init__(self, batch_size: int = 10, max_memory_gb: float = 12.0):
+    def __init__(
+        self,
+        batch_size: int = BATCH_TRAINER_DEFAULT_BATCH_SIZE,
+        max_memory_gb: float = BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
+    ):
         self.batch_size = batch_size
         self.max_memory_gb = max_memory_gb
 
