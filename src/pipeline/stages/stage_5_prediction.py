@@ -22,6 +22,7 @@ from src.analytics.context.prediction_adjuster import PredictionAdjuster
 from src.models.model_selector.smart_selector import SmartModelSelector
 from src.analytics.analyzers.knn_similarity_finder import KnnSimilarityFinder
 from src.features.utils.datetime_utils import ensure_datetime_column, normalize_metadata_columns
+from src.models.loader import ModelLoaderStrategy
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 
@@ -43,6 +44,7 @@ class PredictionStage(BaseStage):
         self.ensemble_factory = StackedEnsemble()
         self.context_selector = SmartModelSelector()
         self.knn_similarity = KnnSimilarityFinder(config={'n_neighbors': 5})
+        self.model_loader = ModelLoaderStrategy(self.logger)
 
     async def run(self, **kwargs) -> Dict[str, Any]:
         """
@@ -885,8 +887,6 @@ class PredictionStage(BaseStage):
             context_id: Ідентифікатор контексту (ticker_target_model)
             models_meta: Метадані моделей (передається з kwargs)
         """
-        import torch
-        
         loaded_models = {}
         
         # ✅ FIX: Визначаємо batch_dir з models_metadata (якщо є model_path)
@@ -993,103 +993,29 @@ class PredictionStage(BaseStage):
         for search_path in models_search_paths:
             if not search_path.exists():
                 continue
-                
+
             for pattern in patterns:
                 for path in search_path.glob(pattern):
                     try:
                         model_name = path.stem.replace(f"_{context_id}", "")
-                        
-                        # Завантажуємо залежно від формату
-                        if path.suffix == '.joblib':
-                            loaded_models[model_name] = joblib.load(path)
-                            self.logger.info(f"✅ Завантажено .joblib: {model_name}")
-                        elif path.suffix == '.pt':
-                            # PyTorch моделі потребують спеціального завантаження
-                            try:
-                                # Спробуємо з weights_only=False (для сумісності з PyTorch 2.6+)
-                                loaded_obj = torch.load(path, map_location='cpu', weights_only=False)
-                                
-                                # ✅ FIX: Перевіряємо чи це state_dict (dict) чи full model
-                                if isinstance(loaded_obj, dict):
-                                    # Це може бути wrapper dict з метаданими або raw state_dict
-                                    self.logger.info(f"🔧 Знайдено dict для {model_name}, аналізуємо формат...")
-                                    
-                                    # Перевіряємо чи це wrapper dict з метаданими
-                                    if 'model_state_dict' in loaded_obj and 'input_size' in loaded_obj:
-                                        # Wrapper dict формат (з Colab)
-                                        self.logger.debug(f"   ✅ Wrapper dict формат (з метаданими)")
-                                        state_dict = loaded_obj['model_state_dict']
-                                        input_size = loaded_obj['input_size']
-                                        saved_model_type = loaded_obj.get('model_type', model_name)
-                                        self.logger.debug(f"   Model type: {saved_model_type}, Input size: {input_size}")
-                                    else:
-                                        # Raw state_dict
-                                        self.logger.debug(f"   ✅ Raw state_dict формат")
-                                        state_dict = loaded_obj
-                                        
-                                        # Витягуємо розмір вхідних даних з state_dict
-                                        # Перший шар має форму (output_size, input_size)
-                                        first_layer_key = None
-                                        for key in state_dict.keys():
-                                            if 'weight' in key and '0' in key:
-                                                first_layer_key = key
-                                                break
-                                        
-                                        if first_layer_key:
-                                            input_size = state_dict[first_layer_key].shape[1]
-                                            self.logger.debug(f"   Витягнуто input_size={input_size} з {first_layer_key}")
-                                        else:
-                                            # Фоллбек: спробуємо знайти будь-який weight
-                                            for key, val in state_dict.items():
-                                                if 'weight' in key and len(val.shape) >= 2:
-                                                    input_size = val.shape[1]
-                                                    self.logger.debug(f"   Витягнуто input_size={input_size} з {key}")
-                                                    break
-                                            else:
-                                                input_size = 47  # Default для AMD test case
-                                                self.logger.warning(f"   ⚠️ Не вдалося витягти input_size, використовуємо default={input_size}")
-                                    
-                                    # ✅ ВАЖЛИВО: Визначаємо saved_model_type для wrapper dict
-                                    saved_model_type = model_name  # Default
-                                    if 'model_state_dict' in loaded_obj and 'input_size' in loaded_obj:
-                                        saved_model_type = loaded_obj.get('model_type', model_name)
-                                    
-                                    # ✅ КРИТИЧНО: Перевіряємо, чи це tree-based модель
-                                    # Tree-based моделі (catboost, lightgbm, xgboost, random_forest, linear, svm, knn)
-                                    # не мають PyTorch state dict, тому пропускаємо їх
-                                    # ✅ ВАЖЛИВО: TabNet це PyTorch модель, НЕ tree-based!
-                                    tree_based_models = ['catboost', 'lightgbm', 'xgboost', 'random_forest', 'linear', 'svm', 'knn']
-                                    if saved_model_type in tree_based_models:
-                                        self.logger.warning(f"⚠️ Tree-based модель {saved_model_type} не підтримується в Stage 5 (тренується локально)")
-                                        self.logger.warning(f"   Пропускаємо {model_name}")
-                                        continue
-                                    
-                                    # Реконструюємо модель
-                                    pytorch_model = self._create_pytorch_model(saved_model_type, input_size)
-                                    pytorch_model.load_state_dict(state_dict)
-                                    
-                                    # ✅ Витягуємо scaler якщо є
-                                    scaler = loaded_obj.get('scaler') if isinstance(loaded_obj, dict) else None
-                                    if scaler:
-                                        self.logger.info(f"   ✅ Знайдено scaler для {model_name}")
-                                    
-                                    # Обгортаємо щоб мати .predict() метод
-                                    loaded_models[model_name] = self._wrap_pytorch_model(pytorch_model, model_name, scaler)
-                                    self.logger.info(f"✅ Реконструйовано та завантажено .pt: {model_name}")
-                                else:
-                                    # Це full model - просто обгортаємо
-                                    loaded_models[model_name] = self._wrap_pytorch_model(loaded_obj, model_name)
-                                    self.logger.info(f"✅ Завантажено .pt (full model): {model_name}")
-                            except Exception as e:
-                                self.logger.warning(f"⚠️ Помилка завантаження {path.name}: {e}")
-                        elif path.suffix == '.pkl':
-                            import pickle
-                            with open(path, 'rb') as f:
-                                loaded_models[model_name] = pickle.load(f)
-                            self.logger.info(f"✅ Завантажено .pkl: {model_name}")
+                        self.logger.debug(f"🔍 Found candidate model file: {path}")
+
+                        model_meta = {
+                            'model_id': model_name,
+                            'model_path': str(path),
+                            'model_type': models_meta.get(context_id, {}).get('model_type', model_name),
+                            'ticker': models_meta.get(context_id, {}).get('ticker'),
+                            'target': models_meta.get(context_id, {}).get('target')
+                        }
+                        loaded_model = self.model_loader.load_path(str(path), model_meta)
+                        if loaded_model is None:
+                            self.logger.warning(f"⚠️ Loader could not instantiate model from {path}")
+                            continue
+                        loaded_models[model_name] = loaded_model
+                        self.logger.info(f"✅ Завантажено модель: {model_name}")
                     except Exception as e:
                         self.logger.warning(f"⚠️ Failed to load model from {path}: {e}")
-        
+
         if not loaded_models:
             self.logger.warning(f"⚠️ Не знайдено жодної моделі для {context_id}")
         else:
