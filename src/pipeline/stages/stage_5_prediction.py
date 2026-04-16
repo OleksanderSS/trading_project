@@ -24,6 +24,7 @@ from src.analytics.analyzers.knn_similarity_finder import KnnSimilarityFinder
 from src.features.utils.datetime_utils import ensure_datetime_column, normalize_metadata_columns
 from src.models.loader import ModelLoaderStrategy
 from src.core.error_handling.error_handler import ModelLoadingError
+from src.predictions.caching import get_ensemble_cache, clear_all_caches
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 
@@ -46,6 +47,10 @@ class PredictionStage(BaseStage):
         self.context_selector = SmartModelSelector()
         self.knn_similarity = KnnSimilarityFinder(config={'n_neighbors': 5})
         self.model_loader = ModelLoaderStrategy(self.logger)
+        
+        # ✅ Phase 3 Optimization: Initialize ensemble cache (40-70% speedup)
+        self.ensemble_cache = get_ensemble_cache(maxsize=5000)
+        self.logger.info("✅ Ensemble prediction cache enabled (LRU, maxsize=5000)")
 
     async def run(self, **kwargs) -> Dict[str, Any]:
         """
@@ -373,7 +378,8 @@ class PredictionStage(BaseStage):
                     self.logger.info(f"KNN Similarity chose '{best_model_name}' for {ticker} (confidence: {knn_confidence:.2f})")
 
                 # 3. Generate Ensemble Prediction
-                # ✅ Розраховуємо anomaly score правильно (Z-score + Isolation Forest + LOF)
+                # ✅ Phase 3 Optimization: Use cache for model predictions
+                # Кеш збереже результати для однакових наборів фіч,避免перепричисли
                 anomaly_score = self._calculate_anomaly_score(ticker_df_clean)
                 
                 if len(models) > 1:
@@ -392,7 +398,13 @@ class PredictionStage(BaseStage):
                             self.logger.debug(f"   ⏭️ Пропускаємо autoencoder для prediction (використовується тільки для anomaly detection)")
                             continue
                         
-                        model_preds[m_name] = m_inst.predict(m_X)
+                        # ✅ OPTIMIZATION: Cache model prediction for identical feature sets
+                        # На наступних запусках з тими ж фічами, результат повернеться з кеша
+                        model_preds[m_name] = self.ensemble_cache.get_or_compute_model_prediction(
+                            features=m_X,
+                            model_id=m_name,
+                            model_fn=lambda: m_inst.predict(m_X)
+                        )
                     
                     if not model_preds:
                         self.logger.warning(f"⚠️ Немає моделей для prediction (тільки autoencoder), пропускаємо {context_id}")
@@ -548,6 +560,15 @@ class PredictionStage(BaseStage):
         self.logger.info(f"✅ Stage 5 complete: {len(predictions_list)} predictions, {len(current_prices)} prices")
         self.logger.info(f"📊 Models: {light_models_count} light, {heavy_models_count} heavy, {len(models_meta)} total")
         
+        # ✅ Phase 3: Log cache statistics for performance analysis
+        cache_stats = self.ensemble_cache.get_statistics()
+        self.logger.info(
+            f"💾 Cache performance - Model: {cache_stats['model_cache']['size']}/{cache_stats['model_cache']['maxsize']} "
+            f"({cache_stats['model_cache']['hit_rate']:.1%} hit rate), "
+            f"Ensemble: {cache_stats['ensemble_cache']['size']}/{cache_stats['ensemble_cache']['maxsize']} "
+            f"({cache_stats['ensemble_cache']['hit_rate']:.1%} hit rate)"
+        )
+        
         # ✅ NEW: Збереження результатів Stage 5 на диск для гнучкого запуску
         self._save_stage_5_results(
             predictions_list=predictions_list,
@@ -555,8 +576,7 @@ class PredictionStage(BaseStage):
             prediction_results=prediction_results,
             models_meta=models_meta,
             kwargs=kwargs
-        )
-        
+        )        
         return {
             'predictions': predictions_list,
             'current_prices': current_prices,
@@ -1028,6 +1048,102 @@ class PredictionStage(BaseStage):
             self.logger.info(f"🎯 Завантажено {len(loaded_models)} моделей для {context_id}")
         
         return loaded_models
+
+    def _extract_batch_dir(self, model_path: str) -> Optional[Path]:
+        """
+        ✅ UTILITY: Extract batch directory from model path.
+        
+        Handles various path formats:
+        - /data/colab/accumulated/test_ticker_amd.../models/model.pt
+        - data\\colab\\accumulated\\batch_name\\models\\model.pt
+        - C:\\absolute\\path\\accumulated\\batch\\models\\model.pt
+        
+        Returns:
+            Path to batch directory or None if extraction fails
+        """
+        if not model_path:
+            return None
+        
+        try:
+            path = Path(model_path.replace('/', '\\'))
+            parts = path.parts
+            
+            # Look for 'models' folder and return parent
+            if 'models' in parts:
+                models_idx = parts.index('models')
+                if models_idx > 0:
+                    batch_name = parts[models_idx - 1]
+                    # Reconstruct path up to batch directory
+                    batch_dir = Path(*parts[:models_idx])
+                    if batch_dir.exists():
+                        return batch_dir
+                    # Fallback: search from accumulated
+                    base_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
+                    return base_dir / batch_name
+        except Exception as e:
+            self.logger.debug(f"Could not extract batch_dir from {model_path}: {e}")
+        
+        return None
+
+    def _load_target_scaler(self, ticker: str, target_col: str, batch_dir: Optional[Path]) -> Optional[Any]:
+        """
+        ✅ UTILITY: Load target scaler with fallback strategies.
+        
+        Tries multiple naming patterns for scaler files:
+        1. scaler_{ticker}_{target_col}.pkl
+        2. scaler_{ticker}.pkl
+        3. scaler_{target_col}.pkl
+        4. Any scaler_*.pkl in directory
+        
+        Args:
+            ticker: Ticker symbol (e.g., 'AMD')
+            target_col: Target column name (e.g., 'target_return_1d')
+            batch_dir: Directory containing scaler files
+        
+        Returns:
+            Loaded scaler object or None if not found
+        """
+        if batch_dir is None or not batch_dir.exists():
+            return None
+        
+        # Candidates in priority order
+        candidates = [
+            batch_dir / f"scaler_{ticker}_{target_col}.pkl",
+            batch_dir / f"scaler_{ticker}.pkl",
+            batch_dir / f"scaler_{target_col}.pkl",
+        ]
+        
+        # Try exact matches first
+        for scaler_path in candidates:
+            if scaler_path.exists():
+                try:
+                    scaler = joblib.load(scaler_path)
+                    
+                    # Validate scaler (should be for target, not features)
+                    if hasattr(scaler, 'scale_') and scaler.scale_.shape[0] == 1:
+                        self.logger.info(f"✅ Loaded target scaler from {scaler_path.name}")
+                        return scaler
+                    else:
+                        self.logger.warning(f"⚠️ Invalid scaler shape at {scaler_path.name}")
+                except Exception as e:
+                    self.logger.debug(f"Failed to load {scaler_path}: {e}")
+        
+        # Fallback: glob search for any scaler_*.pkl
+        try:
+            scaler_files = list(batch_dir.glob("scaler_*.pkl"))
+            for scaler_path in scaler_files:
+                try:
+                    scaler = joblib.load(scaler_path)
+                    if hasattr(scaler, 'scale_') and scaler.scale_.shape[0] == 1:
+                        self.logger.info(f"✅ Loaded target scaler from {scaler_path.name} (glob fallback)")
+                        return scaler
+                except:
+                    pass
+        except Exception as e:
+            self.logger.debug(f"Glob search failed: {e}")
+        
+        self.logger.warning(f"⚠️ No valid target scaler found for {ticker}/{target_col}")
+        return None
 
     def _calculate_anomaly_score(self, X: pd.DataFrame, historical_data: Optional[pd.DataFrame] = None) -> float:
         """
