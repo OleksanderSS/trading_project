@@ -19,161 +19,165 @@ from src.training.constants import (
     BATCH_TRAINER_DEFAULT_BATCH_SIZE,
     BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
 )
+from src.training.base_trainer import BaseTrainer, TrainerConfig
 
 logger = ProjectLogger.get_logger("BatchTrainer")
 
-class BatchConfig:
-    """Configuration for Batch Training"""
-    def __init__(
-        self,
-        batch_size: int = BATCH_TRAINER_DEFAULT_BATCH_SIZE,
-        max_memory_gb: float = BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
-    ):
-        self.batch_size = batch_size
-        self.max_memory_gb = max_memory_gb
+class BatchTrainer(BaseTrainer):
+    """
+    Advanced parallelized batch trainer.
+    
+    Trains all tickers in a single batch using parallel execution.
+    Extends BaseTrainer with batch-specific grouping and parallel training logic.
+    """
 
-class BatchTrainer:
-    """Advanced parallelized batch trainer"""
-
-    def __init__(self, config: Optional[BatchConfig] = None):
-        self.config = config or BatchConfig()
-        self.config_manager = UnifiedConfigManager()
+    def __init__(self, config: Optional[TrainerConfig] = None):
+        super().__init__(config or TrainerConfig(
+            batch_size=BATCH_TRAINER_DEFAULT_BATCH_SIZE,
+            max_memory_gb=BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
+        ))
         self.model_factory = ModelFactory()
         self.diary = DiaryEngine()
         self.evaluator = MLEvaluator()
+    
+    def _prepare_ticker_groups(self, plan: Dict[str, Any]) -> List[List[str]]:
+        """
+        Batch trainer: All tickers in one group.
         
-        models_path = self.config_manager.get('paths.models', None) or self.config_manager.get_config('system', {}).get('models_path', 'data/trained_models')
-        self.output_dir = Path(models_path)
-        self.output_dir.mkdir(parents=True, exist_ok=True)
-
-    def execute_batch_training(self, plan: Dict[str, Any], data_context: Dict[str, Any]) -> Dict[str, Any]:
-        """Executes the batch training process based on the provided plan and data context."""
+        The entire set of tickers is trained in parallel as a single batch.
+        """
         tickers = plan.get('tickers', [])
-        if not tickers or not data_context:
-            logger.warning("No tickers or data context found in training plan.")
-            return {"status": "failed", "reason": "no_tickers_or_data"}
-
-        logger.info(f"Starting batch training for {len(tickers)} tickers. Strategy: {plan.get('strategy')}")
-
-        n_jobs = -1 if len(tickers) > 1 else 1
+        if not tickers:
+            return []
+        return [tickers]  # All tickers in one group
+    
+    def _train_ticker_group(self, ticker_group: List[str], data_context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Train a group of tickers in parallel.
+        
+        Uses joblib.Parallel with delayed execution for parallelization.
+        Automatically uses all cores (-1) when multiple tickers, single core (1) otherwise.
+        """
+        if not ticker_group:
+            return {}
+        
+        n_jobs = -1 if len(ticker_group) > 1 else 1
+        self.logger.info(f"Parallel training {len(ticker_group)} tickers (n_jobs={n_jobs})")
         
         batch_results = Parallel(n_jobs=n_jobs)(
             delayed(self._train_ticker_suite)(
                 ticker=ticker,
-                data=data_context,  # Pass the prepared data
-                plan=plan
+                data=data_context
             )
-            for ticker in tickers
+            for ticker in ticker_group
         )
+        
+        return {ticker: result for ticker, result in zip(ticker_group, batch_results)}
 
-        results = {ticker: result for ticker, result in zip(tickers, batch_results)}
-
-        summary = self._generate_summary(results)
-        return {
-            "status": "success",
-            "tickers_results": results,
-            "training_summary": summary
-        }
-
-    def _train_ticker_suite(self, ticker: str, data: Dict[str, Any], plan: Dict) -> Dict:
-        """Trains all configured models and targets for a specific ticker using prepared data."""
-        ticker_results = {"status": "success", "models": [], "metrics": {}}
+    def _train_ticker_suite(self, ticker: str, data: Dict[str, Any]) -> Dict:
+        """
+        Train all configured models for a specific ticker.
+        
+        Args:
+            ticker: Ticker symbol
+            data: Prepared data with X_train, y_train, X_test, y_test, target_name, etc.
+        
+        Returns:
+            Training result with winner, metrics, and best_score
+        """
+        ticker_results = {"status": "success", "models": [], "metrics": {}, "ticker": ticker}
         
         X_train = data.get('X_train')
         y_train = data.get('y_train')
         X_test = data.get('X_test')
         y_test = data.get('y_test')
-        target_name = data.get('target_name')
+        target_name = data.get('target_name', 'unknown')
 
         if X_train is None or y_train is None:
-            return {"status": "failed", "reason": "incomplete_data"}
+            ticker_results["status"] = "failed"
+            ticker_results["reason"] = "incomplete_data"
+            return ticker_results
         
-        is_classification = 'classification' in data.get('target_type', '')
-        model_types = self.config_manager.get_config('models.enabled_types', ['lgbm', 'rf', 'xgb', 'linear'])
-        
-        best_score = -np.inf
-        winner_name = None
-        
-        for m_type in model_types:
-            try:
-                model_instance = self.model_factory.create_model(
-                    model_type=m_type,
-                    is_classification=is_classification,
-                    params=self.config_manager.get_config(f"models.{m_type}", {})
-                )
-                
-                # Real training on prepared data
-                model_instance.fit(X_train, y_train)
-                
-                predictions = model_instance.predict(X_test)
-                score = self.evaluator.evaluate(y_test, predictions, is_classification)
-                
-                # ✅ Зберігаємо metrics для кожної моделі
-                # Для regression: accuracy = -mse (чим менше mse, тим краще)
-                # Для classification: accuracy = accuracy_score
-                if is_classification:
+        try:
+            is_classification = 'classification' in data.get('target_type', '')
+            model_types = self.config_manager.get_config('models.enabled_types', ['lgbm', 'rf', 'xgb', 'linear'])
+            
+            best_score = -np.inf
+            winner_name = None
+            
+            for m_type in model_types:
+                try:
+                    # Create and train model
+                    model_instance = self.model_factory.create_model(
+                        model_type=m_type,
+                        is_classification=is_classification,
+                        params=self.config_manager.get_config(f"models.{m_type}", {})
+                    )
+                    
+                    model_instance.fit(X_train, y_train)
+                    predictions = model_instance.predict(X_test)
+                    score = self.evaluator.evaluate(y_test, predictions, is_classification)
+                    
+                    # Store metrics
                     metrics_dict = {
                         'score': float(score),
-                        'accuracy': float(score),
-                        'mse': None
+                        'accuracy': float(score) if is_classification else float(-score),
+                        'mse': float(score) if not is_classification else None
                     }
-                else:
-                    # For regression, use -mse as accuracy (higher is better)
-                    metrics_dict = {
-                        'score': float(score),
-                        'accuracy': float(-score),  # -(-mse) = mse
-                        'mse': float(score)
-                    }
-                
-                ticker_results['metrics'][m_type] = metrics_dict
-                
-                if score > best_score:
-                    best_score = score
-                    winner_name = m_type
-                    self._save_champion(model_instance, ticker, target_name)
+                    ticker_results['metrics'][m_type] = metrics_dict
+                    
+                    # Track best model
+                    if score > best_score:
+                        best_score = score
+                        winner_name = m_type
+                        self._save_champion(model_instance, ticker, target_name)
+                    
+                    # Log to diary
+                    self.diary.log_event(
+                        ticker=ticker,
+                        model_name=m_type,
+                        target=target_name,
+                        metrics=float(score),
+                        context_fingerprint=data.get('context_fingerprint', 'default')
+                    )
 
-                self.diary.log_event(
-                    ticker=ticker,
-                    model_name=m_type,
-                    target=target_name,
-                    metrics=score,
-                    context_fingerprint=plan.get('context_fingerprint', 'default')
-                )
-
-            except Exception as e:
-                logger.error(f"Failed to train {m_type} for {ticker} on {target_name}: {e}")
-
-        ticker_results['winner'] = winner_name
-        ticker_results['best_score'] = best_score
-        # ✅ Додаємо metrics чемпіона
-        ticker_results['winner_metrics'] = ticker_results['metrics'].get(winner_name, {})
+                except Exception as e:
+                    self.logger.error(f"Failed to train {m_type} for {ticker}: {e}")
+                    continue
+            
+            ticker_results['winner'] = winner_name
+            ticker_results['best_score'] = float(best_score) if best_score > -np.inf else None
+            ticker_results['winner_metrics'] = ticker_results['metrics'].get(winner_name, {})
+            
+            return ticker_results
         
-        return ticker_results
+        except Exception as e:
+            self.logger.error(f"Error during training for {ticker}: {e}")
+            return {"status": "failed", "ticker": ticker, "reason": str(e)}
 
     def _save_champion(self, model: Any, ticker: str, target: str):
+        """Save best model to disk"""
         filename = f"CHAMP_{ticker}_{target}.joblib"
         path = self.output_dir / filename
         try:
             joblib.dump(model, path)
-            logger.info(f"Champion saved: {path}")
+            self.logger.debug(f"Champion saved: {path}")
         except Exception as e:
-            logger.error(f"Error saving champion {filename}: {e}")
+            self.logger.error(f"Error saving champion {filename}: {e}")
 
-    def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
-        total = len(results)
-        successful = sum(1 for r in results.values() if r.get('status') == 'success')
+    def create_batch_plan(self, tickers: List[str], strategy: str = 'batch') -> Dict[str, Any]:
+        """
+        Create a batch training plan.
         
-        return {
-            "total_tickers": total,
-            "successful_tickers": successful,
-            "failed_tickers": total - successful,
-            "average_score": np.mean([r.get('best_score', 0) for r in results.values()]),
-            "timestamp": datetime.now().isoformat()
-        }
-
-    def create_batch_plan(self, tickers: List[str], strategy: str) -> Dict[str, Any]:
-        # Placeholder for plan creation
+        Args:
+            tickers: List of tickers to train
+            strategy: Training strategy name
+        
+        Returns:
+            Training plan dictionary
+        """
         return {
             "tickers": tickers,
             "strategy": strategy,
+            "context_fingerprint": "batch_training"
         }

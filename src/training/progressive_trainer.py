@@ -28,6 +28,7 @@ from src.training.constants import (
     PROGRESSIVE_MAX_TIME_HOURS,
     PROGRESSIVE_MAX_MEMORY_GB
 )
+from src.training.base_trainer import BaseTrainer, TrainerConfig
 
 @dataclass
 class ProgressiveConfig:
@@ -60,17 +61,17 @@ class TrainingState:
     processed_tickers: Set[str] = field(default_factory=set)
     successful_tickers: Set[str] = field(default_factory=set)
     failed_tickers: Set[str] = field(default_factory=set)
-    current_batch_size: int = 5
+    current_batch_size: int = PROGRESSIVE_INITIAL_BATCH_SIZE
     total_batches_processed: int = 0
     start_time: float = field(default_factory=time.time)
     last_checkpoint: float = field(default_factory=time.time)
     
-class ProgressiveTrainer:
-    """Прогресивний треnotр for великих нorрandв тandкерandв"""
+class ProgressiveTrainer(BaseTrainer):
+    """Прогресивний тренер для великих наборів тикерів"""
     
     def __init__(self, config: ProgressiveConfig = None):
-        self.config = config or ProgressiveConfig()
-        self.logger = logging.getLogger("ProgressiveTrainer")
+        self.progressive_config = config or ProgressiveConfig()
+        super().__init__(config=self.progressive_config)
         
         # Створюємо директорandї
         self.progress_dir = Path("models/progressive")
@@ -87,6 +88,36 @@ class ProgressiveTrainer:
         # Аналandтика
         self.analytics = defaultdict(list)
         self.performance_history = []
+    
+    def _prepare_ticker_groups(self, plan: Dict[str, Any]) -> List[List[str]]:
+        """
+        Prepare adaptive ticker batches for progressive training.
+        Creates progressively larger batches based on success rates.
+        """
+        tickers = plan.get('tickers', [])
+        if not tickers:
+            return []
+        return self.create_progressive_batches(tickers)
+    
+    def _train_ticker_group(self, ticker_group: List[str], data_context: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Train a group of tickers sequentially with adaptation.
+        Unlike BatchTrainer (parallel), ProgressiveTrainer trains sequentially and adapts batch size.
+        """
+        results = {}
+        for ticker in ticker_group:
+            try:
+                result = self._train_ticker_suite(ticker, data_context)
+                results[ticker] = result
+                self.state.processed_tickers.add(ticker)
+                if result.get('status') == 'success':
+                    self.state.successful_tickers.add(ticker)
+                else:
+                    self.state.failed_tickers.add(ticker)
+            except Exception as e:
+                self.logger.error(f"Error training {ticker}: {e}")
+                results[ticker] = {"status": "failed", "reason": str(e)}
+        return results
         
     def create_progressive_batches(self, tickers: List[str]) -> List[List[str]]:
         """
