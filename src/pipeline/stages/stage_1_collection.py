@@ -94,7 +94,7 @@ class CollectionStage(BaseStage):
                 )
                 self.process_and_save_results(results, self.collectors)
             except asyncio.TimeoutError:
-                self.logger.warning("Collection timeout after 5 minutes, processing partial results")
+                self.handle_stage_error(asyncio.TimeoutError("Collection timeout after 5 minutes"), context="Collectors", severity="warning")
                 # Cancel remaining tasks
                 for task in tasks_to_run:
                     if not task.done():

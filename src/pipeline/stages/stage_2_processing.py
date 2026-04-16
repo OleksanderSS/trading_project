@@ -50,8 +50,8 @@ class ProcessingStage(BaseStage):
         scaler_path = paths_config.get('scalers')
 
         if not scaler_path:
-            self.logger.critical("Scaler path ('paths.scalers') not found in configuration. Cannot proceed.")
-            raise ValueError("Scaler path configuration is missing.")
+            err = ValueError("Scaler path configuration is missing.")
+            self.handle_stage_error(err, context="ScalerPath-Config", severity="critical", should_raise=True)
 
         self.data_filter = IntelligentDataFilter(config=filtering_config)
         self.normalization_manager = NormalizationManager(scaler_dir=scaler_path)

@@ -236,10 +236,12 @@ class EvaluationStage(BaseStage):
             return {'evaluation_summary': summary}
 
         except (TypeError, ValueError, AttributeError) as e:
+            self.handle_stage_error(e, context="BacktestingDataIssue", severity="warning")
             logger.error(f"❌ Backtesting failed: {e}. Creating basic evaluation...")
             return self._create_basic_evaluation(signals_df, trading_activity, portfolio_summary)
         
         except Exception as e:
+            self.handle_stage_error(e, context="EvaluationStage", severity="error")
             logger.error(f"Critical error during evaluation stage: {e}", exc_info=True)
             return self._create_basic_evaluation(signals_df, trading_activity, portfolio_summary)
 

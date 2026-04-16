@@ -156,6 +156,7 @@ class ModelingStage(BaseStage):
                                             logger.info(f"✅ Завантажено {len(selected_features)} фіч для {model_type} з {candidate.name}")
                                             break
                                 except Exception as e:
+                                    self.handle_stage_error(e, context=f"LoadFeatures-{candidate.name}", severity="warning")
                                     logger.warning(f"⚠️ Не вдалося завантажити фічи з {candidate}: {e}")
 
                         if not selected_features:
@@ -170,6 +171,7 @@ class ModelingStage(BaseStage):
                                                 logger.info(f"✅ Завантажено {len(selected_features)} фіч для {model_type} з {candidate.name} (glob fallback)")
                                                 break
                                     except Exception as e:
+                                        self.handle_stage_error(e, context=f"LoadFeaturesGlob-{candidate.name}", severity="warning")
                                         logger.warning(f"⚠️ Не вдалося завантажити фічи з {candidate}: {e}")
 
                         if not selected_features:
@@ -241,6 +243,7 @@ class ModelingStage(BaseStage):
                             self._log_to_diary(light_info, timeframe)
 
             except Exception as e:
+                self.handle_stage_error(e, context=f"ModelingForTicker-{ticker}", severity="error")
                 logger.error(f"Error during modeling for ticker {ticker}: {e}", exc_info=True)
 
         logger.info(f"Modeling Stage complete. Trained {len(champions)} champion models.")

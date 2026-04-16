@@ -16,6 +16,26 @@ class TradingSystemError(Exception):
     """Base exception class for trading system errors."""
     pass
 
+class PipelineError(TradingSystemError):
+    """Base exception for pipeline-specific failures."""
+    pass
+
+class StageError(PipelineError):
+    """Base exception for individual pipeline stage failures."""
+    pass
+
+class StageExecutionError(StageError):
+    """Exception raised when a stage fails during execution."""
+    pass
+
+class ModelLoadingError(StageError):
+    """Exception raised when loading a model fails."""
+    pass
+
+class ConfigurationError(TradingSystemError):
+    """Exception raised when a system or training configuration is invalid."""
+    pass
+
 class IErrorHandler(ABC):
     """Interface for error handling implementations."""
     @abstractmethod

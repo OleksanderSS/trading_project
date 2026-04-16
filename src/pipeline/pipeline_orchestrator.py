@@ -188,7 +188,14 @@ class PipelineOrchestrator:
                     f"Memory: {final_mem:.1f}MB (\u0394 {final_mem - initial_mem:.1f}MB) ====="
                 )
             except Exception as e:
-                self.logger.critical(f"Critical error in stage '{stage_name}': {e}", exc_info=True)
+                self.error_handler.handle_error(
+                    e,
+                    context=f"PipelineOrchestrator:{stage_name}",
+                    severity="critical"
+                )
+                self.logger.critical(f"Critical error in stage '{stage_name}', stopping pipeline.", exc_info=True)
+                stage_outputs['pipeline_status'] = 'failed'
+                stage_outputs['failed_stage'] = stage_name
                 break
         
         self.logger.info("Pipeline execution completed successfully.")

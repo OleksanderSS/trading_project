@@ -23,6 +23,7 @@ from src.models.model_selector.smart_selector import SmartModelSelector
 from src.analytics.analyzers.knn_similarity_finder import KnnSimilarityFinder
 from src.features.utils.datetime_utils import ensure_datetime_column, normalize_metadata_columns
 from src.models.loader import ModelLoaderStrategy
+from src.core.error_handling.error_handler import ModelLoadingError
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 
@@ -519,6 +520,7 @@ class PredictionStage(BaseStage):
                 self.logger.info(f"Ensemble forecast for {ticker}: {pred_value:.4f} | Conf: {confidence_info.get('score'):.2%}")
 
             except Exception as e:
+                self.handle_stage_error(e, context=f"Prediction-{context_id}", severity="error")
                 self.logger.error(f"Prediction failed for context {context_id}: {e}", exc_info=True)
 
         # ✅ Конвертуємо predictions в list для Stage 6
@@ -1013,7 +1015,11 @@ class PredictionStage(BaseStage):
                             continue
                         loaded_models[model_name] = loaded_model
                         self.logger.info(f"✅ Завантажено модель: {model_name}")
+                    except ModelLoadingError as e:
+                        self.handle_stage_error(e, context=f"ModelLoad-{path.name}", severity="warning")
+                        self.logger.warning(f"⚠️ Failed to load model from {path}: {e}")
                     except Exception as e:
+                        self.handle_stage_error(e, context=f"ModelLoad-{path.name}", severity="warning")
                         self.logger.warning(f"⚠️ Failed to load model from {path}: {e}")
 
         if not loaded_models:

@@ -175,8 +175,9 @@ class TradingExecutionStage(BaseStage):
             
             self.logger.info("✅ Trading execution completed successfully")
         except Exception as e:
+            self.handle_stage_error(e, context="TradingOrchestration", severity="error")
             self.logger.error(f"❌ Trading execution failed: {e}", exc_info=True)
-            # Навіть якщо trading failed, передаємо predictions як signals для Stage 7
+            # Even if trading failed, return predictions as signals for Stage 7
             return {
                 'signals': predictions,
                 'trading_error': str(e)

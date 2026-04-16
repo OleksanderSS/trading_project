@@ -74,10 +74,8 @@ class Stage_0_Setup(BaseStage):
             self.logger.info(f"Environment setup successfully completed. New directories: {summary}")
 
         except KeyError as e:
-            self.logger.error(f"Missing required configuration key in 'paths.yaml': {e}")
-            raise
+            self.handle_stage_error(e, context="ConfigKey-paths", severity="error", should_raise=True)
         except Exception as e:
-            self.logger.error(f"Failed to complete environment setup: {e}", exc_info=True)
-            raise
+            self.handle_stage_error(e, context="EnvironmentSetup", severity="error", should_raise=True)
         
         return {}

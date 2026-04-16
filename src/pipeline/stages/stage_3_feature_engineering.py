@@ -193,6 +193,7 @@ class FeatureEngineeringStage(BaseStage):
                     logger.info(f"   ✅ Pivoted macro shape: {macro_data.shape}")
                     logger.info(f"   ✅ Macro columns: {macro_data.columns.tolist()[:10]}...")
                 except Exception as e:
+                    self.handle_stage_error(e, context="MacroDataPivot", severity="warning")
                     logger.warning(f"   ⚠️ Failed to pivot macro_data: {e}. Using empty DataFrame.")
                     macro_data = pd.DataFrame()
             else:
