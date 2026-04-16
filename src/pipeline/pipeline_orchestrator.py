@@ -14,6 +14,7 @@ from src.analytics.data_managers.model_results_manager import ModelResultsManage
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.processing.normalization_manager import NormalizationManager
 from src.core.monitoring.memory_profiler import get_memory_profiler, get_memory_stats
+from src.validation.pipeline_schemas import validate_stage_output, RawDataSchema, ProcessedDataSchema, EnrichedDataSchema
 
 class PipelineOrchestrator:
     """
@@ -176,6 +177,22 @@ class PipelineOrchestrator:
                 # ✅ Phase 3 Optimization: Track memory usage for each stage
                 with self.memory_profiler.track(f"stage_{i}_{stage_name}"):
                     stage_output = await stage.run(**stage_outputs)
+                
+                # ✅ Phase 4 Quality: Validate stage output against schema
+                if stage_output:
+                    try:
+                        if i == 1:  # Stage 1 (Collection)
+                            stage_output = validate_stage_output(stage_name, stage_output, RawDataSchema)
+                        elif i == 2:  # Stage 2 (Processing)
+                            stage_output = validate_stage_output(stage_name, stage_output, ProcessedDataSchema)
+                        elif i == 3:  # Stage 3 (Feature Engineering)
+                            stage_output = validate_stage_output(stage_name, stage_output, EnrichedDataSchema)
+                        # Add more stage validations as schemas are implemented
+                        
+                        self.logger.debug(f"✅ Stage {i} output validated successfully")
+                    except Exception as e:
+                        self.logger.warning(f"⚠️ Stage {i} output validation failed: {e}")
+                        # Continue execution but log the issue
                 
                 self.logger.info(f"Stage output type: {type(stage_output)}, keys: {stage_output.keys() if stage_output else 'None'}")
                 

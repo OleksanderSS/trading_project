@@ -1,17 +1,17 @@
 import pandas as pd
 from src.features.enrichers.base import BaseEnricher
-from src.core.logging.logger import ProjectLogger
 from src.features.utils.time_utils import add_time_features
 from src.config.unified_config_manager import get_current_config
-
-logger = ProjectLogger.get_logger("TimeFeaturesEnricher")
 
 class TimeFeaturesEnricher(BaseEnricher):
     """
     Enriches the DataFrame with time-based features as configured in features.yaml.
+
+    ✅ Phase 4 Quality: Updated to use standardized error handling from BaseEnricher.
     """
-    
+
     def __init__(self):
+        super().__init__()
         # TimeFeaturesEnricher is enabled via enabled_enrichers, not separate config
         self.config = {
             'enabled': True,
@@ -27,7 +27,7 @@ class TimeFeaturesEnricher(BaseEnricher):
                 'day_of_week_sin', 'day_of_week_cos'
             ]
         }
-        logger.info(f"TimeFeaturesEnricher initialized with {len(self.config['enabled_features'])} features.")
+        self.logger.info(f"TimeFeaturesEnricher initialized with {len(self.config['enabled_features'])} features.")
 
     @property
     def name(self) -> str:
@@ -37,12 +37,14 @@ class TimeFeaturesEnricher(BaseEnricher):
     def priority(self) -> int:
         return 10
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
-        Adds configured time-based features to the DataFrame.
+        Implementation of time feature enrichment.
+
+        Error handling is provided by BaseEnricher template method.
         """
         if not self.config.get('enabled', False):
-            logger.info("Time feature enrichment is disabled in the config.")
+            self.logger.info("Time feature enrichment is disabled in the config.")
             return df
 
         df_enriched = df.copy()
@@ -51,25 +53,22 @@ class TimeFeaturesEnricher(BaseEnricher):
 
         if timestamp_col not in df_enriched.columns:
             if isinstance(df_enriched.index, pd.DatetimeIndex):
-                logger.debug(f"Using DatetimeIndex as temporary '{timestamp_col}'.")
+                self.logger.debug(f"Using DatetimeIndex as temporary '{timestamp_col}'.")
                 df_enriched[timestamp_col] = df_enriched.index
                 temp_col_created = True
             else:
-                logger.error(f"Required column '{timestamp_col}' not found.")
-                return df
+                raise ValueError(f"Required column '{timestamp_col}' not found.")
         else:
             temp_col_created = False
 
-        try:
-            df_enriched = add_time_features(
-                df_enriched,
-                timestamp_col=timestamp_col,
-                enabled_features=enabled_features
-            )
-            if temp_col_created:
-                df_enriched = df_enriched.drop(columns=[timestamp_col])
-        except Exception as e:
-            logger.error(f"Error during time feature generation: {e}", exc_info=True)
-            return df
+        # Add time features using utility function
+        df_enriched = add_time_features(
+            df_enriched,
+            timestamp_col=timestamp_col,
+            enabled_features=enabled_features
+        )
+
+        if temp_col_created:
+            df_enriched = df_enriched.drop(columns=[timestamp_col])
 
         return df_enriched

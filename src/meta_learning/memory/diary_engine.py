@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 import logging
+from collections import deque
+import sys
 
 from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
@@ -72,11 +74,16 @@ class DiaryEngine(BaseMetaComponent):
     Migrated to DuckDB for high-performance meta-analysis. Supporting Context Map 2.0.
     Acts as the system's memory engine for tracking trade performance and context.
     """
-    def __init__(self, data_manager: Optional[DataManager] = None):
+    def __init__(self, data_manager: Optional[DataManager] = None, maxsize: int = 10000):
         self.config = get_current_config()
         self.data_manager = data_manager or DataManager(self.config, None)
         self.table_name = "experience_diary"
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
+        
+        # ✅ Phase 4 Quality: Add memory-limited in-memory buffer
+        self.maxsize = maxsize
+        self.entries = deque(maxlen=maxsize)  # Auto-evict oldest entries
+        
         self._initialize_database()
 
     @property
@@ -317,9 +324,23 @@ class DiaryEngine(BaseMetaComponent):
         
         return {"adjustment": 0.0, "action": "maintain", "reason": "Stable performance"}
 
-    def close(self):
-        """DataManager handles lifecycle."""
-        pass
+    def log_entry(self, entry: DecisionRecord) -> None:
+        """
+        Log entry to in-memory buffer with automatic eviction.
+        
+        ✅ Phase 4 Quality: Memory-limited buffer prevents unbounded growth.
+        """
+        if len(self.entries) == self.maxsize:
+            self.logger.debug(f"Diary buffer full ({self.maxsize}), evicting oldest entry")
+        self.entries.append(entry)
+    
+    def get_recent_entries(self, limit: int = 100) -> List[DecisionRecord]:
+        """Get most recent entries from in-memory buffer."""
+        return list(self.entries)[-limit:]
+    
+    def memory_usage(self) -> float:
+        """Return memory usage of in-memory buffer in MB."""
+        return sys.getsizeof(self.entries) / 1024 / 1024
 
     def get_contextual_model_weights(self, context_fingerprint: str) -> Dict[str, float]:
         """
