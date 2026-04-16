@@ -13,7 +13,7 @@ from src.data.management.data_manager import DataManager
 from src.analytics.data_managers.model_results_manager import ModelResultsManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.processing.normalization_manager import NormalizationManager
-from src.core.error_handling.error_handler import ErrorHandler
+from src.core.monitoring.memory_profiler import get_memory_profiler, get_memory_stats
 
 class PipelineOrchestrator:
     """
@@ -51,6 +51,12 @@ class PipelineOrchestrator:
         self.http_client_factory = HttpClientFactory(self.config_manager, self.error_handler)
         self.normalizer = NormalizationManager(scaler_dir=scaler_path)
         self.health_hub = HealthHub(self.config_manager, self.data_manager, self.results_manager)
+        
+        # ✅ Phase 3 Optimization: Initialize memory profiler
+        memory_warn_gb = self.config_manager.get('performance.memory_warn_gb', 10.0)
+        self.memory_profiler = get_memory_profiler(warn_threshold_gb=memory_warn_gb)
+        self.logger.info(f"✅ Memory profiler enabled (warning threshold: {memory_warn_gb}GB)")
+        
         self.stages = self._load_stages()
 
     def _load_stages(self) -> List[Any]:
@@ -167,7 +173,9 @@ class PipelineOrchestrator:
 
 
             try:
-                stage_output = await stage.run(**stage_outputs)
+                # ✅ Phase 3 Optimization: Track memory usage for each stage
+                with self.memory_profiler.track(f"stage_{i}_{stage_name}"):
+                    stage_output = await stage.run(**stage_outputs)
                 
                 self.logger.info(f"Stage output type: {type(stage_output)}, keys: {stage_output.keys() if stage_output else 'None'}")
                 
@@ -197,6 +205,14 @@ class PipelineOrchestrator:
                 stage_outputs['pipeline_status'] = 'failed'
                 stage_outputs['failed_stage'] = stage_name
                 break
+        
+        # ✅ Phase 3 Optimization: Log memory profiling statistics
+        memory_stats = get_memory_stats()
+        self.logger.info(
+            f"🧠 Pipeline memory profile - Peak: {memory_stats['peak_memory_gb']:.2f}GB, "
+            f"Operations: {memory_stats['operations_tracked']}, Warnings: {memory_stats['warnings_issued']}, "
+            f"Cleanups: {memory_stats['cleanups_performed']} ({memory_stats['memory_freed_mb']:.1f}MB freed)"
+        )
         
         self.logger.info("Pipeline execution completed successfully.")
         return stage_outputs
