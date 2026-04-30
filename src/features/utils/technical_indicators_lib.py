@@ -5,21 +5,21 @@ import numpy as np
 from typing import Tuple
 
 class TechnicalIndicators:
-    """Централізована бібліотека для розрахунку технічних індикаторів."""
+    """Centralized library for calculating technical indicators."""
 
     @staticmethod
     def calculate_sma(prices: pd.Series, window: int) -> pd.Series:
-        """Розрахунок Simple Moving Average (SMA)"""
+        """Calculation of Simple Moving Average (SMA)"""
         return prices.rolling(window=window).mean()
 
     @staticmethod
     def calculate_ema(prices: pd.Series, window: int) -> pd.Series:
-        """Розрахунок Exponential Moving Average (EMA)"""
+        """Calculation of Exponential Moving Average (EMA)"""
         return prices.ewm(span=window, adjust=False).mean()
 
     @staticmethod
     def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
-        """Розрахунок Relative Strength Index (RSI)"""
+        """Calculation of Relative Strength Index (RSI)"""
         delta = prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
         loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
@@ -29,7 +29,7 @@ class TechnicalIndicators:
 
     @staticmethod
     def calculate_macd(prices: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[pd.Series, pd.Series, pd.Series]:
-        """Розрахунок Moving Average Convergence Divergence (MACD)"""
+        """Calculation of Moving Average Convergence Divergence (MACD)"""
         ema_fast = prices.ewm(span=fast).mean()
         ema_slow = prices.ewm(span=slow).mean()
         macd_line = ema_fast - ema_slow
@@ -39,7 +39,7 @@ class TechnicalIndicators:
 
     @staticmethod
     def calculate_bollinger_bands(prices: pd.Series, period: int = 20, std: float = 2.0) -> Tuple[pd.Series, pd.Series, pd.Series]:
-        """Розрахунок Bollinger Bands"""
+        """Calculation of Bollinger Bands"""
         rolling_mean = prices.rolling(period).mean()
         rolling_std = prices.rolling(period).std()
         upper_band = rolling_mean + (rolling_std * std)
@@ -48,7 +48,7 @@ class TechnicalIndicators:
 
     @staticmethod
     def calculate_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
-        """Розрахунок Average True Range (ATR)"""
+        """Calculation of Average True Range (ATR)"""
         high_low = high - low
         high_close = np.abs(high.shift(1) - close)
         low_close = np.abs(low.shift(1) - close)
@@ -58,7 +58,7 @@ class TechnicalIndicators:
 
     @staticmethod
     def calculate_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, k_period: int = 14, d_period: int = 3) -> Tuple[pd.Series, pd.Series]:
-        """Розрахунок Stochastic Oscillator"""
+        """Calculation of Stochastic Oscillator"""
         lowest_low = low.rolling(window=k_period).min()
         highest_high = high.rolling(window=k_period).max()
         k_percent = 100 * (close - lowest_low) / (highest_high - lowest_low)
@@ -67,7 +67,7 @@ class TechnicalIndicators:
 
     @staticmethod
     def calculate_williams_r(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
-        """Розрахунок Williams %R"""
+        """Calculation of Williams %R"""
         highest_high = high.rolling(window=period).max()
         lowest_low = low.rolling(window=period).min()
         williams_r = -100 * (highest_high - close) / (highest_high - lowest_low)
@@ -75,7 +75,7 @@ class TechnicalIndicators:
 
     @staticmethod
     def calculate_cci(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 20) -> pd.Series:
-        """Розрахунок Commodity Channel Index (CCI)"""
+        """Calculation of Commodity Channel Index (CCI)"""
         typical_price = (high + low + close) / 3
         sma_tp = typical_price.rolling(window=period).mean()
         mean_deviation = typical_price.rolling(window=period).apply(lambda x: np.mean(np.abs(x - np.mean(x))), raw=True)

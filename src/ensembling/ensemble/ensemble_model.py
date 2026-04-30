@@ -9,7 +9,7 @@ from typing import List, Tuple, Any, Optional, Type, Dict
 import logging
 import importlib
 
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config
 from src.models.interfaces import BaseModel
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ class EnsembleModel(BaseModel):
 
     def _get_default_models(self) -> List[Tuple[str, BaseModel]]:
         """Loads the default list of models from the configuration file."""
-        config_manager = UnifiedConfigManager()
+        config_manager = get_current_config()
         model_config = config_manager.get_config('models')
         ensemble_config = model_config.get('ensemble', {})
         
@@ -64,33 +64,49 @@ class EnsembleModel(BaseModel):
     
     def _create_ensemble(self) -> Any:
         """Creates the VotingClassifier or VotingRegressor instance."""
-        if not self.models:
-            logger.warning("No models provided or loaded for the ensemble. The ensemble will be empty.")
+        if not self._validate_models_exist():
             return None
 
         logger.info(f"Creating a {self.task_type} ensemble with {len(self.models)} models: {[name for name, _ in self.models]}")
 
+        if not self._filter_compatible_models():
+            return None
+
+        return self._create_voting_ensemble()
+
+    def _validate_models_exist(self) -> bool:
+        """Validate that models exist for ensemble creation."""
+        if not self.models:
+            logger.warning("No models provided or loaded for the ensemble. The ensemble will be empty.")
+            return False
+        return True
+
+    def _filter_compatible_models(self) -> bool:
+        """Filter models by task type compatibility."""
         compatible_models = []
         for name, model in self.models:
-            if hasattr(model, 'task_type') and model.task_type == self.task_type:
+            if self._is_model_compatible(name, model):
                 compatible_models.append((name, model))
-            else:
-                logger.warning(f"Model '{name}' is incompatible with ensemble task_type '{self.task_type}'. Excluding it.")
 
         self.models = compatible_models
         if not self.models:
             logger.error("No compatible models found for the ensemble after filtering by task type.")
-            return None
+            return False
+        return True
 
+    def _is_model_compatible(self, name: str, model: BaseModel) -> bool:
+        """Check if model is compatible with ensemble task type."""
+        if hasattr(model, 'task_type') and model.task_type == self.task_type:
+            return True
+        
+        logger.warning(f"Model '{name}' is incompatible with ensemble task_type '{self.task_type}'. Excluding it.")
+        return False
+
+    def _create_voting_ensemble(self) -> Any:
+        """Create the appropriate voting ensemble based on task type."""
         try:
             if self.task_type == "classification":
-                if self.voting == 'soft':
-                    for name, model in self.models:
-                        if not hasattr(model, 'predict_proba'):
-                            logger.warning(f"Model '{name}' does not support predict_proba, switching ensemble to 'hard' voting.")
-                            self.voting = 'hard'
-                            break
-                return VotingClassifier(estimators=self.models, voting=self.voting)
+                return self._create_classification_ensemble()
             elif self.task_type == "regression":
                 return VotingRegressor(estimators=self.models)
             else:
@@ -98,6 +114,21 @@ class EnsembleModel(BaseModel):
         except Exception as e:
             logger.error(f"Failed to create ensemble: {e}", exc_info=True)
             return None
+
+    def _create_classification_ensemble(self) -> VotingClassifier:
+        """Create classification ensemble with appropriate voting strategy."""
+        if self.voting == 'soft':
+            self._check_predict_proba_support()
+        
+        return VotingClassifier(estimators=self.models, voting=self.voting)
+
+    def _check_predict_proba_support(self):
+        """Check if all models support predict_proba for soft voting."""
+        for name, model in self.models:
+            if not hasattr(model, 'predict_proba'):
+                logger.warning(f"Model '{name}' does not support predict_proba, switching ensemble to 'hard' voting.")
+                self.voting = 'hard'
+                break
 
     def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> Dict[str, Any]:
         """Fits the ensemble model to the training data."""

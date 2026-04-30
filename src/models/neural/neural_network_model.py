@@ -23,19 +23,23 @@ class NeuralNetworkModel:
         self.is_trained = False
         self.model = None
         
-        # Fallback модель
+        # Fallback model
         self.fallback_model = None
         
     def _create_fallback_model(self):
-        """Створити fallback модель на основі RandomForest"""
+        """Створити Fallback model на основі RandomForest"""
         try:
             self.fallback_model = RandomForestClassifier(
                 n_estimators=100,
                 max_depth=10,
+                min_samples_leaf=4,
+                max_features='sqrt',
                 random_state=42
             ) if self.classification else RandomForestRegressor(
                 n_estimators=100,
                 max_depth=10,
+                min_samples_leaf=4,
+                max_features='sqrt',
                 random_state=42
             )
             
@@ -47,9 +51,9 @@ class NeuralNetworkModel:
             return False
     
     def fit(self, X, y):
-        """Тренування моделі"""
+        """Train the model"""
         try:
-            # Конвертація в numpy
+            # Convert to numpy
             if hasattr(X, 'values'):
                 X = X.values
             if hasattr(y, 'values'):
@@ -70,7 +74,7 @@ class NeuralNetworkModel:
             
         except Exception as e:
             logger.error(f"Neural Network training failed: {e}")
-            # Fallback до простої моделі
+            # Fallback to simple model
             try:
                 self._fit_fallback(X, y)
                 self.is_trained = True
@@ -80,8 +84,8 @@ class NeuralNetworkModel:
                 raise
     
     def _fit_sklearn_nn(self, X, y):
-        """Тренування sklearn Neural Network"""
-        # Створення моделі
+        """Training sklearn Neural Network"""
+        # Create model
         if self.classification:
             self.model = MLPClassifier(
                 hidden_layer_sizes=self.hidden_layer_sizes,
@@ -105,19 +109,18 @@ class NeuralNetworkModel:
                 verbose=False
             )
         
-        # Тренування
+        # Training
         self.model.fit(X, y)
         logger.info("OK Sklearn Neural Network model trained successfully")
     
     def _fit_fallback(self, X, y):
-        """Тренування fallback моделі"""
-        if self.fallback_model is None:
-            if not self._create_fallback_model():
-                raise RuntimeError("Cannot create fallback model")
+        """Train fallback model"""
+        if self.fallback_model is None and not self._create_fallback_model():
+            raise RuntimeError("Cannot create fallback model")
         
-        # Використовуємо останні значення для тренування
+        # Використовуємо останні значення для Training
         if len(X) > 10:
-            X_train = X[-min(len(X), 100):]  # Останні 100 точок
+            X_train = X[-min(len(X), 100):]  # Last 100 points
             y_train = y[-min(len(y), 100):]
         else:
             X_train = X
@@ -127,12 +130,12 @@ class NeuralNetworkModel:
         logger.info("OK Fallback model trained")
     
     def predict(self, X):
-        """Прогнозування"""
+        """Prediction"""
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction")
         
         try:
-            # Конвертація в numpy
+            # Convert to numpy
             if hasattr(X, 'values'):
                 X = X.values
                 
@@ -154,27 +157,27 @@ class NeuralNetworkModel:
                 raise
     
     def _predict_nn(self, X):
-        """Прогнозування Neural Network"""
+        """Prediction Neural Network"""
         return self.model.predict(X)
     
     def _predict_fallback(self, X):
-        """Прогнозування fallback"""
+        """Fallback prediction"""
         if self.fallback_model is None:
             raise RuntimeError("No fallback model available")
         
-        # Використовуємо останні значення для прогнозу
+        # Use latest values for prediction
         if len(X.shape) == 2:
             return self.fallback_model.predict(X[-1:].reshape(1, -1))
         else:
             return self.fallback_model.predict(X.reshape(1, -1))
     
     def predict_proba(self, X):
-        """Прогнозування ймовірностей"""
+        """Probability prediction"""
         if not self.classification:
             raise ValueError("predict_proba only available for classification")
         
         try:
-            # Конвертація в numpy
+            # Convert to numpy
             if hasattr(X, 'values'):
                 X = X.values
                 
@@ -196,7 +199,7 @@ class NeuralNetworkModel:
             raise
     
     def get_params(self) -> Dict[str, Any]:
-        """Параметри моделі"""
+        """Model parameters"""
         return {
             'hidden_layer_sizes': self.hidden_layer_sizes,
             'max_iter': self.max_iter,

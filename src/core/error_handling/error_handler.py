@@ -93,9 +93,10 @@ class ErrorHandler(IErrorHandler):
 
     def __init__(self, config_manager: Optional[UnifiedConfigManager] = None, logger_name: str = "ErrorHandler"):
         """Initializes the ErrorHandler with a logger name and notifier."""
+        from src.config.unified_config_manager import get_current_config
         self.logger = ProjectLogger.get_logger(logger_name)
-        self.config_manager = config_manager
-        self.notifier = UniversalNotifier(config_manager) if config_manager else None
+        self.config_manager = config_manager or get_current_config()
+        self.notifier = UniversalNotifier(self.config_manager) if self.config_manager else None
         self.error_counts: Dict[str, int] = {}
         self.error_history: List[Dict[str, Any]] = []
         self.notification_cooldowns: Dict[str, datetime] = {}

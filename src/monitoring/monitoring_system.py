@@ -1,14 +1,15 @@
+# src/monitoring/monitoring_system.py
 """
-Monitoring System - Система моніторингу.
+Monitoring System.
 
-Основні компоненти:
-- System Health Monitor: моніторинг здоров'я системи
-- Model Performance Monitor: моніторинг продуктивності моделей
-- Data Quality Monitor: моніторинг якості даних
-- Alert Manager: управління сповіщеннями
-- Dashboard Generator: генерація дашбордів
+Core components:
+- System Health Monitor: monitors hardware/OS health
+- Model Performance Monitor: monitors training/prediction performance
+- Data Quality Monitor: monitors integrity of incoming data
+- Alert Manager: handles notifications and thresholds
+- Dashboard Generator: generates data for UI/Reports
 
-Використовує:
+Features:
 - Real-time metrics collection
 - Threshold-based alerting
 - Historical performance tracking
@@ -28,28 +29,28 @@ import numpy as np
 
 from src.core.logging.logger import ProjectLogger
 
-class AlertSeverity(Enum):
-    """Рівні критичності сповіщень"""
+class alertseverity(Enum):
+    """Alert severity levels."""
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
     CRITICAL = "critical"
 
-class AlertStatus(Enum):
-    """Статуси сповіщень"""
+class alertstatus(Enum):
+    """Alert lifecycle statuses."""
     ACTIVE = "active"
     RESOLVED = "resolved"
     ACKNOWLEDGED = "acknowledged"
 
 class MetricType(Enum):
-    """Типи метрик"""
-    GAUGE = "gauge"  # Поточне значення
-    COUNTER = "counter"  # Кумулятивне значення
-    HISTOGRAM = "histogram"  # Розподіл значень
-    SUMMARY = "summary"  # Статистичний зведення
+    """Metric recording types."""
+    GAUGE = "gauge"      # Current value
+    COUNTER = "counter"  # Cumulative value
+    HISTOGRAM = "histogram"  # Distribution
+    SUMMARY = "summary"  # Statistical summary
 
 class BaseMonitor:
-    """Базовий клас для всіх моніторів"""
+    """Base class for all monitoring components."""
 
     def __init__(self, name: str, config: Optional[Dict[str, Any]] = None):
         self.name = name
@@ -60,51 +61,51 @@ class BaseMonitor:
         self.is_running = False
 
     def start(self):
-        """Запуск моніторингу"""
+        """Starts the monitoring process."""
         self.is_running = True
         self.logger.info(f"Started monitoring: {self.name}")
 
     def stop(self):
-        """Зупинка моніторингу"""
+        """Stops the monitoring process."""
         self.is_running = False
         self.logger.info(f"Stopped monitoring: {self.name}")
 
     def collect_metrics(self) -> Dict[str, Any]:
-        """Збір метрик (підкласи повинні перевизначити)"""
+        """Collects metrics (to be overridden by subclasses)."""
         return {}
 
     def check_thresholds(self):
-        """Перевірка порогових значень"""
+        """Checks collected metrics against defined thresholds."""
         pass
 
     def generate_report(self) -> Dict[str, Any]:
-        """Генерація звіту"""
+        """Generates a status report for the monitor."""
         return {
             'monitor_name': self.name,
             'timestamp': datetime.now().isoformat(),
             'metrics': self.metrics,
-            'alerts': [alert.__dict__ if hasattr(alert, '__dict__') else alert for alert in self.alerts[-10:]],  # Останні 10
+            'alerts': [alert.__dict__ if hasattr(alert, '__dict__') else alert for alert in self.alerts[-10:]],
             'status': 'running' if self.is_running else 'stopped'
         }
 
 class SystemHealthMonitor(BaseMonitor):
-    """Моніторинг здоров'я системи"""
+    """Monitors system hardware resources (CPU, Memory, Disk, etc)."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("system_health", config)
 
-        # Пороги
+        # Thresholds
         self.cpu_threshold = self.config.get('cpu_threshold', 80.0)
         self.memory_threshold = self.config.get('memory_threshold', 85.0)
         self.disk_threshold = self.config.get('disk_threshold', 90.0)
         self.network_timeout = self.config.get('network_timeout', 30)
 
-        # Історія метрик
+        # Metrics History
         self.metrics_history = []
         self.history_size = self.config.get('history_size', 100)
 
     def collect_metrics(self) -> Dict[str, Any]:
-        """Збір системних метрик"""
+        """Collects hardware system metrics."""
         try:
             # CPU
             cpu_percent = psutil.cpu_percent(interval=1)
@@ -143,7 +144,7 @@ class SystemHealthMonitor(BaseMonitor):
                 'timestamp': datetime.now().isoformat()
             }
 
-            # Збереження в історію
+            # Save to history
             self.metrics_history.append(metrics)
             if len(self.metrics_history) > self.history_size:
                 self.metrics_history.pop(0)
@@ -156,7 +157,7 @@ class SystemHealthMonitor(BaseMonitor):
             return {}
 
     def check_thresholds(self):
-        """Перевірка системних порогових значень"""
+        """Verifies if system metrics exceed safety thresholds."""
         if not self.metrics:
             return
 
@@ -164,7 +165,7 @@ class SystemHealthMonitor(BaseMonitor):
         if self.metrics.get('cpu_percent', 0) > self.cpu_threshold:
             self._create_alert(
                 f"High CPU usage: {self.metrics['cpu_percent']:.1f}%",
-                AlertSeverity.WARNING,
+                alertseverity.WARNING,
                 {'cpu_percent': self.metrics['cpu_percent']}
             )
 
@@ -172,7 +173,7 @@ class SystemHealthMonitor(BaseMonitor):
         if self.metrics.get('memory_percent', 0) > self.memory_threshold:
             self._create_alert(
                 f"High memory usage: {self.metrics['memory_percent']:.1f}%",
-                AlertSeverity.ERROR,
+                alertseverity.ERROR,
                 {'memory_percent': self.metrics['memory_percent']}
             )
 
@@ -180,18 +181,18 @@ class SystemHealthMonitor(BaseMonitor):
         if self.metrics.get('disk_percent', 0) > self.disk_threshold:
             self._create_alert(
                 f"Low disk space: {self.metrics['disk_percent']:.1f}% used",
-                AlertSeverity.CRITICAL,
+                alertseverity.CRITICAL,
                 {'disk_percent': self.metrics['disk_percent']}
             )
 
-    def _create_alert(self, message: str, severity: AlertSeverity, details: Dict[str, Any]):
-        """Створення сповіщення"""
+    def _create_alert(self, message: str, severity: alertseverity, details: Dict[str, Any]):
+        """Internal helper to register an alert."""
         alert = {
             'id': f"{self.name}_{int(time.time())}",
             'monitor': self.name,
             'message': message,
             'severity': severity.value,
-            'status': AlertStatus.ACTIVE.value,
+            'status': alertstatus.ACTIVE.value,
             'timestamp': datetime.now().isoformat(),
             'details': details
         }
@@ -199,31 +200,28 @@ class SystemHealthMonitor(BaseMonitor):
         self.logger.warning(f"Alert created: {message}")
 
 class ModelPerformanceMonitor(BaseMonitor):
-    """Моніторинг продуктивності моделей"""
+    """Monitors ML model metrics and detects performance drift."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("model_performance", config)
 
-        # Пороги продуктивності
+        # Performance Thresholds
         self.accuracy_threshold = self.config.get('accuracy_threshold', 0.7)
         self.mae_threshold = self.config.get('mae_threshold', 0.1)
         self.drift_threshold = self.config.get('drift_threshold', 0.05)
 
-        # Модельні метрики
+        # Model state
         self.model_metrics = {}
         self.baseline_metrics = {}
 
     def collect_metrics(self) -> Dict[str, Any]:
-        """Збір метрик продуктивності моделей"""
+        """Summarizes current model performance statistics."""
         try:
-            # В реальному випадку тут буде інтеграція з системою логування моделей
-            # Спрощена версія для демонстрації
-
             metrics = {
                 'total_models': len(self.model_metrics),
                 'active_models': sum(1 for m in self.model_metrics.values() if m.get('is_active', True)),
                 'models_with_drift': sum(1 for m in self.model_metrics.values() if m.get('drift_detected', False)),
-                'average_accuracy': np.mean([m.get('accuracy', 0) for m in self.model_metrics.values()]),
+                'average_accuracy': np.mean([m.get('accuracy', 0) for m in self.model_metrics.values()]) if self.model_metrics else 0.0,
                 'timestamp': datetime.now().isoformat()
             }
 
@@ -235,13 +233,13 @@ class ModelPerformanceMonitor(BaseMonitor):
             return {}
 
     def update_model_metrics(self, model_name: str, metrics: Dict[str, Any]):
-        """Оновлення метрик для моделі"""
+        """Updates metrics for a specific model context."""
         if model_name not in self.baseline_metrics:
             self.baseline_metrics[model_name] = metrics.copy()
 
         self.model_metrics[model_name] = metrics
 
-        # Перевірка drift
+        # Drift detection
         baseline = self.baseline_metrics[model_name]
         current_accuracy = metrics.get('accuracy', 0)
         baseline_accuracy = baseline.get('accuracy', 0)
@@ -250,13 +248,13 @@ class ModelPerformanceMonitor(BaseMonitor):
             self._create_drift_alert(model_name, current_accuracy, baseline_accuracy)
 
     def _create_drift_alert(self, model_name: str, current_acc: float, baseline_acc: float):
-        """Створення сповіщення про drift"""
+        """Creates an alert when model drift exceeds thresholds."""
         alert = {
             'id': f"drift_{model_name}_{int(time.time())}",
             'monitor': self.name,
             'message': f"Model drift detected for {model_name}: accuracy {baseline_acc:.3f} -> {current_acc:.3f}",
-            'severity': AlertSeverity.WARNING.value,
-            'status': AlertStatus.ACTIVE.value,
+            'severity': alertseverity.WARNING.value,
+            'status': alertstatus.ACTIVE.value,
             'timestamp': datetime.now().isoformat(),
             'details': {
                 'model_name': model_name,
@@ -269,27 +267,27 @@ class ModelPerformanceMonitor(BaseMonitor):
         self.logger.warning(f"Drift alert for {model_name}")
 
 class DataQualityMonitor(BaseMonitor):
-    """Моніторинг якості даних"""
+    """Monitors data integrity, missing values, and statistical properties."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         super().__init__("data_quality", config)
 
-        # Пороги якості
+        # Quality Thresholds
         self.missing_threshold = self.config.get('missing_threshold', 0.05)  # 5%
         self.outlier_threshold = self.config.get('outlier_threshold', 0.1)   # 10%
         self.consistency_threshold = self.config.get('consistency_threshold', 0.95)  # 95%
 
-        # Дані для моніторингу
+        # Data sources
         self.data_sources = {}
         self.quality_history = {}
 
     def collect_metrics(self) -> Dict[str, Any]:
-        """Збір метрик якості даних"""
+        """Summarizes data quality across all tracked sources."""
         try:
             metrics = {
                 'total_sources': len(self.data_sources),
                 'sources_with_issues': sum(1 for s in self.data_sources.values() if s.get('has_issues', False)),
-                'average_completeness': np.mean([s.get('completeness', 1.0) for s in self.data_sources.values()]),
+                'average_completeness': np.mean([s.get('completeness', 1.0) for s in self.data_sources.values()]) if self.data_sources else 1.0,
                 'total_missing_values': sum(s.get('missing_count', 0) for s in self.data_sources.values()),
                 'timestamp': datetime.now().isoformat()
             }
@@ -302,26 +300,26 @@ class DataQualityMonitor(BaseMonitor):
             return {}
 
     def update_data_quality(self, source_name: str, data_quality_report: Dict[str, Any]):
-        """Оновлення звіту якості даних"""
+        """Updates quality report for a specific data source."""
         self.data_sources[source_name] = data_quality_report
 
-        # Перевірка порогових значень
+        # Check thresholds
         completeness = data_quality_report.get('completeness', 1.0)
         if completeness < (1 - self.missing_threshold):
             self._create_quality_alert(
                 f"Low data completeness in {source_name}: {completeness:.1%}",
-                AlertSeverity.WARNING,
+                alertseverity.WARNING,
                 {'source': source_name, 'completeness': completeness}
             )
 
-    def _create_quality_alert(self, message: str, severity: AlertSeverity, details: Dict[str, Any]):
-        """Створення сповіщення про якість даних"""
+    def _create_quality_alert(self, message: str, severity: alertseverity, details: Dict[str, Any]):
+        """Creates an alert regarding data quality issues."""
         alert = {
             'id': f"{self.name}_{int(time.time())}",
             'monitor': self.name,
             'message': message,
             'severity': severity.value,
-            'status': AlertStatus.ACTIVE.value,
+            'status': alertstatus.ACTIVE.value,
             'timestamp': datetime.now().isoformat(),
             'details': details
         }
@@ -329,25 +327,25 @@ class DataQualityMonitor(BaseMonitor):
         self.logger.warning(f"Data quality alert created: {message}")
 
 class AlertManager:
-    """Менеджер сповіщень"""
+    """Handles alert processing, routing, and lifecycle management."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         self.logger = ProjectLogger.get_logger("AlertManager")
 
-        # Налаштування сповіщень
+        # Routing configuration
         self.alert_channels = self.config.get('channels', ['log'])  # log, email, slack, etc.
         self.alert_history = []
         self.active_alerts = {}
 
-        # Автоматичне вирішення
+        # Auto-resolution
         self.auto_resolve_hours = self.config.get('auto_resolve_hours', 24)
 
     def process_alert(self, alert: Dict[str, Any]):
-        """Обробка нового сповіщення"""
+        """Processes a new alert, avoiding duplicates and routing to channels."""
         alert_id = alert['id']
 
-        # Перевірка на дублікати
+        # Duplicate check
         if alert_id in self.active_alerts:
             self.logger.debug(f"Duplicate alert ignored: {alert_id}")
             return
@@ -355,24 +353,24 @@ class AlertManager:
         self.active_alerts[alert_id] = alert
         self.alert_history.append(alert)
 
-        # Надсилання сповіщень
+        # Route to channels
         self._send_notifications(alert)
 
         self.logger.info(f"Alert processed: {alert['message']}")
 
     def resolve_alert(self, alert_id: str, resolution: str = "auto_resolved"):
-        """Вирішення сповіщення"""
+        """Marks an alert as resolved."""
         if alert_id in self.active_alerts:
             alert = self.active_alerts[alert_id]
-            alert['status'] = AlertStatus.RESOLVED.value
+            alert['status'] = alertstatus.RESOLVED.value
             alert['resolved_at'] = datetime.now().isoformat()
             alert['resolution'] = resolution
 
             del self.active_alerts[alert_id]
             self.logger.info(f"Alert resolved: {alert_id}")
 
-    def get_active_alerts(self, severity: Optional[AlertSeverity] = None) -> List[Dict[str, Any]]:
-        """Отримання активних сповіщень"""
+    def get_active_alerts(self, severity: Optional[alertseverity] = None) -> List[Dict[str, Any]]:
+        """Returns currently active alerts, optionally filtered by severity."""
         alerts = list(self.active_alerts.values())
 
         if severity:
@@ -381,7 +379,7 @@ class AlertManager:
         return alerts
 
     def cleanup_old_alerts(self):
-        """Очищення старих сповіщень"""
+        """Resolves alerts that have been active beyond the timeout threshold."""
         cutoff_time = datetime.now() - timedelta(hours=self.auto_resolve_hours)
 
         to_resolve = []
@@ -394,7 +392,7 @@ class AlertManager:
             self.resolve_alert(alert_id, "auto_resolved_by_timeout")
 
     def _send_notifications(self, alert: Dict[str, Any]):
-        """Надсилання сповіщень по каналах"""
+        """Routes notification to configured output channels."""
         for channel in self.alert_channels:
             try:
                 if channel == 'log':
@@ -403,13 +401,11 @@ class AlertManager:
                     self._send_email_notification(alert)
                 elif channel == 'slack':
                     self._send_slack_notification(alert)
-                # Додати інші канали за потреби
-
             except Exception as e:
                 self.logger.error(f"Error sending {channel} notification: {e}")
 
     def _send_log_notification(self, alert: Dict[str, Any]):
-        """Надсилання сповіщення в лог"""
+        """Logs the alert message with appropriate severity level."""
         severity = alert['severity'].upper()
         message = f"[{severity}] {alert['message']}"
         if severity == 'ERROR':
@@ -420,17 +416,15 @@ class AlertManager:
             self.logger.info(message)
 
     def _send_email_notification(self, alert: Dict[str, Any]):
-        """Надсилання email сповіщення (заглушка)"""
-        # Реалізація відправки email
+        """Mock behavior for email notifications."""
         pass
 
     def _send_slack_notification(self, alert: Dict[str, Any]):
-        """Надсилання Slack сповіщення (заглушка)"""
-        # Реалізація відправки в Slack
+        """Mock behavior for Slack notifications."""
         pass
 
 class MonitoringDashboard:
-    """Генератор дашбордів моніторингу"""
+    """Generates human-readable dashboard payloads from monitors and alerts."""
 
     def __init__(self, monitors: List[BaseMonitor], alert_manager: AlertManager,
                  config: Optional[Dict[str, Any]] = None):
@@ -439,12 +433,12 @@ class MonitoringDashboard:
         self.config = config or {}
         self.logger = ProjectLogger.get_logger("MonitoringDashboard")
 
-        # Налаштування дашборду
-        self.refresh_interval = self.config.get('refresh_interval', 60)  # секунди
+        # Dashboard settings
+        self.refresh_interval = self.config.get('refresh_interval', 60)
         self.history_days = self.config.get('history_days', 7)
 
     def generate_dashboard_data(self) -> Dict[str, Any]:
-        """Генерація даних для дашборду"""
+        """Provides a complete snapshot of the system's current monitoring state."""
         try:
             dashboard_data = {
                 'timestamp': datetime.now().isoformat(),
@@ -453,17 +447,17 @@ class MonitoringDashboard:
                 'alerts': {
                     'active': self.alert_manager.get_active_alerts(),
                     'by_severity': self._group_alerts_by_severity(),
-                    'recent': self._get_recent_alerts(24)  # останні 24 години
+                    'recent': self._get_recent_alerts(24)
                 },
                 'summary': self._generate_summary()
             }
 
-            # Збір даних від моніторів
+            # Collect monitor snapshots
             for monitor in self.monitors:
                 monitor_data = monitor.generate_report()
                 dashboard_data['monitors'][monitor.name] = monitor_data
 
-                # Перевірка загального статусу
+                # Propagate status to root
                 if monitor_data.get('status') != 'running':
                     dashboard_data['system_status'] = 'degraded'
                 if monitor.alerts and any(a.get('severity') in ['error', 'critical'] for a in monitor.alerts[-5:]):
@@ -476,17 +470,17 @@ class MonitoringDashboard:
             return {'error': str(e)}
 
     def _group_alerts_by_severity(self) -> Dict[str, int]:
-        """Групування сповіщень по критичності"""
+        """Counts active alerts grouped by severity level."""
         alerts = self.alert_manager.get_active_alerts()
         grouped = {}
 
-        for severity in AlertSeverity:
+        for severity in alertseverity:
             grouped[severity.value] = sum(1 for a in alerts if a['severity'] == severity.value)
 
         return grouped
 
     def _get_recent_alerts(self, hours: int) -> List[Dict[str, Any]]:
-        """Отримання недавніх сповіщень"""
+        """Retrieves alerts occurred within the past X hours."""
         cutoff_time = datetime.now() - timedelta(hours=hours)
         recent_alerts = []
 
@@ -495,19 +489,19 @@ class MonitoringDashboard:
             if alert_time >= cutoff_time:
                 recent_alerts.append(alert)
 
-        return recent_alerts[-20:]  # останні 20
+        return recent_alerts[-20:]
 
     def _generate_summary(self) -> Dict[str, Any]:
-        """Генерація зведеного звіту"""
+        """Generates a high-level summary of monitoring status."""
         try:
             total_monitors = len(self.monitors)
             active_monitors = sum(1 for m in self.monitors if m.is_running)
-            total_alerts = len(self.alert_manager.get_active_alerts())
+            active_alerts_count = len(self.alert_manager.get_active_alerts())
 
-            # Статус системи
-            if total_alerts > 5:
+            # Heuristic for status
+            if active_alerts_count > 5:
                 system_status = 'critical'
-            elif total_alerts > 2:
+            elif active_alerts_count > 2:
                 system_status = 'warning'
             elif active_monitors < total_monitors:
                 system_status = 'degraded'
@@ -518,7 +512,7 @@ class MonitoringDashboard:
                 'system_status': system_status,
                 'total_monitors': total_monitors,
                 'active_monitors': active_monitors,
-                'total_alerts': total_alerts,
+                'total_alerts': active_alerts_count,
                 'uptime_percent': (active_monitors / total_monitors * 100) if total_monitors > 0 else 0
             }
 
@@ -527,13 +521,13 @@ class MonitoringDashboard:
             return {}
 
 class MonitoringSystem:
-    """Головна система моніторингу"""
+    """Global Monitoring System entry point."""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.config = config or {}
         self.logger = ProjectLogger.get_logger("MonitoringSystem")
 
-        # Ініціалізація компонентів
+        # Initialize internal components
         self.system_monitor = SystemHealthMonitor(self.config.get('system_health', {}))
         self.model_monitor = ModelPerformanceMonitor(self.config.get('model_performance', {}))
         self.data_monitor = DataQualityMonitor(self.config.get('data_quality', {}))
@@ -542,37 +536,34 @@ class MonitoringSystem:
         self.monitors = [self.system_monitor, self.model_monitor, self.data_monitor]
         self.dashboard = MonitoringDashboard(self.monitors, self.alert_manager, self.config.get('dashboard', {}))
 
-        # Потік моніторингу
+        # Monitoring loop state
         self.monitoring_thread = None
         self.is_running = False
-        self.collection_interval = self.config.get('collection_interval', 30)  # секунди
+        self.collection_interval = self.config.get('collection_interval', 30)
 
     def start(self):
-        """Запуск системи моніторингу"""
+        """Launches background monitoring tasks."""
         if self.is_running:
             self.logger.warning("Monitoring system is already running")
             return
 
         self.is_running = True
 
-        # Запуск моніторів
         for monitor in self.monitors:
             monitor.start()
 
-        # Запуск потоку моніторингу
         self.monitoring_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
         self.monitoring_thread.start()
 
         self.logger.info("Monitoring system started")
 
     def stop(self):
-        """Зупинка системи моніторингу"""
+        """Gracefully stops all sensors and loops."""
         if not self.is_running:
             return
 
         self.is_running = False
 
-        # Зупинка моніторів
         for monitor in self.monitors:
             monitor.stop()
 
@@ -582,35 +573,31 @@ class MonitoringSystem:
         self.logger.info("Monitoring system stopped")
 
     def _monitoring_loop(self):
-        """Основний цикл моніторингу"""
+        """Main internal loop for periodic metrics collection and alerting."""
         while self.is_running:
             try:
-                # Збір метрик
                 for monitor in self.monitors:
-                    metrics = monitor.collect_metrics()
+                    monitor.collect_metrics()
                     monitor.check_thresholds()
 
-                    # Обробка сповіщень
-                    for alert in monitor.alerts[-5:]:  # останні 5 сповіщень
-                        if alert not in [a for a in self.alert_manager.alert_history[-10:]]:  # уникнення дублікатів
+                    # Propagate new alerts to manager
+                    for alert in monitor.alerts[-5:]:
+                        if alert not in self.alert_manager.alert_history[-10:]:
                             self.alert_manager.process_alert(alert)
 
-                # Очищення старих сповіщень
                 self.alert_manager.cleanup_old_alerts()
-
-                # Затримка
                 time.sleep(self.collection_interval)
 
             except Exception as e:
                 self.logger.error(f"Error in monitoring loop: {e}")
-                time.sleep(5)  # Коротка затримка перед повтором
+                time.sleep(5)
 
     def get_dashboard_data(self) -> Dict[str, Any]:
-        """Отримання даних дашборду"""
+        """Provides latest dashboard view object."""
         return self.dashboard.generate_dashboard_data()
 
     def get_health_report(self) -> Dict[str, Any]:
-        """Отримання звіту про здоров'я системи"""
+        """Provides a simple health summary report."""
         return {
             'system_status': 'running' if self.is_running else 'stopped',
             'monitors': {m.name: m.is_running for m in self.monitors},
@@ -619,9 +606,9 @@ class MonitoringSystem:
         }
 
     def update_model_metrics(self, model_name: str, metrics: Dict[str, Any]):
-        """Оновлення метрик моделі"""
+        """Externally injects metrics for model performance tracking."""
         self.model_monitor.update_model_metrics(model_name, metrics)
 
     def update_data_quality(self, source_name: str, quality_report: Dict[str, Any]):
-        """Оновлення звіту якості даних"""
+        """Externally injects data quality report for source tracking."""
         self.data_monitor.update_data_quality(source_name, quality_report)

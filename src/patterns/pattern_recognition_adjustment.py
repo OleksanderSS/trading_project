@@ -104,6 +104,27 @@ class PatternRecognitionAdjuster:
         
         return recognized_patterns
     
+    def _get_pattern_data(self, pattern_name: str, timeframe: str) -> Tuple[Dict, float]:
+        """Extracts pattern data for a given pattern and timeframe."""
+        pattern_data = self.learned_patterns[pattern_name]
+        historical_outcomes = pattern_data["historical_outcomes"].get(timeframe, {})
+        confidence = pattern_data["confidence"]
+        return historical_outcomes, confidence
+    
+    def _calculate_asset_adjustment(self, historical_return: float, 
+                                  pattern_strength: float, confidence: float) -> float:
+        """Calculates adjustment for a single asset."""
+        return historical_return * pattern_strength * confidence
+    
+    def _update_adjustments(self, adjustments: Dict[str, float], 
+                          asset: str, new_adjustment: float) -> None:
+        """Updates adjustments dictionary, keeping maximum absolute adjustment."""
+        if asset in adjustments:
+            if abs(new_adjustment) > abs(adjustments[asset]):
+                adjustments[asset] = new_adjustment
+        else:
+            adjustments[asset] = new_adjustment
+    
     def calculate_pattern_adjustments(self, recognized_patterns: Dict[str, float], 
                                     timeframe: str = "1_month") -> Dict[str, float]:
         """Calculates prediction adjustments based on recognized patterns."""
@@ -111,20 +132,13 @@ class PatternRecognitionAdjuster:
         
         for pattern_name, pattern_strength in recognized_patterns.items():
             if pattern_name in self.learned_patterns:
-                pattern_data = self.learned_patterns[pattern_name]
-                historical_outcomes = pattern_data["historical_outcomes"].get(timeframe, {})
-                confidence = pattern_data["confidence"]
+                historical_outcomes, confidence = self._get_pattern_data(pattern_name, timeframe)
                 
-                # Adjustment = historical result * pattern strength * confidence
                 for asset, historical_return in historical_outcomes.items():
-                    adjustment = historical_return * pattern_strength * confidence
-                    
-                    if asset in adjustments:
-                        # If multiple patterns affect one asset, take the maximum absolute adjustment
-                        if abs(adjustment) > abs(adjustments[asset]):
-                            adjustments[asset] = adjustment
-                    else:
-                        adjustments[asset] = adjustment
+                    adjustment = self._calculate_asset_adjustment(
+                        historical_return, pattern_strength, confidence
+                    )
+                    self._update_adjustments(adjustments, asset, adjustment)
         
         return adjustments
     
@@ -207,6 +221,8 @@ def adjust_predictions_with_patterns(base_predictions: Dict[str, float],
     return pattern_adjuster.adjust_ml_predictions(base_predictions, current_news, timeframe)
 
 if __name__ == "__main__":
+    ProjectLogger.setup_logging()
+    logger.info("🎬 Testing pattern recognition adjustment system")
     # Test pattern recognition
     test_news = [
         {
@@ -230,8 +246,8 @@ if __name__ == "__main__":
     # Adjust predictions
     adjusted = adjust_predictions_with_patterns(base_predictions, test_news)
     
-    print("Prediction Adjustments:")
+    logger.info("Adjustment results:")
     for asset in base_predictions:
         base = base_predictions[asset]
         adj = adjusted[asset]
-        print(f"{asset}: {base:.1%} -> {adj:.1%} (Change: {adj-base:+.1%})")
+        logger.info(f"{asset}: {base:.1%} -> {adj:.1%} (Change: {adj-base:+.1%})")

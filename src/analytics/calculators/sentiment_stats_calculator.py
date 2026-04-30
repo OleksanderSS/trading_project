@@ -23,7 +23,11 @@ class SentimentStatsCalculator:
             Dict[str, float]: A dictionary with statistics including 'mean', 'std', 
                               'positive_threshold', and 'negative_threshold'.
         """
-        if news_data is None or news_data.empty or column not in news_data.columns:
+        # Validate input data and column
+        is_data_invalid = news_data is None or news_data.empty
+        is_column_missing = column not in news_data.columns
+        
+        if is_data_invalid or is_column_missing:
             logger.warning(f"Cannot calculate sentiment stats. Input data is empty or column '{column}' is missing.")
             return {"mean": 0.0, "std": 0.0, "positive_threshold": 0.5, "negative_threshold": -0.5}
 

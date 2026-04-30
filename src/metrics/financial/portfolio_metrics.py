@@ -3,7 +3,7 @@ import numpy as np
 from typing import Optional, Dict, Any, List
 from src.core.logging.logger import ProjectLogger
 from src.metrics.base import BaseMetricCalculator
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config
 
 class PortfolioMetricsCalculator(BaseMetricCalculator):
     """
@@ -11,8 +11,8 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
     Обчислює показники прибутковості, ризику та просідання.
     """
 
-    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None):
-        self.config = config_manager or UnifiedConfigManager()
+    def __init__(self, config_manager: Optional[Any] = None):
+        self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("PortfolioMetrics")
         
         # Отримання параметрів з конфігурації

@@ -1,9 +1,9 @@
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
-import logging
+from src.core.logging.logger import ProjectLogger
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class KnnModelWrapper:
     """

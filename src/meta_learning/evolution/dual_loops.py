@@ -156,7 +156,7 @@ class LearningLoopsEngine(BaseMetaComponent):
         return pd.DataFrame(records)
 
     def run_performance_review(self) -> Dict[str, Any]:
-        self.logger.info(f"Running system-wide performance review using DiaryEngine.")
+        self.logger.info("Running system-wide performance review using DiaryEngine.")
 
         agent_ids = [model['model_name'] for model in self.arena.get_leaderboard().get('leaderboard', [])]
         if not agent_ids:

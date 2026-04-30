@@ -10,7 +10,9 @@ from src.config.sentiment_config import SENTIMENT_DEFAULTS
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
 def make_sentiment_key(text: str) -> str:
-    key = "sent_" + hashlib.md5(text.encode("utf-8")).hexdigest()[:12]
+    import hashlib
+    # Use SHA-256 instead of MD5 for better security
+    key = "sent_" + hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
     logger.debug(f"[sentiment_score] Generated key for text: {key}")
     return key
 

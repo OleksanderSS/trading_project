@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
-# TODO: [IMPORTANT] This entire module is a non-functional prototype.
-# The logic for market analysis, trending tickers, and scoring is currently
-# simulated using random data. Implementing this functionality requires
-# significant R&D, including integration with real-time data providers,
-# NLP pipelines for news analysis, and quantitative models for scoring.
-# This should be considered a long-term development goal.
 """
 Live Trading Ticker Manager
-Інтельектуальна система вибору тікерів для лайв трейдингу
+Intelligent ticker selection system for live trading
 """
 
 import pandas as pd
@@ -17,7 +11,7 @@ from datetime import datetime, timedelta
 import logging
 from dataclasses import dataclass
 
-# Імпортуємо існуючі системи
+# Import existing systems
 from config.enhanced_sector_tickers import enhanced_sector_manager
 from features.nlp.extractors.news_ticker_detector import NewsTickerDetector
 
@@ -26,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MarketCondition:
-    """Поточні ринкові умови"""
+    """Current market conditions"""
     volatility_level: float  # 0-1
     trend_direction: str    # 'bull', 'bear', 'sideways'
     volume_level: float      # 0-1
@@ -37,7 +31,7 @@ class MarketCondition:
 
 @dataclass
 class TickerScore:
-    """Оцінка тікера"""
+    """Ticker evaluation"""
     ticker: str
     volatility_score: float
     momentum_score: float
@@ -51,50 +45,47 @@ class TickerScore:
 
 class LiveTradingTickerManager:
     """
-    Інтелектуальний менеджер тікерів для лайв трейдингу
+    Intelligent ticker manager for live trading
     """
     
-    def __init__(self, max_tickers: int = 25, risk_tolerance: str = "medium"):
+    def __init__(self, max_tickers: int = 25):
         self.max_tickers = max_tickers
-        self.risk_tolerance = risk_tolerance
-        # self.enhanced_manager = enhanced_sector_manager
-        # self.news_detector = NewsTickerDetector()
         
-        logger.warning(f"[LiveTradingTickerManager] Initialized, but this module is a non-functional prototype.")
+        logger.warning("[LiveTradingTickerManager] Initialized, but this module is a non-functional prototype.")
     
     def analyze_market_conditions(self) -> MarketCondition:
         """
-        Аналіз поточних ринкових умов.
+        Analyze current market conditions.
         """
         raise NotImplementedError("The 'analyze_market_conditions' method is not implemented. This is part of a non-functional prototype.")
 
     def get_base_strategy_tickers(self, conditions: MarketCondition) -> List[str]:
         """
-        Отримати базові тікери на основі стратегії.
+        Get base tickers based on strategy.
         """
         raise NotImplementedError("The 'get_base_strategy_tickers' method is not implemented. This is part of a non-functional prototype.")
 
     def get_trending_tickers(self, hours: int = 24) -> List[str]:
         """
-        Отримати трендові тікери з новин.
+        Get trending tickers from news.
         """
         raise NotImplementedError("The 'get_trending_tickers' method is not implemented. This is part of a non-functional prototype.")
 
     def score_tickers(self, tickers: List[str], conditions: MarketCondition) -> List[TickerScore]:
         """
-        Оцінити тікери за різними критеріями.
+        Score tickers by various criteria.
         """
         raise NotImplementedError("The 'score_tickers' method is not implemented. This is part of a non-functional prototype.")
 
     def optimize_for_resources(self, scores: List[TickerScore]) -> List[TickerScore]:
         """
-        Оптимізувати список тікерів для ресурсів.
+        Optimize ticker list for resources.
         """
         raise NotImplementedError("The 'optimize_for_resources' method is not implemented. This is part of a non-functional prototype.")
 
     def get_optimal_tickers_for_live_trading(self) -> Tuple[List[str], Dict[str, Any]]:
         """
-        Основний метод - отримати оптимальні тікери для лайв трейдингу.
+        Main method - get optimal tickers for live trading.
         """
         logger.critical("[LiveTrading] Attempted to use the non-functional LiveTradingTickerManager prototype. Aborting.")
         raise NotImplementedError("The 'get_optimal_tickers_for_live_trading' method is not implemented. This module is a prototype and not ready for use.")
@@ -109,7 +100,7 @@ class LiveTradingTickerManager:
 # Глобальний екземпляр
 live_trading_manager = LiveTradingTickerManager()
 
-def get_optimal_tickers_for_live_trading(max_tickers: int = 25, risk_tolerance: str = "medium") -> Tuple[List[str], Dict[str, Any]]:
+def get_optimal_tickers_for_live_trading() -> Tuple[List[str], Dict[str, Any]]:
     """
     Зручна функція для отримання оптимальних тікерів.
     """

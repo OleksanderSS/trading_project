@@ -52,49 +52,73 @@ class NewsImpactAnalyzer(IAnalyzer):
                             - 'news_impact_scores': pd.Series of the calculated scores.
                             - 'news_significance_levels': pd.Series of the significance levels.
         """
-        if not isinstance(news_data, pd.DataFrame) or news_data.empty or 'text' not in news_data.columns:
-            logger.warning("Input data is not a valid DataFrame, is empty, or lacks a 'text' column. Skipping analysis.")
+        if not self._validate_input_data(news_data):
             return {}
 
-        # 1. Perform Sentiment Analysis
+        sentiment_results = self._perform_sentiment_analysis(news_data)
+        if sentiment_results.empty:
+            return {}
+
+        weighted_scores = self._calculate_weighted_scores(sentiment_results)
+        aggregated_scores = self._aggregate_scores_by_timestamp(weighted_scores, news_data)
+        impact_scores = self._apply_time_decay(aggregated_scores)
+        significance_levels = self._determine_significance_levels(impact_scores)
+
+        logger.info("Successfully calculated news impact and significance scores.")
+
+        return {
+            'news_impact_scores': impact_scores,
+            'news_significance_levels': significance_levels
+        }
+
+    def _validate_input_data(self, news_data: pd.DataFrame) -> bool:
+        """Validate input data for sentiment analysis."""
+        if not isinstance(news_data, pd.DataFrame) or news_data.empty or 'text' not in news_data.columns:
+            logger.warning("Input data is not a valid DataFrame, is empty, or lacks a 'text' column. Skipping analysis.")
+            return False
+        return True
+
+    def _perform_sentiment_analysis(self, news_data: pd.DataFrame) -> pd.DataFrame:
+        """Perform sentiment analysis on news data."""
         logger.info(f"Starting sentiment analysis for {len(news_data)} news items...")
-        # Assuming news_data index is the timestamp
         sentiment_results = analyze_sentiment(news_data['text'].tolist())
         if sentiment_results.empty:
             logger.warning("Sentiment analysis returned no results.")
-            return {}
-            
+            return pd.DataFrame()
+        
         # Use original index from news_data for alignment
         sentiment_results.index = news_data.index
+        return sentiment_results
 
-        # 2. Calculate a single weighted sentiment score for each news item
+    def _calculate_weighted_scores(self, sentiment_results: pd.DataFrame) -> pd.DataFrame:
+        """Calculate weighted sentiment scores."""
         sentiment_results['weighted_score'] = sentiment_results.apply(
             lambda row: row['score'] * self.sentiment_weights.get(row['label'], 0),
             axis=1
         )
+        return sentiment_results
 
-        # 3. Aggregate scores per timestamp (if multiple news items have the same timestamp)
-        # Resample to the original frequency to ensure all time points are kept
+    def _aggregate_scores_by_timestamp(self, sentiment_results: pd.DataFrame, news_data: pd.DataFrame) -> pd.Series:
+        """Aggregate scores per timestamp."""
         try:
             if len(news_data.index) > 1:
                 inferred_freq = pd.infer_freq(news_data.index)
             else:
-                inferred_freq = None # Cannot infer with one point
+                inferred_freq = None
 
             if inferred_freq:
-                aggregated_scores = sentiment_results['weighted_score'].resample(inferred_freq).sum()
+                return sentiment_results['weighted_score'].resample(inferred_freq).sum()
             else:
-                # If frequency cannot be inferred (sparse data), group by timestamp
                 logger.warning("Cannot infer frequency from sparse data, grouping by timestamp instead")
-                aggregated_scores = sentiment_results['weighted_score'].groupby(sentiment_results.index).sum()
+                return sentiment_results['weighted_score'].groupby(sentiment_results.index).sum()
         except Exception as e:
             logger.warning(f"Error inferring frequency: {e}, falling back to timestamp grouping")
-            aggregated_scores = sentiment_results['weighted_score'].groupby(sentiment_results.index).sum()
+            return sentiment_results['weighted_score'].groupby(sentiment_results.index).sum()
 
-
-        # 4. Apply Time-Decaying EMA
+    def _apply_time_decay(self, aggregated_scores: pd.Series) -> pd.Series:
+        """Apply time-decaying EMA to scores."""
         if len(aggregated_scores.index) < 2:
-            series_freq_hours = 0.0 # Cannot determine frequency
+            series_freq_hours = 0.0
         else:
             median_diff = aggregated_scores.index.to_series().diff().median()
             series_freq_hours = pd.to_timedelta(median_diff).total_seconds() / 3600
@@ -102,12 +126,12 @@ class NewsImpactAnalyzer(IAnalyzer):
         decay_factor = self._calculate_decay_factor(series_freq_hours)
 
         if decay_factor > 0:
-            # alpha = 1 - decay_factor. An alpha of 1 means no smoothing.
-            impact_score_series = aggregated_scores.ewm(alpha=1-decay_factor, adjust=False).mean()
+            return aggregated_scores.ewm(alpha=1-decay_factor, adjust=False).mean()
         else:
-            impact_score_series = aggregated_scores
-        
-        # 5. Determine significance level
+            return aggregated_scores
+
+    def _determine_significance_levels(self, impact_scores: pd.Series) -> pd.Series:
+        """Determine significance levels for impact scores."""
         significance_thresholds = self.config.get('significance_thresholds', {})
         high_impact_threshold = significance_thresholds.get('high_impact', 0.8)
         medium_impact_threshold = significance_thresholds.get('medium_impact', 0.3)
@@ -121,11 +145,4 @@ class NewsImpactAnalyzer(IAnalyzer):
             else:
                 return 'low'
 
-        significance_series = impact_score_series.apply(get_significance).astype("category")
-
-        logger.info("Successfully calculated news impact and significance scores.")
-
-        return {
-            'news_impact_scores': impact_score_series,
-            'news_significance_levels': significance_series
-        }
+        return impact_scores.apply(get_significance).astype("category")

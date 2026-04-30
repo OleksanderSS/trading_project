@@ -16,7 +16,7 @@ import numpy as np
 from datetime import datetime
 
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
 
 
 class TrainingException(Exception):
@@ -58,7 +58,7 @@ class BaseTrainer(ABC):
             config: TrainerConfig instance with batch_size and max_memory_gb
         """
         self.config = config or TrainerConfig()
-        self.config_manager = UnifiedConfigManager()
+        self.config_manager = get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
         
         # Initialize output directory

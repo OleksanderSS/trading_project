@@ -1,4 +1,4 @@
-# dashboard/main_app.py - Єдиний оптимізований дашборд
+# dashboard/main_app.py - Unified optimized dashboard
 
 import streamlit as st
 import pandas as pd
@@ -14,21 +14,21 @@ import json
 from pathlib import Path
 import psutil
 
-# Додаємо шлях до проекту
+# Add project path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(os.path.dirname(current_dir))
 sys.path.append(project_root)
 
-# Імпорти
+# Imports
 try:
-    from src.config.unified_config_manager import UnifiedConfigManager
+    from src.config.unified_config_manager import get_current_config
     from src.data.management.data_manager import DataManager
     from src.core.error_handling.error_handler import ErrorHandler
     from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
     from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
     from src.analytics.analyzers.hedge_fund_analyzer import HedgeFundAnalyzer
 except ImportError as e:
-    st.error(f"[ERROR] Помилка імпорту модулів: {e}")
+    st.error(f"[ERROR] Module import error: {e}")
     st.stop()
 
 # Logger
@@ -41,13 +41,13 @@ logger.setLevel(logging.INFO)
 
 @st.cache_data(ttl=60)
 def get_data_from_db(_db_manager, query):
-    """ Кешована функція для отримання даних з БД """ 
+    """ Cached function for getting data from DB """
     return _db_manager.load_data(query)
 
 @st.cache_resource
 def get_all_configured_tickers() -> List[str]:
-    """Отримує список всіх унікальних тікерів з конфігурації."""
-    config_manager = UnifiedConfigManager()
+    """Gets list of all unique tickers from configuration."""
+    config_manager = get_current_config()
     assets = config_manager.get("assets", {})
     tickers = list(assets.keys()) if isinstance(assets, dict) else []
     if 'SPY' not in tickers:
@@ -56,16 +56,16 @@ def get_all_configured_tickers() -> List[str]:
 
 class UnifiedDashboard:
     """
-    Єдиний оптимізований дашборд
+    Unified optimized dashboard
     """
     
     def __init__(self):
-        self.config_manager = UnifiedConfigManager()
+        self.config_manager = get_current_config()
         self.error_handler = ErrorHandler()
         self.db_manager = DataManager(self.config_manager, self.error_handler)
         self.available_tickers = get_all_configured_tickers()
         
-        # Ініціалізація session state
+        # Initialize session state
         if 'dashboard_initialized' not in st.session_state:
             st.session_state.dashboard_initialized = True
             st.session_state.selected_tickers = ['SPY']
@@ -76,12 +76,12 @@ class UnifiedDashboard:
         logger.info("[UnifiedDashboard] Initialized")
     
     def render_header(self):
-        """Відображення заголовка з динамічними метриками."""
+        """Render header with dynamic metrics."""
         st.set_page_config(layout="wide", page_title="DEAN Unified Trading Dashboard", page_icon="📈")
         
         col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
         
-        # --- Реальні метрики ---
+        # --- Real metrics ---
         model_perf = get_data_from_db(self.db_manager, "SELECT COUNT(DISTINCT model_name) as count FROM model_performance")
         active_models = model_perf.iloc[0]['count'] if not model_perf.empty else 0
         
@@ -95,7 +95,7 @@ class UnifiedDashboard:
             st.metric("Last Update", datetime.now().strftime("%H:%M:%S"))
     
     def render_sidebar(self):
-        """Відображення сайдбару"""
+        """Render sidebar"""
         with st.sidebar:
             st.header("Configuration")
             st.session_state.selected_tickers = st.multiselect("[UP] Tickers", self.available_tickers, default=st.session_state.selected_tickers)
@@ -104,10 +104,10 @@ class UnifiedDashboard:
                 st.session_state.refresh_interval = st.slider("Interval (s)", 10, 300, st.session_state.refresh_interval)
 
     def render_overview_tab(self):
-        """Відображення вкладки огляду"""
+        """Render overview tab"""
         st.header("[DATA] System Overview")
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, _ = st.columns(4)
         perf_data = get_data_from_db(self.db_manager, "SELECT AVG(profit_factor) as avg_pf, AVG(win_rate) as avg_wr, MAX(max_drawdown) as max_dd FROM model_performance")
         
         avg_pf = perf_data.iloc[0]['avg_pf'] if not perf_data.empty else 0
@@ -120,7 +120,7 @@ class UnifiedDashboard:
         
         st.divider()
         st.subheader("Alpha & Factor Exposure (Hedge Fund Analysis)")
-        # Припускаємо наявність таблиці factor_exposures від HedgeFundAnalyzer
+        # Assume presence of factor_exposures table from HedgeFundAnalyzer
         exposures = get_data_from_db(self.db_manager, "SELECT * FROM factor_exposures ORDER BY timestamp DESC LIMIT 10")
         if not exposures.empty:
             st.dataframe(exposures, use_container_width=True)
@@ -130,7 +130,7 @@ class UnifiedDashboard:
             st.info("No factor exposure data available yet.")
 
     def render_trading_signals_tab(self):
-        """Відображення вкладки торгових сигналів"""
+        """Render trading signals tab"""
         st.header("[UP] Trading Signals")
         
         # Adaptive Thresholds Visualization
@@ -138,9 +138,27 @@ class UnifiedDashboard:
         thresholds_data = get_data_from_db(self.db_manager, "SELECT * FROM adaptive_thresholds ORDER BY timestamp DESC LIMIT 20")
         if not thresholds_data.empty:
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=thresholds_data['timestamp'], y=thresholds_data['sentiment_pos'], name='Pos Threshold', line=dict(color='green')))
-            fig.add_trace(go.Scatter(x=thresholds_data['timestamp'], y=thresholds_data['sentiment_neg'], name='Neg Threshold', line=dict(color='red')))
-            fig.add_trace(go.Scatter(x=thresholds_data['timestamp'], y=thresholds_data['min_prediction_prob'], name='Min Conf', line=dict(dash='dash')))
+            fig.add_trace({
+                'x': thresholds_data['timestamp'],
+                'y': thresholds_data['sentiment_pos'],
+                'name': 'Pos Threshold',
+                'line': {'color': 'green'},
+                'type': 'scatter'
+            })
+            fig.add_trace({
+                'x': thresholds_data['timestamp'],
+                'y': thresholds_data['sentiment_neg'],
+                'name': 'Neg Threshold',
+                'line': {'color': 'red'},
+                'type': 'scatter'
+            })
+            fig.add_trace({
+                'x': thresholds_data['timestamp'],
+                'y': thresholds_data['min_prediction_prob'],
+                'name': 'Min Conf',
+                'line': {'dash': 'dash'},
+                'type': 'scatter'
+            })
             st.plotly_chart(fig, use_container_width=True)
 
         signals = get_data_from_db(self.db_manager, "SELECT * FROM trading_signals ORDER BY timestamp DESC LIMIT 20")
@@ -150,7 +168,7 @@ class UnifiedDashboard:
             st.info("No active signals.")
 
     def render_news_analysis_tab(self):
-        """Відображення вкладки аналізу новин"""
+        """Render news analysis tab"""
         st.header("News Sentiment Analysis")
         news_sentiment = get_data_from_db(self.db_manager, "SELECT timestamp, AVG(sentiment_score) as avg_sentiment FROM news_data GROUP BY timestamp ORDER BY timestamp ASC")
         if not news_sentiment.empty:

@@ -1,0 +1,11 @@
+{
+  "batch_id": "QQQ_transformer_20260322_234159",
+  "ticker": "QQQ",
+  "model_name": "transformer",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_volume_change_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T23:41:59.244300",
+  "status": "PENDING_COLAB"
+}

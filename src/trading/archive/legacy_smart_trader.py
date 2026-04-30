@@ -2,7 +2,6 @@
 Acts as an intelligent bridge between trading signals and the portfolio manager.
 Integrates DEAN principles and consensus-based execution.
 """
-import logging
 import pandas as pd
 from typing import Dict, Any, Optional
 from src.core.logging.logger import ProjectLogger

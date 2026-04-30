@@ -18,7 +18,7 @@ models:
     lstm: { module: "src.models.neural.lstm_model", class: "LSTMModel" }
     gru: { module: "src.models.neural.gru_model", class: "GRUModel" }
     transformer: { module: "src.models.neural.transformer_model", class: "TransformerModel" }
-    tabnet: { module: "src.models.legacy.tabnet_model", class: "TabNetModel" }
+    tabnet: { module: "src.models.neural.tabnet_model", class: "TabNetModel" }
     autoencoder: { module: "src.models.neural.autoencoder_model", class: "AutoencoderModel" }
     ensemble: { module: "src.models.ensemble.ensemble_model", class: "EnsembleModel" }
 
@@ -31,9 +31,9 @@ models:
     light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]
     heavy: ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]
 
-  # ✅ Кількість фіч для кожної моделі
+  # Number of features for each model
   per_model:
-    # Легкі моделі: 20-60 фіч
+    # Light models: 20-60 features
     catboost:
       max_features: 45
     lightgbm:
@@ -49,7 +49,7 @@ models:
     knn:
       max_features: 38
     
-    # Важкі моделі: 80-120 фіч
+    # Heavy models: 80-120 features
     mlp:
       max_features: 100
     cnn:

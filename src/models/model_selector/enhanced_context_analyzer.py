@@ -29,158 +29,184 @@ class EnhancedContextAnalyzer:
         
         context = {}
         
-        # 1. Базовий аналіз волатильності
+        # 1. Volatility analysis
+        self._analyze_volatility(df, context)
+        
+        # 2. Trend analysis
+        self._analyze_trend(df, context)
+        
+        # 3. Market regime analysis
+        self._analyze_market_regime(df, context)
+        
+        # 4. Data volume analysis
+        self._analyze_data_volume(df, context)
+        
+        # 5. Data quality analysis
+        self._analyze_data_quality(df, context)
+        
+        # 6. Time patterns analysis
+        self._analyze_time_patterns(df, context)
+        
+        # 7. Causal analysis
+        causal_weight = self._analyze_causal_factors(trigger_event)
+        
+        # 8. Feature importance
+        feature_importance = self._calculate_dynamic_feature_importance(df, context)
+        
+        # 9. Overall context score
+        context['overall_score'] = self._calculate_overall_context_score(context, feature_importance) * causal_weight
+        context['overall_score'] = min(1.0, max(0.1, context['overall_score']))
+        
+        # 10. Update history
+        self._update_context_history(ticker, context)
+        
+        return context
+    
+    def _analyze_volatility(self, df: pd.DataFrame, context: Dict) -> None:
+        """Analyze volatility with dynamic weighting"""
         returns = df['close'].pct_change().dropna()
         volatility = returns.std()
         
-        # Динамічна вага волатильності
         if volatility < 0.01:
-            volatility_weight = 1.5  # Низька волатильність -> підвищуємо вагу
+            volatility_weight = 1.5
         elif volatility < 0.02:
-            volatility_weight = 1.0  # Середня волатильність
+            volatility_weight = 1.0
         elif volatility < 0.04:
-            volatility_weight = 0.8  # Висока волатильність
+            volatility_weight = 0.8
         else:
-            volatility_weight = 0.5  # Дуже висока волатильність
+            volatility_weight = 0.5
         
         context['volatility'] = {
             'value': volatility,
             'weight': volatility_weight,
             'category': self._categorize_volatility(volatility)
         }
+    
+    def _analyze_trend(self, df: pd.DataFrame, context: Dict) -> None:
+        """Analyze trend with dynamic weighting"""
+        if len(df) < 20:
+            return
         
-        # 2. Аналіз тренду з динамічними вагами
-        if len(df) >= 20:
-            short_trend = (df['close'].iloc[-1] / df['close'].iloc[-5]) - 1
-            medium_trend = (df['close'].iloc[-1] / df['close'].iloc[-10]) - 1
-            long_trend = (df['close'].iloc[-1] / df['close'].iloc[-20]) - 1
-            
-            # Динамічна вага тренду
-            if abs(short_trend) > abs(medium_trend) > abs(long_trend):
-                trend_weight = 1.3  # Короткостроковий тренд домінує
-            elif abs(medium_trend) > abs(long_trend):
-                trend_weight = 1.1  # Середньостроковий тренд домінує
-            else:
-                trend_weight = 1.0  # Довгостроковий тренд домінує
-            
-            context['trend'] = {
-                'short_trend': short_trend,
-                'medium_trend': medium_trend,
-                'long_trend': long_trend,
-                'weight': trend_weight,
-                'dominant_period': self._get_dominant_trend(short_trend, medium_trend, long_trend)
-            }
+        short_trend = (df['close'].iloc[-1] / df['close'].iloc[-5]) - 1
+        medium_trend = (df['close'].iloc[-1] / df['close'].iloc[-10]) - 1
+        long_trend = (df['close'].iloc[-1] / df['close'].iloc[-20]) - 1
         
-        # 3. Аналіз ринкового режиму з динамічними порогами
-        if 'VIX_SIGNAL' in df.columns:
-            vix = df['VIX_SIGNAL'].mean()
-            
-            # Динамічні пороги VIX
-            if vix > 30:
-                market_regime = "extreme_fear"
-                regime_weight = 0.3  # Екстремальний страх - знижуємо вагу
-            elif vix > 20:
-                market_regime = "fear"
-                regime_weight = 0.6  # Страх
-            elif vix > 15:
-                market_regime = "neutral"
-                regime_weight = 1.0  # Нейтральність
-            elif vix > 10:
-                market_regime = "greed"
-                regime_weight = 1.2  # Жадібність
-            else:
-                market_regime = "extreme_greed"
-                regime_weight = 0.8  # Екстремальна жадібність
-            
-            context['market_regime'] = {
-                'vix_value': vix,
-                'regime': market_regime,
-                'weight': regime_weight,
-                'confidence': self._calculate_vix_confidence(vix)
-            }
-        
-        # 4. Аналіз обсягу data
-        data_volume = len(df)
-        if data_volume < 100:
-            volume_weight = 0.8  # Маленький обсяг
-        elif data_volume < 500:
-            volume_weight = 1.0  # Середній обсяг
-        elif data_volume < 1000:
-            volume_weight = 1.2  # Великий обсяг
+        if abs(short_trend) > abs(medium_trend) > abs(long_trend):
+            trend_weight = 1.3
+        elif abs(medium_trend) > abs(long_trend):
+            trend_weight = 1.1
         else:
-            volume_weight = 1.5  # Дуже великий обсяг
+            trend_weight = 1.0
+        
+        context['trend'] = {
+            'short_trend': short_trend,
+            'medium_trend': medium_trend,
+            'long_trend': long_trend,
+            'weight': trend_weight,
+            'dominant_period': self._get_dominant_trend(short_trend, medium_trend, long_trend)
+        }
+    
+    def _analyze_market_regime(self, df: pd.DataFrame, context: Dict) -> None:
+        """Analyze market regime based on VIX"""
+        if 'VIX_SIGNAL' not in df.columns:
+            return
+        
+        vix = df['VIX_SIGNAL'].mean()
+        
+        if vix > 30:
+            market_regime, regime_weight = "extreme_fear", 0.3
+        elif vix > 20:
+            market_regime, regime_weight = "fear", 0.6
+        elif vix > 15:
+            market_regime, regime_weight = "neutral", 1.0
+        elif vix > 10:
+            market_regime, regime_weight = "greed", 1.2
+        else:
+            market_regime, regime_weight = "extreme_greed", 0.8
+        
+        context['market_regime'] = {
+            'vix_value': vix,
+            'regime': market_regime,
+            'weight': regime_weight,
+            'confidence': self._calculate_vix_confidence(vix)
+        }
+    
+    def _analyze_data_volume(self, df: pd.DataFrame, context: Dict) -> None:
+        """Analyze data volume with dynamic weighting"""
+        data_volume = len(df)
+        
+        if data_volume < 100:
+            volume_weight = 0.8
+        elif data_volume < 500:
+            volume_weight = 1.0
+        elif data_volume < 1000:
+            volume_weight = 1.2
+        else:
+            volume_weight = 1.5
         
         context['data_volume'] = {
             'count': data_volume,
             'weight': volume_weight,
             'category': self._categorize_data_volume(data_volume)
         }
-        
-        # 5. Аналіз якості data
+    
+    def _analyze_data_quality(self, df: pd.DataFrame, context: Dict) -> None:
+        """Analyze data quality with dynamic weighting"""
         missing_pct = df.isnull().sum().sum() / (len(df) * len(df.columns))
+        
         if missing_pct < 0.01:
-            quality_weight = 1.2  # Високоякість data
+            quality_weight = 1.2
         elif missing_pct < 0.05:
-            quality_weight = 1.0  # Середня якість
+            quality_weight = 1.0
         elif missing_pct < 0.1:
-            quality_weight = 0.8  # Низька якість
+            quality_weight = 0.8
         else:
-            quality_weight = 0.5  # Погана якість
+            quality_weight = 0.5
         
         context['data_quality'] = {
             'missing_pct': missing_pct,
             'weight': quality_weight,
             'category': self._categorize_data_quality(missing_pct)
         }
+    
+    def _analyze_time_patterns(self, df: pd.DataFrame, context: Dict) -> None:
+        """Analyze time patterns"""
+        if 'datetime' not in df.columns:
+            return
         
-        # 6. Аналіз часових патернів
-        if 'datetime' in df.columns:
-            df['datetime'] = pd.to_datetime(df['datetime'])
-            
-            # Аналіз внутрішньоденної волатильності
-            df['intraday_vol'] = df.groupby(df['datetime'].dt.date)['close'].transform(lambda x: x.std())
-            avg_intraday_vol = df['intraday_vol'].mean()
-            
-            # Аналіз міжденної волатильності
-            daily_returns = df.groupby(df['datetime'].dt.date)['close'].last() / df.groupby(df['datetime'].dt.date)['close'].first() - 1
-            overnight_gap = daily_returns.mean()
-            
-            # Динамічна вага часових патернів
-            if avg_intraday_vol > 0.02:
-                time_weight = 1.2  # Висока внутрішньоденна волатильність
-            elif overnight_gap > 0.005:
-                time_weight = 1.3  # Значний геп між днями
-            else:
-                time_weight = 1.0  # Звичайні умови
-            
-            context['time_patterns'] = {
-                'intraday_vol': avg_intraday_vol,
-                'overnight_gap': overnight_gap,
-                'weight': time_weight,
-                'category': self._categorize_time_patterns(avg_intraday_vol, overnight_gap)
-            }
-
-        # 7. Каузальний аналіз (Causal Vectors)
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        
+        df['intraday_vol'] = df.groupby(df['datetime'].dt.date)['close'].transform(lambda x: x.std())
+        avg_intraday_vol = df['intraday_vol'].mean()
+        
+        daily_returns = df.groupby(df['datetime'].dt.date)['close'].last() / df.groupby(df['datetime'].dt.date)['close'].first() - 1
+        overnight_gap = daily_returns.mean()
+        
+        if avg_intraday_vol > 0.02:
+            time_weight = 1.2
+        elif overnight_gap > 0.005:
+            time_weight = 1.3
+        else:
+            time_weight = 1.0
+        
+        context['time_patterns'] = {
+            'intraday_vol': avg_intraday_vol,
+            'overnight_gap': overnight_gap,
+            'weight': time_weight,
+            'category': self._categorize_time_patterns(avg_intraday_vol, overnight_gap)
+        }
+    
+    def _analyze_causal_factors(self, trigger_event: Optional[str]) -> float:
+        """Analyze causal factors and return weight"""
         causal_weight = 1.0
-        if trigger_event:
+        
+        if trigger_event and self.causal_engine:
             projections = self.causal_engine.generate_causal_projections(trigger_event)
             if projections:
-                context['causal_projections'] = projections
-                # Зменшуємо впевненість/бал, якщо прогнозується ланцюжок негативних подій
                 impact_sum = sum(p['expected_impact'] for p in projections)
-                causal_weight = 1.0 + (impact_sum * 0.2) # Impact can be negative
-
-        # 8. Динамічна оцінка важливості показників
-        feature_importance = self._calculate_dynamic_feature_importance(df, context)
+                causal_weight = 1.0 + (impact_sum * 0.2)
         
-        # 9. Комплексна оцінка контексту з урахуванням каузальності
-        context['overall_score'] = self._calculate_overall_context_score(context, feature_importance) * causal_weight
-        context['overall_score'] = min(1.0, max(0.1, context['overall_score']))
-        
-        # 10. Збереження історії
-        self._update_context_history(ticker, context)
-        
-        return context
+        return causal_weight
     
     def _categorize_volatility(self, volatility: float) -> str:
         """Категоризує волатильність"""
@@ -233,65 +259,91 @@ class EnhancedContextAnalyzer:
             return "long_term"
     
     def _calculate_vix_confidence(self, vix: float) -> float:
-        """Розраховує впевненість у режимі ринку"""
+        """Calculates confidence у режимі ринку"""
         if vix < 10:
-            return 0.9  # Дуже низький VIX - висока впевненість
+            return 0.9  # Дуже низький VIX - висока confidence
         elif vix < 20:
-            return 0.7  # Низький VIX - помірна впевненість
+            return 0.7  # Низький VIX - помірна confidence
         elif vix < 30:
-            return 0.5  # Середній VIX - низька впевненість
+            return 0.5  # Середній VIX - низька confidence
         else:
-            return 0.3  # Високий VIX - дуже низька впевненість
+            return 0.3  # Високий VIX - дуже низька confidence
     
     def _calculate_dynamic_feature_importance(self, df: pd.DataFrame, context: Dict) -> Dict[str, float]:
-        """Розраховує динамічну важливість показників"""
+        """Calculates динамічну важливість показників"""
         
         importance = {}
         
-        # Базові технічні показники
-        technical_indicators = ['rsi', 'macd', 'bb_width', 'volume_ratio']
-        for indicator in technical_indicators:
-            if indicator in df.columns:
-                # Коригуємо важливість на основі контексту
-                base_importance = self._get_base_importance(indicator)
-                
-                # Підвищуємо важливість у волатильних ринках
-                if context['volatility']['category'] == 'high':
-                    importance[indicator] = base_importance * 1.5
-                elif context['volatility']['category'] == 'low':
-                    importance[indicator] = base_importance * 0.7
-                
-                # Підвищуємо важливість при трендових ринках
-                if context.get('trend') and context['trend']['dominant_period'] == 'short_term':
-                    importance[indicator] = importance.get(indicator, base_importance) * 1.3
-                elif context.get('trend') and context['trend']['dominant_period'] == 'long_term':
-                    importance[indicator] = importance.get(indicator, base_importance) * 0.8
+        # Technical indicators
+        self._calculate_technical_importance(df, context, importance)
         
-        # Показники обсягу
-        volume_indicators = ['volume', 'trades_count']
-        for indicator in volume_indicators:
-            if indicator in df.columns:
-                base_importance = self._get_base_importance(indicator)
-                
-                # Підвищуємо важливість при малому обсязі data
-                if context['data_volume']['category'] == 'small':
-                    importance[indicator] = base_importance * 1.4
-                elif context['data_volume']['category'] == 'large':
-                    importance[indicator] = base_importance * 0.9
+        # Volume indicators
+        self._calculate_volume_importance(df, context, importance)
         
-        # Показники якості data
-        quality_indicators = ['close', 'high', 'low']
-        for indicator in quality_indicators:
-            if indicator in df.columns:
-                base_importance = self._get_base_importance(indicator)
-                
-                # Підвищуємо важливість при поганій якості data
-                if context['data_quality']['category'] == 'poor':
-                    importance[indicator] = base_importance * 1.3
-                elif context['data_quality']['category'] == 'excellent':
-                    importance[indicator] = base_importance * 0.8
+        # Quality indicators
+        self._calculate_quality_importance(df, context, importance)
         
         return importance
+    
+    def _calculate_technical_importance(self, df: pd.DataFrame, context: Dict, importance: Dict) -> None:
+        """Calculate importance for technical indicators"""
+        technical_indicators = ['rsi', 'macd', 'bb_width', 'volume_ratio']
+        
+        for indicator in technical_indicators:
+            if indicator not in df.columns:
+                continue
+            
+            base_importance = self._get_base_importance(indicator)
+            adjusted_importance = base_importance
+            
+            # Adjust based on volatility
+            if context['volatility']['category'] == 'high':
+                adjusted_importance *= 1.5
+            elif context['volatility']['category'] == 'low':
+                adjusted_importance *= 0.7
+            
+            # Adjust based on trend
+            if context.get('trend'):
+                if context['trend']['dominant_period'] == 'short_term':
+                    adjusted_importance *= 1.3
+                elif context['trend']['dominant_period'] == 'long_term':
+                    adjusted_importance *= 0.8
+            
+            importance[indicator] = adjusted_importance
+    
+    def _calculate_volume_importance(self, df: pd.DataFrame, context: Dict, importance: Dict) -> None:
+        """Calculate importance for volume indicators"""
+        volume_indicators = ['volume', 'trades_count']
+        
+        for indicator in volume_indicators:
+            if indicator not in df.columns:
+                continue
+            
+            base_importance = self._get_base_importance(indicator)
+            
+            if context['data_volume']['category'] == 'small':
+                importance[indicator] = base_importance * 1.4
+            elif context['data_volume']['category'] == 'large':
+                importance[indicator] = base_importance * 0.9
+            else:
+                importance[indicator] = base_importance
+    
+    def _calculate_quality_importance(self, df: pd.DataFrame, context: Dict, importance: Dict) -> None:
+        """Calculate importance for quality indicators"""
+        quality_indicators = ['close', 'high', 'low']
+        
+        for indicator in quality_indicators:
+            if indicator not in df.columns:
+                continue
+            
+            base_importance = self._get_base_importance(indicator)
+            
+            if context['data_quality']['category'] == 'poor':
+                importance[indicator] = base_importance * 1.3
+            elif context['data_quality']['category'] == 'excellent':
+                importance[indicator] = base_importance * 0.8
+            else:
+                importance[indicator] = base_importance
     
     def _get_base_importance(self, indicator: str) -> float:
         """Базова важливість показника"""
@@ -309,7 +361,7 @@ class EnhancedContextAnalyzer:
         return importance_map.get(indicator, 0.5)
     
     def _calculate_overall_context_score(self, context: Dict, feature_importance: Dict) -> float:
-        """Розраховує загальний контекстний бал"""
+        """Calculates загальний контекстний бал"""
         
         # Ваги контексту
         context_weights = {

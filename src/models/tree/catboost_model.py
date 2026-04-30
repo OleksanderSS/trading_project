@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from typing import Optional, Dict, Any, Union
 from catboost import CatBoostRegressor, CatBoostClassifier
-from src.models.interfaces import BaseModel
-from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel # type: ignore
+from src.core.logging.logger import ProjectLogger # type: ignore
 
 class CatBoostModel(BaseModel):
     """
@@ -15,13 +15,14 @@ class CatBoostModel(BaseModel):
     
     def __init__(self, task_type: str = "regression", iterations: int = 100, 
                  depth: int = 6, learning_rate: float = 0.03, random_state: int = 42, **kwargs):
-        super().__init__(task_type=task_type, random_state=random_state, **kwargs)
+        super().__init__(model_type="catboost", task_type=task_type)
         self.iterations = iterations
         self.depth = depth
         self.learning_rate = learning_rate
+        self.random_state = random_state  # ✅ FIX: Store random_state as instance attribute
         self.logger = ProjectLogger.get_logger("CatBoostModel")
         
-        # ✅ ІНІЦІАЛІЗАЦІЯ МОДЕЛІ В __INIT__ (для Ансамблю)
+        # Initialize model in __init__ (for Ensemble)
         if self.task_type == "classification":
             self.model = CatBoostClassifier(
                 iterations=self.iterations,
@@ -56,17 +57,17 @@ class CatBoostModel(BaseModel):
     def train(self, X: Union[pd.DataFrame, np.ndarray], y: np.ndarray, **kwargs) -> Dict[str, Any]:
         """Trains the CatBoost model."""
         try:
-            X_clean = self._prepare_data(X)
+            x_clean = self._prepare_data(X)
             
-            if isinstance(X_clean, pd.DataFrame):
-                self.feature_cols = X_clean.columns.tolist()
+            if isinstance(x_clean, pd.DataFrame):
+                self.feature_cols = x_clean.columns.tolist()
 
-            # Оновлюємо параметри, якщо вони передані
+            # Update parameters if they are passed
             if kwargs:
                 # CatBoost set_params uses separate logic for some params, but for standard ones it works
                 self.model.set_params(**kwargs)
             
-            self.model.fit(X_clean, y)
+            self.model.fit(x_clean, y)
             self.is_trained = True
             
             self.logger.info(f"CatBoost trained successfully ({self.task_type}, iterations={self.iterations}, depth={self.depth})")
@@ -82,8 +83,8 @@ class CatBoostModel(BaseModel):
             raise ValueError("Model must be trained before prediction")
         
         try:
-            X_clean = self._prepare_data(X)
-            return self.model.predict(X_clean)
+            x_clean = self._prepare_data(X)
+            return self.model.predict(x_clean)
         except Exception as e:
             self.logger.error(f"CatBoost prediction failed: {e}")
             raise
@@ -97,8 +98,8 @@ class CatBoostModel(BaseModel):
             raise ValueError("predict_proba is only available for classification tasks")
         
         try:
-            X_clean = self._prepare_data(X)
-            return self.model.predict_proba(X_clean)
+            x_clean = self._prepare_data(X)
+            return self.model.predict_proba(x_clean)
         except Exception as e:
             self.logger.error(f"CatBoost probability prediction failed: {e}")
             raise

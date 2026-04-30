@@ -4,7 +4,10 @@ Provides tools for eXplainable AI (XAI) on machine learning models.
 import pandas as pd
 import numpy as np
 import logging
-from typing import Dict, Any, List
+from typing import Dict, List, Any
+
+# Create numpy random generator
+rng = np.random.default_rng(42)
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +44,10 @@ class ExplainabilityCalculator:
                 base_error = np.mean(np.abs(base_pred))  # Using Mean Absolute Error as the metric
 
                 for i, col in enumerate(feature_names):
-                    X_permuted = X.copy()
+                    x_permuted = X.copy()
                     # Shuffle a single column
-                    X_permuted.iloc[:, i] = np.random.permutation(X_permuted.iloc[:, i])
-                    perm_pred = model.predict(X_permuted)
+                    x_permuted.iloc[:, i] = rng.permutation(x_permuted.iloc[:, i])
+                    perm_pred = model.predict(x_permuted)
                     perm_error = np.mean(np.abs(perm_pred))
                     # The importance is the increase in error
                     importance[col] = abs(perm_error - base_error)

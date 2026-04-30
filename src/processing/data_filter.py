@@ -6,10 +6,10 @@ Intelligent Data Filter - for robust model training
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional
-import logging
+from typing import Any, Dict, List, Tuple, Optional
+from src.core.logging.logger import ProjectLogger
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger("IntelligentDataFilter")
 
 class IntelligentDataFilter:
     """
@@ -138,56 +138,16 @@ class IntelligentDataFilter:
         filtered_news = news_data.copy()
         removed_reasons = {}
 
-        # ✅ FIX: Додаємо sentiment=0 якщо його немає
-        if 'sentiment' not in filtered_news.columns:
-            logger.warning("'sentiment' column not found in news_data. Adding neutral sentiment (0.0).")
-            filtered_news['sentiment'] = 0.0
+        self._ensure_news_sentiment_column(filtered_news)
 
-        # Quality filters - only apply if columns exist
-        quality_filters = []
-        
-        if 'title' in filtered_news.columns:
-            quality_filters.append((filtered_news['title'].str.len() > self.news_title_min_len, 'title_too_short'))
-        
-        if 'content' in filtered_news.columns:
-            quality_filters.append((filtered_news['content'].str.len() > self.news_content_min_len, 'content_too_short'))
-        
-        # Check for timestamp column - could be 'published_at', 'publishedAt', 'timestamp', etc.
-        timestamp_col = None
-        for col in ['published_at', 'publishedAt', 'timestamp', 'date']:
-            if col in filtered_news.columns:
-                timestamp_col = col
-                break
-        
-        if timestamp_col:
-            quality_filters.append((filtered_news[timestamp_col].notna(), 'missing_timestamp'))
-        else:
-            logger.warning("No timestamp column found in news_data. Skipping timestamp-based filtering.")
-        
-        # ✅ FIX: Не фільтруємо по sentiment, бо ми щойно додали 0.0
-        # if 'sentiment' in filtered_news.columns:
-        #     quality_filters.append((filtered_news['sentiment'].notna(), 'missing_sentiment'))
+        timestamp_col = self._get_news_timestamp_column(filtered_news)
+        quality_filters = self._build_news_quality_filters(filtered_news, timestamp_col)
+        filtered_news, removed_reasons = self._apply_news_quality_filters(
+            filtered_news, quality_filters
+        )
 
-        for filter_condition, reason in quality_filters:
-            before_count = len(filtered_news)
-            filtered_news = filtered_news[filter_condition]
-            removed_count = before_count - len(filtered_news)
-            if removed_count > 0:
-                removed_reasons[reason] = removed_count
-        
-        # Deduplication - only if we have the required columns
-        dedup_cols = []
-        if 'title' in filtered_news.columns:
-            dedup_cols.append('title')
-        if timestamp_col:
-            dedup_cols.append(timestamp_col)
-        
-        duplicates = 0
-        if dedup_cols:
-            duplicates = filtered_news.duplicated(subset=dedup_cols).sum()
-            if duplicates > 0:
-                filtered_news = filtered_news.drop_duplicates(subset=dedup_cols)
-        
+        filtered_news, duplicates = self._deduplicate_news(filtered_news, timestamp_col)
+
         # Classify news types
         filtered_news = self._classify_news_types(filtered_news)
         
@@ -201,6 +161,76 @@ class IntelligentDataFilter:
         }
         
         return filtered_news, quality_report
+
+    def _ensure_news_sentiment_column(self, filtered_news: pd.DataFrame) -> None:
+        """Ensure sentiment column exists with neutral default."""
+        if 'sentiment' in filtered_news.columns:
+            return
+        logger.warning("'sentiment' column not found in news_data. Adding neutral sentiment (0.0).")
+        filtered_news['sentiment'] = 0.0
+
+    def _get_news_timestamp_column(self, filtered_news: pd.DataFrame) -> Optional[str]:
+        """Find the most appropriate timestamp column in news data."""
+        for col in ['published_at', 'publishedAt', 'timestamp', 'date']:
+            if col in filtered_news.columns:
+                return col
+        logger.warning("No timestamp column found in news_data. Skipping timestamp-based filtering.")
+        return None
+
+    def _build_news_quality_filters(
+        self, filtered_news: pd.DataFrame, timestamp_col: Optional[str]
+    ) -> List[Tuple[pd.Series, str]]:
+        """Build filters for news quality checks."""
+        quality_filters: List[Tuple[pd.Series, str]] = []
+
+        if 'title' in filtered_news.columns:
+            quality_filters.append(
+                (filtered_news['title'].str.len() > self.news_title_min_len, 'title_too_short')
+            )
+
+        if 'content' in filtered_news.columns:
+            quality_filters.append(
+                (filtered_news['content'].str.len() > self.news_content_min_len, 'content_too_short')
+            )
+
+        if timestamp_col:
+            quality_filters.append(
+                (filtered_news[timestamp_col].notna(), 'missing_timestamp')
+            )
+
+        return quality_filters
+
+    def _apply_news_quality_filters(
+        self, filtered_news: pd.DataFrame, quality_filters: List[Tuple[pd.Series, str]]
+    ) -> Tuple[pd.DataFrame, Dict[str, int]]:
+        """Apply quality filters and track removed counts."""
+        removed_reasons: Dict[str, int] = {}
+        for filter_condition, reason in quality_filters:
+            before_count = len(filtered_news)
+            filtered_news = filtered_news[filter_condition]
+            removed_count = before_count - len(filtered_news)
+            if removed_count > 0:
+                removed_reasons[reason] = removed_count
+        return filtered_news, removed_reasons
+
+    def _deduplicate_news(
+        self, filtered_news: pd.DataFrame, timestamp_col: Optional[str]
+    ) -> Tuple[pd.DataFrame, int]:
+        """Deduplicate news data based on title and timestamp when available."""
+        dedup_cols: List[str] = []
+        if 'title' in filtered_news.columns:
+            dedup_cols.append('title')
+        if timestamp_col:
+            dedup_cols.append(timestamp_col)
+
+        if not dedup_cols:
+            return filtered_news, 0
+
+        duplicates = int(filtered_news.duplicated(subset=dedup_cols).sum())
+        if duplicates > 0:
+            filtered_news = filtered_news.drop_duplicates(subset=dedup_cols)
+
+        return filtered_news, duplicates
     
     def _filter_trends_data(self, trends_data: Dict) -> Tuple[Dict, Dict]:
         """
@@ -359,29 +389,63 @@ class IntelligentDataFilter:
         
         for col in price_cols:
             prices = price_data[col].dropna()
+            
+            # Skip if insufficient data
             if len(prices) < 10:
                 continue
-            
+                
+            # Calculate statistics
             mean_price = prices.mean()
             std_price = prices.std()
             
-            if std_price == 0: continue
-
-            threshold = self.anomaly_std_dev_threshold
+            # Skip if no variation
+            if std_price == 0:
+                continue
             
-            for idx, price in prices.items():
-                if abs(price - mean_price) > threshold * std_price:
-                    anomaly_info = {
-                        'timestamp': price_data.loc[idx, 'Datetime'] if 'Datetime' in price_data.columns else idx,
-                        'ticker': col.split('_')[0] if '_' in col else 'unknown',
-                        'price': price,
-                        'expected_range': (mean_price - threshold * std_price, mean_price + threshold * std_price),
-                        'anomaly_type': self._classify_anomaly_type(price, mean_price, std_price),
-                        'trading_signal': self._get_anomaly_trading_signal(price, mean_price, std_price)
-                    }
-                    anomalies.append(anomaly_info)
+            # Detect anomalies
+            anomalies.extend(
+                self._detect_anomalies_in_series(
+                    prices, price_data, col, mean_price, std_price
+                )
+            )
         
         return anomalies
+    
+    def _detect_anomalies_in_series(self, prices: pd.Series, price_data: pd.DataFrame, 
+                                  col: str, mean_price: float, std_price: float) -> List[Dict]:
+        """Detect anomalies in a price series."""
+        anomalies = []
+        threshold = self.anomaly_std_dev_threshold
+        
+        for idx, price in prices.items():
+            if self._is_anomaly(price, mean_price, std_price, threshold):
+                anomaly_info = self._create_anomaly_info(
+                    price_data, idx, price, col, mean_price, std_price, threshold
+                )
+                anomalies.append(anomaly_info)
+        
+        return anomalies
+    
+    def _is_anomaly(self, price: float, mean_price: float, std_price: float, 
+                   threshold: float) -> bool:
+        """Check if a price point is an anomaly."""
+        return abs(price - mean_price) > threshold * std_price
+    
+    def _create_anomaly_info(self, price_data: pd.DataFrame, idx: Any, price: float,
+                           col: str, mean_price: float, std_price: float, 
+                           threshold: float) -> Dict:
+        """Create anomaly information dictionary."""
+        return {
+            'timestamp': price_data.loc[idx, 'Datetime'] if 'Datetime' in price_data.columns else idx,
+            'ticker': col.split('_')[0] if '_' in col else 'unknown',
+            'price': price,
+            'expected_range': (
+                mean_price - threshold * std_price, 
+                mean_price + threshold * std_price
+            ),
+            'anomaly_type': self._classify_anomaly_type(price, mean_price, std_price),
+            'trading_signal': self._get_anomaly_trading_signal(price, mean_price, std_price)
+        }
     
     def _classify_gap_type(self, gap_duration: timedelta) -> str:
         """Classifies the type of a time gap."""
@@ -489,7 +553,7 @@ class IntelligentDataFilter:
             'start_time': price_data['Datetime'].min(),
             'end_time': price_data['Datetime'].max(),
             'total_candles': len(price_data),
-            'tickers': list(set([col.split('_')[0] for col in price_data.columns if '_' in col])),
+            'tickers': list({col.split('_')[0] for col in price_data.columns if '_' in col}),
             'data_frequency': self._estimate_data_frequency(price_data)
         }
     
@@ -739,16 +803,5 @@ def filter_data_for_model_training(raw_data: Dict, config: Optional[Dict] = None
 
 if __name__ == "__main__":
     # Example of how to use the filter
-    print("Intelligent Data Filter is ready for use.")
-    print("The main principle: Don't just delete data patterns, classify them for the model!")
-    
-    # This is a placeholder for a real usage example.
-    # To run this, you would need to create a `raw_data` dictionary
-    # with pandas DataFrames for prices, news, etc.
-    
-    # raw_data_example = {
-    #     'prices': {'1d': pd.DataFrame(...) },
-    #     'news': pd.DataFrame(...),
-    # }
-    # filtered_result = filter_data_for_model_training(raw_data_example)
-    # print(filtered_result['filtering_summary'])
+    logger.info("Intelligent Data Filter is ready for use.")
+    logger.info("The main principle: Don't just delete data patterns, classify them for the model!")

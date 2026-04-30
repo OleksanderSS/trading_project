@@ -63,7 +63,7 @@ class DatabaseAudit:
             logger.info("\n📊 FEATURES AUDIT")
             df_features = pd.read_parquet(features_file)
             db_info["files"]["features"] = self._audit_dataframe(
-                df_features, "features"
+                df_features
             )
         
         # Audit targets
@@ -72,7 +72,7 @@ class DatabaseAudit:
             logger.info("\n🎯 TARGETS AUDIT")
             df_targets = pd.read_parquet(targets_file)
             db_info["files"]["targets"] = self._audit_dataframe(
-                df_targets, "targets"
+                df_targets
             )
         
         # Check config
@@ -84,13 +84,13 @@ class DatabaseAudit:
                 "enabled_enrichers": config.get("features", {}).get("enabled_enrichers", {}),
                 "target_types": list(config.get("targets", {}).keys())
             }
-            logger.info(f"\n⚙️  CONFIG AUDIT")
+            logger.info("\n⚙️  CONFIG AUDIT")
             logger.info(f"  Enabled enrichers: {len(config['features']['enabled_enrichers'])}")
             logger.info(f"  Target types: {len(config['targets'])}")
         
         self.audit_results["databases"]["colab"] = db_info
     
-    def _audit_dataframe(self, df, name):
+    def _audit_dataframe(self, df):
         """Audit a single dataframe"""
         info = {
             "shape": df.shape,
@@ -195,11 +195,11 @@ class DatabaseAudit:
             feat_quality = db['files']['features']['quality_metrics']
             targ_quality = db['files']['targets']['quality_metrics']
             
-            logger.info(f"\n  Features Quality:")
+            logger.info("\n  Features Quality:")
             logger.info(f"    Duplicates: {feat_quality['duplicates']}")
             logger.info(f"    Null columns: {len([c for c, v in feat_quality['null_count'].items() if v > 0])}")
             
-            logger.info(f"\n  Targets Quality:")
+            logger.info("\n  Targets Quality:")
             logger.info(f"    Duplicates: {targ_quality['duplicates']}")
             logger.info(f"    Null columns: {len([c for c, v in targ_quality['null_count'].items() if v > 0])}")
 

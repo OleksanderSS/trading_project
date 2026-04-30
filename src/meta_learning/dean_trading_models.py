@@ -81,7 +81,13 @@ class DeanCritic(DeanTradingModel):
     def __init__(self, rules_config: Dict[str, Any], model_id: str = "dean_critic"):
         super().__init__(model_id)
         self.rules_config = rules_config
-        self.meta_model = RandomForestRegressor(n_estimators=50, max_depth=5, random_state=42)
+        self.meta_model = RandomForestRegressor(
+            n_estimators=50, 
+            max_depth=5, 
+            min_samples_leaf=1,
+            max_features='sqrt',
+            random_state=42
+        )
         self.pattern_analyzer = PatternAnalyzer()
         self.is_fitted = False
 
@@ -124,13 +130,39 @@ class DeanCritic(DeanTradingModel):
         score = 0.0
         points = []
         
-        # 1. Традиційна перевірка волатильності
+        # 1. Check volatility
+        score, points = self._check_volatility(context, score, points)
+        
+        # 2. ML analysis of expected error
+        expected_error, score, points = self._analyze_expected_error(context, score, points)
+        
+        # 3. Pattern analysis and regime warnings
+        insights = self._analyze_patterns(context, action, score, points)
+        score = insights['score']
+        points.extend(insights['points'])
+        
+        # 4. Confidence and paradoxical signals
+        score, points = self._check_confidence_signals(action, score, points)
+        
+        return {
+            "score": max(-1.0, min(1.0, score)),
+            "points": points,
+            "alternatives": [{"type": "hold"}] if score < -0.4 else [],
+            "expected_error": float(expected_error),
+            "regime_insights": insights.get('regime_insights', {}),
+            "confidence": 0.85
+        }
+
+    def _check_volatility(self, context: pd.DataFrame, score: float, points: List[str]) -> Tuple[float, List[str]]:
+        """Check market volatility and adjust score."""
         volatility = context.iloc[-1].get('feature_volatility', 0)
         if volatility > self.rules_config.get('high_vol_threshold', 0.05):
             score -= 0.3
             points.append("High market volatility detected")
+        return score, points
 
-        # 2. ML Аналіз очікуваної помилки
+    def _analyze_expected_error(self, context: pd.DataFrame, score: float, points: List[str]) -> Tuple[float, float, List[str]]:
+        """Analyze expected error using ML model."""
         expected_error = 0.0
         if self.is_fitted:
             expected_error = self.predict(context.iloc[[-1]])[0]
@@ -141,8 +173,10 @@ class DeanCritic(DeanTradingModel):
             elif expected_error < 0.15:
                 score += 0.2
                 points.append("Context matches high historical accuracy")
+        return expected_error, score, points
 
-        # 3. Аналіз макро-патернів та ринкових режимів через PatternAnalyzer
+    def _analyze_patterns(self, context: pd.DataFrame, action: Dict[str, Any], score: float, points: List[str]) -> Dict[str, Any]:
+        """Analyze macro patterns and market regimes."""
         news_list = context.iloc[-1].get('news_list', [])
         market_data = context.iloc[-1].get('market_data', {})
         insights = self.pattern_analyzer.get_pattern_insights(news_list, market_data)
@@ -153,19 +187,32 @@ class DeanCritic(DeanTradingModel):
             action_type = action.get('type', '').lower()
             
             for warning in regime_warnings:
-                # Знижуємо score при бульбашках у техах
-                if "TECH BUBBLE" in warning and action_type == "buy" and ticker in ['TSLA', 'NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN']:
-                    score -= 0.8
-                    points.append(f"CRITICAL: {warning} - High risk for long tech positions")
-                # Знижуємо score при кредитних стресах
-                elif "CREDIT STRESS" in warning and action_type == "buy":
-                    score -= 0.6
-                    points.append(f"CRITICAL: {warning} - Deleveraging risk")
-                else:
-                    score -= 0.2
-                    points.append(f"Pattern Warning: {warning}")
+                score, points = self._process_regime_warning(warning, ticker, action_type, score, points)
+        
+        return {
+            'score': score,
+            'points': points,
+            'regime_insights': insights
+        }
 
-        # 4. Перевірка впевненості та парадоксальних сигналів
+    def _process_regime_warning(self, warning: str, ticker: str, action_type: str, score: float, points: List[str]) -> Tuple[float, List[str]]:
+        """Process individual regime warning."""
+        # Знижуємо score при бульбашках у техах
+        if "TECH BUBBLE" in warning and action_type == "buy" and ticker in ['TSLA', 'NVDA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN']:
+            score -= 0.8
+            points.append(f"CRITICAL: {warning} - High risk for long tech positions")
+        # Знижуємо score при кредитних стресах
+        elif "CREDIT STRESS" in warning and action_type == "buy":
+            score -= 0.6
+            points.append(f"CRITICAL: {warning} - Deleveraging risk")
+        else:
+            score -= 0.2
+            points.append(f"Pattern Warning: {warning}")
+        
+        return score, points
+
+    def _check_confidence_signals(self, action: Dict[str, Any], score: float, points: List[str]) -> Tuple[float, List[str]]:
+        """Check confidence and paradoxical signals."""
         if action['confidence'] > 0.9 and score < -0.2:
             score -= 0.4
             points.append("Paradoxical confidence detected: Actor is sure but context/patterns are high-risk")
@@ -174,15 +221,8 @@ class DeanCritic(DeanTradingModel):
             points.append("Low prediction confidence")
         else:
             score += 0.1
-            
-        return {
-            "score": max(-1.0, min(1.0, score)),
-            "points": points,
-            "alternatives": [{"type": "hold"}] if score < -0.4 else [],
-            "expected_error": float(expected_error),
-            "regime_insights": insights,
-            "confidence": 0.85
-        }
+        
+        return score, points
 
 class DeanSimulator(DeanTradingModel):
     """
@@ -206,7 +246,6 @@ class DeanSimulator(DeanTradingModel):
 
     def simulate(self, scenario_context: pd.DataFrame, horizon: int) -> Dict[str, Any]:
         """Симулює розвиток подій на основі схожих історичних станів."""
-        similar_states = self.similarity_finder.find_similar(scenario_context.iloc[[-1]])
         return {
             "state": "predicted_market_movement",
             "key_factors": ["historical_analogs", "momentum"],

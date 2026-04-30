@@ -13,11 +13,8 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Any, Optional, Tuple, Callable
 from datetime import datetime, timedelta
-import logging
-from scipy.stats import norm
-
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config
 
 logger = ProjectLogger.get_logger("AdvancedBacktesting")
 
@@ -164,16 +161,14 @@ class WalkForwardOptimizer:
     Ділить дані на in-sample (тренування) та out-of-sample (тестування) вікна
     """
 
-    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None):
-        self.config = config_manager or UnifiedConfigManager()
+    def __init__(self, config_manager: Optional[Any] = None):
+        self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("WalkForwardOptimizer")
 
-    def optimize_with_walk_forward(self,
-                                  data: pd.DataFrame,
+    def walk_forward_optimization(self, data: pd.DataFrame,
                                   optimization_func: Callable,
                                   in_sample_months: int = 12,
-                                  out_sample_months: int = 3,
-                                  rebalance_frequency: str = 'quarterly') -> Dict[str, Any]:
+                                  out_sample_months: int = 3) -> Dict[str, Any]:
         """
         Виконує Walk-Forward Optimization
 
@@ -206,14 +201,13 @@ class WalkForwardOptimizer:
 
                 # Get data for this window
                 in_sample_data = data.iloc[in_start:in_end]
-                out_sample_data = data.iloc[out_start:out_end]
 
                 # Optimize on in-sample
                 try:
                     best_params = optimization_func(in_sample_data)
                     
                     # Evaluate on out-of-sample
-                    performance = self._evaluate_parameters(best_params, out_sample_data)
+                    performance = self._evaluate_parameters()
                     
                     results.append({
                         'window': window_idx,
@@ -240,7 +234,7 @@ class WalkForwardOptimizer:
             self.logger.error(f"Помилка Walk-Forward Optimization: {e}")
             return {'error': str(e)}
 
-    def _evaluate_parameters(self, params: Dict, data: pd.DataFrame) -> Dict[str, float]:
+    def _evaluate_parameters(self) -> Dict[str, float]:
         """Оцінка параметрів на out-of-sample даних (спрощено)"""
         return {
             'return': 0.05,  # Placeholder
@@ -268,8 +262,8 @@ class AdvancedBacktestEngine:
     Головний engine для розширеного бектестингу
     """
 
-    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None):
-        self.config = config_manager or UnifiedConfigManager()
+    def __init__(self, config_manager: Optional[Any] = None):
+        self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("AdvancedBacktest")
         
         # Ініціалізація компонентів
@@ -319,7 +313,7 @@ class AdvancedBacktestEngine:
                 )
 
             # 3. Risk metrics
-            returns = self._simulate_returns(price_data, signals, initial_capital)
+            returns = self._simulate_returns(price_data, initial_capital)
             report['performance_metrics'] = {
                 'total_return': float((returns.iloc[-1] - initial_capital) / initial_capital),
                 'annual_return': float(returns.pct_change().mean() * 252),
@@ -369,7 +363,7 @@ class AdvancedBacktestEngine:
             'total_cost_estimate': sum(c['total_estimated_costs'] for c in costs)
         }
 
-    def _simulate_returns(self, prices: pd.DataFrame, signals: pd.DataFrame, initial_cap: float) -> pd.Series:
+    def _simulate_returns(self, prices: pd.DataFrame, initial_cap: float) -> pd.Series:
         """Симуляція повернень портфеля"""
         returns = prices.pct_change().mean(axis=1)
         equity = initial_cap * (1 + returns).cumprod()

@@ -15,7 +15,7 @@ import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config
 from src.training.batch_trainer import BatchTrainer, BatchConfig
 from src.training.progressive_trainer import ProgressiveTrainer, ProgressiveConfig
 
@@ -50,7 +50,7 @@ class UnifiedTrainingManager:
     
     def __init__(self, config: UnifiedConfig = None):
         self.config = config or UnifiedConfig()
-        self.config_manager = UnifiedConfigManager()
+        self.config_manager = get_current_config()
         self.logger = logger
         
         system_config = self.config_manager.get_config('system') or {}
@@ -103,7 +103,7 @@ class UnifiedTrainingManager:
             results.update(self.trainers[strategy].execute_progressive_training(tickers, data_context=data_context))
         # Removed Colab training fallback
         elif strategy == TrainingStrategy.HYBRID:
-            results.update(self._execute_hybrid_training(plan, data_context=data_context))
+            results.update(self._execute_hybrid_training(plan))
         
         if results.get("tickers_results"):
             self.logger.info("Initiating Arena Battle for trained models...")
@@ -127,7 +127,7 @@ class UnifiedTrainingManager:
         return models
 
     def create_unified_plan(self, tickers: List[str]) -> Dict[str, Any]:
-        analysis = self.analyze_ticker_set(tickers)
+        analysis = self.analyze_ticker_set()
         strategy_str = self.config.strategy.value if self.config.strategy != TrainingStrategy.HYBRID else analysis["recommended_strategy"]
         strategy = TrainingStrategy(strategy_str)
 
@@ -138,7 +138,7 @@ class UnifiedTrainingManager:
             plan = self._create_progressive_plan(tickers)
         # Removed Colab plan logic
         else:
-            plan = self._create_hybrid_plan(tickers, analysis)
+            plan = self._create_hybrid_plan(tickers)
         
         plan.update({
             "analysis": analysis, 
@@ -148,7 +148,7 @@ class UnifiedTrainingManager:
         })
         return plan
 
-    def analyze_ticker_set(self, tickers: List[str]) -> Dict[str, Any]:
+    def analyze_ticker_set(self) -> Dict[str, Any]:
         # This is a placeholder for a more complex analysis
         return {
             "recommended_strategy": "hybrid"
@@ -162,17 +162,16 @@ class UnifiedTrainingManager:
             "batches": [{"batch_id": i+1, "tickers": b} for i, b in enumerate(batches)],
         }
 
-    def _create_hybrid_plan(self, tickers: List[str], analysis: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_hybrid_plan(self, tickers: List[str]) -> Dict[str, Any]:
         # This is a placeholder for a more complex analysis
         return {
-            "total_tickers": len(tickers),
             "strategy": "hybrid",
-            "phases": []
+            "phases": [],
+            "tickers": tickers
         }
 
-        pass
 
-    def _execute_hybrid_training(self, plan: Dict[str, Any], data_context: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_hybrid_training(self, plan: Dict[str, Any]) -> Dict[str, Any]:
         # This is a placeholder for a more complex execution
         return {
             "strategy": "hybrid",

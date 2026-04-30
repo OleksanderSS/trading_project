@@ -42,53 +42,108 @@ class CausalEngine:
         Processes a DataFrame of detected events and projects their causal ripple 
         effects onto a target timeline.
         """
-        implied_features = pd.DataFrame(0.0, index=target_index, columns=self._get_all_causal_features())
-        if events_df.empty:
-            return implied_features
-
-        for _, row in events_df.iterrows():
-            trigger = row.get('event_type')
-            magnitude = row.get('magnitude', 1.0)
-            event_time = pd.to_datetime(row.get('timestamp'))
-
-            if trigger in self.causal_library:
-                chain = self.causal_library[trigger]
-                for effect in chain:
-                    feature_name = f"implied_{effect['feature']}"
-                    impact_time = event_time + timedelta(days=effect['delay'])
-                    
-                    idx_pos = target_index.get_indexer([impact_time], method='ffill')
-                    
-                    # Check if the indexer returned a valid position
-                    if idx_pos.size > 0 and idx_pos[0] != -1:
-                        self._apply_decaying_impact(
-                            implied_features, 
-                            feature_name, 
-                            idx_pos[0], 
-                            effect['impact'] * magnitude
-                        )
+        implied_features = self._initialize_implied_features(target_index)
         
+        if not events_df.empty:
+            self._process_events(events_df, implied_features, target_index)
+            
         return implied_features
+
+    def _initialize_implied_features(self, target_index: pd.DatetimeIndex) -> pd.DataFrame:
+        """Initialize implied features DataFrame."""
+        return pd.DataFrame(0.0, index=target_index, columns=self._get_all_causal_features())
+    
+    def _process_events(self, events_df: pd.DataFrame, implied_features: pd.DataFrame, target_index: pd.DatetimeIndex):
+        """Process all events and apply their causal effects."""
+        for _, row in events_df.iterrows():
+            event_data = self._extract_event_data(row)
+            self._apply_event_causal_effects(event_data, implied_features, target_index)
+    
+    def _extract_event_data(self, row: pd.Series) -> Dict[str, Any]:
+        """Extract event data from row."""
+        return {
+            'trigger': row.get('event_type'),
+            'magnitude': row.get('magnitude', 1.0),
+            'event_time': pd.to_datetime(row.get('timestamp'))
+        }
+    
+    def _apply_event_causal_effects(self, event_data: Dict[str, Any], implied_features: pd.DataFrame, target_index: pd.DatetimeIndex):
+        """Apply causal effects for a single event."""
+        trigger = event_data['trigger']
+        
+        if trigger not in self.causal_library:
+            return
+        
+        chain = self.causal_library[trigger]
+        for effect in chain:
+            self._apply_single_effect(effect, event_data, implied_features, target_index)
+    
+    def _apply_single_effect(self, effect: Dict[str, Any], event_data: Dict[str, Any], implied_features: pd.DataFrame, target_index: pd.DatetimeIndex):
+        """Apply a single causal effect."""
+        feature_name = f"implied_{effect['feature']}"
+        impact_time = self._calculate_impact_time(event_data['event_time'], effect['delay'])
+        
+        idx_pos = target_index.get_indexer([impact_time], method='ffill')
+        
+        if self._is_valid_index_position(idx_pos):
+            impact_params = self._create_impact_params(effect['impact'], event_data['magnitude'])
+            self._apply_decaying_impact(implied_features, feature_name, idx_pos[0], impact_params)
+
+    def _calculate_impact_time(self, event_time, delay_days: int):
+        """Calculate the time when the impact should be applied."""
+        return event_time + timedelta(days=delay_days)
+
+    def _create_impact_params(self, impact: float, magnitude: float) -> Dict[str, Any]:
+        """Create impact parameters for decaying effect."""
+        return {
+            'base_impact': impact * magnitude,
+            'half_life': 20
+        }
+    
+    def _is_valid_index_position(self, idx_pos: np.ndarray) -> bool:
+        """Check if indexer returned a valid position."""
+        return idx_pos.size > 0 and idx_pos[0] != -1
 
     def _apply_decaying_impact(self, 
                                df: pd.DataFrame, 
                                column: str, 
                                start_idx: int, 
-                               base_impact: float, 
-                               half_life: int = 20):
+                               impact_params: Dict[str, Any]):
         """
         Applies a base impact at start_idx and lets it decay exponentially.
         """
-        decay_factor = np.exp(-np.log(2) / half_life)
-        current_impact = base_impact
+        decay_config = self._create_decay_config(impact_params)
+        
+        self._apply_impact_decay_loop(df, column, start_idx, decay_config)
+
+    def _create_decay_config(self, impact_params: Dict[str, Any]) -> Dict[str, Any]:
+        """Create decay configuration from impact parameters."""
+        base_impact = impact_params['base_impact']
+        half_life = impact_params.get('half_life', 20)
+        
+        return {
+            'current_impact': base_impact,
+            'decay_factor': np.exp(-np.log(2) / half_life),
+            'min_impact': 0.01
+        }
+
+    def _apply_impact_decay_loop(self, df: pd.DataFrame, column: str, start_idx: int, decay_config: Dict[str, Any]):
+        """Apply decaying impact in a loop."""
+        current_impact = decay_config['current_impact']
+        decay_factor = decay_config['decay_factor']
+        min_impact = decay_config['min_impact']
         
         for i in range(start_idx, len(df)):
-            # Ensure the column exists before trying to access it
-            if column in df.columns:
+            if self._should_apply_impact(df, column, current_impact):
                 df.iloc[i, df.columns.get_loc(column)] += current_impact
                 current_impact *= decay_factor
-                if abs(current_impact) < 0.01: # Stop when impact is negligible
+                
+                if abs(current_impact) < min_impact:
                     break
+    
+    def _should_apply_impact(self, df: pd.DataFrame, column: str, current_impact: float) -> bool:
+        """Check if impact should be applied."""
+        return column in df.columns and abs(current_impact) >= 0.01
 
     def _get_all_causal_features(self) -> List[str]:
         """Returns a unique list of all possible implied feature names."""
@@ -100,11 +155,30 @@ class CausalEngine:
 
     def register_custom_chain(self, trigger: str, steps: List[Dict[str, Any]]):
         """Allows dynamic registration of new causal relationships."""
-        if not all('feature' in s and 'delay' in s and 'impact' in s for s in steps):
-            logger.error(f"Invalid format for custom chain '{trigger}'. Each step must have 'feature', 'delay', and 'impact'.")
-            return
+        if self._validate_and_register_chain(trigger, steps):
+            logger.info(f"Registered new causal chain for: {trigger}")
+
+    def _validate_and_register_chain(self, trigger: str, steps: List[Dict[str, Any]]) -> bool:
+        """Validate and register custom chain."""
+        if not self._validate_custom_chain_steps(steps):
+            self._log_invalid_chain_error(trigger)
+            return False
+        
         self.causal_library[trigger] = steps
-        logger.info(f"Registered new causal chain for: {trigger}")
+        return True
+    
+    def _validate_custom_chain_steps(self, steps: List[Dict[str, Any]]) -> bool:
+        """Validate that all steps have required fields."""
+        required_fields = ['feature', 'delay', 'impact']
+        return all(self._has_required_fields(step, required_fields) for step in steps)
+    
+    def _has_required_fields(self, step: Dict[str, Any], required_fields: List[str]) -> bool:
+        """Check if step has all required fields."""
+        return all(field in step for field in required_fields)
+    
+    def _log_invalid_chain_error(self, trigger: str):
+        """Log error for invalid custom chain."""
+        logger.error(f"Invalid format for custom chain '{trigger}'. Each step must have 'feature', 'delay', and 'impact'.")
 
     def get_explanation(self, trigger_event: str) -> str:
         """Returns a human-readable explanation of the causal chain for XAI."""

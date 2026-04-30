@@ -26,6 +26,9 @@ from typing import Optional, Dict, Any
 import pandas as pd
 import json
 
+# Constants to avoid duplication
+PARQUET_EXT = "*.parquet"
+
 
 class FeatureCache:
     """
@@ -110,8 +113,8 @@ class FeatureCache:
             # Remove corrupted file
             try:
                 cache_file.unlink()
-            except:
-                pass
+            except Exception as unlink_err:
+                self.logger.debug(f"Could not remove corrupted cache file {cache_file}: {unlink_err}")
             return None
     
     def save_features(self, ticker: str, date: str, config_hash: str, features: pd.DataFrame) -> bool:
@@ -171,7 +174,7 @@ class FeatureCache:
         """
         removed_count = 0
         try:
-            for cache_file in self.cache_dir.glob(f"*{ticker}*.parquet"):
+            for cache_file in self.cache_dir.glob(f"*{ticker}*{PARQUET_EXT}"):
                 cache_file.unlink()
                 removed_count += 1
             
@@ -192,7 +195,7 @@ class FeatureCache:
         """
         removed_count = 0
         try:
-            for cache_file in self.cache_dir.glob("*.parquet"):
+            for cache_file in self.cache_dir.glob(PARQUET_EXT):
                 cache_file.unlink()
                 removed_count += 1
             
@@ -216,10 +219,10 @@ class FeatureCache:
         # Calculate cache size
         cache_size_mb = 0.0
         try:
-            for cache_file in self.cache_dir.glob("*.parquet"):
+            for cache_file in self.cache_dir.glob(PARQUET_EXT):
                 cache_size_mb += cache_file.stat().st_size / 1024 / 1024
-        except:
-            pass
+        except Exception as e:
+            self.logger.debug(f"Could not calculate cache size: {e}")
         
         return {
             'hits': self.stats['hits'],
@@ -281,7 +284,7 @@ class FeatureCache:
         removed_count = 0
         
         try:
-            for cache_file in self.cache_dir.glob("*.parquet"):
+            for cache_file in self.cache_dir.glob(PARQUET_EXT):
                 if cache_file.stat().st_mtime < cutoff_time:
                     cache_file.unlink()
                     removed_count += 1

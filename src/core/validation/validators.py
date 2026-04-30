@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Централізований модуль валідації для торгової системи, що використовує Pydantic для валідації на рівні записів
-та оптимізовані векторні операції Pandas для валідації великих DataFrame.
+Centralized validation module for the trading system, utilizing Pydantic for record-level validation
+and optimized vector operations in Pandas for large DataFrame validation.
 """
 
 import logging
@@ -20,19 +20,19 @@ logger = ProjectLogger.get_logger("DataValidator")
 
 
 class DataValidationError(Exception):
-    """Спеціальний виняток для помилок валідації даних, особливо для DataFrame."""
+    """Specialized exception for data validation errors, especially for DataFrames."""
     pass
 
-# --- Pydantic моделі для валідації на рівні записів ---
+# --- Pydantic models for record-level validation ---
 
 class TradingAction(str, Enum):
-    """Допустимі торгові дії"""
+    """Allowed trading actions"""
     BUY = "BUY"
     SELL = "SELL"
     HOLD = "HOLD"
 
 class Timeframe(str, Enum):
-    """Допустимі таймфрейми"""
+    """Allowed timeframes"""
     MINUTE_1 = "1m"
     MINUTE_5 = "5m"
     MINUTE_15 = "15m"
@@ -43,32 +43,32 @@ class Timeframe(str, Enum):
     WEEK_1 = "1w"
 
 class OrderType(str, Enum):
-    """Типи ордерів"""
+    """Order types"""
     MARKET = "MARKET"
     LIMIT = "LIMIT"
     STOP = "STOP"
     STOP_LIMIT = "STOP_LIMIT"
 
 class SignalStrength(str, Enum):
-    """Сила сигналу"""
+    """Signal strength levels"""
     WEAK = "WEAK"
     MODERATE = "MODERATE"
     STRONG = "STRONG"
 
 class TickerValidator(BaseModel):
-    """Валідатор для тікерів"""
+    """Validator for ticker symbols"""
     symbol: str = Field(..., min_length=1, max_length=10)
 
     @validator('symbol')
     def validate_ticker_format(cls, v):
         if not v or not re.match(r'^[A-Za-z0-9.-]+$', v):
-            raise ValueError("Тікер повинен містити тільки літери, цифри, . або -")
+            raise ValueError("Ticker must contain only letters, numbers, '.' or '-'")
         return v.upper()
 
 class MarketDataSchema(BaseModel):
     """
-    Pydantic схема для валідації ринкових даних (OHLCV).
-    Гарантує цілісність кожного окремого запису.
+    Pydantic schema for market data validation (OHLCV).
+    Ensures integrity for every individual record.
     """
     timestamp: datetime
     open: float = Field(..., gt=0)
@@ -100,7 +100,7 @@ class MarketDataSchema(BaseModel):
         return values
 
 class TradingSignal(BaseModel):
-    """Валідатор для торгових сигналів"""
+    """Validator for trading signals"""
     ticker: str
     action: TradingAction
     price: Optional[float] = Field(None, gt=0)
@@ -115,7 +115,7 @@ class TradingSignal(BaseModel):
 
 
 class TradeOrder(BaseModel):
-    """Валідатор для торгових ордерів"""
+    """Validator for trading orders"""
     ticker: str
     action: TradingAction
     order_type: OrderType = OrderType.MARKET
@@ -131,14 +131,14 @@ class TradeOrder(BaseModel):
     @validator('price')
     def validate_price(cls, v, values):
         if values.get('order_type') in [OrderType.LIMIT, OrderType.STOP_LIMIT] and v is None:
-            raise ValueError("Ціна є обов'язковою для ордерів LIMIT та STOP_LIMIT")
+            raise ValueError("Price is required for LIMIT and STOP_LIMIT orders")
         if v is not None and v <= 0:
-            raise ValueError("Ціна повинна бути позитивною")
+            raise ValueError("Price must be positive")
         return v
 
 
 class BacktestRequest(BaseModel):
-    """Валідатор для запитів бектестингу"""
+    """Validator for backtesting requests"""
     tickers: List[str] = Field(..., min_items=1, max_items=100)
     timeframes: List[Timeframe] = Field(..., min_items=1)
     start_date: date
@@ -150,27 +150,27 @@ class BacktestRequest(BaseModel):
     def validate_tickers(cls, v):
         validated = [TickerValidator(symbol=t).symbol for t in v]
         if len(set(validated)) != len(validated):
-            raise ValueError("Знайдено дублікати тікерів")
+            raise ValueError("Duplicate tickers found")
         return validated
 
     @validator('end_date')
     def validate_date_range(cls, v, values):
         if 'start_date' in values and v <= values['start_date']:
-            raise ValueError("Дата закінчення повинна бути після дати початку")
+            raise ValueError("End date must be after start date")
         return v
 
 
 class DataValidator:
     """
-    Основний клас валідації, що об'єднує Pydantic моделі для валідації записів
-    та оптимізовані векторні методи для валідації DataFrame.
+    Main validator class, combining Pydantic models for individual record validation
+    and optimized vector methods for DataFrame validation.
     """
 
     @staticmethod
     def validate_df(df: pd.DataFrame, context: str = "Market Data") -> pd.DataFrame:
         """
-        Векторна валідація DataFrame для високої продуктивності.
-        Перевіряє логіку OHLCV та базові обмеження.
+        Vectorized DataFrame validation for high performance.
+        Checks OHLCV logic and basic constraints.
         """
         if df.empty:
             logger.warning(f"Validation skipped: {context} DataFrame is empty.")
@@ -178,13 +178,13 @@ class DataValidator:
 
         initial_len = len(df)
         
-        # 1. Перевірка обов'язкових колонок
+        # 1. Required columns check
         required = ["open", "high", "low", "close", "volume"]
         missing = [c for c in required if c not in df.columns]
         if missing:
             raise DataValidationError(f"{context}: Missing required columns: {missing}")
 
-        # 2. Перевірка позитивних значень та логіки свічок (Векторно)
+        # 2. Positive values and candle logic check (Vectorized)
         invalid_mask = (
             (df['open'] <= 0) | (df['high'] <= 0) | (df['low'] <= 0) | (df['close'] <= 0) |
             (df['volume'] < 0) |
@@ -198,7 +198,7 @@ class DataValidator:
         error_count = invalid_mask.sum()
         if error_count > 0:
             logger.error(f"{context}: Found {error_count} rows with invalid OHLCV logic.")
-            # Повертаємо DataFrame без помилкових рядків
+            # Return DataFrame without invalid rows
             df = df[~invalid_mask].copy()
             logger.info(f"{context}: Removed {error_count} invalid rows. Remaining: {len(df)}/{initial_len}")
         else:
@@ -209,12 +209,12 @@ class DataValidator:
     @staticmethod
     def detect_leakage(df: pd.DataFrame, target_cols: List[str], threshold: float = 0.99) -> List[str]:
         """
-        Виявляє ознаки (features), які мають підозріло високу кореляцію з таргетом.
-        Запобігає Data Leakage (витоку майбутнього в минуле).
+        Detects features that have suspiciously high correlation with the target.
+        Prevents Data Leakage (future-to-past leakage).
         """
         leaking_features = []
         
-        # Виключаємо метадані та самі таргети з перевірки ознак
+        # Exclude metadata and the targets themselves from feature checking
         exclude = set(target_cols) | {'datetime', 'ticker', 'timestamp'}
         features = [c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])]
         
@@ -235,7 +235,7 @@ class DataValidator:
     @staticmethod
     def validate_prediction_input(df: pd.DataFrame, model_features: List[str]) -> bool:
         """
-        Перевіряє вхідні дані перед прогнозом: наявність всіх ознак та відсутність NaN.
+        Validates input data before prediction: existence of all features and absence of NaNs.
         """
         missing_features = [f for f in model_features if f not in df.columns]
         if missing_features:
@@ -247,26 +247,26 @@ class DataValidator:
         
         if not cols_with_nan.empty:
             logger.warning(f"Prediction Input Warning: NaN values found in features: {cols_with_nan.to_dict()}")
-            # Якщо останній рядок (для якого робимо прогноз) має NaN - це критично
+            # If the last row (the one we predict for) has NaNs - it's critical
             if df[model_features].iloc[-1].isna().any():
                 logger.error("Prediction Input Error: Critical NaN in the latest data row.")
                 return False
                 
         return True
 
-    # --- Методи для валідації об'єктів через Pydantic ---
+    # --- Methods for object validation via Pydantic ---
 
     @staticmethod
     def validate_request(model: BaseModel, data: Dict[str, Any]) -> BaseModel:
-        """Універсальний метод валідації для будь-якої Pydantic моделі."""
+        """Universal validation method for any Pydantic model."""
         try:
             return model(**data)
         except ValidationError as e:
-            # Переформатування помилок для кращої читабельності
+            # Reformat errors for better readability
             error_messages = [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
-            raise DataValidationError(f"Помилка валідації: {'; '.join(error_messages)}")
+            raise DataValidationError(f"Validation error: {'; '.join(error_messages)}")
 
-    # --- Статичні методи для валідації DataFrame ---
+    # --- Static methods for DataFrame validation ---
 
     @staticmethod
     def validate_dataframe(
@@ -277,32 +277,32 @@ class DataValidator:
         check_duplicates: bool = True,
         context: str = "DataFrame"
     ) -> pd.DataFrame:
-        """Виконує базову перевірку цілісності DataFrame."""
+        """Performs basic DataFrame integrity checks."""
         if not isinstance(df, pd.DataFrame):
-            raise DataValidationError(f"{context}: Очікувався DataFrame, отримано {type(df)}")
+            raise DataValidationError(f"{context}: Expected DataFrame, got {type(df)}")
 
         if df.empty:
             if min_rows > 0:
-                raise DataValidationError(f"{context}: DataFrame порожній")
+                raise DataValidationError(f"{context}: DataFrame is empty")
             else:
-                return df # Порожній DataFrame є допустимим, якщо min_rows=0
+                return df # Empty DataFrame is allowed if min_rows=0
 
         if len(df) < min_rows:
-            raise DataValidationError(f"{context}: DataFrame має {len(df)} рядків, потрібно щонайменше {min_rows}")
+            raise DataValidationError(f"{context}: DataFrame has {len(df)} rows, expected at least {min_rows}")
 
         if required_columns:
             missing_cols = [col for col in required_columns if col not in df.columns]
             if missing_cols:
-                raise DataValidationError(f"{context}: Відсутні обов'язкові колонки: {missing_cols}")
+                raise DataValidationError(f"{context}: Missing required columns: {missing_cols}")
 
         if check_nulls and df.isnull().values.any():
             null_counts = df.isnull().sum()
             null_cols = null_counts[null_counts > 0].to_dict()
-            logger.warning(f"{context}: Знайдено NULL-значення: {null_cols}")
+            logger.warning(f"{context}: Found NULL values: {null_cols}")
 
         if check_duplicates and df.duplicated().any():
             dup_count = df.duplicated().sum()
-            logger.warning(f"{context}: Знайдено {dup_count} дубльованих рядків")
+            logger.warning(f"{context}: Found {dup_count} duplicated rows")
 
         return df
 
@@ -311,7 +311,7 @@ class DataValidator:
         df: pd.DataFrame,
         strict_mode: bool = True
     ) -> pd.DataFrame:
-        """Виконує детальну валідацію DataFrame з OHLCV даними."""
+        """Performs detailed validation on OHLCV data DataFrames."""
         price_columns = ["open", "high", "low", "close"]
         required_cols = price_columns + ["volume", "timestamp"]
         DataValidator.validate_dataframe(df, required_columns=required_cols, context="OHLCV")
@@ -319,29 +319,29 @@ class DataValidator:
         errors = []
         warnings = []
 
-        # Перевірка на негативні значення
+        # Negative values check
         if (df[price_columns] < 0).any().any():
-            errors.append("Знайдено негативні ціни")
+            errors.append("Negative prices found")
         if (df["volume"] < 0).any():
-            errors.append("Знайдено негативний об'єм")
+            errors.append("Negative volume found")
 
-        # Перевірка логіки свічок
+        # Candle logic check
         if (df["high"] < df[["open", "close"]].max(axis=1)).any():
-            errors.append("Знайдено рядки, де High < max(Open, Close)")
+            errors.append("Rows found where High < max(Open, Close)")
         if (df["low"] > df[["open", "close"]].min(axis=1)).any():
-            errors.append("Знайдено рядки, де Low > min(Open, Close)")
+            errors.append("Rows found where Low > min(Open, Close)")
         if (df["high"] < df["low"]).any():
-            errors.append("Знайдено рядки, де High < Low")
+            errors.append("Rows found where High < Low")
 
-        # Перевірка на нульові ціни (зазвичай це попередження)
+        # Zero prices check (usually a warning)
         if (df[price_columns] == 0).any().any():
-            warnings.append("Знайдено нульові ціни, що може свідчити про проблеми з якістю даних")
+            warnings.append("Zero prices found, which may indicate data quality issues")
 
         for w in warnings:
             logger.warning(f"OHLCV Validation: {w}")
 
         if errors:
-            error_message = f"Помилки валідації OHLCV: {'; '.join(errors)}"
+            error_message = f"OHLCV Validation errors: {'; '.join(errors)}"
             if strict_mode:
                 raise DataValidationError(error_message)
             else:
@@ -355,7 +355,7 @@ class DataValidator:
         price_columns: List[str] = ["open", "high", "low", "close"],
         z_score_threshold: float = 3.0
     ) -> Dict[str, Any]:
-        """Аналізує DataFrame на предмет викидів та розраховує оцінку якості."""
+        """Analyzes a DataFrame for outliers and calculates a quality score."""
         report = {"outliers": {}, "statistics": {}, "quality_score": 100.0}
         df_numeric = df[price_columns].apply(pd.to_numeric, errors='coerce').dropna()
 
@@ -377,7 +377,7 @@ class DataValidator:
                     report["outliers"][col] = outlier_count
                     total_outliers += outlier_count
 
-        # Оцінка якості: 100% - відсоток викидів, помножений на 10
+        # Quality score: 100% - percentage of outliers multiplied by 10
         outlier_percentage = (total_outliers / (total_values * len(price_columns))) * 100
         report["quality_score"] = max(0, 100 - (outlier_percentage * 10))
 

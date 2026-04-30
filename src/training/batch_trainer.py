@@ -21,6 +21,13 @@ from src.training.constants import (
 )
 from src.training.base_trainer import BaseTrainer, TrainerConfig
 
+from dataclasses import dataclass
+
+@dataclass
+class BatchConfig:
+    batch_size: int = BATCH_TRAINER_DEFAULT_BATCH_SIZE
+    max_memory_gb: float = BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
+
 logger = ProjectLogger.get_logger("BatchTrainer")
 
 class BatchTrainer(BaseTrainer):
@@ -72,7 +79,7 @@ class BatchTrainer(BaseTrainer):
             for ticker in ticker_group
         )
         
-        return {ticker: result for ticker, result in zip(ticker_group, batch_results)}
+        return dict(zip(ticker_group, batch_results))
 
     def _train_ticker_suite(self, ticker: str, data: Dict[str, Any]) -> Dict:
         """

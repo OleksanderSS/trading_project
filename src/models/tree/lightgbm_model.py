@@ -20,7 +20,7 @@ class LightGBMModel(BaseModel):
         self.random_state = random_state
         self.logger = ProjectLogger.get_logger("LightGBMModel")
         
-        # ✅ ІНІЦІАЛІЗАЦІЯ МОДЕЛІ В __INIT__ (для Ансамблю)
+        # ✅ INITIALIZE MODEL IN __INIT__ (for Ensemble)
         if self.task_type == "classification":
             self.model = lgb.LGBMClassifier(
                 n_estimators=self.n_estimators,
@@ -45,7 +45,7 @@ class LightGBMModel(BaseModel):
     def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> Dict[str, Any]:
         """Trains the LightGBM model."""
         try:
-            # Оновлюємо параметри, якщо вони передані
+            # Update parameters if they are provided
             if kwargs:
                 self.model.set_params(**kwargs)
                 

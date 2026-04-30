@@ -6,12 +6,12 @@ Monitoring Package - Пакет системи моніторингу.
 - SystemHealthMonitor: Моніторинг системного здоров'я
 - ModelPerformanceMonitor: Моніторинг продуктивності моделей
 - DataQualityMonitor: Моніторинг якості даних
-- AlertManager: Менеджер сповіщень
-- MonitoringDashboard: Дашборд моніторингу
+- AlertManager: Alert manager
+- MonitoringDashboard: Monitoring Dashboard
 
-Використовує:
+Uses:
 - Real-time збір метрик
-- Threshold-based сповіщення
+- Threshold-based alerts
 - Web та text дашборди
 - Конфігуруємі інтервали та пороги
 """
@@ -24,15 +24,19 @@ from .monitoring_system import (
     AlertManager,
     MonitoringDashboard,
     BaseMonitor,
-    AlertSeverity,
-    AlertStatus,
+    alertseverity,
+    alertstatus,
     MetricType
 )
 
-from .dashboard import (
-    MonitoringDashboardGenerator,
-    TextBasedDashboard
-)
+try:
+    from .dashboard import (
+        MonitoringDashboardGenerator,
+        TextBasedDashboard
+    )
+except ImportError:
+    MonitoringDashboardGenerator = None
+    TextBasedDashboard = None
 
 from .config import (
     MonitoringConfig,
@@ -40,12 +44,12 @@ from .config import (
     create_config_file
 )
 
-# Існуючі компоненти для сумісності
+# 
 from .health_hub import HealthHub
 from .infrastructure.resource_monitor import ResourceMonitor
 
 __all__ = [
-    # Нові компоненти системи моніторингу
+# 
     'MonitoringSystem',
     'SystemHealthMonitor',
     'ModelPerformanceMonitor',
@@ -58,11 +62,11 @@ __all__ = [
     'MonitoringConfig',
     'get_monitoring_config',
     'create_config_file',
-    'AlertSeverity',
-    'AlertStatus',
+    'alertseverity',
+    'alertstatus',
     'MetricType',
 
-    # Існуючі компоненти
+# 
     "HealthHub",
     "ResourceMonitor"
 ]

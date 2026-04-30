@@ -1,41 +1,50 @@
+# src/analytics/calculators/fama_french_factors.py
+"""
+Fama-French Factor Provider
+Provides accessibility to systematic risk factors including Market, Size, Value, and Momentum.
+Uses Yahoo Finance as the primary data source for benchmark ETF proxies.
+"""
+
 import pandas as pd
 import numpy as np
-import logging
 from datetime import datetime, timedelta
+from typing import List, Optional
 from typing import Dict, Optional, Any
+from src.core.logging.logger import ProjectLogger
 
 try:
     import yfinance as yf
 except ImportError:
     yf = None
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class FamaFrenchFactors:
     """
-    Provides Fama-French market factors (Market, Size, Value, Momentum, etc.).
-    Acts as a data provider and calculator, downloading benchmark data and computing factors.
+    Data provider and calculator for Fama-French systematic risk factors.
+    Downloads public benchmark data and computes relative factor returns for attribution analysis.
     """
 
     def __init__(self, benchmark_tickers: Optional[Dict[str, str]] = None, use_cache: bool = True):
         """
-        Initializes the Fama-French factor provider.
+        Initializes the Fama-French factor engine.
 
         Args:
-            benchmark_tickers (Optional[Dict[str, str]]): Tickers for benchmark indices.
-            use_cache (bool): Flag to enable/disable caching of downloaded data.
+            benchmark_tickers: Custom ticker mapping for proxy ETFs.
+            use_cache: Enables temporal caching of downloaded market data.
         """
         if yf is None:
-            raise ImportError("yfinance is not installed. Please install it with: pip install yfinance")
+            raise ImportError("yfinance dependency missing. Required for systematic factor retrieval.")
 
+        # Default ETF proxies for Fama-French factors
         self.benchmark_tickers = benchmark_tickers or {
-            'market': '^GSPC',      # S&P 500
-            'size_small': '^RUT',   # Russell 2000 (small caps)
-            'size_big': '^OEX',     # S&P 100 (large caps)
-            'value': 'IWD',         # iShares Russell 1000 Value
-            'growth': 'IWF',        # iShares Russell 1000 Growth
-            'momentum_up': 'MTUM',  # iShares MSCI USA Momentum
-            'momentum_down': 'MDLA', # iShares MSCI USA Minimum Volatility (proxy for down)
+            'market': '^GSPC',      # S&P 500 Index (Market Baseline)
+            'size_small': 'IWM',    # Russell 2000 (Small Cap Proxy)
+            'size_big': 'VV',       # Vanguard Large-Cap (Large Cap Proxy)
+            'value': 'VTV',         # Vanguard Value (Value Style Proxy)
+            'growth': 'VUG',        # Vanguard Growth (Growth Style Proxy)
+            'momentum_up': 'MTUM',  # MSCI USA Momentum (Upward Momentum Proxy)
+            'momentum_down': 'VIG', # Dividend Appreciation (Counter-momentum baseline)
         }
         
         self.use_cache = use_cache
@@ -43,120 +52,192 @@ class FamaFrenchFactors:
         self.cache_expiry = timedelta(hours=24)
         self.last_cache_time: Optional[datetime] = None
         
-        logger.info(f"FamaFrenchFactors provider initialized with {len(self.benchmark_tickers)} benchmark tickers.")
+        logger.info(f"FamaFrenchFactors initialized with {len(self.benchmark_tickers)} benchmark proxies.")
 
     def get_factors(self, start_date: str, end_date: str) -> Optional[pd.DataFrame]:
         """
-        Retrieves and calculates key Fama-French factors (MKT, SMB, HML, UMD).
+        Retrieves and calculates primary Fama-French risk factors (MKT, SMB, HML, UMD).
 
         Args:
-            start_date (str): The start date in 'YYYY-MM-DD' format.
-            end_date (str): The end date in 'YYYY-MM-DD' format.
+            start_date: Period start (YYYY-MM-DD).
+            end_date: Period end (YYYY-MM-DD).
 
         Returns:
-            Optional[pd.DataFrame]: A DataFrame with calculated factors, or None on failure.
+            DataFrame of factor returns or None if retrieval fails.
         """
         cache_key = f"{start_date}_{end_date}"
-        if self.use_cache and cache_key in self.cache:
-            if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
-                return self.cache[cache_key]
+        
+        cached_factors = self._check_factor_cache(cache_key)
+        if cached_factors is not None:
+            return cached_factors
 
         try:
             prices = self._download_data(start_date, end_date)
             if prices.empty:
-                logger.error("No data downloaded for Fama-French factors.")
+                logger.error("Factor calculation aborted: Benchmark dataset empty.")
                 return None
 
             returns = prices.pct_change().dropna()
             
-            # Ensure all required columns are present after download and pct_change
-            required_tickers = set(self.benchmark_tickers.values())
-            if not required_tickers.issubset(returns.columns):
-                missing = required_tickers - set(returns.columns)
-                logger.error(f"Missing required benchmark ticker data after download: {missing}")
+            if not self._validate_ticker_coverage(returns):
                 return None
 
-            factors_df = pd.DataFrame(index=returns.index)
+            factors_df = self._calculate_factors(returns)
+            self._update_factor_cache(cache_key, factors_df)
             
-            # 1. Market Factor (MKT)
-            factors_df['MKT'] = returns[self.benchmark_tickers['market']]
-            
-            # 2. Size Factor (SMB): Small minus Big
-            factors_df['SMB'] = returns[self.benchmark_tickers['size_small']] - returns[self.benchmark_tickers['size_big']]
-            
-            # 3. Value Factor (HML): High Book-to-Market minus Low (Value minus Growth)
-            factors_df['HML'] = returns[self.benchmark_tickers['value']] - returns[self.benchmark_tickers['growth']]
-            
-            # 4. Momentum Factor (UMD): Up minus Down
-            factors_df['UMD'] = returns[self.benchmark_tickers['momentum_up']] - returns[self.benchmark_tickers['momentum_down']]
-            
-            # Note: RMW and CMA factors are harder to replicate with simple ETFs and are omitted for robustness.
-
-            factors_df = factors_df.dropna()
-
-            if self.use_cache:
-                self.cache[cache_key] = factors_df
-                self.last_cache_time = datetime.now()
-
-            logger.info(f"Fama-French factors calculated: {len(factors_df)} observations.")
+            logger.info(f"Fama-French factor calculation successful ({len(factors_df)} points).")
             return factors_df
 
         except Exception as e:
-            logger.error(f"Error calculating Fama-French factors: {e}", exc_info=True)
+            logger.error(f"Systematic factor computation failed: {e}", exc_info=True)
             return None
 
-    def _download_data(self, start_date: str, end_date: str) -> pd.DataFrame:
-        """Downloads historical price data for all benchmark tickers."""
-        tickers = list(set(self.benchmark_tickers.values()))
-        
-        # ✅ FIX: Спочатку перевіряємо кеш перед завантаженням
-        cache_key = f"raw_{start_date}_{end_date}"
+    def _check_factor_cache(self, cache_key: str) -> Optional[pd.DataFrame]:
+        """Check if factors are cached and valid."""
         if self.use_cache and cache_key in self.cache:
             if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
-                logger.info(f"✅ Використовуємо кешовані дані для {start_date} - {end_date}")
                 return self.cache[cache_key]
+        return None
+
+    def _validate_ticker_coverage(self, returns: pd.DataFrame) -> bool:
+        """Validate that all required tickers are present in returns."""
+        required_tickers = set(self.benchmark_tickers.values())
+        if not required_tickers.issubset(returns.columns):
+            missing = required_tickers - set(returns.columns)
+            logger.error(f"Incomplete benchmark coverage. Missing: {missing}")
+            return False
+        return True
+
+    def _calculate_factors(self, returns: pd.DataFrame) -> pd.DataFrame:
+        """Calculate Fama-French factors from returns data."""
+        factors_df = pd.DataFrame(index=returns.index)
         
+        factors_df['MKT'] = self._calculate_market_factor(returns)
+        factors_df['SMB'] = self._calculate_size_factor(returns)
+        factors_df['HML'] = self._calculate_value_factor(returns)
+        factors_df['UMD'] = self._calculate_momentum_factor(returns)
+        
+        return factors_df.dropna()
+
+    def _calculate_market_factor(self, returns: pd.DataFrame) -> pd.Series:
+        """Calculate Market factor (MKT)."""
+        return returns[self.benchmark_tickers['market']]
+
+    def _calculate_size_factor(self, returns: pd.DataFrame) -> pd.Series:
+        """Calculate Size factor (SMB): Small Minus Big."""
+        return returns[self.benchmark_tickers['size_small']] - returns[self.benchmark_tickers['size_big']]
+
+    def _calculate_value_factor(self, returns: pd.DataFrame) -> pd.Series:
+        """Calculate Value factor (HML): High Minus Low (Value vs. Growth)."""
+        return returns[self.benchmark_tickers['value']] - returns[self.benchmark_tickers['growth']]
+
+    def _calculate_momentum_factor(self, returns: pd.DataFrame) -> pd.Series:
+        """Calculate Momentum factor (UMD): Up Minus Down."""
+        return returns[self.benchmark_tickers['momentum_up']] - returns[self.benchmark_tickers['momentum_down']]
+
+    def _update_factor_cache(self, cache_key: str, factors_df: pd.DataFrame) -> None:
+        """Update cache with calculated factors."""
+        if self.use_cache:
+            self.cache[cache_key] = factors_df
+            self.last_cache_time = datetime.now()
+
+    def _download_data(self, start_date: str, end_date: str) -> pd.DataFrame:
+        """Internal worker for Yahoo Finance data ingestion."""
+        # Validate date range
+        if not self._validate_date_range(start_date, end_date):
+            return pd.DataFrame()
+        
+        # Setup cache and tickers
+        tickers = list(set(self.benchmark_tickers.values()))
+        cache_key = f"raw_{start_date}_{end_date}"
+        
+        # Check cache first
+        cached_data = self._check_cache(cache_key, start_date)
+        if cached_data is not None:
+            return cached_data
+        
+        # Download from yfinance
         try:
-            logger.info(f"📥 Завантаження даних з Yahoo Finance для {len(tickers)} тікерів...")
-            data = yf.download(tickers, start=start_date, end=end_date, progress=False, auto_adjust=True, group_by='ticker')
-            
-            # If only one ticker, yf doesn't return a multi-level column header.
-            if len(tickers) == 1:
-                result = data[['Close']].rename(columns={'Close': tickers[0]})
-            else:
-                # Extract 'Close' price for each ticker
-                close_prices = pd.DataFrame({ticker: data[ticker]['Close'] for ticker in tickers if ticker in data.columns.get_level_values(0) and not data[ticker].empty})
-                result = close_prices.dropna(how='all')
-            
-            # ✅ Зберігаємо в кеш
-            if self.use_cache and not result.empty:
-                self.cache[cache_key] = result
-                self.last_cache_time = datetime.now()
-                logger.info(f"✅ Дані збережено в кеш")
-            
+            result = self._download_from_yfinance(tickers, start_date, end_date)
+            if not result.empty:
+                self._update_cache(cache_key, result)
             return result
         except Exception as e:
-            logger.error(f"yfinance download failed for tickers {tickers}: {e}")
-            
-            # ✅ FALLBACK: Спробуємо повернути старі кешовані дані якщо є
-            if self.use_cache and cache_key in self.cache:
-                logger.warning(f"⚠️ Використовуємо старі кешовані дані (можливо застарілі)")
-                return self.cache[cache_key]
-            
+            logger.error(f"Remote benchmark ingestion failed (yfinance): {e}")
+            return self._get_fallback_cache(cache_key)
+    
+    def _validate_date_range(self, start_date: str, end_date: str) -> bool:
+        """Validate date range parameters"""
+        try:
+            start_dt = pd.to_datetime(start_date)
+            end_dt = pd.to_datetime(end_date)
+            if start_dt >= end_dt:
+                logger.error(f"Invalid temporal range: {start_date} to {end_date}")
+                return False
+            return True
+        except Exception as e:
+            logger.error(f"Temporal parameters malformed: {e}")
+            return False
+    
+    def _check_cache(self, cache_key: str, start_date: str) -> Optional[pd.DataFrame]:
+        """Check if cached data is available and valid"""
+        if not self.use_cache or cache_key not in self.cache:
+            return None
+        
+        if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
+            logger.debug(f"Utilizing cached benchmark data for {start_date} period.")
+            return self.cache[cache_key]
+        
+        return None
+    
+    def _download_from_yfinance(self, tickers: List[str], start_date: str, end_date: str) -> pd.DataFrame:
+        """Download data from yfinance"""
+        logger.info(f"Ingesting historical benchmarks from yfinance ({len(tickers)} assets)...")
+        data = yf.download(tickers, start=start_date, end=end_date, progress=False, auto_adjust=True, group_by='ticker')
+        
+        if len(tickers) == 1:
+            result = data[['Close']].rename(columns={'Close': tickers[0]})
+        else:
+            # Reconstruct flat DataFrame from multi-index download
+            close_prices = pd.DataFrame({
+                ticker: data[ticker]['Close'] 
+                for ticker in tickers 
+                if ticker in data.columns.get_level_values(0) and not data[ticker].empty
+            })
+            result = close_prices.dropna(how='all')
+        
+        if result.empty or len(result) < 5:
+            logger.warning(f"Insufficient historical depth returned for {tickers}")
             return pd.DataFrame()
+        
+        return result
+    
+    def _update_cache(self, cache_key: str, data: pd.DataFrame) -> None:
+        """Update cache with new data"""
+        if self.use_cache and not data.empty:
+            self.cache[cache_key] = data
+            self.last_cache_time = datetime.now()
+    
+    def _get_fallback_cache(self, cache_key: str) -> pd.DataFrame:
+        """Get fallback cache data during outage"""
+        if self.use_cache and cache_key in self.cache:
+            logger.warning("Utilizing stale cache due to connectivity/retrieval error.")
+            return self.cache[cache_key]
+        return pd.DataFrame()
 
     def analyze_factor_performance(self, factors: pd.DataFrame) -> Dict[str, Dict[str, float]]:
-        """Analyzes performance and statistical properties of the provided factor series."""
-        stats = {}
-        for col in factors.columns:
-            f_data = factors[col]
-            if f_data.empty:
+        """Calculates statistical properties of the systematic factor streams."""
+        performance_stats = {}
+        for factor_name in factors.columns:
+            f_series = factors[factor_name]
+            if f_series.empty:
                 continue
-            stats[col] = {
-                'mean': float(f_data.mean()),
-                'std': float(f_data.std()),
-                'sharpe': float((f_data.mean() / f_data.std()) * np.sqrt(252)) if f_data.std() != 0 else 0,
-                'annual_return': float(f_data.mean() * 252),
-                'annual_volatility': float(f_data.std() * np.sqrt(252))
+            
+            performance_stats[factor_name] = {
+                'mean_return': float(f_series.mean()),
+                'volatility': float(f_series.std()),
+                'annualized_sharpe': float((f_series.mean() / f_series.std()) * np.sqrt(252)) if f_series.std() != 0 else 0.0,
+                'annualized_return': float(f_series.mean() * 252),
+                'annualized_vol': float(f_series.std() * np.sqrt(252))
             }
-        return stats
+        return performance_stats

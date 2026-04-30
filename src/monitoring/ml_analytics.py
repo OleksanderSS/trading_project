@@ -7,7 +7,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
-from sklearn.ensemble import RandomForestClassifier, IsolationForest
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
@@ -216,16 +215,94 @@ class MLAnalytics:
             recs.append("CRITICAL: Unidentified system anomaly detected. Possible hardware or data corruption.")
         return recs
 
-    def load_historical_data(self, days: int) -> List[Dict]:
+    def load_historical_data(self, days: int = 90) -> List[Dict[str, Any]]:
         """Loads past execution reports for training data generation."""
-        # Implementation depends on ModelResultsManager storage logic
-        return [] # Simplified for focus on integration
+        if not self.results_manager:
+            return []
 
-    def prepare_training_data(self, data: List[Dict]) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        return pd.DataFrame(), pd.DataFrame()
+        try:
+            if hasattr(self.results_manager, "load_recent_results"):
+                return self.results_manager.load_recent_results(days=days)
+            if hasattr(self.results_manager, "load_all_results"):
+                return self.results_manager.load_all_results()
+        except Exception as e:
+            logger.warning(f"Could not load historical monitoring data: {e}")
 
-    def train_problem_predictor(self, X, y, p_type, force):
-        return {"status": "skipped", "message": "Manual training required"}
+        return []
 
-    def train_anomaly_detector(self, X, force):
-        return {"status": "skipped"}
+    def prepare_training_data(self, historical_data: List[Dict[str, Any]]) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Builds a conservative tabular dataset from historical monitoring records."""
+        rows = []
+        targets = []
+
+        for record in historical_data:
+            metrics = record.get("metrics", record)
+            rows.append(self.extract_features_from_metrics(metrics))
+            targets.append({
+                "performance": int(record.get("performance_issue", False)),
+                "memory": int(record.get("memory_issue", False)),
+                "disk": int(record.get("disk_issue", False)),
+                "network": int(record.get("network_issue", False)),
+            })
+
+        return pd.DataFrame(rows), pd.DataFrame(targets)
+
+    def train_problem_predictor(
+        self,
+        features_df: pd.DataFrame,
+        targets_df: pd.DataFrame,
+        problem_type: str,
+        force_retrain: bool = False,
+    ) -> Dict[str, Any]:
+        """Trains a simple monitoring classifier when enough labeled data exists."""
+        if problem_type not in targets_df.columns:
+            return {"status": "skipped", "reason": f"Missing target '{problem_type}'"}
+        if features_df.empty or targets_df[problem_type].nunique() < 2:
+            return {"status": "skipped", "reason": "Insufficient labeled classes"}
+
+        try:
+            from sklearn.ensemble import RandomForestClassifier
+
+            X_train, X_test, y_train, y_test = train_test_split(
+                features_df,
+                targets_df[problem_type],
+                test_size=0.2,
+                shuffle=False,
+            )
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+            X_test_scaled = scaler.transform(X_test)
+
+            model = RandomForestClassifier(n_estimators=100, random_state=42)
+            model.fit(X_train_scaled, y_train)
+            accuracy = accuracy_score(y_test, model.predict(X_test_scaled)) if len(y_test) else 0.0
+
+            model_path = self.model_dir / f"{problem_type}_predictor.pkl"
+            scaler_path = self.model_dir / "resource_scaler.pkl"
+            joblib.dump(model, model_path)
+            joblib.dump(scaler, scaler_path)
+            self.models[f"{problem_type}_predictor"] = model
+            self.scalers["resource_scaler"] = scaler
+
+            return {"status": "trained", "accuracy": float(accuracy), "model_path": str(model_path)}
+        except Exception as e:
+            logger.error(f"Training failed for {problem_type} predictor: {e}", exc_info=True)
+            return {"status": "failed", "error": str(e)}
+
+    def train_anomaly_detector(self, features_df: pd.DataFrame, force_retrain: bool = False) -> Dict[str, Any]:
+        """Trains an isolation-forest anomaly detector for infrastructure metrics."""
+        if features_df.empty:
+            return {"status": "skipped", "reason": "No feature data"}
+
+        try:
+            from sklearn.ensemble import IsolationForest
+
+            model = IsolationForest(contamination=0.05, random_state=42)
+            model.fit(features_df)
+            model_path = self.model_dir / "anomaly_detector.pkl"
+            joblib.dump(model, model_path)
+            self.models["anomaly_detector"] = model
+            return {"status": "trained", "model_path": str(model_path)}
+        except Exception as e:
+            logger.error(f"Anomaly detector training failed: {e}", exc_info=True)
+            return {"status": "failed", "error": str(e)}

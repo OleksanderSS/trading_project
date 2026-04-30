@@ -18,6 +18,9 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Any
 
+# Create numpy random generator
+rng = np.random.default_rng(42)
+
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -106,7 +109,7 @@ class SyntheticDataGenerator:
             if 'close' in enriched_df.columns:
                 returns = enriched_df['close'].pct_change().dropna()
             else:
-                returns = pd.Series(np.random.normal(0.0005, 0.02, 1000))
+                returns = pd.Series(rng.normal(0.0005, 0.02, 1000))
             
             # Run Monte Carlo simulations
             n_simulations = self.config_manager.get_config('simulation', {}).get('defaults', {}).get('monte_carlo_runs', 100)
@@ -238,7 +241,7 @@ class SyntheticDataGenerator:
                 )
                 
                 # Simulate DEAN bootstrap
-                dean_simulation = self._simulate_dean_bootstrap(regime_name, regime_params)
+                dean_simulation = self._simulate_dean_bootstrap(regime_name)
                 
                 scenario = {
                     'scenario_id': f'context_{regime_name}',
@@ -265,7 +268,7 @@ class SyntheticDataGenerator:
         """Generate synthetic price path using historical returns"""
         prices = [100.0]
         for _ in range(horizon):
-            ret = np.random.choice(returns.values)
+            ret = rng.choice(returns.values)
             prices.append(prices[-1] * (1 + ret))
         return np.array(prices)
     
@@ -276,10 +279,10 @@ class SyntheticDataGenerator:
         for i in range(horizon):
             if i < shock_dur:
                 # Apply shock
-                ret = shock_mag / shock_dur + np.random.normal(0, 0.01)
+                ret = shock_mag / shock_dur + rng.normal(0, 0.01)
             else:
                 # Recovery
-                ret = np.random.normal(0.0005, 0.02)
+                ret = rng.normal(0.0005, 0.02)
             
             prices.append(prices[-1] * (1 + ret))
         
@@ -290,7 +293,7 @@ class SyntheticDataGenerator:
         prices = [100.0]
         
         for _ in range(horizon):
-            ret = np.random.normal(trend, volatility)
+            ret = rng.normal(trend, volatility)
             prices.append(prices[-1] * (1 + ret))
         
         return np.array(prices)
@@ -334,7 +337,7 @@ class SyntheticDataGenerator:
                 return i - shock_end
         return len(price_path) - shock_end
     
-    def _simulate_dean_bootstrap(self, regime_name: str, regime_params: Dict) -> Dict[str, Any]:
+    def _simulate_dean_bootstrap(self, regime_name: str) -> Dict[str, Any]:
         """Simulate DEAN bootstrap for regime"""
         return {
             'regime': regime_name,
@@ -356,15 +359,15 @@ class SyntheticDataGenerator:
         logger.info("Creating baseline synthetic data...")
         
         dates = pd.date_range(end=datetime.now(), periods=252, freq='D')
-        prices = 100 * np.exp(np.cumsum(np.random.normal(0.0005, 0.02, 252)))
+        prices = 100 * np.exp(np.cumsum(rng.normal(0.0005, 0.02, 252)))
         
         return pd.DataFrame({
             'timestamp': dates,
-            'open': prices * (1 + np.random.normal(0, 0.01, 252)),
-            'high': prices * (1 + np.abs(np.random.normal(0, 0.02, 252))),
-            'low': prices * (1 - np.abs(np.random.normal(0, 0.02, 252))),
+            'open': prices * (1 + rng.normal(0, 0.01, 252)),
+            'high': prices * (1 + np.abs(rng.normal(0, 0.02, 252))),
+            'low': prices * (1 - np.abs(rng.normal(0, 0.02, 252))),
             'close': prices,
-            'volume': np.random.randint(1000000, 10000000, 252)
+            'volume': rng.integers(1000000, 10000000, 252)
         })
     
     def _save_results(self):

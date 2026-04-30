@@ -38,7 +38,7 @@ class QuickNewsAnalyzer:
 
         df_copy = df.copy()
         
-        # ✅ ЗБЕРІГАЄМО ІНДЕКС (може бути DatetimeIndex)
+        # ✅ PRESERVE INDEX (may be DatetimeIndex)
         original_index = df_copy.index
         logger.info(f"[QuickNewsAnalyzer] Input index type: {type(original_index)}")
         
@@ -71,7 +71,7 @@ class QuickNewsAnalyzer:
             sentiments = [TextBlob(t).sentiment for t in texts_nonempty]
             df_copy.loc[nonempty_idx, 'subjectivity_score'] = [s.subjectivity for s in sentiments]
 
-            # ✅ ВІДНОВЛЮЄМО ОРИГІНАЛЬНИЙ ІНДЕКС
+            # ✅ RESTORE ORIGINAL INDEX
             df_copy.index = original_index
             
             self.clustered_df = df_copy

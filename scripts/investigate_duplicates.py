@@ -12,26 +12,15 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def investigate_duplicates():
-    """Investigate duplicate data in detail"""
-    
+def _load_data():
+    """Load features and targets data"""
     db_path = Path("data/colab/accumulated/test_ticker_amd_target_return_1d")
-    
-    logger.info("=" * 80)
-    logger.info("INVESTIGATING DUPLICATES")
-    logger.info("=" * 80)
-    
-    # Load data
     df_features = pd.read_parquet(db_path / "features.parquet")
     df_targets = pd.read_parquet(db_path / "targets.parquet")
-    
-    investigation = {
-        "features": {},
-        "targets": {},
-        "correlation": {}
-    }
-    
-    # ===== FEATURES INVESTIGATION =====
+    return df_features, df_targets
+
+def _investigate_features_duplicates(df_features):
+    """Investigate duplicates in features data"""
     logger.info("\n📊 FEATURES INVESTIGATION")
     logger.info("-" * 80)
     
@@ -61,7 +50,7 @@ def investigate_duplicates():
             if diff_cols:
                 logger.info(f"  Columns that differ: {diff_cols}")
             else:
-                logger.info(f"  All columns are identical")
+                logger.info("  All columns are identical")
     
     # Check for patterns in duplicates
     logger.info("\nDuplicate patterns:")
@@ -69,52 +58,57 @@ def investigate_duplicates():
     logger.info(f"  Max duplicates per index: {dup_counts.max()}")
     logger.info(f"  Mean duplicates per index: {dup_counts.mean():.2f}")
     
-    investigation["features"]["total_duplicates"] = int(df_features.duplicated().sum())
-    investigation["features"]["duplicate_percentage"] = float(df_features.duplicated().sum() / len(df_features) * 100)
-    investigation["features"]["unique_rows"] = len(df_features.drop_duplicates())
-    
-    # ===== TARGETS INVESTIGATION =====
-    logger.info("\n🎯 TARGETS INVESTIGATION")
-    logger.info("-" * 80)
-    
-    logger.info(f"Target shape: {df_targets.shape}")
-    logger.info(f"Target columns: {list(df_targets.columns)}")
+    return {
+        "total_duplicates": int(df_features.duplicated().sum()),
+        "duplicate_percentage": float(df_features.duplicated().sum() / len(df_features) * 100),
+        "unique_rows": len(df_features.drop_duplicates())
+    }
+
+def _investigate_targets_duplicates(df_targets):
+    """Investigate duplicates in targets data"""
+    logger.info("\nTarget shape: {}".format(df_targets.shape))
+    logger.info("Target columns: {}".format(list(df_targets.columns)))
     
     # Check target values
     for col in df_targets.columns:
-        logger.info(f"\n{col}:")
-        logger.info(f"  Unique values: {df_targets[col].nunique()}")
-        logger.info(f"  Value counts:\n{df_targets[col].value_counts()}")
+        logger.info("\n{}:".format(col))
+        logger.info("  Unique values: {}".format(df_targets[col].nunique()))
+        logger.info("  Value counts:\n{}".format(df_targets[col].value_counts()))
         
         # Only compute stats for numeric columns
         if pd.api.types.is_numeric_dtype(df_targets[col]):
-            logger.info(f"  Min: {df_targets[col].min()}, Max: {df_targets[col].max()}")
-            logger.info(f"  Mean: {df_targets[col].mean():.4f}, Std: {df_targets[col].std():.4f}")
+            logger.info("  Min: {}, Max: {}".format(df_targets[col].min(), df_targets[col].max()))
+            logger.info("  Mean: {:.4f}, Std: {:.4f}".format(df_targets[col].mean(), df_targets[col].std()))
         else:
-            logger.info(f"  Type: {df_targets[col].dtype} (non-numeric)")
+            logger.info("  Type: {} (non-numeric)".format(df_targets[col].dtype))
     
     # Check duplicates
     dup_mask_targets = df_targets.duplicated(keep=False)
-    logger.info(f"\nTotal duplicate rows: {dup_mask_targets.sum()}")
-    logger.info(f"Unique rows: {len(df_targets.drop_duplicates())}")
+    logger.info("\nTotal duplicate rows: {}".format(dup_mask_targets.sum()))
+    logger.info("Unique rows: {}".format(len(df_targets.drop_duplicates())))
     
     # Check if all targets are the same
     if df_targets.shape[1] > 0:
         first_col = df_targets.columns[0]
         all_same = (df_targets[first_col] == df_targets[first_col].iloc[0]).all()
-        logger.info(f"All target values identical: {all_same}")
+        logger.info("All target values identical: {}".format(all_same))
     
-    investigation["targets"]["total_duplicates"] = int(df_targets.duplicated().sum())
-    investigation["targets"]["duplicate_percentage"] = float(df_targets.duplicated().sum() / len(df_targets) * 100)
-    investigation["targets"]["unique_rows"] = len(df_targets.drop_duplicates())
-    investigation["targets"]["columns"] = list(df_targets.columns)
-    investigation["targets"]["value_distribution"] = {}
+    investigation = {
+        "total_duplicates": int(df_targets.duplicated().sum()),
+        "duplicate_percentage": float(df_targets.duplicated().sum() / len(df_targets) * 100),
+        "unique_rows": len(df_targets.drop_duplicates()),
+        "columns": list(df_targets.columns),
+        "value_distribution": {}
+    }
     
     for col in df_targets.columns:
-        investigation["targets"]["value_distribution"][col] = df_targets[col].value_counts().to_dict()
+        investigation["value_distribution"][col] = df_targets[col].value_counts().to_dict()
     
-    # ===== CORRELATION INVESTIGATION =====
-    logger.info("\n🔗 CORRELATION INVESTIGATION")
+    return investigation
+
+def _investigate_correlation(df_features, df_targets):
+    """Investigate correlation between features and targets duplicates"""
+    logger.info("\nCORRELATION INVESTIGATION")
     logger.info("-" * 80)
     
     # Check if features and targets have same duplicates
@@ -122,13 +116,39 @@ def investigate_duplicates():
     targ_dup_indices = set(df_targets[df_targets.duplicated(keep=False)].index)
     
     overlap = feat_dup_indices & targ_dup_indices
-    logger.info(f"Duplicate indices in both: {len(overlap)}")
-    logger.info(f"Duplicate indices only in features: {len(feat_dup_indices - targ_dup_indices)}")
-    logger.info(f"Duplicate indices only in targets: {len(targ_dup_indices - feat_dup_indices)}")
+    logger.info("Duplicate indices in both: {}".format(len(overlap)))
+    logger.info("Duplicate indices only in features: {}".format(len(feat_dup_indices - targ_dup_indices)))
+    logger.info("Duplicate indices only in targets: {}".format(len(targ_dup_indices - feat_dup_indices)))
     
-    investigation["correlation"]["overlap_duplicates"] = len(overlap)
-    investigation["correlation"]["features_only"] = len(feat_dup_indices - targ_dup_indices)
-    investigation["correlation"]["targets_only"] = len(targ_dup_indices - feat_dup_indices)
+    return {
+        "overlap_duplicates": len(overlap),
+        "features_only": len(feat_dup_indices - targ_dup_indices),
+        "targets_only": len(targ_dup_indices - feat_dup_indices)
+    }
+
+def investigate_duplicates():
+    """Investigate duplicate data in detail"""
+    logger.info("=" * 80)
+    logger.info("INVESTIGATING DUPLICATES")
+    logger.info("=" * 80)
+    
+    # Load data
+    df_features, df_targets = _load_data()
+    
+    investigation = {
+        "features": {},
+        "targets": {},
+        "correlation": {}
+    }
+    
+    # ===== FEATURES INVESTIGATION =====
+    investigation["features"] = _investigate_features_duplicates(df_features)
+    
+    # ===== TARGETS INVESTIGATION =====
+    investigation["targets"] = _investigate_targets_duplicates(df_targets)
+    
+    # ===== CORRELATION INVESTIGATION =====
+    investigation["correlation"] = _investigate_correlation(df_features, df_targets)
     
     # ===== SAVE INVESTIGATION =====
     report_path = Path("results/duplicate_investigation.json")

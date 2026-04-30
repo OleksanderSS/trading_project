@@ -1,3 +1,5 @@
+# src/pipeline/stages/stage_5_prediction.py
+
 """
 Stage 5: Prediction Generation with Stacked Ensembles and Contextual Adjustments
 
@@ -12,6 +14,8 @@ import pandas as pd
 import numpy as np
 import joblib
 from pathlib import Path
+from datetime import datetime
+from dataclasses import dataclass
 
 from src.pipeline.stages.base_stage import BaseStage
 from src.config.unified_config_manager import UnifiedConfigManager
@@ -29,11 +33,27 @@ from src.models.model_pool import get_model_pool, clear_model_pool, get_pool_sta
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 
+@dataclass
+class PredictionResultRequest:
+    """Request for creating prediction result."""
+    context_id: str
+    ticker: str
+    adjusted_prediction: float
+    raw_prediction: float
+    model_contributions: Dict[str, float]
+    best_model_name: str
+    ticker_df_clean: pd.DataFrame
+    meta: Dict[str, Any]
+
 class PredictionStage(BaseStage):
     """
     Stage responsible for generating model predictions using an ensemble approach,
     calculating confidence scores, and adjusting forecasts based on market context.
     """
+    
+    # Constants to avoid duplication
+    ACCUMULATION_OUTPUT_DIR_CONFIG = 'system.accumulation.output_dir'
+    DEFAULT_ACCUMULATION_DIR = 'data/colab/accumulated'
     def __init__(self, config_manager: UnifiedConfigManager, error_handler, **kwargs):
         super().__init__(config_manager, error_handler, **kwargs)
         self.logger = ProjectLogger.get_logger("PredictionStage")
@@ -57,6 +77,394 @@ class PredictionStage(BaseStage):
         max_models = self.config_manager.get('performance.model_pool_size', 50)
         self.model_pool = get_model_pool(max_models=max_models)
         self.logger.info(f"✅ Model pool enabled (maxsize={max_models}, LRU eviction)")
+        
+        # ✅ NEW: Cache for anomaly estimators (IsolationForest/LOF) to prevent per-call fitting
+        self._anomaly_estimators_cache = {}
+
+    def _validate_inputs(self, features_df, models_meta) -> tuple[bool, str]:
+        """Validate inputs for the prediction stage."""
+        if features_df is None or features_df.empty or not models_meta:
+            self.logger.warning("Required features or model metadata not found. Skipping Stage 5.")
+            self.logger.warning(f"  - features_df is None: {features_df is None}")
+            self.logger.warning(f"  - features_df empty: {features_df.empty if features_df is not None else 'N/A'}")
+            self.logger.warning(f"  - models_meta empty: {not models_meta}")
+            return False, "Invalid inputs"
+        return True, "Valid inputs"
+
+    def _check_local_models(self, models_meta: Dict[str, Any]) -> bool:
+        """Check if models are available locally."""
+        has_local_models = False
+        for context_id, meta in models_meta.items():
+            model_path = meta.get('model_path', '')
+            if model_path and '/content/drive' not in model_path and ('data\\' in model_path or 'data/' in model_path):
+                has_local_models = True
+                self.logger.debug(f"✅ Found local model: {context_id} -> {model_path}")
+                break
+        return has_local_models
+
+    def _log_model_status(self, models_meta: Dict[str, Any]) -> None:
+        """Log model status information."""
+        self.logger.warning("⚠️ All models are from Colab (not available locally).")
+        self.logger.warning("   Checked models:")
+        for context_id, meta in list(models_meta.items())[:5]:
+            model_path = meta.get('model_path', '')
+            model_type = meta.get('model_type', '')
+            self.logger.warning(f"   - {context_id}: model_path='{model_path}', model_type='{model_type}'")
+
+    def _resolve_batch_directory(self, models_meta: Dict[str, Any], kwargs: Dict[str, Any] = None) -> Optional[Path]:
+        """Resolve batch directory from kwargs batch_name or model paths."""
+        base_dir = Path(self.config_manager.get(self.ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
+        
+        # Priority 1: batch_name from kwargs
+        if kwargs:
+            batch_name = kwargs.get('batch_name')
+            if batch_name:
+                batch_dir = base_dir / batch_name
+                if batch_dir.exists():
+                    self.logger.info(f"✅ Resolved batch_dir from batch_name: {batch_dir}")
+                    return batch_dir
+        
+        # Priority 2: extract from model_path (if non-empty)
+        for context_id, meta in models_meta.items():
+            model_path = meta.get('model_path', '')
+            if model_path:
+                model_path_str = model_path.replace('/', os.sep)
+                parts = Path(model_path_str).parts
+                for i, part in enumerate(parts):
+                    if part == 'accumulated' and i + 1 < len(parts):
+                        batch_dir = base_dir / parts[i + 1]
+                        if batch_dir.exists():
+                            self.logger.info(f"✅ Resolved batch_dir from model_path: {batch_dir}")
+                            return batch_dir
+        
+        # Priority 3: use most recently modified subdir
+        if base_dir.exists():
+            subdirs = [d for d in base_dir.iterdir() if d.is_dir()]
+            if subdirs:
+                chosen = max(subdirs, key=lambda p: p.stat().st_mtime)
+                self.logger.info(f"✅ Using most recent batch_dir: {chosen}")
+                return chosen
+        
+        return None
+
+    def _update_local_model_paths(self, models_meta: Dict[str, Any], batch_dir: Path) -> bool:
+        """Update model paths to use local files found in batch_dir."""
+        # Build an index of available model files: {stem_lower -> full_path}
+        model_extensions = {'.keras', '.pkl', '.h5', '.pt', '.joblib'}
+        available_files = {}
+        for f in batch_dir.iterdir():
+            if f.is_file() and f.suffix in model_extensions:
+                available_files[f.stem.lower()] = f
+        
+        if not available_files:
+            self.logger.warning(f"⚠️ No model files found in: {batch_dir}")
+            return False
+        
+        self.logger.info(f"✅ Found {len(available_files)} model files in {batch_dir}")
+        has_local_models = False
+        
+        for context_id, meta in models_meta.items():
+            ticker = meta.get('ticker', '')
+            target = meta.get('target', '')
+            model_type = meta.get('model_type', '')
+            
+            if not ticker or not model_type:
+                continue
+            
+            # Files are named: model_{TICKER}_{TARGET}*_{MODEL_TYPE}
+            # Search by matching ticker + model_type in filename
+            search_key = f"{ticker}_{target}".lower().replace('-', '_')
+            
+            matched = None
+            for stem, fpath in available_files.items():
+                stem_lower = stem.lower()
+                if (ticker.lower() in stem_lower and 
+                    model_type.lower() in stem_lower and
+                    target.lower().replace('-', '_') in stem_lower):
+                    matched = fpath
+                    break
+            
+            if matched:
+                meta['model_path'] = str(matched)
+                has_local_models = True
+                self.logger.debug(f"✅ Mapped {context_id} -> {matched.name}")
+            # Don't warn for every miss — too noisy with 1638 models
+        
+        mapped = sum(1 for m in models_meta.values() if m.get('model_path'))
+        self.logger.info(f"📊 Mapped model paths: {mapped}/{len(models_meta)}")
+        return has_local_models
+
+    def _prepare_ticker_data(self, features_df: pd.DataFrame, ticker: str) -> Optional[pd.DataFrame]:
+        """Prepare and clean ticker data for prediction."""
+        ticker_df = features_df[features_df['ticker'] == ticker].tail(50)
+        if ticker_df.empty:
+            self.logger.warning(f"⚠️ No data for ticker {ticker}")
+            return None
+
+        ticker_df_clean = ticker_df.copy()
+        metadata_cols = ['ticker', 'datetime', 'date', 'interval', 'timeframe', 'hash', 'symbol']
+        ticker_df_clean = ticker_df_clean.drop(columns=[c for c in metadata_cols if c in ticker_df_clean.columns], errors='ignore')
+        
+        for col in ticker_df_clean.columns:
+            try:
+                ticker_df_clean[col] = pd.to_numeric(ticker_df_clean[col], errors='coerce')
+            except (ValueError, TypeError) as e:
+                self.logger.debug(f"Failed to convert column {col} to numeric: {e}")
+                ticker_df_clean = ticker_df_clean.drop(columns=[col], errors='ignore')
+        
+        ticker_df_clean = ticker_df_clean.fillna(0)
+        ticker_df_clean = ticker_df_clean.replace([np.inf, -np.inf], 0)
+        
+        if ticker_df_clean.empty or ticker_df_clean.dtypes.apply(lambda x: x.kind not in 'biufc').any():
+            self.logger.warning(f"⚠️ Data for {ticker} contains non-numeric columns, skipping")
+            return None
+            
+        return ticker_df_clean
+
+    def _get_filtered_features(self, selected_features: List[str], ticker_df_clean: pd.DataFrame) -> List[str]:
+        """Get filtered features list based on selected features."""
+        # Always use all selected features as expected by the model
+        filtered_features_list = selected_features
+        if filtered_features_list:
+            self.logger.info(f"✅ Using {len(filtered_features_list)} selected features for prediction")
+        else:
+            self.logger.warning("⚠️ No selected features specified in metadata")
+        return filtered_features_list
+
+    def _process_context_data(self, context_id: str, meta: Dict[str, Any], features_df: pd.DataFrame) -> Optional[pd.DataFrame]:
+        """Process and prepare data for a specific context."""
+        ticker = meta.get('ticker')
+        target_col = meta.get('target', '')
+        model_type = meta.get('model_type', '')
+        
+        self.logger.info(f"🔍 Processing context: {context_id}")
+        self.logger.info(f"   ticker={ticker}, target={target_col}, model_type={model_type}")
+        
+        # Prepare ticker data
+        ticker_df_clean = self._prepare_ticker_data(features_df, ticker)
+        if ticker_df_clean is None:
+            return None
+        
+        # Get filtered features
+        selected_features = meta.get('selected_features', [])
+        self.logger.debug(f"🔍 Stage 5: context_id={context_id}")
+        self.logger.debug(f"🔍 Stage 5: selected_features from metadata: {len(selected_features)} features")
+        
+        # Ensure all expected features are present in the DataFrame (fill missing with 0)
+        missing_features = [f for f in selected_features if f not in ticker_df_clean.columns]
+        if missing_features:
+            self.logger.debug(f"Adding {len(missing_features)} missing features to DataFrame filled with 0")
+            for f in missing_features:
+                ticker_df_clean[f] = 0.0
+                
+        filtered_features_list = self._get_filtered_features(selected_features, ticker_df_clean)
+        if selected_features and not filtered_features_list:
+            self.logger.warning(f"⚠️ None of selected features found for {model_type}")
+            return None
+        
+        # Apply feature filtering
+        if filtered_features_list:
+            ticker_df_clean = ticker_df_clean[filtered_features_list]
+            self.logger.info(f" Using {len(filtered_features_list)} features for {model_type}")
+        else:
+            self.logger.warning(f" No selected features found for {model_type}, using all {ticker_df_clean.shape[1]} columns")
+            filtered_features_list = ticker_df_clean.columns.tolist()
+        
+        return ticker_df_clean, filtered_features_list
+
+    def _load_target_scaler(self, meta: Dict[str, Any]) -> Optional[Any]:
+        """Load target scaler for denormalization."""
+        ticker = meta.get('ticker', '')
+        target_col = meta.get('target', '')
+        
+        model_path_str = meta.get('model_path', '')
+        if not model_path_str:
+            return None
+            
+        model_path_str = model_path_str.replace('/', '\\')
+        parts = model_path_str.split('\\')
+        if 'models' not in parts:
+            return None
+            
+        models_idx = parts.index('models')
+        if models_idx <= 0:
+            return None
+            
+        batch_name = parts[models_idx - 1]
+        base_dir = Path(self.config_manager.get(self.ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
+        batch_dir = base_dir / batch_name
+        
+        scaler_path = batch_dir / f"scaler_{ticker}_{target_col}.pkl"
+        if scaler_path.exists():
+            target_scaler = joblib.load(scaler_path)
+            if hasattr(target_scaler, 'scale_'):
+                if target_scaler.scale_.shape[0] == 1:
+                    self.logger.info(f"✅ Loaded target scaler from {scaler_path}")
+                    return target_scaler
+                else:
+                    self.logger.error(f"❌ INVALID scaler! Has {target_scaler.scale_.shape[0]} features instead of 1")
+            else:
+                self.logger.warning("⚠️ Scaler has no scale_ attribute")
+        else:
+            self.logger.debug(f"⚠️ No target scaler found at {scaler_path}")
+        
+        return None
+
+    def _perform_knn_similarity_analysis(self, ticker_df_clean: pd.DataFrame, models_list: List[str]) -> tuple[Optional[str], float]:
+        """Perform KNN similarity analysis for model selection."""
+        try:
+            target_features = ticker_df_clean.tail(5)
+            historical_performance = pd.DataFrame()
+            
+            if not historical_performance.empty:
+                return self._analyze_knn_similarities(target_features, historical_performance, models_list)
+        except Exception as e:
+            self.logger.warning(f"⚠️ KNN similarity failed: {e}, falling back to SmartModelSelector")
+        
+        return None, 0.0
+
+    def _analyze_knn_similarities(self, target_features: pd.DataFrame, historical_performance: pd.DataFrame, models_list: List[str]) -> tuple[Optional[str], float]:
+        """Analyze KNN similarities and select best model."""
+        historical_features = historical_performance.get('features', pd.DataFrame())
+        if not historical_features.empty and len(historical_features.columns) == len(target_features.columns):
+            knn_result = self.knn_similarity.analyze({
+                'historical_features': historical_features,
+                'target_features': target_features
+            })
+            return self._process_knn_results(knn_result, target_features, historical_performance, models_list)
+        
+        return None, 0.0
+
+    def _process_knn_results(self, knn_result: Dict, target_features: pd.DataFrame, historical_performance: pd.DataFrame, models_list: List[str]) -> tuple[Optional[str], float]:
+        """Process KNN results to find best model."""
+        if 'similarities' not in knn_result or not knn_result['similarities']:
+            return None, 0.0
+            
+        similarities = knn_result['similarities']
+        last_target_id = target_features.index[-1]
+        
+        if last_target_id not in similarities:
+            return None, 0.0
+            
+        similar_cases = similarities[last_target_id]
+        if not similar_cases:
+            return None, 0.0
+            
+        model_votes = self._calculate_model_votes(similar_cases, historical_performance, models_list)
+        if model_votes:
+            best_model_name = max(model_votes, key=model_votes.get)
+            knn_confidence = model_votes[best_model_name] / sum(model_votes.values())
+            self.logger.info(f"🎯 KNN selected '{best_model_name}' with confidence {knn_confidence:.2f}")
+            return best_model_name, knn_confidence
+            
+        return None, 0.0
+
+    def _calculate_model_votes(self, similar_cases: List[Dict], historical_performance: pd.DataFrame, models_list: List[str]) -> Dict[str, float]:
+        """Calculate model votes from similar cases."""
+        model_votes = {}
+        for case in similar_cases[:3]:
+            case_id = case['id']
+            similarity_score = case['similarity_score']
+            case_model = historical_performance[historical_performance.index == case_id].get('model_name')
+            if case_model is not None and not case_model.empty:
+                model_name = case_model.iloc[0]
+                if model_name in models_list:
+                    model_votes[model_name] = model_votes.get(model_name, 0) + similarity_score
+        return model_votes
+
+    def _select_best_model(self, ticker_df_clean: pd.DataFrame, ticker: str, target_type: str, models_list: List[str]) -> str:
+        """Select the best model using context selector."""
+        best_model_name, _ = self.context_selector.select_best_model(
+            df=ticker_df_clean,
+            target_type=target_type,
+            available_models=models_list
+        )
+        return best_model_name
+
+    def _generate_ensemble_prediction(self, models: Dict[str, Any], ticker_df_clean: pd.DataFrame, filtered_features_list: List[str], market_regime: str, context_id: str) -> tuple[float, Dict[str, float]]:
+        """Generate ensemble prediction from multiple models."""
+        model_preds = {}
+        for m_name, m_inst in models.items():
+            feature_cols = filtered_features_list if filtered_features_list else ticker_df_clean.columns.tolist()
+            model_features = ticker_df_clean[feature_cols] if all(c in ticker_df_clean.columns for c in feature_cols) else ticker_df_clean
+            self.logger.debug(f"   {m_name}: X shape={model_features.shape}, features={len(feature_cols)}")
+            
+            if 'autoencoder' in m_name.lower():
+                self.logger.debug("   ⏭️ Skipping autoencoder for prediction (used only for anomaly detection)")
+                continue
+            
+            model_preds[m_name] = self.ensemble_cache.get_or_compute_model_prediction(
+                features=model_features,
+                model_id=m_name,
+                model_fn=lambda features=model_features, model=m_inst: model.predict(features)
+            )
+        
+        if not model_preds:
+            self.logger.warning(f"⚠️ No models for prediction (only autoencoder), skipping {context_id}")
+            return None, {}
+        
+        preds_df = pd.DataFrame(model_preds)
+        ensemble_result = self.ensemble_factory.predict(
+            X=preds_df,
+            context_params={"ticker": ticker_df_clean.get('ticker', 'unknown'), "regime": market_regime}
+        )
+        raw_prediction = ensemble_result.final_signal
+        model_contributions = ensemble_result.active_weights
+        
+        return raw_prediction, model_contributions
+
+    def _generate_single_model_prediction(self, models: Dict[str, Any], best_model_name: str, ticker_df_clean: pd.DataFrame, filtered_features_list: List[str]) -> tuple[float, Dict[str, float]]:
+        """Generate prediction from a single selected model."""
+        selected_model = models.get(best_model_name, list(models.values())[0])
+        if 'autoencoder' in best_model_name.lower():
+            self.logger.warning("⚠️ Autoencoder not suitable for regression prediction")
+            return None, {}
+        
+        feature_cols = filtered_features_list if filtered_features_list else ticker_df_clean.columns.tolist()
+        X = ticker_df_clean[feature_cols] if all(c in ticker_df_clean.columns for c in feature_cols) else ticker_df_clean
+        self.logger.debug(f"   {best_model_name}: X shape={X.shape}, features={len(feature_cols)}")
+        
+        raw_prediction = selected_model.predict(X)
+        pred_value = raw_prediction[-1] if isinstance(raw_prediction, np.ndarray) else raw_prediction
+        model_contributions = {best_model_name: pred_value}
+        
+        return raw_prediction, model_contributions
+
+    def _adjust_prediction_contextually(self, raw_prediction, best_model_name: str, market_regime: str, ticker: str) -> float:
+        """Adjust prediction based on market context."""
+        adjustment_result = self.adjuster.analyze(
+            data={
+                'predictions': {best_model_name: raw_prediction[-1] if isinstance(raw_prediction, np.ndarray) else raw_prediction},
+                'market_regime': market_regime,
+                'ticker': ticker
+            }
+        )
+        return adjustment_result.get('enhanced_predictions', {}).get(best_model_name, raw_prediction)
+
+    def _denormalize_prediction(self, adjusted_prediction, target_scaler) -> float:
+        """Denormalize prediction using target scaler."""
+        if target_scaler is None:
+            return adjusted_prediction
+            
+        try:
+            if isinstance(adjusted_prediction, np.ndarray):
+                if adjusted_prediction.ndim == 1:
+                    pred_to_denorm = adjusted_prediction[-1:].reshape(-1, 1)
+                else:
+                    pred_to_denorm = adjusted_prediction.reshape(-1, 1)
+            else:
+                pred_to_denorm = np.array([[adjusted_prediction]])
+            
+            if hasattr(target_scaler, 'scale_') and target_scaler.scale_.shape[0] != 1:
+                raise ValueError(f"Scaler has wrong number of features: {target_scaler.scale_.shape[0]} instead of 1")
+            
+            denormalized = target_scaler.inverse_transform(pred_to_denorm)
+            result = float(denormalized.flatten()[-1])
+            self.logger.info(f"✅ Denormalized prediction: {result:.6f}")
+            return result
+        except Exception as e:
+            self.logger.warning(f"⚠️ Failed to denormalize prediction: {e}")
+            return adjusted_prediction
 
     async def run(self, **kwargs) -> Dict[str, Any]:
         """
@@ -68,483 +476,196 @@ class PredictionStage(BaseStage):
         Returns:
             Dict[str, Any]: Updated pipeline data with 'prediction_results'.
         """
-        features_df = kwargs.get('features_data')
-        # ✅ FIX: Читаємо models_metadata з kwargs (не з brain)
-        models_meta = kwargs.get('models_metadata', {})
-        market_regime = kwargs.get('market_regime', 'neutral')
+        # Extract and validate inputs
+        features_df, models_meta, market_regime = self._prepare_inputs(kwargs)
+        if features_df is None or (hasattr(features_df, 'empty') and features_df.empty) or not models_meta:
+            return {}
         
-        # ✅ NEW: Якщо models_metadata не передана, спробуємо завантажити з диска
-        if not models_meta:
-            self.logger.warning("⚠️ models_metadata не знайдена в kwargs. Спроба завантажити з диска...")
-            models_meta = self._load_models_metadata_from_disk(kwargs)
-            if models_meta:
-                self.logger.info(f"✅ Завантажено {len(models_meta)} моделей з диска")
-            else:
-                self.logger.warning("⚠️ Не вдалося завантажити models_metadata з диска")
-
-        self.logger.debug(f"📊 Stage 5: features_df type: {type(features_df)}")
-        self.logger.debug(f"📊 Stage 5: features_df is None: {features_df is None}")
-        if features_df is not None:
-            self.logger.debug(f"📊 Stage 5: features_df shape: {features_df.shape}")
-            self.logger.debug(f"📊 Stage 5: features_df empty: {features_df.empty}")
-        self.logger.debug(f"📊 Stage 5: models_meta type: {type(models_meta)}")
-        self.logger.debug(f"📊 Stage 5: models_meta count: {len(models_meta)}")
-        self.logger.debug(f"📊 Stage 5: models_meta keys: {list(models_meta.keys())[:5] if models_meta else 'empty'}")
-
-        if features_df is None or features_df.empty or not models_meta:
-            self.logger.warning("Required features or model metadata not found. Skipping Stage 5.")
-            self.logger.warning(f"  - features_df is None: {features_df is None}")
-            self.logger.warning(f"  - features_df empty: {features_df.empty if features_df is not None else 'N/A'}")
-            self.logger.warning(f"  - models_meta empty: {not models_meta}")
+        # Check and handle local models
+        if not self._ensure_local_models(models_meta, kwargs):
             return {}
 
-        # ✅ CRITICAL FIX: Normalize datetime columns at stage entry
+        # Generate predictions for all contexts
+        prediction_results = self._generate_predictions_for_contexts(
+            models_meta, features_df, market_regime
+        )
+
+        # Prepare and return results
+        return self._prepare_final_results(prediction_results, models_meta, kwargs)
+
+    def _prepare_inputs(self, kwargs: Dict[str, Any]) -> tuple[Optional[pd.DataFrame], Dict[str, Any], str]:
+        """Prepare and validate inputs for prediction stage."""
+        features_df = next(
+            (kwargs[k] for k in ('features_data', 'features_df', 'enriched_data')
+             if k in kwargs and kwargs[k] is not None),
+            None
+        )
+        models_meta = kwargs.get('models_metadata') or kwargs.get('models_meta', {})
+        market_regime = kwargs.get('market_regime', 'neutral')
+        
+        # Load models metadata if not provided
+        if not models_meta:
+            models_meta = self._load_models_metadata_from_disk(kwargs)
+            if not models_meta:
+                self.logger.warning("Failed to load models_metadata from disk")
+                return None, {}, market_regime
+            else:
+                self.logger.info(f"Loaded {len(models_meta)} models from disk")
+        
+        # Validate inputs
+        is_valid, _ = self._validate_inputs(features_df, models_meta)
+        if not is_valid:
+            return None, {}, market_regime
+        
+        # Normalize features
         if isinstance(features_df, pd.DataFrame):
             features_df = normalize_metadata_columns(features_df)
-            self.logger.info(f"✅ Normalized features_df at stage entry")
-
-        # ✅ FIX: Перевіряємо, чи моделі доступні локально
-        # Моделі можуть бути:
-        # 1. Локальні: model_path містить локальний шлях (data\colab\accumulated\...)
-        # 2. З Colab: model_path містить /content/drive/... або порожній
-        has_local_models = False
-        for context_id, meta in models_meta.items():
-            model_path = meta.get('model_path', '')
-            # Якщо model_path порожній або містить /content/drive, це Colab модель
-            # Якщо model_path містить локальний шлях (data\ або data/), це локальна модель
-            if model_path and '/content/drive' not in model_path and ('data\\' in model_path or 'data/' in model_path):
-                # Це локальна модель
-                has_local_models = True
-                self.logger.debug(f"✅ Знайдена локальна модель: {context_id} -> {model_path}")
-                break
+            self.logger.info("Normalized features_df at stage entry")
         
+        return features_df, models_meta, market_regime
+
+    def _ensure_local_models(self, models_meta: Dict[str, Any], kwargs: Dict[str, Any] = None) -> bool:
+        """Ensure local models are available."""
+        has_local_models = self._check_local_models(models_meta)
         if not has_local_models:
-            self.logger.warning("⚠️ Всі моделі з Colab (не доступні локально).")
-            self.logger.warning(f"   Перевірені моделі:")
-            for context_id, meta in list(models_meta.items())[:5]:
-                model_path = meta.get('model_path', '')
-                model_type = meta.get('model_type', '')
-                self.logger.warning(f"   - {context_id}: model_path='{model_path}', model_type='{model_type}'")
-            
-            # ✅ КРИТИЧНО: Замість пропускання, спробуємо завантажити моделі з локальної папки
-            # Якщо model_path не встановлено, спробуємо знайти моделі в batch_dir/models/
-            self.logger.info("🔍 Спроба завантажити моделі з локальної папки...")
-            
-            # Витягуємо batch_dir з першої моделі
-            batch_dir = None
-            for context_id, meta in models_meta.items():
-                model_path = meta.get('model_path', '')
-                if model_path:
-                    # Витягуємо batch_dir з model_path
-                    parts = model_path.replace('/', '\\').split('\\')
-                    if 'models' in parts:
-                        models_idx = parts.index('models')
-                        if models_idx > 0:
-                            batch_name = parts[models_idx - 1]
-                            base_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
-                            batch_dir = base_dir / batch_name
-                            self.logger.info(f"✅ Витягнено batch_dir: {batch_dir}")
-                            break
-            
+            self._log_model_status(models_meta)
+            batch_dir = self._resolve_batch_directory(models_meta, kwargs)
             if batch_dir and batch_dir.exists():
-                # Оновлюємо model_path для всіх моделей
-                models_dir = batch_dir / 'models'
-                if models_dir.exists():
-                    self.logger.info(f"✅ Знайдена папка моделей: {models_dir}")
-                    for context_id, meta in models_meta.items():
-                        ticker = meta.get('ticker', '')
-                        target = meta.get('target', '')
-                        model_type = meta.get('model_type', '')
-                        
-                        # Конструюємо очікуване ім'я файлу моделі
-                        model_filename = f"{model_type}_{ticker}_{target}.pt"
-                        model_path = models_dir / model_filename
-                        
-                        if model_path.exists():
-                            meta['model_path'] = str(model_path)
-                            self.logger.info(f"✅ Оновлено model_path для {context_id}: {model_path}")
-                            has_local_models = True
-                        else:
-                            self.logger.warning(f"⚠️ Модель не знайдена: {model_path}")
-                else:
-                    self.logger.warning(f"⚠️ Папка моделей не знайдена: {models_dir}")
-            else:
-                self.logger.warning(f"⚠️ Не вдалося витягти batch_dir з model_path")
+                has_local_models = self._update_local_model_paths(models_meta, batch_dir)
             
             if not has_local_models:
-                self.logger.error("❌ Не вдалося знайти жодної локальної моделі. Пропускаємо Stage 5.")
-                return {}
+                self.logger.error("No local models found. Skipping Stage 5.")
+                return False
+        
+        return True
 
+    def _generate_predictions_for_contexts(self, models_meta: Dict[str, Any], features_df: pd.DataFrame, market_regime: str) -> Dict[str, Any]:
+        """Generate predictions for all contexts."""
         prediction_results = {}
         self.logger.info(f"Generating ensemble predictions for {len(models_meta)} contexts...")
 
         for context_id, meta in models_meta.items():
             try:
-                ticker = meta.get('ticker')
-                target_col = meta.get('target', '')
-                model_type = meta.get('model_type', '')
-                
-                self.logger.info(f"🔍 Processing context: {context_id}")
-                self.logger.info(f"   ticker={ticker}, target={target_col}, model_type={model_type}")
-                
-                # Filter features for this specific ticker
-                ticker_df = features_df[features_df['ticker'] == ticker].tail(50) # Use recent window
-                if ticker_df.empty:
-                    self.logger.warning(f"⚠️ No data for ticker {ticker}")
-                    continue
-
-                # ✅ FIX: Очищуємо дані перед передачею в моделі
-                # Видаляємо non-numeric колонки та конвертуємо в float
-                ticker_df_clean = ticker_df.copy()
-                
-                # Видаляємо metadata колонки
-                metadata_cols = ['ticker', 'datetime', 'date', 'interval', 'timeframe', 'hash', 'symbol']
-                ticker_df_clean = ticker_df_clean.drop(columns=[c for c in metadata_cols if c in ticker_df_clean.columns], errors='ignore')
-                
-                # Конвертуємо всі колонки в float
-                for col in ticker_df_clean.columns:
-                    try:
-                        ticker_df_clean[col] = pd.to_numeric(ticker_df_clean[col], errors='coerce')
-                    except:
-                        ticker_df_clean = ticker_df_clean.drop(columns=[col], errors='ignore')
-                
-                # Заповнюємо NaN нулями
-                ticker_df_clean = ticker_df_clean.fillna(0)
-                
-                # Замінюємо inf на 0
-                ticker_df_clean = ticker_df_clean.replace([np.inf, -np.inf], 0)
-                
-                # Перевіряємо що всі дані числові
-                if ticker_df_clean.empty or ticker_df_clean.dtypes.apply(lambda x: x.kind not in 'biufc').any():
-                    self.logger.warning(f"⚠️ Дані для {ticker} містять non-numeric колонки, пропускаємо")
-                    continue
-                
-                # ✅ NEW: Завантажуємо вибрані фічи для цієї моделі
-                selected_features = meta.get('selected_features', [])
-                self.logger.debug(f"🔍 Stage 5: context_id={context_id}")
-                self.logger.debug(f"🔍 Stage 5: meta keys={list(meta.keys())}")
-                self.logger.debug(f"🔍 Stage 5: selected_features з metadata: {len(selected_features)} фіч")
-                if selected_features:
-                    self.logger.debug(f"🔍 Stage 5: перші 5 фіч: {selected_features[:5]}")
-                self.logger.debug(f"🔍 Stage 5: ticker_df_clean shape ДО фільтрування: {ticker_df_clean.shape}")
-                self.logger.debug(f"🔍 Stage 5: ticker_df_clean columns (перші 5): {list(ticker_df_clean.columns)[:5]}")
-                
-                # ✅ Фільтруємо дані до вибраних фіч
-                filtered_features_list = []  # Track which features we're using
-                if selected_features:
-                    available_features = [f for f in selected_features if f in ticker_df_clean.columns]
-                    self.logger.debug(f"🔍 Stage 5: available_features={len(available_features)} (з {len(selected_features)} вибраних)")
-                    
-                    if available_features:
-                        ticker_df_clean = ticker_df_clean[available_features]
-                        filtered_features_list = available_features
-                        self.logger.info(f"✅ Використовуємо {len(available_features)} фіч для {model_type}")
-                        self.logger.debug(f"🔍 Stage 5: ticker_df_clean shape ПІСЛЯ фільтрування: {ticker_df_clean.shape}")
-                    else:
-                        self.logger.warning(f"⚠️ Жодна з вибраних фіч не знайдена для {model_type}")
-                        self.logger.warning(f"   Вибрані фічи: {selected_features[:5]}...")
-                        self.logger.warning(f"   Доступні колонки: {list(ticker_df_clean.columns)[:5]}...")
-                        continue
-                else:
-                    self.logger.warning(f"⚠️ Не знайдено вибраних фіч для {model_type}, використовуємо всі {ticker_df_clean.shape[1]} колонок")
-                    filtered_features_list = ticker_df_clean.columns.tolist()
-
-                # 1. Load All Available Models for this Context (Ensemble)
-                # ✅ FIX: Передаємо models_meta для витягування batch_dir
-                models = self._load_available_models(context_id, models_meta)
-                if not models:
-                    self.logger.warning(f"⚠️ Не знайдено моделей для {context_id}, пропускаємо")
-                    continue
-                
-                # ✅ Завантажуємо scaler для денормалізації (якщо є)
-                # ВАЖЛИВО: Scaler для TARGET (1 колонка) зберігається окремо в batch_dir
-                # НЕ беремо scaler з моделі, бо там scaler для FEATURES (37 колонок)!
-                target_scaler = None
-                
-                # Спробуємо завантажити scaler з batch_dir
-                if target_scaler is None:
-                    # ✅ FIX: Scaler для TARGET зберігається окремо в batch_dir
-                    # Витягуємо batch_dir з model_path
-                    if context_id in models_meta:
-                        model_path_str = models_meta[context_id].get('model_path', '')
-                        if model_path_str:
-                            model_path_str = model_path_str.replace('/', '\\')
-                            parts = model_path_str.split('\\')
-                            if 'models' in parts:
-                                models_idx = parts.index('models')
-                                if models_idx > 0:
-                                    batch_name = parts[models_idx - 1]
-                                    base_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
-                                    batch_dir = base_dir / batch_name
-                                    
-                                    # ✅ Спробуємо завантажити scaler для TARGET
-                                    # Формат: scaler_AMD_target_return_1d.pkl
-                                    scaler_path = batch_dir / f"scaler_{ticker}_{target_col}.pkl"
-                                    if scaler_path.exists():
-                                        import joblib
-                                        target_scaler = joblib.load(scaler_path)
-                                        
-                                        # ✅ DEBUG: Перевіряємо, чи це правильний scaler
-                                        if hasattr(target_scaler, 'scale_'):
-                                            if target_scaler.scale_.shape[0] == 1:
-                                                self.logger.info(f"✅ Завантажено ПРАВИЛЬНИЙ target scaler з {scaler_path} (shape: {target_scaler.scale_.shape})")
-                                            else:
-                                                self.logger.error(f"❌ НЕПРАВИЛЬНИЙ scaler! Має {target_scaler.scale_.shape[0]} features замість 1")
-                                                target_scaler = None
-                                    else:
-                                        # ✅ Альтернатива: шукаємо будь-який scaler у batch_dir
-                                        scaler_files = list(batch_dir.glob("scaler_*.pkl"))
-                                        if scaler_files:
-                                            # Беремо перший знайдений scaler
-                                            scaler_path = scaler_files[0]
-                                            import joblib
-                                            target_scaler = joblib.load(scaler_path)
-                                            
-                                            # ✅ DEBUG: Перевіряємо, чи це правильний scaler
-                                            if hasattr(target_scaler, 'scale_'):
-                                                if target_scaler.scale_.shape[0] == 1:
-                                                    self.logger.warning(f"⚠️ Точний scaler не знайдено, використовуємо {scaler_path.name} (shape: {target_scaler.scale_.shape})")
-                                                else:
-                                                    self.logger.error(f"❌ НЕПРАВИЛЬНИЙ scaler! Має {target_scaler.scale_.shape[0]} features замість 1")
-                                                    target_scaler = None
-                
-                if target_scaler is None:
-                    self.logger.warning(f"⚠️ Target scaler не знайдено для {context_id} - prediction залишиться нормалізованим")
-                    self.logger.info(f"   💡 Порада: Переконайтеся, що моделі були тренувані в Colab з новим кодом (scaler_*.pkl файли)")
-
-                # 2. Contextual Model Selection з KNN Similarity
-                models_list = list(models.keys())
-                target_type = meta.get('target_type', 'classification')
-                
-                # ✅ Спробуємо знайти схожі історичні ситуації через KNN
-                best_model_name = None
-                knn_confidence = 0.0
-                
-                try:
-                    # Підготуємо дані для KNN: останні N рядків як target
-                    target_features = ticker_df_clean.tail(5)  # Останні 5 рядків
-                    
-                    # Історичні дані з diary (якщо є)
-                    # ✅ FIX: DiaryEngine не має get_all_performance(), використовуємо get_history_by_agent()
-                    # Для KNN нам потрібна історія всіх агентів, тому пропускаємо цей крок
-                    historical_performance = pd.DataFrame()  # Поки що порожній DataFrame
-                    
-                    if historical_performance is not None and not historical_performance.empty:
-                        # Витягуємо features з історичних даних
-                        # (припускаємо що diary зберігає context features)
-                        historical_features = historical_performance.get('features', pd.DataFrame())
-                        
-                        if not historical_features.empty and len(historical_features.columns) == len(target_features.columns):
-                            # Запускаємо KNN аналіз
-                            knn_result = self.knn_similarity.analyze({
-                                'historical_features': historical_features,
-                                'target_features': target_features
-                            })
-                            
-                            if 'similarities' in knn_result and knn_result['similarities']:
-                                # Витягуємо найкращу модель з схожих ситуацій
-                                similarities = knn_result['similarities']
-                                
-                                # Беремо останній рядок (найсвіжіший)
-                                last_target_id = target_features.index[-1]
-                                if last_target_id in similarities:
-                                    similar_cases = similarities[last_target_id]
-                                    
-                                    if similar_cases:
-                                        # Знаходимо яка модель найчастіше була успішною
-                                        model_votes = {}
-                                        for case in similar_cases[:3]:  # Top 3 схожі
-                                            case_id = case['id']
-                                            similarity_score = case['similarity_score']
-                                            
-                                            # Витягуємо модель з historical_performance
-                                            case_model = historical_performance[historical_performance.index == case_id].get('model_name')
-                                            if case_model is not None and not case_model.empty:
-                                                model_name = case_model.iloc[0]
-                                                if model_name in models_list:
-                                                    model_votes[model_name] = model_votes.get(model_name, 0) + similarity_score
-                                        
-                                        if model_votes:
-                                            best_model_name = max(model_votes, key=model_votes.get)
-                                            knn_confidence = model_votes[best_model_name] / sum(model_votes.values())
-                                            self.logger.info(f"🎯 KNN вибрав '{best_model_name}' з confidence {knn_confidence:.2f}")
-                except Exception as e:
-                    self.logger.warning(f"⚠️ KNN similarity failed: {e}, falling back to SmartModelSelector")
-                
-                # Fallback до SmartModelSelector якщо KNN не спрацював
-                if best_model_name is None or best_model_name not in models_list:
-                    best_model_name, _ = self.context_selector.select_best_model(
-                        df=ticker_df_clean, 
-                        ticker=ticker, 
-                        target_type=target_type, 
-                        available_models=models_list
-                    )
-                    self.logger.info(f"Contextual Selector chose '{best_model_name}' for {ticker} in {market_regime} regime.")
-                else:
-                    self.logger.info(f"KNN Similarity chose '{best_model_name}' for {ticker} (confidence: {knn_confidence:.2f})")
-
-                # 3. Generate Ensemble Prediction
-                # ✅ Phase 3 Optimization: Use cache for model predictions
-                # Кеш збереже результати для однакових наборів фіч,避免перепричисли
-                anomaly_score = self._calculate_anomaly_score(ticker_df_clean)
-                
-                if len(models) > 1:
-                    model_preds = {}
-                    for m_name, m_inst in models.items():
-                        # ✅ FIX: Використовуємо filtered_features_list замість feature_names_in_
-                        # Це гарантує що моделі отримають правильну кількість фіч
-                        feature_cols = filtered_features_list if filtered_features_list else ticker_df_clean.columns.tolist()
-                        m_X = ticker_df_clean[feature_cols] if all(c in ticker_df_clean.columns for c in feature_cols) else ticker_df_clean
-                        self.logger.debug(f"   {m_name}: X shape={m_X.shape}, features={len(feature_cols)}")
-                        
-                        # ✅ Autoencoder використовуємо для anomaly detection, а не prediction
-                        if 'autoencoder' in m_name.lower():
-                            # Autoencoder не використовується для prediction
-                            # Його anomaly detection вже враховано у _calculate_anomaly_score
-                            self.logger.debug(f"   ⏭️ Пропускаємо autoencoder для prediction (використовується тільки для anomaly detection)")
-                            continue
-                        
-                        # ✅ OPTIMIZATION: Cache model prediction for identical feature sets
-                        # На наступних запусках з тими ж фічами, результат повернеться з кеша
-                        model_preds[m_name] = self.ensemble_cache.get_or_compute_model_prediction(
-                            features=m_X,
-                            model_id=m_name,
-                            model_fn=lambda: m_inst.predict(m_X)
-                        )
-                    
-                    if not model_preds:
-                        self.logger.warning(f"⚠️ Немає моделей для prediction (тільки autoencoder), пропускаємо {context_id}")
-                        continue
-                    
-                    preds_df = pd.DataFrame(model_preds)
-                    
-                    ensemble_result = self.ensemble_factory.predict(
-                        X=preds_df,
-                        context_params={"ticker": ticker, "regime": market_regime}
-                    )
-                    raw_prediction = ensemble_result.final_signal
-                    model_contributions = ensemble_result.active_weights
-                else:
-                    # Тільки одна модель
-                    selected_model = models.get(best_model_name, list(models.values())[0])
-                    
-                    # ✅ Autoencoder - не використовується для prediction
-                    if 'autoencoder' in best_model_name.lower():
-                        self.logger.warning(f"⚠️ Autoencoder не підходить для regression prediction, пропускаємо {context_id}")
-                        continue
-                    
-                    # ✅ FIX: Використовуємо filtered_features_list замість feature_names_in_
-                    feature_cols = filtered_features_list if filtered_features_list else ticker_df_clean.columns.tolist()
-                    X = ticker_df_clean[feature_cols] if all(c in ticker_df_clean.columns for c in feature_cols) else ticker_df_clean
-                    self.logger.debug(f"   {best_model_name}: X shape={X.shape}, features={len(feature_cols)}")
-                    raw_prediction = selected_model.predict(X)
-                    # ✅ FIX: Передаємо реальний прогноз, а не вагу моделі
-                    pred_value = raw_prediction[-1] if isinstance(raw_prediction, np.ndarray) else raw_prediction
-                    model_contributions = {best_model_name: pred_value}
-
-                # 4. Contextual Prediction Adjustment (Market Regime Awareness)
-                # ✅ FIX: PredictionAdjuster.analyze() не .adjust()
-                adjustment_result = self.adjuster.analyze(
-                    data={
-                        'predictions': {best_model_name: raw_prediction[-1] if isinstance(raw_prediction, np.ndarray) else raw_prediction},
-                        'market_regime': market_regime,
-                        'ticker': ticker
-                    }
-                )
-                adjusted_prediction = adjustment_result.get('enhanced_predictions', {}).get(best_model_name, raw_prediction)
-                
-                # ✅ КРИТИЧНО: Денормалізація prediction назад до реальних значень
-                if target_scaler is not None:
-                    try:
-                        self.logger.debug(f"   Денормалізація: prediction ДО = {adjusted_prediction}")
-                        
-                        # ✅ DEBUG: Перевіряємо scaler
-                        self.logger.debug(f"   Scaler type: {type(target_scaler)}")
-                        if hasattr(target_scaler, 'scale_'):
-                            self.logger.debug(f"   Scaler.scale_ shape: {target_scaler.scale_.shape}")
-                            self.logger.debug(f"   Scaler.mean_: {target_scaler.mean_}")
-                        
-                        # Конвертуємо prediction в правильний формат для scaler
-                        # ВАЖЛИВО: scaler очікує shape (n_samples, 1) для target!
-                        if isinstance(adjusted_prediction, np.ndarray):
-                            if adjusted_prediction.ndim == 1:
-                                pred_to_denorm = adjusted_prediction[-1:].reshape(-1, 1)
-                            else:
-                                pred_to_denorm = adjusted_prediction.reshape(-1, 1)
-                        else:
-                            pred_to_denorm = np.array([[adjusted_prediction]])
-                        
-                        self.logger.debug(f"   Prediction shape перед денормалізацією: {pred_to_denorm.shape}")
-                        
-                        # Перевіряємо розмір перед денормалізацією
-                        if pred_to_denorm.shape[1] != 1:
-                            self.logger.warning(f"⚠️ Неправильний розмір prediction: {pred_to_denorm.shape}, очікується (n, 1)")
-                            # Якщо неправильний розмір, беремо тільки першу колонку
-                            pred_to_denorm = pred_to_denorm[:, :1]
-                            self.logger.debug(f"   Prediction shape після корекції: {pred_to_denorm.shape}")
-                        
-                        # ✅ КРИТИЧНО: Перевіряємо, чи scaler має правильну кількість features
-                        if hasattr(target_scaler, 'scale_') and target_scaler.scale_.shape[0] != 1:
-                            self.logger.error(f"❌ КРИТИЧНА ПОМИЛКА: Scaler має {target_scaler.scale_.shape[0]} features, очікується 1!")
-                            self.logger.error(f"   Це означає, що завантажено scaler для FEATURES, а не для TARGET!")
-                            self.logger.error(f"   Prediction залишається нормалізованим")
-                            raise ValueError(f"Scaler має неправильну кількість features: {target_scaler.scale_.shape[0]} замість 1")
-                        
-                        # Денормалізуємо
-                        denormalized = target_scaler.inverse_transform(pred_to_denorm)
-                        adjusted_prediction = float(denormalized.flatten()[-1])
-                        
-                        self.logger.info(f"✅ Денормалізовано prediction: {adjusted_prediction:.6f}")
-                    except Exception as e:
-                        self.logger.warning(f"⚠️ Не вдалося денормалізувати prediction: {e}")
-                        self.logger.debug(f"   Scaler shape: {target_scaler.scale_.shape if hasattr(target_scaler, 'scale_') else 'unknown'}")
-                        self.logger.debug(f"   Prediction shape: {pred_to_denorm.shape if 'pred_to_denorm' in locals() else 'unknown'}")
-                else:
-                    self.logger.warning(f"⚠️ Target scaler не знайдено - prediction залишається нормалізованим!")
-
-                # 5. Calculate Final Confidence
-                confidence_info = self._calculate_ensemble_confidence(
-                    models=models, 
-                    X=ticker_df, 
-                    prediction=adjusted_prediction, 
-                    context_id=context_id
-                )
-                
-                # ✅ Модифікуємо confidence на основі anomaly score
-                final_confidence = confidence_info.get('score', 0.5) * anomaly_score
-                if anomaly_score < 0.8:
-                    self.logger.warning(f"⚠️ Низький anomaly score ({anomaly_score:.2f}) - можлива аномалія в даних!")
-
-                prediction_results[context_id] = {
-                    'ticker': ticker,
-                    'predictions': adjusted_prediction,
-                    'raw_forecast': raw_prediction,
-                    'predictions_by_model': model_contributions,
-                    'selected_primary_model': best_model_name,
-                    'confidence': final_confidence,
-                    'anomaly_score': anomaly_score,  # ✅ Додаємо anomaly score
-                    'last_price': ticker_df['close'].iloc[-1] if 'close' in ticker_df.columns else (
-                        ticker_df[f'{ticker}_1d_close'].iloc[-1] if f'{ticker}_1d_close' in ticker_df.columns else None
-                    ),
-                    'timestamp': ticker_df.index[-1] if isinstance(ticker_df.index, pd.DatetimeIndex) else None
-                }
-                
-                # Handle both scalar and array predictions
-                if isinstance(adjusted_prediction, (np.ndarray, list, pd.Series)) and len(adjusted_prediction) > 0:
-                    pred_value = adjusted_prediction[-1]
-                else:
-                    pred_value = float(adjusted_prediction)
-                
-                self.logger.info(f"Ensemble forecast for {ticker}: {pred_value:.4f} | Conf: {confidence_info.get('score'):.2%}")
-
-            except Exception as e:
+                result = self._process_single_context(context_id, meta, features_df, market_regime)
+                if result:
+                    prediction_results[context_id] = result
+            except (ValueError, TypeError, KeyError, AttributeError) as e:
                 self.handle_stage_error(e, context=f"Prediction-{context_id}", severity="error")
                 self.logger.error(f"Prediction failed for context {context_id}: {e}", exc_info=True)
 
-        # ✅ Конвертуємо predictions в list для Stage 6
+        return prediction_results
+
+    def _process_single_context(self, context_id: str, meta: Dict[str, Any], features_df: pd.DataFrame, market_regime: str) -> Optional[Dict[str, Any]]:
+        """Process a single context and generate prediction."""
+        # Process context data
+        context_result = self._process_context_data(context_id, meta, features_df)
+        if context_result is None:
+            return None
+        
+        ticker_df_clean, filtered_features_list = context_result
+        ticker = meta.get('ticker')
+
+        # Load models and scaler
+        models = self._load_available_models(context_id, {context_id: meta})
+        if not models:
+            self.logger.warning(f"No models found for {context_id}, skipping")
+            return None
+        
+        target_scaler = self._load_target_scaler(meta)
+        if target_scaler is None:
+            self.logger.warning(f"Target scaler not found for {context_id} - prediction remains normalized")
+
+        # Select best model
+        best_model_name = self._select_best_model_for_context(ticker_df_clean, meta, models, ticker, market_regime)
+
+        # Generate prediction
+        raw_prediction, model_contributions = self._generate_prediction_for_context(
+            models, best_model_name, ticker_df_clean, filtered_features_list, market_regime, context_id
+        )
+        if raw_prediction is None:
+            return None
+
+        # Adjust and denormalize prediction
+        adjusted_prediction = self._adjust_and_denormalize_prediction(
+            raw_prediction, best_model_name, market_regime, ticker, target_scaler
+        )
+
+        # Calculate confidence and create result
+        prediction_request = PredictionResultRequest(
+            context_id=context_id,
+            ticker=ticker,
+            adjusted_prediction=adjusted_prediction,
+            raw_prediction=raw_prediction,
+            model_contributions=model_contributions,
+            best_model_name=best_model_name,
+            ticker_df_clean=ticker_df_clean,
+            meta=meta
+        )
+        return self._create_prediction_result(prediction_request)
+
+    def _select_best_model_for_context(self, ticker_df_clean: pd.DataFrame, meta: Dict[str, Any], models: Dict[str, Any], ticker: str, market_regime: str) -> str:
+        """Select the best model for the current context."""
+        models_list = list(models.keys())
+        target_type = meta.get('target_type', 'classification')
+        
+        # Try KNN similarity analysis first
+        best_model_name, knn_confidence = self._perform_knn_similarity_analysis(ticker_df_clean, models_list)
+        
+        # Fall back to context selector if KNN fails
+        if best_model_name is None or best_model_name not in models_list:
+            best_model_name = self._select_best_model(ticker_df_clean, ticker, target_type, models_list)
+            self.logger.info(f"Contextual Selector chose '{best_model_name}' for {ticker} in {market_regime} regime.")
+        else:
+            self.logger.info(f"KNN Similarity chose '{best_model_name}' for {ticker} (confidence: {knn_confidence:.2f})")
+        
+        return best_model_name
+
+    def _generate_prediction_for_context(self, models: Dict[str, Any], best_model_name: str, ticker_df_clean: pd.DataFrame, filtered_features_list: List[str], market_regime: str, context_id: str) -> tuple[Optional[float], Dict[str, float]]:
+        """Generate prediction for the context."""
+        if len(models) > 1:
+            return self._generate_ensemble_prediction(models, ticker_df_clean, filtered_features_list, market_regime, context_id)
+        else:
+            return self._generate_single_model_prediction(models, best_model_name, ticker_df_clean, filtered_features_list)
+
+    def _adjust_and_denormalize_prediction(self, raw_prediction: float, best_model_name: str, market_regime: str, ticker: str, target_scaler) -> float:
+        """Adjust prediction contextually and denormalize."""
+        adjusted_prediction = self._adjust_prediction_contextually(raw_prediction, best_model_name, market_regime, ticker)
+        return self._denormalize_prediction(adjusted_prediction, target_scaler)
+
+    def _create_prediction_result(self, request: PredictionResultRequest) -> Dict[str, Any]:
+        """Create prediction result dictionary."""
+        # Calculate anomaly score and confidence
+        anomaly_score = self._calculate_anomaly_score(request.ticker_df_clean)
+        confidence_info = self._calculate_ensemble_confidence(
+            models={},  # Will be populated by caller if needed
+            X=request.ticker_df_clean,
+            prediction=request.adjusted_prediction,
+            context_id=request.context_id
+        )
+        
+        final_confidence = confidence_info.get('score', 0.5) * anomaly_score
+        if anomaly_score < 0.8:
+            self.logger.warning(f"Low anomaly score ({anomaly_score:.2f}) - potential data anomaly!")
+
+        pred_value = self._extract_prediction_value(request.adjusted_prediction)
+        self.logger.info(f"Ensemble forecast for {request.ticker}: {pred_value:.4f} | Conf: {confidence_info.get('score'):.2%}")
+
+        return {
+            'ticker': request.ticker,
+            'predictions': request.adjusted_prediction,
+            'raw_forecast': request.raw_prediction,
+            'predictions_by_model': request.model_contributions,
+            'selected_primary_model': request.best_model_name,
+            'confidence': final_confidence,
+            'anomaly_score': anomaly_score,
+            'last_price': self._get_last_price(request.ticker_df_clean, request.ticker),
+            'timestamp': request.ticker_df_clean.index[-1] if isinstance(request.ticker_df_clean.index, pd.DatetimeIndex) else None
+        }
+
+    def _prepare_final_results(self, prediction_results: Dict[str, Any], models_meta: Dict[str, Any], kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Prepare final results for return."""
         predictions_list = list(prediction_results.values())
         
-        # ✅ Збираємо current_prices для Stage 6
         current_prices = {}
         for context_id, pred_data in prediction_results.items():
             ticker = pred_data.get('ticker')
@@ -552,38 +673,13 @@ class PredictionStage(BaseStage):
             if ticker and last_price:
                 current_prices[ticker] = last_price
         
-        # ✅ FIX: Рахуємо light та heavy моделі
-        light_models_count = 0
-        heavy_models_count = 0
+        light_models_count = sum(1 for m in models_meta.values() if m.get('model_category') == 'light')
+        heavy_models_count = sum(1 for m in models_meta.values() if m.get('model_category') in ['heavy', 'colab'])
         
-        for context_id, meta in models_meta.items():
-            model_category = meta.get('model_category', meta.get('type', 'unknown'))
-            if model_category == 'light':
-                light_models_count += 1
-            elif model_category == 'heavy' or model_category == 'colab':
-                heavy_models_count += 1
+        self.logger.info(f"Stage 5 complete: {len(predictions_list)} predictions, {len(current_prices)} prices")
+        self.logger.info(f"Models: {light_models_count} light, {heavy_models_count} heavy, {len(models_meta)} total")
         
-        self.logger.info(f"✅ Stage 5 complete: {len(predictions_list)} predictions, {len(current_prices)} prices")
-        self.logger.info(f"📊 Models: {light_models_count} light, {heavy_models_count} heavy, {len(models_meta)} total")
-        
-        # ✅ Phase 3: Log cache statistics for performance analysis
-        cache_stats = self.ensemble_cache.get_statistics()
-        self.logger.info(
-            f"💾 Cache performance - Model: {cache_stats['model_cache']['size']}/{cache_stats['model_cache']['maxsize']} "
-            f"({cache_stats['model_cache']['hit_rate']:.1%} hit rate), "
-            f"Ensemble: {cache_stats['ensemble_cache']['size']}/{cache_stats['ensemble_cache']['maxsize']} "
-            f"({cache_stats['ensemble_cache']['hit_rate']:.1%} hit rate)"
-        )
-        
-        # ✅ Phase 3 Optimization: Log model pool statistics
-        pool_stats = get_pool_stats()
-        self.logger.info(
-            f"🏊 Model pool performance - Size: {pool_stats['current_size']}/{pool_stats['max_size']} "
-            f"({pool_stats['hit_rate']:.1%} hit rate), "
-            f"Evictions: {pool_stats['evictions']}, Load errors: {pool_stats['load_errors']}"
-        )
-        
-        # ✅ NEW: Збереження результатів Stage 5 на диск для гнучкого запуску
+        # Save Stage 5 results to disk
         self._save_stage_5_results(
             predictions_list=predictions_list,
             current_prices=current_prices,
@@ -594,206 +690,33 @@ class PredictionStage(BaseStage):
         return {
             'predictions': predictions_list,
             'current_prices': current_prices,
-            'prediction_results': prediction_results,  # Зберігаємо оригінальний формат для аналізу
-            'models_metadata': models_meta,  # ✅ CRITICAL: Передаємо models_metadata для Stage 6
-            'light_models_count': light_models_count,  # ✅ NEW
-            'heavy_models_count': heavy_models_count,  # ✅ NEW
-            'total_models': len(models_meta)  # ✅ NEW
+            'prediction_results': prediction_results,
+            'models_metadata': models_meta,
+            'light_models_count': light_models_count,
+            'heavy_models_count': heavy_models_count,
+            'total_models': len(models_meta)
         }
 
-    def _create_pytorch_model(self, model_type: str, input_size: int):
-        """
-        Створює PyTorch модель за типом.
-        
-        ✅ ВАЖЛИВО: Архітектури повинні точно збігатися з Colab моделями!
-        Dropout не має параметрів, тому його можна додавати/видаляти без впливу на state_dict.
-        
-        Args:
-            model_type: Тип моделі (mlp, lstm, gru, cnn, transformer, tabnet, autoencoder)
-            input_size: Розмір вхідних даних
-            
-        Returns:
-            Екземпляр моделі
-        """
-        import torch
-        import torch.nn as nn
-        
-        # ✅ ВАЖЛИВО: Архітектури для light models (catboost, lightgbm, xgboost, random_forest, linear, svm, knn)
-        # Всі light models мають однакову архітектуру: 3 Linear layers (0, 3, 6)
-        # Структура: Linear(input→128) + ReLU + Dropout + Linear(128→64) + ReLU + Dropout + Linear(64→1)
-        # Індекси: 0 (Linear), 1 (ReLU), 2 (Dropout), 3 (Linear), 4 (ReLU), 5 (Dropout), 6 (Linear)
-        light_models = ['catboost', 'lightgbm', 'xgboost', 'random_forest', 'linear', 'svm', 'knn']
-        
-        if model_type in light_models or model_type == 'tabnet':
-            # Light models та TabNet: 3 Linear layers (indices 0, 3, 6)
-            return nn.Sequential(
-                nn.Linear(input_size, 128),      # 0: weight, bias
-                nn.ReLU(),                        # 1
-                nn.Dropout(0.5),                  # 2 (no params)
-                nn.Linear(128, 64),               # 3: weight, bias
-                nn.ReLU(),                        # 4
-                nn.Dropout(0.5),                  # 5 (no params)
-                nn.Linear(64, 1)                  # 6: weight, bias
-            )
-        elif model_type == 'mlp':
-            # MLP: 4 Linear layers (indices 0, 3, 6, 8)
-            return nn.Sequential(
-                nn.Linear(input_size, 128),      # 0: weight, bias
-                nn.ReLU(),                        # 1
-                nn.Dropout(0.5),                  # 2 (no params)
-                nn.Linear(128, 64),               # 3: weight, bias
-                nn.ReLU(),                        # 4
-                nn.Dropout(0.5),                  # 5 (no params)
-                nn.Linear(64, 32),                # 6: weight, bias
-                nn.ReLU(),                        # 7
-                nn.Linear(32, 1)                  # 8: weight, bias
-            )
-        elif model_type == 'lstm':
-            # ✅ LSTM: 2 шари з 64 hidden units
-            class LSTMModel(nn.Module):
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.lstm = nn.LSTM(input_sz, 64, 2, batch_first=True)
-                    self.fc = nn.Linear(64, 1)
-                def forward(self, x):
-                    out, _ = self.lstm(x.unsqueeze(1))
-                    return self.fc(out[:, -1, :])
-            return LSTMModel(input_size)
-        elif model_type == 'gru':
-            # ✅ GRU: 2 шари з 64 hidden units
-            class GRUModel(nn.Module):
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.gru = nn.GRU(input_sz, 64, 2, batch_first=True)
-                    self.fc = nn.Linear(64, 1)
-                def forward(self, x):
-                    out, _ = self.gru(x.unsqueeze(1))
-                    return self.fc(out[:, -1, :])
-            return GRUModel(input_size)
-        elif model_type == 'cnn':
-            # ✅ CNN: Conv1d(1->32->64) + FC
-            class CNNModel(nn.Module):
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.conv1 = nn.Conv1d(1, 32, kernel_size=3, padding=1)
-                    self.conv2 = nn.Conv1d(32, 64, kernel_size=3, padding=1)
-                    self.pool = nn.AdaptiveAvgPool1d(1)
-                    self.fc = nn.Linear(64, 1)
-                def forward(self, x):
-                    x = x.unsqueeze(1)
-                    x = torch.relu(self.conv1(x))
-                    x = torch.relu(self.conv2(x))
-                    return self.fc(self.pool(x).squeeze(-1))
-            return CNNModel(input_size)
-        elif model_type == 'transformer':
-            # ✅ Transformer: embedding + 2 encoder layers
-            class TransformerModel(nn.Module):
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.embedding = nn.Linear(input_sz, 64)
-                    encoder_layer = nn.TransformerEncoderLayer(64, 4, dim_feedforward=128, batch_first=True)
-                    self.transformer = nn.TransformerEncoder(encoder_layer, 2)
-                    self.fc = nn.Linear(64, 1)
-                def forward(self, x):
-                    x = self.embedding(x.unsqueeze(1))
-                    x = self.transformer(x)
-                    return self.fc(x[:, -1, :])
-            return TransformerModel(input_size)
-        elif model_type == 'autoencoder':
-            # ✅ Autoencoder: encoder (2 layers) + decoder (2 layers) БЕЗ Dropout
-            # Colab структура: encoder має Linear(47→64) + ReLU + Linear(64→32)
-            class AutoencoderModel(nn.Module):
-                def __init__(self, input_sz):
-                    super().__init__()
-                    # Encoder: input_sz -> 64 -> 32
-                    self.encoder = nn.Sequential(
-                        nn.Linear(input_sz, 64),      # 0: weight, bias
-                        nn.ReLU(),                     # 1
-                        nn.Linear(64, 32)              # 2: weight, bias
-                    )
-                    # Decoder: 32 -> 16 -> 1
-                    self.decoder = nn.Sequential(
-                        nn.Linear(32, 16),             # 0: weight, bias
-                        nn.ReLU(),                     # 1
-                        nn.Linear(16, 1)               # 2: weight, bias
-                    )
-                def forward(self, x):
-                    encoded = self.encoder(x)
-                    decoded = self.decoder(encoded)
-                    return decoded
-            return AutoencoderModel(input_size)
-        else:
-            # Fallback
-            return nn.Sequential(
-                nn.Linear(input_size, 128),
-                nn.ReLU(),
-                nn.Linear(128, 64),
-                nn.ReLU(),
-                nn.Linear(64, 32),
-                nn.ReLU(),
-                nn.Linear(32, 1)
-            )
-
-    def _wrap_pytorch_model(self, model, model_type: str, scaler=None):
-        """
-        Обгортає PyTorch модель щоб мати .predict() метод.
-        
-        Args:
-            model: PyTorch модель
-            model_type: Тип моделі
-            scaler: Target scaler для денормалізації (опціонально)
-            
-        Returns:
-            Обгорнута модель з .predict() методом
-        """
-        import torch
-        
-        class PyTorchPredictor:
-            def __init__(self, pytorch_model, model_type, scaler=None):
-                self.model = pytorch_model
-                self.model_type = model_type
-                self.scaler = scaler  # ✅ Зберігаємо scaler
-                self.model.eval()
-                
-            def predict(self, X):
-                """Генерує передбачення для X"""
-                if isinstance(X, pd.DataFrame):
-                    X = X.values
-                
-                # ✅ КРИТИЧНО: Нормалізуємо features перед prediction
-                if self.scaler is not None:
-                    X_normalized = self.scaler.transform(X)
-                else:
-                    X_normalized = X
-                
-                X_tensor = torch.FloatTensor(X_normalized)
-                with torch.no_grad():
-                    output = self.model(X_tensor)
-                
-                # Повертаємо як numpy array
-                if isinstance(output, torch.Tensor):
-                    return output.cpu().numpy().flatten()
-                return output
-        
-        return PyTorchPredictor(model, model_type, scaler)
-
     def _save_stage_5_results(self, predictions_list: List[Dict], current_prices: Dict, prediction_results: Dict, models_meta: Dict, kwargs: Dict) -> None:
-        """
-        ✅ NEW: Збереження результатів Stage 5 на диск для гнучкого запуску.
-        
-        Зберігає stage_5_results.json у batch_dir для подальшого використання в Stage 6 та 7.
-        """
-        import json
-        from pathlib import Path
-        from datetime import datetime
-        
+        """Saves Stage 5 results to disk for flexible runs."""
         try:
-            # Витягуємо batch_name
-            batch_name = kwargs.get('batch_name')
-            output_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
+            # Try multiple sources for batch_name
+            batch_name = kwargs.get('batch_name') or self.brain.get('batch_name')
+            output_dir = Path(self.config_manager.get(self.ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
             
             if not batch_name:
-                # Шукаємо найновіший batch
+                # Try to extract from model paths in models_meta
+                for meta in models_meta.values():
+                    path = meta.get('model_path', '')
+                    if path:
+                        path_parts = Path(path.replace('/', '\\')).parts
+                        if 'models' in path_parts:
+                            idx = path_parts.index('models')
+                            if idx > 0:
+                                batch_name = path_parts[idx-1]
+                                break
+                
+            if not batch_name:
                 batch_dirs = list(output_dir.glob('test_ticker_*'))
                 if batch_dirs:
                     batch_name = max(batch_dirs, key=lambda p: p.stat().st_mtime).name
@@ -802,7 +725,6 @@ class PredictionStage(BaseStage):
                 batch_dir = output_dir / batch_name
                 batch_dir.mkdir(parents=True, exist_ok=True)
                 
-                # Підготовляємо дані для збереження
                 stage_5_results = {
                     'timestamp': datetime.now().isoformat(),
                     'batch_name': batch_name,
@@ -816,603 +738,394 @@ class PredictionStage(BaseStage):
                     'total_predictions': len(predictions_list)
                 }
                 
-                # Зберігаємо на диск
-                results_file = batch_dir / "stage_5_results.json"
-                with open(results_file, 'w') as f:
+                stage_5_file = batch_dir / "stage_5_results.json"
+                with open(stage_5_file, 'w') as f:
                     json.dump(stage_5_results, f, indent=2, default=str)
                 
-                self.logger.info(f"✅ Результати Stage 5 збережені: {results_file.name}")
+                self.logger.info(f"✅ Stage 5 results saved: {stage_5_file.name}")
         except Exception as e:
-            self.logger.warning(f"⚠️ Помилка збереження результатів Stage 5: {e}")
+            self.logger.warning(f"Error saving Stage 5 results: {e}")
 
     def _load_models_metadata_from_disk(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        ✅ NEW: Завантажує models_metadata з диска, якщо вона не передана через kwargs.
-        
-        Шукає:
-        1. light_models_results_*.json (легкі моделі з етапу 4)
-        2. colab_results_summary.json (важкі моделі з Colab)
-        
-        Returns:
-            Dict з об'єднаними метаданими легких та важких моделей
-        """
-        import json
-        from pathlib import Path
-        
+        """Loads models_metadata from disk if not provided."""
         models_metadata = {}
+        batch_dir = self._resolve_batch_directory_from_kwargs(kwargs)
         
-        # Витягуємо batch_name з kwargs або шукаємо найновіший
+        if batch_dir:
+            self._load_light_models_from_disk(batch_dir, models_metadata)
+            self._load_heavy_models_from_disk(batch_dir, models_metadata)
+        
+        return models_metadata
+
+    def _resolve_batch_directory_from_kwargs(self, kwargs: Dict[str, Any]) -> Optional[Path]:
+        """Resolve batch directory from kwargs."""
         batch_name = kwargs.get('batch_name')
         output_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
         
         if not batch_name:
-            # Шукаємо найновіший batch
             batch_dirs = list(output_dir.glob('test_ticker_*'))
             if batch_dirs:
                 batch_name = max(batch_dirs, key=lambda p: p.stat().st_mtime).name
-                self.logger.info(f"🔍 Знайдено найновіший batch: {batch_name}")
+                self.logger.info(f"Found latest batch: {batch_name}")
         
         if batch_name:
-            batch_dir = output_dir / batch_name
-            
-            # 1. Завантажуємо легкі моделі
-            light_results_files = list(batch_dir.glob("light_models_results_*.json"))
-            if light_results_files:
-                latest_light = max(light_results_files, key=lambda p: p.stat().st_mtime)
-                try:
-                    with open(latest_light, 'r') as f:
-                        light_results = json.load(f)
-                        light_meta = light_results.get('models_metadata', {})
-                        models_metadata.update(light_meta)
-                        self.logger.info(f"✅ Завантажено {len(light_meta)} легких моделей з {latest_light.name}")
-                except Exception as e:
-                    self.logger.warning(f"⚠️ Помилка завантаження легких моделей: {e}")
-            
-            # 2. Завантажуємо важкі моделі з Colab
-            colab_summary_file = batch_dir / "colab_results_summary.json"
-            if colab_summary_file.exists():
-                try:
-                    with open(colab_summary_file, 'r') as f:
-                        colab_results = json.load(f)
-                        
-                        # Витягуємо models_metadata з colab_results
-                        if 'models_metadata' in colab_results:
-                            heavy_meta = colab_results['models_metadata']
-                            models_metadata.update(heavy_meta)
-                            self.logger.info(f"✅ Завантажено {len(heavy_meta)} важких моделей з {colab_summary_file.name}")
-                        else:
-                            # Fallback: витягуємо з ticker_results
-                            ticker_results = colab_results.get('ticker_results', {})
-                            for ticker, ticker_data in ticker_results.items():
-                                timeframes = ticker_data.get('timeframes', {})
-                                for tf, tf_data in timeframes.items():
-                                    results = tf_data.get('results', {})
-                                    for target, target_data in results.items():
-                                        models = target_data.get('models', {})
-                                        for model_type, model_data in models.items():
-                                            context_key = f"{ticker}_{target}_{model_type}"
-                                            models_metadata[context_key] = {
-                                                'ticker': ticker,
-                                                'target': target,
-                                                'winner': model_type,
-                                                'model_type': model_type,
-                                                'model_category': 'heavy',
-                                                'metrics': model_data.get('metrics', {}),
-                                                'selected_features': model_data.get('selected_features', [])
-                                            }
-                            self.logger.info(f"✅ Витягнено {len(models_metadata)} моделей з colab_results_summary.json")
-                except Exception as e:
-                    self.logger.warning(f"⚠️ Помилка завантаження важких моделей: {e}")
-        
-        return models_metadata
+            return output_dir / batch_name
+        return None
+
+    def _load_light_models_from_disk(self, batch_dir: Path, models_metadata: Dict[str, Any]) -> None:
+        """Load light models from disk."""
+        light_results_files = list(batch_dir.glob("light_models_results_*.json"))
+        if light_results_files:
+            latest_light = max(light_results_files, key=lambda p: p.stat().st_mtime)
+            try:
+                with open(latest_light, 'r') as f:
+                    light_results = json.load(f)
+                    light_meta = light_results.get('models_metadata', {})
+                    models_metadata.update(light_meta)
+                    self.logger.info(f"Loaded {len(light_meta)} light models from {latest_light.name}")
+            except Exception as e:
+                self.logger.warning(f"Error loading light models: {e}")
+
+    def _load_heavy_models_from_disk(self, batch_dir: Path, models_metadata: Dict[str, Any]) -> None:
+        """Load heavy models from disk."""
+        colab_summary_file = batch_dir / "colab_results_summary.json"
+        if colab_summary_file.exists():
+            try:
+                with open(colab_summary_file, 'r') as f:
+                    colab_results = json.load(f)
+                    if 'models_metadata' in colab_results:
+                        heavy_meta = colab_results['models_metadata']
+                        models_metadata.update(heavy_meta)
+                        self.logger.info(f"Loaded {len(heavy_meta)} heavy models from {colab_summary_file.name}")
+                    else:
+                        self._process_ticker_results_from_colab(colab_results, models_metadata)
+            except Exception as e:
+                self.logger.warning(f"Error loading colab models: {e}")
+
+    def _process_ticker_results_from_colab(self, colab_results: Dict[str, Any], models_metadata: Dict[str, Any]) -> None:
+        """Process ticker results from colab results."""
+        ticker_results = colab_results.get('ticker_results', {})
+        for ticker, ticker_data in ticker_results.items():
+            timeframes = ticker_data.get('timeframes', {})
+            for tf, tf_data in timeframes.items():
+                results = tf_data.get('results', {})
+                for target, target_data in results.items():
+                    models = target_data.get('models', {})
+                    for model_type, model_data in models.items():
+                        context_key = f"{ticker}_{target}_{model_type}"
+                        models_metadata[context_key] = {
+                            'ticker': ticker,
+                            'target': target,
+                            'winner': model_type,
+                            'model_type': model_type,
+                            'model_category': 'heavy',
+                            'metrics': model_data.get('metrics', {}),
+                            'selected_features': model_data.get('selected_features', [])
+                        }
 
     def _load_available_models(self, context_id: str, models_meta: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Завантажує всі доступні моделі (Light/Heavy) для контексту.
-        
-        Гнучка логіка:
-        1. Тестовий режим (test_ticker/test_target): шукає в models/ підпапці
-        2. Звичайний режим: шукає в кореневій папці батча
-        
-        Підтримує:
-        - .joblib файли (легкі моделі)
-        - .pt файли (важкі моделі PyTorch) - як state_dict так і full models
-        - .pkl файли (старий формат)
-        
-        Args:
-            context_id: Ідентифікатор контексту (ticker_target_model)
-            models_meta: Метадані моделей (передається з kwargs)
-        """
-        loaded_models = {}
-        
-        # ✅ FIX: Визначаємо batch_dir з models_metadata (якщо є model_path)
-        batch_dir = None
+        """Loads all available models for a context."""
         models_meta = models_meta or {}
         
-        self.logger.debug(f"🔍 _load_available_models: context_id={context_id}, models_meta keys={list(models_meta.keys())[:5]}")
+        # Try direct model loading first
+        direct_result = self._try_load_direct_model(context_id, models_meta)
+        if direct_result:
+            return direct_result
         
-        # Спробуємо витягти batch_dir з model_path
+        # Search for models in batch directories
+        batch_dir = self._resolve_batch_dir_from_context(context_id, models_meta)
+        search_patterns = self._get_model_search_patterns(context_id)
+        
+        return self._search_and_load_models(batch_dir, search_patterns, context_id, models_meta)
+
+    def _try_load_direct_model(self, context_id: str, models_meta: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Try to load model directly from metadata path."""
+        if context_id not in models_meta:
+            return None
+            
+        model_path_str = models_meta[context_id].get('model_path', '')
+        if not model_path_str:
+            return None
+        
+        direct_path = Path(model_path_str.replace('/', os.sep))
+        if not direct_path.exists():
+            return None
+        
+        try:
+            model_name = direct_path.stem
+            model_meta = self._create_model_meta(context_id, models_meta, model_name, str(direct_path))
+            loaded_model = self.model_pool.get_model(
+                model_name,
+                loader_fn=lambda path=str(direct_path), meta=model_meta: self.model_loader.load_path(path, meta)
+            )
+            if loaded_model is not None:
+                return {model_name: loaded_model}
+        except Exception as e:
+            self.logger.warning(f"Failed to load model via direct path {direct_path}: {e}")
+        
+        return None
+
+    def _resolve_batch_dir_from_context(self, context_id: str, models_meta: Dict[str, Any]) -> Path:
+        """Resolve batch directory from context metadata."""
         if context_id in models_meta:
             model_path_str = models_meta[context_id].get('model_path', '')
-            self.logger.debug(f"🔍 Знайдено model_path для {context_id}: {model_path_str}")
             if model_path_str:
-                # ✅ FIX: Нормалізуємо шлях (замінюємо / на \ для Windows)
-                model_path_str = model_path_str.replace('/', '\\')
-                # Витягуємо batch_name з шляху (наприклад: ...\\test_ticker_amd_target_return_1d_ep5_iter5\\models\\...)
-                parts = model_path_str.split('\\')
-                if 'models' in parts:
-                    models_idx = parts.index('models')
-                    if models_idx > 0:
-                        batch_name = parts[models_idx - 1]
-                        base_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
-                        batch_dir = base_dir / batch_name
-                        self.logger.info(f"📂 Витягнуто batch_dir з model_path: {batch_dir}")
-        else:
-            self.logger.warning(f"⚠️ context_id '{context_id}' не знайдено в models_meta")
+                batch_dir = self._extract_batch_dir_from_path(model_path_str)
+                if batch_dir:
+                    return batch_dir
         
-        # Якщо не вдалося витягти, використовуємо дефолтний шлях
-        if batch_dir is None:
-            batch_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
-            self.logger.warning(f"⚠️ Не вдалося витягти batch_dir з model_path, використовуємо дефолтний: {batch_dir}")
-        
-        # Визначаємо режим з runtime_params.json
-        runtime_params_path = batch_dir / "runtime_params.json"
-        is_test_mode = False
-        
-        if runtime_params_path.exists():
-            try:
-                with open(runtime_params_path, 'r') as f:
-                    runtime_params = json.load(f)
-                    test_mode = runtime_params.get('test_mode', {})
-                    is_test_mode = test_mode.get('enabled', False) and (
-                        test_mode.get('test_ticker') or test_mode.get('test_target')
-                    )
-                    self.logger.info(f"📋 runtime_params: test_mode.enabled={is_test_mode}")
-            except Exception as e:
-                self.logger.warning(f"⚠️ Не вдалося прочитати runtime_params.json: {e}")
-        else:
-            self.logger.warning(f"⚠️ runtime_params.json не знайдено: {runtime_params_path}")
-        
-        # Визначаємо шлях до моделей
-        if is_test_mode:
-            # Тестовий режим: models/ підпапка
-            models_search_paths = [
-                batch_dir / 'models',
-                self.models_path / 'models'
-            ]
-            self.logger.info(f"🧪 Тестовий режим: шукаємо моделі в {batch_dir / 'models'}")
-        else:
-            # Звичайний режим: коренева папка
-            models_search_paths = [
-                batch_dir,
-                self.models_path
-            ]
-            self.logger.info(f"📦 Звичайний режим: шукаємо моделі в корені")
-        
-        # Патерни для пошуку
-        # ✅ FIX: Розширені патерни для пошуку моделей
-        # Витягуємо ticker, target, model_name з context_id
-        # Формат context_id: AMD_target_return_1d_mlp (ticker_target_model)
-        # Формат файлів: mlp_AMD_target_return_1d.pt (model_ticker_target)
+        return Path(self.config_manager.get(self.ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
+
+    def _extract_batch_dir_from_path(self, model_path_str: str) -> Optional[Path]:
+        """Extract batch directory from model path."""
+        model_path_str = model_path_str.replace('/', '\\')
+        parts = model_path_str.split('\\')
+        if 'models' in parts:
+            models_idx = parts.index('models')
+            if models_idx > 0:
+                batch_name = parts[models_idx - 1]
+                base_dir = Path(self.config_manager.get(self.ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
+                return base_dir / batch_name
+        return None
+
+    def _get_model_search_patterns(self, context_id: str) -> List[str]:
+        """Get model search patterns based on context ID format."""
         parts = context_id.split('_')
         if len(parts) >= 4:
             ticker = parts[0]
-            target = '_'.join(parts[1:-1])  # target_return_1d
-            model_name = parts[-1]  # mlp
+            target = '_'.join(parts[1:-1]) 
+            model_name = parts[-1] 
             
-            patterns = [
-                # ✅ ПРАВИЛЬНИЙ ФОРМАТ: model_ticker_target
-                # PyTorch моделі (важкі)
-                f"{model_name}_{ticker}_{target}.pt",  # mlp_AMD_target_return_1d.pt
-                f"{model_name}_{ticker}_*.pt",  # mlp_AMD_*.pt
-                f"*{model_name}*.pt",  # *mlp*.pt
-                # Joblib моделі (легкі)
-                f"{model_name}_{ticker}_{target}.joblib",  # catboost_AMD_target_return_1d.joblib
-                f"{model_name}_{ticker}_*.joblib",  # catboost_AMD_*.joblib
-                f"*{model_name}*.joblib",  # *catboost*.joblib
-                # Старі формати (для зворотної сумісності)
-                f"CHAMP_{ticker}_{target}_{model_name}*.joblib",
-                f"MODEL_{ticker}_{target}_{model_name}*.joblib",
-                f"*{ticker}_{target}_{model_name}*.pkl"
-            ]
-        else:
-            # Фоллбек до старих патернів
-            patterns = [
+            return [
+                # New standard Colab naming
+                f"model_{ticker}_{target}*_{model_name}.keras",
+                f"model_{ticker}_{target}*_{model_name}.pkl",
+                f"model_{ticker}_{target}*_{model_name}.h5",
+                f"model_{ticker}_{target}*_{model_name}.pt",
+                f"model_{ticker}_{target}*_{model_name}.joblib",
+                # Legacy / Generic match
+                f"*{ticker}*{target}*{model_name}*.*",
+                f"{model_name}_{ticker}_{target}.pt",
                 f"CHAMP_{context_id}*.joblib",
                 f"MODEL_{context_id}*.joblib",
                 f"*{context_id}*.pt",
                 f"*{context_id}*.pkl"
             ]
+        return [
+            f"*{context_id}*.keras",
+            f"*{context_id}*.pkl",
+            f"*{context_id}*.pt", 
+            f"*{context_id}*.joblib"
+        ]
+    def _search_and_load_models(self, batch_dir: Path, patterns: List[str], context_id: str, models_meta: Dict[str, Any]) -> Dict[str, Any]:
+        """Search and load models from batch directory."""
+        loaded_models = {}
         
-        self.logger.debug(f"🔍 Патерни пошуку: {patterns}")
+        # Read runtime params if available
+        self._read_runtime_params_if_exists(batch_dir)
+        
+        # Define search paths and iterate
+        models_search_paths = self._get_models_search_paths(batch_dir)
         
         for search_path in models_search_paths:
             if not search_path.exists():
                 continue
+            
+            self._search_patterns_in_path(search_path, patterns, context_id, models_meta, loaded_models)
 
-            for pattern in patterns:
-                for path in search_path.glob(pattern):
-                    try:
-                        model_name = path.stem.replace(f"_{context_id}", "")
-                        self.logger.debug(f"🔍 Found candidate model file: {path}")
-
-                        model_meta = {
-                            'model_id': model_name,
-                            'model_path': str(path),
-                            'model_type': models_meta.get(context_id, {}).get('model_type', model_name),
-                            'ticker': models_meta.get(context_id, {}).get('ticker'),
-                            'target': models_meta.get(context_id, {}).get('target')
-                        }
-                        
-                        # ✅ Phase 3 Optimization: Use model pool for lazy loading (30-40% speedup)
-                        loaded_model = self.model_pool.get_model(
-                            model_name,
-                            loader_fn=lambda: self.model_loader.load_path(str(path), model_meta)
-                        )
-                        
-                        if loaded_model is None:
-                            self.logger.warning(f"⚠️ Model pool could not load model {model_name} from {path}")
-                            continue
-                        loaded_models[model_name] = loaded_model
-                        self.logger.info(f"✅ Завантажено модель: {model_name}")
-                    except ModelLoadingError as e:
-                        self.handle_stage_error(e, context=f"ModelLoad-{path.name}", severity="warning")
-                        self.logger.warning(f"⚠️ Failed to load model from {path}: {e}")
-                    except Exception as e:
-                        self.handle_stage_error(e, context=f"ModelLoad-{path.name}", severity="warning")
-                        self.logger.warning(f"⚠️ Failed to load model from {path}: {e}")
-
-        if not loaded_models:
-            self.logger.warning(f"⚠️ Не знайдено жодної моделі для {context_id}")
-        else:
-            self.logger.info(f"🎯 Завантажено {len(loaded_models)} моделей для {context_id}")
-        
         return loaded_models
 
-    def _extract_batch_dir(self, model_path: str) -> Optional[Path]:
-        """
-        ✅ UTILITY: Extract batch directory from model path.
-        
-        Handles various path formats:
-        - /data/colab/accumulated/test_ticker_amd.../models/model.pt
-        - data\\colab\\accumulated\\batch_name\\models\\model.pt
-        - C:\\absolute\\path\\accumulated\\batch\\models\\model.pt
-        
-        Returns:
-            Path to batch directory or None if extraction fails
-        """
-        if not model_path:
-            return None
-        
-        try:
-            path = Path(model_path.replace('/', '\\'))
-            parts = path.parts
-            
-            # Look for 'models' folder and return parent
-            if 'models' in parts:
-                models_idx = parts.index('models')
-                if models_idx > 0:
-                    batch_name = parts[models_idx - 1]
-                    # Reconstruct path up to batch directory
-                    batch_dir = Path(*parts[:models_idx])
-                    if batch_dir.exists():
-                        return batch_dir
-                    # Fallback: search from accumulated
-                    base_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
-                    return base_dir / batch_name
-        except Exception as e:
-            self.logger.debug(f"Could not extract batch_dir from {model_path}: {e}")
-        
-        return None
-
-    def _load_target_scaler(self, ticker: str, target_col: str, batch_dir: Optional[Path]) -> Optional[Any]:
-        """
-        ✅ UTILITY: Load target scaler with fallback strategies.
-        
-        Tries multiple naming patterns for scaler files:
-        1. scaler_{ticker}_{target_col}.pkl
-        2. scaler_{ticker}.pkl
-        3. scaler_{target_col}.pkl
-        4. Any scaler_*.pkl in directory
-        
-        Args:
-            ticker: Ticker symbol (e.g., 'AMD')
-            target_col: Target column name (e.g., 'target_return_1d')
-            batch_dir: Directory containing scaler files
-        
-        Returns:
-            Loaded scaler object or None if not found
-        """
-        if batch_dir is None or not batch_dir.exists():
-            return None
-        
-        # Candidates in priority order
-        candidates = [
-            batch_dir / f"scaler_{ticker}_{target_col}.pkl",
-            batch_dir / f"scaler_{ticker}.pkl",
-            batch_dir / f"scaler_{target_col}.pkl",
+    def _get_models_search_paths(self, batch_dir: Path) -> List[Path]:
+        """Get model search paths."""
+        return [
+            batch_dir / 'models',
+            batch_dir,
+            self.models_path / 'models',
+            self.models_path
         ]
-        
-        # Try exact matches first
-        for scaler_path in candidates:
-            if scaler_path.exists():
-                try:
-                    scaler = joblib.load(scaler_path)
-                    
-                    # Validate scaler (should be for target, not features)
-                    if hasattr(scaler, 'scale_') and scaler.scale_.shape[0] == 1:
-                        self.logger.info(f"✅ Loaded target scaler from {scaler_path.name}")
-                        return scaler
-                    else:
-                        self.logger.warning(f"⚠️ Invalid scaler shape at {scaler_path.name}")
-                except Exception as e:
-                    self.logger.debug(f"Failed to load {scaler_path}: {e}")
-        
-        # Fallback: glob search for any scaler_*.pkl
-        try:
-            scaler_files = list(batch_dir.glob("scaler_*.pkl"))
-            for scaler_path in scaler_files:
-                try:
-                    scaler = joblib.load(scaler_path)
-                    if hasattr(scaler, 'scale_') and scaler.scale_.shape[0] == 1:
-                        self.logger.info(f"✅ Loaded target scaler from {scaler_path.name} (glob fallback)")
-                        return scaler
-                except:
-                    pass
-        except Exception as e:
-            self.logger.debug(f"Glob search failed: {e}")
-        
-        self.logger.warning(f"⚠️ No valid target scaler found for {ticker}/{target_col}")
-        return None
 
-    def _calculate_anomaly_score(self, X: pd.DataFrame, historical_data: Optional[pd.DataFrame] = None) -> float:
-        """
-        Розраховує anomaly score на основі:
-        1. Z-score від історичного середнього
-        2. Isolation Forest
-        3. Local Outlier Factor (LOF)
-        
-        Returns:
-            float: Anomaly score від 0 (нормально) до 1 (аномалія)
-        """
+    def _search_patterns_in_path(self, search_path: Path, patterns: List[str], context_id: str, models_meta: Dict[str, Any], loaded_models: Dict[str, Any]) -> None:
+        """Search for patterns in a specific path and load models."""
+        for pattern in patterns:
+            for path in search_path.glob(pattern):
+                self._try_load_model_from_path(path, context_id, models_meta, loaded_models)
+
+    def _try_load_model_from_path(self, path: Path, context_id: str, models_meta: Dict[str, Any], loaded_models: Dict[str, Any]) -> None:
+        """Try to load a model from a specific path."""
         try:
-            if X is None or len(X) == 0:
-                return 0.5  # Невизначено
+            cur_model_name = path.stem.replace(f"_{context_id}", "")
+            model_meta = self._create_model_meta(context_id, models_meta, cur_model_name, str(path))
             
-            # Отримуємо останній рядок даних
-            current_row = X.iloc[-1:].values.flatten()
-            
-            # Якщо немає історичних даних, використовуємо поточні дані
-            if historical_data is None or len(historical_data) < 2:
-                historical_data = X
-            
-            historical_values = historical_data.values.flatten()
-            
-            scores = []
-            
-            # 1. Z-score метод
-            try:
-                mean = np.mean(historical_values)
-                std = np.std(historical_values)
-                
-                if std > 0:
-                    z_scores = np.abs((current_row - mean) / std)
-                    # Якщо z-score > 3, це аномалія
-                    z_anomaly = np.mean(z_scores > 3.0)
-                    scores.append(z_anomaly)
-                else:
-                    scores.append(0.0)
-            except:
-                scores.append(0.0)
-            
-            # 2. Isolation Forest
-            try:
-                if len(historical_values) > 10:
-                    iso_forest = IsolationForest(contamination=0.1, random_state=42)
-                    iso_forest.fit(historical_values.reshape(-1, 1))
-                    iso_pred = iso_forest.predict(current_row.reshape(-1, 1))
-                    # -1 = аномалія, 1 = нормально
-                    iso_anomaly = 1.0 if iso_pred[0] == -1 else 0.0
-                    scores.append(iso_anomaly)
-                else:
-                    scores.append(0.0)
-            except:
-                scores.append(0.0)
-            
-            # 3. Local Outlier Factor (LOF)
-            try:
-                if len(historical_values) > 20:
-                    lof = LocalOutlierFactor(n_neighbors=min(20, len(historical_values) - 1))
-                    lof.fit(historical_values.reshape(-1, 1))
-                    lof_pred = lof.predict(current_row.reshape(-1, 1))
-                    # -1 = аномалія, 1 = нормально
-                    lof_anomaly = 1.0 if lof_pred[0] == -1 else 0.0
-                    scores.append(lof_anomaly)
-                else:
-                    scores.append(0.0)
-            except:
-                scores.append(0.0)
-            
-            # Комбінуємо оцінки
-            if scores:
-                anomaly_score = np.mean(scores)
-            else:
-                anomaly_score = 0.5
-            
-            return np.clip(anomaly_score, 0, 1)
-        
+            loaded_model = self.model_pool.get_model(
+                cur_model_name,
+                loader_fn=lambda path=str(path), meta=model_meta: self.model_loader.load_path(path, meta)
+            )
+            if loaded_model is not None:
+                loaded_models[cur_model_name] = loaded_model
         except Exception as e:
-            self.logger.warning(f"⚠️ Помилка при розрахунку anomaly score: {e}")
+            self.logger.warning(f"Failed to load model from {path}: {e}")
+
+    def _create_model_meta(self, context_id: str, models_meta: Dict[str, Any], model_name: str, model_path: str) -> Dict[str, Any]:
+        """Create model metadata dictionary."""
+        return {
+            'model_id': model_name,
+            'model_path': model_path,
+            'model_type': models_meta.get(context_id, {}).get('model_type', model_name),
+            'ticker': models_meta.get(context_id, {}).get('ticker'),
+            'target': models_meta.get(context_id, {}).get('target')
+        }
+
+    def _read_runtime_params_if_exists(self, batch_dir: Path) -> None:
+        """Read runtime params if file exists."""
+        runtime_params_path = batch_dir / "runtime_params.json"
+        if runtime_params_path.exists():
+            try:
+                with open(runtime_params_path, 'r') as f:
+                    runtime_params = json.load(f)
+                    test_mode = runtime_params.get('test_mode', {})
+                    _ = test_mode.get('enabled', False)
+            except Exception as e:
+                self.logger.warning(f"Could not read runtime_params.json: {e}")
+
+    def _calculate_anomaly_score(self, X: pd.DataFrame, context_id: str = "default") -> float:
+        """Calculates anomaly score from 0 to 1."""
+        try:
+            if X.empty or len(X) < 2:
+                return 0.5
+
+            current_row, historical_data = self._prepare_anomaly_data(X)
+            cache_key = f"{context_id}_{X.shape[1]}"
+            
+            # Calculate different anomaly scores
+            z_score = self._calculate_zscore_anomaly(current_row, historical_data)
+            iso_score = self._calculate_isolation_forest_anomaly(current_row, historical_data, cache_key)
+            lof_score = self._calculate_lof_anomaly(current_row, historical_data, cache_key)
+            
+            # Combine scores
+            final_anomaly = (z_score * 0.4 + iso_score * 0.4 + lof_score * 0.2)
+            return float(np.clip(final_anomaly, 0, 1))
+            
+        except Exception as e:
+            self.logger.warning(f"Anomaly detection failure: {e}")
             return 0.5
 
-    def _calculate_anomaly_score(self, X: pd.DataFrame) -> float:
-        """
-        Розраховує anomaly score на основі:
-        1. Z-score від історичного середнього
-        2. Isolation Forest
-        3. Local Outlier Factor (LOF)
-        
-        Повертає значення від 0 (нормально) до 1 (аномалія)
-        """
+    def _prepare_anomaly_data(self, X: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+        """Prepare data for anomaly detection."""
+        current_row = X.iloc[-1:].values
+        historical_data = X.iloc[:-1].values if len(X) > 1 else X.values
+        return current_row, historical_data
+
+    def _calculate_zscore_anomaly(self, current_row: np.ndarray, historical_data: np.ndarray) -> float:
+        """Calculate Z-score based anomaly score."""
         try:
-            from sklearn.ensemble import IsolationForest
-            from sklearn.neighbors import LocalOutlierFactor
-            import numpy as np
-            
-            if X.empty or len(X) < 2:
-                return 0.5  # Невизначено
-            
-            # Беремо останній рядок як поточні дані
-            current_data = X.iloc[-1:].values
-            historical_data = X.iloc[:-1].values if len(X) > 1 else X.values
-            
-            scores = []
-            
-            # 1. Z-score (0-1)
-            try:
-                if len(historical_data) > 1:
-                    mean = np.mean(historical_data, axis=0)
-                    std = np.std(historical_data, axis=0)
-                    z_scores = np.abs((current_data - mean) / (std + 1e-6))
-                    z_score_anomaly = np.mean(z_scores)
-                    z_score_anomaly = np.clip(z_score_anomaly / 3.0, 0, 1)  # Нормалізуємо до [0, 1]
-                    scores.append(z_score_anomaly)
-                    self.logger.debug(f"   Z-score anomaly: {z_score_anomaly:.3f}")
-                else:
-                    scores.append(0.5)
-            except Exception as e:
-                self.logger.warning(f"   Z-score calculation failed: {e}")
-                scores.append(0.5)
-            
-            # 2. Isolation Forest (0-1)
-            try:
-                if len(historical_data) > 5:
-                    iso_forest = IsolationForest(contamination=0.1, random_state=42)
-                    iso_forest.fit(historical_data)
-                    iso_pred = iso_forest.predict(current_data)
-                    iso_anomaly = 1.0 if iso_pred[0] == -1 else 0.0
-                    scores.append(iso_anomaly)
-                    self.logger.debug(f"   Isolation Forest anomaly: {iso_anomaly:.3f}")
-                else:
-                    scores.append(0.5)
-            except Exception as e:
-                self.logger.warning(f"   Isolation Forest failed: {e}")
-                scores.append(0.5)
-            
-            # 3. Local Outlier Factor (0-1)
-            try:
-                if len(historical_data) > 5:
-                    lof = LocalOutlierFactor(n_neighbors=min(20, len(historical_data)-1))
-                    lof.fit(historical_data)
-                    lof_pred = lof.predict(current_data)
-                    lof_anomaly = 1.0 if lof_pred[0] == -1 else 0.0
-                    scores.append(lof_anomaly)
-                    self.logger.debug(f"   LOF anomaly: {lof_anomaly:.3f}")
-                else:
-                    scores.append(0.5)
-            except Exception as e:
-                self.logger.warning(f"   LOF failed: {e}")
-                scores.append(0.5)
-            
-            # Комбінуємо з вагами
-            final_anomaly = (scores[0] * 0.5 +  # Z-score: 50%
-                           scores[1] * 0.3 +    # Isolation Forest: 30%
-                           scores[2] * 0.2)     # LOF: 20%
-            
-            final_anomaly = np.clip(final_anomaly, 0, 1)
-            self.logger.info(f"   📊 Final anomaly score: {final_anomaly:.3f} (z={scores[0]:.2f}, iso={scores[1]:.2f}, lof={scores[2]:.2f})")
-            
-            return final_anomaly
-            
-        except Exception as e:
-            self.logger.warning(f"   ⚠️ Anomaly score calculation failed: {e}")
-            return 0.5  # Невизначено
-        """
-        Calculates confidence based on:
-        1. Model consensus (how many models agree)
-        2. Model accuracy (historical performance)
-        3. Market volatility (context)
-        4. Prediction dispersion (variance)
-        """
-        scores = []
-        
-        # 1. Model Consensus (0-1)
-        if len(models) > 1:
-            try:
-                preds = []
-                for m in models.values():
-                    try:
-                        pred = m.predict(X)
-                        if isinstance(pred, np.ndarray):
-                            preds.append(pred[-1] if len(pred) > 0 else 0)
-                        else:
-                            preds.append(float(pred))
-                    except:
-                        continue
+            mean = np.mean(historical_data, axis=0)
+            std = np.std(historical_data, axis=0)
+            z_scores = np.abs((current_row - mean) / (std + 1e-6))
+            return np.clip(float(np.mean(z_scores)) / 3.0, 0, 1)
+        except Exception:
+            return 0.5
+
+    def _calculate_isolation_forest_anomaly(self, current_row: np.ndarray, historical_data: np.ndarray, cache_key: str) -> float:
+        """Calculate Isolation Forest based anomaly score."""
+        try:
+            if len(historical_data) <= 10:
+                return 0.5
                 
-                if len(preds) > 1:
-                    # Consensus: how many models agree on direction
-                    mean_pred = np.mean(preds)
-                    agreement = np.mean([1 if (p > 0) == (mean_pred > 0) else 0 for p in preds])
-                    scores.append(agreement)
-                else:
-                    scores.append(0.5)
-            except:
-                scores.append(0.5)
+            iso_key = f"iso_{cache_key}"
+            if iso_key not in self._anomaly_estimators_cache:
+                iso_forest = IsolationForest(contamination=0.1, random_state=42)
+                iso_forest.fit(historical_data)
+                self._anomaly_estimators_cache[iso_key] = iso_forest
+            
+            iso_pred = self._anomaly_estimators_cache[iso_key].predict(current_row)
+            return 1.0 if iso_pred[0] == -1 else 0.0
+        except Exception:
+            return 0.5
+
+    def _calculate_lof_anomaly(self, current_row: np.ndarray, historical_data: np.ndarray, cache_key: str) -> float:
+        """Calculate Local Outlier Factor based anomaly score."""
+        try:
+            if len(historical_data) <= 10:
+                return 0.5
+                
+            lof_key = f"lof_{cache_key}"
+            if lof_key not in self._anomaly_estimators_cache:
+                lof = LocalOutlierFactor(n_neighbors=min(20, len(historical_data)-1), novelty=True)
+                lof.fit(historical_data)
+                self._anomaly_estimators_cache[lof_key] = lof
+            
+            lof_pred = self._anomaly_estimators_cache[lof_key].predict(current_row)
+            return 1.0 if lof_pred[0] == -1 else 0.0
+        except Exception:
+            return 0.5
+    
+    def _get_last_price(self, ticker_df: pd.DataFrame, ticker: str) -> Optional[float]:
+        """Get the last price from ticker dataframe with fallback options."""
+        if 'close' in ticker_df.columns:
+            return ticker_df['close'].iloc[-1]
+        elif f'{ticker}_1d_close' in ticker_df.columns:
+            return ticker_df[f'{ticker}_1d_close'].iloc[-1]
         else:
-            scores.append(0.5)
-        
-        # 2. Model Accuracy (0-1)
+            return None
+
+    def _extract_prediction_value(self, adjusted_prediction) -> float:
+        """Extract prediction value from various prediction formats."""
+        if hasattr(adjusted_prediction, '__len__') and len(adjusted_prediction) > 0:
+            return adjusted_prediction[-1] if hasattr(adjusted_prediction, '__getitem__') else float(adjusted_prediction)
+        else:
+            return float(adjusted_prediction)
+
+    def _calculate_ensemble_confidence(self, models: Dict[str, Any], X: pd.DataFrame, prediction: float, context_id: str) -> Dict[str, float]:
+        """Calculates multi-factor confidence score."""
         try:
-            perf = self.diary.get_recent_performance(context=context_id, window=30)
-            accuracy = perf.get('accuracy', 0.5)
-            scores.append(np.clip(accuracy, 0, 1))
-        except:
-            scores.append(0.5)
-        
-        # 3. Market Volatility Factor (0-1)
-        try:
-            if len(X) > 1:
-                returns = np.diff(X.iloc[:, 0].values) / (X.iloc[:-1, 0].values + 1e-6)
-                volatility = np.std(returns)
-                # Lower volatility = higher confidence
-                vol_factor = 1.0 / (1.0 + volatility * 10)
-                scores.append(np.clip(vol_factor, 0, 1))
-            else:
-                scores.append(0.5)
-        except:
-            scores.append(0.5)
-        
-        # 4. Prediction Dispersion (0-1)
-        try:
-            if len(models) > 1:
-                preds = []
-                for m in models.values():
-                    try:
-                        pred = m.predict(X)
-                        if isinstance(pred, np.ndarray):
-                            preds.append(pred[-1] if len(pred) > 0 else 0)
-                        else:
-                            preds.append(float(pred))
-                    except:
-                        continue
-                
-                if len(preds) > 1:
-                    variance = np.var(preds)
-                    # Lower variance = higher confidence
-                    dispersion = 1.0 / (1.0 + variance)
-                    scores.append(np.clip(dispersion, 0, 1))
-                else:
-                    scores.append(0.5)
-            else:
-                scores.append(0.5)
-        except:
-            scores.append(0.5)
-        
-        # Combine scores with weights
-        final_score = (scores[0] * 0.3 +  # Consensus: 30%
-                      scores[1] * 0.3 +   # Accuracy: 30%
-                      scores[2] * 0.2 +   # Volatility: 20%
-                      scores[3] * 0.2)    # Dispersion: 20%
-        
-        return {'score': np.clip(final_score, 0, 1)}
+            if not models:
+                return {'score': 0.5}
+
+            raw_preds = []
+            for m_name, model in models.items():
+                try:
+                    p = model.predict(X)
+                    val = float(p[-1]) if hasattr(p, '__len__') else float(p)
+                    raw_preds.append(val)
+                except (ValueError, TypeError, AttributeError):
+                    continue
+
+            if not raw_preds:
+                return {'score': 0.5}
+
+            consensus_score = 0.5
+            dispersion_score = 0.5
+            
+            if len(raw_preds) > 1:
+                final_dir = (prediction > 0)
+                agreement = sum(1 for p in raw_preds if (p > 0) == final_dir)
+                consensus_score = agreement / len(raw_preds)
+                variance = np.var(raw_preds)
+                dispersion_score = 1.0 / (1.0 + variance * 5)
+            
+            accuracy_score = 0.5
+            try:
+                perf = self.diary.get_recent_performance(context=context_id, window=20)
+                accuracy_score = perf.get('accuracy', 0.5)
+            except Exception:
+                pass
+
+            volatility_factor = 0.5
+            try:
+                if len(X) > 5:
+                    vol = np.std(X.iloc[-10:, 0].values)
+                    volatility_factor = 1.0 / (1.0 + vol * 20)
+            except Exception:
+                pass
+
+            final_score = (
+                consensus_score * 0.35 + 
+                dispersion_score * 0.25 + 
+                accuracy_score * 0.25 + 
+                volatility_factor * 0.15
+            )
+            
+            return {'score': float(np.clip(final_score, 0, 1))}
+        except Exception as e:
+            self.logger.warning(f"⚠️ Confidence calculation failure: {e}")
+            return {'score': 0.5}

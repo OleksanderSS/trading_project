@@ -35,7 +35,7 @@ def load_results_json(path: str = "results.json") -> pd.DataFrame:
 def build_competence_matrix(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     """
     Будує матрицю компетенцandй for порandвняння:
-    - for класифandкацandєю: average accuracy/F1/roc_auc per (ticker, interval, model)
+    - for classифandкацandєю: average accuracy/F1/roc_auc per (ticker, interval, model)
     - for регресandєю: average mae/r2 per (ticker, interval, model)
     """
     if df.empty:
@@ -49,7 +49,7 @@ def build_competence_matrix(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     df["metrics"] = df["metrics"].apply(lambda m: m if isinstance(m, dict) else {})
     metrics_df = df.assign(**df["metrics"].apply(pd.Series))
 
-    # Класифandкацandя
+    # classифandкацandя
     cls_cols = ["accuracy", "F1", "roc_auc"]
     cls_matrix = (
         metrics_df[["ticker", "interval", "model"] + cls_cols]
@@ -81,7 +81,7 @@ def pick_best_models(
 ) -> Dict[str, pd.DataFrame]:
     """
     Вибирає топ-моwhereлand:
-    - for класифandкацandї: сортуємо for середнandм скором (mean accuracy/F1/roc_auc)
+    - for classифandкацandї: сортуємо for середнandм скором (mean accuracy/F1/roc_auc)
     - for регресandї: компоwithитний скор (1/mae + r2), сортуємо спадно
     """
     cls = matrices.get("classification", pd.DataFrame()).copy()

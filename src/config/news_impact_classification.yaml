@@ -1,0 +1,200 @@
+# News Impact Classification Configuration
+# Повна класифікація впливу новин на тікери та таймфрейми
+
+news_impact_classification:
+  
+  # ============================================
+  # MARKET WIDE NEWS (впливають на весь ринок)
+  # ============================================
+  market_wide:
+    keywords: [
+      "economy", "economic", "inflation", "fed", "federal reserve", "interest rates",
+      "gdp", "unemployment", "recession", "market", "stock market", "wall street",
+      "trading", "investors", "investment", "bull market", "bear market",
+      "volatility", "vix", "fear greed index", "market sentiment"
+    ]
+    impact_type: "market_wide"
+    affected_tickers: "all"
+    affected_sectors: "all"
+    timeframes: ["1d", "60m"]  # Середньо-довгостроковий вплив
+    impact_strength: "high"
+    description: "Новини що впливають на весь ринок"
+    
+  # ============================================
+  # MACRO ECONOMIC NEWS (макроекономічні)
+  # ============================================
+  macro_economic:
+    keywords: [
+      "cpi", "consumer price index", "ppi", "producer price index",
+      "jobless claims", "nonfarm payrolls", "retail sales", "manufacturing",
+      "services pmi", "industrial production", "consumer confidence",
+      "durable goods", "housing starts", "building permits", "trade balance"
+    ]
+    impact_type: "macro_economic"
+    affected_tickers: "all"
+    affected_sectors: "all"
+    timeframes: ["1d"]  # Довгостроковий вплив
+    impact_strength: "high"
+    description: "Макроекономічні показники"
+    
+  # ============================================
+  # GEOPOLITICAL NEWS (геополітичні)
+  # ============================================
+  geopolitical:
+    keywords: [
+      "war", "conflict", "sanctions", "trade war", "tariffs", "geopolitical",
+      "china", "russia", "ukraine", "europe", "middle east", "north korea",
+      "iran", "israel", "brexit", "election", "political", "government"
+    ]
+    impact_type: "geopolitical"
+    affected_tickers: "all"
+    affected_sectors: "all"
+    timeframes: ["1d", "60m"]
+    impact_strength: "medium"
+    description: "Геополітичні події"
+    
+  # ============================================
+  # TECHNOLOGY SECTOR (технологічний сектор)
+  # ============================================
+  technology:
+    keywords: [
+      "apple", "iphone", "ipad", "mac", "ios", "app store", "tim cook",
+      "microsoft", "windows", "office", "azure", "satya nadella", "xbox",
+      "google", "alphabet", "search", "android", "chrome", "sundar pichai",
+      "amazon", "aws", "prime", "jeff bezos", "andy jassy", "ecommerce",
+      "nvidia", "gpu", "ai", "artificial intelligence", "chatgpt", "jensen huang",
+      "tesla", "electric vehicle", "ev", "elon musk", "model y", "cybertruck",
+      "meta", "facebook", "instagram", "mark zuckerberg", "metaverse",
+      "semiconductor", "chip", "tsmc", "intel", "amd", "qualcomm"
+    ]
+    impact_type: "sector_specific"
+    affected_tickers: ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA", "META", "AMD", "INTC", "TSM"]
+    affected_sectors: ["ai_big_tech", "semiconductors"]
+    timeframes: ["15m", "60m", "1d"]  # Всі таймфрейми
+    impact_strength: "high"
+    description: "Новини технологічного сектору"
+    
+  # ============================================
+  # FINANCIAL SECTOR (фінансовий сектор)
+  # ============================================
+  financial:
+    keywords: [
+      "bank", "banking", "jpmorgan", "bank of america", "goldman sachs",
+      "wells fargo", "citigroup", "morgan stanley", "interest rates",
+      "loans", "credit", "mortgage", "deposit", "regulation", "fed",
+      "jamie dimon", "brian moynihan", "david solomon", "earnings", "profit"
+    ]
+    impact_type: "sector_specific"
+    affected_tickers: ["JPM", "BAC", "GS", "WFC", "C", "MS"]
+    affected_sectors: ["finance"]
+    timeframes: ["60m", "1d"]  # Середньо-довгостроковий
+    impact_strength: "high"
+    description: "Новини фінансового сектору"
+    
+  # ============================================
+  # ENERGY SECTOR (енергетичний сектор)
+  # ============================================
+  energy:
+    keywords: [
+      "oil", "gas", "petroleum", "crude oil", "natural gas", "opec",
+      "exxonmobil", "chevron", "conocophillips", "bp", "shell",
+      "hurricane", "gulf of mexico", "refinery", "pipeline", "energy",
+      "renewable energy", "solar", "wind", "esg", "climate", "carbon"
+    ]
+    impact_type: "sector_specific"
+    affected_tickers: ["XOM", "CVX", "COP", "BP", "SHEL", "EOG", "SLB"]
+    affected_sectors: ["energy"]
+    timeframes: ["1d"]  # Довгостроковий вплив
+    impact_strength: "medium"
+    description: "Новини енергетичного сектору"
+    
+  # ============================================
+  # CONSUMER STAPLES (споживчі товари)
+  # ============================================
+  consumer_staples:
+    keywords: [
+      "coca-cola", "pepsi", "walmart", "target", "costco", "home depot",
+      "procter & gamble", "unilever", "nestle", "consumer", "retail",
+      "grocery", "food", "beverage", "household", "consumer staples",
+      "inflation", "supply chain", "consumer spending", "discretionary"
+    ]
+    impact_type: "sector_specific"
+    affected_tickers: ["KO", "PEP", "WMT", "TGT", "COST", "HD", "PG", "UL"]
+    affected_sectors: ["consumer_staples"]
+    timeframes: ["60m", "1d"]  # Середньо-довгостроковий
+    impact_strength: "low"
+    description: "Новини споживчого сектору"
+    
+  # ============================================
+  # ETF MARKET (ETF ринок)
+  # ============================================
+  etf_market:
+    keywords: [
+      "spy", "qqq", "iwm", "etf", "exchange traded fund", "index fund",
+      "s&p 500", "nasdaq", "russell", "dow jones", "vanguard", "ishares",
+      "passive investing", "index investing", "market exposure"
+    ]
+    impact_type: "market_wide"
+    affected_tickers: ["SPY", "QQQ", "IWM", "VTI", "VOO", "IVV", "AGG"]
+    affected_sectors: ["market_etfs"]
+    timeframes: ["60m", "1d"]  # Середньо-довгостроковий
+    impact_strength: "medium"
+    description: "Новини ETF ринку"
+    
+  # ============================================
+  # SPECIFIC COMPANY NEWS (новини конкретних компаній)
+  # ============================================
+  company_specific:
+    keywords: [
+      "earnings report", "quarterly results", "annual results", "guidance",
+      "forecast", "outlook", "revenue", "profit", "eps", "beat estimates",
+      "miss estimates", "dividend", "buyback", "stock split", "acquisition",
+      "merger", "ipo", "bankruptcy", "lawsuit", "regulation", "ceo", "cfo"
+    ]
+    impact_type: "ticker_specific"
+    affected_tickers: "dynamic"  # Визначається з тексту новини
+    affected_sectors: "dynamic"
+    timeframes: ["15m", "60m"]  # Коротко-середньостроковий
+    impact_strength: "high"
+    description: "Новини конкретних компаній"
+
+# ============================================
+# IMPACT STRENGTH MAPPING
+# ============================================
+impact_strength_mapping:
+  high: 
+    multiplier: 1.0
+    priority: "immediate"
+    retention_hours: 48
+    
+  medium:
+    multiplier: 0.7
+    priority: "normal"
+    retention_hours: 24
+    
+  low:
+    multiplier: 0.5
+    priority: "low"
+    retention_hours: 12
+
+# ============================================
+# TIMEFRAME IMPACT PATTERNS
+# ============================================
+timeframe_impact_patterns:
+  intraday: ["15m"]
+    # Новини що викликають швидку реакцію
+    # - Еarnings reports
+    # - Технологічні анонси
+    # - Регуляторні рішення
+    
+  swing: ["60m"]
+    # Новини що викликають реакцію протягом дня
+    # - Макроекономічні дані
+    # - Секторальні новини
+    # - Геополітичні події
+    
+  position: ["1d"]
+    # Новини що викликають довгострокову реакцію
+    # - Енергетичні події
+    # - Споживчі тренди
+    # - Політичні рішення

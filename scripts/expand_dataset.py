@@ -53,6 +53,74 @@ class DatasetExpander:
         for sector_tickers in self.tickers.values():
             self.all_tickers.extend(sector_tickers)
     
+    def _collect_ticker_data(self, ticker, days, frequencies):
+        """Collect data for a single ticker across all frequencies."""
+        self.logger.info(f"\n📥 Збір даних для {ticker}...")
+        ticker_data = {}
+        
+        for freq in frequencies:
+            self.logger.info(f"   ⏱️ Частота: {freq}")
+            
+            try:
+                # Collect data
+                data = self.collector.collect_market_data(
+                    ticker=ticker,
+                    days=days,
+                    interval=freq
+                )
+                
+                if data is not None and len(data) > 0:
+                    ticker_data[freq] = {
+                        'rows': len(data),
+                        'columns': len(data.columns),
+                        'date_range': f"{data.index[0]} to {data.index[-1]}"
+                    }
+                    
+                    # Store in DuckDB
+                    self.data_manager.upsert_data(
+                        table_name=f"raw_data_{ticker}_{freq}",
+                        data=data
+                    )
+                    
+                    self.logger.info(f"      ✅ Збрано {len(data)} рядків")
+                
+                else:
+                    self.logger.warning(f"      ⚠️ Немає даних для {ticker} ({freq})")
+                
+            except Exception as e:
+                self.logger.error(f"      ❌ Помилка збору {ticker} ({freq}): {e}")
+                return None
+        
+        return ticker_data
+
+    def _log_expansion_start(self, all_tickers, days, frequencies):
+        """Log the start of dataset expansion."""
+        self.logger.info("🚀 Початок розширення датасету")
+        self.logger.info(f"   📊 Тікери: {len(all_tickers)} ({', '.join(all_tickers[:5])}...)")
+        self.logger.info(f"   📅 Період: {days} днів")
+        self.logger.info(f"   ⏱️ Частоти: {frequencies}")
+
+    def _initialize_results(self, all_tickers, days, frequencies):
+        """Initialize results dictionary."""
+        return {
+            'tickers': all_tickers,
+            'days': days,
+            'frequencies': frequencies,
+            'collected_data': {},
+            'errors': []
+        }
+
+    def _process_ticker(self, ticker, results, days, frequencies):
+        """Process a single ticker and update results."""
+        ticker_data = self._collect_ticker_data(ticker, days, frequencies)
+        
+        if ticker_data:
+            results['collected_data'][ticker] = ticker_data
+            self.logger.info(f"   ✅ {ticker}: {len(ticker_data)} частот")
+        else:
+            self.logger.error(f"❌ Помилка обробки {ticker}: No data collected")
+            results['errors'].append(f"{ticker}: No data collected")
+
     def expand_dataset(self, 
                       days: int = 365,
                       frequencies: Optional[List[str]] = None) -> Dict[str, any]:
@@ -69,62 +137,16 @@ class DatasetExpander:
         if frequencies is None:
             frequencies = ['1d', '1h', '15m']
         
-        self.logger.info(f"🚀 Початок розширення датасету")
-        self.logger.info(f"   📊 Тікери: {len(self.all_tickers)} ({', '.join(self.all_tickers[:5])}...)")
-        self.logger.info(f"   📅 Період: {days} днів")
-        self.logger.info(f"   ⏱️ Частоти: {frequencies}")
+        # Log expansion start
+        self._log_expansion_start(self.all_tickers, days, frequencies)
         
-        results = {
-            'tickers': self.all_tickers,
-            'days': days,
-            'frequencies': frequencies,
-            'collected_data': {},
-            'errors': []
-        }
+        # Initialize results
+        results = self._initialize_results(self.all_tickers, days, frequencies)
         
-        # Збираємо дані для кожного тікера
+        # Process each ticker
         for ticker in self.all_tickers:
-            self.logger.info(f"\n📥 Збір даних для {ticker}...")
-            
             try:
-                # Збираємо дані для кожної частоти
-                ticker_data = {}
-                for freq in frequencies:
-                    self.logger.info(f"   ⏱️ Частота: {freq}")
-                    
-                    try:
-                        # Збираємо дані
-                        data = self.collector.collect_market_data(
-                            ticker=ticker,
-                            days=days,
-                            interval=freq
-                        )
-                        
-                        if data is not None and len(data) > 0:
-                            ticker_data[freq] = {
-                                'rows': len(data),
-                                'columns': len(data.columns),
-                                'date_range': f"{data.index[0]} to {data.index[-1]}"
-                            }
-                            
-                            # Зберігаємо в DuckDB
-                            self.data_manager.upsert_data(
-                                table_name=f"raw_data_{ticker}_{freq}",
-                                data=data
-                            )
-                            
-                            self.logger.info(f"      ✅ Збрано {len(data)} рядків")
-                        else:
-                            self.logger.warning(f"      ⚠️ Немає даних для {ticker} ({freq})")
-                    
-                    except Exception as e:
-                        self.logger.error(f"      ❌ Помилка збору {ticker} ({freq}): {e}")
-                        results['errors'].append(f"{ticker} ({freq}): {str(e)}")
-                
-                if ticker_data:
-                    results['collected_data'][ticker] = ticker_data
-                    self.logger.info(f"   ✅ {ticker}: {len(ticker_data)} частот")
-            
+                self._process_ticker(ticker, results, days, frequencies)
             except Exception as e:
                 self.logger.error(f"❌ Помилка обробки {ticker}: {e}")
                 results['errors'].append(f"{ticker}: {str(e)}")
@@ -145,7 +167,7 @@ class DatasetExpander:
         print(f"\n📅 Період: {results['days']} днів")
         print(f"⏱️ Частоти: {', '.join(results['frequencies'])}")
         
-        print(f"\n📥 Зібрано даних:")
+        print("\n📥 Зібрано даних:")
         total_rows = 0
         for ticker, data in results['collected_data'].items():
             print(f"   {ticker}:")

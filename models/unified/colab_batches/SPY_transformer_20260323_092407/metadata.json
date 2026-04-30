@@ -1,0 +1,11 @@
+{
+  "batch_id": "SPY_transformer_20260323_092407",
+  "ticker": "SPY",
+  "model_name": "transformer",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_bb_width_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T09:24:07.158051",
+  "status": "PENDING_COLAB"
+}

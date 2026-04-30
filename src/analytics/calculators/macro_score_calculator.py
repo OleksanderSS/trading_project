@@ -36,55 +36,95 @@ class MacroScoreCalculator:
         Returns:
             pd.DataFrame: A DataFrame with the composite macro score and its components.
         """
-        if not isinstance(macro_data, pd.DataFrame) or macro_data.empty:
-            logger.warning("Macro data is empty or not a DataFrame. Returning empty DataFrame.")
+        if not self._validate_macro_data(macro_data):
             return pd.DataFrame()
 
+        individual_scores = self._calculate_individual_scores(macro_data, rolling_window)
+        
+        if not individual_scores:
+            return self._create_empty_composite_score(macro_data)
+
+        scores_df = pd.DataFrame(individual_scores, index=macro_data.index)
+        composite_score = self._calculate_weighted_composite(scores_df)
+        final_score = self._scale_final_score(composite_score)
+        
+        scores_df['composite_macro_score'] = final_score
+        logger.info("Successfully calculated the composite macro score.")
+        
+        return scores_df
+
+    def _validate_macro_data(self, macro_data: pd.DataFrame) -> bool:
+        """Validate macro data input."""
+        if not isinstance(macro_data, pd.DataFrame) or macro_data.empty:
+            logger.warning("Macro data is empty or not a DataFrame. Returning empty DataFrame.")
+            return False
+        return True
+
+    def _calculate_individual_scores(self, macro_data: pd.DataFrame, rolling_window: int) -> Dict[str, pd.Series]:
+        """Calculate individual indicator scores."""
         all_scores = {}
+        
         for indicator, config in self.indicators_config.items():
             if indicator not in macro_data.columns:
                 logger.warning(f"Indicator '{indicator}' not found in macro data. Skipping.")
                 continue
 
-            series = macro_data[indicator].dropna()
-            
-            # 1. Transform: Use percentage change to represent momentum
-            transformed_series = series.pct_change(periods=int(rolling_window/12)).fillna(0) # Monthly change assumption
-            
-            # 2. Normalize: Rolling Z-score to standardize the data
-            mean = transformed_series.rolling(window=rolling_window, min_periods=int(rolling_window*0.8)).mean()
-            std = transformed_series.rolling(window=rolling_window, min_periods=int(rolling_window*0.8)).std()
-            normalized_series = (transformed_series - mean) / std.replace(0, 1)
+            score = self._process_indicator(macro_data[indicator], config, rolling_window)
+            if score is not None:
+                all_scores[f"{indicator}_score"] = score
 
-            # 3. Directional Alignment
-            if config.get('direction', 'positive') == 'negative':
-                normalized_series = -normalized_series
+        return all_scores
 
-            all_scores[f"{indicator}_score"] = normalized_series.fillna(0)
-
-        if not all_scores:
-            logger.error("No indicators were processed. Cannot calculate composite score.")
-            return pd.DataFrame(index=macro_data.index).assign(composite_macro_score=0.0)
-
-        scores_df = pd.DataFrame(all_scores, index=macro_data.index)
+    def _process_indicator(self, series: pd.Series, config: Dict, rolling_window: int) -> pd.Series:
+        """Process a single indicator to calculate its score."""
+        clean_series = series.dropna()
         
-        # 4. Weighting and Aggregation
+        transformed_series = self._transform_series(clean_series, rolling_window)
+        normalized_series = self._normalize_series(transformed_series, rolling_window)
+        aligned_series = self._apply_directional_alignment(normalized_series, config)
+        
+        return aligned_series.fillna(0)
+
+    def _transform_series(self, series: pd.Series, rolling_window: int) -> pd.Series:
+        """Transform series using percentage change for momentum."""
+        return series.pct_change(periods=int(rolling_window/12)).fillna(0)
+
+    def _normalize_series(self, series: pd.Series, rolling_window: int) -> pd.Series:
+        """Normalize series using rolling Z-score."""
+        min_periods = int(rolling_window * 0.8)
+        mean = series.rolling(window=rolling_window, min_periods=min_periods).mean()
+        std = series.rolling(window=rolling_window, min_periods=min_periods).std()
+        return (series - mean) / std.replace(0, 1)
+
+    def _apply_directional_alignment(self, series: pd.Series, config: Dict) -> pd.Series:
+        """Apply directional alignment based on configuration."""
+        if config.get('direction', 'positive') == 'negative':
+            return -series
+        return series
+
+    def _create_empty_composite_score(self, macro_data: pd.DataFrame) -> pd.DataFrame:
+        """Create empty composite score DataFrame."""
+        logger.error("No indicators were processed. Cannot calculate composite score.")
+        return pd.DataFrame(index=macro_data.index).assign(composite_macro_score=0.0)
+
+    def _calculate_weighted_composite(self, scores_df: pd.DataFrame) -> pd.Series:
+        """Calculate weighted composite score from individual scores."""
         composite_score = pd.Series(0.0, index=scores_df.index)
         total_weight = sum(config['weight'] for config in self.indicators_config.values())
         
-        if total_weight == 0: 
+        if total_weight == 0:
             logger.warning("Total weight of indicators is zero. Composite score will be zero.")
-            return scores_df.assign(composite_macro_score=0.0)
+            return composite_score
 
         for indicator, config in self.indicators_config.items():
             score_col = f"{indicator}_score"
             if score_col in scores_df.columns:
-                composite_score += scores_df[score_col] * (config['weight'] / total_weight)
+                weight = config['weight'] / total_weight
+                composite_score += scores_df[score_col] * weight
 
-        # 5. Final Scaling: Scale to a consistent range (e.g., 0 to 100)
-        final_composite_score = pd.Series(minmax_scale(composite_score.fillna(0), feature_range=(0, 100)), index=composite_score.index)
-        
-        scores_df['composite_macro_score'] = final_composite_score
-        logger.info("Successfully calculated the composite macro score.")
-        
-        return scores_df
+        return composite_score
+
+    def _scale_final_score(self, composite_score: pd.Series) -> pd.Series:
+        """Scale final composite score to 0-100 range."""
+        scaled_values = minmax_scale(composite_score.fillna(0), feature_range=(0, 100))
+        return pd.Series(scaled_values, index=composite_score.index)

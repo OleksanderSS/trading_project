@@ -156,7 +156,11 @@ def log_memory_usage(logger: logging.Logger, operation: str, memory_mb: float,
         memory_mb: Current memory usage in MB
         delta_mb: Optional memory change from start
     """
-    delta_str = f" ({'+' if delta_mb and delta_mb >= 0 else ''}{delta_mb:.1f}MB)" if delta_mb is not None else ""
+    if delta_mb is not None:
+        sign = '+' if delta_mb and delta_mb >= 0 else ''
+        delta_str = f" ({sign}{delta_mb:.1f}MB)"
+    else:
+        delta_str = ""
     logger.debug(f"🧠 {operation}: {memory_mb:.1f}MB{delta_str}")
 
 

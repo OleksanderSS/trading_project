@@ -65,74 +65,114 @@ class PostInferenceFilter:
         choices = [1.2, 1.1, 1.0]
         return pd.Series(np.select(conditions, choices, default=0.9), index=sentiment_score.index)
 
-    def apply(self, 
-              predictions_df: pd.DataFrame,
-              confidence_col: str = 'confidence',
-              macro_col: Optional[str] = 'macro_decayed_strength',
-              rsi_col: Optional[str] = 'RSI_14',
-              sentiment_col: Optional[str] = 'sentiment_score') -> pd.DataFrame:
+    def apply(self, predictions_df: pd.DataFrame, config: Optional[Dict] = None) -> pd.DataFrame:
         """
-        Applies the vectorized post-inference filter to a DataFrame of predictions.
+        Applies vectorized post-inference filter to a DataFrame of predictions.
 
         Args:
             predictions_df: DataFrame with model predictions and contextual features.
-            confidence_col: The name of the column holding the original prediction confidence.
-            macro_col: Column name for the macro signal strength.
-            rsi_col: Column name for the RSI indicator.
-            sentiment_col: Column name for the sentiment score.
+            config: Configuration dictionary with column names:
+                - confidence_col: The name of column holding the original prediction confidence
+                - macro_col: Column name for macro signal strength
+                - rsi_col: Column name for RSI indicator
+                - sentiment_col: Column name for sentiment score
 
         Returns:
             pd.DataFrame: The DataFrame with added columns for filtered confidence.
         """
+        # Set default configuration
+        if config is None:
+            config = {}
+        
+        confidence_col = config.get('confidence_col', 'confidence')
+        macro_col = config.get('macro_col', 'macro_decayed_strength')
+        rsi_col = config.get('rsi_col', 'RSI_14')
+        sentiment_col = config.get('sentiment_col', 'sentiment_score')
+        
         self.logger.info(f"Applying post-inference filter to {len(predictions_df)} predictions...")
         
+        self._validate_input(predictions_df, confidence_col)
+        result_df = self._prepare_result_dataframe(predictions_df, confidence_col)
+        
+        multipliers, total_weight = self._calculate_multipliers(result_df, macro_col, rsi_col, sentiment_col)
+        weighted_multiplier = self._calculate_weighted_multiplier(multipliers, total_weight)
+        
+        result_df = self._apply_final_adjustments(result_df, weighted_multiplier)
+        self._log_statistics(result_df)
+        
+        return result_df
+    
+    def _validate_input(self, predictions_df: pd.DataFrame, confidence_col: str):
+        """Validate input DataFrame and required columns."""
         if confidence_col not in predictions_df.columns:
             raise ValueError(f"Confidence column '{confidence_col}' not found in DataFrame.")
-
+    
+    def _prepare_result_dataframe(self, predictions_df: pd.DataFrame, confidence_col: str) -> pd.DataFrame:
+        """Prepare result DataFrame with original confidence column."""
         result_df = predictions_df.copy()
         result_df['original_confidence'] = result_df[confidence_col]
-        
-        # --- Calculate all multipliers vectorially ---
+        return result_df
+    
+    def _calculate_multipliers(self, result_df: pd.DataFrame, macro_col: str, rsi_col: str, sentiment_col: str) -> tuple:
+        """Calculate all multipliers vectorially."""
         multipliers = pd.DataFrame(index=result_df.index)
         total_weight = 0
 
+        macro_multiplier, macro_weight = self._get_macro_data(result_df, macro_col)
+        multipliers['macro'] = macro_multiplier
+        total_weight += macro_weight
+
+        rsi_multiplier, rsi_weight = self._get_rsi_data(result_df, rsi_col)
+        multipliers['rsi'] = rsi_multiplier
+        total_weight += rsi_weight
+
+        sentiment_multiplier, sentiment_weight = self._get_sentiment_data(result_df, sentiment_col)
+        multipliers['sentiment'] = sentiment_multiplier
+        total_weight += sentiment_weight
+
+        return multipliers, total_weight
+    
+    def _get_macro_data(self, result_df: pd.DataFrame, macro_col: str) -> tuple:
+        """Get macro multiplier and weight."""
         if macro_col and macro_col in result_df.columns:
-            multipliers['macro'] = self._get_macro_multiplier(result_df[macro_col])
-            total_weight += self.params['macro_weight']
-        else:
-             multipliers['macro'] = 1.0
-
+            return self._get_macro_multiplier(result_df[macro_col]), self.params['macro_weight']
+        return 1.0, 0
+    
+    def _get_rsi_data(self, result_df: pd.DataFrame, rsi_col: str) -> tuple:
+        """Get RSI multiplier and weight."""
         if rsi_col and rsi_col in result_df.columns:
-            multipliers['rsi'] = self._get_rsi_multiplier(result_df[rsi_col])
-            total_weight += self.params['rsi_weight']
-        else:
-            multipliers['rsi'] = 1.0
-
+            return self._get_rsi_multiplier(result_df[rsi_col]), self.params['rsi_weight']
+        return 1.0, 0
+    
+    def _get_sentiment_data(self, result_df: pd.DataFrame, sentiment_col: str) -> tuple:
+        """Get sentiment multiplier and weight."""
         if sentiment_col and sentiment_col in result_df.columns:
-            multipliers['sentiment'] = self._get_sentiment_multiplier(result_df[sentiment_col])
-            total_weight += self.params['sentiment_weight']
-        else:
-            multipliers['sentiment'] = 1.0
-
-        # --- Calculate the weighted average multiplier ---
-        weighted_multiplier = (
+            return self._get_sentiment_multiplier(result_df[sentiment_col]), self.params['sentiment_weight']
+        return 1.0, 0
+    
+    def _calculate_weighted_multiplier(self, multipliers: pd.DataFrame, total_weight: float) -> pd.Series:
+        """Calculate weighted average multiplier."""
+        return (
             multipliers['macro'] * self.params['macro_weight'] +
             multipliers['rsi'] * self.params['rsi_weight'] +
             multipliers['sentiment'] * self.params['sentiment_weight']
         ) / total_weight
-
+    
+    def _apply_final_adjustments(self, result_df: pd.DataFrame, weighted_multiplier: pd.Series) -> pd.DataFrame:
+        """Apply final adjustments to result DataFrame."""
         result_df['confidence_multiplier'] = weighted_multiplier
         result_df['filtered_confidence'] = result_df['original_confidence'] * weighted_multiplier
-
-        # --- Clip to final min/max bounds ---
+        
+        # Clip to final min/max bounds
         result_df['filtered_confidence'] = result_df['filtered_confidence'].clip(
             self.params['min_confidence'], self.params['max_confidence']
         )
-
-        # --- Logging Statistics ---
+        
+        return result_df
+    
+    def _log_statistics(self, result_df: pd.DataFrame):
+        """Log filtering statistics."""
         avg_original = result_df['original_confidence'].mean()
         avg_filtered = result_df['filtered_confidence'].mean()
         self.logger.info("Filter application complete.")
         self.logger.info(f"Average Confidence: Original={avg_original:.3f}, Filtered={avg_filtered:.3f}")
-
-        return result_df

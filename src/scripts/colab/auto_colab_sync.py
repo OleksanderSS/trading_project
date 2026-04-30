@@ -48,15 +48,14 @@ class AutoColabSync:
         return f"{base_name}_{version}.{compression}"
     
     def calculate_data_hash(self, data_files: List[Path]) -> str:
-        """Calculates a MD5 hash of the data files to detect changes."""
-        hash_md5 = hashlib.md5()
-        
+        """Calculates a SHA256 hash of the data files to detect changes."""
+        hash_sha256 = hashlib.sha256()
         for file_path in sorted(data_files):
             if file_path.exists():
                 file_stat = file_path.stat()
-                hash_md5.update(f"{file_path.name}:{file_stat.st_mtime}:{file_stat.st_size}".encode())
+                hash_sha256.update(f"{file_path.name}:{file_stat.st_mtime}:{file_stat.st_size}".encode())
         
-        return hash_md5.hexdigest()
+        return hash_sha256.hexdigest()
     
     def create_automated_package(self) -> Path:
         """Creates an automated package containing the latest project state for Colab."""
@@ -144,40 +143,44 @@ class AutoColabSync:
         
         return package_file
 
-    def cleanup_old_packages(self, keep_count: int = 5):
+    def cleanup_old_packages(self, keep_count: int = 5) -> int:
         """Removes old sync packages to save space."""
         logger.info("Cleaning up old packages (keeping last %d)...", keep_count)
         package_files = list(self.colab_dir.glob("trading_pipeline_data_*.tar.gz"))
         package_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
         
+        deleted_count = 0
         for old_package in package_files[keep_count:]:
             try:
                 old_package.unlink()
                 logger.info("Deleted old package: %s", old_package.name)
+                deleted_count += 1
             except Exception as e:
                 logger.error("Error deleting %s: %s", old_package.name, e)
+        
+        return deleted_count
 
 def main():
     """CLI entry point for Colab synchronization."""
-    print("Automated Colab Sync System")
-    print("=" * 50)
+    logger.info("Automated Colab Sync System")
+    logger.info("=" * 50)
     
     try:
         sync_system = AutoColabSync()
-        print("1. Create Automated Package")
-        print("2. Cleanup Old Packages")
-        print("0. Exit")
+        logger.info("1. Create Automated Package")
+        logger.info("2. Cleanup Old Packages")
+        logger.info("0. Exit")
         
         choice = input("\nSelect action: ").strip()
         
         if choice == "1":
             path = sync_system.create_automated_package()
-            print(f"[OK] Package created: {path}")
+            logger.info(f"[OK] Package created: {path}")
         elif choice == "2":
             count = sync_system.cleanup_old_packages()
-            print(f"[OK] Cleanup complete.")
+            logger.info(f"[OK] Cleanup complete. Deleted {count} files.")
         elif choice == "0":
-            print("Goodbye.")
+            logger.info("Goodbye.")
     except Exception as e:
         logger.error("Sync failed: %s", e, exc_info=True)
 

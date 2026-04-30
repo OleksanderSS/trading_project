@@ -1,7 +1,7 @@
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
 
@@ -74,60 +74,36 @@ class MarketContextAnalyzer(IAnalyzer):
         Підтримує як стандартний формат (close, open, high, low, volume),
         так і event-centric формат (AMD_1d_close, AMD_15m_open, тощо).
         """
-        # Шукаємо колонки з 'close', 'open', 'high', 'low', 'volume'
-        self.close_col = None
-        self.open_col = None
-        self.high_col = None
-        self.low_col = None
-        self.volume_col = None
-        self.rsi_col = None
+        # Ініціалізуємо колонки
+        self.close_col = self._find_column(df, 'close')
+        self.open_col = self._find_column(df, 'open')
+        self.high_col = self._find_column(df, 'high')
+        self.low_col = self._find_column(df, 'low')
+        self.volume_col = self._find_column(df, 'volume')
+        self.rsi_col = self._find_rsi_column(df)
+    
+    def _find_column(self, df: pd.DataFrame, column_type: str) -> Optional[str]:
+        """Знайти колонку певного типу"""
+        # Пріоритет: спочатку стандартні назви
+        if column_type in df.columns:
+            return column_type
         
-        # Пріоритет: спочатку шукаємо стандартні назви
-        if 'close' in df.columns:
-            self.close_col = 'close'
-        else:
-            # Шукаємо колонки з '_close' (event-centric формат)
-            close_cols = [col for col in df.columns if col.endswith('_close') and not col.endswith('_+1') and not col.endswith('_+2')]
-            if close_cols:
-                # Віддаємо перевагу 1d таймфрейму
-                self.close_col = next((col for col in close_cols if '_1d_' in col), close_cols[0])
+        # Шукаємо event-centric формат
+        suffix = f'_{column_type}'
+        cols = [col for col in df.columns if col.endswith(suffix) and not col.endswith('_+1') and not col.endswith('_+2')]
         
-        if 'open' in df.columns:
-            self.open_col = 'open'
-        else:
-            open_cols = [col for col in df.columns if col.endswith('_open') and not col.endswith('_+1') and not col.endswith('_+2')]
-            if open_cols:
-                self.open_col = next((col for col in open_cols if '_1d_' in col), open_cols[0])
+        if cols:
+            # Віддаємо перевагу 1d таймфрейму
+            return next((col for col in cols if '_1d_' in col), cols[0])
         
-        if 'high' in df.columns:
-            self.high_col = 'high'
-        else:
-            high_cols = [col for col in df.columns if col.endswith('_high') and not col.endswith('_+1') and not col.endswith('_+2')]
-            if high_cols:
-                self.high_col = next((col for col in high_cols if '_1d_' in col), high_cols[0])
-        
-        if 'low' in df.columns:
-            self.low_col = 'low'
-        else:
-            low_cols = [col for col in df.columns if col.endswith('_low') and not col.endswith('_+1') and not col.endswith('_+2')]
-            if low_cols:
-                self.low_col = next((col for col in low_cols if '_1d_' in col), low_cols[0])
-        
-        if 'volume' in df.columns:
-            self.volume_col = 'volume'
-        else:
-            volume_cols = [col for col in df.columns if col.endswith('_volume') and not col.endswith('_+1') and not col.endswith('_+2')]
-            if volume_cols:
-                self.volume_col = next((col for col in volume_cols if '_1d_' in col), volume_cols[0])
-        
-        if 'rsi' in df.columns:
-            self.rsi_col = 'rsi'
-        else:
-            rsi_cols = [col for col in df.columns if 'rsi' in col.lower()]
-            if rsi_cols:
-                self.rsi_col = rsi_cols[0]
-        
-        logger.debug(f"Found price columns: close={self.close_col}, open={self.open_col}, high={self.high_col}, low={self.low_col}, volume={self.volume_col}, rsi={self.rsi_col}")
+        return None
+    
+    def _find_rsi_column(self, df: pd.DataFrame) -> Optional[str]:
+        """Знайти RSI колонку"""
+        rsi_cols = [col for col in df.columns if 'rsi' in col.lower() and not col.endswith('_+1') and not col.endswith('_+2')]
+        if rsi_cols:
+            return next((col for col in rsi_cols if '_1d_' in col), rsi_cols[0])
+        return None
 
     # --- Feature Calculation Methods ---
     # Each method is responsible for a single feature.
@@ -173,17 +149,31 @@ class MarketContextAnalyzer(IAnalyzer):
         return 50.0  # Neutral RSI
 
     def _calculate_volume_ratio(self, df: pd.DataFrame, **kwargs) -> float:
-        if self.volume_col and self.volume_col in df.columns and len(df) >= 20:
-            avg_vol_5 = df[self.volume_col].tail(5).mean()
-            avg_vol_20 = df[self.volume_col].tail(20).mean()
-            return avg_vol_5 / (avg_vol_20 + 1e-9)
-        return 1.0  # Neutral volume ratio
+        if not self._can_calculate_volume_ratio(df):
+            return 1.0  # Neutral volume ratio
+        
+        avg_vol_5 = df[self.volume_col].tail(5).mean()
+        avg_vol_20 = df[self.volume_col].tail(20).mean()
+        return avg_vol_5 / (avg_vol_20 + 1e-9)
+
+    def _can_calculate_volume_ratio(self, df: pd.DataFrame) -> bool:
+        """Check if volume ratio can be calculated."""
+        return (self.volume_col and 
+                self.volume_col in df.columns and 
+                len(df) >= 20)
 
     def _calculate_price_to_ma20(self, df: pd.DataFrame, **kwargs) -> float:
-        if self.close_col and self.close_col in df.columns and len(df) >= 20:
-            ma20 = df[self.close_col].tail(20).mean()
-            return (df[self.close_col].iloc[-1] / ma20) - 1
-        return 0.0  # Neutral price to MA ratio
+        if not self._can_calculate_price_to_ma20(df):
+            return 0.0  # Neutral price to MA ratio
+        
+        ma20 = df[self.close_col].tail(20).mean()
+        return (df[self.close_col].iloc[-1] / ma20) - 1
+    
+    def _can_calculate_price_to_ma20(self, df: pd.DataFrame) -> bool:
+        """Check if price to MA20 can be calculated."""
+        return (self.close_col and 
+                self.close_col in df.columns and 
+                len(df) >= 20)
 
     def _calculate_hour_of_day(self, df: pd.DataFrame, **kwargs) -> int:
         return df.index[-1].hour if isinstance(df.index, pd.DatetimeIndex) else datetime.now().hour
@@ -198,15 +188,29 @@ class MarketContextAnalyzer(IAnalyzer):
         Розраховує нахил кривої дохідності (10Y - 2Y).
         Негативне значення = інверсія кривої = можлива рецесія.
         """
-        dgs10 = kwargs.get('DGS10', df.get('DGS10', pd.Series([np.nan])).iloc[-1] if 'DGS10' in df.columns else np.nan)
-        dgs2 = kwargs.get('DGS2', df.get('DGS2', pd.Series([np.nan])).iloc[-1] if 'DGS2' in df.columns else np.nan)
+        dgs10 = self._get_yield_rate('DGS10', df, kwargs)
+        dgs2 = self._get_yield_rate('DGS2', df, kwargs)
         
-        if pd.isna(dgs10) or pd.isna(dgs2):
+        if self._is_yield_data_invalid(dgs10, dgs2):
             return 0.0
         
         slope = dgs10 - dgs2
-        logger.debug(f"Yield curve slope: {slope:.4f} (10Y={dgs10:.2f}%, 2Y={dgs2:.2f}%)")
+        self._log_yield_curve_slope(slope, dgs10, dgs2)
         return slope
+
+    def _get_yield_rate(self, rate_name: str, df: pd.DataFrame, kwargs: Dict[str, Any]) -> float:
+        """Get yield rate from kwargs or DataFrame."""
+        if rate_name in df.columns:
+            return df[rate_name].iloc[-1]
+        return kwargs.get(rate_name, np.nan)
+
+    def _is_yield_data_invalid(self, dgs10: float, dgs2: float) -> bool:
+        """Check if yield data is invalid."""
+        return pd.isna(dgs10) or pd.isna(dgs2)
+
+    def _log_yield_curve_slope(self, slope: float, dgs10: float, dgs2: float):
+        """Log yield curve slope information."""
+        logger.debug(f"Yield curve slope: {slope:.4f} (10Y={dgs10:.2f}%, 2Y={dgs2:.2f}%)")
     
     def _calculate_yield_curve_inverted(self, df: pd.DataFrame, **kwargs) -> int:
         """
@@ -221,30 +225,50 @@ class MarketContextAnalyzer(IAnalyzer):
         Тренд ставки Fed Funds (зміна за останні 3 місяці).
         Позитивне = підвищення ставок = жорсткіша монетарна політика.
         """
-        if 'FEDFUNDS' not in df.columns or len(df) < 60:
+        if not self._can_calculate_fed_funds_trend(df):
             return 0.0
         
         current = df['FEDFUNDS'].iloc[-1]
-        three_months_ago = df['FEDFUNDS'].iloc[-60] if len(df) >= 60 else df['FEDFUNDS'].iloc[0]
+        three_months_ago = self._get_fed_funds_three_months_ago(df)
         
         trend = current - three_months_ago
-        logger.debug(f"Fed Funds trend: {trend:.4f}% (current={current:.2f}%, 3m ago={three_months_ago:.2f}%)")
+        self._log_fed_funds_trend(trend, current, three_months_ago)
         return trend
+
+    def _can_calculate_fed_funds_trend(self, df: pd.DataFrame) -> bool:
+        """Check if Fed Funds trend can be calculated."""
+        return 'FEDFUNDS' in df.columns and len(df) >= 60
+
+    def _get_fed_funds_three_months_ago(self, df: pd.DataFrame) -> float:
+        """Get Fed Funds rate from three months ago."""
+        return df['FEDFUNDS'].iloc[-60] if len(df) >= 60 else df['FEDFUNDS'].iloc[0]
+
+    def _log_fed_funds_trend(self, trend: float, current: float, three_months_ago: float):
+        """Log Fed Funds trend information."""
+        logger.debug(f"Fed Funds trend: {trend:.4f}% (current={current:.2f}%, 3m ago={three_months_ago:.2f}%)")
     
     def _calculate_fed_funds_velocity(self, df: pd.DataFrame, **kwargs) -> float:
         """
         Швидкість зміни ставки Fed Funds (% за місяць).
         Висока швидкість = агресивна зміна політики.
         """
-        if 'FEDFUNDS' not in df.columns or len(df) < 20:
+        if not self._can_calculate_fed_funds_velocity(df):
             return 0.0
         
         current = df['FEDFUNDS'].iloc[-1]
-        one_month_ago = df['FEDFUNDS'].iloc[-20] if len(df) >= 20 else df['FEDFUNDS'].iloc[0]
+        one_month_ago = self._get_fed_funds_one_month_ago(df)
         
         velocity = current - one_month_ago
         logger.debug(f"Fed Funds velocity: {velocity:.4f}%/month")
         return velocity
+
+    def _can_calculate_fed_funds_velocity(self, df: pd.DataFrame) -> bool:
+        """Check if Fed Funds velocity can be calculated."""
+        return 'FEDFUNDS' in df.columns and len(df) >= 20
+
+    def _get_fed_funds_one_month_ago(self, df: pd.DataFrame) -> float:
+        """Get Fed Funds rate from one month ago."""
+        return df['FEDFUNDS'].iloc[-20] if len(df) >= 20 else df['FEDFUNDS'].iloc[0]
     
     def _calculate_market_breadth(self, df: pd.DataFrame, **kwargs) -> float:
         """
@@ -256,22 +280,38 @@ class MarketContextAnalyzer(IAnalyzer):
         % акцій вище SMA(50) / % акцій нижче SMA(50).
         """
         # Спробуємо знайти advance/decline дані
-        if 'advances' in df.columns and 'declines' in df.columns:
-            advances = df['advances'].iloc[-1]
-            declines = df['declines'].iloc[-1]
-            breadth = advances / (declines + 1e-9)
-            logger.debug(f"Market breadth: {breadth:.2f} (advances={advances}, declines={declines})")
-            return breadth
+        if self._has_advance_decline_data(df):
+            return self._calculate_advance_decline_breadth(df)
         
         # Proxy: використовуємо close vs SMA(50)
-        if 'close' in df.columns and len(df) >= 50:
-            sma50 = df['close'].tail(50).mean()
-            current_price = df['close'].iloc[-1]
-            breadth_proxy = 1.0 if current_price > sma50 else 0.5
-            logger.debug(f"Market breadth (proxy): {breadth_proxy:.2f} (price vs SMA50)")
-            return breadth_proxy
+        if self._can_use_price_proxy(df):
+            return self._calculate_price_proxy_breadth(df)
         
         return 1.0  # Neutral
+
+    def _has_advance_decline_data(self, df: pd.DataFrame) -> bool:
+        """Check if DataFrame has advance/decline data."""
+        return 'advances' in df.columns and 'declines' in df.columns
+
+    def _calculate_advance_decline_breadth(self, df: pd.DataFrame) -> float:
+        """Calculate breadth using advance/decline data."""
+        advances = df['advances'].iloc[-1]
+        declines = df['declines'].iloc[-1]
+        breadth = advances / (declines + 1e-9)
+        logger.debug(f"Market breadth: {breadth:.2f} (advances={advances}, declines={declines})")
+        return breadth
+
+    def _can_use_price_proxy(self, df: pd.DataFrame) -> bool:
+        """Check if price proxy can be used for breadth."""
+        return 'close' in df.columns and len(df) >= 50
+
+    def _calculate_price_proxy_breadth(self, df: pd.DataFrame) -> float:
+        """Calculate breadth using price proxy."""
+        sma50 = df['close'].tail(50).mean()
+        current_price = df['close'].iloc[-1]
+        breadth_proxy = 1.0 if current_price > sma50 else 0.5
+        logger.debug(f"Market breadth (proxy): {breadth_proxy:.2f} (price vs SMA50)")
+        return breadth_proxy
     
     def _calculate_dollar_strength(self, df: pd.DataFrame, **kwargs) -> float:
         """

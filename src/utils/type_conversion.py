@@ -27,6 +27,72 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _handle_none_nan(pred: Any) -> Optional[float]:
+    """Handle None and NaN values."""
+    if pred is None or (isinstance(pred, float) and np.isnan(pred)):
+        return 0.0
+    return None
+
+
+def _convert_numeric_types(pred: Any) -> Optional[float]:
+    """Convert direct numeric types."""
+    if isinstance(pred, (int, float)):
+        return float(pred)
+    return None
+
+
+def _convert_numpy_array(pred: Any) -> Optional[float]:
+    """Convert numpy arrays to float."""
+    if isinstance(pred, np.ndarray):
+        if pred.size == 0:
+            return 0.0
+        return float(pred.flatten()[-1])
+    return None
+
+
+def _convert_list_tuple(pred: Any) -> Optional[float]:
+    """Convert lists and tuples to float."""
+    if isinstance(pred, (list, tuple)):
+        if not pred:
+            return 0.0
+        return float(pred[-1])
+    return None
+
+
+def _convert_pandas_series(pred: Any) -> Optional[float]:
+    """Convert pandas Series to float."""
+    if isinstance(pred, pd.Series):
+        if pred.empty:
+            return 0.0
+        return float(pred.iloc[-1])
+    return None
+
+
+def _convert_numpy_scalar(pred: Any) -> Optional[float]:
+    """Convert numpy scalars to float."""
+    if hasattr(pred, 'item'):  # numpy scalar
+        return float(pred.item())
+    return None
+
+
+def _handle_unknown_type(pred: Any, strict: bool) -> float:
+    """Handle unknown prediction types."""
+    if strict:
+        raise TypeError(f"Cannot convert prediction of type {type(pred)} to float")
+    else:
+        logger.warning(f"Unknown prediction type {type(pred)}, returning 0.0")
+        return 0.0
+
+
+def _handle_conversion_error(pred: Any, error: Exception, strict: bool) -> float:
+    """Handle conversion errors."""
+    if strict:
+        raise TypeError(f"Failed to convert prediction {pred} to float: {error}") from error
+    else:
+        logger.warning(f"Failed to convert prediction {pred} to float: {error}, returning 0.0")
+        return 0.0
+
+
 def normalize_prediction(pred: Any, strict: bool = False) -> float:
     """
     Convert any prediction format to standardized float.
@@ -58,50 +124,92 @@ def normalize_prediction(pred: Any, strict: bool = False) -> float:
     """
     try:
         # Handle None/NaN
-        if pred is None or (isinstance(pred, float) and np.isnan(pred)):
-            return 0.0
+        result = _handle_none_nan(pred)
+        if result is not None:
+            return result
         
         # Direct numeric types
-        if isinstance(pred, (int, float)):
-            return float(pred)
+        result = _convert_numeric_types(pred)
+        if result is not None:
+            return result
         
         # Numpy arrays
-        elif isinstance(pred, np.ndarray):
-            if pred.size == 0:
-                return 0.0
-            # Take last element (most recent prediction)
-            return float(pred.flatten()[-1])
+        result = _convert_numpy_array(pred)
+        if result is not None:
+            return result
         
         # Lists and tuples
-        elif isinstance(pred, (list, tuple)):
-            if not pred:
-                return 0.0
-            return float(pred[-1])
+        result = _convert_list_tuple(pred)
+        if result is not None:
+            return result
         
         # Pandas Series
-        elif isinstance(pred, pd.Series):
-            if pred.empty:
-                return 0.0
-            return float(pred.iloc[-1])
+        result = _convert_pandas_series(pred)
+        if result is not None:
+            return result
         
         # Numpy scalars
-        elif hasattr(pred, 'item'):  # numpy scalar
-            return float(pred.item())
+        result = _convert_numpy_scalar(pred)
+        if result is not None:
+            return result
         
         # Unknown type
-        else:
-            if strict:
-                raise TypeError(f"Cannot convert prediction of type {type(pred)} to float")
-            else:
-                logger.warning(f"Unknown prediction type {type(pred)}, returning 0.0")
-                return 0.0
+        return _handle_unknown_type(pred, strict)
                 
     except (ValueError, IndexError, TypeError) as e:
-        if strict:
-            raise TypeError(f"Failed to convert prediction {pred} to float: {e}") from e
-        else:
-            logger.warning(f"Failed to convert prediction {pred} to float: {e}, returning 0.0")
-            return 0.0
+        return _handle_conversion_error(pred, e, strict)
+
+
+def _convert_dataframe(data: Any) -> Optional[pd.DataFrame]:
+    """Handle already DataFrame input."""
+    if isinstance(data, pd.DataFrame):
+        return data.copy()
+    return None
+
+
+def _convert_dict_to_dataframe(data: Any) -> Optional[pd.DataFrame]:
+    """Convert dict of arrays/lists to DataFrame."""
+    if isinstance(data, dict):
+        return pd.DataFrame(data)
+    return None
+
+
+def _convert_numpy_to_dataframe(data: Any, columns: Optional[list]) -> Optional[pd.DataFrame]:
+    """Convert numpy array to DataFrame."""
+    if isinstance(data, np.ndarray):
+        df = pd.DataFrame(data)
+        if columns and len(columns) == df.shape[1]:
+            df.columns = columns
+        return df
+    return None
+
+
+def _convert_list_to_dataframe(data: Any, columns: Optional[list]) -> Optional[pd.DataFrame]:
+    """Convert list data to DataFrame."""
+    if not isinstance(data, list):
+        return None
+        
+    if not data:
+        return pd.DataFrame()
+    
+    # List of dicts
+    if isinstance(data[0], dict):
+        return pd.DataFrame(data)
+    
+    # List of lists
+    elif isinstance(data[0], (list, tuple)):
+        return pd.DataFrame(data, columns=columns)
+    
+    # Simple list
+    else:
+        return pd.DataFrame(data, columns=columns or ['value'])
+
+
+def _convert_series_to_dataframe(data: Any) -> Optional[pd.DataFrame]:
+    """Convert pandas Series to DataFrame."""
+    if isinstance(data, pd.Series):
+        return data.to_frame()
+    return None
 
 
 def ensure_dataframe(data: Any, columns: Optional[list] = None) -> pd.DataFrame:
@@ -132,43 +240,32 @@ def ensure_dataframe(data: Any, columns: Optional[list] = None) -> pd.DataFrame:
     """
     try:
         # Already a DataFrame
-        if isinstance(data, pd.DataFrame):
-            return data.copy()
+        result = _convert_dataframe(data)
+        if result is not None:
+            return result
         
         # Dict of arrays/lists
-        elif isinstance(data, dict):
-            return pd.DataFrame(data)
+        result = _convert_dict_to_dataframe(data)
+        if result is not None:
+            return result
         
         # Numpy array
-        elif isinstance(data, np.ndarray):
-            df = pd.DataFrame(data)
-            if columns and len(columns) == df.shape[1]:
-                df.columns = columns
-            return df
+        result = _convert_numpy_to_dataframe(data, columns)
+        if result is not None:
+            return result
         
-        # List of lists/dicts
-        elif isinstance(data, list):
-            if not data:
-                return pd.DataFrame()
-            
-            # List of dicts
-            if isinstance(data[0], dict):
-                return pd.DataFrame(data)
-            
-            # List of lists
-            elif isinstance(data[0], (list, tuple)):
-                return pd.DataFrame(data, columns=columns)
-            
-            # Simple list
-            else:
-                return pd.DataFrame(data, columns=columns or ['value'])
+        # List data
+        result = _convert_list_to_dataframe(data, columns)
+        if result is not None:
+            return result
         
         # Pandas Series
-        elif isinstance(data, pd.Series):
-            return data.to_frame()
+        result = _convert_series_to_dataframe(data)
+        if result is not None:
+            return result
         
-        else:
-            raise ValueError(f"Cannot convert {type(data)} to DataFrame")
+        # Unknown type
+        raise ValueError(f"Cannot convert {type(data)} to DataFrame")
             
     except Exception as e:
         raise ValueError(f"Failed to convert data to DataFrame: {e}") from e
@@ -248,7 +345,7 @@ def safe_divide(a: Union[float, np.ndarray], b: Union[float, np.ndarray],
                 return result
         else:
             return a / b if b != 0 else default
-    except:
+    except Exception:
         return default
 
 

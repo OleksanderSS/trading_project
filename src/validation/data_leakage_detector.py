@@ -177,20 +177,23 @@ def main():
     """Example usage of the DataLeakageDetector."""
     detector = DataLeakageDetector()
     
+    # ✅ Ensuring example determinism
+    rng = np.random.default_rng(42)
+    
     # Create dummy data with leakage
     data = {
-        'feature_clean': np.random.randn(100),
-        'feature_leaky': np.arange(100) + 0.01 * np.random.randn(100),
+        'feature_clean': rng.standard_normal(100),
+        'feature_leaky': np.arange(100) + 0.01 * rng.standard_normal(100),
         'target': np.arange(100)
     }
     df = pd.DataFrame(data)
     
     report = detector.run_comprehensive_audit(df, target_col='target')
     
-    print(f"Leakage Detected: {report.leakage_detected}")
-    print(f"Severity: {report.severity}")
-    print(f"Affected Features: {report.affected_features}")
-    print(f"Recommendations: {report.recommendations}")
+    logger.info(f"Leakage Detected: {report.leakage_detected}")
+    logger.info(f"Severity: {report.severity}")
+    logger.info(f"Affected Features: {report.affected_features}")
+    logger.info(f"Recommendations: {report.recommendations}")
 
 if __name__ == "__main__":
     main()

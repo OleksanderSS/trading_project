@@ -154,56 +154,62 @@ class SystemValidator:
         self.results["secrets"] = results
         logger.info("Secrets validation complete.")
 
-    # def _check_database_availability(self, db_path: str):
-    #     """Checks if the DuckDB database file is accessible."""
-    #     results = {}
-    #     path = self.root / db_path
-    #     try:
-    #         import duckdb
-    #         # Try connecting to ensure the file is valid and not locked exclusively
-    #         conn = duckdb.connect(database=str(path), read_only=True)
-    #         conn.close()
-    #         results[db_path] = {"status": "PASSED"}
-    #     except Exception as e:
-    #         results[db_path] = {"status": "FAILED", "error": str(e)}
-    #         self.errors.append(f"Database error at {db_path}: {str(e)}")
-    #     
-    #     self.results["database"] = results
-    #     logger.info("Database availability check complete.")
-
-    def _summarize_results(self):
-        """Generates a summary of the validation checks."""
+    
+    def _count_checks(self) -> Tuple[int, int]:
+        """Counts total and passed checks from results."""
         total_checks = 0
         passed_checks = 0
-        for category in self.results.values():
-            if isinstance(category, dict):
-                for item in category.values():
-                    if isinstance(item, dict):
-                        total_checks += 1
-                        if item.get("status") in ["PASSED", "INFO"]:
-                            passed_checks += 1
         
-        success_rate = (passed_checks / total_checks * 100) if total_checks > 0 else 100
+        for category in self.results.values():
+            if not isinstance(category, dict):
+                continue
+                
+            for item in category.values():
+                if not isinstance(item, dict):
+                    continue
+                    
+                total_checks += 1
+                if self._is_check_passed(item):
+                    passed_checks += 1
+        
+        return total_checks, passed_checks
+    
+    def _is_check_passed(self, item: Dict[str, Any]) -> bool:
+        """Determines if a check item passed."""
+        return item.get("status") in ["PASSED", "INFO"]
+    
+    def _calculate_success_rate(self, passed: int, total: int) -> float:
+        """Calculates success rate percentage."""
+        return (passed / total * 100) if total > 0 else 100
+    
+    def _determine_overall_status(self) -> str:
+        """Determines overall system status."""
+        return "HEALTHY" if not self.errors else "NEEDS ATTENTION"
+    
+    def _summarize_results(self):
+        """Generates a summary of the validation checks."""
+        total_checks, passed_checks = self._count_checks()
+        success_rate = self._calculate_success_rate(passed_checks, total_checks)
         
         self.results["summary"] = {
             "total_checks": total_checks,
             "passed_checks": passed_checks,
             "failed_checks": len(self.errors),
             "success_rate": f"{success_rate:.1f}%",
-            "overall_status": "HEALTHY" if not self.errors else "NEEDS ATTENTION"
+            "overall_status": self._determine_overall_status()
         }
 
     def print_report(self):
-        """Prints a formatted report of the validation results."""
+        """Logs a formatted report of the validation results."""
         summary = self.results.get("summary", {})
-        print("\n--- System Validation Report ---")
-        print(f"Overall Status: {summary.get('overall_status', 'UNKNOWN')}")
-        print(f"Checks Passed: {summary.get('passed_checks', 0)}/{summary.get('total_checks', 0)} ({summary.get('success_rate', 'N/A')})\n")
+        logger.info("\n--- System Validation Report ---")
+        logger.info(f"Overall Status: {summary.get('overall_status', 'UNKNOWN')}")
+        logger.info(f"Checks Passed: {summary.get('passed_checks', 0)}/{summary.get('total_checks', 0)} ({summary.get('success_rate', 'N/A')})\n")
 
         if self.errors:
-            print("--- Issues Found ---")
+            logger.info("--- Issues Found ---")
             for error in self.errors:
-                print(f"[ERROR] {error}")
-            print("--------------------\n")
+                logger.info(f"[ERROR] {error}")
+            logger.info("--------------------\n")
         else:
-            print("System appears to be configured correctly.\n")
+            logger.info("System appears to be configured correctly.\n")

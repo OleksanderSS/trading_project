@@ -74,8 +74,9 @@ class DataCleaner:
         
         if nan_count > 0:
             if method == 'ffill':
-                df_out = df_out.ffill().bfill()
+                df_out = df_out.ffill()
             elif method == 'bfill':
+                logger.warning("Backfill can introduce future information in time series; use only for non-causal data.")
                 df_out = df_out.bfill().ffill()
             logger.info(f"Handled {nan_count} missing values using {method}.")
             
@@ -139,9 +140,10 @@ def safe_fill(df: pd.DataFrame, zero_fill_cols: Optional[List[str]] = None, unkn
             if col in df.columns:
                 df[col] = df[col].fillna(0)
 
-    # 2. Fill numeric columns with ffill/bfill
+    # 2. Fill numeric columns causally. Leading NaNs should be handled by
+    # downstream train-time masks rather than filled from future rows.
     num_cols = df.select_dtypes(include=["number"]).columns
-    df[num_cols] = df[num_cols].ffill().bfill()
+    df[num_cols] = df[num_cols].ffill()
 
     # 3. Fill categorical/object columns with a placeholder
     cat_cols = df.select_dtypes(include=["object", "category"]).columns
@@ -149,6 +151,24 @@ def safe_fill(df: pd.DataFrame, zero_fill_cols: Optional[List[str]] = None, unkn
         df[col] = df[col].fillna(unknown_fill_val)
 
     return df
+
+def _sanitize_index_timezone(df: pd.DataFrame, label: str) -> pd.DataFrame:
+    """Sanitize DatetimeIndex timezone."""
+    try:
+        df.index = df.index.tz_localize(None)
+        logger.debug(f"[{label}] Converted DatetimeIndex to timezone-naive.")
+    except Exception as e:
+        logger.warning(f"[{label}] Failed to sanitize index timezone: {e}")
+    return df
+
+def _sanitize_column_timezone(df: pd.DataFrame, col: str, label: str) -> None:
+    """Sanitize a single datetime column timezone."""
+    if df[col].dt.tz is not None:
+        try:
+            df[col] = df[col].dt.tz_localize(None)
+            logger.debug(f"[{label}] Converted column '{col}' to timezone-naive.")
+        except Exception as e:
+            logger.warning(f"[{label}] Failed to sanitize column '{col}' timezone: {e}")
 
 def sanitize_dataframe_timezone(df: pd.DataFrame, label: str = "sanitize_df") -> pd.DataFrame:
     """
@@ -160,21 +180,12 @@ def sanitize_dataframe_timezone(df: pd.DataFrame, label: str = "sanitize_df") ->
     df = df.copy()
 
     if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
-        try:
-            df.index = df.index.tz_localize(None)
-            logger.debug(f"[{label}] Converted DatetimeIndex to timezone-naive.")
-        except Exception as e:
-            logger.warning(f"[{label}] Failed to sanitize index timezone: {e}")
+        df = _sanitize_index_timezone(df, label)
 
-    for col in df.columns:
-        if pd.api.types.is_datetime64_any_dtype(df[col]):
-            if df[col].dt.tz is not None:
-                try:
-                    df[col] = df[col].dt.tz_localize(None)
-                    logger.debug(f"[{label}] Converted column '{col}' to timezone-naive.")
-                except Exception as e:
-                    logger.warning(f"[{label}] Failed to sanitize column '{col}' timezone: {e}")
-    
+    datetime_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
+    for col in datetime_cols:
+        _sanitize_column_timezone(df, col, label)
+
     return df
 
 def generate_content_hash(df: pd.DataFrame, cols_to_hash: List[str] = ['title', 'description', 'published_at']) -> pd.Series:
@@ -194,12 +205,36 @@ def generate_content_hash(df: pd.DataFrame, cols_to_hash: List[str] = ['title', 
     content = content.str.lower().str.replace(r'[^\w\s]', '', regex=True).str.replace(r'\s+', ' ', regex=True).str.strip()
     
     # Hash generation
-    def _md5(val):
-        return hashlib.md5(val.encode('utf-8')).hexdigest()
+    def _sha256(val):
+        return hashlib.sha256(val.encode('utf-8')).hexdigest()
     
-    hashes = content.apply(_md5)
+    hashes = content.apply(_sha256)
     logger.info(f"Generated {len(hashes)} content hashes for deduplication.")
     return hashes
+
+def _apply_column_mapping(normalized: pd.DataFrame, column_mapping: Dict[str, str]) -> None:
+    """Apply column mapping to normalized DataFrame."""
+    for old_col, new_col in column_mapping.items():
+        if old_col in normalized.columns and new_col not in normalized.columns:
+            normalized.rename(columns={old_col: new_col}, inplace=True)
+
+def _add_missing_columns(normalized: pd.DataFrame, source_type: str, required_columns: List[str]) -> None:
+    """Add missing required columns with defaults."""
+    for col in required_columns:
+        if col not in normalized.columns:
+            if col == 'id':
+                normalized[col] = range(len(normalized))
+            elif col == 'source_type':
+                normalized[col] = source_type
+            elif 'score' in col.lower() or 'count' in col.lower():
+                normalized[col] = 0.0
+            else:
+                normalized[col] = ''
+
+def _process_published_at(normalized: pd.DataFrame) -> None:
+    """Process published_at column."""
+    if 'published_at' in normalized.columns:
+        normalized['published_at'] = pd.to_datetime(normalized['published_at'], errors='coerce')
 
 def normalize_to_unified_schema(df: pd.DataFrame, source_type: str, required_columns: List[str], column_mapping: Dict[str, str]) -> pd.DataFrame:
     """
@@ -210,25 +245,9 @@ def normalize_to_unified_schema(df: pd.DataFrame, source_type: str, required_col
     
     normalized = df.copy()
     
-    # Rename columns based on provided mapping
-    for old_col, new_col in column_mapping.items():
-        if old_col in normalized.columns and new_col not in normalized.columns:
-            normalized.rename(columns={old_col: new_col}, inplace=True)
-    
-    # Add missing required columns with defaults
-    for col in required_columns:
-        if col not in normalized.columns:
-            if col == 'id':
-                normalized[col] = range(len(normalized))
-            elif col == 'source_type':
-                normalized[col] = source_type
-            elif 'score' in col.lower() or 'count' in col.lower():
-                normalized[col] = 0.0
-            else:
-                 normalized[col] = ''
-    
-    if 'published_at' in normalized.columns:
-        normalized['published_at'] = pd.to_datetime(normalized['published_at'], errors='coerce')
+    _apply_column_mapping(normalized, column_mapping)
+    _add_missing_columns(normalized, source_type, required_columns)
+    _process_published_at(normalized)
 
     normalized['hash'] = generate_content_hash(normalized)
     

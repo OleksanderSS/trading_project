@@ -1,0 +1,308 @@
+"""
+Advanced Adaptive Confidence Calibrator
+- Platt scaling for fast adaptation
+- Isotonic regression for accuracy
+- Online learning with exponential decay
+- Distribution shift detection
+"""
+
+import numpy as np
+import pandas as pd
+
+# Create numpy random generator
+rng = np.random.default_rng(42)
+from sklearn.isotonic import IsotonicRegression
+from sklearn.linear_model import LogisticRegression
+from scipy import stats
+import pickle
+from pathlib import Path
+from datetime import datetime
+
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
+
+class AdaptiveConfidenceCalibrator:
+    """Elite-grade confidence calibration with adaptive retraining"""
+
+    def __init__(self, logger=None, window_size=500, decay_rate=0.95):
+        """
+        Args:
+            window_size: How many recent trades to use for adaptation
+            decay_rate: Exponential decay for old data (0.95 = 5% hourly decay)
+        """
+        self.logger = logger or ProjectLogger.get_logger(__name__)
+        
+        # Primary models
+        self.isotonic_model = IsotonicRegression(out_of_bounds='clip')
+        self.platt_model = LogisticRegression(solver='lbfgs', random_state=42)  # For quick adaptation
+        
+        self.window_size = window_size
+        self.decay_rate = decay_rate
+        
+        # Tracking
+        self.calibration_history = []  # (timestamp, raw_conf, actual_conf, error)
+        self.is_isotonic_calibrated = False
+        self.is_platt_calibrated = False
+        self.last_retrain_time = None
+        self.distribution_shift_detected = False
+        self.current_accuracy = None
+        
+        # Performance tracking
+        self.mae = np.inf
+        self.calibration_error = np.inf
+        self.expected_calibration_error = np.inf
+
+    def calibrate(self, raw_confidence):
+        """
+        Calibration: first Platt (fast), then Isotonic (accurate)
+        """
+        if not self.is_platt_calibrated and not self.is_isotonic_calibrated:
+            return np.clip(raw_confidence, 0.01, 0.99)
+
+        try:
+            # 1. Quick adjustment with Platt scaling (if available)
+            if self.is_platt_calibrated:
+                platt_pred = self.platt_model.predict_proba([[raw_confidence]])[0, 1]
+            else:
+                platt_pred = raw_confidence
+
+            # 2. Precise calibration with Isotonic (if available)
+            if self.is_isotonic_calibrated:
+                isotonic_pred = self.isotonic_model.predict([platt_pred])[0]
+            else:
+                isotonic_pred = platt_pred
+
+            return np.clip(isotonic_pred, 0.01, 0.99)
+
+        except Exception as e:
+            self.logger.warning(f"Calibration failed: {e}. Returning raw confidence.")
+            return np.clip(raw_confidence, 0.01, 0.99)
+
+    def update_with_outcome(self, raw_confidence, actual_outcome):
+        """
+        Update model when we learn the result (online learning)
+
+        Args:
+            raw_confidence: Model gave this confidence
+            actual_outcome: 1 if signal was correct, 0 - no
+        """
+        try:
+            calibrated_conf = self.calibrate(raw_confidence)
+            error = abs(calibrated_conf - actual_outcome)
+
+            # Track history with timestamp
+            self.calibration_history.append({
+                'timestamp': datetime.now(),
+                'raw_confidence': raw_confidence,
+                'calibrated_confidence': calibrated_conf,
+                'actual_outcome': actual_outcome,
+                'error': error,
+                'weight': 1.0  # For weighted learning
+            })
+            
+            # Keep window
+            if len(self.calibration_history) > self.window_size * 2:
+                self.calibration_history = self.calibration_history[-self.window_size:]
+
+            # Trigger retraining every 50 new observations or if there's shift
+            if len(self.calibration_history) % 50 == 0:
+                self._check_distribution_shift()
+                if self.distribution_shift_detected or len(self.calibration_history) % 200 == 0:
+                    self._retrain_models()
+
+        except Exception as e:
+            self.logger.warning(f"Update failed: {e}")
+
+    def _apply_exponential_decay(self):
+        """
+        Apply exponential decay to old data
+        New data has weight 1.0, old data - less
+        """
+        if not self.calibration_history:
+            return
+
+        now = datetime.now()
+
+        for entry in self.calibration_history:
+            age_hours = (now - entry['timestamp']).total_seconds() / 3600
+            entry['weight'] = self.decay_rate ** (age_hours / 24)
+
+            # Remote data has minimal weight
+            if entry['weight'] < 0.05:
+                entry['weight'] = 0.0
+
+    def _check_distribution_shift(self):
+        """
+        Detect when data distribution changed (concept drift)
+        Use Kolmogorov-Smirnov test
+        """
+        if len(self.calibration_history) < 100:
+            return
+
+        # Split into two halves
+        mid = len(self.calibration_history) // 2
+        old_outcomes = [e['actual_outcome'] for e in self.calibration_history[:mid]]
+        new_outcomes = [e['actual_outcome'] for e in self.calibration_history[mid:]]
+
+        if len(old_outcomes) > 10 and len(new_outcomes) > 10:
+            # KS test
+            ks_stat, p_value = stats.ks_2samp(old_outcomes, new_outcomes)
+            
+            self.distribution_shift_detected = p_value < 0.05
+            
+            if self.distribution_shift_detected:
+                self.logger.warning(f"Distribution shift detected! KS stat={ks_stat:.3f}, p={p_value:.4f}")
+            else:
+                self.logger.debug(f"Distribution stable. KS stat={ks_stat:.3f}, p={p_value:.4f}")
+
+    def _retrain_models(self):
+        """
+        Retrain both models on current data with decay
+        """
+        if len(self.calibration_history) < 30:
+            self.logger.warning("Not enough history for retraining")
+            return
+
+        try:
+            self._apply_exponential_decay()
+
+            # Extract data
+            raw_confs = np.array([e['raw_confidence'] for e in self.calibration_history])
+            outcomes = np.array([e['actual_outcome'] for e in self.calibration_history])
+            weights = np.array([e['weight'] for e in self.calibration_history])
+
+            # Discard with zero weight
+            mask = weights > 0.01
+            raw_confs = raw_confs[mask]
+            outcomes = outcomes[mask]
+            weights = weights[mask]
+
+            if len(raw_confs) < 10:
+                self.logger.warning("Not enough weighted samples")
+                return
+
+            # 1. Retrain Platt scaling (fast adaptation)
+            try:
+                x_platt = raw_confs.reshape(-1, 1)
+                self.platt_model.fit(x_platt, outcomes, sample_weight=weights)
+                self.is_platt_calibrated = True
+                self.logger.info("Platt scaling retrained")
+            except Exception as e:
+                self.logger.warning(f"Platt training failed: {e}")
+
+            # 2. Retrain Isotonic regression (more accurate)
+            try:
+                # Isotonic doesn't support weights directly, so we use bootstrap sampling
+                sample_indices = rng.choice(
+                    len(raw_confs),
+                    size=min(len(raw_confs), 200),
+                    p=weights / weights.sum()
+                )
+                x_iso = raw_confs[sample_indices]
+                y_iso = outcomes[sample_indices]
+                
+                self.isotonic_model.fit(x_iso, y_iso)
+                self.is_isotonic_calibrated = True
+                self.logger.info("✅ Isotonic regression retrained")
+            except Exception as e:
+                self.logger.warning(f"Isotonic training failed: {e}")
+            
+            # Compute ECE (Expected Calibration Error)
+            self._compute_metrics()
+            self.last_retrain_time = datetime.now()
+            self.logger.info(f"📊 Calibration metrics - MAE: {self.mae:.4f}, ECE: {self.expected_calibration_error:.4f}")
+        
+        except Exception as e:
+            self.logger.error(f"Retraining failed: {e}")
+
+    def _compute_metrics(self):
+        """
+        Обчислити calibration metrics для моніторингу
+        """
+        try:
+            if not self.calibration_history:
+                return
+            
+            # Calibrated predictions
+            calibrated = np.array([e['calibrated_confidence'] for e in self.calibration_history])
+            outcomes = np.array([e['actual_outcome'] for e in self.calibration_history])
+            
+            # MAE - Mean Absolute Error
+            self.mae = np.mean(np.abs(calibrated - outcomes))
+            
+            # ECE - Expected Calibration Error (binned)
+            n_bins = 10
+            bin_edges = np.linspace(0, 1, n_bins + 1)
+            ece = 0.0
+            
+            for i in range(n_bins):
+                mask = (calibrated >= bin_edges[i]) & (calibrated < bin_edges[i+1])
+                if mask.sum() > 0:
+                    bin_accuracy = outcomes[mask].mean()
+                    bin_confidence = calibrated[mask].mean()
+                    bin_size = mask.sum()
+                    ece += np.abs(bin_accuracy - bin_confidence) * (bin_size / len(calibrated))
+            
+            self.expected_calibration_error = ece
+            self.current_accuracy = outcomes.mean()
+        
+        except Exception as e:
+            self.logger.warning(f"Metric computation failed: {e}")
+
+    def save(self, filepath):
+        """Зберегти обидві моделі"""
+        try:
+            Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+            data = {
+                'isotonic_model': self.isotonic_model,
+                'platt_model': self.platt_model,
+                'is_isotonic_calibrated': self.is_isotonic_calibrated,
+                'is_platt_calibrated': self.is_platt_calibrated,
+                'mae': self.mae,
+                'ece': self.expected_calibration_error,
+                'current_accuracy': self.current_accuracy,
+                'calibration_history': self.calibration_history[-100:],  # Keep last 100
+                'last_retrain_time': self.last_retrain_time
+            }
+            with open(filepath, 'wb') as f:
+                pickle.dump(data, f)
+            self.logger.info(f"✅ Calibrator saved to {filepath}")
+        except Exception as e:
+            self.logger.error(f"Save failed: {e}")
+
+    def load(self, filepath):
+        """Завантажити моделі"""
+        try:
+            with open(filepath, 'rb') as f:
+                data = pickle.load(f)
+            self.isotonic_model = data['isotonic_model']
+            self.platt_model = data['platt_model']
+            self.is_isotonic_calibrated = data['is_isotonic_calibrated']
+            self.is_platt_calibrated = data['is_platt_calibrated']
+            self.mae = data.get('mae', np.inf)
+            self.expected_calibration_error = data.get('ece', np.inf)
+            self.current_accuracy = data.get('current_accuracy')
+            self.calibration_history = data.get('calibration_history', [])
+            self.last_retrain_time = data.get('last_retrain_time')
+            self.logger.info(f"✅ Calibrator loaded from {filepath}")
+            return True
+        except Exception as e:
+            self.logger.warning(f"Load failed: {e}")
+            return False
+
+    def get_calibration_report(self):
+        """Генерувати звіт про calibration"""
+        return {
+            'is_calibrated': self.is_isotonic_calibrated or self.is_platt_calibrated,
+            'mae': self.mae,
+            'expected_calibration_error': self.expected_calibration_error,
+            'current_accuracy': self.current_accuracy,
+            'history_size': len(self.calibration_history),
+            'distribution_shift_detected': self.distribution_shift_detected,
+            'last_retrain': self.last_retrain_time.isoformat() if self.last_retrain_time else None,
+            'models_active': {
+                'platt': self.is_platt_calibrated,
+                'isotonic': self.is_isotonic_calibrated
+            }
+        }

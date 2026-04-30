@@ -125,13 +125,36 @@ class StackedEnsemble:
         )
 
     def save(self, path: str):
+        """Save the ensemble state safely using joblib instead of pickle."""
+        import joblib
+        
+        state = {
+            'meta_model': self.meta_model,
+            'is_trained': self.is_trained,
+            'feature_names': self.feature_names,
+            'config_manager': self.config_manager  # May need special handling if complex
+        }
+        
         with open(path, 'wb') as f:
-            pickle.dump(self, f)
+            joblib.dump(state, f)
+        logger.info(f"[StackedEnsemble] Saved to {path}")
 
     @classmethod
     def load(cls, path: str):
+        """Load the ensemble state safely."""
+        import joblib
+        
         with open(path, 'rb') as f:
-            return pickle.load(f)
+            state = joblib.load(f)
+        
+        instance = cls(
+            meta_model=state['meta_model'],
+            config_manager=state.get('config_manager')
+        )
+        instance.is_trained = state['is_trained']
+        instance.feature_names = state['feature_names']
+        
+        return instance
 
 def ensemble_forecast(
     model_predictions: Dict[str, Union[List[float], np.ndarray]],
@@ -139,7 +162,6 @@ def ensemble_forecast(
     weights: Optional[Dict[str, float]] = None,
     market_regime: Optional[str] = None,
     regime_configs: Optional[Dict[str, Dict[str, float]]] = None,
-    normalize_weights: bool = True,
     max_weight: float = 0.8,
     min_weight: float = 0.0,
     divergence_shrinkage: bool = True,
@@ -155,24 +177,62 @@ def ensemble_forecast(
         logger.warning("[Ensemble] No model predictions provided.")
         return EnsembleResult(np.array([]), np.array([]), np.array([]), {}, None)
 
-    # 1. Dynamic Regime-based Weight Selection
-    active_base_weights = {}
+    active_base_weights = _determine_regime_weights(market_regime, regime_configs, weights, model_predictions)
+    constrained_weights = _apply_weight_constraints(active_base_weights, min_weight, max_weight)
+    
+    aligned_data = _align_predictions_and_confidences(model_predictions, model_confidences)
+    stacked_preds, stacked_conf = aligned_data['predictions'], aligned_data['confidences']
+    
+    effective_weights = _calculate_effective_weights(constrained_weights, stacked_conf, aligned_data['model_order'])
+    final_signal = _generate_ensemble_signal(stacked_preds, effective_weights, method)
+    
+    divergence = np.nanstd(stacked_preds, axis=0)
+    final_signal = _apply_divergence_penalty(final_signal, divergence, divergence_shrinkage)
+    final_signal = _apply_smoothing(final_signal, rolling_window, fill_na)
+    
+    final_confidence = _calculate_final_confidence(stacked_conf, effective_weights)
+    stats = _create_ensemble_stats(len(model_predictions), divergence, market_regime)
+    
+    return EnsembleResult(
+        final_signal=final_signal,
+        confidence=final_confidence,
+        divergence=divergence,
+        active_weights=constrained_weights,
+        stats=stats
+    )
+
+def _determine_regime_weights(
+    market_regime: Optional[str], 
+    regime_configs: Optional[Dict[str, Dict[str, float]]], 
+    weights: Optional[Dict[str, float]], 
+    model_predictions: Dict[str, Union[List[float], np.ndarray]]
+) -> Dict[str, float]:
+    """Determine weights based on market regime."""
     if market_regime and regime_configs and market_regime in regime_configs:
         active_base_weights = regime_configs[market_regime]
         logger.info(f"[Ensemble] Applying weights for regime: {market_regime}")
     else:
-        active_base_weights = weights or {m: 1.0 for m in model_predictions.keys()}
+        active_base_weights = weights or dict.fromkeys(model_predictions.keys(), 1.0)
         if market_regime:
-             logger.warning(f"[Ensemble] Regime '{market_regime}' not found in config. Using default weights.")
+            logger.warning(f"[Ensemble] Regime '{market_regime}' not found in config. Using default weights.")
+    
+    return active_base_weights
 
-    # Apply constraints
-    active_base_weights = {m: max(min_weight, min(w, max_weight)) for m, w in active_base_weights.items()}
+def _apply_weight_constraints(weights: Dict[str, float], min_weight: float, max_weight: float) -> Dict[str, float]:
+    """Apply min/max weight constraints."""
+    return {m: max(min_weight, min(w, max_weight)) for m, w in weights.items()}
 
+def _align_predictions_and_confidences(
+    model_predictions: Dict[str, Union[List[float], np.ndarray]], 
+    model_confidences: Optional[Dict[str, Union[List[float], np.ndarray]]]
+) -> Dict[str, Any]:
+    """Align predictions and confidences to same length."""
     max_len = max((len(v) for v in model_predictions.values()), default=0)
     
-    # Align and handle confidence
     aligned_preds = {}
     aligned_conf = {}
+    model_order = []
+    
     for m in model_predictions.keys():
         p = np.array(model_predictions[m], dtype=float)
         c = np.array(model_confidences[m], dtype=float) if (model_confidences and m in model_confidences) else np.ones(len(p))
@@ -180,55 +240,63 @@ def ensemble_forecast(
         if len(p) < max_len:
             p = np.pad(p, (max_len - len(p), 0), 'constant', constant_values=np.nan)
             c = np.pad(c, (max_len - len(c), 0), 'constant', constant_values=0.0)
-            
+        
         aligned_preds[m] = p
         aligned_conf[m] = c
-
-    # 2. Confidence-weighted Averaging
-    stacked_preds = np.stack(list(aligned_preds.values()))
-    stacked_conf = np.stack(list(aligned_conf.values()))
+        model_order.append(m)
     
-    # Calculate effective weights per time step: base_weight * confidence
-    base_weight_vec = np.array([active_base_weights.get(m, 1.0) for m in aligned_preds.keys()]).reshape(-1, 1)
+    return {
+        'predictions': aligned_preds,
+        'confidences': aligned_conf,
+        'model_order': model_order
+    }
+
+def _calculate_effective_weights(
+    base_weights: Dict[str, float], 
+    stacked_conf: np.ndarray, 
+    model_order: List[str]
+) -> np.ndarray:
+    """Calculate effective weights combining base weights and confidence."""
+    base_weight_vec = np.array([base_weights.get(m, 1.0) for m in model_order]).reshape(-1, 1)
     effective_weights = base_weight_vec * stacked_conf
     
     # Normalize effective weights across models at each time step
     weight_sums = np.nansum(effective_weights, axis=0)
     normalized_weights = np.divide(effective_weights, weight_sums, out=np.zeros_like(effective_weights), where=weight_sums != 0)
+    
+    return normalized_weights
 
-    # 3. Generate Final Signal
+def _generate_ensemble_signal(stacked_preds: np.ndarray, effective_weights: np.ndarray, method: str) -> np.ndarray:
+    """Generate final ensemble signal using specified method."""
     if method == "median":
-        final_signal = np.nanmedian(stacked_preds, axis=0)
+        return np.nanmedian(stacked_preds, axis=0)
     elif method == "mean":
-        final_signal = np.nanmean(stacked_preds, axis=0)
-    else: # weighted
-        final_signal = np.nansum(stacked_preds * normalized_weights, axis=0)
+        return np.nanmean(stacked_preds, axis=0)
+    else:  # weighted
+        return np.nansum(stacked_preds * effective_weights, axis=0)
 
-    # 4. Divergence Penalty (Shrinkage)
-    divergence = np.nanstd(stacked_preds, axis=0)
+def _apply_divergence_penalty(signal: np.ndarray, divergence: np.ndarray, divergence_shrinkage: bool) -> np.ndarray:
+    """Apply divergence penalty if enabled."""
     if divergence_shrinkage:
-        # Reduce signal strength where models disagree heavily
         penalty = 1.0 / (1.0 + divergence)
-        final_signal = final_signal * penalty
+        signal = signal * penalty
         logger.debug("[Ensemble] Applied divergence penalty (shrinkage).")
+    return signal
 
-    # Smoothing
+def _apply_smoothing(signal: np.ndarray, rolling_window: Optional[int], fill_na: float) -> np.ndarray:
+    """Apply rolling window smoothing if specified."""
     if rolling_window and rolling_window > 1:
-        final_signal = pd.Series(final_signal).ffill().fillna(fill_na).rolling(rolling_window, min_periods=1).mean().to_numpy()
+        return pd.Series(signal).ffill().fillna(fill_na).rolling(rolling_window, min_periods=1).mean().to_numpy()
+    return signal
 
-    # Confidence is average weighted confidence
-    final_confidence = np.nansum(stacked_conf * normalized_weights, axis=0)
+def _calculate_final_confidence(stacked_conf: np.ndarray, effective_weights: np.ndarray) -> np.ndarray:
+    """Calculate final confidence as weighted average."""
+    return np.nansum(stacked_conf * effective_weights, axis=0)
 
-    stats = {
-        "n_models": len(model_predictions),
+def _create_ensemble_stats(n_models: int, divergence: np.ndarray, market_regime: Optional[str]) -> Dict[str, Any]:
+    """Create ensemble statistics dictionary."""
+    return {
+        "n_models": n_models,
         "avg_divergence": float(np.nanmean(divergence)),
         "regime_applied": market_regime
     }
-
-    return EnsembleResult(
-        final_signal=final_signal,
-        confidence=final_confidence,
-        divergence=divergence,
-        active_weights=active_base_weights,
-        stats=stats
-    )

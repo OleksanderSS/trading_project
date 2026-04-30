@@ -4,9 +4,10 @@ import os
 import numpy as np
 import pandas as pd
 import joblib
+from pathlib import Path
 from typing import Dict, Any
-from src.core.logging.logger import ProjectLogger # Corrected import
-from src.ensembling.ensemble import ensemble_forecast # Corrected import
+from src.core.logging.logger import ProjectLogger
+from src.ensembling.ensemble import ensemble_forecast
 from .deep_predict import predict_lstm, predict_cnn, predict_transformer, predict_autoencoder
 from .dean_integration import get_dean_integrator
 from .sentiment_integration import get_sentiment_integrator
@@ -17,48 +18,48 @@ logger = ProjectLogger.get_logger(__name__)
 # Safe inverse transform
 # --------------------
 def safe_inverse_transform(scaler, y_pred: np.ndarray) -> np.ndarray:
-    """Inverse transform with NaN-safe fallback"""
+    """Inverse transform with NaN-safe fallback."""
     y_pred = np.nan_to_num(y_pred, nan=0.0, posinf=0.0, neginf=0.0)
     try:
         return scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
     except Exception:
-        logger.warning("Не вдалося inverse_transform, поверandємо оригandнальнand values")
+        logger.warning("Failed to inverse_transform, returning original values.")
         return y_pred
 
 # --------------------
-# Класичнand ML моwhereлand
+# Classic ML Models
 # --------------------
 def predict_ml(model: Any, X: np.ndarray) -> np.ndarray:
-    """Прогноwithи класичних ML моwhereлей (with пandдтримкою predict_proba)"""
-    X_safe = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
+    """Predictions for classic ML models (with predict_proba support)."""
+    x_safe = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
     if hasattr(model, "predict_proba"):
-        y_pred = model.predict_proba(X_safe)[:, 1]
+        y_pred = model.predict_proba(x_safe)[:, 1]
     else:
-        y_pred = model.predict(X_safe)
+        y_pred = model.predict(x_safe)
     return np.asarray(y_pred).reshape(-1)
 
 # --------------------
-# Унandверсальний роутер
+# Universal Router
 # --------------------
-def predict_any(model: Any, X: np.ndarray, model_type: str, return_proba: bool = False) -> np.ndarray:
-    """Вибandр правильної функцandї прогноwithу forлежно вandд типу моwhereлand"""
+def predict_any(model: Any, X: np.ndarray, model_type: str) -> np.ndarray:
+    """Selects the correct prediction function based on model type."""
     try:
         if "lstm" in model_type:
-            return predict_lstm(model, X, return_proba=return_proba)
+            return predict_lstm(model, X)
         elif "cnn" in model_type:
-            return predict_cnn(model, X, return_proba=return_proba)
+            return predict_cnn(model, X)
         elif "transformer" in model_type:
-            return predict_transformer(model, X, return_proba=return_proba)
+            return predict_transformer(model, X)
         elif "autoencoder" in model_type:
-            return predict_autoencoder(model, X, return_proba=return_proba)
+            return predict_autoencoder(model, X)
         else:
             return predict_ml(model, X)
     except Exception as e:
-        logger.exception(f"[ERROR] Error прогноwithу for {model_type}: {e}")
+        logger.exception(f"[ERROR] Error predicting for {model_type}: {e}")
         return np.array([])
 
 # --------------------
-# Отримання прогноwithandв вandд усandх моwhereлей + ансамбль
+# Get Predictions from All Models + Ensemble
 # --------------------
 def get_predictions(
     models_dict: Dict[str, Any],
@@ -66,23 +67,23 @@ def get_predictions(
     target_scaler=None,
     ensemble_weights: Dict[str, float] = None
 ) -> Dict[str, Any]:
-    """Отримати прогноwithи вandд усandх моwhereлей with беwithпечним inverse_transform and ансамблем"""
+    """Get predictions from all models with safe inverse transform and ensembling."""
     X = df_features.values
     preds = {}
 
     for name, model in models_dict.items():
-        y_pred = predict_any(model, X, model_type=name.lower(), return_proba=True)
+        y_pred = predict_any(model, X, model_type=name.lower())
         if y_pred.size == 0:
-            logger.warning(f"[WARN] Прогноwith for {name} порожнandй. Пропущено.")
+            logger.warning(f"[WARN] Prediction for {name} is empty. Skipped.")
             continue
 
         if target_scaler is not None:
             y_pred = safe_inverse_transform(target_scaler, y_pred)
 
         preds[name] = y_pred
-        logger.info(f"[OK] Прогноwith {name} готовий ({y_pred.shape[0]} точок).")
+        logger.info(f"[OK] Prediction for {name} ready ({y_pred.shape[0]} points).")
 
-    # --- Ансамбль ---
+    # --- Ensemble ---
     if preds:
         ensemble_result = ensemble_forecast(
             model_predictions=preds,
@@ -92,27 +93,27 @@ def get_predictions(
         )
         preds["ensemble"] = ensemble_result.final_signal
         preds["ensemble_stats"] = ensemble_result.stats
-        logger.info(f"[DATA] Ансамблевий прогноwith готовий ({len(ensemble_result.final_signal)} точок)")
+        logger.info(f"[DATA] Ensemble forecast ready ({len(ensemble_result.final_signal)} points).")
     else:
-        logger.warning("[WARN] Немає жодного прогноwithу for ансамблю")
+        logger.warning("[WARN] No predictions available for ensemble.")
 
     return preds
 
 # --------------------
-# Заванandження моwhereлей and прогноwith with parquet
+# Load Models and Predict with Parquet
 # --------------------
 def predict_from_parquet(parquet_path: str, models_path: str = "data/trained_models") -> Dict[str, Any]:
-    """Повний прогноз на основі final_features.parquet"""
+    """Full prediction based on final_features.parquet."""
     parquet_file = Path(parquet_path)
     if not parquet_file.exists():
-        raise FileNotFoundError(f"Файл не знайдено: {parquet_path}")
+        raise FileNotFoundError(f"File not found: {parquet_path}")
 
     df = pd.read_parquet(parquet_file)
     df = df.drop(columns=["date", "ticker", "scope", "target"], errors="ignore")
 
     models_dir = Path(models_path)
     if not models_dir.exists():
-        raise FileNotFoundError(f"Models folder not found: {models_dir}")
+        raise FileNotFoundError(f"Models directory not found: {models_dir}")
 
     model_files = [f for f in os.listdir(models_dir) if f.endswith(".pkl")]
     models_dict = {}
@@ -125,7 +126,7 @@ def predict_from_parquet(parquet_path: str, models_path: str = "data/trained_mod
             continue
         models_dict[f.replace(".pkl", "")] = model
 
-    logger.info(f" Заванandжено {len(models_dict)} моwhereлей")
+    logger.info(f"Loaded {len(models_dict)} models.")
 
     ensemble_result = get_predictions(models_dict, df, target_scaler=target_scaler)
     return ensemble_result
@@ -134,12 +135,12 @@ def predict_from_parquet(parquet_path: str, models_path: str = "data/trained_mod
 # Dean Models Prediction
 # --------------------
 def predict_dean_models(data: pd.DataFrame, ticker: str, timeframe: str) -> Dict[str, Any]:
-    """Прогноз з використанням Dean RL моделей"""
+    """Prediction using Dean RL models."""
     try:
         dean_integrator = get_dean_integrator()
         dean_decision = dean_integrator.get_trading_decision(data, ticker, timeframe)
         
-        logger.info(f"[DEAN] Прогноз для {ticker}: {dean_decision['type']} (confidence: {dean_decision['confidence']:.2f})")
+        logger.info(f"[DEAN] Prediction for {ticker}: {dean_decision['type']} (confidence: {dean_decision['confidence']:.2f})")
         
         return {
             'dean_prediction': dean_decision,
@@ -151,7 +152,7 @@ def predict_dean_models(data: pd.DataFrame, ticker: str, timeframe: str) -> Dict
         }
         
     except Exception as e:
-        logger.error(f"[DEAN] Помилка прогнозу: {e}")
+        logger.error(f"[DEAN] Prediction error: {e}")
         return {
             'dean_prediction': None,
             'model_type': 'dean_error',
@@ -173,23 +174,23 @@ def predict_all_models_enhanced(
     ticker: str = "UNKNOWN",
     timeframe: str = "1h"
 ) -> Dict[str, Any]:
-    """Розширений прогноз з усіма моделями включно з Dean"""
+    """Enhanced prediction with all models including Dean."""
     
-    # Звичайні прогнози
+    # Traditional predictions
     predictions = get_predictions(models_dict, df_features, target_scaler, ensemble_weights)
     
-    # Dean прогноз
+    # Dean prediction
     if use_dean:
         try:
             dean_prediction = predict_dean_models(df_features, ticker, timeframe)
             predictions['dean'] = dean_prediction
             
-            # Додаємо Dean в ансамбль з вагою 0.2
+            # Add Dean to ensemble with weight 0.2 if confidence is high
             if 'ensemble' in predictions and dean_prediction['confidence'] > 0.3:
                 ensemble_preds = predictions['ensemble']
                 dean_weight = dean_prediction['confidence'] * 0.2
                 
-                # Конвертуємо Dean рішення в числовий прогноз
+                # Convert Dean decision to numeric prediction
                 dean_numeric = convert_dean_decision_to_numeric(dean_prediction['recommendation'])
                 
                 if len(ensemble_preds) > 0:
@@ -206,14 +207,14 @@ def predict_all_models_enhanced(
     return predictions
 
 def convert_dean_decision_to_numeric(decision: str) -> float:
-    """Конвертація Dean рішення в числовий прогноз"""
+    """Converts Dean decision string to numeric prediction value."""
     decision_map = {
-        'buy': 0.02,      # +2% очікувана зміна
-        'sell': -0.02,    # -2% очікувана зміна
-        'hold': 0.0,      # 0% очікувана зміна
-        'wait': 0.0,      # 0% очікувана зміна
-        'reduce_position': -0.01,  # -1% очікувана зміна
-        'increase_position': 0.01   # +1% очікувана зміна
+        'buy': 0.02,      # +2% expected change
+        'sell': -0.02,    # -2% expected change
+        'hold': 0.0,      # 0% expected change
+        'wait': 0.0,      # 0% expected change
+        'reduce_position': -0.01,  # -1% expected change
+        'increase_position': 0.01   # +1% expected change
     }
     
     return decision_map.get(decision.lower(), 0.0)
@@ -222,17 +223,17 @@ def convert_dean_decision_to_numeric(decision: str) -> float:
 # Sentiment Models Prediction
 # --------------------
 def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame) -> Dict[str, Any]:
-    """Прогноз з використанням sentiment моделей"""
+    """Prediction using sentiment models."""
     try:
         sentiment_integrator = get_sentiment_integrator()
         sentiment_signal = sentiment_integrator.get_sentiment_signal(news_data, price_data)
         
-        logger.info(f"[SENTIMENT] Сигнал: {sentiment_signal['signal_type']} (confidence: {sentiment_signal['confidence']:.2f})")
+        logger.info(f"[SENTIMENT] Signal: {sentiment_signal['signal_type']} (confidence: {sentiment_signal['confidence']:.2f})")
         
         return sentiment_signal
         
     except Exception as e:
-        logger.error(f"[SENTIMENT] Помилка прогнозу: {e}")
+        logger.error(f"[SENTIMENT] Prediction error: {e}")
         return {
             'signal_type': 'hold',
             'signal_strength': 0.0,
@@ -256,26 +257,26 @@ def predict_all_models_final(
     news_data: pd.DataFrame = None,
     price_data: pd.DataFrame = None
 ) -> Dict[str, Any]:
-    """Фінальний прогноз з усіма моделями"""
+    """Final prediction with all models integrated."""
     
-    # Звичайні прогнози + Dean
+    # Traditional + Dean predictions
     predictions = predict_all_models_enhanced(
         models_dict, df_features, target_scaler, ensemble_weights,
         use_dean, ticker, timeframe
     )
     
-    # Sentiment прогноз
+    # Sentiment prediction
     if use_sentiment and news_data is not None and price_data is not None:
         try:
             sentiment_prediction = predict_sentiment_models(news_data, price_data)
             predictions['sentiment'] = sentiment_prediction
             
-            # Додаємо sentiment в фінальний ансамбль
+            # Integrate sentiment into final ensemble
             if 'ensemble_enhanced' in predictions and sentiment_prediction['confidence'] > 0.3:
                 ensemble_preds = predictions['ensemble_enhanced']
-                sentiment_weight = sentiment_prediction['confidence'] * 0.15  # 15% вага для sentiment
+                sentiment_weight = sentiment_prediction['confidence'] * 0.15  # 15% weight for sentiment
                 
-                # Конвертуємо sentiment сигнал в числовий прогноз
+                # Convert sentiment signal to numeric prediction
                 sentiment_numeric = convert_sentiment_signal_to_numeric(sentiment_prediction['signal_type'])
                 
                 if len(ensemble_preds) > 0:
@@ -293,13 +294,13 @@ def predict_all_models_final(
     return predictions
 
 def convert_sentiment_signal_to_numeric(signal: str) -> float:
-    """Конвертація sentiment сигналу в числовий прогноз"""
+    """Converts sentiment signal string to numeric prediction value."""
     signal_map = {
-        'buy': 0.015,      # +1.5% очікувана зміна
-        'sell': -0.015,    # -1.5% очікувана зміна
-        'hold': 0.0,       # 0% очікувана зміна
-        'strong_buy': 0.025,    # +2.5% очікувана зміна
-        'strong_sell': -0.025   # -2.5% очікувана зміна
+        'buy': 0.015,      # +1.5% expected change
+        'sell': -0.015,    # -1.5% expected change
+        'hold': 0.0,       # 0% expected change
+        'strong_buy': 0.025,    # +2.5% expected change
+        'strong_sell': -0.025   # -2.5% expected change
     }
     
     return signal_map.get(signal.lower(), 0.0)

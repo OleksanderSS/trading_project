@@ -1,0 +1,11 @@
+{
+  "batch_id": "TSLA_transformer_20260322_160925",
+  "ticker": "TSLA",
+  "model_name": "transformer",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_rsi14_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T16:09:25.531626",
+  "status": "PENDING_COLAB"
+}

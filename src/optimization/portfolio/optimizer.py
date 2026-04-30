@@ -6,14 +6,26 @@ Portfolio Optimization Module
 
 import pandas as pd
 import numpy as np
-import scipy.optimize as opt
-from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Optional, Union, Any
-
-from src.optimization.base import BaseOptimizer
+from typing import Dict, Any, List, Optional, Tuple
+from dataclasses import dataclass
+from scipy.optimize import minimize
+from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.spatial.distance import squareform
+from sklearn.covariance import LedoitWolf
 from src.core.logging.logger import ProjectLogger
 from src.metrics.calculator import MetricsCalculator
 from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
+
+@dataclass
+class BlackLittermanParams:
+    """Parameters for Black-Litterman optimization"""
+    views: Optional[Dict[str, float]] = None
+    tau: float = 0.025
+    risk_free_rate: float = 0.02
+    benchmark_ticker: str = 'SPY'
+
+# Constants to avoid duplication
+SHARPE_RATIO = "Sharpe Ratio"
 
 class PortfolioOptimizer(BaseOptimizer):
     """
@@ -56,21 +68,46 @@ class PortfolioOptimizer(BaseOptimizer):
         Головна точка входу для оптимізації портфоліо.
         """
         try:
-            if method == 'markowitz': return self.markowitz_optimization(returns, **kwargs)
-            elif method == 'max_sharpe': return self.max_sharpe_optimization(returns, **kwargs)
-            elif method == 'min_variance': return self.markowitz_optimization(returns, target_return=0, **kwargs)
-            elif method == 'risk_parity': return self.risk_parity_optimization(returns, **kwargs)
-            elif method == 'hrp': return self.hierarchical_risk_parity(returns, **kwargs)
-            elif method == 'black_litterman': return self.black_litterman_optimization(returns, **kwargs)
-            elif method == 'equal_weight': return self.equal_weight_portfolio(returns, **kwargs)
-            elif method == 'inverse_volatility': return self.inverse_volatility_portfolio(returns, **kwargs)
-            elif method == 'kelly': return self.kelly_optimization(kwargs.get('win_rate', 0.5), kwargs.get('profit_factor', 2.0), list(returns.columns))
-            else: 
-                self.logger.error(f"Unknown optimization method: {method}")
-                return {'success': False, 'error': f'Unknown method: {method}'}
+            return self._dispatch_optimization(returns, method, **kwargs)
         except Exception as e:
-            self.logger.error(f"Error in portfolio optimization ({method}): {e}", exc_info=True)
-            return {'success': False, 'error': str(e)}
+            return self._handle_optimization_error(e, method)
+    
+    def _dispatch_optimization(self, returns: pd.DataFrame, method: str, **kwargs) -> Dict[str, Any]:
+        """Dispatch optimization to appropriate method"""
+        optimization_methods = {
+            'markowitz': lambda: self.markowitz_optimization(returns, **kwargs),
+            'max_sharpe': lambda: self.max_sharpe_optimization(returns, **kwargs),
+            'min_variance': lambda: self.markowitz_optimization(returns, target_return=0, **kwargs),
+            'risk_parity': lambda: self.risk_parity_optimization(returns, **kwargs),
+            'hrp': lambda: self.hierarchical_risk_parity(returns, **kwargs),
+            'black_litterman': lambda: self._black_litterman_with_params(returns, **kwargs),
+            'equal_weight': lambda: self.equal_weight_portfolio(returns, **kwargs),
+            'inverse_volatility': lambda: self.inverse_volatility_portfolio(returns, **kwargs),
+            'kelly': lambda: self.kelly_optimization(
+                kwargs.get('win_rate', 0.5), 
+                kwargs.get('profit_factor', 2.0), 
+                list(returns.columns)
+            )
+        }
+        
+        if method not in optimization_methods:
+            self.logger.error(f"Unknown optimization method: {method}")
+            return {'success': False, 'error': f'Unknown method: {method}'}
+        
+        return optimization_methods[method]()
+    
+    def _handle_optimization_error(self, error: Exception, method: str) -> Dict[str, Any]:
+        """Handle optimization errors consistently"""
+        self.logger.error(f"Error in portfolio optimization ({method}): {error}", exc_info=True)
+        return {'success': False, 'error': str(error)}
+    
+    def _black_litterman_with_params(self, returns: pd.DataFrame, **kwargs) -> Dict[str, Any]:
+        """Black-Litterman optimization with parameter object"""
+        if 'params' in kwargs and isinstance(kwargs['params'], BlackLittermanParams):
+            params = kwargs['params']
+            return self.black_litterman_optimization(returns, params)
+        else:
+            return self.black_litterman_optimization(returns, **kwargs)
 
     def _calculate_periods_per_year(self, timeframe: str) -> float:
         """Розраховує кількість торгових періодів у році для заданого таймфрейму."""
@@ -81,7 +118,7 @@ class PortfolioOptimizer(BaseOptimizer):
         elif timeframe == '5m': return float(base_days * 78)
         elif timeframe == '1m': return float(base_days * 390)
         return float(base_days)
-    
+
     def calculate_returns(self, prices: pd.DataFrame) -> pd.DataFrame:
         """Розрахувати доходності цін"""
         try:
@@ -140,7 +177,7 @@ class PortfolioOptimizer(BaseOptimizer):
             bounds = tuple((self.constraints['min_weight'], self.constraints['max_weight']) for _ in range(n_assets))
             x0 = np.array([1/n_assets] * n_assets)
             
-            result = opt.minimize(objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
+            result = minimize(objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
             
             if result.success:
                 weights = self._apply_fractional_constraints(pd.Series(result.x, index=mu.index))
@@ -178,7 +215,7 @@ class PortfolioOptimizer(BaseOptimizer):
             bounds = tuple((self.constraints['min_weight'], self.constraints['max_weight']) for _ in range(n_assets))
             x0 = np.array([1/n_assets] * n_assets)
             
-            result = opt.minimize(objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
+            result = minimize(objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
             
             if result.success:
                 weights = self._apply_fractional_constraints(pd.Series(result.x, index=mu.index))
@@ -216,11 +253,21 @@ class PortfolioOptimizer(BaseOptimizer):
             self.logger.error(f"Error in Kelly optimization: {e}")
             return {'success': False, 'error': str(e)}
 
-    def black_litterman_optimization(self, returns: pd.DataFrame,
-                                   views: Dict[str, float] = None,
-                                   tau: float = 0.025,
-                                   risk_free_rate: float = 0.02,
-                                   benchmark_ticker: str = 'SPY') -> Dict[str, Any]:
+    def black_litterman_optimization(self, returns: pd.DataFrame, params: Optional[BlackLittermanParams] = None) -> Dict[str, Any]:
+        """Black-Litterman оптимізація."""
+        if params is None:
+            params = BlackLittermanParams()
+        
+        return self._black_litterman_calculation(returns, params)
+    
+    def black_litterman_optimization_legacy(self, returns: pd.DataFrame, 
+                                   params: BlackLittermanParams = None) -> Dict[str, Any]:
+        """Legacy Black-Litterman optimization for backward compatibility"""
+        if params is None:
+            params = BlackLittermanParams()
+        return self._black_litterman_calculation(returns, params)
+    
+    def _black_litterman_calculation(self, returns: pd.DataFrame, params: BlackLittermanParams) -> Dict[str, Any]:
         """Black-Litterman оптимізація."""
         try:
             mu = returns.mean() * self.periods_per_year
@@ -230,14 +277,15 @@ class PortfolioOptimizer(BaseOptimizer):
             risk_aversion = 3.0
             implied_returns = risk_aversion * np.dot(cov_matrix.values, market_weights)
             
-            if views is None: views = {asset: implied_returns[i] for i, asset in enumerate(mu.index)}
+            if params.views is None: 
+                params.views = {asset: implied_returns[i] for i, asset in enumerate(mu.index)}
             P = np.eye(n_assets)
-            Q = np.array([views.get(asset, implied_returns[i]) for i, asset in enumerate(mu.index)])
-            tau_cov = tau * cov_matrix.values
+            Q = np.array([params.views.get(asset, implied_returns[i]) for i, asset in enumerate(mu.index)])
+            tau_cov = params.tau * cov_matrix.values
             omega = np.diag(np.diag(tau_cov))
             tau_cov_inv, omega_inv = np.linalg.inv(tau_cov), np.linalg.inv(omega)
             posterior_returns = np.linalg.inv(tau_cov_inv + P.T @ omega_inv @ P) @ (tau_cov_inv @ implied_returns + P.T @ omega_inv @ Q)
-            res = self.markowitz_optimization(returns, risk_free_rate=risk_free_rate)
+            res = self.markowitz_optimization(returns, risk_free_rate=params.risk_free_rate)
             if res['success']:
                 res['method'] = 'black_litterman'
                 res['posterior_returns'] = pd.Series(posterior_returns, index=mu.index)
@@ -402,8 +450,8 @@ class PortfolioOptimizer(BaseOptimizer):
             if result.get('success', False):
                 comparison_data.append({
                     'Method': method, 'Expected Return': result.get('expected_return', 0),
-                    'Volatility': result.get('volatility', 0), 'Sharpe Ratio': result.get('sharpe_ratio', 0), 'Success': True
+                    'Volatility': result.get('volatility', 0), SHARPE_RATIO: result.get('sharpe_ratio', 0), 'Success': True
                 })
             else:
-                comparison_data.append({'Method': method, 'Expected Return': 0, 'Volatility': 0, 'Sharpe Ratio': 0, 'Success': False})
-        return pd.DataFrame(comparison_data).sort_values('Sharpe Ratio', ascending=False)
+                comparison_data.append({'Method': method, 'Expected Return': 0, 'Volatility': 0, SHARPE_RATIO: 0, 'Success': False})
+        return pd.DataFrame(comparison_data).sort_values(SHARPE_RATIO, ascending=False)

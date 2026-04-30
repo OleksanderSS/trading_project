@@ -55,33 +55,13 @@ class UnifiedValidator:
                 issues.append(f"[{data_key}] DataFrame is empty.")
                 continue
 
-            # 1. Essential Columns Check
-            if data_key == 'market_data':
-                missing_cols = [col for col in self.essential_columns if col not in df.columns]
-                if missing_cols:
-                    issues.append(f"[{data_key}] Missing essential columns: {missing_cols}")
+            # Validate individual dataframe
+            df_issues = self._validate_dataframe(data_key, df)
+            issues.extend(df_issues)
 
-            # 2. NaN Ratio Check
-            nan_ratio = df.isna().mean().max()
-            if nan_ratio > self.nan_threshold:
-                issues.append(f"[{data_key}] Critical NaN ratio detected: {nan_ratio:.2%}")
-
-            # 3. Infinite Values Check
-            inf_count = np.isinf(df.select_dtypes(include=[np.number])).sum().sum()
-            if inf_count > 0:
-                issues.append(f"[{data_key}] Detected {inf_count} infinite values.")
-
-            # 4. Time Continuity Check
-            if isinstance(df.index, pd.DatetimeIndex):
-                gaps = self.ts_validator.validate_time_gaps(df)
-                if gaps.get('has_gaps', False):
-                    issues.append(f"[{data_key}] Time series contains gaps: {gaps.get('gap_count')} missing periods.")
-
-        # 5. Leakage Check (Cross-referencing market and features if present)
-        if 'market_data' in data_map and 'target' in df.columns:
-            leakage_report = self.leakage_detector.detect_correlation_leakage(df, 'target')
-            if leakage_report:
-                issues.append(f"Potential data leakage detected in columns: {list(leakage_report.keys())}")
+        # Check for data leakage
+        leakage_issues = self._check_data_leakage(data_map)
+        issues.extend(leakage_issues)
 
         if issues:
             is_valid = False
@@ -92,27 +72,113 @@ class UnifiedValidator:
         return {
             "is_valid": is_valid,
             "issues": issues,
-            "summary": {
-                "rows": len(df) if 'market_data' in data_map else 0,
-                "columns": len(df.columns) if 'market_data' in data_map else 0
-            }
+            "summary": self._get_data_summary(data_map)
         }
 
-    def validate_training_ready(self, X_train: pd.DataFrame, X_val: pd.DataFrame) -> bool:
+    def _validate_dataframe(self, data_key: str, df: pd.DataFrame) -> List[str]:
+        """Validate individual dataframe for common issues."""
+        issues = []
+        
+        # 1. Essential Columns Check
+        issues.extend(self._check_essential_columns(data_key, df))
+        
+        # 2. NaN Ratio Check
+        issues.extend(self._check_nan_ratio(data_key, df))
+        
+        # 3. Infinite Values Check
+        issues.extend(self._check_infinite_values(data_key, df))
+        
+        # 4. Time Continuity Check
+        issues.extend(self._check_time_continuity(data_key, df))
+        
+        return issues
+
+    def _check_essential_columns(self, data_key: str, df: pd.DataFrame) -> List[str]:
+        """Check for essential columns in market data."""
+        if data_key != 'market_data':
+            return []
+            
+        missing_cols = [col for col in self.essential_columns if col not in df.columns]
+        if missing_cols:
+            return [f"[{data_key}] Missing essential columns: {missing_cols}"]
+        return []
+
+    def _check_nan_ratio(self, data_key: str, df: pd.DataFrame) -> List[str]:
+        """Check for excessive NaN values."""
+        # Skip NaN ratio check for news data - it naturally has many NaN values in numeric columns
+        if data_key in ['news', 'news_data', 'google_news', 'newsapi_articles']:
+            return []
+        
+        # Only check numeric columns for NaN ratio
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) == 0:
+            return []
+            
+        nan_ratio = df[numeric_cols].isna().mean().max()
+        if nan_ratio > self.nan_threshold:
+            return [f"[{data_key}] Critical NaN ratio detected: {nan_ratio:.2%}"]
+        return []
+
+    def _check_infinite_values(self, data_key: str, df: pd.DataFrame) -> List[str]:
+        """Check for infinite values."""
+        inf_count = np.isinf(df.select_dtypes(include=[np.number])).sum().sum()
+        if inf_count > 0:
+            return [f"[{data_key}] Detected {inf_count} infinite values."]
+        return []
+
+    def _check_time_continuity(self, data_key: str, df: pd.DataFrame) -> List[str]:
+        """Check for time series continuity."""
+        if not isinstance(df.index, pd.DatetimeIndex):
+            return []
+            
+        gaps = self.ts_validator.validate_time_gaps(df)
+        if gaps.get('has_gaps', False):
+            return [f"[{data_key}] Time series contains gaps: {gaps.get('gap_count')} missing periods."]
+        return []
+
+    def _check_data_leakage(self, data_map: Dict[str, Any]) -> List[str]:
+        """Check for data leakage across datasets."""
+        issues = []
+        
+        # Only check if we have market_data and target column
+        if 'market_data' not in data_map:
+            return issues
+            
+        market_df = data_map['market_data']
+        if 'target' not in market_df.columns:
+            return issues
+            
+        leakage_report = self.leakage_detector.detect_correlation_leakage(market_df, 'target')
+        if leakage_report:
+            issues.append(f"Potential data leakage detected in columns: {list(leakage_report.keys())}")
+            
+        return issues
+
+    def _get_data_summary(self, data_map: Dict[str, Any]) -> Dict[str, int]:
+        """Get summary statistics for the data."""
+        if 'market_data' in data_map:
+            df = data_map['market_data']
+            return {
+                "rows": len(df),
+                "columns": len(df.columns)
+            }
+        return {"rows": 0, "columns": 0}
+
+    def validate_training_ready(self, x_train: pd.DataFrame, x_val: pd.DataFrame) -> bool:
         """
         Pre-modeling validation to ensure train/val sets are clean and separated.
         """
         logger.info("Performing pre-training validation...")
         
         # Check for temporal overlap
-        overlap = self.ts_validator.check_leakage(X_train, X_val)
+        overlap = self.ts_validator.check_leakage(x_train, x_val)
         if overlap:
             logger.error("Data leakage detected: Overlapping indices between train and validation sets.")
             return False
             
         # Check for shape consistency
-        if X_train.shape[1] != X_val.shape[1]:
-            logger.error(f"Feature count mismatch: Train({X_train.shape[1]}) vs Val({X_val.shape[1]})")
+        if x_train.shape[1] != x_val.shape[1]:
+            logger.error(f"Feature count mismatch: Train({x_train.shape[1]}) vs Val({x_val.shape[1]})")
             return False
 
         return True

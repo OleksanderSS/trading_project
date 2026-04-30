@@ -203,34 +203,39 @@ class BattleGroupManager:
         if len(available_in_group) < 2:
             raise ValueError(f"Not enough models for group '{group_name}': {len(available_in_group)}")
         
-        battles = []
+        battle_format = group.battle_format or "round_robin"
         
-        if group.battle_format == "round_robin":
-            # Кожен з кожним
-            for i in range(len(available_in_group)):
-                for j in range(i + 1, len(available_in_group)):
-                    battles.append((available_in_group[i], available_in_group[j]))
-        
-        elif group.battle_format == "tournament":
-            # Турнірний формат
-            battles = []
-            for i in range(len(available_in_group)):
-                for j in range(i + 1, min(i + group.max_battles_per_model + 1, len(available_in_group))):
-                    battles.append((available_in_group[i], available_in_group[j]))
-        
-        elif group.battle_format == "elimination":
-            # Формат вибування
-            battles = []
-            for i in range(len(available_in_group)):
-                for j in range(i + 1, min(i + 2, len(available_in_group))):
-                    battles.append((available_in_group[i], available_in_group[j]))
-        
+        if battle_format == "round_robin":
+            return self._generate_round_robin_battles(available_in_group)
+        elif battle_format == "tournament":
+            return self._generate_tournament_battles(available_in_group, group.max_battles_per_model)
+        elif battle_format == "elimination":
+            return self._generate_elimination_battles(available_in_group)
         else:
-            # За замовчуванням round_robin
-            for i in range(len(available_in_group)):
-                for j in range(i + 1, len(available_in_group)):
-                    battles.append((available_in_group[i], available_in_group[j]))
-        
+            return self._generate_round_robin_battles(available_in_group)
+    
+    def _generate_round_robin_battles(self, available_models: List[str]) -> List[tuple]:
+        """Згенерувати бої в форматі round-robin"""
+        battles = []
+        for i in range(len(available_models)):
+            for j in range(i + 1, len(available_models)):
+                battles.append((available_models[i], available_models[j]))
+        return battles
+    
+    def _generate_tournament_battles(self, available_models: List[str], max_battles_per_model: int) -> List[tuple]:
+        """Згенерувати бої в турнірному форматі"""
+        battles = []
+        for i in range(len(available_models)):
+            for j in range(i + 1, min(i + max_battles_per_model + 1, len(available_models))):
+                battles.append((available_models[i], available_models[j]))
+        return battles
+    
+    def _generate_elimination_battles(self, available_models: List[str]) -> List[tuple]:
+        """Згенерувати бої в форматі вибування"""
+        battles = []
+        for i in range(len(available_models)):
+            for j in range(i + 1, min(i + 2, len(available_models))):
+                battles.append((available_models[i], available_models[j]))
         return battles
     
     def get_group_info(self, group_name: str) -> Dict[str, Any]:

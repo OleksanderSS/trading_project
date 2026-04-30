@@ -16,7 +16,6 @@ class AutomatedReporting:
     
     def __init__(self, results_manager: ResultsManager):
         self.results_manager = results_manager
-        # self.reporter = ComprehensiveReporter(self.results_manager)
         self.running = False
         self.scheduler_thread = None
         logger.info("[AutomatedReporting] Initialized, but scheduling is disabled.")
@@ -52,7 +51,7 @@ class HistoricalAnalytics:
     def analyze_trends(self, days: int = 30) -> Dict:
         """Аналіз трендів за останні дні"""
         try:
-            reports = self.load_historical_reports(days)
+            self.load_historical_reports()
             
             trends = {
                 "performance_trends": {},
@@ -85,13 +84,10 @@ class HistoricalAnalytics:
         filename = f"trends_{datetime.now().strftime('%Y%m%d')}.json"
         self.results_manager.save_json_result(report, filename)
         
-        logger.info(f"[HistoricalAnalytics] Generated trend report for {days} days")
         return report
     
-    def load_historical_reports(self, days: int) -> List[Dict]:
+    def load_historical_reports(self) -> List[Dict]:
         """Завантажити історичні звіти"""
-        cutoff_date = datetime.now() - timedelta(days=days)
-        reports = []
         
         try:
             # This part needs to be adapted to the new ResultsManager structure
@@ -100,4 +96,4 @@ class HistoricalAnalytics:
         except Exception as e:
             logger.error(f"[HistoricalAnalytics] Failed to load historical reports: {e}")
             return []
-        return reports
+        return []

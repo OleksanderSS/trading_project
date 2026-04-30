@@ -10,13 +10,24 @@ secrets/
 
 # Large data and model files (keep locally, don't push to Git)
 data/
-models/
+# models/  # Temporarily commented for debugging
 logs/
 cache/
 backups/
 results/
 monitoring_reports/
 src/trained_models/
+trained_models/
+catboost_info/
+full_pipeline_trading/
+reports/leakage/
+reports/evaluation/
+outputs/
+*.joblib
+*.pkl
+*.pt
+*.parquet
+*.duckdb
 
 # Local runtime/config caches
 src/config/runtime_params.json
@@ -62,8 +73,14 @@ Thumbs.db
 
 # Testing
 .pytest_cache/
+pytest-cache-files-*/
 .coverage
 htmlcov/
+
+# Static analysis caches
+.mypy_cache/
+.ruff_cache/
+.scannerwork/
 
 # Temporary files
 *.tmp

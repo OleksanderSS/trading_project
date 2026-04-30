@@ -1,0 +1,11 @@
+{
+  "batch_id": "QQQ_autoencoder_20260322_212333",
+  "ticker": "QQQ",
+  "model_name": "autoencoder",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_rsi14_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T21:23:33.190654",
+  "status": "PENDING_COLAB"
+}

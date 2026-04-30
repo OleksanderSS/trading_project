@@ -42,19 +42,19 @@ class TimeSeriesValidator:
         Returns:
             Tuple of (X_train, X_val, y_train, y_val).
         """
-        X_sorted = X.sort_index()
-        y_sorted = y.loc[X_sorted.index]
+        x_sorted = X.sort_index()
+        y_sorted = y.loc[x_sorted.index]
         
-        n_samples = len(X_sorted)
+        n_samples = len(x_sorted)
         split_idx = int(n_samples * (1 - validation_ratio))
         
-        X_train = X_sorted.iloc[:split_idx]
-        X_val = X_sorted.iloc[split_idx:]
+        X_train = x_sorted.iloc[:split_idx]
+        x_val = x_sorted.iloc[split_idx:]
         y_train = y_sorted.iloc[:split_idx]
         y_val = y_sorted.iloc[split_idx:]
         
-        logger.info(f"Chronological split successful: {len(X_train)} training and {len(X_val)} validation samples.")
-        return X_train, X_val, y_train, y_val
+        logger.info(f"Chronological split successful: {len(X_train)} training and {len(x_val)} validation samples.")
+        return X_train, x_val, y_train, y_val
     
     def cross_validate_model(self, model, X: pd.DataFrame, y: pd.Series,
                            scoring: str = 'neg_mean_absolute_error') -> Dict[str, Any]:
@@ -98,13 +98,13 @@ class TimeSeriesValidator:
             if val_end <= i: break
             
             X_train, y_train = X.iloc[train_end - window_size : train_end], y.iloc[train_end - window_size : train_end]
-            X_val, y_val = X.iloc[train_end:val_end], y.iloc[train_end:val_end]
+            x_val, y_val = X.iloc[train_end:val_end], y.iloc[train_end:val_end]
             
             if len(X_train) < 50: continue
             
             try:
                 model.fit(X_train, y_train)
-                y_pred = model.predict(X_val)
+                y_pred = model.predict(x_val)
                 
                 predictions.extend(y_pred)
                 actuals.extend(y_val.values)
@@ -133,13 +133,12 @@ class TimeSeriesValidator:
             'aggregate_metrics': aggregate_metrics
         }
     
-    def validate_time_gaps(self, df: pd.DataFrame, expected_freq: str = '1D') -> Dict[str, Any]:
+    def validate_time_gaps(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
         Validates the continuity of the time series using the TradingCalendar.
         
         Args:
             df: DataFrame with a DatetimeIndex.
-            expected_freq: The expected data frequency.
             
         Returns:
             Report on data integrity and detected gaps.
@@ -159,7 +158,7 @@ class TimeSeriesValidator:
         report = {
             'is_valid': len(missing_trading_days) == 0,
             'missing_points_count': len(missing_trading_days),
-            'missing_dates': sorted(list(missing_trading_days))[:5],
+            'missing_dates': sorted(missing_trading_days)[:5],
             'coverage_ratio': 1.0 - (len(missing_trading_days) / len(expected_trading_days)) if len(expected_trading_days) > 0 else 0
         }
         

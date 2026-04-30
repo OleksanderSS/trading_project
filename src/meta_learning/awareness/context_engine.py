@@ -246,7 +246,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
         
         for source_name, source_url in self.news_sources.items():
             try:
-                source_events = self._fetch_news_from_source(source_name, source_url)
+                source_events = self._fetch_news_from_source(source_name)
                 events.extend(source_events)
                 self.logger.info(f" Fetched {len(source_events)} events from {source_name}")
                 
@@ -276,10 +276,10 @@ class ContextAwarenessEngine(BaseMetaComponent):
         sentiment_index = self._calculate_sentiment_index(recent_events)
         
         # Get Fear & Greed Index
-        fear_greed_index = self._get_fear_greed_index()
+        fear_greed_index = self._get_fear_greed_index() or 50.0  # Default neutral value
         
         # Get VIX level
-        vix_level = self._get_vix_level()
+        vix_level = self._get_vix_level() or 20.0  # Default normal VIX level
         
         # Analyze sector performance
         sector_performance = self._analyze_sector_performance(recent_events)
@@ -329,7 +329,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
         
         # Generate recommendations
         recommendations = self._generate_contextual_recommendations(
-            ticker, context, relevant_events, event_impact
+            context, relevant_events, event_impact
         )
         
         return {
@@ -515,38 +515,13 @@ class ContextAwarenessEngine(BaseMetaComponent):
             ]
         }
     
-    def _fetch_news_from_source(self, source_name: str, source_url: str) -> List[MarketEvent]:
-        """Fetch news from a source"""
-        
-        # Simulation of fetching news (in reality, this would be an HTTP request or use existing collectors)
-        events = []
-        
-        # Generate test events for internal engine validation
-        event_types = list(EventType)
-        impact_levels = list(EventImpact)
-        
-        for i in range(np.random.randint(3, 10)):
-            event = MarketEvent(
-                id=None,
-                timestamp=datetime.now() - timedelta(hours=np.random.randint(0, 24)),
-                event_type=np.random.choice(event_types),
-                title=f"Sample news {i+1} from {source_name}",
-                description=f"This is a sample news article about market events",
-                source=source_name,
-                impact_level=np.random.choice(impact_levels),
-                affected_tickers=[f"TICKER_{np.random.randint(1, 100)}"],
-                affected_sectors=[np.random.choice(self.sectors)],
-                keywords=["market", "news", "analysis"],
-                sentiment_score=np.random.uniform(-1, 1),
-                confidence=np.random.uniform(0.6, 1.0),
-                relevance_score=np.random.uniform(0.5, 1.0),
-                expiration_time=datetime.now() + timedelta(hours=48),
-                processed=False,
-                impact_assessment={}
-            )
-            events.append(event)
-        
-        return events
+    def _fetch_news_from_source(self, source_name: str) -> List[MarketEvent]:
+        """
+        Fetch news from a source.
+        TODO: Integrate with real news collectors.
+        """
+        self.logger.warning(f"Real news fetching not yet implemented for {source_name}. Returning empty list.")
+        return []
     
     def _save_market_event(self, event: MarketEvent):
         """Save a market event"""
@@ -679,12 +654,36 @@ class ContextAwarenessEngine(BaseMetaComponent):
         return weighted_sentiment / total_weight if total_weight > 0 else 0.0
     
     def _get_fear_greed_index(self) -> Optional[float]:
-        """Get the Fear & Greed Index (currently simulated)"""
-        return np.random.uniform(0, 100)
+        """Get the Fear & Greed Index from external source."""
+        try:
+            # Implement basic Fear & Greed Index fetching
+            # Using CNN's Fear & Greed Index API endpoint
+            import requests
+            response = requests.get("https://production.dataviz.cnn.io/index/fearandgreed/graphdata", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                if data and "fear_and_greed" in data and "history" in data["fear_and_greed"]:
+                    latest = data["fear_and_greed"]["history"][-1]
+                    return float(latest.get("value", 50.0))
+        except Exception as e:
+            logger.debug(f"Failed to fetch Fear & Greed Index: {e}")
+        
+        # Return neutral value if fetching fails
+        return 50.0
     
     def _get_vix_level(self) -> Optional[float]:
-        """Get the VIX level (currently simulated)"""
-        return np.random.uniform(10, 40)
+        """Get the VIX level from market data provider."""
+        try:
+            # Implement basic VIX level fetching using yfinance
+            import yfinance as yf
+            vix_data = yf.download("^VIX", period="1d", interval="1d", progress=False)
+            if not vix_data.empty:
+                return float(vix_data["Close"].iloc[-1])
+        except Exception as e:
+            logger.debug(f"Failed to fetch VIX level: {e}")
+        
+        # Return default VIX level if fetching fails
+        return 20.0
     
     def _analyze_sector_performance(self, events: List[MarketEvent]) -> Dict[str, float]:
         """Analyze sector performance"""
@@ -703,13 +702,13 @@ class ContextAwarenessEngine(BaseMetaComponent):
         return sector_performance
     
     def _get_macro_indicators(self) -> Dict[str, float]:
-        """Get macro indicators (currently simulated)"""
+        """Get macro indicators from FRED collector (TODO)"""
         return {
-            "gdp_growth": np.random.uniform(-2, 5),
-            "inflation_rate": np.random.uniform(1, 6),
-            "unemployment_rate": np.random.uniform(3, 10),
-            "interest_rate": np.random.uniform(0, 5),
-            "consumer_confidence": np.random.uniform(50, 150)
+            "gdp_growth": 0.0,
+            "inflation_rate": 0.0,
+            "unemployment_rate": 0.0,
+            "interest_rate": 0.0,
+            "consumer_confidence": 0.0
         }
     
     def _identify_risk_factors(self, events: List[MarketEvent]) -> List[str]:
@@ -808,36 +807,56 @@ class ContextAwarenessEngine(BaseMetaComponent):
             "volatility_impact": volatility_impact
         }
     
-    def _generate_contextual_recommendations(self, ticker: str, context: MarketContext,
+    def _generate_contextual_recommendations(self, context: MarketContext,
                                            events: List[MarketEvent], impact: Dict[str, float]) -> List[str]:
         """Generate contextual recommendations"""
         
         recommendations = []
         
         # Recommendations based on market regime
-        if context.market_regime == MarketRegime.BULL_MARKET:
-            recommendations.append("Consider increasing exposure in bull market conditions")
-        elif context.market_regime == MarketRegime.BEAR_MARKET:
-            recommendations.append("Reduce position sizes in bear market conditions")
-        elif context.market_regime == MarketRegime.VOLATILE:
-            recommendations.append("Use tighter stop-losses in volatile conditions")
+        recommendations.extend(self._get_regime_recommendations(context.market_regime))
         
         # Recommendations based on sentiment
-        if impact["sentiment_impact"] > 0.3:
-            recommendations.append("Positive sentiment suggests potential upside")
-        elif impact["sentiment_impact"] < -0.3:
-            recommendations.append("Negative sentiment indicates caution advised")
+        recommendations.extend(self._get_sentiment_recommendations(impact["sentiment_impact"]))
         
         # Recommendations based on volatility
-        if impact["volatility_impact"] > 0.7:
-            recommendations.append("High volatility detected - consider smaller positions")
+        recommendations.extend(self._get_volatility_recommendations(impact["volatility_impact"]))
         
         # Recommendations based on events
-        high_impact_events = [e for e in events if e.impact_level in [EventImpact.HIGH, EventImpact.CRITICAL]]
-        if high_impact_events:
-            recommendations.append(f"Monitor {len(high_impact_events)} high-impact events closely")
+        recommendations.extend(self._get_event_recommendations(events))
         
         return recommendations
+
+    def _get_regime_recommendations(self, regime: MarketRegime) -> List[str]:
+        """Get recommendations based on market regime."""
+        if regime == MarketRegime.BULL_MARKET:
+            return ["Consider increasing exposure in bull market conditions"]
+        elif regime == MarketRegime.BEAR_MARKET:
+            return ["Reduce position sizes in bear market conditions"]
+        elif regime == MarketRegime.VOLATILE:
+            return ["Use tighter stop-losses in volatile conditions"]
+        return []
+
+    def _get_sentiment_recommendations(self, sentiment_impact: float) -> List[str]:
+        """Get recommendations based on sentiment impact."""
+        if sentiment_impact > 0.3:
+            return ["Positive sentiment suggests potential upside"]
+        elif sentiment_impact < -0.3:
+            return ["Negative sentiment indicates caution advised"]
+        return []
+
+    def _get_volatility_recommendations(self, volatility_impact: float) -> List[str]:
+        """Get recommendations based on volatility impact."""
+        if volatility_impact > 0.7:
+            return ["High volatility detected - consider smaller positions"]
+        return []
+
+    def _get_event_recommendations(self, events: List[MarketEvent]) -> List[str]:
+        """Get recommendations based on events."""
+        high_impact_events = [e for e in events if e.impact_level in [EventImpact.HIGH, EventImpact.CRITICAL]]
+        if high_impact_events:
+            return [f"Monitor {len(high_impact_events)} high-impact events closely"]
+        return []
     
     def _analyze_text_sentiment(self, text: str) -> Dict[str, float]:
         """Analyze the sentiment of a text"""
@@ -916,49 +935,91 @@ class ContextAwarenessEngine(BaseMetaComponent):
         Convert a database row to a MarketContext object.
         Supports both sqlite3.Row and indexed sequences.
         """
-        if isinstance(row, sqlite3.Row):
-            data = dict(row)
-        else:
-            column_names = [
-                'id', 'timestamp', 'market_regime', 'volatility_regime', 'sentiment_index',
-                'fear_greed_index', 'vix_level', 'major_events', 'sector_performance',
-                'macro_indicators', 'risk_factors', 'opportunities'
-            ]
-            if len(row) < len(column_names):
-                raise ValueError(f"Database row has insufficient columns: {len(row)} < {len(column_names)}")
-            data = dict(zip(column_names, row))
-            
-        major_events_raw = json.loads(data['major_events']) if isinstance(data['major_events'], str) else (data['major_events'] or [])
+        data = self._extract_row_data(row, self._get_context_columns())
         
-        major_events = []
-        for event_data in major_events_raw:
-            if isinstance(event_data, dict):
-                # Ensure all required fields are passed to MarketEvent, handling Enums
-                event_data_copy = event_data.copy()
-                if 'event_type' in event_data_copy and isinstance(event_data_copy['event_type'], str):
-                    event_data_copy['event_type'] = EventType(event_data_copy['event_type'])
-                if 'impact_level' in event_data_copy and isinstance(event_data_copy['impact_level'], str):
-                    event_data_copy['impact_level'] = EventImpact(event_data_copy['impact_level'])
-                if 'timestamp' in event_data_copy and isinstance(event_data_copy['timestamp'], str):
-                    event_data_copy['timestamp'] = datetime.fromisoformat(event_data_copy['timestamp'])
-                if 'expiration_time' in event_data_copy and isinstance(event_data_copy['expiration_time'], str):
-                    event_data_copy['expiration_time'] = datetime.fromisoformat(event_data_copy['expiration_time'])
-                
-                major_events.append(MarketEvent(**event_data_copy))
+        major_events = self._parse_major_events(data.get('major_events'))
         
         return MarketContext(
-            timestamp=datetime.fromisoformat(data['timestamp']) if isinstance(data['timestamp'], str) else data['timestamp'],
+            timestamp=self._parse_datetime(data['timestamp']),
             market_regime=MarketRegime(data['market_regime']),
             volatility_regime=data['volatility_regime'],
             sentiment_index=data['sentiment_index'],
             fear_greed_index=data['fear_greed_index'],
             vix_level=data['vix_level'],
             major_events=major_events,
-            sector_performance=json.loads(data['sector_performance']) if isinstance(data['sector_performance'], str) else (data['sector_performance'] or {}),
-            macro_indicators=json.loads(data['macro_indicators']) if isinstance(data['macro_indicators'], str) else (data['macro_indicators'] or {}),
-            risk_factors=json.loads(data['risk_factors']) if isinstance(data['risk_factors'], str) else (data['risk_factors'] or []),
-            opportunities=json.loads(data['opportunities']) if isinstance(data['opportunities'], str) else (data['opportunities'] or [])
+            sector_performance=self._parse_json_field(data, 'sector_performance', {}),
+            macro_indicators=self._parse_json_field(data, 'macro_indicators', {}),
+            risk_factors=self._parse_json_field(data, 'risk_factors', []),
+            opportunities=self._parse_json_field(data, 'opportunities', [])
         )
+
+    def _get_context_columns(self) -> List[str]:
+        """Get column names for market context."""
+        return [
+            'id', 'timestamp', 'market_regime', 'volatility_regime', 'sentiment_index',
+            'fear_greed_index', 'vix_level', 'major_events', 'sector_performance',
+            'macro_indicators', 'risk_factors', 'opportunities'
+        ]
+
+    def _extract_row_data(self, row: Union[sqlite3.Row, tuple, list], column_names: List[str]) -> Dict[str, Any]:
+        """Extract data from database row."""
+        if isinstance(row, sqlite3.Row):
+            return dict(row)
+        else:
+            if len(row) < len(column_names):
+                raise ValueError(f"Database row has insufficient columns: {len(row)} < {len(column_names)}")
+            return dict(zip(column_names, row))
+
+    def _parse_major_events(self, major_events_raw) -> List[MarketEvent]:
+        """Parse major events from raw data."""
+        major_events_data = json.loads(major_events_raw) if isinstance(major_events_raw, str) else (major_events_raw or [])
+        
+        major_events = []
+        for event_data in major_events_data:
+            if isinstance(event_data, dict):
+                processed_event = self._process_event_data(event_data)
+                if processed_event:
+                    major_events.append(processed_event)
+        
+        return major_events
+
+    def _process_event_data(self, event_data: Dict[str, Any]) -> Optional[MarketEvent]:
+        """Process individual event data."""
+        try:
+            event_data_copy = event_data.copy()
+            
+            # Convert string fields to proper types
+            self._convert_event_field(event_data_copy, 'event_type', EventType)
+            self._convert_event_field(event_data_copy, 'impact_level', EventImpact)
+            self._convert_event_field(event_data_copy, 'timestamp', datetime)
+            self._convert_event_field(event_data_copy, 'expiration_time', datetime)
+            
+            return MarketEvent(**event_data_copy)
+        except Exception as e:
+            self.logger.warning(f"Failed to process event data: {e}")
+            return None
+
+    def _convert_event_field(self, event_data: Dict[str, Any], field_name: str, target_type):
+        """Convert event field to target type if it's a string."""
+        if field_name in event_data and isinstance(event_data[field_name], str):
+            if target_type in [EventType, EventImpact]:
+                event_data[field_name] = target_type(event_data[field_name])
+            elif target_type == datetime:
+                event_data[field_name] = datetime.fromisoformat(event_data[field_name])
+
+    def _parse_datetime(self, timestamp_value) -> datetime:
+        """Parse datetime from string or return as-is."""
+        return datetime.fromisoformat(timestamp_value) if isinstance(timestamp_value, str) else timestamp_value
+
+    def _parse_json_field(self, data: Dict[str, Any], field_name: str, default: Any) -> Any:
+        """Parse JSON field or return default."""
+        field_value = data.get(field_name)
+        if isinstance(field_value, str):
+            try:
+                return json.loads(field_value)
+            except json.JSONDecodeError:
+                return default
+        return field_value or default
     
     def close(self):
         """Close the database connection"""

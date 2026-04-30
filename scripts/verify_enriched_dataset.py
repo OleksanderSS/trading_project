@@ -13,9 +13,34 @@ Enriched Dataset Verification Script
 import sys
 import os
 import json
+import re
 from datetime import datetime
 import pandas as pd
 import numpy as np
+
+def sanitize_path_input(path_input: str) -> str:
+    """
+    Sanitize path input to prevent path traversal attacks.
+    
+    Args:
+        path_input: Input string that will be used in file paths
+        
+    Returns:
+        Sanitized string safe for path construction
+    """
+    if not path_input:
+        return ""
+    
+    # Remove path traversal characters
+    sanitized = re.sub(r'[./\\]', '_', path_input)
+    
+    # Remove null bytes and other dangerous characters
+    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
+    
+    # Limit length to prevent path overflow
+    sanitized = sanitized[:100]
+    
+    return sanitized
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -219,7 +244,7 @@ class EnrichedDatasetVerifier:
         
         self.verification_report['event_series_format'] = report
         
-        logger.info(f"✓ Event-series format check:")
+        logger.info("✓ Event-series format check:")
         logger.info(f"  Has timestamp: {report['has_timestamp']}")
         logger.info(f"  Has ticker: {report['has_ticker']}")
         logger.info(f"  Sorted by timestamp: {report['is_sorted_by_timestamp']}")
@@ -250,7 +275,7 @@ class EnrichedDatasetVerifier:
         
         self.verification_report['data_integrity'] = report
         
-        logger.info(f"✓ Data integrity check:")
+        logger.info("✓ Data integrity check:")
         logger.info(f"  Total rows: {report['total_rows']}")
         logger.info(f"  Total columns: {report['total_columns']}")
         logger.info(f"  Null percentage: {report['null_percentage']:.2f}%")
@@ -297,7 +322,7 @@ class EnrichedDatasetVerifier:
         
         self.verification_report['enricher_coverage'] = report
         
-        logger.info(f"✓ Enricher coverage check:")
+        logger.info("✓ Enricher coverage check:")
         for enricher_name, info in report.items():
             status = "✓" if info['found'] else "✗"
             logger.info(f"  {status} {enricher_name}: {info['column_count']} columns")
@@ -349,8 +374,9 @@ def main():
     result = verifier.run()
     
     # Save report
-    os.makedirs(os.path.dirname(args.output), exist_ok=True)
-    with open(args.output, 'w') as f:
+    sanitized_output = sanitize_path_input(args.output)
+    os.makedirs(os.path.dirname(sanitized_output), exist_ok=True)
+    with open(sanitized_output, 'w') as f:
         json.dump(result, f, indent=2, default=str)
     
     logger.info(f"\n✓ Verification report saved to {args.output}")

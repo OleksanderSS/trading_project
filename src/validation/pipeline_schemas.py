@@ -60,25 +60,53 @@ class ProcessedDataSchema(BaseModel):
     Schema for data output from Stage 2 (Processing).
     Validates cleaned data and normalization parameters.
     """
-    cleaned_data: Dict[str, pd.DataFrame] = Field(description="Cleaned data by timeframe")
-    normalization_params: Dict[str, Any] = Field(description="Scaling parameters for reverse transformation")
-    quality_metrics: Dict[str, float] = Field(description="Data quality scores")
+    cleaned_data: Dict[str, Any] = Field(description="Cleaned data by timeframe")
+    normalization_params: Dict[str, Any] = Field(default_factory=dict, description="Scaling parameters for reverse transformation")
+    quality_metrics: Dict[str, float] = Field(default_factory=dict, description="Data quality scores")
 
     class Config:
         arbitrary_types_allowed = True
 
     def validate(self) -> None:
         """Custom validation."""
+        self._validate_cleaned_data()
+        self._validate_prices_structure()
+        self._validate_news_data()
+        self._validate_macro_data()
+    
+    def _validate_cleaned_data(self):
+        """Validate cleaned data dictionary is not empty."""
         if not self.cleaned_data:
             raise ValueError("Cleaned data dictionary is empty")
+    
+    def _validate_prices_structure(self):
+        """Validate prices dictionary and DataFrames."""
+        if 'prices' not in self.cleaned_data or not isinstance(self.cleaned_data['prices'], dict):
+            raise ValueError("Cleaned data must contain a 'prices' dict")
 
-        # Check each timeframe has data
-        for tf, df in self.cleaned_data.items():
-            if df.empty:
-                raise ValueError(f"Cleaned data for timeframe '{tf}' is empty")
-
-            if 'ticker' not in df.columns:
-                raise ValueError(f"Cleaned data for '{tf}' missing 'ticker' column")
+        for tf, df in self.cleaned_data['prices'].items():
+            self._validate_price_dataframe(tf, df)
+    
+    def _validate_price_dataframe(self, timeframe: str, df: pd.DataFrame):
+        """Validate individual price DataFrame."""
+        if not isinstance(df, pd.DataFrame):
+            raise ValueError(f"Cleaned data for timeframe '{timeframe}' must be a DataFrame")
+        if df.empty:
+            raise ValueError(f"Cleaned data for timeframe '{timeframe}' is empty")
+        if 'ticker' not in df.columns:
+            raise ValueError(f"Cleaned data for '{timeframe}' missing 'ticker' column")
+    
+    def _validate_news_data(self):
+        """Validate news data if present."""
+        if 'news' in self.cleaned_data and self.cleaned_data['news'] is not None:
+            if not isinstance(self.cleaned_data['news'], pd.DataFrame):
+                raise ValueError("News data must be a DataFrame")
+    
+    def _validate_macro_data(self):
+        """Validate macro data if present."""
+        if 'macro_data' in self.cleaned_data and self.cleaned_data['macro_data'] is not None:
+            if not isinstance(self.cleaned_data['macro_data'], pd.DataFrame):
+                raise ValueError("Macro data must be a DataFrame")
 
 
 class EnrichedDataSchema(BaseModel):

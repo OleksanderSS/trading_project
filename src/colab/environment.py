@@ -1,0 +1,92 @@
+"""Colab environment setup and configuration."""
+
+import os
+import sys
+from pathlib import Path
+
+COLAB_BASE_PATH = "/content"
+
+
+class ColabEnvironment:
+    """Colab environment setup."""
+
+    def __init__(self):
+        """Initialize Colab environment."""
+        possible_paths = [
+            Path(f"{COLAB_BASE_PATH}/drive/MyDrive/trading_project"),
+            Path(f"{COLAB_BASE_PATH}/trading_project"),
+            Path("G:/Мій диск/trading_project"),
+            Path.cwd() / "trading_project"
+        ]
+
+        self.PROJECT_PATH = None
+        for path in possible_paths:
+            if path.exists():
+                self.PROJECT_PATH = path
+                break
+
+        if not self.PROJECT_PATH:
+            self.PROJECT_PATH = Path.cwd()
+            print("⚠️ Використовуємо поточну директорію як PROJECT_PATH")
+
+        src_path = self.PROJECT_PATH / "src"
+        if str(src_path) not in sys.path:
+            sys.path.insert(0, str(src_path))
+
+        print(f"📂 PROJECT_PATH: {self.PROJECT_PATH}")
+        print(f"📂 SRC_PATH: {src_path}")
+        print(f"📂 SRC існує: {src_path.exists()}")
+
+        self.SRC_PATH = src_path
+        self.BATCH_NAME = "main_database"
+        self.batch_dir = None
+        self.models_dir = None
+
+    def setup_paths(self):
+        """Setup paths for Colab or local environment."""
+        try:
+            from google.colab import drive
+            import signal
+
+            def timeout_handler(signum, frame):
+                raise TimeoutError("Таймаут при подключении к Google Colab")
+
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(5)
+
+            try:
+                drive.mount(f'{COLAB_BASE_PATH}/drive')
+                signal.alarm(0)
+                self.PROJECT_PATH = (
+                    f'{COLAB_BASE_PATH}/drive/MyDrive/trading_project')
+                print("✅ Google Drive підключено")
+            except TimeoutError:
+                signal.alarm(0)
+                print(
+                    "⚠️ Таймаут при подключении к Google Drive, "
+                    "працюємо локально"
+                )
+                raise ImportError("Таймаут Colab")
+        except (ImportError, TimeoutError):
+            self.PROJECT_PATH = str(Path.cwd())
+            print("⚠️ Працюємо локально")
+
+        self.SRC_PATH = os.path.join(self.PROJECT_PATH, "src")
+        for p in [self.PROJECT_PATH, self.SRC_PATH]:
+            if p not in sys.path:
+                sys.path.insert(0, p)
+
+        print(f"📁 PROJECT_PATH: {self.PROJECT_PATH}")
+        print(f"📁 Current dir: {os.getcwd()}")
+
+    def setup_batch_directory(self, batch_name=None):
+        """Setup batch directory."""
+        if batch_name:
+            self.BATCH_NAME = batch_name
+
+        self.batch_dir = Path(self.PROJECT_PATH) / "data" / \
+            "colab" / "accumulated" / self.BATCH_NAME
+        self.models_dir = self.batch_dir / "models"
+        self.models_dir.mkdir(parents=True, exist_ok=True)
+
+        return self.batch_dir, self.models_dir

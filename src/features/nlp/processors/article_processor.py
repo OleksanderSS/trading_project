@@ -81,8 +81,7 @@ class ArticleProcessor:
         entities = self.keyword_extractor.extract_keywords(text) # Using keywords as a proxy for entities
 
         # Combine extracted keywords with any existing ones
-        extracted_keywords = self.keyword_extractor.extract_keywords(text)
-        all_keywords = sorted(list(set(article.get('keywords', [])) | set(extracted_keywords)))
+        all_keywords = sorted(set(article.get('keywords', [])) | set(entities))
 
         # --- Step 2: Scoring ---
         final_score = self.scorer.score(

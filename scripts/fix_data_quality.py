@@ -13,8 +13,37 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import logging
+import re
 import json
 from datetime import datetime
+
+def sanitize_path_input(path_input: str) -> str:
+    """
+    Sanitize path input to prevent path traversal attacks.
+    
+    Args:
+        path_input: Input string that will be used in file paths
+        
+    Returns:
+        Sanitized string safe for path construction
+    """
+    if not path_input:
+        return ""
+    
+    # Remove path traversal characters
+    sanitized = re.sub(r'[./\\]', '_', path_input)
+    
+    # Remove null bytes and other dangerous characters
+    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
+    
+    # Limit length to prevent path overflow
+    sanitized = sanitized[:100]
+    
+    return sanitized
+
+# Constants to avoid duplication
+FEATURES_FILE = "features.parquet"
+TARGETS_FILE = "targets.parquet"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -172,8 +201,11 @@ def main():
     
     args = parser.parse_args()
     
-    batch_dir = Path(args.batch_dir)
-    output_dir = Path(args.output_dir) if args.output_dir else batch_dir
+    sanitized_batch_dir = sanitize_path_input(args.batch_dir)
+    sanitized_output_dir = sanitize_path_input(args.output_dir) if args.output_dir else sanitized_batch_dir
+    
+    batch_dir = Path(sanitized_batch_dir)
+    output_dir = Path(sanitized_output_dir)
     
     logger.info("=" * 80)
     logger.info("🔧 ВИПРАВЛЕННЯ ЯКОСТІ ДАНИХ")
@@ -182,8 +214,8 @@ def main():
     logger.info(f"📁 Output: {output_dir}")
     
     # Завантажити дані
-    features_path = batch_dir / 'features.parquet'
-    targets_path = batch_dir / 'targets.parquet'
+    features_path = batch_dir / FEATURES_FILE
+    targets_path = batch_dir / TARGETS_FILE
     
     if not features_path.exists():
         logger.error(f"❌ Файл не знайдено: {features_path}")
@@ -206,7 +238,7 @@ def main():
         backup_dir = batch_dir / 'backup_before_fix'
         backup_dir.mkdir(exist_ok=True)
         
-        logger.info(f"💾 Створення backup в {backup_dir}...")
+        logger.info("💾 Створення backup в {}".format(backup_dir))
         features_df.to_parquet(backup_dir / 'features.parquet')
         targets_df.to_parquet(backup_dir / 'targets.parquet')
         logger.info("✅ Backup створено")
@@ -251,12 +283,12 @@ def main():
     logger.info("=" * 80)
     logger.info("📊 ПІДСУМОК")
     logger.info("=" * 80)
-    logger.info(f"Features:")
+    logger.info("Features:")
     logger.info(f"  До:    {features_report['before']['shape']}, nulls: {features_report['before']['null_percentage']}%")
     logger.info(f"  Після: {features_report['after']['shape']}, nulls: {features_report['after']['null_percentage']}%")
     logger.info(f"  Дії:   {len(features_report['actions'])}")
     logger.info("")
-    logger.info(f"Targets:")
+    logger.info("Targets:")
     logger.info(f"  Shape: {targets_report['shape']}")
     logger.info(f"  Нулів: {targets_report['quality']['zero_count']} ({targets_report['quality']['zero_percentage']}%)")
     logger.info(f"  Унікальних: {targets_report['quality']['unique_values']}")

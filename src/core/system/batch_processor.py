@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Batch Processing Manager для великих наборів тікерів
-Оптимізований для швидкої обробки 50+ тікерів
+Batch Processing Manager for large ticker sets.
+Optimized for rapid processing of 50+ tickers.
 """
 
 import logging
@@ -17,39 +17,39 @@ import threading
 
 @dataclass
 class BatchConfig:
-    """Конфігурація пакетної обробки"""
-    # Розміри батчів
+    """Batch processing configuration"""
+    # Batch sizes
     small_batch_size: int = 5
     medium_batch_size: int = 10
     large_batch_size: int = 20
     max_batch_size: int = 50
     
-    # Ресурси
+    # Resources
     max_workers: int = 4
     memory_limit_gb: float = 8.0
     timeout_seconds: int = 300
     
-    # Оптимізація
+    # Optimization
     enable_parallel: bool = True
     enable_caching: bool = True
     enable_monitoring: bool = True
     
-    # Стратегії
+    # Strategies
     strategy: str = "adaptive"
     priority_categories: List[str] = field(default_factory=lambda: ["tech", "finance", "core"])
 
 class BatchProcessor:
-    """Менеджер пакетної обробки тікерів"""
+    """Ticker batch processing manager"""
     
     def __init__(self, config: BatchConfig = None, cache_dir: Optional[Path] = None, results_dir: Optional[Path] = None):
         self.config = config or BatchConfig()
         self.logger = logging.getLogger("BatchProcessor")
         
-        # Використовувати передані шляхи або шляхи за замовчуванням
+        # Use provided paths or defaults
         self.cache_dir = cache_dir or Path("cache/batch")
         self.results_dir = results_dir or Path("results/batch")
         
-        # Створюємо директорії, якщо вони не існують
+        # Create directories if they do not exist
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.results_dir.mkdir(parents=True, exist_ok=True)
         
@@ -68,14 +68,14 @@ class BatchProcessor:
     
     def create_optimal_batches(self, tickers: List[str], ticker_categories: Optional[Dict[str, List[str]]] = None) -> List[List[str]]:
         """
-        Створити оптимальні батчі для обробки
+        Create optimal batches for processing.
         
         Args:
-            tickers: Список тікерів
-            ticker_categories: Словник, де ключ - тікер, а значення - список його категорій
+            tickers: List of tickers
+            ticker_categories: Dictionary where key is ticker and value is list of its categories
             
         Returns:
-            List[List[str]]: Список батчів
+            List[List[str]]: List of batches
         """
         if not tickers:
             return []
@@ -93,7 +93,7 @@ class BatchProcessor:
             return self._create_fixed_batches(tickers)
 
     def _create_adaptive_batches(self, tickers: List[str]) -> List[List[str]]:
-        """Адаптивне створення батчів"""
+        """Adaptive batch creation"""
         total_tickers = len(tickers)
         
         if total_tickers <= 10:
@@ -110,7 +110,7 @@ class BatchProcessor:
         return batches
 
     def _create_priority_batches(self, tickers: List[str], ticker_categories: Dict[str, List[str]]) -> List[List[str]]:
-        """Створення батчів за пріоритетом"""
+        """Priority-based batch creation"""
         priority_tickers = []
         other_tickers = []
         
@@ -125,7 +125,7 @@ class BatchProcessor:
         return self._create_fixed_batches(all_tickers)
 
     def _create_fixed_batches(self, tickers: List[str]) -> List[List[str]]:
-        """Фіксоване створення батчів"""
+        """Fixed-size batch creation"""
         batch_size = self.config.medium_batch_size
         batches = [tickers[i:i + batch_size] for i in range(0, len(tickers), batch_size)]
         self.logger.info(f"Created {len(batches)} fixed batches (size: {batch_size})")
@@ -133,7 +133,7 @@ class BatchProcessor:
 
     def process_batches(self, batches: List[List[str]], processing_func: Callable[[List[str]], Any]) -> Dict[str, Any]:
         """
-        Обробити батчі
+        Process batches.
         """
         if not batches:
             return {'status': 'error', 'message': 'No batches to process'}
@@ -163,7 +163,7 @@ class BatchProcessor:
         return final_results
 
     def _process_batches_parallel(self, batches: List[List[str]], processing_func: Callable[[List[str]], Any]) -> List[Dict[str, Any]]:
-        """Паралельна обробка батчів"""
+        """Parallel batch processing"""
         results = []
         with ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
             future_to_batch = {executor.submit(self._process_single_batch, batch, processing_func): batch for batch in batches}
@@ -185,7 +185,7 @@ class BatchProcessor:
         return results
 
     def _process_batches_sequential(self, batches: List[List[str]], processing_func: Callable[[List[str]], Any]) -> List[Dict[str, Any]]:
-        """Послідовна обробка батчів"""
+        """Sequential batch processing"""
         results = []
         for i, batch in enumerate(batches):
             try:
@@ -202,7 +202,7 @@ class BatchProcessor:
         return results
 
     def _process_single_batch(self, batch: List[str], processing_func: Callable[[List[str]], Any]) -> Dict[str, Any]:
-        """Обробка одного батчу"""
+        """Processing of a single batch"""
         start_time = time.time()
         try:
             batch_results = processing_func(batch)
@@ -228,10 +228,10 @@ class BatchProcessor:
             }
     
     def _save_results(self, results: Dict[str, Any]):
-        """Зберегти результати"""
+        """Save results to disk"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         results_file = self.results_dir / f"batch_results_{timestamp}.json"
         import json
-        with open(results_file, 'w') as f:
+        with open(results_file, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, default=str)
         self.logger.info(f"Results saved to {results_file}")

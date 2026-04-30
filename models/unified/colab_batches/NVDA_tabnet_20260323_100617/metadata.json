@@ -1,0 +1,11 @@
+{
+  "batch_id": "NVDA_tabnet_20260323_100617",
+  "ticker": "NVDA",
+  "model_name": "tabnet",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_atr14_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T10:06:17.356523",
+  "status": "PENDING_COLAB"
+}

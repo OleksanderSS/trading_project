@@ -1,132 +1,138 @@
+# src/analytics/calculators/market_regime_calculator.py
+"""
+Market Regime Calculator
+Categorizes market states based on price volatility and trend dynamics.
+Identifies states such as Bullish, Bearish, and Consolidation for strategy adaptation.
+"""
+
 import pandas as pd
 import numpy as np
 from scipy.stats import entropy
-import logging
+from src.core.logging.logger import ProjectLogger
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class MarketRegimeCalculator:
     """
-    Analyzes market regime based on price volatility and trend dynamics.
-    The goal is to identify the dominant market state (e.g., Bull, Bear, Consolidation).
+    Analyzes market regimes to determine the dominant environmental state.
+    Facilitates regime-specific logic for algorithmic execution and risk management.
     """
 
-    # Regime encoding map: текст → число
+    # Regime encoding map: label -> numeric identifier
     REGIME_ENCODING = {
-        'High Volatility': 2,    # Найагресивніший, найбільший ризик
-        'Bullish': 1,            # Агресивний ріст
-        'Consolidation': 0,      # Нейтральний, бічний рух
-        'Bearish': -1,           # Агресивне падіння
-        'Low Volatility': -2     # Пасивний, низький ризик
+        'High Volatility': 2,    # Maximum variance, elevated risk environment
+        'Bullish': 1,            # Aggressive expansionary trend
+        'Consolidation': 0,      # Neutral, sideways mean-reverting movement
+        'Bearish': -1,           # Aggressive contractionary trend
+        'Low Volatility': -2     # Stable, compressed variance environment
     }
     
     @staticmethod
     def calculate_regime(price_series: pd.Series, window: int = 20, return_encoded: bool = False) -> pd.Series:
         """
-        Determines the market regime for each point in a time series.
+        Determines the current market regime for each observation in the time series.
 
         Args:
-            price_series (pd.Series): Series of prices.
-            window (int): Rolling window for calculations.
-            return_encoded (bool): If True, returns numeric encoding instead of text labels.
+            price_series: Series of historical prices.
+            window: Rolling window for volatility and trend estimation.
+            return_encoded: Returns numeric identifiers if True, else text labels.
 
         Returns:
-            pd.Series: A series of strings (or numbers if return_encoded=True) representing the market regime.
+            Series of regime markers.
         """
         if not isinstance(price_series, pd.Series) or price_series.empty:
-            logger.warning("Price series is empty or not a Series. Returning empty Series.")
+            logger.warning("Regime calculation skipped: Input series empty.")
             return pd.Series(dtype=str if not return_encoded else float)
 
-        logger.info(f"Calculating market regime with window size {window}...")
+        logger.info(f"Identifying market regimes using a {window}-period rolling window.")
 
-        # Calculate indicators
-        rolling_std = price_series.pct_change().rolling(window=window).std()
-        rolling_mean = price_series.pct_change().rolling(window=window).mean()
+        # Core Statistical Indicators
+        returns = price_series.pct_change()
+        rolling_std = returns.rolling(window=window).std()
+        rolling_mean = returns.rolling(window=window).mean()
 
-        # Define regime thresholds (these might be calibrated)
-        volatility_threshold_high = rolling_std.quantile(0.75)
-        volatility_threshold_low = rolling_std.quantile(0.25)
-        trend_threshold_positive = rolling_mean.quantile(0.7)
-        trend_threshold_negative = rolling_mean.quantile(0.3)
+        # Dynamic Threshold Estimation (Percentile-based)
+        vol_high = rolling_std.quantile(0.75)
+        vol_low = rolling_std.quantile(0.25)
+        trend_pos = rolling_mean.quantile(0.7)
+        trend_neg = rolling_mean.quantile(0.3)
 
-        # Classify regime (text labels)
+        # Vectorized Classification logic
         regime = pd.Series('Consolidation', index=price_series.index)
-        regime[ (rolling_mean > trend_threshold_positive) & (rolling_std > volatility_threshold_low) ] = 'Bullish'
-        regime[ (rolling_mean < trend_threshold_negative) & (rolling_std > volatility_threshold_low) ] = 'Bearish'
-        regime[ rolling_std > volatility_threshold_high ] = 'High Volatility'
-        regime[ rolling_std < volatility_threshold_low ] = 'Low Volatility'
+        regime[(rolling_mean > trend_pos) & (rolling_std > vol_low)] = 'Bullish'
+        regime[(rolling_mean < trend_neg) & (rolling_std > vol_low)] = 'Bearish'
+        regime[rolling_std > vol_high] = 'High Volatility'
+        regime[rolling_std < vol_low] = 'Low Volatility'
         
         regime = regime.fillna('Consolidation')
         
-        # Convert to numeric encoding if requested
+        # Numeric transformation for ML inputs/monitoring
         if return_encoded:
             regime = regime.map(MarketRegimeCalculator.REGIME_ENCODING).fillna(0)
-            logger.info("Market regime calculation completed (numeric encoding).")
+            logger.debug("Regime calculation finalized (numeric).")
         else:
-            logger.info("Market regime calculation completed (text labels).")
+            logger.debug("Regime calculation finalized (categorical).")
         
         return regime
 
     @staticmethod
     def calculate_entropy(price_series: pd.Series, window: int = 50, num_bins: int = 10) -> pd.Series:
         """
-        Calculates the rolling Shannon entropy of price returns.
-        Entropy can be a measure of uncertainty or randomness in the market.
+        Calculates rolling Shannon entropy to measure market uncertainty/disorder.
 
         Args:
-            price_series (pd.Series): Series of prices.
-            window (int): Rolling window for entropy calculation.
-            num_bins (int): Number of bins to discretize returns.
+            price_series: Historical price sequence.
+            window: Rolling window for distribution estimation.
+            num_bins: Histogram bins for return discretization.
 
         Returns:
-            pd.Series: A series of entropy values.
+            Series of entropy coefficients (measured in bits).
         """
         if not isinstance(price_series, pd.Series) or price_series.empty:
             return pd.Series(dtype=float)
             
         returns = price_series.pct_change().dropna()
         
-        def rolling_entropy(window_data):
-            if len(window_data) < window * 0.8: # Require enough data
+        def _compute_entropy(window_slice):
+            if len(window_slice) < window * 0.8:
                 return np.nan
-            hist, _ = np.histogram(window_data, bins=num_bins, density=True)
-            prob_dist = hist * np.diff(np.histogram_bin_edges(window_data, bins=num_bins))
+            hist, _ = np.histogram(window_slice, bins=num_bins, density=True)
+            # Normalize to probability distribution for entropy calculation
+            prob_dist = hist * np.diff(np.histogram_bin_edges(window_slice, bins=num_bins))
             return entropy(prob_dist, base=2)
 
-        result = returns.rolling(window=window).apply(rolling_entropy, raw=True)
-        logger.info(f"Calculated entropy with window {window} and {num_bins} bins.")
+        result = returns.rolling(window=window).apply(_compute_entropy, raw=True)
+        logger.debug(f"Entropy estimation completed (window={window}, bins={num_bins}).")
         return result
 
     @staticmethod
     def calculate_reversal_probability(price_series: pd.Series, down_day_threshold: float = -0.01, window: int = 5) -> pd.Series:
         """
-        Estimates the probability of a reversal after a sequence of down days.
-        This is a heuristic-based indicator.
+        Estimates local reversal probability following sequences of expansionary/contractionary days.
 
         Args:
-            price_series (pd.Series): Series of prices.
-            down_day_threshold (float): The return threshold to consider a "down day".
-            window (int): How many consecutive days to look back.
+            price_series: Historical price sequence.
+            down_day_threshold: Return threshold defining a 'down' state.
+            window: Lookback for streak identification.
 
         Returns:
-            pd.Series: A series of estimated reversal probabilities.
+            Series of probabilities [0, 1].
         """
         if not isinstance(price_series, pd.Series) or price_series.empty:
             return pd.Series(dtype=float)
 
         returns = price_series.pct_change()
-        is_down_day = (returns < down_day_threshold).astype(int)
+        is_down = (returns < down_day_threshold).astype(int)
 
-        # Count consecutive down days
-        consecutive_down_days = is_down_day.rolling(window=window).sum()
+        # Identify consecutive streak length
+        consecutive_down = is_down.rolling(window=window).sum()
 
-        # Simple probabilistic model: probability increases with more consecutive down days
-        # This is a very basic model and can be significantly improved.
-        base_prob = 0.1
-        prob = base_prob + (consecutive_down_days / window) * 0.5
+        # Heuristic probabilistic model (increases with streak exhaustion)
+        base_probability = 0.1
+        probability_estimate = base_probability + (consecutive_down / window) * 0.5
         
-        # We only care about the probability at the end of a streak
-        reversal_prob = prob.where(consecutive_down_days > 1, 0)
+        # Isolate probabilities for relevant streaks only
+        reversal_series = probability_estimate.where(consecutive_down > 1, 0.0)
         
-        logger.info(f"Calculated reversal probability with window {window}.")
-        return reversal_prob.clip(0, 1)
+        logger.debug(f"Reversal probability estimated across {window}-day streaks.")
+        return reversal_series.clip(0, 1)

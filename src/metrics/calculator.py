@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-import logging
 from typing import Dict, Any, Optional, Union
 
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config
 from src.metrics.model.ml_evaluator import MLEvaluator
 from src.metrics.financial.portfolio_metrics import PortfolioMetricsCalculator
 
@@ -14,26 +13,26 @@ class MetricsCalculator:
     Об'єднує функціонал MLEvaluator та PortfolioMetricsCalculator.
     """
 
-    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None):
+    def __init__(self, config_manager: Optional[Any] = None):
         """
         Ініціалізація калькулятора метрик.
         
         Args:
             config_manager: Менеджер конфігурацій для налаштування порогів та параметрів.
         """
-        self.config = config_manager or UnifiedConfigManager()
+        self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("MetricsCalculator")
         
-        # Ініціалізація спеціалізованих калькуляторів з передачею конфігурації
-        self.ml_evaluator = MLEvaluator(config_manager=self.config)
-        self.portfolio_metrics = PortfolioMetricsCalculator(config_manager=self.config)
+        # Ініціалізація спеціалізованих калькуляторів
+        self.ml_evaluator = MLEvaluator()  # MLEvaluator не приймає параметри
+        self.portfolio_metrics = PortfolioMetricsCalculator(config_manager=config_manager)  # Передаємо оригінальний config_manager
         
         # Отримання порогів для оцінки з конфігурації
         self.grade_thresholds = self.config.get_setting('metrics.grade_thresholds', {})
         self.accuracy_threshold = self.grade_thresholds.get('high_performance_accuracy', 0.6)
         self.sharpe_threshold = self.grade_thresholds.get('stable_profit_sharpe', 1.0)
 
-        self.logger.info("MetricsCalculator успішно ініціалізовано.")
+        self.logger.info("MetricsCalculator successfully initialized.")
 
     def get_ml_metrics(self, 
                        y_true: Union[np.ndarray, pd.Series], 

@@ -1,14 +1,15 @@
-# src/models/interfaces.py - Уніфікований інтерфейс для всіх моделей
+# src/models/interfaces.py - Unified interface for all models
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, Any, Union
 import numpy as np
 import pandas as pd
 from src.metrics.calculator import MetricsCalculator
 from src.core.logging.logger import ProjectLogger
 
+
 class BaseModel(ABC):
-    """Абстрактний базовий клас для всіх моделей, що визначає уніфікований інтерфейс."""
+    """Abstract base class for all models, defining a unified interface."""
     
     def __init__(self, model_type: str, task_type: str = "regression"):
         self.model_type = model_type
@@ -20,45 +21,54 @@ class BaseModel(ABC):
     
     @property
     def name(self) -> str:
-        """Повертає унікальне ім'я моделі."""
+        """Returns unique model name."""
         return f"{self.model_type}_{self.task_type}"
 
     @abstractmethod
-    def train(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series], **kwargs) -> Dict[str, Any]:
-        """Тренує модель."""
+    def train(
+        self, X: Union[np.ndarray, pd.DataFrame],
+        y: Union[np.ndarray, pd.Series],
+        **kwargs
+    ) -> Dict[str, Any]:
+        """Trains the model."""
         pass
     
     @abstractmethod
     def predict(self, X: Union[np.ndarray, pd.DataFrame]) -> np.ndarray:
-        """Робить прогнози."""
+        """Makes predictions."""
         pass
     
-    def evaluate(self, X: Union[np.ndarray, pd.DataFrame], y: Union[np.ndarray, pd.Series]) -> Dict[str, float]:
-        """Оцінює продуктивність моделі за допомогою централізованого калькулятора метрик."""
-        self.logger.info(f"Оцінка моделі {self.name}...")
+    def evaluate(
+        self, X: Union[np.ndarray, pd.DataFrame],
+        y: Union[np.ndarray, pd.Series]
+    ) -> Dict[str, float]:
+        """Evaluates model performance using centralized metrics calculator."""
+        self.logger.info(f"Evaluating model {self.name}...")
         predictions = self.predict(X)
         
         calculator = MetricsCalculator()
         is_classification = (self.task_type == 'classification')
         
-        # Використовуємо уніфікований калькулятор для отримання ML метрик
-        results = calculator.get_ml_metrics(y, predictions, is_classification=is_classification)
+        # Use unified calculator for ML metrics
+        results = calculator.get_ml_metrics(
+            y, predictions, is_classification=is_classification
+        )
         
         self.metrics.update(results)
         return results
     
     @abstractmethod
     def save_model(self, path: str) -> bool:
-        """Зберігає модель у файл."""
+        """Saves model to file."""
         pass
     
     @abstractmethod
     def load_model(self, path: str) -> bool:
-        """Завантажує модель з файлу."""
+        """Loads model from file."""
         pass
     
     def get_model_info(self) -> Dict[str, Any]:
-        """Повертає інформацію про модель."""
+        """Returns model information."""
         return {
             "name": self.name,
             "model_type": self.model_type,

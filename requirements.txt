@@ -40,6 +40,7 @@ lightgbm
 catboost
 tensorflow
 keras
+pytorch-tabnet
 fastapi
 uvicorn
 pydantic-settings

@@ -45,7 +45,7 @@ class TargetOrchestrator:
         else:
             self.targets = targets_list
         
-        # ✅ ФІЛЬТРАЦІЯ ТАРГЕТІВ: Якщо прописано test_target, береться ТІЛЬКИ він
+        # ✅ TARGET FILTERING: If test_target is specified, only that target is used
         import json
         runtime_params = {}
         config_manager = get_current_config()
@@ -57,16 +57,17 @@ class TargetOrchestrator:
             except Exception as e:
                 logger.warning(f"Could not load runtime_params.json: {e}")
         
-        test_target = runtime_params.get('test_mode', {}).get('test_target')
+        test_mode = runtime_params.get('test_mode', {})
+        test_target = test_mode.get('test_target') or runtime_params.get('test_target')
         if test_target:
-            # Фільтруємо: залишаємо ТІЛЬКИ обраний таргет
+            # Filter: leave ONLY the selected target
             original_count = len(self.targets)
             self.targets = [t for t in self.targets if t['name'] == test_target]
             if self.targets:
-                logger.info(f"🎯 ФІЛЬТРАЦІЯ ТАРГЕТІВ: {test_target} (було {original_count}, залишилось {len(self.targets)})")
+                logger.info(f"🎯 TARGET FILTERING: {test_target} (was {original_count}, remaining {len(self.targets)})")
             else:
-                logger.warning(f"⚠️ test_target '{test_target}' не знайдено в конфігурації! Використовуємо всі таргети.")
-                # Відновлюємо всі таргети, якщо обраний не знайдено
+                logger.warning(f"⚠️ test_target '{test_target}' not found in configuration! Using all targets.")
+                # Restore all targets if the selected one is not found
                 if isinstance(targets_list, dict):
                     self.targets = [
                         {'name': name, **config}
@@ -77,51 +78,94 @@ class TargetOrchestrator:
         
         logger.info(f"TargetOrchestrator initialized with {len(self.targets)} target configurations.")
 
-    def generate_targets(self, df: pd.DataFrame) -> pd.DataFrame:
+    def generate_targets(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Generates all configured targets for the given DataFrame.
+        
+        Returns ONLY target columns + minimal metadata (datetime, ticker, interval).
+        This prevents data leakage and keeps targets DataFrame clean.
         """
+        # Validate input
+        self._validate_input_dataframe(df)
+        
+        # Prepare metadata and targets container
+        targets_dict = self._prepare_metadata_container(df)
+        
+        logger.info(f"🎯 Generating {len(self.targets)} targets (clean mode - no feature leakage)")
+
+        # Generate each target
+        for target_config in self.targets:
+            self._generate_single_target(df, target_config, targets_dict, **kwargs)
+
+        # Create final targets DataFrame
+        return self._create_targets_dataframe(targets_dict)
+    
+    def _validate_input_dataframe(self, df: pd.DataFrame) -> None:
+        """Validate that DataFrame has required columns."""
         if 'ticker' not in df.columns:
             logger.error("DataFrame must contain a 'ticker' column for target generation.")
             raise ValueError("Missing 'ticker' column.")
+    
+    def _prepare_metadata_container(self, df: pd.DataFrame) -> dict:
+        """Prepare metadata container with only essential columns."""
+        metadata_columns = ['datetime', 'ticker', 'interval']
+        available_metadata = [col for col in metadata_columns if col in df.columns]
+        return {col: df[col] for col in available_metadata}
+    
+    def _generate_single_target(self, df: pd.DataFrame, target_config: dict, targets_dict: dict, **kwargs) -> None:
+        """Generate a single target and add it to the targets dictionary."""
+        name = target_config['name']
+        target_type = target_config['type']
+        params = target_config.get('params', {})
 
-        df_with_targets = df.copy()
-        # Use a list to collect results for each target configuration
-        all_targets_df_list = [df_with_targets]
+        logger.debug(f"Generating target: {name} (Type: {target_type})")
 
-        for target_config in self.targets:
-            name = target_config['name']
-            target_type = target_config['type']
-            params = target_config.get('params', {})
+        calculator_class = self.CALCULATOR_MAPPING.get(target_type)
+        if not calculator_class:
+            logger.warning(f"No calculator found for target type '{target_type}'. Skipping target '{name}'.")
+            return
 
-            logger.debug(f"Generating target: {name} (Type: {target_type})")
+        try:
+            self._handle_standard_target(df, name, target_type, params, targets_dict)
+        except Exception as e:
+            logger.error(f"Failed to generate target '{name}'. Error: {e}", exc_info=True)
+    
+    def _handle_standard_target(self, df: pd.DataFrame, name: str, target_type: str, params: dict, targets_dict: dict) -> None:
+        """Handle standard target generation."""
+        calculator_class = self.CALCULATOR_MAPPING[target_type]
+        calculator_instance = calculator_class()
+        
+        method_name = self.METHOD_MAPPING.get(target_type, 'calculate')
+        calculation_method = getattr(calculator_instance, method_name)
 
-            calculator_class = self.CALCULATOR_MAPPING.get(target_type)
-            if not calculator_class:
-                logger.warning(f"No calculator found for target type '{target_type}'. Skipping target '{name}'.")
-                continue
+        # Process by ticker groups if ticker column exists
+        if 'ticker' in df.columns:
+            target_series = self._process_by_ticker_groups(df, calculation_method, params)
+        else:
+            target_series = calculation_method(df, **params)
 
-            try:
-                calculator_instance = calculator_class()
-                method_name = self.METHOD_MAPPING.get(target_type, 'calculate')
-                calculation_method = getattr(calculator_instance, method_name)
+        targets_dict[name] = target_series
+        logger.info(f"Successfully generated target '{name}'.")
+    
+    def _process_by_ticker_groups(self, df: pd.DataFrame, calculation_method, params: dict) -> pd.Series:
+        """Process target calculation by ticker groups."""
+        target_series_list = []
+        for ticker, group in df.groupby('ticker'):
+            target_series_list.append(calculation_method(self._sort_group_for_targets(group), **params))
+        return pd.concat(target_series_list)
 
-                # This approach ensures that we handle single and multi-ticker data correctly
-                # without relying on groupby().apply() which can have tricky return types.
-                if 'ticker' in df.columns:
-                    # Process by group and concatenate
-                    target_series_list = []
-                    for ticker, group in df.groupby('ticker'):
-                        target_series_list.append(calculation_method(group.copy(), **params))
-                    target_series = pd.concat(target_series_list)
-                else:
-                    # Process the whole dataframe if no ticker is present
-                    target_series = calculation_method(df, **params)
-
-                df_with_targets[name] = target_series
-                logger.info(f"Successfully generated target '{name}'.")
-
-            except Exception as e:
-                logger.error(f"Failed to generate target '{name}'. Error: {e}", exc_info=True)
-
-        return df_with_targets
+    def _sort_group_for_targets(self, group: pd.DataFrame) -> pd.DataFrame:
+        """Sort each ticker group chronologically before future-shift target generation."""
+        for col in ("datetime", "timestamp", "date"):
+            if col in group.columns:
+                return group.sort_values(col).copy()
+        return group.sort_index().copy()
+    
+    def _create_targets_dataframe(self, targets_dict: dict) -> pd.DataFrame:
+        """Create final targets DataFrame and log summary."""
+        targets_df = pd.DataFrame(targets_dict)
+        
+        target_cols = [col for col in targets_df.columns if col.startswith('target_')]
+        logger.info(f"✅ Generated {len(target_cols)} target columns (total {len(targets_df.columns)} with metadata)")
+        
+        return targets_df

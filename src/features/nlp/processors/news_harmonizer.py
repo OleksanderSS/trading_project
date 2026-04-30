@@ -2,7 +2,7 @@
 
 import pandas as pd
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config
 
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
@@ -10,9 +10,10 @@ logger = ProjectLogger.get_logger("TradingProjectLogger")
 def _get_news_fields():
     """Lazy load news fields configuration."""
     try:
-        config = UnifiedConfigManager().get_config('enrichment')
+        config = get_current_config().get_config('enrichment')
         return config.get('news_fields', {})
-    except:
+    except Exception as e:
+        logger.warning(f"[news_harmonizer] Failed to load news fields config: {e}")
         return {}
 
 def detect_news_format(entry: dict) -> dict:

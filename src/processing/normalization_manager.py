@@ -43,35 +43,59 @@ class NormalizationManager:
 
         logger.info(f"Fitting scalers for {len(features_to_normalize)} features...")
         for config in features_to_normalize:
-            feature = config['feature']
-            scaler_type = config.get('scaler_type', 'min_max')
-
-            if feature not in data.columns:
-                logger.warning(f"Feature '{feature}' not found in DataFrame. Skipping.")
-                continue
-
-            feature_data = data[[feature]].dropna()
-            if feature_data.empty:
-                logger.warning(f"No data for feature '{feature}' after dropping NaNs. Skipping.")
-                continue
-
-            if scaler_type == 'min_max':
-                scaler = MinMaxScaler()
-            elif scaler_type == 'standard':
-                scaler = StandardScaler()
-            else:
-                logger.warning(f"Unknown scaler type '{scaler_type}' for feature '{feature}'. Defaulting to MinMaxScaler.")
-                scaler = MinMaxScaler()
-
-            try:
-                scaler.fit(feature_data)
-                self.scalers[feature] = scaler
-                self._save_scaler(feature)
-                logger.debug(f"Fitted and saved '{scaler_type}' scaler for feature '{feature}'.")
-            except Exception as e:
-                logger.error(f"Error fitting scaler for feature '{feature}': {e}")
+            self._fit_single_scaler(data, config)
         
         logger.info("Scaler fitting complete.")
+    
+    def _fit_single_scaler(self, data: pd.DataFrame, config: Dict[str, Any]):
+        """Fit a single scaler for a feature."""
+        feature = config['feature']
+        scaler_type = config.get('scaler_type', 'min_max')
+
+        if not self._validate_feature_exists(data, feature):
+            return
+        
+        if not self._validate_feature_data(data, feature):
+            return
+
+        scaler = self._create_scaler(scaler_type, feature)
+        self._fit_and_save_scaler(data, scaler, feature, scaler_type)
+    
+    def _validate_feature_exists(self, data: pd.DataFrame, feature: str) -> bool:
+        """Validate that feature exists in DataFrame."""
+        if feature not in data.columns:
+            logger.warning(f"Feature '{feature}' not found in DataFrame. Skipping.")
+            return False
+        return True
+    
+    def _validate_feature_data(self, data: pd.DataFrame, feature: str) -> bool:
+        """Validate that feature has data after dropping NaNs."""
+        feature_data = data[[feature]].dropna()
+        if feature_data.empty:
+            logger.warning(f"No data for feature '{feature}' after dropping NaNs. Skipping.")
+            return False
+        return True
+    
+    def _create_scaler(self, scaler_type: str, feature: str):
+        """Create appropriate scaler instance."""
+        if scaler_type == 'min_max':
+            return MinMaxScaler()
+        if scaler_type == 'standard':
+            return StandardScaler()
+        
+        logger.warning(f"Unknown scaler type '{scaler_type}' for feature '{feature}'. Defaulting to MinMaxScaler.")
+        return MinMaxScaler()
+    
+    def _fit_and_save_scaler(self, data: pd.DataFrame, scaler, feature: str, scaler_type: str):
+        """Fit scaler and save it with error handling."""
+        try:
+            feature_data = data[[feature]].dropna()
+            scaler.fit(feature_data)
+            self.scalers[feature] = scaler
+            self._save_scaler(feature)
+            logger.debug(f"Fitted and saved '{scaler_type}' scaler for feature '{feature}'.")
+        except Exception as e:
+            logger.error(f"Error fitting scaler for feature '{feature}': {e}")
 
     def transform_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """

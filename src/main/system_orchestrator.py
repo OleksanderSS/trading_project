@@ -9,6 +9,7 @@ import inspect
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Optional, Dict, Any
+from dataclasses import dataclass
 
 from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
@@ -19,6 +20,15 @@ from src.main.modes.backtest import BacktestMode
 from src.main.modes.predict import PredictMode
 from src.main.modes.training_data_pipeline import run_pipeline as run_training_data_pipeline
 from src.models.dean.dean_bootstrap_system import get_dean_system
+
+
+@dataclass
+class ExecutionConfig:
+    """Configuration for mode execution to reduce argument count."""
+    mode: str
+    tickers: Optional[List[str]] = None
+    timeframes: Optional[List[str]] = None
+    parallel: bool = False
 
 class SystemOrchestrator:
     """
@@ -43,72 +53,107 @@ class SystemOrchestrator:
         try:
             parallel = self.config_manager.get_config('execution.parallel_tickers', False)
             
-            if mode == 'train':
-                return self._dispatch(TrainMode, tickers, timeframes, parallel, **kwargs)
-            
-            elif mode == 'predict':
-                return self._dispatch(PredictMode, tickers, timeframes, parallel, **kwargs)
-            
-            elif mode == 'backtest':
-                return self._dispatch(BacktestMode, tickers, timeframes, parallel, **kwargs)
-
-            elif mode == 'hybrid':
-                return await self._run_hybrid_mode(tickers, timeframes, **kwargs)
-
-            elif mode == 'training_data_pipeline':
-                # FIX: Instantiate DataManager and pass it to the pipeline
-                db_manager = DataManager(self.config_manager)
-                await run_training_data_pipeline(config_manager=self.config_manager, db_manager=db_manager)
-                return {"status": "success", "message": "Training data pipeline completed successfully."}
-
-            elif mode in ['web-ui', 'dashboard']:
-                return self._run_web_ui()
-            
-            elif mode == 'intelligent':
-                return self._run_intelligent_mode(tickers, timeframes, parallel, **kwargs)
-            
-            elif mode == 'monster_test':
-                return self._run_monster_test(tickers, timeframes, parallel, **kwargs)
-            
-            else:
-                error_msg = f"Unknown operational mode: {mode}"
-                self.logger.error(error_msg)
-                return {"status": "error", "message": error_msg}
+            config = ExecutionConfig(mode=mode, tickers=tickers, timeframes=timeframes, parallel=parallel)
+            return await self._execute_mode(config, **kwargs)
 
         except Exception as e:
-            self.logger.critical(f"A critical error occurred while executing mode '{mode}': {e}", exc_info=True)
-            return {"status": "critical_failure", "error": str(e)}
+            return self._handle_mode_error(mode, e)
         finally:
             self.logger.info(f"--- Finished execution of mode: '{mode}' ---")
+    
+    async def _execute_mode(self, config: ExecutionConfig, **kwargs) -> Dict[str, Any]:
+        """Execute the specified mode."""
+        if config.mode in ['train', 'predict', 'backtest']:
+            mode_class = self._get_mode_class(config.mode)
+            return await self._dispatch(mode_class, config, **kwargs)
+        
+        elif config.mode == 'hybrid':
+            return await self._run_hybrid_mode(config.tickers, config.timeframes, **kwargs)
+        
+        elif config.mode == 'training_data_pipeline':
+            return await self._run_training_data_pipeline()
+        
+        elif config.mode in ['web-ui', 'dashboard']:
+            return self._run_web_ui()
+        
+        elif config.mode == 'intelligent':
+            return await self._run_intelligent_mode(config.tickers, config.timeframes, config.parallel, **kwargs)
+        
+        elif config.mode == 'monster_test':
+            return await self._run_monster_test(config.tickers, config.timeframes, config.parallel, **kwargs)
+        
+        else:
+            return self._handle_unknown_mode(config.mode)
+    
+    def _get_mode_class(self, mode: str) -> Any:
+        """Get the mode class for the specified mode."""
+        mode_classes = {
+            'train': TrainMode,
+            'predict': PredictMode,
+            'backtest': BacktestMode
+        }
+        return mode_classes.get(mode)
+    
+    async def _run_training_data_pipeline(self) -> Dict[str, Any]:
+        """Run the training data pipeline."""
+        db_manager = DataManager(self.config_manager)
+        await run_training_data_pipeline(config_manager=self.config_manager, db_manager=db_manager)
+        return {"status": "success", "message": "Training data pipeline completed successfully."}
+    
+    def _handle_unknown_mode(self, mode: str) -> Dict[str, Any]:
+        """Handle unknown mode error."""
+        error_msg = f"Unknown operational mode: {mode}"
+        self.logger.error(error_msg)
+        return {"status": "error", "message": error_msg}
+    
+    def _handle_mode_error(self, mode: str, error: Exception) -> Dict[str, Any]:
+        """Handle mode execution error."""
+        self.logger.critical(f"A critical error occurred while executing mode '{mode}': {error}", exc_info=True)
+        return {"status": "critical_failure", "error": str(error)}
 
-    def _dispatch(self, mode_class: Any, tickers: Optional[List[str]], timeframes: Optional[List[str]], parallel: bool, **kwargs) -> Dict[str, Any]:
+    async def _dispatch(self, mode_class: Any, config: ExecutionConfig, **kwargs) -> Dict[str, Any]:
         """
         Creates and runs an instance of a mode, supporting parallelization across tickers.
         """
         results = {"status": "completed", "tickers_processed": []}
         
-        if tickers and parallel and len(tickers) > 1:
-            self.logger.info(f"Running {mode_class.__name__} in parallel for {len(tickers)} tickers.")
-            max_workers = self.config_manager.get_config('execution.max_workers', os.cpu_count())
-            
-            with ProcessPoolExecutor(max_workers=max_workers) as executor:
-                futures = {
-                    executor.submit(self._run_single_instance_sync, mode_class, [ticker], timeframes, **kwargs): ticker 
-                    for ticker in tickers
-                }
-                for future in as_completed(futures):
-                    ticker = futures[future]
-                    try:
-                        future.result()
-                        results["tickers_processed"].append(ticker)
-                        self.logger.info(f"Ticker {ticker} processed successfully.")
-                    except Exception as e:
-                        self.logger.error(f"Error processing ticker {ticker}: {e}")
+        if self._should_run_parallel(config.tickers, config.parallel):
+            return self._run_parallel_execution(mode_class, config, results=results, **kwargs)
         else:
-            # Run within the current event loop if the mode returns a coroutine.
-            result = asyncio.run(self._run_single_instance(mode_class, tickers, timeframes, **kwargs))
-            if result is not None:
-                results["tickers_processed"] = tickers if tickers else ["all_configured"]
+            return await self._run_sequential_execution(mode_class, config, results=results, **kwargs)
+        
+        return results
+    
+    def _should_run_parallel(self, tickers: Optional[List[str]], parallel: bool) -> bool:
+        """Check if execution should run in parallel."""
+        return tickers is not None and parallel and len(tickers) > 1
+    
+    def _run_parallel_execution(self, mode_class: Any, config: ExecutionConfig, results: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Run mode execution in parallel across tickers."""
+        self.logger.info(f"Running {mode_class.__name__} in parallel for {len(config.tickers)} tickers.")
+        max_workers = self.config_manager.get_config('execution.max_workers', os.cpu_count())
+        
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(self._run_single_instance_sync, mode_class, [ticker], config.timeframes, **kwargs): ticker 
+                for ticker in config.tickers
+            }
+            for future in as_completed(futures):
+                ticker = futures[future]
+                try:
+                    future.result()
+                    results["tickers_processed"].append(ticker)
+                    self.logger.info(f"Ticker {ticker} processed successfully.")
+                except Exception as e:
+                    self.logger.error(f"Error processing ticker {ticker}: {e}")
+        
+        return results
+    
+    async def _run_sequential_execution(self, mode_class: Any, config: ExecutionConfig, results: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+        """Run mode execution sequentially."""
+        result = await self._run_single_instance(mode_class, config.tickers, config.timeframes, **kwargs)
+        if result is not None:
+            results["tickers_processed"] = config.tickers if config.tickers else ["all_configured"]
         
         return results
 
@@ -130,18 +175,21 @@ class SystemOrchestrator:
 
     async def _run_hybrid_mode(self, tickers: Optional[List[str]], timeframes: Optional[List[str]], **kwargs) -> Dict[str, Any]:
         """Runs the hybrid pipeline via HybridOrchestrator."""
+        from src.pipeline.hybrid_orchestrator import HybridPipelineRequest
+        
         self.logger.info("🚀 Running hybrid pipeline mode...")
         batch_name = kwargs.pop('batch_name', 'main_database')
         orchestrator = HybridOrchestrator(self.config_manager, batch_name=batch_name)
-        return await orchestrator.run_full_hybrid_pipeline(
+        
+        request = HybridPipelineRequest(
             tickers=tickers,
             timeframes=timeframes,
-            run_colab=kwargs.pop('run_colab', False),
             accumulate=kwargs.pop('accumulate', True),
             force_training=kwargs.pop('force_training', False),
             skip_colab=kwargs.pop('skip_colab', False),
             force_feature_selection=kwargs.pop('force_feature_selection', False)
         )
+        return await orchestrator.run_full_hybrid_pipeline(request)
 
     def _run_web_ui(self) -> Dict[str, Any]:
         """Launches the Streamlit Dashboard."""
@@ -154,7 +202,7 @@ class SystemOrchestrator:
             self.logger.error(f"Failed to launch Web-UI: {e}")
             return {"status": "error", "message": str(e)}
 
-    def _run_intelligent_mode(self, tickers: Optional[List[str]], timeframes: Optional[List[str]], parallel: bool, **kwargs) -> Dict[str, Any]:
+    async def _run_intelligent_mode(self, tickers: Optional[List[str]], timeframes: Optional[List[str]], parallel: bool, **kwargs) -> Dict[str, Any]:
         """Runs INTELLIGENT mode with self-diagnosis."""
         self.logger.info("🧠 Running INTELLIGENT mode...")
         dean_brain = get_dean_system()
@@ -167,12 +215,14 @@ class SystemOrchestrator:
         except Exception as e:
             self.logger.warning(f"Could not get advice from ExperienceDiary: {e}")
 
-        return self._dispatch(mode_type, tickers, timeframes, parallel, brain=dean_brain, **kwargs)
+        config = ExecutionConfig(mode="intelligent", tickers=tickers, timeframes=timeframes, parallel=parallel)
+        return await self._dispatch(mode_type, config, brain=dean_brain, **kwargs)
 
-    def _run_monster_test(self, tickers: Optional[List[str]], timeframes: Optional[List[str]], parallel: bool, **kwargs) -> Dict[str, Any]:
+    async def _run_monster_test(self, tickers: Optional[List[str]], timeframes: Optional[List[str]], parallel: bool, **kwargs) -> Dict[str, Any]:
         """
         Runs the stress test (Monster Test).
         """
         self.logger.info("👹 Running MONSTER TEST...")
         test_tickers = tickers or self.config_manager.get_config('monster_test.tickers', ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL"])
-        return self._dispatch(TrainMode, test_tickers, timeframes, parallel, **kwargs)
+        config = ExecutionConfig(mode="monster_test", tickers=test_tickers, timeframes=timeframes, parallel=parallel)
+        return await self._dispatch(TrainMode, config, **kwargs)

@@ -1,6 +1,6 @@
 """
 ADVANCED SIMULATION ENGINE
-Розширена симуляційна система для моделювання складних ринкових ситуацій
+Advanced simulation system for modeling complex market situations
 """
 
 import numpy as np
@@ -15,11 +15,16 @@ from concurrent.futures import ThreadPoolExecutor
 import multiprocessing as mp
 from scipy import stats
 
+from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import get_current_config
 from src.trading.virtual_portfolio import VirtualPortfolio
 from src.metrics.calculator import MetricsCalculator
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger("SimulationEngine")
+
+# Configuration constants
+RANDOM_SEED_CONFIG_KEY = 'performance.random_seed'
+DEFAULT_RANDOM_SEED = 42
 
 class SimulationGranularity(Enum):
     TICKER_LEVEL = "ticker"
@@ -47,7 +52,7 @@ class SimulationRiskReport:
 
 class SimulationEngine:
     def __init__(self, max_workers: int = None):
-        self.logger = logging.getLogger(__name__)
+        self.logger = ProjectLogger.get_logger("SimulationEngine")
         self.max_workers = max_workers or min(mp.cpu_count(), 4)
         self.config = get_current_config()
         self.sim_config = self.config.get('simulation', {})
@@ -113,33 +118,84 @@ class SimulationEngine:
 
     def _generate_price_path(self, context: SimulationContext, horizon: int) -> pd.DataFrame:
         """Generates a DataFrame with OHLCV data for a single path."""
-        current_price = context.features.get('close', 100)
-        volatility = context.market_conditions.get('volatility', 0.02)
-        trend = context.market_conditions.get('trend', 0)
+        market_params = self._extract_market_parameters(context)
         
-        use_bootstrap = self.optimization_config.get('use_historical_bootstrap', True)
-        if use_bootstrap and context.historical_returns is not None and not context.historical_returns.empty:
-            hist_rets = context.historical_returns.values
-            daily_returns = np.random.choice(hist_rets, size=horizon, replace=True)
+        self._ensure_determinism()
+        
+        daily_returns = self._generate_daily_returns(context, horizon, market_params)
+        
+        dates = self._generate_dates(context.timestamp, horizon)
+        prices = self._calculate_price_path(market_params['current_price'], daily_returns)
+        
+        return self._create_ohlcv_dataframe(prices, daily_returns, dates)
+    
+    def _extract_market_parameters(self, context: SimulationContext) -> dict:
+        """Extract market parameters from context."""
+        return {
+            'current_price': context.features.get('close', 100),
+            'volatility': context.market_conditions.get('volatility', 0.02),
+            'trend': context.market_conditions.get('trend', 0)
+        }
+    
+    def _ensure_determinism(self):
+        """Ensure deterministic random number generation."""
+        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
+        np.random.seed(seed)
+    
+    def _generate_daily_returns(self, context: SimulationContext, horizon: int, market_params: dict) -> np.ndarray:
+        """Generate daily returns based on configuration."""
+        if self._should_use_bootstrap(context):
+            return self._generate_bootstrap_returns(context, horizon)
         else:
-            df = self.optimization_config.get('t_distribution_df', 3.0)
-            scale = volatility * np.sqrt((df - 2) / df) if df > 2 else volatility
-            daily_returns = stats.t.rvs(df, loc=trend / horizon, scale=scale, size=horizon)
-
-        dates = pd.to_datetime([context.timestamp + timedelta(days=i) for i in range(horizon)])
+            return self._generate_t_distribution_returns(horizon, market_params)
+    
+    def _should_use_bootstrap(self, context: SimulationContext) -> bool:
+        """Check if historical bootstrap should be used."""
+        use_bootstrap = self.optimization_config.get('use_historical_bootstrap', True)
+        return (use_bootstrap and 
+                context.historical_returns is not None and 
+                not context.historical_returns.empty)
+    
+    def _generate_bootstrap_returns(self, context: SimulationContext, horizon: int) -> np.ndarray:
+        """Generate returns using historical bootstrap."""
+        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
+        hist_rets = context.historical_returns.values
+        rng = np.random.default_rng(seed)
+        return rng.choice(hist_rets, size=horizon, replace=True)
+    
+    def _generate_t_distribution_returns(self, horizon: int, market_params: dict) -> np.ndarray:
+        """Generate returns using t-distribution."""
+        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
+        df = self.optimization_config.get('t_distribution_df', 3.0)
+        scale = self._calculate_t_distribution_scale(market_params['volatility'], df)
+        return stats.t.rvs(df, loc=market_params['trend'] / horizon, scale=scale, size=horizon, random_state=seed)
+    
+    def _calculate_t_distribution_scale(self, volatility: float, df: float) -> float:
+        """Calculate scale parameter for t-distribution."""
+        return volatility * np.sqrt((df - 2) / df) if df > 2 else volatility
+    
+    def _generate_dates(self, start_timestamp: datetime, horizon: int) -> pd.DatetimeIndex:
+        """Generate date series for the simulation horizon."""
+        return pd.to_datetime([start_timestamp + timedelta(days=i) for i in range(horizon)])
+    
+    def _calculate_price_path(self, current_price: float, daily_returns: np.ndarray) -> list:
+        """Calculate price path from daily returns."""
         prices = [current_price]
         for r in daily_returns[:-1]:
             prices.append(prices[-1] * (1 + r))
-        
-        price_path = pd.DataFrame({
+        return prices
+    
+    def _create_ohlcv_dataframe(self, prices: list, daily_returns: np.ndarray, dates: pd.DatetimeIndex) -> pd.DataFrame:
+        """Create OHLCV DataFrame from prices and returns."""
+        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
+        rng = np.random.default_rng(seed)
+        return pd.DataFrame({
             'open': prices,
             'high': [p * (1 + abs(r) * 0.5) for p, r in zip(prices, daily_returns)],
             'low': [p * (1 - abs(r) * 0.5) for p, r in zip(prices, daily_returns)],
             'close': prices,
-            'volume': [np.random.randint(1000, 10000) for _ in range(horizon)]
+            'volume': [rng.integers(1000, 10000) for _ in range(len(prices))]
         }, index=dates)
-        
-        return price_path
 
 _simulation_engine = None
 

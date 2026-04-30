@@ -46,55 +46,97 @@ class ModelAnalyzer:
             if not candidates:
                 continue
 
-            # Determine if classification or regression for metric selection
-            is_clf = "direction" in key.lower()
-            main_metric = "f1" if is_clf else "rmse"
-            is_higher_better = is_clf # F1 higher is better, RMSE lower is better
-
-            # Sort to find the ticker champion
-            sorted_cand = sorted(
-                candidates, 
-                key=lambda x: x['metrics'].get(main_metric, 0 if is_higher_better else float('inf')), 
-                reverse=is_higher_better
-            )
+            # Determine metric type
+            metric_info = self._determine_metric_type(key)
             
-            champion = sorted_cand[0]
-            champions.append({
-                "id": key,
-                "model_name": champion["name"],
-                "archetype": champion.get("archetype", "unknown"),
-                "metric": main_metric,
-                "value": champion["metrics"].get(main_metric)
-            })
+            # Find champion and collect metrics
+            champion = self._find_champion(candidates, metric_info)
+            champions.append(self._create_champion_info(key, champion, metric_info))
+            
+            # Collect architecture metrics
+            self._collect_architecture_metrics(candidates, metric_info, light_metrics, heavy_metrics)
 
-            # Performance comparison: Light vs Heavy
-            for cand in candidates:
-                m_val = cand['metrics'].get(main_metric)
-                if m_val is None: continue
-                
-                if cand.get("type") == "light":
-                    light_metrics.append(m_val)
-                elif cand.get("type") == "heavy":
-                    heavy_metrics.append(m_val)
-
-        avg_light = sum(light_metrics) / len(light_metrics) if light_metrics else 0
-        avg_heavy = sum(heavy_metrics) / len(heavy_metrics) if heavy_metrics else 0
+        # Calculate summary statistics
+        architecture_comparison = self._calculate_architecture_comparison(light_metrics, heavy_metrics)
 
         self.summary = {
             "timestamp": datetime.now().isoformat(),
             "total_ticker_targets": len(self.results),
             "total_models_trained": total_models,
             "champions": champions,
-            "architecture_comparison": {
-                "avg_light_performance": round(avg_light, 4),
-                "avg_heavy_performance": round(avg_heavy, 4),
-                "heavy_improvement_pct": round(((avg_heavy - avg_light) / (avg_light + 1e-6)) * 100, 2) if avg_light > 0 else 0
-            },
+            "architecture_comparison": architecture_comparison,
             "best_overall_model": champions[0] if champions else None
         }
         
-        logger.info(f"Summary generated. Heavy models are {self.summary['architecture_comparison']['heavy_improvement_pct']}% better than Light.")
+        logger.info(f"Summary generated. Heavy models are {architecture_comparison['heavy_improvement_pct']}% better than Light.")
         return self.summary
+    
+    def _determine_metric_type(self, key: str) -> Dict[str, Any]:
+        """Determine if classification or regression and select appropriate metric"""
+        is_clf = "direction" in key.lower()
+        main_metric = "f1" if is_clf else "rmse"
+        is_higher_better = is_clf
+        
+        return {
+            "is_classification": is_clf,
+            "main_metric": main_metric,
+            "is_higher_better": is_higher_better
+        }
+    
+    def _find_champion(self, candidates: List[Dict], metric_info: Dict[str, Any]) -> Dict:
+        """Find the champion model from candidates"""
+        main_metric = metric_info["main_metric"]
+        is_higher_better = metric_info["is_higher_better"]
+        
+        def sort_key(candidate, metric=main_metric, higher_better=is_higher_better):
+            default_value = 0 if higher_better else float('inf')
+            return candidate['metrics'].get(metric, default_value)
+        
+        sorted_candidates = sorted(candidates, key=sort_key, reverse=is_higher_better)
+        return sorted_candidates[0]
+    
+    def _create_champion_info(self, key: str, champion: Dict, metric_info: Dict[str, Any]) -> Dict[str, Any]:
+        """Create champion information dictionary"""
+        main_metric = metric_info["main_metric"]
+        
+        return {
+            "id": key,
+            "model_name": champion["name"],
+            "archetype": champion.get("archetype", "unknown"),
+            "metric": main_metric,
+            "value": champion["metrics"].get(main_metric)
+        }
+    
+    def _collect_architecture_metrics(self, candidates: List[Dict], metric_info: Dict[str, Any], 
+                                    light_metrics: List[float], heavy_metrics: List[float]) -> None:
+        """Collect metrics for light vs heavy architecture comparison"""
+        main_metric = metric_info["main_metric"]
+        
+        for candidate in candidates:
+            metric_value = candidate['metrics'].get(main_metric)
+            if metric_value is None:
+                continue
+            
+            arch_type = candidate.get("type")
+            if arch_type == "light":
+                light_metrics.append(metric_value)
+            elif arch_type == "heavy":
+                heavy_metrics.append(metric_value)
+    
+    def _calculate_architecture_comparison(self, light_metrics: List[float], heavy_metrics: List[float]) -> Dict[str, float]:
+        """Calculate architecture performance comparison"""
+        avg_light = sum(light_metrics) / len(light_metrics) if light_metrics else 0
+        avg_heavy = sum(heavy_metrics) / len(heavy_metrics) if heavy_metrics else 0
+        
+        heavy_improvement_pct = 0.0
+        if avg_light > 0:
+            heavy_improvement_pct = float(round(((avg_heavy - avg_light) / (avg_light + 1e-6)) * 100, 2))
+        
+        return {
+            "avg_light_performance": round(avg_light, 4),
+            "avg_heavy_performance": round(avg_heavy, 4),
+            "heavy_improvement_pct": heavy_improvement_pct
+        }
 
     def save_report(self, report_name: str = "training_summary") -> str:
         """
@@ -120,4 +162,4 @@ class ModelAnalyzer:
         """
         if not self.summary:
             self.generate_training_summary()
-        return self.summary.get("architecture_comparison", {})
+        return dict(self.summary.get("architecture_comparison", {}))

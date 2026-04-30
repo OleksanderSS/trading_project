@@ -40,12 +40,15 @@ class MarketRegime(Enum):
     BREAKOUT = "BREAKOUT"
     NORMAL = "NORMAL"
 
+from src.config.unified_config_manager import get_current_config
+
 class MarketRegimeDetector:
     """Виявляє режими ринку з використанням ML та статистичних методів"""
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         self.logger = ProjectLogger.get_logger("MarketRegimeDetector")
-        self.config = config or {}
+        self.config_manager = get_current_config()
+        self.config = config or self.config_manager.get('logic.regime_detection', {})
 
         # Параметри для виявлення режимів
         self.adx_threshold = self.config.get('adx_threshold', 25)
@@ -97,105 +100,98 @@ class MarketRegimeDetector:
         """
         try:
             if len(returns) < 30:
-                return {'regime': MarketRegime.NORMAL.value, 'confidence': 0.5, 'reason': 'insufficient_data'}
+                return self._create_insufficient_data_result()
 
             # Розрахуємо базові метрики
-            volatility = np.std(returns)
-            mean_return = np.mean(returns)
-            adx = self._calculate_adx(returns)
+            volatility, mean_return, adx = self._calculate_basic_metrics(returns)
 
             # 1. Crisis detection (highest priority)
-            if mean_return < self.crisis_threshold:
-                return {
-                    'regime': MarketRegime.CRISIS.value,
-                    'confidence': 0.95,
-                    'reason': 'extreme_negative_returns',
-                    'metrics': {'mean_return': mean_return, 'crisis_threshold': self.crisis_threshold}
-                }
+            crisis_result = self._check_crisis_regime(mean_return)
+            if crisis_result:
+                return crisis_result
 
             # 2. ML-based clustering (якщо достатньо даних)
-            if self.use_ml_clustering and len(returns) >= self.min_samples_for_clustering:
-                ml_regime = self._detect_regime_ml(returns, prices, volume, sentiment_data)
-                if ml_regime['confidence'] > 0.7:
-                    return ml_regime
+            ml_result = self._try_ml_detection(returns, prices, volume, sentiment_data)
+            if ml_result:
+                return ml_result
 
             # 3. Rule-based detection
             rule_regime = self._detect_regime_rules(returns, prices, volume, adx, volatility, mean_return)
 
             # 4. Multi-timeframe consensus
-            if multi_timeframe_data:
-                consensus_regime = self._multi_timeframe_consensus(
-                    rule_regime, multi_timeframe_data
-                )
-                if consensus_regime['confidence'] > rule_regime['confidence']:
-                    return consensus_regime
+            consensus_regime = self._try_multi_timeframe_consensus(rule_regime, multi_timeframe_data)
+            if consensus_regime:
+                return consensus_regime
 
             return rule_regime
 
         except Exception as e:
-            self.logger.error(f"Помилка виявлення режиму: {e}")
+            return self._create_error_result(e)
+
+    def _create_insufficient_data_result(self) -> Dict[str, Any]:
+        """Створює результат при недостатньо даних"""
+        return {
+            'regime': MarketRegime.NORMAL.value, 
+            'confidence': 0.5, 
+            'reason': 'insufficient_data'
+        }
+
+    def _calculate_basic_metrics(self, returns: np.ndarray) -> Tuple[float, float, float]:
+        """Розраховує базові метрики"""
+        volatility = np.std(returns)
+        mean_return = np.mean(returns)
+        adx = self._calculate_adx(returns)
+        return volatility, mean_return, adx
+
+    def _check_crisis_regime(self, mean_return: float) -> Optional[Dict[str, Any]]:
+        """Перевіряє crisis regime"""
+        if mean_return < self.crisis_threshold:
             return {
-                'regime': MarketRegime.NORMAL.value,
-                'confidence': 0.5,
-                'error': str(e)
+                'regime': MarketRegime.CRISIS.value,
+                'confidence': 0.95,
+                'reason': 'extreme_negative_returns',
+                'metrics': {'mean_return': mean_return, 'crisis_threshold': self.crisis_threshold}
             }
+        return None
+
+    def _try_ml_detection(self, returns: np.ndarray, prices: Optional[np.ndarray],
+                        volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> Optional[Dict[str, Any]]:
+        """Намагається виявити regime за допомогою ML"""
+        if self.use_ml_clustering and len(returns) >= self.min_samples_for_clustering:
+            ml_regime = self._detect_regime_ml(returns, prices, volume, sentiment)
+            if ml_regime['confidence'] > 0.7:
+                return ml_regime
+        return None
+
+    def _try_multi_timeframe_consensus(self, rule_regime: Dict[str, Any], 
+                                     multi_timeframe_data: Optional[Dict[str, np.ndarray]]) -> Optional[Dict[str, Any]]:
+        """Намагається отримати consensus з різних таймфреймів"""
+        if multi_timeframe_data:
+            consensus_regime = self._multi_timeframe_consensus(rule_regime, multi_timeframe_data)
+            if consensus_regime['confidence'] > rule_regime['confidence']:
+                return consensus_regime
+        return None
+
+    def _create_error_result(self, error: Exception) -> Dict[str, Any]:
+        """Створює результат при помилці"""
+        return {
+            'regime': MarketRegime.NORMAL.value,
+            'confidence': 0.5,
+            'error': str(error)
+        }
 
     def _detect_regime_ml(self, returns: np.ndarray, prices: Optional[np.ndarray],
                          volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> Dict[str, Any]:
         """ML-based regime detection using clustering"""
         try:
-            # Створюємо features для кластеризації
-            features = []
-
-            # Return-based features
-            features.extend([
-                np.mean(returns), np.std(returns), np.skew(returns),
-                np.kurtosis(returns), np.min(returns), np.max(returns)
-            ])
-
-            # Price-based features (якщо доступні)
-            if prices is not None and len(prices) > 20:
-                # Trend strength
-                trend = np.polyfit(np.arange(len(prices)), prices, 1)[0]
-                features.append(trend)
-
-                # RSI
-                rsi = self._calculate_rsi(prices)
-                features.append(rsi)
-
-                # Bollinger Bands position
-                sma = np.mean(prices[-20:])
-                std = np.std(prices[-20:])
-                bb_position = (prices[-1] - sma) / (2 * std) if std > 0 else 0
-                features.append(bb_position)
-
-            # Volume-based features
-            if volume is not None and len(volume) > 20:
-                volume_sma = np.mean(volume[-20:])
-                volume_ratio = volume[-1] / volume_sma if volume_sma > 0 else 1
-                features.append(volume_ratio)
-
-            # Sentiment features
-            if sentiment is not None and len(sentiment) > 0:
-                features.append(np.mean(sentiment))
-
-            # Normalize features
-            features_array = np.array(features).reshape(1, -1)
-            features_scaled = self.scaler.fit_transform(features_array)
-
-            # Fit cluster model if not fitted
-            if self.cluster_model is None:
-                # Use predefined cluster centers based on regime characteristics
-                self._initialize_cluster_centers()
-
-            # Predict cluster
+            features = self._extract_ml_features(returns, prices, volume, sentiment)
+            features_scaled = self._normalize_features(features)
+            
+            self._ensure_cluster_model_fitted()
+            
             cluster = self.cluster_model.predict(features_scaled)[0]
             regime = self._cluster_to_regime(cluster)
-
-            # Calculate confidence based on distance to cluster center
-            distances = self.cluster_model.transform(features_scaled)[0]
-            min_distance = np.min(distances)
-            confidence = max(0.5, 1.0 - min_distance)  # Higher confidence for closer points
+            confidence = self._calculate_ml_confidence(features_scaled)
 
             return {
                 'regime': regime.value,
@@ -208,6 +204,72 @@ class MarketRegimeDetector:
         except Exception as e:
             self.logger.warning(f"ML regime detection failed: {e}")
             return {'regime': MarketRegime.NORMAL.value, 'confidence': 0.5, 'method': 'ml_fallback'}
+
+    def _extract_ml_features(self, returns: np.ndarray, prices: Optional[np.ndarray],
+                            volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> List[float]:
+        """Витягує features для ML кластеризації"""
+        features = []
+        
+        # Return-based features
+        features.extend([
+            np.mean(returns), np.std(returns), np.skew(returns),
+            np.kurtosis(returns), np.min(returns), np.max(returns)
+        ])
+        
+        # Price-based features
+        if prices is not None and len(prices) > 20:
+            features.extend(self._extract_price_features(prices))
+            
+        # Volume-based features
+        if volume is not None and len(volume) > 20:
+            features.append(self._extract_volume_feature(volume))
+            
+        # Sentiment features
+        if sentiment is not None and len(sentiment) > 0:
+            features.append(np.mean(sentiment))
+            
+        return features
+
+    def _extract_price_features(self, prices: np.ndarray) -> List[float]:
+        """Витягує price-based features"""
+        features = []
+        
+        # Trend strength
+        trend = np.polyfit(np.arange(len(prices)), prices, 1)[0]
+        features.append(trend)
+        
+        # RSI
+        rsi = self._calculate_rsi(prices)
+        features.append(rsi)
+        
+        # Bollinger Bands position
+        sma = np.mean(prices[-20:])
+        std = np.std(prices[-20:])
+        bb_position = (prices[-1] - sma) / (2 * std) if std > 0 else 0
+        features.append(bb_position)
+        
+        return features
+
+    def _extract_volume_feature(self, volume: np.ndarray) -> float:
+        """Витягує volume feature"""
+        volume_sma = np.mean(volume[-20:])
+        return volume[-1] / volume_sma if volume_sma > 0 else 1
+
+    def _normalize_features(self, features: List[float]) -> np.ndarray:
+        """Нормалізує features"""
+        features_array = np.array(features).reshape(1, -1)
+        return self.scaler.fit_transform(features_array)
+
+    def _ensure_cluster_model_fitted(self):
+        """Переконується що cluster model навчена"""
+        if self.cluster_model is None:
+            self._initialize_cluster_centers()
+
+    def _calculate_ml_confidence(self, features_scaled: np.ndarray) -> float:
+        """Розраховує confidence для ML методу"""
+        distances = self.cluster_model.transform(features_scaled)[0]
+        min_distance = np.min(distances)
+        return max(0.5, 1.0 - min_distance)  # Higher confidence for closer points
 
     def _initialize_cluster_centers(self):
         """Ініціалізує центри кластерів на основі характеристик режимів"""
@@ -231,7 +293,8 @@ class MarketRegimeDetector:
             [0.002, 0.030, 0.3, 1.2, -0.04, 0.08, 0.001, 80, 0.8, 2.0, 0.3]
         ])
 
-        self.cluster_model = KMeans(n_clusters=self.n_clusters, init=centers, n_init=1, random_state=42)
+        seed = self.config_manager.get('performance.random_seed', 42)
+        self.cluster_model = KMeans(n_clusters=self.n_clusters, init=centers, n_init=1, random_state=seed)
 
     def _cluster_to_regime(self, cluster: int) -> MarketRegime:
         """Перетворює номер кластера в regime"""
@@ -251,8 +314,25 @@ class MarketRegimeDetector:
                            volume: Optional[np.ndarray], adx: float, volatility: float,
                            mean_return: float) -> Dict[str, Any]:
         """Rule-based regime detection"""
+        
+        # Check special regimes first
+        mean_reversion_result = self._check_mean_reversion_regime(returns)
+        if mean_reversion_result:
+            return mean_reversion_result
+            
+        momentum_result = self._check_momentum_regime(returns)
+        if momentum_result:
+            return momentum_result
+            
+        breakout_result = self._check_breakout_regime(prices, volume)
+        if breakout_result:
+            return breakout_result
+            
+        # Standard regime detection
+        return self._detect_standard_regimes(adx, volatility, mean_return)
 
-        # Mean Reversion detection
+    def _check_mean_reversion_regime(self, returns: np.ndarray) -> Optional[Dict[str, Any]]:
+        """Перевіряє mean reversion regime"""
         if self._is_mean_reversion(returns):
             return {
                 'regime': MarketRegime.MEAN_REVERSION.value,
@@ -260,8 +340,10 @@ class MarketRegimeDetector:
                 'reason': 'statistical_mean_reversion',
                 'metrics': {'z_score': self._calculate_z_score(returns)}
             }
+        return None
 
-        # Momentum detection
+    def _check_momentum_regime(self, returns: np.ndarray) -> Optional[Dict[str, Any]]:
+        """Перевіряє momentum regime"""
         if self._is_momentum(returns):
             direction = 'up' if np.mean(returns[-self.momentum_window:]) > 0 else 'down'
             return {
@@ -270,8 +352,11 @@ class MarketRegimeDetector:
                 'reason': f'strong_{direction}_momentum',
                 'metrics': {'momentum_strength': abs(np.mean(returns[-self.momentum_window:]))}
             }
+        return None
 
-        # Breakout detection
+    def _check_breakout_regime(self, prices: Optional[np.ndarray], 
+                              volume: Optional[np.ndarray]) -> Optional[Dict[str, Any]]:
+        """Перевіряє breakout regime"""
         if prices is not None and volume is not None and self._is_breakout(prices, volume):
             return {
                 'regime': MarketRegime.BREAKOUT.value,
@@ -279,15 +364,13 @@ class MarketRegimeDetector:
                 'reason': 'price_volume_breakout',
                 'metrics': {'breakout_size': abs(prices[-1] - prices[-2]) / prices[-2]}
             }
+        return None
 
-        # Original logic for other regimes
+    def _detect_standard_regimes(self, adx: float, volatility: float, 
+                                mean_return: float) -> Dict[str, Any]:
+        """Виявляє стандартні режими ринку"""
         if adx > self.adx_threshold:
-            if mean_return > 0:
-                regime = MarketRegime.TRENDING_UP
-                confidence = min(0.9, adx / 50)
-            else:
-                regime = MarketRegime.TRENDING_DOWN
-                confidence = min(0.9, adx / 50)
+            regime, confidence = self._detect_trending_regime(adx, mean_return)
         elif volatility > self.volatility_threshold_high:
             regime = MarketRegime.VOLATILE
             confidence = min(0.9, volatility / 0.05)
@@ -310,6 +393,15 @@ class MarketRegimeDetector:
             }
         }
 
+    def _detect_trending_regime(self, adx: float, mean_return: float) -> Tuple[MarketRegime, float]:
+        """Виявляє trending regime"""
+        if mean_return > 0:
+            regime = MarketRegime.TRENDING_UP
+        else:
+            regime = MarketRegime.TRENDING_DOWN
+        confidence = min(0.9, adx / 50)
+        return regime, confidence
+
     def _is_mean_reversion(self, returns: np.ndarray) -> bool:
         """Перевіряє чи є mean reversion"""
         if len(returns) < 50:
@@ -324,7 +416,8 @@ class MarketRegimeDetector:
 
             # If p-value < 0.05, series is stationary (mean reversion)
             return p_value < 0.05
-        except:
+        except Exception as e:
+            self.logger.debug(f"ADF test failed, using fallback mean-reversion check: {e}")
             # Fallback: check if returns oscillate around zero
             recent_returns = returns[-50:]
             z_score = abs(np.mean(recent_returns)) / (np.std(recent_returns) / np.sqrt(len(recent_returns)))

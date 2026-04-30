@@ -48,7 +48,7 @@ def prepare_data_for_models(
         # 3. Обробка категоріальних фіч
         df_processed, categorical_info = handle_categorical_features(filtered_df, target_cols)
         
-        # 4. Вибір ознак (numeric only)
+        # 4. Feature selection (numeric only)
         feature_cols = [c for c in df_processed.select_dtypes(include=[np.number]).columns 
                         if c not in target_cols and c not in ['datetime', 'date']]
         
@@ -61,21 +61,21 @@ def prepare_data_for_models(
         
         log_data_distribution(X)
         
-        # 5. Розподіл на вибірки
+        # 5. Split into вибірки
         total_len = len(X)
         test_idx = int(total_len * (1 - test_size))
         val_idx = int(test_idx * (1 - val_size / (1 - test_size)))
         
-        X_train, X_val, X_test = X.iloc[:val_idx], X.iloc[val_idx:test_idx], X.iloc[test_idx:]
+        x_train, x_val, x_test = X.iloc[:val_idx], X.iloc[val_idx:test_idx], X.iloc[test_idx:]
         y_train, y_val, y_test = y.iloc[:val_idx], y.iloc[val_idx:test_idx], y.iloc[test_idx:]
         
         # 6. ML Трансформації (Імпутація та Скейлінг)
         imputer = SimpleImputer(strategy='median')
         scaler = StandardScaler()
         
-        X_train_scaled = scaler.fit_transform(imputer.fit_transform(X_train))
-        X_val_scaled = scaler.transform(imputer.transform(X_val))
-        X_test_scaled = scaler.transform(imputer.transform(X_test))
+        x_train_scaled = scaler.fit_transform(imputer.fit_transform(x_train))
+        x_val_scaled = scaler.transform(imputer.transform(x_val))
+        x_test_scaled = scaler.transform(imputer.transform(x_test))
         
         target_scaler = None
         if scale_target:
@@ -87,14 +87,14 @@ def prepare_data_for_models(
             y_train_processed, y_val_processed, y_test_processed = y_train.values, y_val.values, y_test.values
         
         light_data = {
-            'X_train': X_train_scaled, 'X_val': X_val_scaled, 'X_test': X_test_scaled,
+            'X_train': x_train_scaled, 'X_val': x_val_scaled, 'X_test': x_test_scaled,
             'y_train': y_train_processed, 'y_val': y_val_processed, 'y_test': y_test_processed,
             'imputer': imputer, 'scaler': scaler, 'target_scaler': target_scaler,
             'feature_names': feature_cols, 'categorical_info': categorical_info
         }
         
         heavy_data = prepare_sequence_data_optimized(
-            X_train_scaled, X_val_scaled, X_test_scaled,
+            x_train_scaled, x_val_scaled, x_test_scaled,
             y_train_processed, y_val_processed, y_test_processed,
             seq_len
         )
@@ -140,7 +140,7 @@ def log_data_distribution(df: pd.DataFrame):
             stats.append(f"{col}(S:{skew(vals):.2f},K:{kurtosis(vals):.2f})")
     logger.debug(f"Feature distribution: {', '.join(stats)}")
 
-def prepare_sequence_data_optimized(X_tr, X_va, X_te, y_tr, y_va, y_te, seq_len) -> Dict[str, Any]:
+def prepare_sequence_data_optimized(x_tr, x_va, x_te, y_tr, y_va, y_te, seq_len) -> Dict[str, Any]:
     """Створення 3D вікон для Neural Networks за допомогою numpy strides."""
     def strided_window(x, y, window):
         if len(x) <= window: return np.array([]), np.array([])
@@ -150,14 +150,14 @@ def prepare_sequence_data_optimized(X_tr, X_va, X_te, y_tr, y_va, y_te, seq_len)
         y_win = y[window:]
         return x_win, y_win
 
-    X_train_s, y_train_s = strided_window(X_tr, y_tr, seq_len)
-    X_val_s, y_val_s = strided_window(X_va, y_va, seq_len)
-    X_test_s, y_test_s = strided_window(X_te, y_te, seq_len)
+    x_train_s, y_train_s = strided_window(x_tr, y_tr, seq_len)
+    x_val_s, y_val_s = strided_window(x_va, y_va, seq_len)
+    x_test_s, y_test_s = strided_window(x_te, y_te, seq_len)
     
     return {
-        'X_train': X_train_s, 'X_val': X_val_s, 'X_test': X_test_s,
+        'X_train': x_train_s, 'X_val': x_val_s, 'X_test': x_test_s,
         'y_train': y_train_s, 'y_val': y_val_s, 'y_test': y_test_s,
-        'seq_len': seq_len, 'n_features': X_tr.shape[1]
+        'seq_len': seq_len, 'n_features': x_tr.shape[1]
     }
 
 def filter_data_by_ticker_timeframe(df: pd.DataFrame, ticker: str, timeframe: str) -> pd.DataFrame:

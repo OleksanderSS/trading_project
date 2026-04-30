@@ -91,7 +91,7 @@ class NewsEventDatasetBuilder:
             'valid_records': 0
         }
         
-        logger.info(f"NewsEventDatasetBuilder initialized:")
+        logger.info("NewsEventDatasetBuilder initialized:")
         logger.info(f"  Test mode: {self.is_test_mode}")
         logger.info(f"  Test ticker: {self.test_ticker}")
         logger.info(f"  Test target: {self.test_target}")
@@ -116,31 +116,57 @@ class NewsEventDatasetBuilder:
         """
         self.stats['total_news'] = len(news_df)
         
+        # Initialize dataset building
+        build_config = self._initialize_build_config(price_data, tickers)
+        
+        # Find publication date column
+        pub_col = self._find_publication_column(news_df)
+        if pub_col is None:
+            return pd.DataFrame()
+        
+        # Process each news item
+        records = self._process_all_news(news_df, pub_col, build_config, price_data, macro_data)
+        
+        # Finalize dataset
+        return self._finalize_dataset(records)
+    
+    def _initialize_build_config(self, price_data: Dict[str, pd.DataFrame], tickers: List[str]) -> Dict[str, Any]:
+        """Initialize build configuration."""
         # Динамічно визначаємо доступні таймфрейми
         self.timeframes = list(price_data.keys())
         logger.info(f"Dynamically set timeframes to: {self.timeframes}")
         
         # Фільтруємо тікери (якщо тестовий режим)
+        filtered_tickers = self._filter_tickers(tickers)
+        
+        logger.info(f"Обробка для {filtered_tickers} тікерів × {len(self.timeframes)} таймфреймів")
+        
+        return {
+            'tickers': filtered_tickers,
+            'timeframes': self.timeframes
+        }
+
+    def _filter_tickers(self, tickers: List[str]) -> List[str]:
+        """Filter tickers based on test mode."""
         if self.is_test_mode and self.test_ticker:
-            tickers = [self.test_ticker]
             logger.info(f"🧪 Тестовий режим: використовуємо тільки {self.test_ticker}")
-        
-        logger.info(f"Обробка {len(news_df)} новин для {len(tickers)} тікерів × {len(self.timeframes)} таймфреймів")
-        
-        records = []
-        
-        # Find the accurate publication date column
-        pub_col = None
+            return [self.test_ticker]
+        return tickers
+
+    def _find_publication_column(self, news_df: pd.DataFrame) -> Optional[str]:
+        """Find publication date column in news DataFrame."""
         for col in ['publishedAt', 'published_at', 'published_date', 'date', 'datetime']:
             if col in news_df.columns:
-                pub_col = col
-                break
+                return col
         
-        if pub_col is None:
-            logger.error(f"Cannot find publication date column in news_df. Available columns: {news_df.columns.tolist()}")
-            return pd.DataFrame()
+        logger.error(f"Cannot find publication date column in news_df. Available columns: {news_df.columns.tolist()}")
+        return None
 
-        # Для кожної новини
+    def _process_all_news(self, news_df: pd.DataFrame, pub_col: str, build_config: Dict[str, Any], 
+                          price_data: Dict[str, pd.DataFrame], macro_data: pd.DataFrame) -> List[Dict]:
+        """Process all news items and build records."""
+        records = []
+        
         for idx, news in news_df.iterrows():
             try:
                 published_at = pd.to_datetime(news[pub_col])
@@ -148,9 +174,8 @@ class NewsEventDatasetBuilder:
                 logger.warning(f"Could not parse date {news.get(pub_col)} for news {idx}: {e}")
                 continue
             
-            # Перевіряємо наявність даних для ВСІХ тікерів × ВСІХ таймфреймів
             record = self._build_record_for_news(
-                news, published_at, tickers, price_data, macro_data
+                news, published_at, build_config['tickers'], price_data, macro_data
             )
             
             if record:
@@ -161,6 +186,10 @@ class NewsEventDatasetBuilder:
             if (idx + 1) % 100 == 0:
                 logger.info(f"Оброблено {idx + 1}/{len(news_df)} новин, валідних: {self.stats['valid_records']}")
         
+        return records
+
+    def _finalize_dataset(self, records: List[Dict]) -> pd.DataFrame:
+        """Finalize dataset creation."""
         # Виводимо статистику
         self._log_filtering_stats()
         
@@ -170,7 +199,7 @@ class NewsEventDatasetBuilder:
         
         logger.info(f"✅ Згенеровано {len(records)} повних записів")
         return pd.DataFrame(records)
-    
+
     def _build_record_for_news(
         self,
         news: pd.Series,
@@ -184,89 +213,138 @@ class NewsEventDatasetBuilder:
         
         Повертає None якщо дані неповні для хоча б одного тікера × таймфрейму.
         """
-        # ✅ FIX: Використовуємо правильні назви колонок
-        # ✅ FIX: Видаляємо timezone з published_at одразу
+        # Normalize published_at
+        published_at_normalized = self._normalize_datetime(published_at)
+        
+        # Initialize base record
+        record = self._initialize_base_record(news, published_at_normalized)
+        
+        # Process all ticker-timeframe combinations
+        if not self._process_ticker_timeframes(record, tickers, price_data, published_at_normalized):
+            return None
+        
+        # Add final record fields
+        self._add_final_record_fields(record, tickers)
+        
+        # Add global features
+        if not self._add_global_features(record, macro_data, published_at_normalized, tickers, price_data):
+            return None
+        
+        return record
+
+    def _normalize_datetime(self, published_at: pd.Timestamp) -> pd.Timestamp:
+        """Normalize datetime by removing timezone."""
         published_at_normalized = pd.to_datetime(published_at)
         if published_at_normalized.tz is not None:
             published_at_normalized = published_at_normalized.tz_localize(None)
-        
-        record = {
+        return published_at_normalized
+
+    def _initialize_base_record(self, news: pd.Series, published_at_normalized: pd.Timestamp) -> Dict[str, Any]:
+        """Initialize base record with news information."""
+        return {
             'news_id': news.get('hash') if pd.notna(news.get('hash')) else '',
             'published_at': published_at_normalized,
             'news_title': news.get('title') if pd.notna(news.get('title')) else '',
             'news_sentiment': news.get('sentiment', 0.0),  # sentiment, не sentiment_score
         }
-        
-        # Для кожного тікера × кожен таймфрейм (15m, 60m, 1d)
+
+    def _process_ticker_timeframes(self, record: Dict[str, Any], tickers: List[str], 
+                                   price_data: Dict[str, pd.DataFrame], published_at: pd.Timestamp) -> bool:
+        """Process all ticker-timeframe combinations."""
         for ticker in tickers:
             for tf in self.timeframes:
-                if tf not in price_data:
-                    logger.warning(f"Таймфрейм {tf} відсутній в price_data")
-                    return None
-                
-                # Отримуємо дані для цього тікера
-                ticker_data = price_data[tf]
-                if 'ticker' in ticker_data.columns:
-                    ticker_data = ticker_data[ticker_data['ticker'] == ticker].copy()
-                
-                if ticker_data.empty:
-                    return None
-                
-                # 1 свічка ДО публікації
-                candle_before = self._get_last_candle_before(ticker_data, published_at, tf)
-                if candle_before is None:
-                    self.stats['filtered_insufficient_before'] += 1
-                    return None
-                
-                # 2 свічки ПІСЛЯ публікації
-                candles_after = self._get_2_candles_after(ticker_data, published_at, tf)
-                if len(candles_after) < 2:
-                    self.stats['filtered_insufficient_after'] += 1
-                    return None
-                
-                # Перевірка на пропуски
-                if self._has_missing_data(candle_before) or any(self._has_missing_data(c) for c in candles_after):
-                    self.stats['filtered_missing_data'] += 1
-                    return None
-                
-                # Додаємо фічі ДО
-                record.update(self._extract_candle_features(ticker, tf, candle_before, suffix=''))
-                
-                # Додаємо цільові змінні (targets) зі свічки ДО (як правило, розраховані на 1d або основному таймфреймі)
-                for col in candle_before.index:
-                    if isinstance(col, str) and col.startswith('target_'):
-                        # Якщо у нас декілька тікерів, префіксуємо таргет
-                        target_key = col if len(tickers) == 1 else f"{ticker}_{col}"
-                        record[target_key] = candle_before[col]
-                
-                # Додаємо фічі ПІСЛЯ
-                record.update(self._extract_candle_features(ticker, tf, candles_after[0], suffix='_+1'))
-                record.update(self._extract_candle_features(ticker, tf, candles_after[1], suffix='_+2'))
+                if not self._process_single_ticker_timeframe(record, ticker, tf, price_data, published_at):
+                    return False
+        return True
+
+    def _process_single_ticker_timeframe(self, record: Dict[str, Any], ticker: str, tf: str,
+                                         price_data: Dict[str, pd.DataFrame], published_at: pd.Timestamp) -> bool:
+        """Process single ticker-timeframe combination."""
+        if tf not in price_data:
+            logger.warning(f"Таймфрейм {tf} відсутній в price_data")
+            return False
         
-        # ✅ FIX: Додати ticker та datetime ПІСЛЯ циклу (не всередині)
+        # Отримуємо дані для цього тікера
+        ticker_data = self._get_ticker_data(price_data[tf], ticker)
+        if ticker_data.empty:
+            return False
+        
+        # Get candles
+        candle_before = self._get_last_candle_before(ticker_data, published_at, tf)
+        if candle_before is None:
+            self.stats['filtered_insufficient_before'] += 1
+            logger.debug(f"No candle before for {ticker} {tf}")
+            return False
+        
+        candles_after = self._get_2_candles_after(ticker_data, published_at, tf)
+        if len(candles_after) < 2:
+            self.stats['filtered_insufficient_after'] += 1
+            logger.debug(f"Insufficient candles after for {ticker} {tf}: {len(candles_after)}")
+            return False
+        
+        # Check for missing data
+        if self._has_missing_data(candle_before) or any(self._has_missing_data(c) for c in candles_after):
+            self.stats['filtered_missing_data'] += 1
+            logger.debug(f"Missing data in candles for {ticker} {tf}")
+            return False
+        
+        # Add features
+        self._add_candle_features_to_record(record, ticker, tf, candle_before, candles_after, tickers)
+        
+        return True
+
+    def _get_ticker_data(self, price_data: pd.DataFrame, ticker: str) -> pd.DataFrame:
+        """Get filtered ticker data."""
+        if 'ticker' in price_data.columns:
+            return price_data[price_data['ticker'] == ticker].copy()
+        return price_data.copy()
+
+    def _add_candle_features_to_record(self, record: Dict[str, Any], ticker: str, tf: str,
+                                       candle_before: pd.Series, candles_after: List[pd.Series], tickers: List[str]):
+        """Add candle features to record."""
+        # Додаємо фічі ДО
+        record.update(self._extract_candle_features(ticker, tf, candle_before, suffix=''))
+        
+        # Додаємо цільові змінні (targets) зі свічки ДО
+        self._add_target_features(record, candle_before, ticker, tickers)
+        
+        # Додаємо фічі ПІСЛЯ
+        record.update(self._extract_candle_features(ticker, tf, candles_after[0], suffix='_+1'))
+        record.update(self._extract_candle_features(ticker, tf, candles_after[1], suffix='_+2'))
+
+    def _add_target_features(self, record: Dict[str, Any], candle_before: pd.Series, ticker: str, tickers: List[str]):
+        """Add target features from candle before."""
+        for col in candle_before.index:
+            if isinstance(col, str) and col.startswith('target_'):
+                # Якщо у нас декілька тікерів, префіксуємо таргет
+                target_key = col if len(tickers) == 1 else f"{ticker}_{col}"
+                record[target_key] = candle_before[col]
+
+    def _add_final_record_fields(self, record: Dict[str, Any], tickers: List[str]):
+        """Add final record fields."""
         # Якщо один тікер - додаємо його, якщо декілька - залишаємо порожнім
         if len(tickers) == 1:
             record['ticker'] = tickers[0]
         else:
             record['ticker'] = None  # Для мультитікерних записів
-        
+
+    def _add_global_features(self, record: Dict[str, Any], macro_data: pd.DataFrame, 
+                            published_at: pd.Timestamp, tickers: List[str], price_data: Dict[str, pd.DataFrame]) -> bool:
+        """Add global features to record."""
         # Додаємо глобальні показники
         macro_features = self._get_macro_features(macro_data, published_at)
         if not macro_features:
             self.stats['filtered_missing_macro'] += 1
-            return None
+            return False
         record.update(macro_features)
         
         # Додаємо довгострокові ковзні середні
         record.update(self._get_long_term_mas(tickers, price_data, published_at))
         
         # Додаємо мапу контексту
-        record.update(self._calculate_context_map(record, published_at))
+        record.update(self._calculate_context_map(record))
         
-        # ✅ FIX: Додати datetime як published_at (дата новини), видалити timezone
-        record['datetime'] = pd.to_datetime(published_at).tz_localize(None)
-        
-        return record
+        return True
     
     def _get_last_candle_before(
         self,
@@ -278,21 +356,46 @@ class NewsEventDatasetBuilder:
         Отримує останню закриту свічку строго ДО публікації.
         Використовує pandas індексацію. DataFrame вже містить тільки валідні торгові години.
         """
+        if df is None or df.empty:
+            logger.debug(f"No data for timeframe {timeframe}")
+            return None
+        
         # ✅ FIX: Нормалізуємо timezone для порівняння
         published_at_normalized = pd.to_datetime(published_at)
         if published_at_normalized.tz is not None:
             published_at_normalized = published_at_normalized.tz_localize(None)
         
-        # Нормалізуємо індекс DataFrame якщо потрібно
-        df_index = df.index
-        if isinstance(df_index, pd.DatetimeIndex) and df_index.tz is not None:
-            df = df.copy()
-            df.index = df.index.tz_localize(None)
+        logger.debug(f"Looking for candle before {published_at_normalized} in {timeframe} data (shape: {df.shape})")
         
-        # Фільтруємо дані строго до початку новини (або <=)
-        df_before = df[df.index <= published_at_normalized]
+        # Перевіряємо чи є datetime-колонка
+        datetime_col = None
+        for col in ['datetime', 'published_at', 'date', 'timestamp']:
+            if col in df.columns:
+                datetime_col = col
+                break
+        
+        logger.debug(f"Available columns: {df.columns.tolist()}")
+        logger.debug(f"Using datetime column: {datetime_col}")
+        
+        if datetime_col:
+            # Фільтруємо за datetime-колонкою
+            df_temp = df.copy()
+            df_temp[datetime_col] = pd.to_datetime(df_temp[datetime_col], utc=True).dt.tz_localize(None)
+            
+            df_before = df_temp[df_temp[datetime_col] <= published_at_normalized]
+        else:
+            # Fallback: використовуємо індекс якщо він DatetimeIndex
+            df_index = df.index
+            if isinstance(df_index, pd.DatetimeIndex) and df_index.tz is not None:
+                df = df.copy()
+                df.index = df.index.tz_localize(None)
+            
+            df_before = df[df.index <= published_at_normalized]
+        
+        logger.debug(f"Found {len(df_before)} candles before {published_at_normalized}")
         
         if df_before.empty:
+            logger.debug(f"No candles before {published_at_normalized}")
             return None
         
         # Повертаємо останню свічку
@@ -307,21 +410,46 @@ class NewsEventDatasetBuilder:
         """
         Отримує 2 наступні свічки строго ПІСЛЯ публікації новини.
         """
+        if df is None or df.empty:
+            logger.debug(f"No data for timeframe {timeframe}")
+            return []
+        
         # ✅ FIX: Нормалізуємо timezone для порівняння
         published_at_normalized = pd.to_datetime(published_at)
         if published_at_normalized.tz is not None:
             published_at_normalized = published_at_normalized.tz_localize(None)
         
-        # Нормалізуємо індекс DataFrame якщо потрібно
-        df_index = df.index
-        if isinstance(df_index, pd.DatetimeIndex) and df_index.tz is not None:
-            df = df.copy()
-            df.index = df.index.tz_localize(None)
+        logger.debug(f"Looking for 2 candles after {published_at_normalized} in {timeframe} data (shape: {df.shape})")
         
-        # Фільтруємо дані після current_time. DataFrame вже містить тільки валідні торгові години.
-        df_after = df[df.index > published_at_normalized]
+        # Перевіряємо чи є datetime-колонка
+        datetime_col = None
+        for col in ['datetime', 'published_at', 'date', 'timestamp']:
+            if col in df.columns:
+                datetime_col = col
+                break
+        
+        logger.debug(f"Available columns: {df.columns.tolist()}")
+        logger.debug(f"Using datetime column: {datetime_col}")
+        
+        if datetime_col:
+            # Фільтруємо за datetime-колонкою
+            df_temp = df.copy()
+            df_temp[datetime_col] = pd.to_datetime(df_temp[datetime_col], utc=True).dt.tz_localize(None)
+            
+            df_after = df_temp[df_temp[datetime_col] > published_at_normalized]
+        else:
+            # Fallback: використовуємо індекс якщо він DatetimeIndex
+            df_index = df.index
+            if isinstance(df_index, pd.DatetimeIndex) and df_index.tz is not None:
+                df = df.copy()
+                df.index = df.index.tz_localize(None)
+            
+            df_after = df[df.index > published_at_normalized]
+        
+        logger.debug(f"Found {len(df_after)} candles after {published_at_normalized}")
         
         if len(df_after) < 2:
+            logger.debug(f"Insufficient candles after {published_at_normalized}: {len(df_after)} < 2")
             return []
             
         return [df_after.iloc[0], df_after.iloc[1]]
@@ -377,60 +505,74 @@ class NewsEventDatasetBuilder:
             logger.warning("Macro data is empty")
             return {}
         
-        # ✅ FIX: Нормалізуємо timezone для порівняння
-        published_at_normalized = pd.to_datetime(published_at)
-        if published_at_normalized.tz is not None:
-            published_at_normalized = published_at_normalized.tz_localize(None)
-        
-        # ✅ FIX: Перевіряємо чи індекс є DatetimeIndex
-        if not isinstance(macro_data.index, pd.DatetimeIndex):
-            # Якщо індекс не datetime, шукаємо колонку з датою
-            date_col = None
-            # ✅ FIX: Змінено порядок - 'date' перший, бо це найчастіша назва в FRED
-            for col in ['date', 'datetime', 'timestamp']:
-                if col in macro_data.columns:
-                    date_col = col
-                    break
-            
-            if date_col is None:
-                logger.warning(f"Macro data has no datetime index or column. Index type: {type(macro_data.index)}, Columns: {macro_data.columns.tolist()}")
-                return {}
-            
-            # Фільтруємо по колонці
-            macro_data_copy = macro_data.copy()
-            # ✅ FIX: Нормалізуємо timezone в колонці date
-            macro_data_copy[date_col] = pd.to_datetime(macro_data_copy[date_col])
-            if macro_data_copy[date_col].dt.tz is not None:
-                macro_data_copy[date_col] = macro_data_copy[date_col].dt.tz_localize(None)
-            macro_before = macro_data_copy[macro_data_copy[date_col] <= published_at_normalized]
-        else:
-            # Нормалізуємо індекс якщо потрібно
-            if macro_data.index.tz is not None:
-                macro_data = macro_data.copy()
-                macro_data.index = macro_data.index.tz_localize(None)
-            # Знаходимо найближчі дані ДО публікації
-            macro_before = macro_data[macro_data.index <= published_at_normalized]
+        published_at_normalized = self._normalize_timestamp(published_at)
+        macro_before = self._filter_macro_data_before_date(macro_data, published_at_normalized)
         
         if macro_before.empty:
             logger.warning(f"No macro data before {published_at_normalized}")
             return {}
         
-        # Беремо останні значення
-        latest_macro = macro_before.iloc[-1]
+        return self._extract_macro_features(macro_before, macro_data.columns)
+
+    def _normalize_timestamp(self, timestamp: pd.Timestamp) -> pd.Timestamp:
+        """Normalize timestamp by removing timezone."""
+        normalized = pd.to_datetime(timestamp)
+        if normalized.tz is not None:
+            normalized = normalized.tz_localize(None)
+        return normalized
+
+    def _filter_macro_data_before_date(self, macro_data: pd.DataFrame, published_at: pd.Timestamp) -> pd.DataFrame:
+        """Filter macro data to include only records before publication date."""
+        if not isinstance(macro_data.index, pd.DatetimeIndex):
+            return self._filter_macro_by_column(macro_data, published_at)
+        else:
+            return self._filter_macro_by_index(macro_data, published_at)
+
+    def _filter_macro_by_column(self, macro_data: pd.DataFrame, published_at: pd.Timestamp) -> pd.DataFrame:
+        """Filter macro data using date column."""
+        date_col = self._find_macro_date_column(macro_data)
+        if date_col is None:
+            logger.warning(f"Macro data has no datetime index or column. Index type: {type(macro_data.index)}, Columns: {macro_data.columns.tolist()}")
+            return pd.DataFrame()
         
+        macro_data_copy = macro_data.copy()
+        macro_data_copy[date_col] = pd.to_datetime(macro_data_copy[date_col])
+        if macro_data_copy[date_col].dt.tz is not None:
+            macro_data_copy[date_col] = macro_data_copy[date_col].dt.tz_localize(None)
+        
+        return macro_data_copy[macro_data_copy[date_col] <= published_at]
+
+    def _filter_macro_by_index(self, macro_data: pd.DataFrame, published_at: pd.Timestamp) -> pd.DataFrame:
+        """Filter macro data using datetime index."""
+        macro_data_filtered = macro_data.copy()
+        if macro_data_filtered.index.tz is not None:
+            macro_data_filtered.index = macro_data_filtered.index.tz_localize(None)
+        
+        return macro_data_filtered[macro_data_filtered.index <= published_at]
+
+    def _find_macro_date_column(self, macro_data: pd.DataFrame) -> Optional[str]:
+        """Find date column in macro data."""
+        for col in ['date', 'datetime', 'timestamp']:
+            if col in macro_data.columns:
+                return col
+        return None
+
+    def _extract_macro_features(self, macro_before: pd.DataFrame, all_columns: List[str]) -> Dict:
+        """Extract macro features from filtered data."""
+        latest_macro = macro_before.iloc[-1]
         features = {}
-        # ✅ FIX: Обробляємо wide format (після pivot)
-        for col in macro_data.columns:
-            if col not in ['ticker', 'datetime', 'date', 'timestamp', 'hash', 'realtime_start', 'realtime_end', 'series_id']:
-                # Додаємо всі колонки як macro_{column_name}
+        
+        excluded_cols = ['ticker', 'datetime', 'date', 'timestamp', 'hash', 'realtime_start', 'realtime_end', 'series_id']
+        
+        for col in all_columns:
+            if col not in excluded_cols:
                 key = f"macro_{col.lower()}"
                 value = latest_macro[col]
-                # Пропускаємо NaN значення
                 if pd.notna(value):
                     features[key] = value
         
         if not features:
-            logger.warning(f"No macro features extracted from columns: {macro_data.columns.tolist()}")
+            logger.warning(f"No macro features extracted from columns: {all_columns}")
         else:
             logger.debug(f"Extracted {len(features)} macro features")
         
@@ -448,55 +590,62 @@ class NewsEventDatasetBuilder:
         Returns:
             Dict у форматі: {ticker}_sma_200_1d, {ticker}_ema_200_1d
         """
-        features = {}
-        
-        # Використовуємо денний таймфрейм
         if '1d' not in price_data:
-            return features
+            return {}
         
         daily_data = price_data['1d']
+        published_at_normalized = self._normalize_timestamp(published_at)
         
-        # ✅ FIX: Нормалізуємо timezone для порівняння
-        published_at_normalized = pd.to_datetime(published_at)
-        if published_at_normalized.tz is not None:
-            published_at_normalized = published_at_normalized.tz_localize(None)
+        return self._calculate_long_term_mas_for_tickers(tickers, daily_data, published_at_normalized)
+
+    def _calculate_long_term_mas_for_tickers(self, tickers: List[str], daily_data: pd.DataFrame, published_at: pd.Timestamp) -> Dict:
+        """Calculate long-term moving averages for all tickers."""
+        features = {}
         
         for ticker in tickers:
-            # Фільтруємо по тікеру
-            if 'ticker' in daily_data.columns:
-                ticker_data = daily_data[daily_data['ticker'] == ticker].copy()
-            else:
-                ticker_data = daily_data.copy()
-            
-            if ticker_data.empty:
-                continue
-            
-            # Нормалізуємо індекс якщо потрібно
-            if isinstance(ticker_data.index, pd.DatetimeIndex) and ticker_data.index.tz is not None:
-                ticker_data = ticker_data.copy()
-                ticker_data.index = ticker_data.index.tz_localize(None)
-            
-            # Фільтруємо ДО публікації
-            ticker_before = ticker_data[ticker_data.index <= published_at_normalized]
-            
-            if len(ticker_before) < 200:
-                continue
-            
-            # Розраховуємо SMA_200 та EMA_200
-            close_prices = ticker_before['close']
-            
-            sma_200 = close_prices.rolling(window=200).mean().iloc[-1]
-            ema_200 = close_prices.ewm(span=200, adjust=False).mean().iloc[-1]
-            
+            ticker_features = self._calculate_ticker_long_term_mas(ticker, daily_data, published_at)
+            features.update(ticker_features)
+        
+        return features
+
+    def _calculate_ticker_long_term_mas(self, ticker: str, daily_data: pd.DataFrame, published_at: pd.Timestamp) -> Dict:
+        """Calculate long-term moving averages for a single ticker."""
+        features = {}
+        
+        if ticker not in daily_data.columns:
+            logger.debug(f"No daily data for {ticker}")
+            return features
+        
+        ticker_data = daily_data[ticker].dropna()
+        if ticker_data.empty:
+            logger.debug(f"Empty daily data for {ticker}")
+            return features
+        
+        # Normalize timezone for comparison
+        if ticker_data.index.tz is not None:
+            ticker_data = ticker_data.copy()
+            ticker_data.index = ticker_data.index.tz_localize(None)
+        
+        # Filter data before publication date
+        data_before = ticker_data[ticker_data.index <= published_at]
+        if data_before.empty:
+            logger.debug(f"No daily data before {published_at} for {ticker}")
+            return features
+        
+        # Calculate moving averages
+        if len(data_before) >= 200:
+            sma_200 = data_before.rolling(window=200).mean().iloc[-1]
             features[f"{ticker}_sma_200_1d"] = sma_200
+        
+        if len(data_before) >= 200:
+            ema_200 = data_before.ewm(span=200).mean().iloc[-1]
             features[f"{ticker}_ema_200_1d"] = ema_200
         
         return features
     
     def _calculate_context_map(
         self,
-        record: Dict,
-        published_at: pd.Timestamp
+        record: Dict
     ) -> Dict:
         """
         Розраховує мапу контексту (context fingerprint).
@@ -528,7 +677,6 @@ class NewsEventDatasetBuilder:
             if indicator in record:
                 # Тут потрібно мати попереднє значення для розрахунку зміни
                 # Для спрощення використовуємо фіксовані пороги
-                value = record[indicator]
                 
                 # Визначаємо стан (спрощена логіка)
                 # В реальності потрібно порівнювати з попереднім значенням
@@ -554,7 +702,7 @@ class NewsEventDatasetBuilder:
         logger.info("📊 СТАТИСТИКА ФІЛЬТРАЦІЇ НОВИН")
         logger.info("=" * 60)
         logger.info(f"Всього новин: {self.stats['total_news']}")
-        logger.info(f"Відфільтровано:")
+        logger.info("Відфільтровано:")
         logger.info(f"  - Недостатньо даних ДО: {self.stats['filtered_insufficient_before']}")
         logger.info(f"  - Недостатньо даних ПІСЛЯ: {self.stats['filtered_insufficient_after']}")
         logger.info(f"  - Пропуски в даних: {self.stats['filtered_missing_data']}")

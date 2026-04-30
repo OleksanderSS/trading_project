@@ -30,7 +30,12 @@ for table in news_tables:
             total_records += count
             print(f"\n[OK] {table}: {count} records")
             print(f"   Columns: {list(df.columns)}")
-            date_col = 'published_date' if 'published_date' in df.columns else ('filingDate' if 'filingDate' in df.columns else 'date')
+            if 'published_date' in df.columns:
+                date_col = 'published_date'
+            elif 'filingDate' in df.columns:
+                date_col = 'filingDate'
+            else:
+                date_col = 'date'
             if date_col in df.columns:
                 print(f"   Date range: {df[date_col].min()} to {df[date_col].max()}")
         else:
@@ -38,6 +43,6 @@ for table in news_tables:
     except Exception as e:
         print(f"\n[ERROR] {table}: {e}")
 
-print(f"\n" + "=" * 80)
+print("\n" + "=" * 80)
 print(f"TOTAL NEWS RECORDS: {total_records}")
 print("=" * 80)

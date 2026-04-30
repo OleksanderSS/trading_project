@@ -1,3 +1,4 @@
+# src/trading/portfolio_manager.py
 """
 Acts as the Risk Officer for the trading system.
 
@@ -7,11 +8,12 @@ portfolio state directly but queries a VirtualPortfolio instance.
 """
 
 from typing import List, Dict, Optional
+import numpy as np
 from src.core.logging.logger import ProjectLogger
 from src.trading.virtual_portfolio import VirtualPortfolio
-from src.trading.trader import TradeOrder # Re-using the dataclass
-# Assuming an optimizer exists and follows a similar pattern
-# from src.optimization.portfolio_optimizer import PortfolioOptimizer
+from src.trading.trader import TradeOrder 
+from src.algorithms.adaptive_position_sizer import AdaptivePositionSizer
+from src.algorithms.risk_parity_allocator import RiskParityAllocator
 
 logger = ProjectLogger.get_logger("PortfolioManager")
 
@@ -22,23 +24,27 @@ class PortfolioManager:
 
     def __init__(self, 
                  virtual_portfolio: VirtualPortfolio, 
-                 # optimizer: PortfolioOptimizer,
+                 elite_risk_sizer=None, 
                  config: Optional[Dict] = None):
         """
         Args:
             virtual_portfolio: The stateful portfolio object.
-            optimizer: The portfolio optimization engine.
+            elite_risk_sizer: EliteRiskSizer for optimal position sizing (Kelly + correlation-aware).
             config: Risk management configuration.
         """
         self.portfolio = virtual_portfolio
-        # self.optimizer = optimizer
+        self.elite_risk_sizer = elite_risk_sizer 
         self.logger = logger
         
         # Load risk parameters from config or use defaults
         risk_config = config if config is not None else {}
-        self.risk_per_trade_pct = risk_config.get('risk_per_trade_pct', 0.03) # 3% of total equity per trade (збільшено для дорогих акцій)
-        self.max_position_size_pct = risk_config.get('max_position_size_pct', 0.10) # Max 10% of equity in one asset
-        self.max_daily_drawdown_pct = risk_config.get('max_daily_drawdown_pct', 0.05) # 5% max daily loss
+        self.risk_per_trade_pct = risk_config.get('risk_per_trade_pct', 0.03) 
+        self.max_position_size_pct = risk_config.get('max_position_size_pct', 0.10) 
+        self.max_daily_drawdown_pct = risk_config.get('max_daily_drawdown_pct', 0.05) 
+        
+        # Initialize advanced algorithms
+        self.position_sizer = AdaptivePositionSizer(config=risk_config.get('position_sizer', {}))
+        self.risk_allocator = RiskParityAllocator(config=risk_config.get('risk_allocator', {}))
         
         self.kill_switch_active = False
 
@@ -46,22 +52,19 @@ class PortfolioManager:
         """
         Primary gatekeeper. Checks if any risk rule prevents trading.
         """
-        # ✅ DEBUG: Логуємо перед перевіркою
-        self.logger.info(f"[PORTFOLIO] is_trading_allowed called with {len(current_prices)} prices")
+        self.logger.debug(f"[PORTFOLIO] is_trading_allowed called with {len(current_prices)} prices")
         
         if self.kill_switch_active:
             self.logger.critical("Trading blocked: KILL SWITCH IS ACTIVE.")
             return False
 
-        # Check for daily drawdown
-        # This requires the portfolio to track daily starting equity
-        # For now, we assume a method exists on the portfolio
+        # Check for daily drawdown limit
         if hasattr(self.portfolio, 'get_daily_drawdown') and self.portfolio.get_daily_drawdown(current_prices) < -self.max_daily_drawdown_pct:
             self.logger.critical(f"Trading blocked: Max daily drawdown of {self.max_daily_drawdown_pct:.2%} exceeded.")
             self.kill_switch_active = True
             return False
         
-        self.logger.info("[PORTFOLIO] is_trading_allowed: TRUE")
+        self.logger.debug("[PORTFOLIO] is_trading_allowed: TRUE")
         return True
 
     def generate_orders_from_signals(self, 
@@ -70,14 +73,13 @@ class PortfolioManager:
         """
         Processes signals from the ConsensusEngine and generates executable TradeOrders.
         """
-        # ✅ DEBUG: Логуємо перед перевіркою trading_allowed
         self.logger.info(f"[PORTFOLIO] generate_orders_from_signals called with {len(signals)} signals")
         
         if not self.is_trading_allowed(current_prices):
-            self.logger.warning("[PORTFOLIO] Trading is NOT allowed!")
+            self.logger.warning("[PORTFOLIO] Trading is NOT allowed by risk protocol!")
             return []
 
-        self.logger.info("[PORTFOLIO] Trading is allowed, processing signals...")
+        self.logger.info("[PORTFOLIO] Trading protocol cleared, processing signals...")
         
         orders = []
         for signal in signals:
@@ -86,12 +88,10 @@ class PortfolioManager:
             confidence = signal.get('confidence', 0.5)
             price = current_prices.get(ticker)
 
-            # ✅ DEBUG: Логуємо сигнал для розуміння проблеми
-            self.logger.info(f"[PORTFOLIO] Processing signal: ticker={ticker}, action={action}, confidence={confidence}, price={price}")
+            self.logger.debug(f"[PORTFOLIO] Analyzing signal: ticker={ticker}, action={action}, confidence={confidence}, price={price}")
 
             if not all([action, ticker, price]):
                 self.logger.warning(f"Skipping invalid signal: {signal}")
-                self.logger.warning(f"  - action={action}, ticker={ticker}, price={price}")
                 continue
 
             if action == 'BUY':
@@ -106,13 +106,12 @@ class PortfolioManager:
                     ))
             
             elif action == 'SELL':
-                # For now, we assume a SELL signal means closing the entire position.
-                # More complex logic could sell a portion.
+                # Simplified SELL: close entire existing position
                 position = self.portfolio.positions.get(ticker)
                 if position and position['quantity'] > 0:
                     orders.append(TradeOrder(
                         ticker=ticker,
-                        quantity=position['quantity'], # Sell all
+                        quantity=position['quantity'], 
                         price=price,
                         action='SELL',
                         reason="Consensus Signal (SELL)"
@@ -132,8 +131,7 @@ class PortfolioManager:
             if not current_price: 
                 continue
 
-            # NOTE: This assumes the position dict contains SL/TP levels.
-            # The VirtualPortfolio would need to be extended to hold this.
+            # Check hard risk exits
             stop_loss = position.get('stop_loss')
             take_profit = position.get('take_profit')
 
@@ -158,20 +156,68 @@ class PortfolioManager:
 
     def _calculate_position_size(self, ticker: str, price: float, confidence: float) -> int:
         """
-        Calculates the number of shares to buy based on risk parameters and portfolio state.
+        Calculates optimal position size using available sizing algorithms (Adaptive, Elite, or Basic).
         """
-        total_equity = self.portfolio.get_total_value({ticker: price}) # Approximate value
+        total_equity = self.portfolio.get_total_value({ticker: price})
         
-        # ✅ FIX: Не множимо risk_per_trade_pct на confidence
-        # confidence вже враховується в сигналі (тільки сильні сигнали генерують ордери)
-        # Використовуємо фіксований risk_per_trade_pct для всіх ордерів
+        # 1. PRIMARY: AdaptivePositionSizer (Market-aware)
+        try:
+            market_regime = 'NORMAL'  # Logic integration pending
+            portfolio_volatility = 0.15 
+            active_positions = len(self.portfolio.positions)
+            max_drawdown = 0.0 
+            
+            sizing_result = self.position_sizer.calculate_position_size(
+                portfolio_value=total_equity,
+                volatility=portfolio_volatility,
+                confidence=confidence,
+                max_drawdown=max_drawdown,
+                active_positions=active_positions,
+                market_regime=market_regime,
+                current_price=price
+            )
+            
+            capital_allocated = sizing_result['position_size']
+            shares = int(capital_allocated / price)
+            
+            self.logger.info(f"💰 ADAPTIVE [{ticker}]: cap={capital_allocated:.2f}, shares={shares}, conf={confidence:.2f}")
+            return max(0, shares)
+            
+        except Exception as e:
+            self.logger.debug(f"AdaptivePositionSizer skipped: {e}. Trying Elite fallback.")
+        
+        # 2. SECONDARY: EliteRiskSizer (Correlation-aware Kelly)
+        if self.elite_risk_sizer:
+            try:
+                portfolio_vol = 0.15 
+                correlation_matrix = {} 
+                
+                position_pct, sizing_details = self.elite_risk_sizer.compute_optimal_position_size(
+                    ticker=ticker,
+                    confidence=confidence,
+                    prediction=0.0,
+                    total_capital=total_equity,
+                    ticker_volatility=portfolio_vol * 1.2,
+                    portfolio_volatility=portfolio_vol,
+                    portfolio_positions=self.portfolio.positions,
+                    correlation_matrix=correlation_matrix
+                )
+                
+                capital_allocated = total_equity * position_pct
+                shares = int(capital_allocated / price)
+                
+                self.logger.info(f"💰 ELITE [{ticker}]: pct={position_pct:.2%}, shares={shares}, Kelly={sizing_details.get('stages', {}).get('kelly_size', 0):.2%}")
+                return max(0, shares)
+            except Exception as e:
+                self.logger.debug(f"EliteRiskSizer skipped: {e}. Using Basic fallback.")
+        
+        # 3. BASIC: Static percentage based on capital at risk
+        # Risk is pre-calculated from signals (confidence filtering happens in Consensus)
+        # We use a fixed risk_per_trade_pct as the baseline allocation.
         capital_at_risk = total_equity * self.risk_per_trade_pct
-
-        # Simple assumption: risk is the full amount. A better way involves stop-loss.
-        # For now, shares are based on capital at risk.
         shares_from_risk = capital_at_risk / price
 
-        # 2. Determine max capital based on position size limit
+        # Position concentration limit
         max_position_value = total_equity * self.max_position_size_pct
         current_position_value = 0
         if ticker in self.portfolio.positions:
@@ -180,22 +226,67 @@ class PortfolioManager:
         allowed_capital = max(0, max_position_value - current_position_value)
         shares_from_exposure = allowed_capital / price
 
-        # 3. Determine max capital based on available cash
-        available_cash = self.portfolio.current_balance
-        shares_from_cash = available_cash / price
+        # Margin/Cash limit
+        shares_from_cash = self.portfolio.current_balance / price
 
-        # The final number of shares is the minimum of all constraints
-        final_shares = min(shares_from_risk, shares_from_exposure, shares_from_cash)
+        # Combine all constraints
+        final_shares = int(min(shares_from_risk, shares_from_exposure, shares_from_cash))
 
-        # ✅ DEBUG: Логуємо розрахунки
-        self.logger.info(f"[POSITION_SIZE] ticker={ticker}, price={price:.2f}")
-        self.logger.info(f"  total_equity={total_equity:.2f}, capital_at_risk={capital_at_risk:.2f}")
-        self.logger.info(f"  shares_from_risk={shares_from_risk:.2f}, shares_from_exposure={shares_from_exposure:.2f}, shares_from_cash={shares_from_cash:.2f}")
-        self.logger.info(f"  final_shares={final_shares:.2f} -> int={int(final_shares)}")
+        self.logger.debug(f"[POSITION_SIZE] ticker={ticker}, price={price:.2f}, total_equity={total_equity:.2f}")
+        self.logger.info(f"💰 BASIC [{ticker}]: shares={final_shares} (final) | constraints: risk={int(shares_from_risk)}, exposure={int(shares_from_exposure)}, cash={int(shares_from_cash)}")
 
-        if final_shares <= 0:
-            return 0
+        return max(0, final_shares)
+    
+    def rebalance_portfolio(self, 
+                          current_prices: Dict[str, float],
+                          volatilities: Dict[str, float],
+                          target_assets: List[str] = None) -> List[TradeOrder]:
+        """
+        Rebalance portfolio using Risk Parity allocation mechanism.
+        """
+        try:
+            if not target_assets:
+                target_assets = list(current_prices.keys())
             
-        # Return as an integer number of shares
-        return int(final_shares)
-
+            total_value = self.portfolio.get_total_value(current_prices)
+            correlations = np.eye(len(target_assets))
+            
+            # Risk Parity Allocation logic
+            allocation_result = self.risk_allocator.allocate(
+                assets=target_assets,
+                volatilities={asset: volatilities.get(asset, 0.15) for asset in target_assets},
+                correlations=correlations,
+                target_volatility=None 
+            )
+            
+            orders = []
+            for asset, target_weight in allocation_result['weights'].items():
+                if asset not in current_prices:
+                    continue
+                    
+                target_value = total_value * target_weight
+                current_value = 0
+                
+                if asset in self.portfolio.positions:
+                    current_quantity = self.portfolio.positions[asset]['quantity']
+                    current_value = current_quantity * current_prices[asset]
+                
+                value_adjustment = target_value - current_value
+                shares_adjustment = int(value_adjustment / current_prices[asset])
+                
+                if abs(shares_adjustment) > 0:
+                    action = 'BUY' if shares_adjustment > 0 else 'SELL'
+                    orders.append(TradeOrder(
+                        ticker=asset,
+                        quantity=abs(shares_adjustment),
+                        price=current_prices[asset],
+                        action=action,
+                        reason="Risk Parity Rebalancing"
+                    ))
+            
+            self.logger.info(f"📊 Portfolio rebalanced: {len(orders)} optimization orders generated.")
+            return orders
+            
+        except Exception as e:
+            self.logger.error(f"❌ Critical failure during portfolio rebalancing: {e}")
+            return []

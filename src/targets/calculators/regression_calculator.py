@@ -1,36 +1,46 @@
+# src/targets/calculators/regression_calculator.py
+"""
+Regression Calculator Module.
+Computes future percentage returns for asset labels.
+Supports transaction cost adjustments to ensure model training accounts for market friction.
+"""
 
 import pandas as pd
+import numpy as np
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("RegressionCalculator")
 
 class RegressionCalculator:
     """
-    Calculates regression targets based on future returns.
+    Calculates regression targets based on normalized future returns.
     """
+    
     def calculate(self, df: pd.DataFrame, base_col: str, shift: int, **kwargs) -> pd.Series:
         """
-        Calculates the future percentage return.
+        Calculates the future percentage return relative to the current timestamp.
 
         Args:
-            df (pd.DataFrame): The input DataFrame.
-            base_col (str): The column to use for calculation (e.g., 'close').
-            shift (int): The number of periods to look into the future (should be negative).
-            adjust_for_costs (bool): Whether to subtract transaction costs from returns.
-            transaction_costs (dict): Dict with commission_pct, spread_pct, slippage_pct.
+            df (pd.DataFrame): Input market data.
+            base_col (str): Source column for calculations (typically 'close').
+            shift (int): Lookahead horizon (must be negative for future values).
+            adjust_for_costs (bool): If True, subtracts estimated friction from the targets.
+            transaction_costs (dict): Configuration containing commission, spread, and slippage percentages.
 
         Returns:
-            pd.Series: A series with the calculated future returns.
+            pd.Series: Vector of calculated future returns.
         """
         if base_col not in df.columns:
-            logger.error(f"Base column '{base_col}' not found in DataFrame.")
-            raise ValueError(f"Base column '{base_col}' not found.")
+            logger.error(f"Integrity Error: Mapping column '{base_col}' is absent from the input DataFrame.")
+            raise ValueError(f"Mapping column '{base_col}' not found.")
             
+        # Standard lookahead return: (Price[T+n] - Price[T]) / Price[T]
         future_price = df[base_col].shift(shift)
         target_series = (future_price - df[base_col]) / df[base_col]
         
-        # ✅ КРИТИЧНО: Віднімаємо маржу (transaction costs) з таргету
-        # Це навчає модель враховувати реальні витрати на торгівлю
+        # TRANSACTION COST ADJUSTMENT
+        # Subtracting friction (margin) from the target forces the model to ignore 
+        # signals where the predicted reward doesn't cover execution overhead.
         adjust_for_costs = kwargs.get('adjust_for_costs', False)
         transaction_costs = kwargs.get('transaction_costs', {})
         
@@ -39,13 +49,13 @@ class RegressionCalculator:
             spread_pct = transaction_costs.get('spread_pct', 0.0)
             slippage_pct = transaction_costs.get('slippage_pct', 0.0)
             
-            # Загальна маржа на round trip (buy + sell)
+            # Total estimated round-trip overhead (buy sequence + sell sequence)
             total_cost = (commission_pct + spread_pct + slippage_pct) * 2
             
-            # Віднімаємо маржу з таргету
+            # Prune target returns by the cost factor
             target_series = target_series - total_cost
             
-            logger.info(f"✅ Adjusted target for transaction costs: {total_cost:.4%} per round trip")
-            logger.debug(f"   Commission: {commission_pct:.4%}, Spread: {spread_pct:.4%}, Slippage: {slippage_pct:.4%}")
+            logger.info(f"Target Sanitization: Adjusted for round-trip friction ({total_cost:.4%})")
+            logger.debug(f"Breakdown: Comm={commission_pct:.4%}, Spread={spread_pct:.4%}, Slip={slippage_pct:.4%}")
         
         return target_series

@@ -1,7 +1,6 @@
 # src/models/model_selector/selector.py
 
 import json
-import logging
 import numpy as np
 from typing import Dict, List, Any, Optional, Tuple
 from src.core.logging.logger import ProjectLogger
@@ -20,7 +19,7 @@ class SmartModelSelector:
         self.logger = logger
         self.reward_history = []
 
-    def select_best_model(self, target: str, context_fingerprint: str, arena_leaderboard: Dict[str, Any]) -> str:
+    def select_best_model(self, context_fingerprint: str, arena_leaderboard: Dict[str, Any]) -> str:
         """
         Selects the best model based on 'points' or 'win_rate' for a specific fingerprint.
         If no exact match, performs a similarity check on the '1|0|-1' string bits.
@@ -77,15 +76,16 @@ class SmartModelSelector:
             l_pred = light_model.predict(data)
             
             # Simple direction check (sign)
-            h_dir = 1 if h_pred > 0 else (-1 if h_pred < 0 else 0)
-            l_dir = 1 if l_pred > 0 else (-1 if l_pred < 0 else 0)
+            h_dir = self._get_direction(h_pred)
+            l_dir = self._get_direction(l_pred)
 
             if h_dir == l_dir and h_dir != 0:
-                confidence = 0.95 if abs(h_pred - l_pred) < 0.02 else 0.85
+                confidence = self._calculate_consensus_confidence(h_pred, l_pred)
+                action = self._get_action_from_direction(h_dir)
                 self.logger.info(f"Consensus CONFIRMED: Heavy({h_pred:.4f}) and Light({l_pred:.4f}) agree.")
                 return {
                     "status": "CONFIRMED",
-                    "action": "BUY" if h_dir > 0 else "SELL",
+                    "action": action,
                     "confidence": confidence,
                     "avg_pred": (h_pred + l_pred) / 2
                 }
@@ -101,6 +101,29 @@ class SmartModelSelector:
         except Exception as e:
             self.logger.error(f"Consensus calculation failed: {e}")
             return {"status": "ERROR", "action": "SKIP"}
+    
+    def _get_direction(self, prediction: float) -> int:
+        """Extract direction from prediction value"""
+        if prediction > 0:
+            return 1
+        elif prediction < 0:
+            return -1
+        else:
+            return 0
+    
+    def _calculate_consensus_confidence(self, h_pred: float, l_pred: float) -> float:
+        """Calculate confidence based on prediction difference"""
+        if abs(h_pred - l_pred) < 0.02:
+            return 0.95
+        else:
+            return 0.85
+    
+    def _get_action_from_direction(self, direction: int) -> str:
+        """Convert direction to action"""
+        if direction > 0:
+            return "BUY"
+        else:
+            return "SELL"
 
     def calculate_reward(self, predicted_direction: int, actual_direction: int, was_consensus: bool, critic_warned: bool) -> Dict[str, float]:
         """

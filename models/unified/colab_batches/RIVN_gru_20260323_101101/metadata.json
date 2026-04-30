@@ -1,0 +1,11 @@
+{
+  "batch_id": "RIVN_gru_20260323_101101",
+  "ticker": "RIVN",
+  "model_name": "gru",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_atr14_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T10:11:01.284355",
+  "status": "PENDING_COLAB"
+}

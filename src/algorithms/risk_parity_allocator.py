@@ -131,7 +131,7 @@ class RiskParityAllocator:
             self.logger.error(f"Помилка розподілу за методом {method}: {e}")
             # Fallback до рівних ваг
             equal_weight = 1.0 / len(assets)
-            weights = {asset: equal_weight for asset in assets}
+            weights = dict.fromkeys(assets, equal_weight)
             return {
                 'weights': weights,
                 'method': 'fallback_equal_weight',
@@ -141,49 +141,57 @@ class RiskParityAllocator:
     def _equal_risk_contribution(self, vols: np.ndarray, correlations: np.ndarray,
                                 constraints: Dict[str, Any]) -> np.ndarray:
         """Equal Risk Contribution - кожен актив вносить однаковий ризик"""
-        try:
-            n_assets = len(vols)
+        return self._optimize_portfolio(
+            vols, correlations, constraints, "ERC",
+            lambda v, c, n: self._create_erc_objective(v, c, n)
+        )
 
-            # Початкові ваги
-            init_weights = np.ones(n_assets) / n_assets
+    def _get_initial_weights(self, n_assets: int) -> np.ndarray:
+        """Створює початкові рівні ваги"""
+        return np.ones(n_assets) / n_assets
 
-            # Функція для мінімізації (відхилення від рівного внеску ризику)
-            def objective(weights):
-                risk_contrib = self.calculate_risk_contribution(weights, vols, correlations)
-                target_contrib = 1.0 / n_assets
-                return np.sum((risk_contrib - target_contrib) ** 2)
+    def _create_erc_objective(self, vols: np.ndarray, correlations: np.ndarray, 
+                             n_assets: int):
+        """Створює цільову функцію для ERC"""
+        def objective(weights):
+            risk_contrib = self.calculate_risk_contribution(weights, vols, correlations)
+            target_contrib = 1.0 / n_assets
+            return np.sum((risk_contrib - target_contrib) ** 2)
+        return objective
 
-            # Обмеження
-            bounds = Bounds(
-                constraints.get('min_weights', np.full(n_assets, self.min_weight)),
-                constraints.get('max_weights', np.full(n_assets, self.max_weight))
-            )
+    def _create_optimization_bounds(self, constraints: Dict[str, Any], n_assets: int):
+        """Створює обмеження для оптимізації"""
+        return Bounds(
+            constraints.get('min_weights', np.full(n_assets, self.min_weight)),
+            constraints.get('max_weights', np.full(n_assets, self.max_weight))
+        )
 
-            # Нормалізація ваг
-            cons = [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0}]
+    def _create_optimization_constraints(self):
+        """Створює обмеження нормалізації ваг"""
+        return [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0}]
 
-            # Оптимізація
-            result = minimize(
-                objective,
-                init_weights,
-                method='SLSQP',
-                bounds=bounds,
-                constraints=cons,
-                options={'maxiter': self.max_iter, 'ftol': self.tol}
-            )
+    def _run_optimization(self, objective, init_weights: np.ndarray, bounds, cons):
+        """Запускає оптимізацію"""
+        return minimize(
+            objective,
+            init_weights,
+            method='SLSQP',
+            bounds=bounds,
+            constraints=cons,
+            options={'maxiter': self.max_iter, 'ftol': self.tol}
+        )
 
-            if result.success:
-                return result.x
-            else:
-                self.logger.warning(f"ERC optimization failed: {result.message}")
-                return init_weights
+    def _handle_optimization_failure(self, result, init_weights: np.ndarray, method_name: str):
+        """Обробляє невдалу оптимізацію"""
+        self.logger.warning(f"{method_name} optimization failed: {result.message}")
+        return init_weights
 
-        except Exception as e:
-            self.logger.error(f"ERC calculation failed: {e}")
-            return np.ones(len(vols)) / len(vols)
+    def _get_fallback_weights(self, vols: np.ndarray) -> np.ndarray:
+        """Повертає запасні рівні ваги"""
+        return np.ones(len(vols)) / len(vols)
 
     def _hierarchical_risk_parity(self, vols: np.ndarray, correlations: np.ndarray,
-                                 constraints: Dict[str, Any]) -> np.ndarray:
+                                 _constraints: Dict[str, Any]) -> np.ndarray:
         """Hierarchical Risk Parity - використовує кластеризацію"""
         try:
             n_assets = len(vols)
@@ -232,10 +240,10 @@ class RiskParityAllocator:
 
         for i, merge in enumerate(cluster_tree):
             if set(merge).issubset(set(cluster_items)):
-                left_idx, right_idx = merge
+                _, right_idx = merge
                 left_cluster = [x for x in cluster_items if x != right_idx]
                 right_cluster = [right_idx]
-                remaining = [x for x in cluster_items if x not in merge]
+                # remaining - unused variable removed
                 break
 
         if not left_cluster or not right_cluster:
@@ -269,101 +277,78 @@ class RiskParityAllocator:
     def _maximum_diversification(self, vols: np.ndarray, correlations: np.ndarray,
                                constraints: Dict[str, Any]) -> np.ndarray:
         """Maximum Diversification Portfolio"""
-        try:
-            n_assets = len(vols)
+        return self._optimize_portfolio(
+            vols, correlations, constraints, "MDP",
+            lambda v, c, n: self._create_mdp_objective(v, c)
+        )
 
-            # Функція для максимізації диверсифікації
-            def objective(weights):
-                portfolio_vol = np.sqrt(np.dot(weights, np.dot(correlations, weights)))
-                weighted_avg_vol = np.dot(weights, vols)
-                if weighted_avg_vol == 0:
-                    return 0
-                return -weighted_avg_vol / portfolio_vol  # Максимізуємо (негатив для мінімізації)
-
-            # Обмеження
-            bounds = Bounds(
-                constraints.get('min_weights', np.full(n_assets, self.min_weight)),
-                constraints.get('max_weights', np.full(n_assets, self.max_weight))
-            )
-
-            cons = [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0}]
-
-            # Початкові ваги
-            init_weights = np.ones(n_assets) / n_assets
-
-            # Оптимізація
-            result = minimize(
-                objective,
-                init_weights,
-                method='SLSQP',
-                bounds=bounds,
-                constraints=cons,
-                options={'maxiter': self.max_iter, 'ftol': self.tol}
-            )
-
-            if result.success:
-                return result.x
-            else:
-                self.logger.warning(f"MDP optimization failed: {result.message}")
-                return init_weights
-
-        except Exception as e:
-            self.logger.error(f"MDP calculation failed: {e}")
-            return np.ones(len(vols)) / len(vols)
+    def _create_mdp_objective(self, vols: np.ndarray, correlations: np.ndarray):
+        """Створює цільову функцію для Maximum Diversification"""
+        def objective(weights):
+            portfolio_vol = np.sqrt(np.dot(weights, np.dot(correlations, weights)))
+            weighted_avg_vol = np.dot(weights, vols)
+            if weighted_avg_vol == 0:
+                return 0
+            return -weighted_avg_vol / portfolio_vol  # Максимізуємо (негатив для мінімізації)
+        return objective
 
     def _minimum_variance(self, vols: np.ndarray, correlations: np.ndarray,
-                        constraints: Dict[str, Any]) -> np.ndarray:
+                           constraints: Dict[str, Any]) -> np.ndarray:
         """Minimum Variance Portfolio"""
+        return self._optimize_portfolio(
+            vols, correlations, constraints, "MV",
+            lambda v, c, n: self._create_mv_objective(c)
+        )
+
+    def _optimize_portfolio(self, vols: np.ndarray, correlations: np.ndarray,
+                          constraints: Dict[str, Any], method_name: str,
+                          objective_creator) -> np.ndarray:
+        """Common portfolio optimization logic"""
         try:
             n_assets = len(vols)
-
-            # Функція для мінімізації дисперсії
-            def objective(weights):
-                return np.dot(weights, np.dot(correlations, weights))
-
-            # Обмеження
-            bounds = Bounds(
-                constraints.get('min_weights', np.full(n_assets, self.min_weight)),
-                constraints.get('max_weights', np.full(n_assets, self.max_weight))
+            init_weights = self._get_initial_weights(n_assets)
+            
+            objective = objective_creator(vols, correlations, n_assets)
+            bounds = self._create_optimization_bounds(constraints, n_assets)
+            cons = self._create_optimization_constraints()
+            
+            result = self._run_optimization(objective, init_weights, bounds, cons)
+            
+            return result.x if result.success else self._handle_optimization_failure(
+                result, init_weights, method_name
             )
-
-            cons = [{'type': 'eq', 'fun': lambda w: np.sum(w) - 1.0}]
-
-            # Початкові ваги
-            init_weights = np.ones(n_assets) / n_assets
-
-            # Оптимізація
-            result = minimize(
-                objective,
-                init_weights,
-                method='SLSQP',
-                bounds=bounds,
-                constraints=cons,
-                options={'maxiter': self.max_iter, 'ftol': self.tol}
-            )
-
-            if result.success:
-                return result.x
-            else:
-                self.logger.warning(f"MVP optimization failed: {result.message}")
-                return init_weights
 
         except Exception as e:
-            self.logger.error(f"MVP calculation failed: {e}")
-            return np.ones(len(vols)) / len(vols)
+            self.logger.error(f"{method_name} calculation failed: {e}")
+            return self._get_fallback_weights(vols)
+
+    def _create_mv_objective(self, correlations: np.ndarray):
+        """Створює цільову функцію для Minimum Variance"""
+        def objective(weights):
+            return np.dot(weights, np.dot(correlations, weights))
+        return objective
 
     def _risk_parity(self, vols: np.ndarray, correlations: Optional[np.ndarray],
                    constraints: Dict[str, Any]) -> np.ndarray:
         """Базовий Risk Parity (обернено пропорційно волатильності)"""
         try:
             # Обробляємо кореляції
-            if correlations is None:
-                # Припускаємо незалежність
-                inv_vols = 1.0 / vols
-            else:
+            inv_vols = 1.0 / vols
+            if correlations is not None:
                 # Коригуємо за кореляціями
-                inv_vols = 1.0 / vols
                 # Спрощена корекція - можна покращити
+                # Розраховуємо ефективні волатильності з урахуванням кореляцій
+                try:
+                    # Перетворюємо кореляції в коваріаційну матрицю
+                    vol_matrix = np.diag(vols)
+                    cov_matrix = np.dot(vol_matrix, np.dot(correlations, vol_matrix))
+                    
+                    # Розраховуємо ефективні волатильності
+                    effective_vols = np.sqrt(np.diag(cov_matrix))
+                    inv_vols = 1.0 / np.maximum(effective_vols, 0.001)  # Уникаємо ділення на нуль
+                except (ValueError, np.linalg.LinAlgError, RuntimeError):
+                    # Якщо корекція не вдалася, використовуємо базові волатильності
+                    pass
 
             # Нормалізуємо
             weights = inv_vols / np.sum(inv_vols)
@@ -427,7 +412,9 @@ class RiskParityAllocator:
 
         except Exception as e:
             self.logger.warning(f"Applying constraints failed: {e}")
-            return weights
+            # Return safe fallback: equal weights instead of potentially problematic original weights
+            n_assets = len(weights) if hasattr(weights, '__len__') and len(weights) > 0 else 1
+            return np.ones(n_assets) / n_assets
 
     def calculate_risk_contribution(self, weights: np.ndarray, vols: np.ndarray,
                                    correlations: np.ndarray) -> np.ndarray:

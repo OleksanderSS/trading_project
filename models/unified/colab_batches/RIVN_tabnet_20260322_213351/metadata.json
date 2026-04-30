@@ -1,0 +1,11 @@
+{
+  "batch_id": "RIVN_tabnet_20260322_213351",
+  "ticker": "RIVN",
+  "model_name": "tabnet",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_return_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T21:33:51.273377",
+  "status": "PENDING_COLAB"
+}

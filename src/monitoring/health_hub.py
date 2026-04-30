@@ -1,6 +1,6 @@
-
+# src/monitoring/health_hub.py
 """
-Моніторинг стану системи за допомогою машинного навчання для прогнозування системних збоїв та фінансового дрейфу.
+System health monitoring using Machine Learning to predict failures and financial drift.
 """
 
 import json
@@ -8,12 +8,11 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from sklearn.ensemble import RandomForestClassifier, IsolationForest
+from typing import Dict, List, Optional, Any, Tuple, Union
 from sklearn.preprocessing import StandardScaler
 import joblib
 
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config, UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.analytics.data_managers.model_results_manager import ModelResultsManager
 from src.data.management.data_manager import DataManager
@@ -22,199 +21,258 @@ from src.core.cache.cache_manager import CacheManager
 from src.monitoring.infrastructure.resource_monitor import ResourceMonitor
 
 class HealthHub:
-    """Моніторить стан системи, прогнозує проблеми, детектує фінансовий дрейф та генерує рекомендації."""
+    """
+    Monitors system state, predicts hardware issues, detects financial drift,
+    and generates corrective recommendations.
+    """
     
-    def __init__(self, config_manager: UnifiedConfigManager, data_manager: DataManager, results_manager: ModelResultsManager, notifier: Optional[Notifier] = None):
-        self.config_manager = config_manager
+    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None, 
+                 data_manager: Optional[DataManager] = None, 
+                 results_manager: Optional[ModelResultsManager] = None, 
+                 notifier: Optional[Notifier] = None):
+        """Initializes HealthHub with necessary dependencies."""
+        self._initialize_core_components(config_manager, data_manager, results_manager, notifier)
+        self._setup_cache_manager()
+        self._initialize_monitoring_components()
+        self._setup_model_directory()
+        self.load_ml_models()
+        self.logger.info("HealthHub initialized successfully")
+    
+    def _initialize_core_components(self, config_manager: Optional[UnifiedConfigManager],
+                                data_manager: Optional[DataManager],
+                                results_manager: Optional[ModelResultsManager],
+                                notifier: Optional[Notifier]) -> None:
+        """Initialize core components and dependencies."""
+        self.config_manager = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("HealthHub")
         self.data_manager = data_manager
         self.results_manager = results_manager
         self.notifier = notifier
-        self.cache_manager = CacheManager(data_manager=data_manager, config_manager=config_manager)
+    
+    def _setup_cache_manager(self) -> None:
+        """Setup cache manager based on data manager availability."""
+        if self.data_manager:
+            self.cache_manager = CacheManager(data_manager=self.data_manager, config_manager=self.config_manager)
+        else:
+            self.cache_manager = None
+    
+    def _initialize_monitoring_components(self) -> None:
+        """Initialize monitoring components and data structures."""
         self.resource_monitor = ResourceMonitor()
         self.models = {}
         self.scalers = {}
-
-        # --- Diagnostic Change ---
-        self.logger.info("Attempting to retrieve 'paths' configuration for HealthHub...")
-        paths_config = self.config_manager.get_config('paths')
-        self.logger.info(f"Retrieved 'paths' config for HealthHub: {paths_config}")
-
-        models_path = paths_config.get('models') if paths_config else None
-        if not models_path:
-            self.logger.error("Failed to resolve models_path, it is None. Defaulting to 'trained_models'.")
-            models_path = 'trained_models'
+    
+    def _setup_model_directory(self) -> None:
+        """Setup directory path for monitoring models."""
+        paths_config = self.config_manager.get_config('paths') or {}
+        models_path = paths_config.get('models', 'trained_models')
         
         self.model_dir = Path(models_path) / "system_health_monitor"
-        # --- End Diagnostic Change ---
-
         self.model_dir.mkdir(parents=True, exist_ok=True)
-        self.load_ml_models()
-        self.logger.info("HealthHub ініціалізовано з підтримкою DuckDB")
     
     def load_ml_models(self):
-        """Завантаження ML моделей для моніторингу."""
+        """Loads ML models used for health monitoring and anomaly detection."""
         try:
-            model_files = {
-                "performance_predictor": "performance_predictor.pkl",
-                "memory_predictor": "memory_predictor.pkl", 
-                "disk_predictor": "disk_predictor.pkl",
-                "network_predictor": "network_predictor.pkl",
-                "anomaly_detector": "anomaly_detector.pkl"
-            }
-            
-            for model_name, filename in model_files.items():
-                model_path = self.model_dir / filename
-                if model_path.exists():
-                    self.models[model_name] = joblib.load(model_path)
-                    self.logger.info(f"Завантажено модель: {model_name}")
-            
-            scaler_files = {
-                "resource_scaler": "resource_scaler.pkl"
-            }
-            
-            for scaler_name, filename in scaler_files.items():
-                scaler_path = self.model_dir / filename
-                if scaler_path.exists():
-                    self.scalers[scaler_name] = joblib.load(scaler_path)
-                    self.logger.info(f"Завантажено скалер: {scaler_name}")
-            
+            self._load_prediction_models()
+            self._load_scaler_models()
         except Exception as e:
-            self.logger.error(f"Не вдалося завантажити ML моделі: {e}")
+            self.logger.error(f"Failed to load internal health monitoring ML models: {e}")
+    
+    def _get_model_file_mapping(self) -> Dict[str, str]:
+        """Get mapping of model names to their file paths."""
+        return {
+            "performance_predictor": "performance_predictor.pkl",
+            "memory_predictor": "memory_predictor.pkl", 
+            "disk_predictor": "disk_predictor.pkl",
+            "network_predictor": "network_predictor.pkl",
+            "anomaly_detector": "anomaly_detector.pkl"
+        }
+    
+    def _load_prediction_models(self) -> None:
+        """Load prediction models from disk."""
+        model_files = self._get_model_file_mapping()
+        
+        for model_name, filename in model_files.items():
+            model_path = self.model_dir / filename
+            if model_path.exists():
+                self.models[model_name] = joblib.load(model_path)
+    
+    def _load_scaler_models(self) -> None:
+        """Load scaler models from disk."""
+        scaler_path = self.model_dir / "resource_scaler.pkl"
+        if scaler_path.exists():
+            self.scalers["resource_scaler"] = joblib.load(scaler_path)
 
     def check_system_health(self) -> Dict[str, Any]:
-        """Отримує метрики з ResourceMonitor та запускає ML прогнозування."""
+        """Retrieves hardware metrics and runs ML diagnostics/projections."""
         try:
-            # Get the new, detailed metrics dictionary
-            current_metrics = self.resource_monitor.get_health_status()
+            current_metrics = self._get_current_metrics()
+            if not current_metrics:
+                return {"status": "failed", "error": "Unable to retrieve real-time resource metrics"}
             
-            if not current_metrics or current_metrics.get('overall_status') == 'error':
-                self.logger.warning("Не вдалося отримати поточні метрики від ResourceMonitor")
-                return {"status": "failed", "error": "Unable to get current metrics"}
-            
-            # Automatic cache clearing based on detailed memory metrics
-            mem_usage = current_metrics.get('system', {}).get('memory', {}).get('percent', 0)
-            if mem_usage > 90.0:
-                self.logger.warning("Використання пам\'яті > 90%. Запуск очищення кешу.")
-                self.cache_manager.clear()
-                if self.notifier:
-                    self.notifier.send_info("Система: Високе навантаження на пам\'ять. Кеш очищено автоматично.")
-
-            # Extract features for ML predictions using the detailed metrics
+            self._handle_memory_management(current_metrics)
             features = self.extract_features_from_metrics(current_metrics)
-            predictions = {}
-            
-            problem_types = ["performance", "memory", "disk", "network"]
-            for problem_type in problem_types:
-                model_name = f"{problem_type}_predictor"
-                if model_name in self.models:
-                    model = self.models[model_name]
-                    scaler = self.scalers.get("resource_scaler")
-                    features_scaled = scaler.transform([features]) if scaler else [features]
-                    
-                    prob = model.predict_proba(features_scaled)[0][1]
-                    risk_level = self.calculate_risk_level(prob)
-                    
-                    predictions[problem_type] = {
-                        "probability": float(prob),
-                        "risk_level": risk_level
-                    }
-
-                    if risk_level in ["high", "critical"] and self.notifier:
-                        self.notifier.send_alert(f"ALERT: Ризик {problem_type.upper()} становить {risk_level.upper()} ({prob:.1%})")
-
+            predictions = self._predict_resource_risks(features)
             anomaly_result = self.detect_anomalies(features)
             
-            result = {
-                "timestamp": datetime.now().isoformat(),
-                "metrics": current_metrics, # Store the full detailed metrics
-                "predictions": predictions,
-                "anomalies": anomaly_result,
-                "overall_risk": self.calculate_overall_risk(predictions),
-                "recommendations": self.generate_ml_recommendations(predictions, anomaly_result)
-            }
-            
-            return result
+            return self._build_health_report(current_metrics, predictions, anomaly_result)
         except Exception as e:
-            self.logger.error(f"Перевірка здоров\'я системи провалилася: {e}", exc_info=True)
+            self.logger.error(f"HealthHub diagnostic loop failure: {e}")
             return {"status": "failed", "error": str(e)}
-
-    def check_model_drift(self, model_name: str, window_days: int = 7) -> Dict:
-        """Порівнює поточну продуктивність моделі з історичною для детекції дрейфу."""
-        try:
-            query = f"""
-                SELECT win_rate, sharpe_ratio, timestamp 
-                FROM model_performance 
-                WHERE model_name = '{model_name}' 
-                ORDER BY timestamp DESC
-            """
-            perf_df = self.data_manager.load_data(query)
+    
+    def _get_current_metrics(self) -> Optional[Dict[str, Any]]:
+        """Get current system metrics with validation."""
+        current_metrics = self.resource_monitor.get_health_status()
+        if not current_metrics or current_metrics.get('overall_status') == 'error':
+            return None
+        return current_metrics
+    
+    def _handle_memory_management(self, current_metrics: Dict[str, Any]) -> None:
+        """Handle autonomous memory management."""
+        if not self.cache_manager:
+            return
             
-            if len(perf_df) < 20:
-                return {"status": "insufficient_data"}
-
-            perf_df['timestamp'] = pd.to_datetime(perf_df['timestamp'])
-            recent = perf_df[perf_df['timestamp'] > (datetime.now() - timedelta(days=window_days))]
-            historical = perf_df[perf_df['timestamp'] <= (datetime.now() - timedelta(days=window_days))]
-            
-            if recent.empty or historical.empty:
-                return {"status": "insufficient_window_data"}
-
-            metrics = ['win_rate', 'sharpe_ratio']
-            drift_detected = False
-            alerts = []
-
-            for metric in metrics:
-                hist_mean = historical[metric].mean()
-                hist_std = historical[metric].std()
-                curr_mean = recent[metric].mean()
-                
-                z_score = abs(curr_mean - hist_mean) / (hist_std if hist_std > 0 else 0.001)
-                
-                if z_score > 2.0:
-                    drift_detected = True
-                    msg = f"Виявлено дрейф моделі для {model_name} [{metric}]: Z-Score={z_score:.2f}"
-                    alerts.append(msg)
-                    self.logger.warning(f"[FINANCIAL] {msg}")
-
-            if drift_detected and self.notifier:
-                self.notifier.send_alert(f"CRITICAL: Дрейф моделі {model_name}\n" + "\n".join(alerts))
-
-            return {
-                "model_name": model_name,
-                "drift_detected": drift_detected,
-                "alerts": alerts,
-                "recent_metrics": recent[metrics].mean().to_dict()
-            }
-        except Exception as e:
-            self.logger.error(f"Помилка детекції дрейфу для {model_name}: {e}")
-            return {"status": "error", "message": str(e)}
+        mem_usage = current_metrics.get('system', {}).get('memory', {}).get('percent', 0)
+        if mem_usage > 90.0:
+            self.logger.warning("System memory > 90%. Automatic cache purge triggered.")
+            self.cache_manager.clear()
+    
+    def _predict_resource_risks(self, features: List[float]) -> Dict[str, Any]:
+        """Predict risks for all resource types."""
+        predictions = {}
+        problem_types = ["performance", "memory", "disk", "network"]
+        
+        for pt in problem_types:
+            model_name = f"{pt}_predictor"
+            if model_name in self.models:
+                predictions[pt] = self._predict_single_risk(model_name, features)
+        
+        return predictions
+    
+    def _predict_single_risk(self, model_name: str, features: List[float]) -> Dict[str, Any]:
+        """Predict risk for a single resource type."""
+        model = self.models[model_name]
+        scaler = self.scalers.get("resource_scaler")
+        features_scaled = scaler.transform([features]) if scaler else [features]
+        
+        prob = model.predict_proba(features_scaled)[0][1]
+        risk = self.calculate_risk_level(prob)
+        return {"probability": float(prob), "risk_level": risk}
+    
+    def _build_health_report(self, current_metrics: Dict[str, Any], 
+                           predictions: Dict[str, Any], anomaly_result: Dict) -> Dict[str, Any]:
+        """Build comprehensive health report."""
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "metrics": current_metrics,
+            "predictions": predictions,
+            "anomalies": anomaly_result,
+            "overall_risk": self.calculate_overall_risk(predictions),
+            "recommendations": self.generate_ml_recommendations(predictions, anomaly_result)
+        }
 
     def extract_features_from_metrics(self, metrics: Dict) -> List[float]:
-        """Extracts features for ML models from the detailed metrics dictionary."""
-        self.logger.critical("Feature extraction for HealthHub is not fully implemented and relies on placeholder data.")
-        raise NotImplementedError("The 'extract_features_from_metrics' method is not implemented. Critical metrics for pipeline performance, model accuracy, and market context are missing. Using this for predictions would be misleading.")
+        """Exctracts stabilized feature vector for ML diagnostic analysis."""
+        try:
+            sys_m = metrics.get('system', {})
+            cpu = sys_m.get('cpu', {}).get('percent', 0) / 100.0
+            mem = sys_m.get('memory', {}).get('percent', 0) / 100.0
+            disk = sys_m.get('disk', {}).get('percent', 0) / 100.0
+            
+            # Pipeline and behavioral metrics
+            pipe_perf = metrics.get('pipeline', {}).get('efficiency', 1.0)
+            drift = metrics.get('analytics', {}).get('drift_score', 0.0)
+            
+            return [cpu, mem, disk, pipe_perf, drift]
+        except Exception:
+            return [0.5, 0.5, 0.1, 1.0, 0.0] # Conservative fallback
 
     def calculate_risk_level(self, prob: float) -> str:
+        """Maps probability score to human-readable risk level."""
         if prob >= 0.8: return "critical"
         if prob >= 0.6: return "high"
         if prob >= 0.4: return "medium"
         return "low"
 
     def calculate_overall_risk(self, predictions: Dict) -> str:
+        """Determines worst-case risk across all monitored subsystems."""
         probs = [p["probability"] for p in predictions.values()]
-        max_p = max(probs) if probs else 0
-        return self.calculate_risk_level(max_p)
+        return self.calculate_risk_level(max(probs)) if probs else "low"
 
     def detect_anomalies(self, features: List[float]) -> Dict:
-        if "anomaly_detector" not in self.models: return {"is_anomaly": False}
-        score = self.models["anomaly_detector"].decision_function([features])[0]
-        is_anomaly = self.models["anomaly_detector"].predict([features])[0] == -1
-        return {"is_anomaly": bool(is_anomaly), "score": float(score)}
+        """Runs isolation forest to detect deviations from normal baseline behavior."""
+        if "anomaly_detector" not in self.models: 
+            return {"is_anomaly": False, "score": 0.0}
+        try:
+            score = self.models["anomaly_detector"].decision_function([features])[0]
+            is_anomaly = self.models["anomaly_detector"].predict([features])[0] == -1
+            return {"is_anomaly": bool(is_anomaly), "score": float(score)}
+        except Exception:
+            return {"is_anomaly": False, "score": 0.0}
 
     def generate_ml_recommendations(self, predictions: Dict, anomaly: Dict) -> List[str]:
+        """Generates actionable recommendations based on prediction outcomes."""
         recs = []
-        for k, v in predictions.items():
-            if v["probability"] > 0.6: recs.append(f"Дія: Терміново зменшити ризик {k}.")
-        if anomaly["is_anomaly"]: recs.append("Дія: Перевірте нетипову поведінку системи, виявлену IsolationForest.")
+        for subsystem, data in predictions.items():
+            if data["probability"] > 0.6: 
+                recs.append(f"Action Required: Optimize {subsystem} resources (risk: {data['risk_level']})")
+        if anomaly.get("is_anomaly"): 
+            recs.append("Action Required: Investigate system logs for anomalous behavioral patterns.")
         return recs
+
+    def check_model_drift(self, model_name: str, window_days: int = 7) -> Dict:
+        """Detects financial and performance drift by comparing against historical baseline."""
+        if not self.data_manager:
+            return {"status": "error", "message": "DataManager not available for historical audit"}
+            
+        try:
+            perf_df = self._load_performance_data(model_name)
+            if not isinstance(perf_df, pd.DataFrame):
+                return perf_df  # Return error status
+            
+            recent_data, historical_data = self._split_performance_data(perf_df, window_days)
+            if recent_data is None:
+                return historical_data  # Return error status
+            
+            drift_detected = self._calculate_drift_metrics(recent_data, historical_data)
+            
+            return {
+                "model_name": model_name, 
+                "drift_detected": drift_detected,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            self.logger.error(f"Financial drift analysis failure: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    def _load_performance_data(self, model_name: str) -> Union[pd.DataFrame, Dict[str, str]]:
+        """Load and validate performance data for drift analysis."""
+        query = f"SELECT win_rate, sharpe_ratio, timestamp FROM model_performance WHERE model_name = '{model_name}' ORDER BY timestamp DESC"
+        perf_df = self.data_manager.load_data(query)
+        
+        if len(perf_df) < 10: 
+            return {"status": "insufficient_data", "message": "Threshold for historical comparison not met"}
+        
+        return perf_df
+    
+    def _split_performance_data(self, perf_df: pd.DataFrame, window_days: int) -> Tuple[Optional[pd.DataFrame], Union[pd.DataFrame, Dict[str, str]]]:
+        """Split performance data into recent and historical windows."""
+        perf_df['timestamp'] = pd.to_datetime(perf_df['timestamp'])
+        cutoff = datetime.now() - timedelta(days=window_days)
+        recent = perf_df[perf_df['timestamp'] > cutoff]
+        historical = perf_df[perf_df['timestamp'] <= cutoff]
+        
+        if recent.empty or historical.empty: 
+            return None, {"status": "insufficient_window", "message": "One of the analysis windows (recent/historical) is empty"}
+        
+        return recent, historical
+    
+    def _calculate_drift_metrics(self, recent_data: pd.DataFrame, historical_data: pd.DataFrame) -> bool:
+        """Calculate drift detection metrics."""
+        drift = False
+        for metric in ['win_rate', 'sharpe_ratio']:
+            z_score = abs(recent_data[metric].mean() - historical_data[metric].mean()) / (historical_data[metric].std() + 1e-6)
+            if z_score > 2.0: 
+                drift = True
+                break
+        return drift

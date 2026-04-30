@@ -1,0 +1,11 @@
+{
+  "batch_id": "XOM_tabnet_20260323_093028",
+  "ticker": "XOM",
+  "model_name": "tabnet",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_macd_hist_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T09:30:28.708662",
+  "status": "PENDING_COLAB"
+}

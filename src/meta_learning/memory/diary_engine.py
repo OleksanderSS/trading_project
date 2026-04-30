@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Any, Optional, Tuple, Union
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import logging
 from collections import deque
@@ -64,7 +64,7 @@ class DecisionRecord:
     profit_loss: Optional[float] = None
     
     # Other Metadata
-    decision_timestamp: int = field(default_factory=lambda: int(datetime.utcnow().timestamp()))
+    decision_timestamp: int = field(default_factory=lambda: int(datetime.now(timezone.utc).timestamp()))
     decision_id: Optional[int] = None
 
 
@@ -110,7 +110,8 @@ class DiaryEngine(BaseMetaComponent):
         """
         try:
             query = f"SELECT COUNT(*) as total_trades FROM {self.table_name}"
-            result = self.data_manager.load_data(query)
+            result_list = self.data_manager.fetch_all(query)
+            result = pd.DataFrame(result_list)
             total_trades = int(result.iloc[0]['total_trades']) if not result.empty else 0
             
             return {
@@ -147,7 +148,9 @@ class DiaryEngine(BaseMetaComponent):
 
     def record_decision(self, decision: DecisionRecord):
         """Records a single trading decision in the database."""
+        import uuid
         df = pd.DataFrame([{
+            "id": uuid.uuid4().int & 0x7FFFFFFF,
             "agent_id": decision.agent_id,
             "decision_timestamp": decision.decision_timestamp,
             "ticker": decision.ticker,
@@ -162,13 +165,70 @@ class DiaryEngine(BaseMetaComponent):
             "outcome": decision.outcome.value,
             "profit_loss": decision.profit_loss
         }])
-        self.data_manager.upsert(self.table_name, df)
+        self.data_manager.upsert(self.table_name, df, unique_on=["agent_id", "decision_timestamp", "ticker"])
         self.logger.debug(f"Recorded decision for {decision.ticker} by {decision.agent_id}")
+
+    def record_decision_metadata(self, metadata: Dict[str, Any]):
+        """Records consensus decision metadata for analysis."""
+        try:
+            # Store metadata in a separate table or extend existing one
+            # For now, we'll log it as a special record
+            import uuid
+            df = pd.DataFrame([{
+                "id": uuid.uuid4().int & 0x7FFFFFFF,
+                "agent_id": "consensus_engine",
+                "decision_timestamp": int(pd.Timestamp.now().timestamp() * 1000),
+                "ticker": "CONSENSUS",
+                "decision_type": "metadata",
+                "reasoning": json.dumps(metadata),
+                "market_context": json.dumps(metadata),
+                "context_fingerprint": metadata.get('fingerprint', ''),
+                "model_prediction": metadata.get('raw_score', 0.0),
+                "model_confidence": metadata.get('critic_score', 0.0),
+                "entry_price": 0.0,
+                "exit_price": 0.0,
+                "outcome": "metadata",
+                "profit_loss": 0.0
+            }])
+            self.data_manager.upsert(self.table_name, df, unique_on=["agent_id", "decision_timestamp", "ticker"])
+            self.logger.debug("Recorded consensus metadata")
+        except Exception as e:
+            self.logger.error(f"Failed to record decision metadata: {e}")
 
     def get_history_by_agent(self, agent_id: str) -> pd.DataFrame:
         """Retrieves the decision history for a specific agent."""
         query = f"SELECT * FROM {self.table_name} WHERE agent_id = '{agent_id}'"
-        return self.data_manager.load_data(query)
+        return pd.DataFrame(self.data_manager.fetch_all(query))
+
+    def get_recent_trades(self, window: int = 500) -> pd.DataFrame:
+        """
+        Retrieves recent trades for calibration.
+        
+        Args:
+            window: Number of recent trades to retrieve
+            
+        Returns:
+            DataFrame with trade history including confidence and outcome signs
+        """
+        query = f"""
+        SELECT 
+            model_confidence as confidence,
+            CASE WHEN model_prediction > 0.5 THEN 1 ELSE -1 END as prediction_sign,
+            CASE WHEN outcome = '{DecisionOutcome.PROFITABLE.value}' THEN (CASE WHEN model_prediction > 0.5 THEN 1 ELSE -1 END) 
+                 ELSE (CASE WHEN model_prediction > 0.5 THEN -1 ELSE 1 END) END as actual_sign
+        FROM {self.table_name}
+        WHERE outcome != '{DecisionOutcome.PENDING.value}'
+        ORDER BY decision_timestamp DESC
+        LIMIT {window}
+        """
+        try:
+            df = pd.DataFrame(self.data_manager.fetch_all(query))
+            if df.empty:
+                self.logger.warning("No historical trades found for calibration")
+            return df
+        except Exception as e:
+            self.logger.error(f"Failed to retrieve recent trades: {e}")
+            return pd.DataFrame()
 
     def get_context_vulnerability(self, agent_id: str) -> Dict[str, Any]:
         """
@@ -183,7 +243,7 @@ class DiaryEngine(BaseMetaComponent):
         ORDER BY loss_count DESC
         LIMIT 10
         """
-        loss_patterns = self.data_manager.load_data(query)
+        loss_patterns = pd.DataFrame(self.data_manager.fetch_all(query))
         
         if loss_patterns.empty:
             return {"status": "No failure patterns detected"}
@@ -260,6 +320,17 @@ class DiaryEngine(BaseMetaComponent):
         """
         Performs performance comparison and context-specific promotion analysis.
         """
+        comparison_results = self._calculate_agent_performance(agent_ids)
+        recommendations = self._generate_promotion_recommendations(agent_ids, comparison_results)
+        
+        return {
+            "agents": comparison_results,
+            "recommendations": recommendations,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    def _calculate_agent_performance(self, agent_ids: List[str]) -> Dict[str, Any]:
+        """Розраховує продуктивність для кожного агента."""
         comparison_results = {}
         
         for agent_id in agent_ids:
@@ -273,42 +344,62 @@ class DiaryEngine(BaseMetaComponent):
                 comparison_results[agent_id] = {"error": "No valid returns"}
                 continue
 
-            total_pnl = np.sum(returns)
-            win_rate = (returns > 0).mean()
-            sharpe = (np.mean(returns) / np.std(returns) * np.sqrt(252)) if np.std(returns) != 0 else 0
-            
+            performance_metrics = self._calculate_performance_metrics(returns)
             comparison_results[agent_id] = {
-                "total_pnl": float(total_pnl),
-                "win_rate": float(win_rate),
-                "sharpe_ratio": float(sharpe),
-                "total_trades": int(len(returns)),
+                **performance_metrics,
                 "vulnerabilities": self.get_context_vulnerability(agent_id),
                 "success_zones": self.get_context_success_analysis(agent_id)
             }
+        
+        return comparison_results
 
-        # Context-Specific Promotion Logic
+    def _calculate_performance_metrics(self, returns: np.ndarray) -> Dict[str, Any]:
+        """Розраховує метрики продуктивності для масиву повернень."""
+        total_pnl = np.sum(returns)
+        win_rate = (returns > 0).mean()
+        sharpe = (np.mean(returns) / np.std(returns) * np.sqrt(252)) if np.std(returns) != 0 else 0
+        
+        return {
+            "total_pnl": float(total_pnl),
+            "win_rate": float(win_rate),
+            "sharpe_ratio": float(sharpe),
+            "total_trades": int(len(returns))
+        }
+
+    def _generate_promotion_recommendations(self, agent_ids: List[str], 
+                                       comparison_results: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Генерує рекомендації щодо просування на основі продуктивності."""
         recommendations = []
-        champion_id = next((aid for aid in agent_ids if 'champion' in aid.lower()), agent_ids[0] if agent_ids else None)
+        champion_id = next((aid for aid in agent_ids if 'champion' in aid.lower()), 
+                          agent_ids[0] if agent_ids else None)
         
         if champion_id and len(agent_ids) > 1:
-            for agent_id in agent_ids:
-                if agent_id == champion_id: continue
-                
-                # Check for regime-specific excellence
-                # This could be expanded to look at specific drivers, simplified to High/Low Vol for now
-                if comparison_results.get(agent_id, {}).get('sharpe_ratio', 0) > comparison_results.get(champion_id, {}).get('sharpe_ratio', 0) * 1.15:
-                    recommendations.append({
-                        "type": "PROMOTION",
-                        "agent_id": agent_id,
-                        "context": "Global (General Performance)",
-                        "reason": "Significantly higher Sharpe ratio"
-                    })
+            recommendations = self._check_promotion_criteria(agent_ids, champion_id, comparison_results)
+        
+        return recommendations
 
-        return {
-            "agents": comparison_results,
-            "recommendations": recommendations,
-            "timestamp": datetime.now().isoformat()
-        }
+    def _check_promotion_criteria(self, agent_ids: List[str], champion_id: str, 
+                               comparison_results: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Перевіряє критерії просування для агентів."""
+        recommendations = []
+        champion_sharpe = comparison_results.get(champion_id, {}).get('sharpe_ratio', 0)
+        
+        for agent_id in agent_ids:
+            if agent_id == champion_id: 
+                continue
+            
+            agent_sharpe = comparison_results.get(agent_id, {}).get('sharpe_ratio', 0)
+            
+            # Check for regime-specific excellence
+            if agent_sharpe > champion_sharpe * 1.15:
+                recommendations.append({
+                    "type": "PROMOTION",
+                    "agent_id": agent_id,
+                    "context": "Global (General Performance)",
+                    "reason": "Significantly higher Sharpe ratio"
+                })
+        
+        return recommendations
 
     def suggest_threshold_adjustments(self, agent_id: str) -> Dict[str, Any]:
         """Suggests adjustments for AdaptiveThresholds based on recent performance."""

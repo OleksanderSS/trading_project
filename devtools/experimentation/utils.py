@@ -91,8 +91,7 @@ class ExperimentVisualizer:
                           save_path: Optional[Path] = None) -> None:
         """Plot metrics comparison by group"""
         
-        n_metrics = len(metrics)
-        fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+        _, axes = plt.subplots(2, 2, figsize=(15, 10))
         axes = axes.flatten()
         
         for i, metric in enumerate(metrics):
@@ -181,50 +180,100 @@ class ExperimentVisualizer:
         
         plt.show()
 
+def _get_metric_stats(df: pd.DataFrame, metric: str) -> Optional[Dict[str, Any]]:
+    """Helper to calculate summary statistics for a metric."""
+    if metric not in df.columns:
+        return None
+    data = df[metric].dropna()
+    if data.empty:
+        return None
+    return {
+        'mean': data.mean(),
+        'std': data.std(),
+        'min': data.min(),
+        'max': data.max(),
+        'median': data.median(),
+        'count': len(data)
+    }
+
+def _get_best_record(df: pd.DataFrame, metric: str) -> Optional[Dict[str, Any]]:
+    """Helper to identify best performing record for a metric."""
+    if metric not in df.columns or df.empty:
+        return None
+
+    higher_is_better = metric in ['R2', 'Sharpe']
+    try:
+        best_idx = df[metric].idxmax() if higher_is_better else df[metric].idxmin()
+    except (ValueError, TypeError):
+        return None
+
+    if best_idx not in df.index:
+        return None
+
+    best_result = df.loc[best_idx]
+    return {
+        'value': best_result[metric],
+        'ticker': best_result.get('ticker'),
+        'time_frame': best_result.get('time_frame'),
+        'layers': best_result.get('layers')
+    }
+
 def analyze_experiment_results(results: List[Dict], metrics: List[str]) -> Dict:
     """Analyze experiment results and return insights"""
-    
     if not results:
         return {"error": "No results to analyze"}
     
     df = pd.DataFrame(results)
     analysis = {}
     
-    # Success rate
+    # Calculate success rate
+    analysis['success_rate'] = _calculate_success_rate(df)
+    
+    # Analyze metrics for successful results
+    successful_df = df[df['success'] == True]
+    if len(successful_df) > 0:
+        analysis.update(_analyze_metrics(successful_df, metrics))
+        analysis.update(_find_best_results(successful_df, metrics))
+    
+    return analysis
+
+def _calculate_success_rate(df: pd.DataFrame) -> float:
+    """Calculate success rate from results"""
     success_count = len(df[df['success'] == True])
     total_count = len(df)
-    analysis['success_rate'] = success_count / total_count if total_count > 0 else 0
-    
-    # Metric analysis (only successful results)
-    successful_df = df[df['success'] == True]
-    
-    if len(successful_df) > 0:
-        for metric in metrics:
-            if metric in successful_df.columns:
-                metric_data = successful_df[metric].dropna()
-                if len(metric_data) > 0:
-                    analysis[metric] = {
-                        'mean': metric_data.mean(),
-                        'std': metric_data.std(),
-                        'min': metric_data.min(),
-                        'max': metric_data.max(),
-                        'median': metric_data.median(),
-                        'count': len(metric_data)
-                    }
-    
-    # Best results
+    return success_count / total_count if total_count > 0 else 0
+
+def _analyze_metrics(df: pd.DataFrame, metrics: List[str]) -> Dict:
+    """Analyze metrics for successful results"""
+    analysis = {}
     for metric in metrics:
-        if metric in successful_df.columns:
-            best_idx = successful_df[metric].idxmax() if metric in ['R2', 'Sharpe'] else successful_df[metric].idxmin()
-            if best_idx is not None and best_idx in successful_df.index:
-                best_result = successful_df.loc[best_idx]
+        if metric in df.columns:
+            metric_data = df[metric].dropna()
+            if len(metric_data) > 0:
+                analysis[metric] = {
+                    'mean': metric_data.mean(),
+                    'std': metric_data.std(),
+                    'min': metric_data.min(),
+                    'max': metric_data.max(),
+                    'median': metric_data.median(),
+                    'count': len(metric_data)
+                }
+    return analysis
+
+def _find_best_results(df: pd.DataFrame, metrics: List[str]) -> Dict:
+    """Find best results for each metric"""
+    analysis = {}
+    for metric in metrics:
+        if metric in df.columns:
+            best_idx = df[metric].idxmax() if metric in ['R2', 'Sharpe'] else df[metric].idxmin()
+            if best_idx in df.index:
+                best_result = df.loc[best_idx]
                 analysis[f'best_{metric.lower()}'] = {
                     'value': best_result[metric],
                     'ticker': best_result['ticker'],
                     'time_frame': best_result['time_frame'],
                     'layers': best_result['layers']
                 }
-    
     return analysis
 
 def create_experiment_summary(results: List[Dict], experiment_name: str, 

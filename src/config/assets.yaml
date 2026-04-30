@@ -4,7 +4,7 @@ assets:
     default_volatile:
       description: "A comprehensive and diversified set of volatile tickers from key sectors, as per user specification."
       sectors: ["ai_big_tech", "semiconductors", "market_etfs", "consumer_staples", "energy", "finance"]
-      tickers: ["TSLA", "NVDA", "SPY", "QQQ", "AMD", "KO", "WMT", "XOM", "JPM", "GS"]
+      tickers: ["TSLA", "NVDA", "SPY", "QQQ", "AMD", "KO", "WMT", "XOM", "JPM", "GS", "AAPL", "MSFT", "GOOGL", "AMZN", "INTC", "TSM", "IWM", "BAC"]
 
   active_preset: "default_volatile"
 

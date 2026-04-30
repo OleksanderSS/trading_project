@@ -120,33 +120,52 @@ class RealDataAccumulator:
             import asyncio
             
             # Run collection stage
-            result = asyncio.run(self.orchestrator.run_stage(
-                stage_name='collection',
-                tickers=tickers
+            result = asyncio.run(self.orchestrator.run(
+                tickers=tickers,
+                timeframes=['1d'],
+                stages_to_run=[1]
             ))
             
-            if not result or 'raw_data' not in result:
-                logger.warning("⚠️  No data collected from Stage 1")
+            logger.info(f"🔍 DEBUG: Stage 1 result type: {type(result)}")
+            logger.info(f"🔍 DEBUG: Stage 1 result keys: {list(result.keys()) if isinstance(result, dict) else 'NOT A DICT'}")
+            
+            if not result:
+                logger.warning("⚠️  No result from Stage 1")
                 return None
             
-            raw_data = result['raw_data']
-            
-            # Extract market data
+            # Stage 1 returns market_data directly (not wrapped in 'raw_data')
             market_df = None
-            if 'market_data_raw' in raw_data:
-                market_df = raw_data['market_data_raw']
-            elif 'market_data' in raw_data:
-                market_df = raw_data['market_data']
-            elif 'yf_collector' in raw_data:
-                market_df = raw_data['yf_collector']
+            if 'market_data' in result:
+                market_df = result['market_data']
+                logger.info(f"✓ Found 'market_data' key: {type(market_df)}")
+            elif 'market_data_raw' in result:
+                market_df = result['market_data_raw']
+                logger.info(f"✓ Found 'market_data_raw' key: {type(market_df)}")
+            elif 'prices' in result:
+                market_df = result['prices']
+                logger.info(f"✓ Found 'prices' key: {type(market_df)}")
+                if isinstance(market_df, dict):
+                    # If prices is a dict of timeframes, get the first one
+                    market_df = next(iter(market_df.values())) if market_df else None
+                    logger.info(f"✓ Extracted from prices dict: {type(market_df)}")
             
-            if market_df is None or market_df.empty:
-                logger.warning("⚠️  No market data in collected data")
+            if market_df is None:
+                logger.warning("⚠️  No market data key found in result")
+                logger.info(f"Available keys: {list(result.keys())}")
                 # Try to fetch from DuckDB as fallback
                 market_df = self.data_manager.fetch_data_from_table('market_data_raw')
                 if market_df is None or market_df.empty:
                     logger.error("❌ No market data available")
                     return None
+            
+            # Ensure it's a DataFrame
+            if not isinstance(market_df, pd.DataFrame):
+                logger.error(f"❌ Market data is not a DataFrame: {type(market_df)}")
+                return None
+            
+            if market_df.empty:
+                logger.warning("⚠️  Market data DataFrame is empty")
+                return None
             
             # Filter by tickers
             if 'ticker' in market_df.columns:
@@ -155,6 +174,8 @@ class RealDataAccumulator:
             # Sort by timestamp
             if 'timestamp' in market_df.columns:
                 market_df = market_df.sort_values('timestamp')
+            elif 'datetime' in market_df.columns:
+                market_df = market_df.sort_values('datetime')
             
             logger.info(f"✓ Collected {len(market_df)} rows")
             logger.info(f"✓ Columns: {list(market_df.columns)[:10]}... ({len(market_df.columns)} total)")
@@ -207,9 +228,8 @@ class RealDataAccumulator:
             logger.info(f"✓ Features: {len(df.columns)} → {len(enriched_df.columns)}")
             
             # Show sample of enriched data
-            logger.info(f"✓ Sample enriched row:")
+            logger.info("✓ Sample enriched row:")
             if len(enriched_df) > 0:
-                sample_row = enriched_df.iloc[0]
                 logger.info(f"  Columns: {list(enriched_df.columns)[:15]}...")
                 logger.info(f"  Shape: {enriched_df.shape}")
             

@@ -5,10 +5,10 @@ This module provides a set of reusable static methods.
 
 import pandas as pd
 import numpy as np
-import logging
 from typing import Dict
+from src.core.logging.logger import ProjectLogger
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class DrawdownCalculator:
     """A collection of static methods to calculate drawdown-related metrics."""

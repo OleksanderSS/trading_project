@@ -254,14 +254,14 @@ analysis:
             - "price_to_ma20"
             - "hour_of_day"
             - "day_of_week"
-            # ✅ НОВІ КОНТЕКСТНІ ПОКАЗНИКИ (з CONTEXT_FEATURES_RECOMMENDATIONS.md)
-            - "yield_curve_slope"        # Нахил кривої дохідності (10Y - 2Y)
-            - "yield_curve_inverted"     # Прапорець інверсії (0/1)
-            - "fed_funds_trend"          # Тренд ставки Fed Funds (3 місяці)
-            - "fed_funds_velocity"       # Швидкість зміни ставки (1 місяць)
-            - "market_breadth"           # Ширина ринку (advance/decline)
-            - "dollar_strength"          # Сила долара (DXY)
-            - "put_call_ratio"           # Put/Call ratio (страх на ринку)
+            # ✅ NEW CONTEXT INDICATORS (from CONTEXT_FEATURES_RECOMMENDATIONS.md)
+            - "yield_curve_slope"        # Yield curve slope (10Y - 2Y)
+            - "yield_curve_inverted"     # Inversion flag (0/1)
+            - "fed_funds_trend"          # Fed Funds rate trend (3 months)
+            - "fed_funds_velocity"       # Rate change velocity (1 month)
+            - "market_breadth"           # Market breadth (advance/decline)
+            - "dollar_strength"          # Dollar strength (DXY)
+            - "put_call_ratio"           # Put/Call ratio (market fear)
         data_mapping:
           - "price_data"
           - "market_indicators"
@@ -452,7 +452,7 @@ strategy:
 training_pipeline:
   - name: "Stage_0_Setup"
     enabled: true
-    class_path: "src.pipeline.stages.stage_0_setup.Stage_0_Setup"
+    class_path: "src.pipeline.stages.stage_0_setup.Stage0Setup"
   - name: "Stage_1_Collection"
     enabled: true
     class_path: "src.pipeline.stages.stage_1_collection.CollectionStage"

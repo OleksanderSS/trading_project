@@ -9,7 +9,7 @@ from typing import List, Dict, Tuple, Optional
 from collections import defaultdict
 import pandas as pd
 
-from src.utils.logging.logger import ProjectLogger
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -155,7 +155,7 @@ class NewsTickerDetector:
         relevance = financial_words / len(words)
         return min(1.0, relevance * 5)  # Scaling
     
-    def get_primary_ticker(self, text: str, fallback_symbol: str = 'SPY') -> str:
+    def get_primary_ticker(self, text: str, fallback_symbol: str = 'SPY') -> Optional[str]:
         """
         Get the primary ticker for the news
         
@@ -164,7 +164,7 @@ class NewsTickerDetector:
             fallback_symbol: Fallback symbol
             
         Returns:
-            str: Primary ticker
+            Optional[str]: Primary ticker or None if not financial news
         """
         tickers = self.extract_tickers_from_text(text)
         
@@ -204,7 +204,7 @@ class NewsTickerDetector:
             # Update the news item
             enhanced_news = news.copy()
             enhanced_news['detected_tickers'] = [ticker for ticker, _ in tickers]
-            enhanced_news['ticker_confidence'] = {ticker: confidence for ticker, confidence in tickers}
+            enhanced_news['ticker_confidence'] = dict(tickers)
             enhanced_news['primary_ticker'] = primary_ticker
             enhanced_news['financial_relevance'] = self._calculate_financial_relevance(text.lower())
             

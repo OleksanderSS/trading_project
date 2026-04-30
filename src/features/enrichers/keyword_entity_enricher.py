@@ -9,6 +9,11 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("KeywordEntityEnricher")
 
+# Constants to avoid duplication
+DATETIME64_NS = "datetime64[ns]"
+TEXT_COLUMNS = ['title', 'text', 'description', 'content']
+TIME_COLUMNS = ['published_at', 'publishedAt', 'published_date', 'date', 'timestamp', 'datetime']
+
 class KeywordEntityEnricher(BaseEnricher):
     """
     Enriches DataFrame with keyword and entity features from news.
@@ -56,129 +61,191 @@ class KeywordEntityEnricher(BaseEnricher):
         Returns:
             DataFrame with added keyword_count, entity_count, ticker_mentions features
         """
-        if df.empty:
-            logger.warning("Input DataFrame is empty. Skipping keyword/entity enrichment.")
+        if not self._validate_input(df):
             return df
 
-        # Get news data from kwargs
         news_df = kwargs.get('news')
-        if news_df is None or not isinstance(news_df, pd.DataFrame) or news_df.empty:
-            logger.warning("No news data available in kwargs. Skipping keyword/entity enrichment.")
+        if not self._validate_news_data(news_df):
             return df
 
-        # Find text column
-        text_col = None
-        for col in ['title', 'text', 'description', 'content']:
-            if col in news_df.columns:
-                text_col = col
-                break
-
+        text_col = self._find_text_column(news_df)
         if text_col is None:
-            logger.error("No text column found in news data. Skipping keyword/entity enrichment.")
             return df
 
-        # Find time column
-        time_col = None
-        possible_time_cols = ['published_at', 'publishedAt', 'published_date', 'date', 'timestamp', 'datetime']
-        for col in possible_time_cols:
-            if col in news_df.columns:
-                time_col = col
-                break
-
+        time_col = self._find_time_column(news_df)
         if time_col is None:
-            logger.error(f"No time column found in news data. Available columns: {news_df.columns.tolist()[:10]}. Skipping keyword/entity enrichment.")
             return df
 
         try:
-            news_copy = news_df.copy()
-            # ✅ FIX: Normalize timezone and convert to datetime64[ns]
-            news_copy[time_col] = pd.to_datetime(news_copy[time_col], errors='coerce', utc=True)
-            if news_copy[time_col].dt.tz is not None:
-                news_copy[time_col] = news_copy[time_col].dt.tz_localize(None)
-            news_copy[time_col] = news_copy[time_col].astype('datetime64[ns]')
-            news_copy = news_copy.dropna(subset=[time_col])
-            
-            logger.info(f"✅ Found time column '{time_col}' with {len(news_copy)} valid timestamps")
-
-            logger.info(f"Extracting keywords and entities from {len(news_copy)} news items...")
-
-            # Extract keywords and entities
-            news_copy['keywords'] = news_copy[text_col].fillna('').apply(lambda x: self.keyword_extractor.extract(x))
-            news_copy['keyword_count'] = news_copy['keywords'].apply(len)
-            
-            if self.entity_extractor:
-                news_copy['entities'] = news_copy[text_col].fillna('').apply(
-                    lambda x: self.entity_extractor.extract(x, entity_types=['ORG', 'GPE', 'PERSON'])
-                )
-                news_copy['entity_count'] = news_copy['entities'].apply(len)
-            else:
-                news_copy['entity_count'] = 0
-
-            # Aggregate by time (hourly)
-            news_copy = news_copy.set_index(time_col)
-            
-            # Resample to hourly and aggregate
-            aggregated = news_copy.resample('1h').agg({
-                'keyword_count': 'sum',
-                'entity_count': 'sum'
-            })
-
-            # Merge with main DataFrame
-            df_enriched = df.copy()
-
-            # Ensure df has DatetimeIndex
-            if not isinstance(df_enriched.index, pd.DatetimeIndex):
-                if 'datetime' in df_enriched.columns:
-                    df_enriched = df_enriched.set_index('datetime')
-                else:
-                    logger.error("Cannot merge: df has no DatetimeIndex or 'datetime' column")
-                    return df
-
-            # Normalize timezones
-            if df_enriched.index.tz is not None:
-                df_enriched.index = df_enriched.index.tz_localize(None)
-            if aggregated.index.tz is not None:
-                aggregated.index = aggregated.index.tz_localize(None)
-
-            # Merge using merge_asof for time-series alignment
-            df_reset = df_enriched.reset_index()
-            df_reset = df_reset.rename(columns={'index': 'datetime'} if 'index' in df_reset.columns else {})
-            
-            # ✅ Нормалізуємо timezone + precision в df_reset
-            if 'datetime' in df_reset.columns:
-                if pd.api.types.is_datetime64_any_dtype(df_reset['datetime']):
-                    if hasattr(df_reset['datetime'].dtype, 'tz') and df_reset['datetime'].dt.tz is not None:
-                        df_reset['datetime'] = df_reset['datetime'].dt.tz_localize(None)
-                    # Convert to ns precision
-                    if df_reset['datetime'].dtype != 'datetime64[ns]':
-                        df_reset['datetime'] = df_reset['datetime'].astype('datetime64[ns]')
-            
-            aggregated_reset = aggregated.reset_index()
-            aggregated_reset = aggregated_reset.rename(columns={time_col: 'datetime'})
-            
-            # ✅ Нормалізуємо timezone + precision в aggregated_reset
-            if 'datetime' in aggregated_reset.columns:
-                if pd.api.types.is_datetime64_any_dtype(aggregated_reset['datetime']):
-                    if hasattr(aggregated_reset['datetime'].dtype, 'tz') and aggregated_reset['datetime'].dt.tz is not None:
-                        aggregated_reset['datetime'] = aggregated_reset['datetime'].dt.tz_localize(None)
-                    # Convert to ns precision
-                    if aggregated_reset['datetime'].dtype != 'datetime64[ns]':
-                        aggregated_reset['datetime'] = aggregated_reset['datetime'].astype('datetime64[ns]')
-
-            df_merged = pd.merge_asof(
-                df_reset.sort_values('datetime'),
-                aggregated_reset.sort_values('datetime'),
-                on='datetime',
-                direction='backward'
-            )
-
-            df_merged = df_merged.set_index('datetime')
-            df_merged['keyword_count'] = df_merged['keyword_count'].fillna(0).astype(int)
-            df_merged['entity_count'] = df_merged['entity_count'].fillna(0).astype(int)
-
-            logger.info(f"✅ Added keyword/entity features. Avg keywords: {df_merged['keyword_count'].mean():.1f}, Avg entities: {df_merged['entity_count'].mean():.1f}")
-            return df_merged
-
+            return self._process_enrichment(df, news_df, text_col, time_col)
         except Exception as e:
             logger.error(f"Error during keyword/entity enrichment: {e}", exc_info=True)
             return df
+
+    def _validate_input(self, df: pd.DataFrame) -> bool:
+        """Validate input DataFrame."""
+        if df.empty:
+            logger.warning("Input DataFrame is empty. Skipping keyword/entity enrichment.")
+            return False
+        return True
+
+    def _validate_news_data(self, news_df: pd.DataFrame) -> bool:
+        """Validate news data."""
+        if news_df is None or not isinstance(news_df, pd.DataFrame) or news_df.empty:
+            logger.warning("No news data available in kwargs. Skipping keyword/entity enrichment.")
+            return False
+        return True
+
+    def _find_text_column(self, news_df: pd.DataFrame) -> Optional[str]:
+        """Find text column in news DataFrame."""
+        for col in TEXT_COLUMNS:
+            if col in news_df.columns:
+                return col
+        
+        logger.error("No text column found in news data. Skipping keyword/entity enrichment.")
+        return None
+
+    def _find_time_column(self, news_df: pd.DataFrame) -> Optional[str]:
+        """Find time column in news DataFrame."""
+        for col in TIME_COLUMNS:
+            if col in news_df.columns:
+                return col
+        
+        logger.error(f"No time column found in news data. Available columns: {news_df.columns.tolist()[:10]}. Skipping keyword/entity enrichment.")
+        return None
+
+    def _process_enrichment(self, df: pd.DataFrame, news_df: pd.DataFrame, text_col: str, time_col: str) -> pd.DataFrame:
+        """Process the enrichment workflow."""
+        news_copy = self._prepare_news_data(news_df, time_col)
+        
+        logger.info(f"✅ Found time column '{time_col}' with {len(news_copy)} valid timestamps")
+        logger.info(f"Extracting keywords and entities from {len(news_copy)} news items...")
+
+        news_copy = self._extract_features(news_copy, text_col)
+        aggregated = self._aggregate_by_time(news_copy, time_col)
+        
+        return self._merge_with_main_df(df, aggregated, time_col)
+
+    def _prepare_news_data(self, news_df: pd.DataFrame, time_col: str) -> pd.DataFrame:
+        """Prepare news data with normalized datetime."""
+        news_copy = news_df.copy()
+        
+        # Normalize timezone and convert to datetime64[ns]
+        news_copy[time_col] = pd.to_datetime(news_copy[time_col], errors='coerce', utc=True)
+        if news_copy[time_col].dt.tz is not None:
+            news_copy[time_col] = news_copy[time_col].dt.tz_localize(None)
+        news_copy[time_col] = news_copy[time_col].astype(DATETIME64_NS)
+        
+        return news_copy.dropna(subset=[time_col])
+
+    def _extract_features(self, news_copy: pd.DataFrame, text_col: str) -> pd.DataFrame:
+        """Extract keywords and entities from news."""
+        # Extract keywords
+        news_copy['keywords'] = news_copy[text_col].fillna('').apply(lambda x: self.keyword_extractor.extract(x))
+        news_copy['keyword_count'] = news_copy['keywords'].apply(len)
+        
+        # Extract entities
+        if self.entity_extractor:
+            news_copy['entities'] = news_copy[text_col].fillna('').apply(
+                lambda x: self.entity_extractor.extract(x, entity_types=['ORG', 'GPE', 'PERSON'])
+            )
+            news_copy['entity_count'] = news_copy['entities'].apply(len)
+        else:
+            news_copy['entity_count'] = 0
+        
+        return news_copy
+
+    def _aggregate_by_time(self, news_copy: pd.DataFrame, time_col: str) -> pd.DataFrame:
+        """Aggregate news data by time (hourly)."""
+        news_copy = news_copy.set_index(time_col)
+        
+        # Resample to hourly and aggregate
+        return news_copy.resample('1h').agg({
+            'keyword_count': 'sum',
+            'entity_count': 'sum'
+        })
+
+    def _merge_with_main_df(self, df: pd.DataFrame, aggregated: pd.DataFrame, time_col: str) -> pd.DataFrame:
+        """Merge aggregated features with main DataFrame."""
+        df_enriched = df.copy()
+
+        # Ensure df has DatetimeIndex
+        if not self._ensure_datetime_index(df_enriched):
+            return df
+
+        # Normalize timezones
+        self._normalize_timezones(df_enriched, aggregated)
+
+        # Prepare DataFrames for merge
+        df_reset = self._prepare_df_for_merge(df_enriched)
+        aggregated_reset = self._prepare_aggregated_for_merge(aggregated, time_col)
+
+        # Merge using merge_asof for time-series alignment
+        df_merged = pd.merge_asof(
+            df_reset.sort_values('datetime'),
+            aggregated_reset.sort_values('datetime'),
+            on='datetime',
+            direction='backward'
+        )
+
+        return self._finalize_merge_result(df_merged)
+
+    def _ensure_datetime_index(self, df_enriched: pd.DataFrame) -> bool:
+        """Ensure DataFrame has DatetimeIndex."""
+        if isinstance(df_enriched.index, pd.DatetimeIndex):
+            return True
+        
+        if 'datetime' in df_enriched.columns:
+            df_enriched = df_enriched.set_index('datetime')
+            return True
+        
+        logger.error("Cannot merge: df has no DatetimeIndex or 'datetime' column")
+        return False
+
+    def _normalize_timezones(self, df_enriched: pd.DataFrame, aggregated: pd.DataFrame):
+        """Normalize timezones in both DataFrames."""
+        if df_enriched.index.tz is not None:
+            df_enriched.index = df_enriched.index.tz_localize(None)
+        if aggregated.index.tz is not None:
+            aggregated.index = aggregated.index.tz_localize(None)
+
+    def _prepare_df_for_merge(self, df_enriched: pd.DataFrame) -> pd.DataFrame:
+        """Prepare main DataFrame for merge."""
+        df_reset = df_enriched.reset_index()
+        df_reset = df_reset.rename(columns={'index': 'datetime'} if 'index' in df_reset.columns else {})
+        
+        # Normalize timezone + precision
+        self._normalize_datetime_column(df_reset, 'datetime')
+        
+        return df_reset
+
+    def _prepare_aggregated_for_merge(self, aggregated: pd.DataFrame, time_col: str) -> pd.DataFrame:
+        """Prepare aggregated DataFrame for merge."""
+        aggregated_reset = aggregated.reset_index()
+        aggregated_reset = aggregated_reset.rename(columns={time_col: 'datetime'})
+        
+        # Normalize timezone + precision
+        self._normalize_datetime_column(aggregated_reset, 'datetime')
+        
+        return aggregated_reset
+
+    def _normalize_datetime_column(self, df: pd.DataFrame, col: str):
+        """Normalize datetime column timezone and precision."""
+        if col not in df.columns:
+            return
+            
+        if pd.api.types.is_datetime64_any_dtype(df[col]):
+            if hasattr(df[col].dtype, 'tz') and df[col].dt.tz is not None:
+                df[col] = df[col].dt.tz_localize(None)
+            
+            if df[col].dtype != DATETIME64_NS:
+                df[col] = df[col].astype(DATETIME64_NS)
+
+    def _finalize_merge_result(self, df_merged: pd.DataFrame) -> pd.DataFrame:
+        """Finalize merge result."""
+        df_merged = df_merged.set_index('datetime')
+        df_merged['keyword_count'] = df_merged['keyword_count'].fillna(0).astype(int)
+        df_merged['entity_count'] = df_merged['entity_count'].fillna(0).astype(int)
+
+        logger.info(f"✅ Added keyword/entity features. Avg keywords: {df_merged['keyword_count'].mean():.1f}, Avg entities: {df_merged['entity_count'].mean():.1f}")
+        return df_merged

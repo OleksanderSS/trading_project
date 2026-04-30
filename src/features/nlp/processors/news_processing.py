@@ -14,7 +14,6 @@ logger = ProjectLogger.get_logger(__name__)
 DATA_PATH = 'data'
 
 def process_news_data(news_df: pd.DataFrame, 
-                     cluster_method: str = "kmeans",
                      n_clusters: int = 10,
                      save_csv: bool = True) -> pd.DataFrame:
     """Process and cluster news data"""
@@ -27,7 +26,7 @@ def process_news_data(news_df: pd.DataFrame,
     processed_df = _preprocess_news(news_df)
     
     # Cluster news
-    clustered_df = _cluster_news(processed_df, method=cluster_method, n_clusters=n_clusters)
+    clustered_df = _cluster_news(processed_df, n_clusters=n_clusters)
     
     # Save if requested
     if save_csv:
@@ -60,7 +59,7 @@ def _preprocess_news(df: pd.DataFrame) -> pd.DataFrame:
     
     return df_clean
 
-def _cluster_news(df: pd.DataFrame, method: str = "kmeans", n_clusters: int = 10) -> pd.DataFrame:
+def _cluster_news(df: pd.DataFrame, n_clusters: int = 10) -> pd.DataFrame:
     """Cluster news articles"""
     try:
         from sklearn.feature_extraction.text import TfidfVectorizer

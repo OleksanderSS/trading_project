@@ -13,7 +13,7 @@ from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.core.error_handling.error_handler import ErrorHandler
 
-class Stage_0_Setup(BaseStage):
+class Stage0Setup(BaseStage):
     """
     Stage responsible for preparing the working environment by ensuring 
     necessary infrastructure and configurations are in place.

@@ -1,6 +1,7 @@
+# src/core/security/secure_secrets_manager.py
 """
 🔐 SECURE SECRETS MANAGER
-Безпечне управління секретами та API ключами
+Production-grade management of system secrets, API keys, and environment variables.
 """
 
 import os
@@ -9,30 +10,56 @@ import hashlib
 from typing import Optional, Dict, List
 from pathlib import Path
 
-# Використовуємо наш централізований логгер
+# Utilize centralized project-wide logger
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
 class SecurityError(Exception):
-    """Виключення для критичних помилок безпеки."""
+    """Exception raised for critical security violations or missing required credentials."""
     pass
 
 def load_dotenv(dotenv_path: str = '.env'):
     """
-    Вручну завантажує змінні з .env файлу в оточення os.environ.
-    Це робиться, оскільки в середовищі може бути відсутня бібліотека python-dotenv.
+    Manually parses a .env file and injects keys into os.environ.
+    This provides robustness in environments where the 'python-dotenv' library is not available.
+    
+    Search Protocol:
+    1. Specified parameter path (default: .env)
+    2. Google Drive mount point (Colab support): /content/drive/MyDrive/trading_project/.env
+    3. Parent directory lookup: ../.env
+    4. User home directory
     """
-    if not os.path.exists(dotenv_path):
-        logger.warning(f"Файл .env не знайдено за шляхом: {dotenv_path}. Секрети не будуть завантажені з файлу.")
+    # Hierarchical list of potential .env locations
+    search_paths = [
+        dotenv_path,
+        '/content/drive/MyDrive/trading_project/.env',
+        '/content/drive/MyDrive/.env',
+        '/content/.env',
+        '../.env',
+        Path.home() / '.env',
+    ]
+    
+    found_path = None
+    for path in search_paths:
+        if isinstance(path, Path):
+            path = str(path)
+        if os.path.exists(path):
+            found_path = path
+            logger.info(f"Environment configuration identified: {path}")
+            break
+    
+    if not found_path:
+        logger.warning(f"No .env configuration file found across search vectors: {search_paths}. Utilizing existing environment variables.")
         return
 
-    logger.debug(f"Завантаження змінних оточення з файлу {dotenv_path}...")
+    logger.debug(f"Synchronizing environment variables from file: {found_path}")
     try:
         loaded_keys = []
-        with open(dotenv_path, 'r', encoding='utf-8') as f:
+        with open(found_path, 'r', encoding='utf-8') as f:
             for line in f:
                 line = line.strip()
+                # Skip empty lines, comments, and malformed lines
                 if not line or line.startswith('#') or '=' not in line:
                     continue
                 
@@ -40,21 +67,21 @@ def load_dotenv(dotenv_path: str = '.env'):
                 key = key.strip()
                 value = value.strip().strip('"').strip("'")
                 
-                # Завжди перезаписуємо змінні з .env файлу
+                # Overwrite environment variable with the file value
                 os.environ[key] = value
                 loaded_keys.append(key)
         
-        logger.info(f"Змінні з .env ({len(loaded_keys)} шт.) успішно завантажені в оточення.")
+        logger.info(f"Successfully loaded {len(loaded_keys)} variables into the active environment.")
         return loaded_keys
     except Exception as e:
-        logger.error(f"Помилка під час читання або обробки файлу {dotenv_path}: {e}", exc_info=True)
+        logger.error(f"Critical failure reading environment file {found_path}: {e}")
         return []
 
 
 class SecretsManager:
-    """Безпечний менеджер секретів виробничого рівня."""
+    """Secure Secrets Manager designed for production stability and observability."""
 
-    # Регулярні вирази для валідації форматів відомих API ключів
+    # Predefined validation patterns for known API providers
     FORMAT_PATTERNS = {
         'FRED_API_KEY': r'^[a-f0-9]{32}$',
         'NEWS_API_KEY': r'^[a-f0-9]{32}$',
@@ -64,69 +91,69 @@ class SecretsManager:
 
     def __init__(self, dotenv_path: str = '.env', encrypted_path: str = '.env.enc'):
         """
-        Ініціалізація менеджера секретів.
+        Initializes the secrets manager and synchronizes local environment variables.
         """
         self.dotenv_keys = load_dotenv(dotenv_path)
         self._secrets_cache: Dict[str, str] = {}
         
-        # Опціональне завантаження зашифрованих секретів (якщо є ключ шифрування в оточенні)
+        # Optional: Decrypt and load persistent encrypted secrets
         self._load_encrypted_secrets(encrypted_path)
 
     def _load_encrypted_secrets(self, path: str):
-        """Спроба завантаження секретів із зашифрованого файлу (потребує CRYPTO_KEY)."""
+        """Attempts to load secrets from an encrypted payload (requires CRYPTO_KEY)."""
         crypto_key = os.getenv('CRYPTO_KEY')
         if not crypto_key or not os.path.exists(path):
             return
             
         try:
-            # Тут могла б бути реальна логіка дешифрування через cryptography.fernet
-            # Зараз це просто скелет для майбутньої реалізації
-            logger.info(f"Виявлено зашифрований файл {path}. Використовуйте 'cryptography' для повної реалізації.")
+            # Placeholder for Fernet-based decryption logic
+            logger.info(f"Encrypted payload identified: {path}. Logic integration pending cryptography implementation.")
         except Exception as e:
-            logger.error(f"Не вдалося завантажити зашифровані секрети: {e}")
+            logger.error(f"Failed to synchronize encrypted secrets: {e}")
 
     def validate_format(self, key_name: str, value: str) -> bool:
-        """Перевіряє чи відповідає секрет очікуваному формату через Regex."""
+        """Validates if a specific secret aligns with its expected provider format."""
         if not value:
             return False
             
         pattern = self.FORMAT_PATTERNS.get(key_name)
         if not pattern:
-            return True # Якщо патерн не визначений, вважаємо валідним за замовчуванням
+            return True # Pass by default if no pattern is defined
             
         if not re.match(pattern, value):
-            logger.warning(f"Секрет '{key_name}' не відповідає очікуваному формату Regex.")
+            logger.warning(f"Format Validation Failure: Secret '{key_name}' does not match expected Regex pattern.")
             return False
         return True
 
     def get_secret(self, key_name: str, default: Optional[str] = None, critical: bool = False) -> Optional[str]:
         """
-        Безпечне отримання секрету. Пріоритет: os.environ -> .env.
+        Safely retrieves a configuration secret. 
+        Hierarchy: os.environ -> Local Cache.
         """
         value = os.getenv(key_name)
 
         if not value:
             if critical:
-                logger.critical(f"КРИТИЧНА ПОМИЛКА СЕКРЕТІВ: Ключ '{key_name}' відсутній!")
+                logger.critical(f"AUTHENTICATION PROTOCOL BREACH: Required key '{key_name}' is missing or undefined!")
                 raise SecurityError(f"Critical secret '{key_name}' is missing.")
             return default
 
-        # Перевірка на плейсхолдери та формат
+        # Block placeholder values from development templates
         if f"your_{key_name.lower()}_here" in value.lower() or value == "":
             if critical:
+                logger.critical(f"SECURITY PROTOCOL BREACH: Key '{key_name}' contains a template placeholder.")
                 raise SecurityError(f"Secret '{key_name}' contains a placeholder value.")
             return default
             
-        # Валідація формату
+        # Enforce format validation for critical assets
         if not self.validate_format(key_name, value) and critical:
-             raise SecurityError(f"Secret '{key_name}' has an invalid format.")
+             raise SecurityError(f"Secret '{key_name}' failed hierarchical format validation.")
 
         return value
 
     def as_dict(self) -> Dict[str, str]:
         """
-        Повертає обмежений набір секретів. 
-        Тільки ті, що були в .env або містять ознаки безпекових ключів.
+        Exports a filtered dictionary of sensitive keys identified in the environment.
         """
         result = {}
         target_patterns = ['API', 'KEY', 'TOKEN', 'SECRET', 'PASSWORD', 'URL', 'DATABASE']
@@ -142,7 +169,7 @@ class SecretsManager:
 
     @staticmethod
     def mask_secret(secret: Optional[str]) -> str:
-        """Маскує секрет для безпечного логування (наприклад, 'AKIA...XXXX')."""
+        """Masks sensitive content for safe observability (e.g., 'APIK...XXXX')."""
         if not secret:
             return "None"
         if len(secret) <= 8:
@@ -150,34 +177,41 @@ class SecretsManager:
         return f"{secret[:4]}...{secret[-4:]}"
 
     def validate_secrets(self, expected_keys: List[str]) -> Dict[str, bool]:
-        """Перевіряє наявність списку очікуваних ключів."""
+        """Validates the presence and format of multiple required keys."""
         return {key: (self.get_secret(key) is not None and self.validate_format(key, self.get_secret(key))) 
                 for key in expected_keys}
 
     def log_secrets_status(self, keys_to_check: List[str]):
-        """Виводить статус завантаження секретів у лог без розкриття значень."""
-        logger.info("--- СТАТУС КОНФІГУРАЦІЇ СЕКРЕТІВ (VALIDATION) ---")
+        """Logs the readiness status of critical infrastructure keys without exposure."""
+        logger.info("--- SECRETS CONFIGURATION AUDIT (VALIDATION) ---")
         for key in keys_to_check:
             value = self.get_secret(key)
             is_present = value is not None
             is_valid = self.validate_format(key, value) if is_present else False
             
-            status = f"[OK]" if is_valid else ("[FORMAT ERR]" if is_present else "[MISSING]")
+            if is_valid:
+                status = "[OK]"
+            elif is_present:
+                status = "[FORMAT ERR]"
+            else:
+                status = "[MISSING]"
             masked = self.mask_secret(value) if is_present else "N/A"
-            logger.info(f"- {key:20} {status:12} {masked}")
+            logger.info(f"- {key:25} {status:15} {masked}")
         logger.info("--------------------------------------------------")
 
 
+# Singleton instance for global state management
 _secrets_manager_instance = SecretsManager()
 
 def get_secret(key_name: str, default: Optional[str] = None, critical: bool = False) -> Optional[str]:
-    """Глобальна функція доступу до секретів."""
+    """Global interface for secure secret retrieval."""
     return _secrets_manager_instance.get_secret(key_name, default=default, critical=critical)
 
 def mask_secret(secret: Optional[str]) -> str:
-    """Глобальна функція маскування."""
+    """Global interface for secret masking."""
     return SecretsManager.mask_secret(secret)
 
 if __name__ == "__main__":
+    # Internal validation logic
     test_keys = ['NEWS_API_KEY', 'FRED_API_KEY', 'HF_TOKEN', 'TELEGRAM_TOKEN', 'CRYPTO_KEY']
     _secrets_manager_instance.log_secrets_status(test_keys)

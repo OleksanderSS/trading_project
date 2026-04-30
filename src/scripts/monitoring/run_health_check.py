@@ -1,10 +1,7 @@
-# src/scripts/monitoring/run_health_check.py
-
-import json
+from src.config.unified_config_manager import get_current_config
 from src.monitoring.health_hub import HealthHub
 from src.data.management.data_manager import DataManager
 from src.core.reporting.results_manager import ResultsManager
-from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 
 def main():
@@ -18,7 +15,7 @@ def main():
 
     try:
         # Initialize dependencies for HealthHub
-        config_manager = UnifiedConfigManager()
+        config_manager = get_current_config()
         data_manager = DataManager(config_manager)
         results_manager = ResultsManager(data_manager)
         
@@ -36,9 +33,9 @@ def main():
         # Pretty-print the JSON report
         report_str = json.dumps(health_report, indent=2, ensure_ascii=False)
         
-        print("\n--- System Health Report ---")
-        print(report_str)
-        print("--- End of Report ---\n")
+        logger.info("\n--- System Health Report ---")
+        logger.info(report_str)
+        logger.info("--- End of Report ---\n")
 
         logger.info("Health check completed successfully.")
 

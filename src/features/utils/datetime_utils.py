@@ -60,7 +60,7 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
         return df
     
     # Try alternative datetime column names
-    for alt_name in ['published_at', 'timestamp', 'date', 'created_at', 'updated_at', 'time']:
+    for alt_name in ['published_date', 'published_at', 'timestamp', 'date', 'created_at', 'updated_at', 'time']:
         if alt_name in df.columns:
             logger.info(f"✅ Using '{alt_name}' column as datetime")
             df['datetime'] = pd.to_datetime(df[alt_name], utc=True)
@@ -71,11 +71,11 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
     if raise_on_missing:
         available_cols = df.columns.tolist()[:10]
         raise ValueError(
-            f"Cannot find datetime column. Available columns: {available_cols}"
+            "Cannot find datetime column. Available columns: {}".format(available_cols)
         )
     
-    logger.warning(f"⚠️ No datetime column found in DataFrame")
-    logger.warning(f"   Available columns: {df.columns.tolist()[:10]}")
+    logger.warning("No datetime column found in DataFrame")
+    logger.warning("   Available columns: {}".format(df.columns.tolist()[:10]))
     
     # Create a default datetime if needed
     df['datetime'] = pd.Timestamp.now()

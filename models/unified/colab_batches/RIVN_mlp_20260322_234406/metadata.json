@@ -1,0 +1,11 @@
+{
+  "batch_id": "RIVN_mlp_20260322_234406",
+  "ticker": "RIVN",
+  "model_name": "mlp",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_volume_change_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T23:44:07.011531",
+  "status": "PENDING_COLAB"
+}

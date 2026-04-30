@@ -23,7 +23,8 @@ class BaseMode(ABC):
         Args:
             config_manager: Примірник UnifiedConfigManager для доступу до налаштувань.
         """
-        self.config_manager = config_manager or UnifiedConfigManager()
+        from src.config.unified_config_manager import get_current_config
+        self.config_manager = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
     
     @abstractmethod

@@ -4,7 +4,7 @@
 import pandas as pd
 from typing import Optional
 
-from src.utils.logging.logger import ProjectLogger
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("DatasetSampler")
 

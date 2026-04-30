@@ -74,7 +74,7 @@ class TradingCalendar:
         dt = pd.to_datetime(from_date).normalize()
         
         try:
-            # Pandas 2.0+ не підтримує method='pad', використовуємо searchsorted
+            # Pandas 2.0+ does not support method='pad', using searchsorted instead
             loc = self.trading_days.searchsorted(dt, side='right') - 1
             if loc < 0:
                 logger.warning(f"Date {dt} is before the start of the calendar.")
@@ -94,6 +94,21 @@ class TradingCalendar:
             
         start_index = max(0, end_index - count)
         return [d.date() for d in self.trading_days[start_index:end_index]]
+    
+    def get_previous_trading_day(self, from_date: Union[date, datetime, str]) -> date:
+        """Returns the previous trading day before the given date from the index."""
+        dt = pd.to_datetime(from_date).normalize()
+        
+        # Find the first trading day strictly before the given date
+        past_days = self.trading_days[self.trading_days < dt]
+        if not past_days.empty:
+            return past_days[-1].date()
+        
+        # Fallback if outside pre-generated range (not efficient but safe)
+        prev_day = (dt - BDay(1)).date()
+        while prev_day in self.holidays:
+            prev_day = (pd.to_datetime(prev_day) - BDay(1)).date()
+        return prev_day
 
     def fetch_and_set_earnings_dates(self, tickers: List[str]):
         """Fetches earnings dates for tickers and updates the calendar."""
@@ -111,7 +126,7 @@ class TradingCalendar:
         self.earnings_dates.update(all_earnings)
         logger.info(f"Updated earnings dates. Total unique dates: {len(self.earnings_dates)}")
 
-    def is_earnings_day(self, day: Union[date, datetime, str], ticker: Optional[str] = None) -> bool:
+    def is_earnings_day(self, day: Union[date, datetime, str]) -> bool:
         """Checks if a given date is an earnings announcement day."""
         try:
             dt = pd.to_datetime(day).normalize().date()

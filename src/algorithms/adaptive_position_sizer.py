@@ -13,8 +13,33 @@
 
 import numpy as np
 from typing import Dict, Any, Optional, List
+from dataclasses import dataclass
 from src.core.logging.logger import ProjectLogger
 from src.risk_management import VaRCalculator
+
+
+@dataclass
+class PositionSizingParams:
+    """Parameters for position sizing calculation"""
+    portfolio_value: float
+    volatility: float
+    confidence: float
+    max_drawdown: float = 0.0
+    active_positions: int = 0
+    market_regime: str = 'NORMAL'
+    daily_volume: Optional[float] = None
+    current_price: Optional[float] = None
+    historical_returns: Optional[np.ndarray] = None
+
+
+@dataclass
+class LiquidityParams:
+    """Parameters for liquidity adjustment calculation"""
+    base_size: float
+    var_adjustment: float
+    kelly_adjustment: float
+    daily_volume: Optional[float]
+    current_price: Optional[float]
 
 class AdaptivePositionSizer:
     """Адаптивно розраховує розмір позиції з використанням сучасних методів"""
@@ -23,20 +48,30 @@ class AdaptivePositionSizer:
         self.logger = ProjectLogger.get_logger("AdaptivePositionSizer")
         self.config = config or {}
         
-        # Параметри
+        self._initialize_position_parameters()
+        self._initialize_kelly_parameters()
+        self._initialize_liquidity_parameters()
+        self._initialize_regime_multipliers()
+        self._initialize_var_calculator()
+    
+    def _initialize_position_parameters(self):
+        """Initialize basic position sizing parameters"""
         self.base_position_size_pct = self.config.get('base_position_size_pct', 0.02)  # 2%
         self.max_position_size_pct = self.config.get('max_position_size_pct', 0.10)    # 10%
         self.min_position_size_pct = self.config.get('min_position_size_pct', 0.005)   # 0.5%
         self.max_active_positions = self.config.get('max_active_positions', 10)
-        
-        # Kelly Criterion параметри
+    
+    def _initialize_kelly_parameters(self):
+        """Initialize Kelly Criterion parameters"""
         self.use_kelly = self.config.get('use_kelly_criterion', True)
         self.kelly_fraction = self.config.get('kelly_fraction', 0.5)  # Conservative Kelly
-        
-        # Liquidity constraints
+    
+    def _initialize_liquidity_parameters(self):
+        """Initialize liquidity constraint parameters"""
         self.liquidity_threshold = self.config.get('liquidity_threshold', 0.01)  # 1% of daily volume
-        
-        # Market regime adaptation
+    
+    def _initialize_regime_multipliers(self):
+        """Initialize market regime adaptation multipliers"""
         self.regime_multipliers = {
             'TRENDING_UP': 1.2,      # Increase size in uptrends
             'TRENDING_DOWN': 0.8,    # Decrease size in downtrends  
@@ -44,11 +79,43 @@ class AdaptivePositionSizer:
             'VOLATILE': 0.6,         # Reduce size in high volatility
             'CRISIS': 0.3            # Minimal size in crisis
         }
-        
-        # VaR calculator для risk-based sizing
-        self.var_calculator = VaRCalculator()
     
-    def calculate_position_size(self,
+    def _initialize_var_calculator(self):
+        """Initialize VaR calculator for risk-based sizing"""
+        self.var_calculator = VaRCalculator()
+
+    def calculate_position_size(self, params: PositionSizingParams) -> Dict[str, Any]:
+        """Calculate position size using parameter object"""
+        return self._calculate_position_size_from_params(params)
+    
+    @staticmethod
+    def create_params(portfolio_value: float,
+                      volatility: float,
+                      confidence: float,
+                      **kwargs) -> PositionSizingParams:
+        """
+        Factory method to create PositionSizingParams with required params only.
+        Optional params passed as keyword arguments.
+        
+        Args:
+            portfolio_value: Required portfolio value
+            volatility: Required volatility
+            confidence: Required confidence score
+            **kwargs: Optional parameters (max_drawdown, active_positions, etc.)
+        """
+        return PositionSizingParams(
+            portfolio_value=portfolio_value,
+            volatility=volatility,
+            confidence=confidence,
+            max_drawdown=kwargs.get('max_drawdown', 0.0),
+            active_positions=kwargs.get('active_positions', 0),
+            market_regime=kwargs.get('market_regime', 'NORMAL'),
+            daily_volume=kwargs.get('daily_volume', None),
+            current_price=kwargs.get('current_price', None),
+            historical_returns=kwargs.get('historical_returns', None)
+        )
+    
+    def calculate_position_size_legacy(self,
                                portfolio_value: float,
                                volatility: float,
                                confidence: float,
@@ -59,7 +126,8 @@ class AdaptivePositionSizer:
                                current_price: Optional[float] = None,
                                historical_returns: Optional[np.ndarray] = None) -> Dict[str, Any]:
         """
-        Розраховує розмір позиції з використанням всіх факторів
+        @deprecated: Use calculate_position_size(params) instead.
+        This method has too many parameters and is kept for backward compatibility only.
         
         Args:
             portfolio_value: Вартість портфеля
@@ -75,64 +143,44 @@ class AdaptivePositionSizer:
         Returns:
             Dict з розміром позиції та детальними розрахунками
         """
+        # Create params using the factory method to avoid duplication
+        params = self.create_params(
+            portfolio_value=portfolio_value,
+            volatility=volatility,
+            confidence=confidence,
+            max_drawdown=max_drawdown,
+            active_positions=active_positions,
+            market_regime=market_regime,
+            daily_volume=daily_volume,
+            current_price=current_price,
+            historical_returns=historical_returns
+        )
+        return self._calculate_position_size_from_params(params)
+
+    def _calculate_position_size_from_params(self, params: PositionSizingParams) -> Dict[str, Any]:
+        """Розраховує розмір позиції з параметрів"""
         try:
             # 1. Базовий розмір
-            base_size = portfolio_value * self.base_position_size_pct
+            base_size = params.portfolio_value * self.base_position_size_pct
             
-            # 2. VaR-based sizing (якщо є історичні дані)
-            var_adjustment = 1.0
-            if historical_returns is not None and len(historical_returns) > 30:
-                try:
-                    var_result = self.var_calculator.calculate_var_historical(
-                        historical_returns, confidence=0.95, time_horizon=1
-                    )
-                    if 'var' in var_result:
-                        # VaR-based position sizing: position = portfolio_value * (target_risk / VaR)
-                        target_risk_pct = self.base_position_size_pct
-                        var_pct = abs(var_result['var'])
-                        if var_pct > 0:
-                            var_adjustment = min(target_risk_pct / var_pct, 2.0)  # Max 2x adjustment
-                except Exception as e:
-                    self.logger.debug(f"VaR calculation failed, using base size: {e}")
+            # 2. Calculate all adjustment factors using helper methods
+            var_adjustment = self._calculate_var_adjustment(params.historical_returns)
+            kelly_adjustment = self._calculate_kelly_adjustment(params.confidence)
+            conf_adjustment = params.confidence if params.confidence is not None else 1.0
+            vol_adjustment = self._calculate_volatility_adjustment(params.volatility)
+            dd_adjustment = self._calculate_drawdown_adjustment(params.max_drawdown)
+            pos_adjustment = self._calculate_positions_adjustment(params.active_positions)
+            regime_adjustment = self.regime_multipliers.get(params.market_regime, 1.0)
+            liquidity_params = LiquidityParams(
+                base_size=base_size, 
+                var_adjustment=var_adjustment, 
+                kelly_adjustment=kelly_adjustment, 
+                daily_volume=params.daily_volume, 
+                current_price=params.current_price
+            )
+            liquidity_adjustment = self._calculate_liquidity_adjustment(liquidity_params)
             
-            # 3. Kelly Criterion sizing (якщо включено)
-            kelly_adjustment = 1.0
-            if self.use_kelly and confidence is not None:
-                # Simplified Kelly: f = (p - q) / b, де p=confidence, q=1-p, b=1 (even odds)
-                kelly_f = (confidence - (1 - confidence)) / 1.0
-                kelly_adjustment = max(0.1, min(kelly_f * self.kelly_fraction, 2.0))
-            
-            # 4. Confidence adjustment
-            conf_adjustment = confidence if confidence is not None else 1.0
-            
-            # 5. Volatility adjustment (inverse relationship)
-            vol_adjustment = 1.0 / (1.0 + volatility * 5)  # Reduce size with volatility
-            vol_adjustment = np.clip(vol_adjustment, 0.3, 1.0)
-            
-            # 6. Drawdown adjustment
-            dd_adjustment = 1.0 - max_drawdown * 2  # Reduce size with drawdown
-            dd_adjustment = np.clip(dd_adjustment, 0.3, 1.0)
-            
-            # 7. Active positions adjustment
-            if active_positions > 0:
-                pos_adjustment = 1.0 / (1.0 + active_positions / self.max_active_positions)
-                pos_adjustment = np.clip(pos_adjustment, 0.5, 1.0)
-            else:
-                pos_adjustment = 1.0
-            
-            # 8. Market regime adjustment
-            regime_adjustment = self.regime_multipliers.get(market_regime, 1.0)
-            
-            # 9. Liquidity adjustment
-            liquidity_adjustment = 1.0
-            if daily_volume and current_price and current_price > 0:
-                position_value = base_size * var_adjustment * kelly_adjustment
-                max_safe_position = daily_volume * current_price * self.liquidity_threshold
-                if position_value > max_safe_position:
-                    liquidity_adjustment = max_safe_position / position_value
-                    liquidity_adjustment = np.clip(liquidity_adjustment, 0.1, 1.0)
-            
-            # 10. Комбінуємо всі фактори
+            # 3. Combine all factors
             position_size = (base_size * 
                            var_adjustment * 
                            kelly_adjustment * 
@@ -143,19 +191,13 @@ class AdaptivePositionSizer:
                            regime_adjustment * 
                            liquidity_adjustment)
             
-            # 11. Обмежуємо розмір
-            position_size = np.clip(
-                position_size,
-                portfolio_value * self.min_position_size_pct,
-                portfolio_value * self.max_position_size_pct
-            )
+            # 4. Apply position limits
+            position_size = self._apply_position_limits(position_size, params.portfolio_value)
+            position_size_pct = position_size / params.portfolio_value
             
-            # 12. Розраховуємо відсоток від портфеля
-            position_size_pct = position_size / portfolio_value
-            
-            # 13. Risk metrics
-            expected_risk = volatility * position_size_pct
-            risk_adjusted_return = confidence * position_size_pct
+            # 5. Risk metrics
+            expected_risk = params.volatility * position_size_pct
+            risk_adjusted_return = params.confidence * position_size_pct
             
             return {
                 'position_size': float(position_size),
@@ -183,16 +225,16 @@ class AdaptivePositionSizer:
                 'sharpe_contribution': float(risk_adjusted_return / expected_risk) if expected_risk > 0 else 0.0,
                 
                 # Market context
-                'market_regime': market_regime,
+                'market_regime': params.market_regime,
                 'liquidity_constrained': liquidity_adjustment < 1.0,
                 'kelly_fraction_used': self.kelly_fraction,
-                'var_based_sizing': historical_returns is not None
+                'var_based_sizing': params.historical_returns is not None
             }
         
         except Exception as e:
             self.logger.error(f"Помилка розрахунку розміру позиції: {e}")
             # Fallback to simple calculation
-            fallback_size = portfolio_value * self.base_position_size_pct
+            fallback_size = params.portfolio_value * self.base_position_size_pct
             return {
                 'position_size': float(fallback_size),
                 'position_size_pct': float(self.base_position_size_pct),
@@ -200,86 +242,89 @@ class AdaptivePositionSizer:
                 'fallback_used': True
             }
     
-    def calculate_position_size(self,
-                               portfolio_value: float,
-                               volatility: float,
-                               confidence: float,
-                               max_drawdown: float = 0.0,
-                               active_positions: int = 0) -> Dict[str, Any]:
-        """
-        Розраховує розмір позиції
+    def _calculate_var_adjustment(self, historical_returns: Optional[np.ndarray]) -> float:
+        """Calculate VaR-based adjustment factor"""
+        if historical_returns is None or len(historical_returns) <= 30:
+            return 1.0
         
-        Args:
-            portfolio_value: Вартість портфеля
-            volatility: Волатильність активу
-            confidence: Confidence score (0-1)
-            max_drawdown: Максимальний drawdown портфеля (0-1)
-            active_positions: Кількість активних позицій
-        
-        Returns:
-            Dict з розміром позиції та параметрами
-        """
         try:
-            # Базовий розмір
-            base_size = portfolio_value * self.base_position_size_pct
-            
-            # 1. Коригування за волатильністю
-            # Вища волатильність = менша позиція
-            vol_factor = 1.0 / (1.0 + volatility * 10)
-            vol_factor = np.clip(vol_factor, 0.3, 1.0)
-            
-            # 2. Коригування за confidence
-            # Нижча впевненість = менша позиція
-            conf_factor = confidence
-            
-            # 3. Коригування за drawdown
-            # Більший drawdown = менша позиція
-            dd_factor = 1.0 - max_drawdown
-            dd_factor = np.clip(dd_factor, 0.3, 1.0)
-            
-            # 4. Коригування за кількістю позицій
-            # Більше позицій = менша позиція на кожну
-            if active_positions > 0:
-                pos_factor = 1.0 / (1.0 + active_positions / self.max_active_positions)
-            else:
-                pos_factor = 1.0
-            
-            # Комбінуємо всі фактори
-            position_size = base_size * vol_factor * conf_factor * dd_factor * pos_factor
-            
-            # Обмежуємо розмір
-            position_size = np.clip(
-                position_size,
-                portfolio_value * self.min_position_size_pct,
-                portfolio_value * self.max_position_size_pct
+            var_result = self.var_calculator.calculate_var_historical(
+                historical_returns, confidence=0.95, time_horizon=1
             )
-            
-            # Розраховуємо відсоток від портфеля
-            position_size_pct = position_size / portfolio_value
-            
-            return {
-                'position_size': float(position_size),
-                'position_size_pct': float(position_size_pct),
-                'base_size': float(base_size),
-                'vol_factor': float(vol_factor),
-                'conf_factor': float(conf_factor),
-                'dd_factor': float(dd_factor),
-                'pos_factor': float(pos_factor),
-                'effective_multiplier': float(vol_factor * conf_factor * dd_factor * pos_factor)
-            }
-        
+            if 'var' in var_result:
+                target_risk_pct = self.base_position_size_pct
+                var_pct = abs(var_result['var'])
+                if var_pct > 0:
+                    return min(target_risk_pct / var_pct, 2.0)
         except Exception as e:
-            self.logger.error(f"Помилка розрахунку розміру позиції: {e}")
-            return {
-                'position_size': portfolio_value * self.base_position_size_pct,
-                'position_size_pct': self.base_position_size_pct,
-                'base_size': portfolio_value * self.base_position_size_pct,
-                'vol_factor': 1.0,
-                'conf_factor': 1.0,
-                'dd_factor': 1.0,
-                'pos_factor': 1.0,
-                'effective_multiplier': 1.0
-            }
+            self.logger.debug(f"VaR calculation failed: {e}")
+        return 1.0
+    
+    def _calculate_kelly_adjustment(self, confidence: float) -> float:
+        """Calculate Kelly Criterion adjustment factor"""
+        if not self.use_kelly or confidence is None:
+            return 1.0
+        
+        kelly_f = (confidence - (1 - confidence)) / 1.0
+        return max(0.1, min(kelly_f * self.kelly_fraction, 2.0))
+    
+    def _calculate_volatility_adjustment(self, volatility: float) -> float:
+        """Calculate volatility-based adjustment factor"""
+        vol_adjustment = 1.0 / (1.0 + volatility * 5)
+        return np.clip(vol_adjustment, 0.3, 1.0)
+    
+    def _calculate_drawdown_adjustment(self, max_drawdown: float) -> float:
+        """Calculate drawdown-based adjustment factor"""
+        dd_adjustment = 1.0 - max_drawdown * 2
+        return np.clip(dd_adjustment, 0.3, 1.0)
+    
+    def _calculate_positions_adjustment(self, active_positions: int) -> float:
+        """Calculate adjustment based on number of active positions"""
+        if active_positions <= 0:
+            return 1.0
+        
+        pos_adjustment = 1.0 / (1.0 + active_positions / self.max_active_positions)
+        return np.clip(pos_adjustment, 0.5, 1.0)
+    
+    def _calculate_liquidity_adjustment(self, params: LiquidityParams) -> float:
+        """Calculate liquidity-based adjustment factor"""
+        if not self._has_valid_liquidity_data(params):
+            return 1.0
+        
+        position_value = self._calculate_position_value(params)
+        max_safe_position = self._calculate_max_safe_position(params)
+        
+        if position_value <= max_safe_position:
+            return 1.0
+        
+        return self._compute_liquidity_adjustment(position_value, max_safe_position)
+
+    def _has_valid_liquidity_data(self, params: LiquidityParams) -> bool:
+        """Check if liquidity data is valid"""
+        return (params.daily_volume and 
+                params.current_price and 
+                params.current_price > 0)
+
+    def _calculate_position_value(self, params: LiquidityParams) -> float:
+        """Calculate position value"""
+        return params.base_size * params.var_adjustment * params.kelly_adjustment
+
+    def _calculate_max_safe_position(self, params: LiquidityParams) -> float:
+        """Calculate maximum safe position based on liquidity"""
+        return params.daily_volume * params.current_price * self.liquidity_threshold
+
+    def _compute_liquidity_adjustment(self, position_value: float, max_safe_position: float) -> float:
+        """Compute final liquidity adjustment"""
+        liquidity_adjustment = max_safe_position / position_value
+        return np.clip(liquidity_adjustment, 0.1, 1.0)
+    
+    def _apply_position_limits(self, position_size: float, portfolio_value: float) -> float:
+        """Apply min/max position size limits"""
+        return np.clip(
+            position_size,
+            portfolio_value * self.min_position_size_pct,
+            portfolio_value * self.max_position_size_pct
+        )
     
     def calculate_kelly_fraction(self,
                                 win_rate: float,
@@ -303,20 +348,26 @@ class AdaptivePositionSizer:
             Kelly fraction (0-1)
         """
         try:
-            if avg_loss == 0 or win_rate <= 0 or win_rate >= 1:
+            if self._is_invalid_kelly_input(avg_loss, win_rate):
                 return 0.0
             
+            kelly = self._compute_kelly_fraction(avg_win, avg_loss, win_rate)
+            return float(np.clip(kelly, 0, 0.25))
+        except Exception as e:
+            self.logger.error(f"Error computing Kelly fraction: {e}")
+            return 0.0
+
+    def _is_invalid_kelly_input(self, avg_loss: float, win_rate: float) -> bool:
+        """Check if Kelly calculation inputs are invalid"""
+        return avg_loss == 0 or win_rate <= 0 or win_rate >= 1
+
+    def _compute_kelly_fraction(self, avg_win: float, avg_loss: float, win_rate: float) -> float:
+        """Compute Kelly fraction"""
+        try:
             b = avg_win / avg_loss
             p = win_rate
             q = 1 - p
-            
-            kelly = (b * p - q) / b
-            
-            # Обмежуємо Kelly fraction (зазвичай використовуємо 25% від Kelly)
-            kelly = np.clip(kelly, 0, 0.25)
-            
-            return float(kelly)
-        
+            return (b * p - q) / b
         except Exception as e:
             self.logger.warning(f"Помилка розрахунку Kelly fraction: {e}")
             return 0.0

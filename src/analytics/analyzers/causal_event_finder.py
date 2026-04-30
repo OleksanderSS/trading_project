@@ -1,12 +1,19 @@
 import pandas as pd
 import numpy as np
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
+import networkx as nx
 from dowhy import CausalModel
+from src.core.logging.logger import ProjectLogger
 
 from ..interfaces import IAnalyzer
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
+
+# Compatibility shim for networkx/dowhy API differences
+if not hasattr(nx.algorithms, 'd_separated') and hasattr(nx.algorithms, 'd_separation'):
+    nx.algorithms.d_separated = nx.algorithms.d_separation
+    logging.getLogger(__name__).info("Patched networkx.algorithms.d_separated alias for dowhy compatibility")
 
 class CausalEventFinder(IAnalyzer):
     """
@@ -41,85 +48,138 @@ class CausalEventFinder(IAnalyzer):
             Dict with causal analysis results
         """
         try:
-            # Handle dict input (multiple data sources)
-            if isinstance(data, dict):
-                # Merge macro and price data if both provided
-                if 'price_data' in data and 'macro_data' in data:
-                    df = pd.merge(data['price_data'], data['macro_data'], 
-                                left_index=True, right_index=True, how='left')
-                elif 'price_data' in data:
-                    df = data['price_data']
-                else:
-                    df = data.get('macro_data', pd.DataFrame())
-            else:
-                df = data
+            df = self._prepare_analysis_data(data)
+            if not isinstance(df, pd.DataFrame):
+                return df  # Return error status from preparation
             
-            if df.empty or len(df) < 10:
-                logger.warning("Insufficient data for causal analysis")
-                return {"causal_effect": 0.0, "status": "insufficient_data"}
+            validation_result = self._validate_data_columns(df)
+            if validation_result.get("status") != "valid":
+                return validation_result
             
-            # ⚠️ CRITICAL FIX: Check if required columns exist
-            # Do NOT create synthetic dummy columns - instead skip analysis if missing
-            if self.treatment not in df.columns:
-                logger.warning(f"Treatment column '{self.treatment}' not found in data - skipping causal analysis")
-                return {"causal_effect": 0.0, "status": "missing_treatment_column", "treatment": self.treatment}
-            
-            if self.outcome not in df.columns:
-                logger.warning(f"Outcome column '{self.outcome}' not found in data - skipping causal analysis")
-                return {"causal_effect": 0.0, "status": "missing_outcome_column", "outcome": self.outcome}
-            
-            # Filter common causes to only existing columns
-            available_causes = [c for c in self.common_causes if c in df.columns]
-            
+            available_causes = self._filter_available_causes(df)
             if not available_causes:
-                logger.warning("No common causes available, skipping causal analysis")
                 return {"causal_effect": 0.0, "status": "no_confounders"}
             
-            # Validate treatment and outcome have sufficient variance
-            if df[self.treatment].nunique() < 2:
-                logger.warning(f"Treatment '{self.treatment}' has no variance - cannot estimate causal effect")
-                return {"causal_effect": 0.0, "status": "no_treatment_variance"}
+            variance_check = self._validate_treatment_outcome_variance(df)
+            if variance_check.get("status") != "valid":
+                return variance_check
             
-            if df[self.outcome].nunique() < 2:
-                logger.warning(f"Outcome '{self.outcome}' has no variance - cannot estimate causal effect")
-                return {"causal_effect": 0.0, "status": "no_outcome_variance"}
-            
-            # Use CausalModel from DoWhy instead of undefined CausalEngine
-            try:
-                from dowhy import CausalModel
-                
-                # Create graphical model with common causes
-                gml_graph = f"digraph {{{';'.join(available_causes)}->{self.treatment}->{self.outcome}}}"
-                
-                model = CausalModel(
-                    data=df,
-                    treatment=self.treatment,
-                    outcome=self.outcome,
-                    common_causes=available_causes,
-                    graphs=gml_graph
-                )
-                
-                # Identify causal effect
-                identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
-                
-                # Estimate using OLS
-                estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
-                effect = estimate.value if hasattr(estimate, 'value') else 0.0
-                
-                return {
-                    "causal_effect": float(effect) if not np.isnan(effect) else 0.0,
-                    "treatment": self.treatment,
-                    "outcome": self.outcome,
-                    "common_causes": available_causes,
-                    "status": "success"
-                }
-            except ImportError:
-                logger.error("DoWhy library not available for causal analysis")
-                return {"causal_effect": 0.0, "status": "dowhy_not_available"}
+            return self._run_causal_analysis(df, available_causes)
             
         except Exception as e:
             logger.error(f"Causal analysis failed: {e}", exc_info=True)
             return {"causal_effect": 0.0, "status": "error", "error": str(e)}
+    
+    def _filter_available_causes(self, df: pd.DataFrame) -> List[str]:
+        """Filter common causes to only existing columns."""
+        available_causes = [c for c in self.common_causes if c in df.columns]
+        
+        if not available_causes:
+            logger.warning("No common causes available, skipping causal analysis")
+        
+        return available_causes
+    
+    def _validate_treatment_outcome_variance(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Validate treatment and outcome have sufficient variance."""
+        if df[self.treatment].nunique() < 2:
+            logger.warning(f"Treatment '{self.treatment}' has no variance - cannot estimate causal effect")
+            return {"causal_effect": 0.0, "status": "no_treatment_variance"}
+        
+        if df[self.outcome].nunique() < 2:
+            logger.warning(f"Outcome '{self.outcome}' has no variance - cannot estimate causal effect")
+            return {"causal_effect": 0.0, "status": "no_outcome_variance"}
+        
+        return {"status": "valid"}
+    
+    def _run_causal_analysis(self, df: pd.DataFrame, available_causes: List[str]) -> Dict[str, Any]:
+        """Run causal analysis using DoWhy library."""
+        try:
+            from dowhy import CausalModel
+            
+            # Create graphical model with common causes
+            gml_graph = f"digraph {{{';'.join(available_causes)}->{self.treatment}->{self.outcome}}}"
+            
+            model = CausalModel(
+                data=df,
+                treatment=self.treatment,
+                outcome=self.outcome,
+                common_causes=available_causes,
+                graphs=gml_graph
+            )
+            
+            # Identify causal effect
+            identified_estimand = model.identify_effect(proceed_when_unidentifiable=True)
+            
+            # Estimate using OLS
+            estimate = model.estimate_effect(identified_estimand, method_name="backdoor.linear_regression")
+            effect = estimate.value if hasattr(estimate, 'value') else 0.0
+            
+            return {
+                "causal_effect": float(effect) if not np.isnan(effect) else 0.0,
+                "treatment": self.treatment,
+                "outcome": self.outcome,
+                "common_causes": available_causes,
+                "status": "success"
+            }
+        except ImportError:
+            logger.error("DoWhy library not available for causal analysis")
+            return {"causal_effect": 0.0, "status": "dowhy_not_available"}
+
+    def _prepare_analysis_data(self, data: Any) -> Any:
+        """Prepare and validate input data for analysis."""
+        if isinstance(data, dict):
+            return self._prepare_dict_data(data)
+        else:
+            return self._validate_dataframe(data)
+    
+    def _prepare_dict_data(self, data: dict) -> Any:
+        """Prepare data from dictionary input."""
+        price_data = data.get('price_data')
+        macro_data = data.get('macro_data')
+        
+        if self._no_data_available(price_data, macro_data):
+            return {"causal_effect": 0.0, "status": "no_data"}
+        
+        df = self._merge_data_sources(price_data, macro_data)
+        return self._validate_dataframe(df)
+    
+    def _no_data_available(self, price_data: Any, macro_data: Any) -> bool:
+        """Check if no data is available."""
+        if price_data is None and macro_data is None:
+            logger.warning("Both price_data and macro_data are None - skipping causal analysis")
+            return True
+        return False
+    
+    def _merge_data_sources(self, price_data: Any, macro_data: Any) -> pd.DataFrame:
+        """Merge price and macro data sources."""
+        if price_data is not None and macro_data is not None:
+            return pd.merge(price_data, macro_data, 
+                          left_index=True, right_index=True, how='left', on=None,
+                          validate='one_to_one')
+        elif price_data is not None:
+            return price_data
+        else:
+            return macro_data
+    
+    def _validate_dataframe(self, df: pd.DataFrame) -> Any:
+        """Validate dataframe has sufficient data."""
+        if df.empty or len(df) < 10:
+            logger.warning("Insufficient data for causal analysis")
+            return {"causal_effect": 0.0, "status": "insufficient_data"}
+        
+        return df
+
+    def _validate_data_columns(self, df: pd.DataFrame) -> Dict[str, Any]:
+        """Validate that required columns exist in the data."""
+        if self.treatment not in df.columns:
+            logger.warning(f"Treatment column '{self.treatment}' not found in data - skipping causal analysis")
+            return {"causal_effect": 0.0, "status": "missing_treatment_column", "treatment": self.treatment}
+        
+        if self.outcome not in df.columns:
+            logger.warning(f"Outcome column '{self.outcome}' not found in data - skipping causal analysis")
+            return {"causal_effect": 0.0, "status": "missing_outcome_column", "outcome": self.outcome}
+        
+        return {"status": "valid"}
 
 
 class CausalEngine:

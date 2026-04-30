@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import aiohttp
+import aiofiles
 import os
 from typing import Optional, List, Dict, Any
 from pathlib import Path
@@ -69,7 +70,7 @@ class UniversalNotifier:
                     data = aiohttp.FormData()
                     data.add_field('chat_id', str(chat_id))
                     data.add_field('caption', message)
-                    data.add_field('photo', open(image_path, 'rb'))
+                    data.add_field('photo', await aiofiles.open(image_path, 'rb').read())
                     async with session.post(url, data=data) as resp:
                         if resp.status != 200:
                             logger.error(f"Telegram photo failed: {await resp.text()}")
@@ -95,7 +96,7 @@ class UniversalNotifier:
                 if image_path and os.path.exists(image_path):
                     data = aiohttp.FormData()
                     data.add_field('payload_json', '{"content": "' + message + '"}')
-                    data.add_field('file', open(image_path, 'rb'), filename=Path(image_path).name)
+                    data.add_field('file', await aiofiles.open(image_path, 'rb').read(), filename=Path(image_path).name)
                     async with session.post(webhook_url, data=data) as resp:
                         if resp.status not in [200, 204]:
                             logger.error(f"Discord file failed: {await resp.text()}")

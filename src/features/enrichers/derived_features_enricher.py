@@ -1,6 +1,6 @@
 import pandas as pd
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from src.config.unified_config_manager import get_current_config
 from src.features.enrichers.base import BaseEnricher
@@ -59,45 +59,55 @@ class DerivedFeaturesEnricher(BaseEnricher):
         """
         df_enriched = df.copy()
         
-        # Use 'close' as default if not provided
-        price_target_col = kwargs.get('target_column', self.target_column)
-        if not isinstance(price_target_col, str) or price_target_col not in df_enriched.columns:
-            # Fallback to 'close' if target_column is invalid
-            price_target_col = 'close' if 'close' in df_enriched.columns else None
+        # Process price-based derived features
+        price_target_col = self._resolve_price_target_column(df_enriched, kwargs.get('target_column', self.target_column))
+        if price_target_col:
+            self._add_price_based_features(df_enriched, price_target_col)
         
-        if price_target_col and price_target_col in df_enriched.columns:
-            logger.info(f"Generating price-based derived features on column '{price_target_col}'...")
-            
-            # ✅ Calculate returns if missing
-            if self.returns_column not in df_enriched.columns:
-                df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change()
-                logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
-            
-            if 'lags' in self.config:
-                self._add_lags(df_enriched, price_target_col, self.config['lags'])
-            if 'velocity' in self.config:
-                self._add_velocity(df_enriched, price_target_col, self.config['velocity'])
-            if 'acceleration' in self.config:
-                self._add_acceleration(df_enriched, price_target_col, self.config['acceleration'])
-            if 'rolling_skew' in self.config:
-                self._add_rolling_stat(df_enriched, price_target_col, 'rolling_skew', self.config['rolling_skew'])
-            if 'rolling_kurtosis' in self.config:
-                self._add_rolling_stat(df_enriched, price_target_col, 'rolling_kurtosis', self.config['rolling_kurtosis'])
-        else:
-            logger.warning(f"Target column '{price_target_col}' not found. Skipping price-based derived features.")
-
+        # Process returns-based derived features
         returns_col = kwargs.get('returns_column', self.returns_column)
         if isinstance(returns_col, str) and returns_col in df_enriched.columns:
-            logger.info(f"Generating returns-based derived features on column '{returns_col}'...")
-            if 'rolling_volatility' in self.config:
-                self._add_rolling_stat(df_enriched, returns_col, 'rolling_volatility', self.config['rolling_volatility'])
-            if 'forward_targets' in self.config:
-                self._add_forward_targets(df_enriched, returns_col, self.config['forward_targets'])
-        else:
-            logger.warning(f"Returns column '{returns_col}' not found. Skipping returns-based features and targets.")
+            self._add_returns_based_features(df_enriched, returns_col)
 
         logger.info(f"Derived features enrichment complete. Added {len(df_enriched.columns) - len(df.columns)} features.")
         return df_enriched
+
+    def _resolve_price_target_column(self, df_enriched: pd.DataFrame, target_col: str) -> Optional[str]:
+        """Resolve the price target column to use."""
+        if not isinstance(target_col, str) or target_col not in df_enriched.columns:
+            # Fallback to 'close' if target_column is invalid
+            return 'close' if 'close' in df_enriched.columns else None
+        return target_col
+
+    def _add_price_based_features(self, df_enriched: pd.DataFrame, price_target_col: str) -> None:
+        """Add price-based derived features to DataFrame."""
+        logger.info(f"Generating price-based derived features on column '{price_target_col}'...")
+        
+        # Calculate returns if missing
+        if self.returns_column not in df_enriched.columns:
+            df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change()
+            logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
+        
+        # Add various price-based features
+        if 'lags' in self.config:
+            self._add_lags(df_enriched, price_target_col, self.config['lags'])
+        if 'velocity' in self.config:
+            self._add_velocity(df_enriched, price_target_col, self.config['velocity'])
+        if 'acceleration' in self.config:
+            self._add_acceleration(df_enriched, price_target_col, self.config['acceleration'])
+        if 'rolling_skew' in self.config:
+            self._add_rolling_stat(df_enriched, price_target_col, 'rolling_skew', self.config['rolling_skew'])
+        if 'rolling_kurtosis' in self.config:
+            self._add_rolling_stat(df_enriched, price_target_col, 'rolling_kurtosis', self.config['rolling_kurtosis'])
+
+    def _add_returns_based_features(self, df_enriched: pd.DataFrame, returns_col: str) -> None:
+        """Add returns-based derived features to DataFrame."""
+        logger.info(f"Generating returns-based derived features on column '{returns_col}'...")
+        
+        if 'rolling_volatility' in self.config:
+            self._add_rolling_stat(df_enriched, returns_col, 'rolling_volatility', self.config['rolling_volatility'])
+        if 'forward_targets' in self.config:
+            self._add_forward_targets(df_enriched, returns_col, self.config['forward_targets'])
 
     def _add_lags(self, df: pd.DataFrame, target_col: str, lags: List[int]):
         for lag in lags:

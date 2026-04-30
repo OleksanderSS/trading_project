@@ -9,7 +9,7 @@ import pandas as pd
 import seaborn as sns
 
 from src.core.file_management.file_manager import FileManager
-from src.utils.logging.logger import ProjectLogger
+from src.core.logging.logger import ProjectLogger
 
 # Initialize logger for the module
 logger = ProjectLogger.get_logger("Visualizer")
@@ -25,7 +25,7 @@ class Visualizer:
     def __init__(self, file_manager: FileManager, output_dir: str = "reports/charts"):
         self.fm = file_manager
         self.output_dir = Path(output_dir)
-        self.fm.create_directory(self.output_dir)
+        self.fm.ensure_directory(self.output_dir)
         logger.info(f"Visualizer initialized. Charts will be saved to '{self.output_dir}'.")
 
     def _save_plot(self, fig: plt.Figure, filename: str) -> Optional[Path]:

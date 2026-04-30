@@ -18,7 +18,7 @@ else:
 
 # Альтернативний запит
 all_tables = conn.execute("SELECT * FROM duckdb_tables()").fetchall()
-print(f'\n📊 ВСІ ТАБЛИЦІ (duckdb_tables):')
+print('\n📊 ВСІ ТАБЛИЦІ (duckdb_tables):')
 for table in all_tables:
     print(f'  - {table[0]}')
 

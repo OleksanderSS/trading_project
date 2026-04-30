@@ -73,7 +73,7 @@ class PredictionCache:
             self.persist_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"Cache persistence enabled at {self.persist_dir}")
     
-    def _hash_features(self, features: Any, model_id: str) -> str:
+    def _hash_features(self, features: Any, model_id: str) -> Optional[str]:
         """
         Create stable hash from features and model_id.
         Handles: numpy arrays, pandas DataFrames, lists, tuples.
@@ -145,7 +145,7 @@ class PredictionCache:
         
         # Add to cache with eviction if needed
         if len(self.cache) >= self.maxsize:
-            evicted_key, _ = self.cache.popitem(last=False)  # Remove oldest
+            _, _ = self.cache.popitem(last=False)  # Remove oldest
             logger.debug(f"Cache full ({self.maxsize}), evicted oldest entry")
         
         self.cache[cache_key] = (result, datetime.now())

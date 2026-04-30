@@ -63,10 +63,10 @@ class EntityExtractor:
 
         try:
             doc = self.nlp(text)
-            # Use a set for automatic deduplication, then convert to list
+            # Use a set for automatic deduplication, then convert to sorted list
             entities = {ent.text.strip() for ent in doc.ents if not entity_types or ent.label_ in entity_types}
             logger.debug(f"Extracted {len(entities)} entities from text.")
-            return sorted(list(entities))
+            return sorted(entities)
         except Exception as e:
             logger.error(f"An unexpected error occurred during entity extraction: {e}", exc_info=True)
             return []

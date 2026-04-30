@@ -1,12 +1,18 @@
-import pandas as pd
-import numpy as np
-import logging
+"""
+Market regime analysis module for classifying market conditions.
+"""
+
+
 from typing import Dict, Any, Optional
 
-from ..interfaces import IAnalyzer
+import pandas as pd
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger
+from src.analytics.interfaces import IAnalyzer
 from .market_regime_calculator import MarketRegimeCalculator
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class MarketRegimeAnalyzer(IAnalyzer):
     """
@@ -34,36 +40,47 @@ class MarketRegimeAnalyzer(IAnalyzer):
         })
         logger.info("MarketRegimeAnalyzer initialized.")
 
-    def analyze(self, data: pd.DataFrame, **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: pd.DataFrame) -> Dict[str, Any]:
         """
         Performs the full market regime analysis.
 
         Args:
-            data (pd.DataFrame): Input DataFrame containing at least 'close' and 'volume' columns.
-            **kwargs: Not used.
+            data (pd.DataFrame): Input DataFrame containing at least
+                               'close' and 'volume' columns.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the calculated regimes and other metrics.
+            Dict[str, Any]: A dictionary containing the calculated
+                              regimes and other metrics.
         """
         if not all(col in data.columns for col in ['close', 'volume']):
-            logger.error("Input data for MarketRegimeAnalyzer must contain 'close' and 'volume' columns.")
+            logger.error(
+                "Input data for MarketRegimeAnalyzer must contain "
+                "'close' and 'volume' columns."
+            )
             return {}
 
         # 1. Calculate all necessary indicators using the vectorized calculator
-        regime_indicators = MarketRegimeCalculator.get_regime_indicators(data, window=self.window_size)
-        
+        regime_indicators = MarketRegimeCalculator.get_regime_indicators(
+            data, window=self.window_size
+        )
+
         # 2. Classify regime based on indicators and rules
         regimes = self._classify_regime(regime_indicators)
-        
-        # 3. (Optional) Calculate other metrics like entropy or reversal probability if needed
-        entropy = MarketRegimeCalculator.calculate_market_entropy(data['close'], window=self.entropy_window)
-        reversal_prob = MarketRegimeCalculator.calculate_reversal_probability(data['close'])
+
+        # 3. (Optional) Calculate other metrics like entropy or reversal
+        # probability if needed
+        entropy = MarketRegimeCalculator.calculate_market_entropy(
+            data['close'], window=self.entropy_window
+        )
+        reversal_prob = MarketRegimeCalculator.calculate_reversal_probability(
+            data['close']
+        )
 
         return {
             "market_regime": regimes,
             "market_entropy": entropy,
             "reversal_probability": reversal_prob,
-            "regime_indicators": regime_indicators # For debugging or further analysis
+            "regime_indicators": regime_indicators  # For debugging
         }
 
     def _classify_regime(self, indicators: pd.DataFrame) -> pd.Series:
@@ -71,18 +88,34 @@ class MarketRegimeAnalyzer(IAnalyzer):
         Applies the configured rules to classify the market regime.
         """
         conditions = [
-            (indicators['trend_strength'] > indicators['volatility'] * self.rules.get('trend_threshold_multiplier', 2)),
-            (indicators['volatility'] > indicators['trend_strength'] * self.rules.get('volatile_threshold_multiplier', 2)),
-            (indicators['volume_trend'].abs() < self.rules.get('range_volume_threshold', 0.1))
+            (
+                indicators['trend_strength'] >
+                indicators['volatility'] * self.rules.get(
+                    'trend_threshold_multiplier', 2
+                )
+            ),
+            (
+                indicators['volatility'] >
+                indicators['trend_strength'] * self.rules.get(
+                    'volatile_threshold_multiplier', 2
+                )
+            ),
+            (
+                indicators['volume_trend'].abs() <
+                self.rules.get('range_volume_threshold', 0.1)
+            ),
         ]
-        
+
         choices = ['Trend', 'Volatile', 'Range']
-        
+
         # numpy.select is a vectorized equivalent of if/elif/else
-        regime_series = pd.Series(np.select(conditions, choices, default='Transition'), index=indicators.index)
-        
+        regime_series = pd.Series(
+            np.select(conditions, choices, default='Transition'),
+            index=indicators.index
+        )
+
         # Set initial periods to 'Unknown' as they are unreliable
         regime_series.iloc[:self.window_size] = 'Unknown'
-        
+
         logger.info("Market regime classification complete.")
         return regime_series

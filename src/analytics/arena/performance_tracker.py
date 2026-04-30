@@ -9,7 +9,7 @@ import logging
 from dataclasses import dataclass, asdict
 from collections import defaultdict
 
-from src.utils.logger import ProjectLogger
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -233,98 +233,65 @@ class ModelPerformanceTracker:
             
             for model_name, stats in self.model_stats.items():
                 if stats['total_battles'] > 0:
-                    # Розраховуємо середні показники
-                    avg_accuracy = np.mean(stats['accuracy_scores']) if stats['accuracy_scores'] else 0.0
-                    avg_sharpe = np.mean(stats['sharpe_ratios']) if stats['sharpe_ratios'] else 0.0
-                    avg_win_rate = np.mean(stats['win_rates']) if stats['win_rates'] else 0.0
-                    avg_confidence = np.mean(stats['confidence_scores']) if stats['confidence_scores'] else 0.0
-                    
-                    # Розраховуємо win rate
-                    win_rate = stats['wins'] / stats['total_battles']
-                    
-                    # Розраховуємо очки (3 за перемогу, 1 за нічию)
-                    points = stats['wins'] * 3 + stats['draws']
-                    
-                    entry = LeaderboardEntry(
-                        rank=0,  # Буде встановлено після сортування
-                        model_name=model_name,
-                        model_type=stats['model_type'],
-                        total_battles=stats['total_battles'],
-                        wins=stats['wins'],
-                        losses=stats['losses'],
-                        draws=stats['draws'],
-                        win_rate=win_rate,
-                        points=points,
-                        avg_accuracy=avg_accuracy,
-                        avg_sharpe_ratio=avg_sharpe,
-                        avg_win_rate=avg_win_rate,
-                        last_updated=datetime.now()
-                    )
-                    
-                    leaderboard_entries.append(entry)
+                    leaderboard_entries.append(self._create_leaderboard_entry(model_name, stats))
             
-            # Сортуємо за очками (потім за win rate)
-            leaderboard_entries.sort(key=lambda x: (x.points, x.win_rate), reverse=True)
-            
-            # Встановлюємо ранги
+            # Сортуємо за очками і встановлюємо ранги
+            leaderboard_entries.sort(key=lambda x: x.points, reverse=True)
             for i, entry in enumerate(leaderboard_entries):
                 entry.rank = i + 1
             
             self.leaderboard = leaderboard_entries
+            logger.info(f"[TRACKER] Leaderboard updated with {len(leaderboard_entries)} models")
             
         except Exception as e:
             logger.error(f"[TRACKER] Failed to update leaderboard: {e}")
     
-    def get_leaderboard(self, limit: int = 10) -> Dict[str, Any]:
-        """Отримати таблицю лідерів"""
-        try:
-            top_entries = self.leaderboard[:limit]
-            
-            return {
-                'leaderboard': [asdict(entry) for entry in top_entries],
-                'total_models': len(self.leaderboard),
-                'last_updated': datetime.now().isoformat(),
-                'categories': self._get_leaderboard_categories()
-            }
-            
-        except Exception as e:
-            logger.error(f"[TRACKER] Failed to get leaderboard: {e}")
-            return {'leaderboard': [], 'total_models': 0, 'last_updated': datetime.now().isoformat()}
-    
-    def _get_leaderboard_categories(self) -> Dict[str, List[Dict]]:
-        """Отримати категорії таблиці лідерів"""
-        try:
-            categories = {
-                'overall': [],
-                'traditional': [],
-                'enhanced': [],
-                'heavy': [],
-                'light': []
-            }
-            
-            for entry in self.leaderboard:
-                category_entry = asdict(entry)
-                model_type = entry.model_type
-                
-                categories['overall'].append(category_entry)
-                
-                if model_type in ['traditional', 'light', 'heavy']:
-                    categories[model_type].append(category_entry)
-                elif model_type == 'enhanced':
-                    categories['enhanced'].append(category_entry)
-            
-            # Сортуємо кожну категорію
-            for category in categories:
-                categories[category].sort(key=lambda x: (x['points'], x['win_rate']), reverse=True)
-                # Встановлюємо ранги в категоріях
-                for i, entry in enumerate(categories[category]):
-                    entry['category_rank'] = i + 1
-            
-            return categories
-            
-        except Exception as e:
-            logger.error(f"[TRACKER] Failed to get leaderboard categories: {e}")
-            return {}
+    def _create_leaderboard_entry(self, model_name: str, stats: Dict[str, Any]) -> LeaderboardEntry:
+        """Створити запис для таблиці лідерів"""
+        # Розраховуємо середні показники
+        avg_accuracy = np.mean(stats['accuracy_scores']) if stats['accuracy_scores'] else 0.0
+        avg_sharpe = np.mean(stats['sharpe_ratios']) if stats['sharpe_ratios'] else 0.0
+        avg_win_rate = np.mean(stats['win_rates']) if stats['win_rates'] else 0.0
+        points = stats['wins'] * 3 + stats['draws'] - stats['losses']
+        win_rate = stats['wins'] / stats['total_battles'] if stats['total_battles'] > 0 else 0.0
+
+        return LeaderboardEntry(
+            rank=0,
+            model_name=model_name,
+            model_type=stats['model_type'],
+            total_battles=stats['total_battles'],
+            wins=stats['wins'],
+            losses=stats['losses'],
+            draws=stats['draws'],
+            win_rate=win_rate,
+            points=points,
+            avg_accuracy=float(avg_accuracy),
+            avg_sharpe_ratio=float(avg_sharpe),
+            avg_win_rate=float(avg_win_rate),
+            last_updated=datetime.now(),
+        )
+
+    def get_leaderboard_categories(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Return leaderboard grouped by model category."""
+        categories = {
+            'overall': [],
+            'enhanced': [],
+            'heavy': [],
+            'light': [],
+        }
+
+        for entry in self.leaderboard:
+            category_entry = asdict(entry)
+            model_type = entry.model_type if entry.model_type in categories else 'light'
+            categories['overall'].append(category_entry)
+            categories[model_type].append(category_entry)
+
+        for category_entries in categories.values():
+            category_entries.sort(key=lambda x: (x['points'], x['win_rate']), reverse=True)
+            for idx, entry in enumerate(category_entries):
+                entry['category_rank'] = idx + 1
+
+        return categories
     
     def get_model_performance_history(self, model_name: str, days: int = 30) -> Dict[str, Any]:
         """Отримати історію продуктивності моделі"""
@@ -389,7 +356,8 @@ class ModelPerformanceTracker:
             else:
                 return "stable"
                 
-        except:
+        except Exception as e:
+            logger.warning(f"[TRACKER] Could not calculate performance trend: {e}")
             return "unknown"
     
     def get_model_stats(self, model_name: str) -> Dict[str, Any]:

@@ -49,7 +49,7 @@ class PurgedTimeSeriesSplit:
         self.purge_window = purge_window
         self.embargo_period = embargo_period
 
-    def split(self, X: pd.DataFrame, y: Optional[pd.Series] = None, groups: Optional[Any] = None) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
+    def split(self, X: pd.DataFrame) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
         n_samples = len(X)
         test_size = n_samples // (self.n_splits + 1)
         
@@ -183,7 +183,9 @@ class ValidationProtocolsEngine:
             try:
                 model.fit(data.iloc[train_idx][features], data.iloc[train_idx][target])
                 scores.append(model.score(data.iloc[test_idx][features], data.iloc[test_idx][target]))
-            except Exception: continue
+            except Exception as e:
+                self.logger.warning(f"CV Fold failed for {v_type.value}: {e}")
+                continue
             
         mean_score = np.mean(scores) if scores else 0.0
         return ValidationResult(
@@ -202,7 +204,7 @@ class ValidationProtocolsEngine:
 
         split_idx = int(len(data) * 0.8)
         X_train, y_train = data.iloc[:split_idx][features], data.iloc[:split_idx][target]
-        X_test, y_test = data.iloc[split_idx:][features], data.iloc[split_idx:][target]
+        X_test, _ = data.iloc[split_idx:][features], data.iloc[split_idx:][target]
 
         try:
             heavy_model.fit(X_train, y_train)
@@ -224,13 +226,14 @@ class ValidationProtocolsEngine:
 
 def main():
     """Engine test"""
+    rng = np.random.default_rng(42)
     engine = ValidationProtocolsEngine()
-    data = pd.DataFrame({'target': np.random.randn(200), 'f1': np.random.randn(200)}, 
+    data = pd.DataFrame({'target': rng.normal(0, 1, 200), 'f1': rng.normal(0, 1, 200)}, 
                         index=pd.date_range('2023-01-01', periods=200))
     from sklearn.linear_model import Ridge
     report = engine.run_comprehensive_validation(data, ['f1'], 'target', Ridge())
     for k, v in report.items():
-        print(f"Protocol {k}: Valid={v.is_valid}, Metrics={v.performance_metrics}")
+        logger.info(f"Protocol {k}: Valid={v.is_valid}, Metrics={v.performance_metrics}")
 
 if __name__ == "__main__":
     main()

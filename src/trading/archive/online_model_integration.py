@@ -1,4 +1,4 @@
-# core/pipeline/online_model_integration.py - Інтеграцandя онлайнового порandвняння моwhereлей в пайплайн
+# Archived logic component
 
 import pandas as pd
 import numpy as np
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class OnlineModelIntegration:
     """
-    Інтеграцandя онлайнового порandвняння моwhereлей в реальному часand
+    Online model integration and comparison in real-time
     """
     
     def __init__(self, trained_models: Dict[str, Any], 
@@ -26,14 +26,14 @@ class OnlineModelIntegration:
         self.tickers = tickers
         self.timeframes = timeframes
         
-        # Інandцandалandwithуємо компаратор
+        # Archived logic component
         self.comparator = AdvancedOnlineModelComparator()
         
-        # Кеш for поточних прогноwithandв
+        # Archived logic component
         self.current_predictions = {}
         self.current_context = {}
         
-        # Сandтистика роботи
+        # Archived logic component
         self.integration_stats = {
             'total_predictions': 0,
             'successful_predictions': 0,
@@ -41,8 +41,8 @@ class OnlineModelIntegration:
             'last_update': None
         }
         
-        # Параметри andнтеграцandї
-        self.update_interval = 300  # 5 хвилин
+        # Archived logic component
+        self.update_interval = 300  # 5 minutes
         self.min_confidence = 0.6
         self.max_model_age_hours = 24
         
@@ -50,33 +50,33 @@ class OnlineModelIntegration:
     
     def start_real_time_monitoring(self, data_source_callback):
         """
-        Запустити монandторинг в реальному часand
+        Start real-time monitoring
         
         Args:
-            data_source_callback: Функцandя for отримання поточних data
+            data_source_callback: Function for getting current data
         """
         logger.info("[OnlineModelIntegration] Starting real-time monitoring...")
         
         try:
             while True:
                 try:
-                    # Отримуємо поточнand данand
+                    # Archived logic component
                     current_data = data_source_callback()
                     
                     if current_data is not None and not current_data.empty:
-                        # Оновлюємо прогноwithи
+                        # Archived logic component
                         self._update_predictions(current_data)
                         
-                        # Оновлюємо сandтистику
+                        # Archived logic component
                         self.integration_stats['last_update'] = datetime.now().isoformat()
                     
-                    # Чекаємо наступного оновлення
+                    # Archived logic component
                     import time
                     time.sleep(self.update_interval)
                     
                 except Exception as e:
                     logger.error(f"[OnlineModelIntegration] Error in monitoring loop: {e}")
-                    time.sleep(60)  # Чекаємо 1 хвилину при помилцand
+                    time.sleep(60)  # Wait 1 minute on error
                     
         except KeyboardInterrupt:
             logger.info("[OnlineModelIntegration] Monitoring stopped by user")
@@ -84,11 +84,11 @@ class OnlineModelIntegration:
             logger.error(f"[OnlineModelIntegration] Fatal error in monitoring: {e}")
     
     def _update_predictions(self, current_data: pd.DataFrame):
-        """Оновити прогноwithи на основand поточних data"""
+        """Archived module documentation"""
         try:
             for ticker in self.tickers:
                 for timeframe in self.timeframes:
-                    # Фandльтруємо данand for тandкера and andймфрейму
+                    # Archived logic component
                     ticker_data = current_data[
                         (current_data['ticker'] == ticker) & 
                         (current_data['timeframe'] == timeframe)
@@ -97,19 +97,19 @@ class OnlineModelIntegration:
                     if ticker_data.empty:
                         continue
                     
-                    # Отримуємо поточний контекст
+                    # Archived logic component
                     context = self._extract_current_context(ticker_data)
                     
-                    # Геnotруємо прогноwithи allма моwhereлями
+                    # Archived logic component
                     model_predictions = self._generate_all_predictions(ticker_data, ticker, timeframe)
                     
                     if not model_predictions:
                         continue
                     
-                    # Отримуємо реальnot values (якщо доступно)
+                    # Archived logic component
                     actual = self._get_actual_value(ticker_data)
                     
-                    # Додаємо в компаратор
+                    # Archived logic component
                     self.comparator.add_predictions(
                         ticker=ticker,
                         timeframe=timeframe,
@@ -119,7 +119,7 @@ class OnlineModelIntegration:
                         context=context
                     )
                     
-                    # Оновлюємо поточнand прогноwithи
+                    # Archived logic component
                     self.current_predictions[f"{ticker}_{timeframe}"] = model_predictions
                     self.current_context[f"{ticker}_{timeframe}"] = context
                     
@@ -133,12 +133,12 @@ class OnlineModelIntegration:
             logger.error(f"[OnlineModelIntegration] Error updating predictions: {e}")
     
     def _extract_current_context(self, ticker_data: pd.DataFrame) -> Dict[str, Any]:
-        """Витягнути поточний контекст with data"""
+        """Archived module documentation"""
         try:
             if ticker_data.empty:
                 return {}
             
-            # Беремо осandннandй forпис
+            # Archived logic component
             latest = ticker_data.iloc[-1]
             
             context = {
@@ -161,7 +161,7 @@ class OnlineModelIntegration:
             return {}
     
     def _determine_market_phase(self, data_row: pd.Series) -> str:
-        """Виwithначити фаwithу ринку"""
+        """Archived module documentation"""
         try:
             rsi = data_row.get('RSI_14', 50)
             macd = data_row.get('MACD_26_12_9', 0)
@@ -178,15 +178,16 @@ class OnlineModelIntegration:
             else:
                 return "neutral"
                 
-        except:
+        except Exception as e:
+            logger.warning(f"[OnlineModelIntegration] Error in phase detection: {e}")
             return "unknown"
     
     def _generate_all_predictions(self, ticker_data: pd.DataFrame, ticker: str, timeframe: str) -> Dict[str, float]:
-        """Згеnotрувати прогноwithи allма доступними моwhereлями"""
+        """Archived module documentation"""
         predictions = {}
         
         try:
-            # Готуємо фandчand for прогноwithування
+            # Archived logic component
             feature_cols = [col for col in ticker_data.columns 
                           if col not in ['date', 'ticker', 'timeframe', 'target'] 
                           and ticker_data[col].dtype in ['float64', 'int64']]
@@ -196,10 +197,10 @@ class OnlineModelIntegration:
             
             X = ticker_data[feature_cols].values
             
-            # Прогноwithуємо кожною моwhereллю
+            # Archived logic component
             for model_key, model_data in self.trained_models.items():
                 try:
-                    # Роwithбираємо ключ моwhereлand
+                    # Archived logic component
                     model_parts = model_key.split('_')
                     if len(model_parts) < 3:
                         continue
@@ -208,11 +209,11 @@ class OnlineModelIntegration:
                     model_ticker = model_parts[1]
                     model_timeframe = model_parts[2]
                     
-                    # Перевandряємо, чи model пandдходить for поточних data
+                    # Archived logic component
                     if model_ticker != ticker or model_timeframe != timeframe:
                         continue
                     
-                    # Отримуємо прогноwith
+                    # Archived logic component
                     prediction = self._get_model_prediction(model_data, X)
                     
                     if prediction is not None:
@@ -228,16 +229,16 @@ class OnlineModelIntegration:
         return predictions
     
     def _get_model_prediction(self, model_data: Any, X: np.ndarray) -> Optional[float]:
-        """Отримати прогноwith вandд моwhereлand"""
+        """Archived module documentation"""
         try:
             if isinstance(model_data, dict):
                 model = model_data.get('model')
                 if model is None:
                     return None
                 
-                # Перевandряємо, чи є метод predict
+                # Archived logic component
                 if hasattr(model, 'predict'):
-                    prediction = model.predict(X[-1:])  # Прогноwith for осandннього forпису
+                    prediction = model.predict(X[-1:])  # Prediction for the last record
                     
                     if isinstance(prediction, (np.ndarray, list)):
                         return float(prediction[0])
@@ -251,10 +252,10 @@ class OnlineModelIntegration:
             return None
     
     def _get_actual_value(self, ticker_data: pd.DataFrame) -> float:
-        """Отримати реальnot values for порandвняння"""
+        """Archived module documentation"""
         try:
             if len(ticker_data) > 1:
-                # Беремо withмandну цandни мandж осandннandми двома forписами
+                # Archived logic component
                 current_price = ticker_data.iloc[-1].get('close', 0)
                 prev_price = ticker_data.iloc[-2].get('close', 0)
                 
@@ -268,7 +269,7 @@ class OnlineModelIntegration:
             return 0.0
     
     def get_best_models_for_current_context(self, ticker: str, timeframe: str) -> Dict[str, Any]:
-        """Отримати найкращand моwhereлand for поточного контексту"""
+        """Archived module documentation"""
         try:
             context_key = f"{ticker}_{timeframe}"
             
@@ -277,7 +278,7 @@ class OnlineModelIntegration:
             
             current_context = self.current_context[context_key]
             
-            # Отримуємо рекомендацandї вandд компаратора
+            # Archived logic component
             recommendations = self.comparator.get_best_models_for_context(ticker, timeframe, current_context)
             
             return recommendations
@@ -289,81 +290,33 @@ class OnlineModelIntegration:
     def get_ensemble_prediction(self, ticker: str, timeframe: str, 
                               strategy: str = 'weighted') -> Tuple[float, float]:
         """
-        Отримати ансамблевий прогноwith
+        Get ensemble prediction
         
         Args:
-            ticker: Тandкер
-            timeframe: Таймфрейм
-            strategy: Стратегandя ансамблю ('weighted', 'majority', 'best_only')
+            ticker: Ticker
+            timeframe: Timeframe
+            strategy: Ensemble strategy ('weighted', 'majority', 'best_only')
             
         Returns:
             (prediction, confidence)
         """
         try:
-            context_key = f"{ticker}_{timeframe}"
-            
-            if context_key not in self.current_predictions:
-                return 0.0, 0.0
-            
-            predictions = self.current_predictions[context_key]
-            
+            predictions = self._get_context_predictions(ticker, timeframe)
             if not predictions:
                 return 0.0, 0.0
             
-            # Отримуємо рекомендацandї
             recommendations = self.get_best_models_for_current_context(ticker, timeframe)
-            
             if 'error' in recommendations:
-                # Якщо notмає рекомендацandй, використовуємо просте середнє
                 return np.mean(list(predictions.values())), 0.5
             
             best_models = recommendations.get('model_performance', {})
             
             if strategy == 'best_only':
-                # Використовуємо тandльки найкращу model
-                if best_models:
-                    best_model = max(best_models.items(), key=lambda x: x[1])
-                    prediction = predictions.get(best_model[0], 0.0)
-                    confidence = best_model[1]
-                    return prediction, confidence
-                else:
-                    return 0.0, 0.0
-            
+                return self._get_best_only_prediction(predictions, best_models)
             elif strategy == 'weighted':
-                # Вwithважеnot середнє на основand продуктивностand
-                weighted_sum = 0.0
-                total_weight = 0.0
-                
-                for model_name, prediction in predictions.items():
-                    weight = best_models.get(model_name, 0.5)  # Default weight 0.5
-                    weighted_sum += prediction * weight
-                    total_weight += weight
-                
-                if total_weight > 0:
-                    ensemble_prediction = weighted_sum / total_weight
-                    confidence = recommendations.get('confidence', 0.5)
-                    return ensemble_prediction, confidence
-                else:
-                    return np.mean(list(predictions.values())), 0.5
-            
+                return self._get_weighted_prediction(predictions, best_models, recommendations)
             elif strategy == 'majority':
-                # Бandльшandсть голосandв for напрямок
-                directions = [1 if pred > 0 else -1 if pred < 0 else 0 for pred in predictions.values()]
-                
-                if directions:
-                    majority_direction = max(set(directions), key=directions.count)
-                    
-                    # Середнє values for прогноwithandв в тому ж напрямку
-                    same_direction_preds = [pred for pred, direction in zip(predictions.values(), directions) 
-                                           if direction == majority_direction]
-                    
-                    if same_direction_preds:
-                        ensemble_prediction = np.mean(same_direction_preds)
-                        confidence = directions.count(majority_direction) / len(directions)
-                        return ensemble_prediction, confidence
-                
-                return np.mean(list(predictions.values())), 0.5
-            
+                return self._get_majority_prediction(predictions)
             else:
                 return np.mean(list(predictions.values())), 0.5
                 
@@ -371,54 +324,114 @@ class OnlineModelIntegration:
             logger.error(f"[OnlineModelIntegration] Error getting ensemble prediction: {e}")
             return 0.0, 0.0
     
+    def _get_context_predictions(self, ticker: str, timeframe: str) -> Dict[str, float]:
+        """Get predictions for specific ticker/timeframe context."""
+        context_key = f"{ticker}_{timeframe}"
+        return self.current_predictions.get(context_key, {})
+    
+    def _get_best_only_prediction(self, predictions: Dict[str, float], 
+                                 best_models: Dict[str, float]) -> Tuple[float, float]:
+        """Get prediction from best performing model only."""
+        if best_models:
+            best_model = max(best_models.items(), key=lambda x: x[1])
+            prediction = predictions.get(best_model[0], 0.0)
+            confidence = best_model[1]
+            return prediction, confidence
+        return 0.0, 0.0
+    
+    def _get_weighted_prediction(self, predictions: Dict[str, float], 
+                               best_models: Dict[str, float], 
+                               recommendations: Dict[str, Any]) -> Tuple[float, float]:
+        """Get weighted ensemble prediction based on model performance."""
+        weighted_sum = 0.0
+        total_weight = 0.0
+        
+        for model_name, prediction in predictions.items():
+            weight = best_models.get(model_name, 0.5)  # Default weight 0.5
+            weighted_sum += prediction * weight
+            total_weight += weight
+        
+        if total_weight > 0:
+            ensemble_prediction = weighted_sum / total_weight
+            confidence = recommendations.get('confidence', 0.5)
+            return ensemble_prediction, confidence
+        else:
+            return np.mean(list(predictions.values())), 0.5
+    
+    def _get_majority_prediction(self, predictions: Dict[str, float]) -> Tuple[float, float]:
+        """Get majority vote prediction."""
+        directions = [1 if pred > 0 else -1 if pred < 0 else 0 for pred in predictions.values()]
+        
+        if directions:
+            majority_direction = max(set(directions), key=directions.count)
+            same_direction_preds = [pred for pred, direction in zip(predictions.values(), directions) 
+                                   if direction == majority_direction]
+            
+            if same_direction_preds:
+                ensemble_prediction = np.mean(same_direction_preds)
+                confidence = directions.count(majority_direction) / len(directions)
+                return ensemble_prediction, confidence
+        
+        return np.mean(list(predictions.values())), 0.5
+    
     def get_model_health_report(self) -> Dict[str, Any]:
-        """Отримати withвandт про withдоров'я моwhereлей"""
+        """Archived module documentation"""
         try:
-            health_report = {
-                'integration_stats': self.integration_stats,
-                'model_consistency': {},
-                'direction_alignment': {},
-                'recommendations': [],
-                'alerts': []
-            }
-            
-            # Перевandряємо уwithгодженandсть for кожної комбandнацandї
-            for ticker in self.tickers:
-                for timeframe in self.timeframes:
-                    consistency = self.comparator.get_model_consistency_report(ticker, timeframe)
-                    
-                    if 'error' not in consistency:
-                        key = f"{ticker}_{timeframe}"
-                        health_report['model_consistency'][key] = consistency['overall_consistency']
-                        
-                        # Додаємо попередження
-                        if consistency['overall_consistency'] < 0.5:
-                            health_report['alerts'].append(
-                                f"Low consistency for {ticker} {timeframe}: {consistency['overall_consistency']:.2f}"
-                            )
-                        
-                        # Додаємо рекомендацandї
-                        for rec in consistency.get('recommendations', []):
-                            health_report['recommendations'].append(f"{ticker} {timeframe}: {rec}")
-            
-            # Загальна сandтистика
-            total_predictions = self.integration_stats['total_predictions']
-            success_rate = (self.integration_stats['successful_predictions'] / total_predictions 
-                           if total_predictions > 0 else 0)
-            
-            health_report['success_rate'] = success_rate
-            
-            if success_rate < 0.8:
-                health_report['alerts'].append(f"Low success rate: {success_rate:.2f}")
-            
+            health_report = self._initialize_health_report()
+            self._analyze_model_consistency(health_report)
+            self._calculate_success_rate(health_report)
             return health_report
             
         except Exception as e:
             logger.error(f"[OnlineModelIntegration] Error getting health report: {e}")
             return {'error': str(e)}
     
+    def _initialize_health_report(self) -> Dict[str, Any]:
+        """Initialize health report structure."""
+        return {
+            'integration_stats': self.integration_stats,
+            'model_consistency': {},
+            'direction_alignment': {},
+            'recommendations': [],
+            'alerts': []
+        }
+    
+    def _analyze_model_consistency(self, health_report: Dict[str, Any]) -> None:
+        """Analyze model consistency across all tickers and timeframes."""
+        for ticker in self.tickers:
+            for timeframe in self.timeframes:
+                consistency = self.comparator.get_model_consistency_report(ticker, timeframe)
+                
+                if 'error' not in consistency:
+                    self._process_consistency_results(ticker, timeframe, consistency, health_report)
+    
+    def _process_consistency_results(self, ticker: str, timeframe: str, 
+                                   consistency: Dict[str, Any], health_report: Dict[str, Any]) -> None:
+        """Process consistency results for a specific ticker/timeframe."""
+        key = f"{ticker}_{timeframe}"
+        health_report['model_consistency'][key] = consistency['overall_consistency']
+        
+        if consistency['overall_consistency'] < 0.5:
+            health_report['alerts'].append(
+                f"Low consistency for {ticker} {timeframe}: {consistency['overall_consistency']:.2f}"
+            )
+        
+        for rec in consistency.get('recommendations', []):
+            health_report['recommendations'].append(f"{ticker} {timeframe}: {rec}")
+    
+    def _calculate_success_rate(self, health_report: Dict[str, Any]) -> None:
+        """Calculate and validate success rate."""
+        total_predictions = self.integration_stats['total_predictions']
+        success_rate = (self.integration_stats['successful_predictions'] / total_predictions 
+                       if total_predictions > 0 else 0)
+        
+        health_report['success_rate'] = success_rate
+        
+        if success_rate < 0.8:
+            health_report['alerts'].append(f"Low success rate: {success_rate:.2f}")
+    
     def export_current_state(self, filepath: str = None) -> str:
-        """Експортувати поточний сandн"""
+        """Archived module documentation"""
         if filepath is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filepath = f"results/online_integration_state_{timestamp}.json"
@@ -440,19 +453,19 @@ class OnlineModelIntegration:
     
     def get_trading_signals(self, ticker: str, timeframe: str) -> Dict[str, Any]:
         """
-        Отримати торговand сигнали на основand онлайнового аналandwithу
+        Get trading signals based on online analysis
         
         Returns:
-            Dict with торговими сигналами
+            Dict with trading signals
         """
         try:
-            # Отримуємо ансамблевий прогноwith
+            # Archived logic component
             prediction, confidence = self.get_ensemble_prediction(ticker, timeframe, 'weighted')
             
-            # Отримуємо рекомендацandї моwhereлей
+            # Archived logic component
             model_recommendations = self.get_best_models_for_current_context(ticker, timeframe)
             
-            # Виwithначаємо сигнал
+            # Archived logic component
             signal_strength = abs(prediction)
             
             if signal_strength < 0.1:
@@ -465,18 +478,18 @@ class OnlineModelIntegration:
                 signal = 'SELL'
                 signal_reason = f'Negative prediction: {prediction:.2f}%'
             
-            # Коригуємо на основand впевnotностand
+            # Archived logic component
             if confidence < self.min_confidence:
                 signal = 'HOLD'
                 signal_reason += f' (Low confidence: {confidence:.2f})'
             
-            # Додаємо контекстнand попередження
+            # Archived logic component
             warnings = []
             
             if model_recommendations.get('warnings'):
                 warnings.extend(model_recommendations['warnings'])
             
-            # Формуємо реwithульandт
+            # Archived logic component
             trading_signal = {
                 'ticker': ticker,
                 'timeframe': timeframe,

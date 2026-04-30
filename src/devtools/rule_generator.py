@@ -1,4 +1,4 @@
-# src.analytics/rule_generator.py
+# src/devtools/rule_generator.py
 
 import pandas as pd
 import yaml
@@ -148,5 +148,5 @@ class ContextRuleGenerator:
             with open(path, 'w') as f:
                 yaml.dump({'generated_context_rules': rules}, f, allow_unicode=True, sort_keys=False)
             logger.info(f"Rules successfully saved to {path}")
-        except Exception as e:
+        except Exception:
             logger.exception(f"Failed to save rules to {path}")

@@ -1,0 +1,11 @@
+{
+  "batch_id": "SPY_autoencoder_20260322_184611",
+  "ticker": "SPY",
+  "model_name": "autoencoder",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_direction_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T18:46:11.253537",
+  "status": "PENDING_COLAB"
+}

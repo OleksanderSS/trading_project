@@ -65,7 +65,7 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
         output_path = output_dir / output_filename
         
         final_df.to_parquet(output_path, index=False)
-        logger.info(f"--- Pipeline Finished Successfully ---")
+        logger.info("--- Pipeline Finished Successfully ---")
         logger.info(f"Final dataset saved to: {output_path}")
 
     except Exception as e:

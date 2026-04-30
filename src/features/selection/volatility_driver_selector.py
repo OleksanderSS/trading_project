@@ -14,7 +14,14 @@ class VolatilityDriverSelector:
 
     def __init__(self, top_n: int = 25):
         self.top_n = top_n
-        self.model = RandomForestRegressor(n_estimators=100, max_depth=7, random_state=42, n_jobs=-1)
+        self.model = RandomForestRegressor(
+            n_estimators=100, 
+            max_depth=7, 
+            min_samples_leaf=1,
+            max_features='sqrt',
+            random_state=42, 
+            n_jobs=-1
+        )
         self.selected_features: List[str] = []
 
     def select(self, df: pd.DataFrame, auxiliary_pool: List[str], target_col: str) -> List[str]:
@@ -31,20 +38,20 @@ class VolatilityDriverSelector:
 
         # 2. Prepare Auxiliary Pool
         valid_aux = [c for c in auxiliary_pool if c in df.columns]
-        X_sub = df[valid_aux].ffill().fillna(0)
+        x_sub = df[valid_aux].ffill().fillna(0)
         
         # Remove low-variance/constant features
-        selector_mask = X_sub.std() > 1e-6
-        X_sub = X_sub.loc[:, selector_mask]
+        selector_mask = x_sub.std() > 1e-6
+        x_sub = x_sub.loc[:, selector_mask]
         
-        if X_sub.empty:
+        if x_sub.empty:
             logger.error("Auxiliary pool contains no valid non-constant features.")
             return []
 
         try:
             # 3. Driver Discovery via Feature Importance
-            self.model.fit(X_sub, y_vol)
-            importances = pd.Series(self.model.feature_importances_, index=X_sub.columns).sort_values(ascending=False)
+            self.model.fit(x_sub, y_vol)
+            importances = pd.Series(self.model.feature_importances_, index=x_sub.columns).sort_values(ascending=False)
             self.selected_features = importances.head(self.top_n).index.tolist()
             
             logger.info(f"VolatilityDriverSelector selected {len(self.selected_features)} features: {self.selected_features}")

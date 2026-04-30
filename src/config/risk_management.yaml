@@ -1,5 +1,5 @@
 # Risk Management Configuration
-# Налаштування системи управління ризиками
+# Risk management system settings
 
 strategy:
   risk_management:

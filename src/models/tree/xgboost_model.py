@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import joblib
 from typing import Dict, Any
-from src.models.interfaces import BaseModel
-from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel # type: ignore
+from src.core.logging.logger import ProjectLogger # type: ignore
 
 class XGBoostModel(BaseModel):
     """XGBoost model for classification and regression tasks."""
@@ -19,7 +19,7 @@ class XGBoostModel(BaseModel):
         self.random_state = random_state
         self.logger = ProjectLogger.get_logger("XGBoostModel")
         
-        # ✅ ІНІЦІАЛІЗАЦІЯ МОДЕЛІ В __INIT__ (для Ансамблю)
+        # Initialize model in __init__ (for Ensemble)
         import xgboost as xgb
         if self.task_type == "classification":
             self.model = xgb.XGBClassifier(
@@ -49,7 +49,7 @@ class XGBoostModel(BaseModel):
             if isinstance(X, pd.DataFrame):
                 self.feature_cols = X.columns.tolist()
             
-            # Оновлюємо параметри, якщо вони передані
+            # Update parameters if they are provided
             if kwargs:
                 self.model.set_params(**kwargs)
             

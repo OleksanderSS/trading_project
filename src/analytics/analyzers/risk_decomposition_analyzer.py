@@ -1,17 +1,18 @@
 """
-Risk Decomposition Analyzer - Аналізатор декомпозиції ризику.
+Risk Decomposition Analyzer
+Deconstructs portfolio risk into fundamental components to identify volatility sources.
 
-Виконує декомпозицію ризику портфеля на компоненти:
-- Systematic risk (ринковий ризик)
-- Idiosyncratic risk (специфічний ризик)
-- Factor risk (ризик факторів)
-- Liquidity risk (ризик ліквідності)
-- Concentration risk (ризик концентрації)
+Risk Layers Analyzed:
+- Systematic Risk (Market Exposure)
+- Idiosyncratic Risk (Asset-Specific Variance)
+- Factor Risk (Structural Multi-Factor Exposure)
+- Liquidity Risk (Market Impact Sensitivity)
+- Concentration Risk (Asset and Sector Clustering)
 
-Використовує:
-- Risk factor models (Fama-French, etc.)
-- Principal Component Analysis
-- Risk attribution techniques
+Methodologies Supported:
+- Multi-Factor Risk Models (Fama-French, Industry Factors)
+- Principal Component Analysis (PCA) for Latent Factor Discovery
+- Marginal and Incremental Risk Attribution
 """
 
 import pandas as pd
@@ -19,388 +20,380 @@ import numpy as np
 from typing import Dict, Any, List, Optional, Tuple
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
-from scipy import stats
+from datetime import datetime
 
 from ..interfaces import IAnalyzer
 from src.core.logging.logger import ProjectLogger
 
+logger = ProjectLogger.get_logger("RiskDecompositionAnalyzer")
+
 class RiskDecompositionAnalyzer(IAnalyzer):
     """
-    Аналізатор декомпозиції ризику портфеля.
-
-    Розкладає загальний ризик на компоненти для кращого розуміння
-    джерел волатильності та прийняття рішень.
+    Core engine for deconstructing risk profiles.
+    Translates raw return variance into actionable risk attribution layers.
     """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
-        self.logger = ProjectLogger.get_logger("RiskDecompositionAnalyzer")
+        """
+        Initializes the risk decomposition engine.
+        
+        Args:
+            config: Configuration parameters for PCA components, factor models, and thresholds.
+        """
         self.config = config or {}
 
-        # Параметри аналізу
-        self.use_pca = self.config.get('use_pca', True)
-        self.n_factors = self.config.get('n_factors', 5)
-        self.factor_model = self.config.get('factor_model', 'fama_french')  # 'fama_french', 'pca', 'custom'
+        # Decomposition Parameters
+        self.enable_pca = self.config.get('use_pca', True)
+        self.latent_factor_count = self.config.get('n_factors', 5)
+        self.primary_factor_model = self.config.get('factor_model', 'fama_french')
 
-        # Ризик метрики
-        self.risk_metrics = ['volatility', 'var_95', 'cvar_95', 'max_drawdown', 'sharpe_ratio']
-
-        # Фактори ризику (якщо використовуємо custom)
-        self.custom_factors = self.config.get('custom_factors', [])
+        # Baseline Risk Dimensions
+        self.tracked_metrics = ['volatility', 'var_95', 'cvar_95', 'max_drawdown', 'sharpe_ratio']
+        
+        # User-defined risk vectors
+        self.custom_risk_factors = self.config.get('custom_factors', [])
+        logger.info(f"RiskDecompositionAnalyzer initialized using {self.primary_factor_model} methodology.")
 
     def analyze(self, data: Dict[str, pd.DataFrame], **kwargs) -> Dict[str, Any]:
         """
-        Виконує декомпозицію ризику портфеля.
+        Executes a holistic risk decomposition suite.
 
         Args:
-            data: Словник з даними портфеля та факторів
-                - 'portfolio_returns': pd.DataFrame з поверненнями активів
-                - 'factor_returns': pd.DataFrame з факторними поверненнями (опціонально)
-                - 'weights': Dict з вагами активів (опціонально)
+            data: Composite dictionary containing:
+                - 'portfolio_returns': pd.DataFrame of multi-asset historical returns.
+                - 'factor_returns': Optional pd.DataFrame of systematic risk factor returns.
+                - 'weights': Dictionary of asset allocation weights.
 
         Returns:
-            Dict з результатами декомпозиції ризику
+            Structured risk report with systematic, specific, and factor-level attribution.
         """
         try:
-            # Отримання даних
+            # Data Synchronization
             portfolio_returns = data.get('portfolio_returns')
             factor_returns = data.get('factor_returns')
-            weights = data.get('weights', {})
+            allocation_weights = data.get('weights', {})
 
             if portfolio_returns is None or portfolio_returns.empty:
-                return {"error": "portfolio_returns is required and cannot be empty"}
+                logger.error("Decomposition failed: Portfolio dataset is missing or empty.")
+                return {"error": "portfolio_returns dataset required for risk analysis."}
 
-            # Розрахунок загального ризику портфеля
-            portfolio_risk = self._calculate_portfolio_risk(portfolio_returns, weights)
+            # 1. Total Portfolio Volatility Profile
+            aggregate_risk = self._calculate_aggregate_risk_profile(portfolio_returns, allocation_weights)
 
-            # Декомпозиція на систематичний та ідіосинкратичний ризик
-            systematic_risk, idiosyncratic_risk = self._decompose_systematic_idiosyncratic(
+            # 2. Systematic vs. Idiosyncratic Split
+            systematic_vector, idiosyncratic_vector = self._decompose_systematic_idiosyncratic(
                 portfolio_returns, factor_returns
             )
 
-            # Факторна декомпозиція
-            factor_decomposition = self._factor_risk_decomposition(
+            # 3. Structural Factor Decomposition
+            factor_attribution_payload = self._decompose_factor_risk(
                 portfolio_returns, factor_returns
             )
 
-            # Концентраційний ризик
-            concentration_risk = self._calculate_concentration_risk(portfolio_returns, weights)
+            # 4. Clustering and Concentration Audit
+            concentration_metrics = self._calculate_concentration_profile(portfolio_returns, allocation_weights)
 
-            # Ліквідність ризик
-            liquidity_risk = self._calculate_liquidity_risk(portfolio_returns)
+            # 5. Market Impact (Liquidity) Proxy Analysis
+            liquidity_risk_proxies = self._calculate_liquidity_risk_proxies(portfolio_returns)
 
-            # Агрегація результатів
-            result = {
-                'portfolio_risk': portfolio_risk,
-                'systematic_risk': systematic_risk,
-                'idiosyncratic_risk': idiosyncratic_risk,
-                'factor_decomposition': factor_decomposition,
-                'concentration_risk': concentration_risk,
-                'liquidity_risk': liquidity_risk,
-                'risk_attribution': self._calculate_risk_attribution(
-                    systematic_risk, idiosyncratic_risk, factor_decomposition,
-                    concentration_risk, liquidity_risk
+            # Execution Result Synthesis
+            payload = {
+                'aggregate_risk': aggregate_risk,
+                'systematic_risk_profile': systematic_vector,
+                'idiosyncratic_risk_profile': idiosyncratic_vector,
+                'factor_attribution': factor_attribution_payload,
+                'concentration_metrics': concentration_metrics,
+                'liquidity_proxies': liquidity_risk_proxies,
+                'risk_contribution_summary': self._summarize_risk_contributions(
+                    systematic_vector, idiosyncratic_vector, concentration_metrics,
+                    liquidity_risk_proxies
                 ),
-                'recommendations': self._generate_recommendations(
-                    systematic_risk, idiosyncratic_risk, factor_decomposition,
-                    concentration_risk, liquidity_risk
-                )
+                'strategic_recommendations': self._generate_risk_mitigation_recommendations(
+                    systematic_vector, idiosyncratic_vector, factor_attribution_payload,
+                    concentration_metrics, liquidity_risk_proxies
+                ),
+                'analysis_timestamp': datetime.now().isoformat()
             }
 
-            self.logger.info("Risk decomposition analysis completed successfully")
-            return result
+            logger.info("Risk decomposition analysis suite completed successfully.")
+            return payload
 
         except Exception as e:
-            self.logger.error(f"Error in risk decomposition analysis: {e}")
-            return {"error": str(e)}
+            logger.error(f"Risk decomposition critical failure: {e}", exc_info=True)
+            return {"error": str(e), "status": "failed"}
 
-    def _calculate_portfolio_risk(self, returns: pd.DataFrame, weights: Dict[str, float]) -> Dict[str, float]:
-        """Розрахунок основних метрик ризику портфеля"""
+    def _calculate_aggregate_risk_profile(self, returns: pd.DataFrame, weights: Dict[str, float]) -> Dict[str, float]:
+        """Calculates top-level realized risk metrics for the combined portfolio."""
         try:
-            # Якщо ваги не задані, використовуємо рівні ваги
+            # Baseline is equal weighting if explicit weights are absent
             if not weights:
-                n_assets = len(returns.columns)
-                weights = {col: 1.0 / n_assets for col in returns.columns}
+                asset_population = len(returns.columns)
+                weights = {ticker: 1.0 / asset_population for ticker in returns.columns}
 
-            # Перетворення у numpy arrays
-            returns_array = returns.values
-            weights_array = np.array([weights.get(col, 0) for col in returns.columns])
+            # Vectorized portfolio return calculation
+            weighted_returns = returns.values @ np.array([weights.get(t, 0.0) for t in returns.columns])
 
-            # Портфельні повернення
-            portfolio_returns = returns_array @ weights_array
+            # Annualized Statistics
+            realized_vol = np.std(weighted_returns) * np.sqrt(252)
+            var_05_threshold = np.percentile(weighted_returns, 5)
+            cvar_05_threshold = weighted_returns[weighted_returns <= var_05_threshold].mean()
 
-            # Метрики ризику
-            volatility = np.std(portfolio_returns) * np.sqrt(252)  # Annualized
-            var_95 = np.percentile(portfolio_returns, 5)  # VaR 95%
-            cvar_95 = portfolio_returns[portfolio_returns <= var_95].mean()  # CVaR 95%
+            # Dynamic Drawdown Profile
+            wealth_index = np.cumprod(1 + weighted_returns)
+            peak_nav = np.maximum.accumulate(wealth_index)
+            max_dd = ((wealth_index - peak_nav) / peak_nav).min()
 
-            # Maximum drawdown
-            cumulative = np.cumprod(1 + portfolio_returns)
-            running_max = np.maximum.accumulate(cumulative)
-            drawdown = (cumulative - running_max) / running_max
-            max_drawdown = drawdown.min()
-
-            # Sharpe ratio (припускаємо безризикову ставку 0.02)
-            excess_returns = portfolio_returns - 0.02/252
-            sharpe_ratio = np.mean(excess_returns) / np.std(excess_returns) * np.sqrt(252)
+            # Annualized Efficiency (Sharpe)
+            annual_rf = 0.02
+            excess_mean = np.mean(weighted_returns) - (annual_rf / 252)
+            realized_sharpe = (excess_mean / np.std(weighted_returns)) * np.sqrt(252)
 
             return {
-                'volatility': float(volatility),
-                'var_95': float(var_95),
-                'cvar_95': float(cvar_95),
-                'max_drawdown': float(max_drawdown),
-                'sharpe_ratio': float(sharpe_ratio)
+                'annualized_volatility': float(realized_vol),
+                'value_at_risk_95': float(var_05_threshold),
+                'conditional_var_95': float(cvar_05_threshold),
+                'max_drawdown': float(max_dd),
+                'realized_sharpe_ratio': float(realized_sharpe)
             }
 
         except Exception as e:
-            self.logger.warning(f"Error calculating portfolio risk: {e}")
+            logger.warning(f"Aggregate risk profiling failure: {e}")
             return {}
 
     def _decompose_systematic_idiosyncratic(self, returns: pd.DataFrame,
                                           factor_returns: Optional[pd.DataFrame]) -> Tuple[Dict[str, float], Dict[str, float]]:
-        """Декомпозиція на систематичний та ідіосинкратичний ризик"""
+        """Isolates systematic market exposure from individual asset variance."""
         try:
-            systematic_risk = {}
-            idiosyncratic_risk = {}
+            systematic_map = {}
+            idiosyncratic_map = {}
 
-            for asset in returns.columns:
-                asset_returns = returns[asset].dropna()
+            for asset_name in returns.columns:
+                asset_series = returns[asset_name].dropna()
 
                 if factor_returns is not None and not factor_returns.empty:
-                    # Використання факторної моделі
-                    common_index = asset_returns.index.intersection(factor_returns.index)
-                    if len(common_index) < 30:
-                        # Недостатньо даних для факторної моделі
-                        systematic_risk[asset] = 0.7 * asset_returns.std()
-                        idiosyncratic_risk[asset] = 0.3 * asset_returns.std()
+                    # Multi-factor regression approach
+                    shared_idx = asset_series.index.intersection(factor_returns.index)
+                    if len(shared_idx) < 30:
+                        # Falling back to statistical heuristic for sparse datasets
+                        systematic_map[asset_name] = 0.7 * float(asset_series.std())
+                        idiosyncratic_map[asset_name] = 0.3 * float(asset_series.std())
                         continue
 
-                    X = factor_returns.loc[common_index].values
-                    y = asset_returns.loc[common_index].values
+                    x_factors = factor_returns.loc[shared_idx].values
+                    y_returns = asset_series.loc[shared_idx].values
 
-                    # Регресія на фактори
-                    reg = LinearRegression()
-                    reg.fit(X, y)
+                    regressor = LinearRegression().fit(x_factors, y_returns)
 
-                    # Систематичний ризик
-                    systematic_var = reg.predict(X).var()
-                    systematic_risk[asset] = np.sqrt(systematic_var)
+                    # Systematic Variance (Explained by factors)
+                    systematic_variance = regressor.predict(x_factors).var()
+                    systematic_map[asset_name] = float(np.sqrt(systematic_variance))
 
-                    # Ідіосинкратичний ризик
-                    residuals = y - reg.predict(X)
-                    idiosyncratic_risk[asset] = np.sqrt(residuals.var())
-
+                    # Idiosyncratic Variance (Residuals)
+                    residual_variance = (y_returns - regressor.predict(x_factors)).var()
+                    idiosyncratic_map[asset_name] = float(np.sqrt(residual_variance))
                 else:
-                    # Спрощена декомпозиція (70% систематичний, 30% ідіосинкратичний)
-                    total_vol = asset_returns.std()
-                    systematic_risk[asset] = 0.7 * total_vol
-                    idiosyncratic_risk[asset] = 0.3 * total_vol
+                    # Standard 70/30 baseline for unknown factor environments
+                    total_var = float(asset_series.std())
+                    systematic_map[asset_name] = 0.7 * total_var
+                    idiosyncratic_map[asset_name] = 0.3 * total_var
 
-            return systematic_risk, idiosyncratic_risk
+            return systematic_map, idiosyncratic_map
 
         except Exception as e:
-            self.logger.warning(f"Error in systematic/idiosyncratic decomposition: {e}")
+            logger.warning(f"Systematic/Idiosyncratic decomposition error: {e}")
             return {}, {}
 
-    def _factor_risk_decomposition(self, returns: pd.DataFrame,
+    def _decompose_factor_risk(self, returns: pd.DataFrame,
                                  factor_returns: Optional[pd.DataFrame]) -> Dict[str, Any]:
-        """Факторна декомпозиція ризику"""
+        """Calculates portfolio sensitivity and risk contribution for each identified risk factor."""
         try:
             if factor_returns is None or factor_returns.empty:
-                if self.use_pca:
-                    # Використання PCA для створення факторів
-                    returns_clean = returns.dropna()
-                    pca = PCA(n_components=min(self.n_factors, len(returns_clean.columns)))
-                    pca.fit(returns_clean.T)  # Транспонуємо для аналізу активів
-
-                    factor_loadings = pca.components_
-                    explained_variance = pca.explained_variance_ratio_
+                if self.enable_pca:
+                    # Latent factor discovery via PCA
+                    clean_returns = returns.dropna()
+                    pca_engine = PCA(n_components=min(self.latent_factor_count, len(clean_returns.columns)), random_state=42)
+                    pca_engine.fit(clean_returns.T)
 
                     return {
-                        'method': 'pca',
-                        'factor_loadings': factor_loadings.tolist(),
-                        'explained_variance': explained_variance.tolist(),
-                        'n_factors': len(explained_variance)
+                        'methodology': 'pca_latent_discovery',
+                        'loadings': pca_engine.components_.tolist(),
+                        'variance_explained_ratio': pca_engine.explained_variance_ratio_.tolist(),
+                        'discovered_factor_count': int(len(pca_engine.explained_variance_ratio_))
                     }
                 else:
-                    return {'method': 'unavailable', 'reason': 'no factor data and PCA disabled'}
+                    return {'methodology': 'unavailable', 'reason': 'Factor data missing and PCA discovery disabled.'}
 
-            # Аналіз факторних навантажень
-            factor_loadings = {}
-            factor_contributions = {}
+            # Explicit factor loading analysis
+            loadings_map = {}
+            contributions_map = {}
 
-            for asset in returns.columns:
-                asset_returns = returns[asset].dropna()
-                common_index = asset_returns.index.intersection(factor_returns.index)
+            for asset_name in returns.columns:
+                asset_series = returns[asset_name].dropna()
+                common_idx = asset_series.index.intersection(factor_returns.index)
 
-                if len(common_index) >= 30:
-                    X = factor_returns.loc[common_index].values
-                    y = asset_returns.loc[common_index].values
+                if len(common_idx) >= 30:
+                    x_f = factor_returns.loc[common_idx].values
+                    y_a = asset_series.loc[common_idx].values
 
-                    reg = LinearRegression()
-                    reg.fit(X, y)
+                    ols = LinearRegression().fit(x_f, y_a)
 
-                    factor_loadings[asset] = reg.coef_.tolist()
-                    factor_contributions[asset] = (reg.coef_ ** 2).tolist()
+                    loadings_map[asset_name] = ols.coef_.tolist()
+                    contributions_map[asset_name] = (ols.coef_ ** 2).tolist()
 
             return {
-                'method': 'factor_model',
-                'factor_loadings': factor_loadings,
-                'factor_contributions': factor_contributions,
-                'factor_names': factor_returns.columns.tolist()
+                'methodology': 'multi_factor_regression',
+                'asset_loadings': loadings_map,
+                'squared_contributions': contributions_map,
+                'factor_labels': factor_returns.columns.tolist()
             }
 
         except Exception as e:
-            self.logger.warning(f"Error in factor risk decomposition: {e}")
-            return {'method': 'error', 'error': str(e)}
+            logger.warning(f"Factor-level risk decomposition failure: {e}")
+            return {'methodology': 'failure', 'error_detail': str(e)}
 
-    def _calculate_concentration_risk(self, returns: pd.DataFrame, weights: Dict[str, float]) -> Dict[str, Any]:
-        """Розрахунок ризику концентрації"""
+    def _calculate_concentration_profile(self, returns: pd.DataFrame, weights: Dict[str, float]) -> Dict[str, Any]:
+        """Evaluates asset and sector clustering to identify concentration risks."""
         try:
             if not weights:
-                n_assets = len(returns.columns)
-                weights = {col: 1.0 / n_assets for col in returns.columns}
+                pop = len(returns.columns)
+                weights = {t: 1.0 / pop for t in returns.columns}
 
-            weights_array = np.array([weights.get(col, 0) for col in returns.columns])
+            weight_vector = np.array([weights.get(t, 0.0) for t in returns.columns])
 
-            # Herfindahl-Hirschman Index (HHI)
-            hhi = np.sum(weights_array ** 2)
+            # Herfindahl-Hirschman Index (Clustering marker)
+            realized_hhi = np.sum(weight_vector ** 2)
 
-            # Effective number of assets
-            effective_n = 1.0 / hhi
+            # Diversity score (Effective number of independent positions)
+            effective_position_count = 1.0 / realized_hhi if realized_hhi > 0 else 0.0
 
-            # Concentration ratio (top 3 assets)
-            sorted_weights = np.sort(weights_array)[::-1]
-            concentration_ratio = np.sum(sorted_weights[:3])
+            # Weight Distribution (Top 3 asset concentration)
+            ranked_weights = np.sort(weight_vector)[::-1]
+            top_3_concentration = np.sum(ranked_weights[:3])
 
-            # Gini coefficient для ваг
-            sorted_weights = np.sort(weights_array)
-            n = len(sorted_weights)
-            cumsum = np.cumsum(sorted_weights)
-            gini = (n + 1 - 2 * np.sum(cumsum) / cumsum[-1]) / n
+            # Gini Coefficient (Structural inequality tracker)
+            sorted_w = np.sort(weight_vector)
+            n_w = len(sorted_w)
+            weight_cumsum = np.cumsum(sorted_w)
+            calculated_gini = (n_w + 1 - 2 * np.sum(weight_cumsum) / weight_cumsum[-1]) / n_w if weight_cumsum[-1] > 0 else 0.0
 
             return {
-                'hhi': float(hhi),
-                'effective_n_assets': float(effective_n),
-                'concentration_ratio_top3': float(concentration_ratio),
-                'gini_coefficient': float(gini),
-                'is_concentrated': hhi > 0.25  # HHI > 0.25 вважається високою концентрацією
+                'herfindahl_hirschman_index': float(realized_hhi),
+                'effective_asset_count': float(effective_position_count),
+                'top_3_concentration_ratio': float(top_3_concentration),
+                'gini_coefficient': float(calculated_gini),
+                'concentration_warning': bool(realized_hhi > 0.25)
             }
 
         except Exception as e:
-            self.logger.warning(f"Error calculating concentration risk: {e}")
+            logger.warning(f"Concentration risk audit failure: {e}")
             return {}
 
-    def _calculate_liquidity_risk(self, returns: pd.DataFrame) -> Dict[str, Any]:
-        """Розрахунок ризику ліквідності"""
+    def _calculate_liquidity_risk_proxies(self, returns: pd.DataFrame) -> Dict[str, Any]:
+        """Estimates market impact sensitivity as a proxy for liquidity risk."""
         try:
-            # Amihud illiquidity measure (спрощена версія)
-            # У реальному випадку потрібні дані про обсяг та ціну
-            liquidity_risk = {}
+            asset_liquidity_map = {}
 
-            for asset in returns.columns:
-                asset_returns = returns[asset].dropna()
+            for asset_name in returns.columns:
+                asset_series = returns[asset_name].dropna()
 
-                # Спрощена метрика: волатильність як proxy для ліквідності
-                # (менш ліквідні активи мають вищу волатильність)
-                vol = asset_returns.std()
+                # Basic Volatility Proxy (Illiquid assets often exhibit artificial variance spikes)
+                realized_vol = asset_series.std()
 
-                # Turnover ratio (спрощений, без реальних даних)
-                # Припускаємо середній turnover
-                avg_turnover = 0.1  # Placeholder
+                # Placeholder for Volume-adjusted Turnover (Amihud Proxy)
+                # In production, this requires integration with trading volume timestamps.
+                estimated_turnover_baseline = 0.1 
 
-                # Liquidity risk score
-                liquidity_score = vol / (avg_turnover + 0.01)  # Вищий score = вищий ризик
+                # Risk Score (Higher signifies higher liquidity risk/illiquidity)
+                implied_risk_score = realized_vol / (estimated_turnover_baseline + 0.01)
 
-                liquidity_risk[asset] = {
-                    'volatility': float(vol),
-                    'liquidity_score': float(liquidity_score),
-                    'is_illiquid': liquidity_score > 1.0
+                asset_liquidity_map[asset_name] = {
+                    'volatility_proxy': float(realized_vol),
+                    'relative_illiquidity_score': float(implied_risk_score),
+                    'illiquid_flag': bool(implied_risk_score > 1.0)
                 }
 
-            # Портфельний ліквідність ризик
-            portfolio_liquidity = np.mean([v['liquidity_score'] for v in liquidity_risk.values()])
+            portfolio_wide_score = np.mean([entry['relative_illiquidity_score'] for entry in asset_liquidity_map.values()])
 
             return {
-                'asset_liquidity': liquidity_risk,
-                'portfolio_liquidity_risk': float(portfolio_liquidity),
-                'illiquid_assets_count': sum(1 for v in liquidity_risk.values() if v['is_illiquid'])
+                'asset_level_liquidity': asset_liquidity_map,
+                'portfolio_liquidity_risk_index': float(portfolio_wide_score),
+                'illiquid_asset_count': int(sum(1 for entry in asset_liquidity_map.values() if entry['illiquid_flag']))
             }
 
         except Exception as e:
-            self.logger.warning(f"Error calculating liquidity risk: {e}")
+            logger.warning(f"Liquidity risk proxy analysis failure: {e}")
             return {}
 
-    def _calculate_risk_attribution(self, systematic_risk: Dict[str, float],
-                                  idiosyncratic_risk: Dict[str, float],
-                                  factor_decomposition: Dict[str, Any],
-                                  concentration_risk: Dict[str, Any],
-                                  liquidity_risk: Dict[str, Any]) -> Dict[str, Any]:
-        """Розрахунок атрибуції ризику"""
+    def _summarize_risk_contributions(self, systematic: Dict[str, float],
+                                   idiosyncratic: Dict[str, float],
+                                   concentration: Dict[str, Any],
+                                   liquidity: Dict[str, Any]) -> Dict[str, Any]:
+        """Aggregates and normalizes risk layers into a high-level attribution report."""
         try:
-            # Агрегація ризиків по активах
-            total_systematic = np.mean(list(systematic_risk.values()))
-            total_idiosyncratic = np.mean(list(idiosyncratic_risk.values()))
+            mean_systematic = np.mean(list(systematic.values())) if systematic else 0.0
+            mean_idiosyncratic = np.mean(list(idiosyncratic.values())) if idiosyncratic else 0.0
 
-            # Відносні вклади
-            total_risk = total_systematic + total_idiosyncratic
-            if total_risk > 0:
-                systematic_pct = total_systematic / total_risk
-                idiosyncratic_pct = total_idiosyncratic / total_risk
+            net_risk = mean_systematic + mean_idiosyncratic
+            if net_risk > 0:
+                systematic_weight = mean_systematic / net_risk
+                idiosyncratic_weight = mean_idiosyncratic / net_risk
             else:
-                systematic_pct = 0.5
-                idiosyncratic_pct = 0.5
+                systematic_weight = 0.5
+                idiosyncratic_weight = 0.5
 
             return {
-                'systematic_risk_contribution': float(systematic_pct),
-                'idiosyncratic_risk_contribution': float(idiosyncratic_pct),
-                'concentration_risk_impact': concentration_risk.get('hhi', 0),
-                'liquidity_risk_impact': liquidity_risk.get('portfolio_liquidity_risk', 0),
-                'diversification_benefit': 1.0 - concentration_risk.get('hhi', 1.0)
+                'systematic_risk_contribution_ratio': float(systematic_weight),
+                'idiosyncratic_risk_contribution_ratio': float(idiosyncratic_weight),
+                'clustering_impact_hhi': concentration.get('herfindahl_hirschman_index', 0.0),
+                'liquidity_impact_index': liquidity.get('portfolio_liquidity_risk_index', 0.0),
+                'diversification_efficiency': float(1.0 - concentration.get('herfindahl_hirschman_index', 1.0))
             }
 
         except Exception as e:
-            self.logger.warning(f"Error in risk attribution: {e}")
+            logger.warning(f"Risk attribution synthesis failure: {e}")
             return {}
 
-    def _generate_recommendations(self, systematic_risk: Dict[str, float],
-                                idiosyncratic_risk: Dict[str, float],
-                                factor_decomposition: Dict[str, Any],
-                                concentration_risk: Dict[str, Any],
-                                liquidity_risk: Dict[str, Any]) -> List[str]:
-        """Генерація рекомендацій на основі аналізу ризику"""
+    def _generate_risk_mitigation_recommendations(self, systematic: Dict[str, float],
+                                 idiosyncratic: Dict[str, float],
+                                 factors: Dict[str, Any],
+                                 concentration: Dict[str, Any],
+                                 liquidity: Dict[str, Any]) -> List[str]:
+        """Translates quantitative risk metrics into actionable portfolio mitigation strategies."""
         recommendations = []
 
-        # Концентрація
-        if concentration_risk.get('hhi', 0) > 0.25:
-            recommendations.append("Висока концентрація портфеля. Рекомендується диверсифікація.")
+        # 1. Concentration Mitigation
+        if concentration.get('herfindahl_hirschman_index', 0.0) > 0.25:
+            recommendations.append("High portfolio clustering detected. Diversify asset allocation to reduce structural fragility.")
 
-        if concentration_risk.get('effective_n_assets', 10) < 5:
-            recommendations.append("Низька ефективна кількість активів. Додайте більше різноманітних активів.")
+        if concentration.get('effective_asset_count', 10) < 5:
+            recommendations.append("Low effective asset count identified. Increase positional diversity across non-correlated sectors.")
 
-        # Систематичний vs ідіосинкратичний ризик
-        systematic_pct = np.mean(list(systematic_risk.values()))
-        idiosyncratic_pct = np.mean(list(idiosyncratic_risk.values()))
+        # 2. Systematic vs. Idiosyncratic Arbitrage
+        s_val = np.mean(list(systematic.values())) if systematic else 0.0
+        i_val = np.mean(list(idiosyncratic.values())) if idiosyncratic else 0.0
+        total_v = s_val + i_val
 
-        if systematic_pct > 0.8:
-            recommendations.append("Переважний систематичний ризик. Розгляньте хеджування ринкового ризику.")
-        elif idiosyncratic_pct > 0.8:
-            recommendations.append("Переважний ідіосинкратичний ризик. Можна зменшити через диверсифікацію.")
+        if total_v > 0:
+            if (s_val / total_v) > 0.8:
+                recommendations.append("Market (Systematic) risk predominates. Implement index-based hedging or reduce Beta exposure.")
+            elif (i_val / total_v) > 0.8:
+                recommendations.append("Specific (Idiosyncratic) risk predominates. This can be mitigated through increased asset-level diversification.")
 
-        # Ліквідність
-        if liquidity_risk.get('portfolio_liquidity_risk', 0) > 1.0:
-            recommendations.append("Високий ризик ліквідності. Перегляньте позиції в менш ліквідних активах.")
+        # 3. Liquidity Mitigation
+        if liquidity.get('portfolio_liquidity_risk_index', 0.0) > 1.0:
+            recommendations.append("Elevated liquidity risk index. Review positions in low-volume tickers or reduce individual position sizes.")
 
-        illiquid_count = liquidity_risk.get('illiquid_assets_count', 0)
-        if illiquid_count > 0:
-            recommendations.append(f"{illiquid_count} активів мають низьку ліквідність. Моніторте ці позиції.")
+        illiquid_c = liquidity.get('illiquid_asset_count', 0)
+        if illiquid_c > 0:
+            recommendations.append(f"Action required: {illiquid_c} assets flagged for insufficient liquidity. Monitor slippage and exit availability.")
 
-        # Факторний ризик
-        if factor_decomposition.get('method') == 'pca':
-            explained_var = sum(factor_decomposition.get('explained_variance', []))
-            if explained_var < 0.5:
-                recommendations.append("Низьке пояснення варіації факторами. Можливо потрібні додаткові фактори ризику.")
+        # 4. Factor Explainability
+        if factors.get('methodology') == 'pca_latent_discovery':
+            explained_v = sum(factors.get('variance_explained_ratio', []))
+            if explained_v < 0.5:
+                recommendations.append("Low factor explainability observed. Latent PCA factors capture < 50% of variance; consider alternative risk models.")
 
         if not recommendations:
-            recommendations.append("Ризик портфеля добре збалансований. Продовжуйте моніторинг.")
+            recommendations.append("Risk profile appears balanced and structurally sound. Maintain current monitoring routines.")
 
         return recommendations

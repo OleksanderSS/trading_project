@@ -1,0 +1,11 @@
+{
+  "batch_id": "WMT_lstm_20260322_185801",
+  "ticker": "WMT",
+  "model_name": "lstm",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_return_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T18:58:01.124258",
+  "status": "PENDING_COLAB"
+}

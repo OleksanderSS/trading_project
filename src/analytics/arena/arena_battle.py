@@ -8,6 +8,9 @@ import json
 import logging
 import os
 import joblib
+
+# Create numpy random generator
+rng = np.random.default_rng(42)
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -126,7 +129,7 @@ class TradingModelArena:
             "financial_loss": float(financial_loss)
         }
 
-    def compare_with_baseline(self, test_data: pd.DataFrame, actual_targets: pd.Series) -> Dict[str, float]:
+    def compare_with_baseline(self, actual_targets: pd.Series) -> Dict[str, float]:
         """Порівняння з базовим орієнтиром (Moving Average / VAR)."""
         # Простий Baseline: Ковзне середнє останніх 5 значень (як сурогат VAR(1))
         baseline_preds = actual_targets.shift(1).rolling(window=5).mean().fillna(0).values
@@ -152,8 +155,8 @@ class TradingModelArena:
         simulations = []
         
         # Phase 1: Blind Simulations (adding small noise to context to see variability)
-        for i in range(num_simulations):
-            noise = np.random.normal(0, 0.001, context_data.shape)
+        for _ in range(num_simulations):
+            noise = rng.normal(0, 0.001, context_data.shape)
             noisy_context = context_data + noise
             sim_pred = self._get_instance_predictions(model, noisy_context)
             simulations.append(sim_pred)
@@ -167,7 +170,7 @@ class TradingModelArena:
         structural_alignment = np.corrcoef(np.abs(sim_mean), volatility)[0, 1] if np.std(sim_mean) > 0 else 0.5
         
         # Phase 3: The Reveal
-        logger.info(f"[ARENA] Phase 3: The Reveal. Comparing simulations to real outcome.")
+        logger.info("[ARENA] Phase 3: The Reveal. Comparing simulations to real outcome.")
         real_vals = real_outcome.values if hasattr(real_outcome, 'values') else real_outcome
         realization_gap = np.mean(np.abs(sim_mean - real_vals))
         
@@ -199,10 +202,10 @@ class TradingModelArena:
         Головний метод проведення бою з фільтром строгості проти Baseline.
         """
         # 1. Отримуємо Baseline
-        baseline_metrics = self.compare_with_baseline(test_data, actual_targets)
+        baseline_metrics = self.compare_with_baseline(actual_targets)
         
         # 2. Проводимо 'The Reveal' для кандидата
-        cand_reveal = self.run_blind_challenge(candidate_name, test_data, actual_targets)
+        self.run_blind_challenge(candidate_name, test_data, actual_targets)
         
         # 3. Отримуємо прогнози та ймовірності
         cand_preds = self._get_model_predictions(candidate_name, test_data)
@@ -341,12 +344,12 @@ class TradingModelArena:
         """Отримання прогнозів від моделі"""
         try:
             model_info = self.models[model_name]
-            return self._get_instance_predictions(model_info['instance'], test_data, model_name)
+            return self._get_instance_predictions(model_info['instance'], test_data)
         except Exception as e:
             logger.error(f"[ARENA] Failed to get predictions from {model_name}: {e}")
             return np.zeros(len(test_data))
 
-    def _get_instance_predictions(self, model_instance: Any, data: pd.DataFrame, model_name: str = "model") -> np.ndarray:
+    def _get_instance_predictions(self, model_instance: Any, data: pd.DataFrame) -> np.ndarray:
         """Виконання прогнозу на конкретному інстансі моделі."""
         if hasattr(model_instance, 'predict'):
             predictions = model_instance.predict(data)
@@ -379,7 +382,9 @@ class TradingModelArena:
             running_max = np.maximum.accumulate(cumulative)
             drawdown = (cumulative - running_max) / running_max
             return np.min(drawdown)
-        except: return 0.0
+        except Exception as e:
+            logger.warning(f"[ARENA] Error calculating max drawdown: {e}")
+            return 0.0
     
     def _determine_battle_winner(self, metrics1: BattleMetrics, metrics2: BattleMetrics) -> str:
         """Визначення переможця бою на основі метрик"""
@@ -410,15 +415,24 @@ class TradingModelArena:
     
     def save_arena_state(self, filepath: str) -> bool:
         try:
-            with open(filepath, 'w') as f: json.dump({'models': {k:v for k,v in self.models.items() if k != 'instance'}}, f)
+            serializable = {k: {sk: sv for sk, sv in v.items() if sk != 'instance'} 
+                           for k, v in self.models.items()}
+            with open(filepath, 'w') as f:
+                json.dump({'models': serializable}, f, indent=2, default=str)
             return True
-        except: return False
+        except Exception as e:
+            logger.warning(f"[ARENA] Failed to save arena state: {e}")
+            return False
 
     def load_arena_state(self, filepath: str) -> bool:
         try:
-            with open(filepath, 'r') as f: state = json.load(f); self.models = state.get('models', {})
+            with open(filepath, 'r') as f:
+                state = json.load(f)
+            self.models = state.get('models', {})
             return True
-        except: return False
+        except Exception as e:
+            logger.warning(f"[ARENA] Failed to load arena state: {e}")
+            return False
 
 def get_trading_arena() -> TradingModelArena:
     global _trading_arena

@@ -16,6 +16,9 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("GitHubActionsClient")
 
+# Constants to avoid duplication
+TEST_RESULTS_FILE = "test_results.json"
+
 class GitHubActionsClient(BaseIntegration):
     """Інтеграція з CI/CD pipeline"""
     
@@ -177,16 +180,16 @@ class GitHubActionsClient(BaseIntegration):
             
             # Запуск pytest
             try:
-                result = subprocess.run(
-                    ["python", "-m", "pytest", "tests/", "--cov=.", "--json-report", "--json-report-file=test_results.json"],
+                subprocess.run(
+                    ["python", "-m", "pytest", "tests/", "--cov=.", "--json-report", "--json-report-file=" + TEST_RESULTS_FILE],
                     capture_output=True,
                     text=True,
                     timeout=300  # 5 хвилин
                 )
                 
                 # Завантажити результати
-                if Path("test_results.json").exists():
-                    with open("test_results.json", 'r') as f:
+                if Path(TEST_RESULTS_FILE).exists():
+                    with open(TEST_RESULTS_FILE, 'r') as f:
                         pytest_results = json.load(f)
                     
                     test_results.update({
@@ -206,9 +209,9 @@ class GitHubActionsClient(BaseIntegration):
                                 "error": test.get("call", {}).get("longrepr", "Unknown error")
                             })
                 
-                # Очистка
-                if Path("test_results.json").exists():
-                    Path("test_results.json").unlink()
+                # Очищення
+                if Path(TEST_RESULTS_FILE).exists():
+                    Path(TEST_RESULTS_FILE).unlink()
                 
             except subprocess.TimeoutExpired:
                 return {
@@ -412,15 +415,15 @@ class GitHubActionsClient(BaseIntegration):
                     timeout=60
                 )
                 
-                if result.returncode == 0:
+                if result.stdout:
                     coverage_data = json.loads(result.stdout)
                     return {
                         "total_coverage": coverage_data.get("totals", {}).get("percent_covered", 0),
                         "line_coverage": coverage_data.get("totals", {}).get("covered_lines", 0),
                         "missing_lines": coverage_data.get("totals", {}).get("missing_lines", 0)
                     }
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"[GitHubActionsClient] Failed to get code coverage: {e}")
             
             # Альтернативний розрахунок
             return {
@@ -509,8 +512,8 @@ class GitHubActionsClient(BaseIntegration):
                         "warning_count": len([v for v in violations if v.get("code", "").startswith("W")]),
                         "violations": violations[:10]  # Перші 10
                     }
-            except:
-                pass
+            except Exception as e:
+                logger.debug(f"[GitHubActionsClient] Code style check failed: {e}")
             
             # Альтернативні дані
             return {

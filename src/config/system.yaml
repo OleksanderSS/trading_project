@@ -21,14 +21,3 @@ system:
       enabled: false
       project_id: null
       bucket: null
-  
-  # ✅ Fallback storage options
-  storage_fallback:
-    s3:
-      enabled: false
-      bucket: null
-      region: null
-    gcs:
-      enabled: false
-      bucket: null
-      project_id: null

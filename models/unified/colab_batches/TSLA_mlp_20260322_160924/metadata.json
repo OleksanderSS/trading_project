@@ -1,0 +1,11 @@
+{
+  "batch_id": "TSLA_mlp_20260322_160924",
+  "ticker": "TSLA",
+  "model_name": "mlp",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_rsi14_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T16:09:24.731271",
+  "status": "PENDING_COLAB"
+}

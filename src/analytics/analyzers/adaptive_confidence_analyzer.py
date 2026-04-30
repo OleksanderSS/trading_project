@@ -1,9 +1,9 @@
-import logging
 from typing import Dict, Any, List, Optional
 
 from ..interfaces import IAnalyzer
+from src.core.logging.logger import ProjectLogger
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class AdaptiveConfidenceAnalyzer(IAnalyzer):
     """

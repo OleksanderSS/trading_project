@@ -42,7 +42,6 @@ class VirtualPortfolio:
         self.metrics_calculator = PortfolioMetricsCalculator()
         
         # Load risk settings from strategy config
-        strategy_config = self.config_manager.get_config('strategy.trading_advisor', {})
         risk_config = self.config_manager.get_config('strategy.risk_management', {})
         
         self.max_position_size = risk_config.get('max_position_size', 0.1)
@@ -61,55 +60,45 @@ class VirtualPortfolio:
     def load_portfolio(self):
         """Loads portfolio state from disk."""
         try:
-            if self.portfolio_file.exists():
-                with open(self.portfolio_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                
-                self.current_balance = data.get('current_balance', self.initial_balance)
-                self.positions = data.get('positions', {})
-                self.transactions = data.get('transactions', [])
-                self.performance_history = data.get('performance_history', [])
-                
-                # Convert timestamps back to datetime objects
-                for pos in self.positions.values():
-                    if 'entry_time' in pos:
-                        pos['entry_time'] = datetime.fromisoformat(pos['entry_time'])
-                
-                for tx in self.transactions:
-                    if 'timestamp' in tx:
-                        tx['timestamp'] = datetime.fromisoformat(tx['timestamp'])
-                
-                logger.info(f"Portfolio loaded from {self.portfolio_file}")
-            else:
+            if not self.portfolio_file.exists():
                 self.save_portfolio()
+                return
+                
+            with open(self.portfolio_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            self._load_portfolio_data(data)
+            logger.info(f"Portfolio loaded from {self.portfolio_file}")
                 
         except Exception as e:
             error_handler.handle_error(e, "Loading Virtual Portfolio")
     
+    def _load_portfolio_data(self, data: Dict[str, Any]):
+        """Load portfolio data from loaded JSON."""
+        self.current_balance = data.get('current_balance', self.initial_balance)
+        self.positions = data.get('positions', {})
+        self.transactions = data.get('transactions', [])
+        self.performance_history = data.get('performance_history', [])
+        
+        self._convert_position_timestamps()
+        self._convert_transaction_timestamps()
+    
+    def _convert_position_timestamps(self):
+        """Convert position timestamps to datetime objects."""
+        for pos in self.positions.values():
+            if 'entry_time' in pos:
+                pos['entry_time'] = datetime.fromisoformat(pos['entry_time'])
+    
+    def _convert_transaction_timestamps(self):
+        """Convert transaction timestamps to datetime objects."""
+        for tx in self.transactions:
+            if 'timestamp' in tx:
+                tx['timestamp'] = datetime.fromisoformat(tx['timestamp'])
+    
     def save_portfolio(self):
         """Saves portfolio state to disk."""
         try:
-            data = {
-                'portfolio_name': self.portfolio_name,
-                'initial_balance': self.initial_balance,
-                'current_balance': self.current_balance,
-                'positions': {},
-                'transactions': [],
-                'performance_history': self.performance_history,
-                'last_updated': datetime.now().isoformat()
-            }
-            
-            for ticker, pos in self.positions.items():
-                pos_copy = pos.copy()
-                if isinstance(pos_copy.get('entry_time'), datetime):
-                    pos_copy['entry_time'] = pos_copy['entry_time'].isoformat()
-                data['positions'][ticker] = pos_copy
-            
-            for tx in self.transactions:
-                tx_copy = tx.copy()
-                if isinstance(tx_copy.get('timestamp'), datetime):
-                    tx_copy['timestamp'] = tx_copy['timestamp'].isoformat()
-                data['transactions'].append(tx_copy)
+            data = self._prepare_portfolio_data()
             
             with open(self.portfolio_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
@@ -118,6 +107,38 @@ class VirtualPortfolio:
             
         except Exception as e:
             error_handler.handle_error(e, "Saving Virtual Portfolio")
+    
+    def _prepare_portfolio_data(self) -> Dict[str, Any]:
+        """Prepare portfolio data for JSON serialization."""
+        return {
+            'portfolio_name': self.portfolio_name,
+            'initial_balance': self.initial_balance,
+            'current_balance': self.current_balance,
+            'positions': self._serialize_positions(),
+            'transactions': self._serialize_transactions(),
+            'performance_history': self.performance_history,
+            'last_updated': datetime.now().isoformat()
+        }
+    
+    def _serialize_positions(self) -> Dict[str, Any]:
+        """Serialize positions for JSON storage."""
+        serialized = {}
+        for ticker, pos in self.positions.items():
+            pos_copy = pos.copy()
+            if isinstance(pos_copy.get('entry_time'), datetime):
+                pos_copy['entry_time'] = pos_copy['entry_time'].isoformat()
+            serialized[ticker] = pos_copy
+        return serialized
+    
+    def _serialize_transactions(self) -> List[Dict[str, Any]]:
+        """Serialize transactions for JSON storage."""
+        serialized = []
+        for tx in self.transactions:
+            tx_copy = tx.copy()
+            if isinstance(tx_copy.get('timestamp'), datetime):
+                tx_copy['timestamp'] = tx_copy['timestamp'].isoformat()
+            serialized.append(tx_copy)
+        return serialized
     
     def get_total_value(self, current_prices: Dict[str, float]) -> float:
         """Calculates total portfolio value (cash + mark-to-market positions)."""
@@ -128,40 +149,20 @@ class VirtualPortfolio:
                 total_value += position['quantity'] * price
         return total_value
     
-    def buy_stock(self, ticker: str, quantity: int, price: float, 
-                  reason: str = "", confidence: float = 0.8) -> Dict[str, Any]:
+    def buy_stock(self, order_params: Dict[str, Any]) -> Dict[str, Any]:
         """Executes a virtual buy order."""
         try:
+            ticker = order_params['ticker']
+            quantity = order_params['quantity']
+            price = order_params['price']
+            confidence = order_params.get('confidence', 0.8)
+            
             total_cost = quantity * price
             if total_cost > self.current_balance:
                 return {'success': False, 'error': 'Insufficient funds'}
             
-            transaction = {
-                'timestamp': datetime.now(),
-                'type': 'BUY',
-                'ticker': ticker,
-                'quantity': quantity,
-                'price': price,
-                'total_cost': total_cost,
-                'reason': reason,
-                'confidence': confidence
-            }
-            
-            self.current_balance -= total_cost
-            
-            if ticker in self.positions:
-                old_qty = self.positions[ticker]['quantity']
-                old_avg = self.positions[ticker]['avg_price']
-                new_qty = old_qty + quantity
-                self.positions[ticker]['avg_price'] = ((old_qty * old_avg) + total_cost) / new_qty
-                self.positions[ticker]['quantity'] = new_qty
-            else:
-                self.positions[ticker] = {
-                    'quantity': quantity,
-                    'avg_price': price,
-                    'entry_time': datetime.now(),
-                    'confidence': confidence
-                }
+            transaction = self._create_buy_transaction(order_params, total_cost)
+            self._process_buy_order(ticker, quantity, price, total_cost, confidence)
             
             self.transactions.append(transaction)
             self.save_portfolio()
@@ -169,11 +170,41 @@ class VirtualPortfolio:
             return {'success': True, 'transaction': transaction}
             
         except Exception as e:
-            error_handler.handle_error(e, f"Buy Stock {ticker}")
+            error_handler.handle_error(e, f"Buy Stock {order_params.get('ticker', 'unknown')}")
             return {'success': False, 'error': str(e)}
     
-    def sell_stock(self, ticker: str, quantity: int, price: float, 
-                   reason: str = "") -> Dict[str, Any]:
+    def _create_buy_transaction(self, order_params: Dict[str, Any], total_cost: float) -> Dict[str, Any]:
+        """Create buy transaction record."""
+        return {
+            'timestamp': datetime.now(),
+            'type': 'BUY',
+            'ticker': order_params['ticker'],
+            'quantity': order_params['quantity'],
+            'price': order_params['price'],
+            'total_cost': total_cost,
+            'reason': order_params.get('reason', ''),
+            'confidence': order_params.get('confidence', 0.8)
+        }
+    
+    def _process_buy_order(self, ticker: str, quantity: int, price: float, total_cost: float, confidence: float):
+        """Process buy order and update positions."""
+        self.current_balance -= total_cost
+        
+        if ticker in self.positions:
+            old_qty = self.positions[ticker]['quantity']
+            old_avg = self.positions[ticker]['avg_price']
+            new_qty = old_qty + quantity
+            self.positions[ticker]['avg_price'] = ((old_qty * old_avg) + total_cost) / new_qty
+            self.positions[ticker]['quantity'] = new_qty
+        else:
+            self.positions[ticker] = {
+                'quantity': quantity,
+                'avg_price': price,
+                'entry_time': datetime.now(),
+                'confidence': confidence
+            }
+    
+    def sell_stock(self, ticker: str, quantity: int, price: float, reason: str = "") -> Dict[str, Any]:
         """Executes a virtual sell order."""
         try:
             if ticker not in self.positions or self.positions[ticker]['quantity'] < quantity:

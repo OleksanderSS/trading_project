@@ -1,0 +1,11 @@
+{
+  "batch_id": "RIVN_transformer_20260323_092043",
+  "ticker": "RIVN",
+  "model_name": "transformer",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_macd_hist_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T09:20:43.826327",
+  "status": "PENDING_COLAB"
+}

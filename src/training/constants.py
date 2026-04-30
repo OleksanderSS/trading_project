@@ -1,7 +1,7 @@
 """
 Training Constants
-Ця модульоль містить усі магічні числа та константи, що використовуються у системі тренування.
-Централізація забезпечує простоту модифaкації та послідовність.
+This module contains all magic numbers and constants used across the training system.
+Centralization ensures ease of modification and consistency.
 """
 
 # ============================================================================

@@ -2,13 +2,13 @@
 Monitoring System Tests - Тести системи моніторингу.
 
 Тестує:
-- Системний моніторинг (CPU, пам'ять, диск)
+- System monitorинг (CPU, пам'ять, диск)
 - Моніторинг моделей
 - Моніторинг якості даних
-- Менеджер сповіщень
+- Alert manager
 - Дашборд
 
-Використовує:
+Uses:
 - unittest для структурованих тестів
 - Mock дані для симуляції
 - Інтеграційні тести
@@ -25,16 +25,16 @@ import os
 from src.monitoring.monitoring_system import (
     MonitoringSystem, SystemHealthMonitor, ModelPerformanceMonitor,
     DataQualityMonitor, AlertManager, MonitoringDashboard,
-    AlertSeverity, AlertStatus, MetricType
+    alertseverity, alertstatus, MetricType
 )
 from src.monitoring.dashboard import MonitoringDashboardGenerator, TextBasedDashboard
 from src.core.logging.logger import ProjectLogger
 
 class TestSystemHealthMonitor(unittest.TestCase):
-    """Тести моніторингу системного здоров'я"""
+    """   '"""
 
     def setUp(self):
-        """Підготовка тесту"""
+        """ """
         self.config = {
             'cpu_threshold': 80.0,
             'memory_threshold': 85.0,
@@ -44,8 +44,8 @@ class TestSystemHealthMonitor(unittest.TestCase):
 
     @patch('src.monitoring.monitoring_system.psutil')
     def test_collect_metrics(self, mock_psutil):
-        """Тест збірки системних метрик"""
-        # Мок системних метрик
+        """   """
+# 
         mock_psutil.cpu_percent.return_value = 45.5
         mock_psutil.virtual_memory.return_value = Mock(
             percent=67.8,
@@ -63,10 +63,10 @@ class TestSystemHealthMonitor(unittest.TestCase):
         )
         mock_psutil.pids.return_value = [1, 2, 3, 4, 5]
 
-        # Збір метрик
+# 
         metrics = self.monitor.collect_metrics()
 
-        # Перевірки
+# 
         self.assertIn('cpu_percent', metrics)
         self.assertIn('memory_percent', metrics)
         self.assertIn('disk_percent', metrics)
@@ -76,8 +76,8 @@ class TestSystemHealthMonitor(unittest.TestCase):
 
     @patch('src.monitoring.monitoring_system.psutil')
     def test_threshold_checking(self, mock_psutil):
-        """Тест перевірки порогових значень"""
-        # Високе навантаження CPU
+        """   """
+# CPU
         mock_psutil.cpu_percent.return_value = 95.0
         mock_psutil.virtual_memory.return_value = Mock(percent=70.0)
         mock_psutil.disk_usage.return_value = Mock(percent=80.0)
@@ -85,14 +85,14 @@ class TestSystemHealthMonitor(unittest.TestCase):
         self.monitor.collect_metrics()
         self.monitor.check_thresholds()
 
-        # Повинно бути створено сповіщення
-        self.assertTrue(len(self.monitor.alerts) > 0)
+# alerts
+        self.assertGreater(len(self.monitor.alerts), 0)
         alert = self.monitor.alerts[-1]
         self.assertEqual(alert['severity'], 'warning')
         self.assertIn('High CPU usage', alert['message'])
 
 class TestModelPerformanceMonitor(unittest.TestCase):
-    """Тести моніторингу продуктивності моделей"""
+    """   """
 
     def setUp(self):
         self.monitor = ModelPerformanceMonitor({
@@ -101,33 +101,33 @@ class TestModelPerformanceMonitor(unittest.TestCase):
         })
 
     def test_update_model_metrics(self):
-        """Тест оновлення метрик моделі"""
-        # Початкові метрики
+        """   """
+# 
         self.monitor.update_model_metrics('model_1', {
             'accuracy': 0.85,
             'mae': 0.02,
             'timestamp': datetime.now().isoformat()
         })
 
-        # Перевірка збереження
+# 
         self.assertIn('model_1', self.monitor.baseline_metrics)
         self.assertEqual(self.monitor.baseline_metrics['model_1']['accuracy'], 0.85)
 
     def test_drift_detection(self):
-        """Тест виявлення drift"""
-        # Початкові метрики
+        """  drift"""
+# 
         self.monitor.update_model_metrics('model_1', {'accuracy': 0.85})
 
-        # Оновлені метрики з drift
+# drift
         self.monitor.update_model_metrics('model_1', {'accuracy': 0.75})
 
-        # Повинно бути створено сповіщення про drift
-        self.assertTrue(len(self.monitor.alerts) > 0)
+# alerts  drift
+        self.assertGreater(len(self.monitor.alerts), 0)
         alert = self.monitor.alerts[-1]
         self.assertIn('drift detected', alert['message'].lower())
 
 class TestDataQualityMonitor(unittest.TestCase):
-    """Тести моніторингу якості даних"""
+    """   """
 
     def setUp(self):
         self.monitor = DataQualityMonitor({
@@ -136,7 +136,7 @@ class TestDataQualityMonitor(unittest.TestCase):
         })
 
     def test_update_data_quality(self):
-        """Тест оновлення якості даних"""
+        """ Update data quality"""
         quality_report = {
             'completeness': 0.92,  # 92% - нижче порогу
             'total_rows': 1000,
@@ -146,13 +146,13 @@ class TestDataQualityMonitor(unittest.TestCase):
 
         self.monitor.update_data_quality('source_1', quality_report)
 
-        # Повинно бути створено сповіщення про низьку якість
-        self.assertTrue(len(self.monitor.alerts) > 0)
+# alerts
+        self.assertGreater(len(self.monitor.alerts), 0)
         alert = self.monitor.alerts[-1]
         self.assertIn('Low data completeness', alert['message'])
 
 class TestAlertManager(unittest.TestCase):
-    """Тести менеджера сповіщень"""
+    """  """
 
     def setUp(self):
         self.manager = AlertManager({
@@ -161,7 +161,7 @@ class TestAlertManager(unittest.TestCase):
         })
 
     def test_process_alert(self):
-        """Тест обробки сповіщення"""
+        """  alerts"""
         alert = {
             'id': 'test_alert_1',
             'monitor': 'test_monitor',
@@ -174,13 +174,13 @@ class TestAlertManager(unittest.TestCase):
 
         self.manager.process_alert(alert)
 
-        # Перевірка додавання в активні
+# 
         self.assertIn('test_alert_1', self.manager.active_alerts)
         self.assertEqual(len(self.manager.alert_history), 1)
 
     def test_resolve_alert(self):
-        """Тест вирішення сповіщення"""
-        # Створення сповіщення
+        """  alerts"""
+# alerts
         alert = {
             'id': 'test_alert_2',
             'monitor': 'test_monitor',
@@ -193,15 +193,15 @@ class TestAlertManager(unittest.TestCase):
         self.manager.process_alert(alert)
         self.assertIn('test_alert_2', self.manager.active_alerts)
 
-        # Вирішення
+# 
         self.manager.resolve_alert('test_alert_2', 'manually resolved')
 
-        # Перевірка видалення з активних
+# 
         self.assertNotIn('test_alert_2', self.manager.active_alerts)
         self.assertEqual(self.manager.active_alerts['test_alert_2']['status'], 'resolved')
 
     def test_get_active_alerts_by_severity(self):
-        """Тест фільтрації сповіщень по критичності"""
+        """    """
         alerts = [
             {
                 'id': 'alert_1',
@@ -222,18 +222,18 @@ class TestAlertManager(unittest.TestCase):
         for alert in alerts:
             self.manager.process_alert(alert)
 
-        # Фільтрація по критичності
-        warnings = self.manager.get_active_alerts(AlertSeverity.WARNING)
-        errors = self.manager.get_active_alerts(AlertSeverity.ERROR)
+# 
+        warnings = self.manager.get_active_alerts(alertseverity.WARNING)
+        errors = self.manager.get_active_alerts(alertseverity.ERROR)
 
         self.assertEqual(len(warnings), 1)
         self.assertEqual(len(errors), 1)
 
 class TestMonitoringDashboard(unittest.TestCase):
-    """Тести дашборду моніторингу"""
+    """  """
 
     def setUp(self):
-        # Створення мок моніторів
+# 
         self.mock_monitor1 = Mock()
         self.mock_monitor1.name = 'system_health'
         self.mock_monitor1.is_running = True
@@ -256,7 +256,7 @@ class TestMonitoringDashboard(unittest.TestCase):
             'alerts': []
         }
 
-        # Мок менеджер сповіщень
+# Alert manager
         self.mock_alert_manager = Mock()
         self.mock_alert_manager.get_active_alerts.return_value = []
         self.mock_alert_manager.alert_history = []
@@ -267,20 +267,20 @@ class TestMonitoringDashboard(unittest.TestCase):
         )
 
     def test_generate_dashboard_data(self):
-        """Тест генерації даних дашборду"""
+        """   """
         data = self.dashboard.generate_dashboard_data()
 
-        # Перевірка структури
+# 
         self.assertIn('system_status', data)
         self.assertIn('monitors', data)
         self.assertIn('alerts', data)
         self.assertIn('summary', data)
 
-        # Перевірка моніторів
+# 
         self.assertIn('system_health', data['monitors'])
         self.assertIn('model_performance', data['monitors'])
 
-        # Перевірка зведення
+# 
         summary = data['summary']
         self.assertIn('total_monitors', summary)
         self.assertIn('active_monitors', summary)
@@ -288,10 +288,10 @@ class TestMonitoringDashboard(unittest.TestCase):
         self.assertEqual(summary['active_monitors'], 2)
 
 class TestTextBasedDashboard(unittest.TestCase):
-    """Тести текстового дашборду"""
+    """  """
 
     def setUp(self):
-        # Мок системи моніторингу
+# 
         self.mock_monitoring_system = Mock()
         self.mock_monitoring_system.get_dashboard_data.return_value = {
             'system_status': 'healthy',
@@ -330,33 +330,33 @@ class TestTextBasedDashboard(unittest.TestCase):
         self.dashboard = TextBasedDashboard(self.mock_monitoring_system)
 
     def test_generate_report(self):
-        """Тест генерації текстового звіту"""
+        """   """
         report = self.dashboard.generate_report()
 
-        # Перевірка наявності ключових секцій
+# 
         self.assertIn('TRADING SYSTEM MONITORING DASHBOARD', report)
         self.assertIn('System Status: HEALTHY', report)
         self.assertIn('SYSTEM METRICS:', report)
         self.assertIn('MODEL PERFORMANCE:', report)
-        self.assertIn('ACTIVE ALERTS:', report)
+        self.assertIn('ACTIVE alerts:', report)
 
-        # Перевірка метрик
+# 
         self.assertIn('CPU Usage: 45.5%', report)
         self.assertIn('Memory Usage: 67.8%', report)
         self.assertIn('Total Models: 5', report)
 
     def test_save_report(self):
-        """Тест збереження звіту"""
+        """ Save report"""
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as tmp:
             tmp_path = tmp.name
 
         try:
             self.dashboard.save_report(tmp_path)
 
-            # Перевірка створення файлу
+# 
             self.assertTrue(os.path.exists(tmp_path))
 
-            # Перевірка вмісту
+# 
             with open(tmp_path, 'r', encoding='utf-8') as f:
                 content = f.read()
                 self.assertIn('TRADING SYSTEM MONITORING DASHBOARD', content)
@@ -366,7 +366,7 @@ class TestTextBasedDashboard(unittest.TestCase):
                 os.unlink(tmp_path)
 
 class TestMonitoringSystem(unittest.TestCase):
-    """Тести основної системи моніторингу"""
+    """   """
 
     def setUp(self):
         self.config = {
@@ -379,12 +379,12 @@ class TestMonitoringSystem(unittest.TestCase):
         self.system = MonitoringSystem(self.config)
 
     def tearDown(self):
-        """Очищення після тесту"""
+        """Cleanup  """
         if self.system.is_running:
             self.system.stop()
 
     def test_initialization(self):
-        """Тест ініціалізації системи"""
+        """  """
         self.assertIsInstance(self.system.system_monitor, SystemHealthMonitor)
         self.assertIsInstance(self.system.model_monitor, ModelPerformanceMonitor)
         self.assertIsInstance(self.system.data_monitor, DataQualityMonitor)
@@ -394,20 +394,20 @@ class TestMonitoringSystem(unittest.TestCase):
         self.assertFalse(self.system.is_running)
 
     def test_start_stop(self):
-        """Тест запуску та зупинки системи"""
-        # Запуск
+        """    """
+# 
         self.system.start()
         self.assertTrue(self.system.is_running)
 
-        # Невелика затримка для ініціалізації потоку
+# 
         time.sleep(0.1)
 
-        # Зупинка
+# 
         self.system.stop()
         self.assertFalse(self.system.is_running)
 
     def test_get_health_report(self):
-        """Тест отримання звіту про здоров'я"""
+        """    '"""
         report = self.system.get_health_report()
 
         expected_keys = ['system_status', 'monitors', 'active_alerts', 'last_collection']
@@ -417,16 +417,16 @@ class TestMonitoringSystem(unittest.TestCase):
         self.assertEqual(report['system_status'], 'stopped')  # Система не запущена
 
     def test_update_model_metrics(self):
-        """Тест оновлення метрик моделі через систему"""
+        """     """
         metrics = {'accuracy': 0.85, 'mae': 0.03}
 
         self.system.update_model_metrics('test_model', metrics)
 
-        # Перевірка передачі до монітора
+# 
         self.assertIn('test_model', self.system.model_monitor.model_metrics)
 
     def test_update_data_quality(self):
-        """Тест оновлення якості даних через систему"""
+        """ Update data quality  """
         quality_report = {
             'completeness': 0.95,
             'total_rows': 1000,
@@ -435,11 +435,11 @@ class TestMonitoringSystem(unittest.TestCase):
 
         self.system.update_data_quality('test_source', quality_report)
 
-        # Перевірка передачі до монітора
+# 
         self.assertIn('test_source', self.system.data_monitor.data_sources)
 
 class TestMonitoringDashboardGenerator(unittest.TestCase):
-    """Тести генератора дашбордів"""
+    """  """
 
     def setUp(self):
         self.mock_system = Mock()
@@ -457,34 +457,34 @@ class TestMonitoringDashboardGenerator(unittest.TestCase):
         self.generator = MonitoringDashboardGenerator(self.mock_system, self.config)
 
     def test_initialization(self):
-        """Тест ініціалізації генератора"""
+        """  """
         self.assertIsInstance(self.generator.text_dashboard, TextBasedDashboard)
 
-        # Web dashboard може бути None якщо Plotly недоступний
+# Web dashboard   None  Plotly
         if 'plotly' in globals():
             self.assertIsNotNone(self.generator.web_dashboard)
         else:
             self.assertIsNone(self.generator.web_dashboard)
 
     def test_generate_text_report(self):
-        """Тест генерації текстового звіту"""
+        """   """
         report = self.generator.generate_text_report()
 
         self.assertIsInstance(report, str)
         self.assertIn('TRADING SYSTEM MONITORING DASHBOARD', report)
 
     def test_save_current_report(self):
-        """Тест збереження поточного звіту"""
+        """   """
         with tempfile.TemporaryDirectory() as tmp_dir:
             filepath = os.path.join(tmp_dir, 'test_report.txt')
 
             self.generator.save_current_report(filepath)
 
-            # Перевірка створення файлу
+# 
             self.assertTrue(os.path.exists(filepath))
 
     def test_get_dashboard_summary(self):
-        """Тест отримання зведення дашборду"""
+        """   """
         summary = self.generator.get_dashboard_summary()
 
         expected_keys = ['system_status', 'active_monitors', 'total_alerts', 'last_update']
@@ -495,8 +495,8 @@ class TestMonitoringDashboardGenerator(unittest.TestCase):
         self.assertEqual(summary['active_monitors'], 2)
 
 if __name__ == '__main__':
-    # Налаштування логування для тестів
+# Configure logging
     logging.basicConfig(level=logging.WARNING)
 
-    # Запуск тестів
+# 
     unittest.main(verbosity=2)

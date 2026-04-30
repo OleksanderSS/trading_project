@@ -13,6 +13,31 @@ from pathlib import Path
 import argparse
 import pandas as pd
 import numpy as np
+import re
+
+def sanitize_path_input(path_input: str) -> str:
+    """
+    Sanitize path input to prevent path traversal attacks.
+    
+    Args:
+        path_input: Input string that will be used in file paths
+        
+    Returns:
+        Sanitized string safe for path construction
+    """
+    if not path_input:
+        return ""
+    
+    # Remove path traversal characters
+    sanitized = re.sub(r'[./\\]', '_', path_input)
+    
+    # Remove null bytes and other dangerous characters
+    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
+    
+    # Limit length to prevent path overflow
+    sanitized = sanitized[:100]
+    
+    return sanitized
 
 # Add project root to path
 project_root = Path(__file__).resolve().parent.parent.parent.parent
@@ -38,8 +63,7 @@ def get_training_data() -> tuple[pd.DataFrame, pd.Series]:
     logger.info("Loading historical prediction data for meta-model training from DataManager...")
     
     config_manager = get_current_config()
-    error_handler = get_error_handler()
-    data_manager = DataManager(config_manager, error_handler)
+    data_manager = DataManager(config_manager)
     
     try:
         tables = data_manager.get_all_tables()
@@ -136,7 +160,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     try:
-        main(args.output)
+        sanitized_output = sanitize_path_input(args.output)
+        main(sanitized_output)
     except Exception as e:
         logger.error(f"An error occurred during training: {e}", exc_info=True)
         sys.exit(1)

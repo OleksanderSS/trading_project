@@ -65,7 +65,12 @@ def main():
 
         # 5. (Optional) Train the final model with the best parameters
         logger.info("Training final model with best parameters...")
-        final_model = RandomForestRegressor(**best_params, random_state=42)
+        final_model = RandomForestRegressor(
+            **best_params, 
+            min_samples_leaf=best_params.get('min_samples_leaf', 1),
+            max_features=best_params.get('max_features', 'sqrt'),
+            random_state=42
+        )
         final_model.fit(X, y)
         logger.info("Final model trained successfully.")
 

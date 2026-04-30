@@ -1,6 +1,12 @@
+# src/trading/consensus_engine.py
+"""
+Consensus Engine - The decision core of the DEAN trading system.
+Aggregates predictions from multiple heterogeneous models using an ensemble meta-model
+or regime-aware weighted averaging.
+"""
+
 import numpy as np
 import pandas as pd
-import logging
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -12,10 +18,11 @@ from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.analytics.analyzers.adaptive_confidence_analyzer import AdaptiveConfidenceAnalyzer
 from src.models.dean.dean_bootstrap_system import get_dean_system
 from src.ensembling.stacked_ensemble import StackedEnsemble
+from src.config.unified_config_manager import get_current_config
 
 @dataclass
 class ConsensusReport:
-    """Detailed breakdown of the decision-making process for transparency."""
+    """Detailed breakdown of the decision-making process for transparency and auditing."""
     final_signal: str  # BUY, SELL, HOLD
     raw_score: float
     confidence: float
@@ -29,180 +36,260 @@ class ConsensusReport:
 
 class ConsensusEngine:
     """
-    The central decision node of DEAN. Aggregates predictions using a trained 
-    meta-model, cross-references with historical KNN patterns, and applies Critic risk filters.
+    The central decision node of the architecture. 
+    Aggregates predictions using a trained meta-model, 
+    cross-references with historical KNN patterns, and applies Critic risk filters.
     """
 
     def __init__(self, 
-                 experience_diary: DiaryEngine,
-                 threshold_analyzer: AdaptiveConfidenceAnalyzer,
+                 experience_diary: Any,
+                 threshold_analyzer: Any,
                  config_manager: Optional[Any] = None,
                  meta_model_path: Optional[str] = None):
+        """Initializes the ConsensusEngine with its required dependencies."""
+        self.config_manager = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
         self.diary = experience_diary
         self.threshold_analyzer = threshold_analyzer
         self.dean_system = get_dean_system()
         
-        # Resolve meta_model_path from config if not provided
-        if meta_model_path is None and config_manager is not None:
-            meta_model_path = config_manager.get('paths.meta_model', "data/trained_models/consensus_meta_model.pkl")
-        elif meta_model_path is None:
+        # Resolve meta_model_path from configuration
+        if meta_model_path is None:
+            self.logger.debug("Meta-model path not provided. Checking configuration defaults.")
+            # Default to data/trained_models/consensus_meta_model.pkl if not set
             meta_model_path = "data/trained_models/consensus_meta_model.pkl"
 
-        # --- 2. LOAD THE TRAINED META-MODEL ---
+        # Load the trained meta-model for intelligent ensembling
         self.meta_model = None
         if Path(meta_model_path).exists():
             try:
                 self.meta_model = StackedEnsemble.load(meta_model_path)
-                self.logger.info(f"Successfully loaded trained meta-model from {meta_model_path}")
+                self.logger.info(f"Meta-model successfully synchronized from {meta_model_path}")
             except Exception as e:
-                self.logger.error(f"Failed to load meta-model from {meta_model_path}: {e}", exc_info=True)
+                self.logger.error(f"Failed to load Meta-model at {meta_model_path}: {e}")
         else:
-            self.logger.warning(f"Meta-model not found at {meta_model_path}. "
-                                f"ConsensusEngine will fall back to simple weighted averaging.")
-        # -----------------------------------------
+            self.logger.warning(f"Meta-model not found at {meta_model_path}. Falling back to weighted averaging.")
 
     def generate_consensus(self, 
                            model_predictions: Dict[str, float], 
                            context_data: Dict[str, Any],
                            knn_results: Optional[Dict[str, Any]] = None) -> ConsensusReport:
         """
-        Processes predictions from all architectures to reach a single unified decision.
+        Processes predictions from all architectures to reach a single unified trade decision.
         """
         fingerprint = context_data.get('fingerprint', '0|0|0')
         regime = context_data.get('regime', 'neutral')
         
-        raw_score = 0.0
-        contributions = {}
+        raw_score, contributions = self._calculate_raw_score(
+            model_predictions=model_predictions,
+            context_data=context_data,
+            regime=regime,
+            fingerprint=fingerprint,
+        )
 
-        # --- 3. USE META-MODEL FOR PREDICTION ---
+        raw_score, knn_adjustment = self._apply_knn_adjustment(raw_score, knn_results)
+
+        min_confidence = self._get_min_confidence_threshold(context_data)
+        normalized_score = self._normalize_score(raw_score)
+        signal_threshold = self._calculate_signal_threshold(min_confidence)
+
+        self._log_consensus_inference(raw_score, normalized_score, signal_threshold, context_data)
+
+        initial_signal = self._determine_initial_signal(normalized_score, signal_threshold)
+        final_signal, critic_score, blocked_by_critic = self._apply_critic_filter(initial_signal, context_data)
+
+        report = self._build_report(
+            final_signal=final_signal,
+            raw_score=raw_score,
+            normalized_score=normalized_score,
+            regime=regime,
+            fingerprint=fingerprint,
+            contributions=contributions,
+            knn_adjustment=knn_adjustment,
+            critic_score=critic_score,
+            blocked_by_critic=blocked_by_critic,
+        )
+
+        self._log_consensus_to_diary(report, context_data)
+        return report
+
+    def _calculate_raw_score(
+        self,
+        model_predictions: Dict[str, float],
+        context_data: Dict[str, Any],
+        regime: str,
+        fingerprint: str,
+    ) -> Tuple[float, Dict[str, float]]:
+        """Calculate raw consensus score and per-model contributions."""
         if self.meta_model and self.meta_model.is_trained:
-            # Convert single-step predictions to a DataFrame row
-            predictions_df = pd.DataFrame([model_predictions])
-            
-            # Ensure columns match the order the model was trained on
-            # Missing predictions will be filled with NaN, which the model should handle or we can fill with 0
-            predictions_df = predictions_df.reindex(columns=self.meta_model.feature_names, fill_value=0.0)
+            return self._predict_with_meta_model(model_predictions, context_data, regime)
 
-            # The predict method from StackedEnsemble now includes live efficiency weighting
-            ensemble_result = self.meta_model.predict(predictions_df, context_params={
+        self.logger.debug("Initiating failover weighted aggregation protocol.")
+        return self._predict_with_weighted_aggregation(model_predictions, fingerprint)
+
+    def _predict_with_meta_model(
+        self,
+        model_predictions: Dict[str, float],
+        context_data: Dict[str, Any],
+        regime: str,
+    ) -> Tuple[float, Dict[str, float]]:
+        """Predict consensus score using the trained meta-model."""
+        predictions_df = pd.DataFrame([model_predictions])
+        predictions_df = predictions_df.reindex(columns=self.meta_model.feature_names, fill_value=0.0)
+
+        ensemble_result = self.meta_model.predict(
+            predictions_df,
+            context_params={
                 'ticker': context_data.get('ticker', 'any'),
                 'tf': context_data.get('tf', 'any'),
-                'regime': regime
-            })
-            
-            raw_score = ensemble_result.final_signal[0]
-            contributions = ensemble_result.active_weights
+                'regime': regime,
+            },
+        )
 
-        else:
-            # --- 4. FALLBACK TO MANUAL AGGREGATION ---
-            self.logger.debug("Using fallback manual aggregation.")
-            weights = self.diary.get_contextual_model_weights(fingerprint)
-            weighted_sum = 0.0
-            total_weight = 0.0
+        raw_score = ensemble_result.final_signal[0]
+        contributions = ensemble_result.active_weights
+        return raw_score, contributions
 
-            for model_id, pred in model_predictions.items():
-                # ✅ Use centralized prediction normalization utility
-                try:
-                    pred_value = normalize_prediction(pred)
-                except TypeError as e:
-                    self.logger.warning(f"Failed to normalize prediction for {model_id}: {e}. Using 0.0")
-                    pred_value = 0.0
-                
-                w = weights.get(model_id, 1.0)
-                weighted_sum += pred_value * w
-                total_weight += w
-                contributions[model_id] = pred_value * w
+    def _predict_with_weighted_aggregation(
+        self,
+        model_predictions: Dict[str, float],
+        fingerprint: str,
+    ) -> Tuple[float, Dict[str, float]]:
+        """Predict consensus score using contextual weighted averaging."""
+        weights = self.diary.get_contextual_model_weights(fingerprint)
+        weighted_sum = 0.0
+        total_weight = 0.0
+        contributions: Dict[str, float] = {}
 
-            raw_score = weighted_sum / total_weight if total_weight > 0 else 0.0
-        # -----------------------------------------
+        for model_id, pred in model_predictions.items():
+            pred_value = self._safe_normalize_prediction(model_id, pred)
+            w = weights.get(model_id, 1.0)
+            weighted_sum += pred_value * w
+            total_weight += w
+            contributions[model_id] = pred_value * w
 
-        # --- 5. ALL SUBSEQUENT STEPS REMAIN UNCHANGED ---
-        # They now operate on a more robust `raw_score`
-        
-        # KNN Pattern Adjustment
+        raw_score = weighted_sum / total_weight if total_weight > 0 else 0.0
+        return raw_score, contributions
+
+    def _safe_normalize_prediction(self, model_id: str, pred: float) -> float:
+        """Normalize a prediction with safe fallback."""
+        try:
+            return normalize_prediction(pred)
+        except Exception as e:
+            self.logger.warning(f"Normalization failed for {model_id}: {e}. Defaulting to 0.0")
+            return 0.0
+
+    def _apply_knn_adjustment(
+        self,
+        raw_score: float,
+        knn_results: Optional[Dict[str, Any]],
+    ) -> Tuple[float, float]:
+        """Adjust raw score using KNN reversal probability if available."""
         knn_adjustment = 1.0
-        if knn_results and 'reversal_probability' in knn_results:
-            rev_prob = knn_results['reversal_probability']
-            knn_adjustment = 1.0 - rev_prob
-            raw_score *= knn_adjustment
+        if not knn_results or 'reversal_probability' not in knn_results:
+            return raw_score, knn_adjustment
 
-        # Adaptive Thresholding
-        thresholds = self.threshold_analyzer.analyze(pd.DataFrame([context_data]))
-        # ✅ FIX: AdaptiveConfidenceAnalyzer повертає 'adaptive_confidence_threshold', не 'min_prediction_prob'
-        min_conf = thresholds.get('adaptive_confidence_threshold', thresholds.get('min_prediction_prob', 0.5))
-        
-        # ✅ FIX: Predictions можуть бути в різних діапазонах:
-        # 1. Нормалізовані [0, 1]: 0.5 = нейтральний, > 0.5 = BUY, < 0.5 = SELL
-        # 2. Денормалізовані [-inf, +inf]: 0 = нейтральний, > 0 = BUY, < 0 = SELL
-        # 3. Нормалізовані [-1, 1]: 0 = нейтральний, > 0 = BUY, < 0 = SELL
-        
-        # Визначаємо діапазон predictions
-        # Якщо raw_score близько до 0.5, це нормалізований [0, 1] діапазон
-        # Якщо raw_score близько до 0, це денормалізований або [-1, 1] діапазон
-        
-        initial_signal = "HOLD"
-        
-        # ✅ DEBUG: Логуємо raw_score для розуміння діапазону
-        self.logger.info(f"[CONSENSUS] raw_score={raw_score:.6f}, min_conf={min_conf:.4f}, ticker={context_data.get('ticker')}")
-        
-        # Перевіряємо, чи це нормалізований [0, 1] діапазон
-        if 0.4 < raw_score < 0.6:
-            # Це близько до 0.5, тому це нормалізований [0, 1] діапазон
-            # Використовуємо min_conf як порог
-            if raw_score > min_conf:
-                initial_signal = "BUY"
-                self.logger.info(f"[CONSENSUS] BUY сигнал (нормалізований діапазон): {raw_score:.6f} > {min_conf:.4f}")
-            elif raw_score < (1.0 - min_conf):
-                initial_signal = "SELL"
-                self.logger.info(f"[CONSENSUS] SELL сигнал (нормалізований діапазон): {raw_score:.6f} < {1.0 - min_conf:.4f}")
-        else:
-            # Це денормалізований або [-1, 1] діапазон
-            # Використовуємо 0 як порог
-            if raw_score > 0.01:  # Невеликий позитивний поріг для уникнення шуму
-                initial_signal = "BUY"
-                self.logger.info(f"[CONSENSUS] BUY сигнал (денормалізований діапазон): {raw_score:.6f} > 0.01")
-            elif raw_score < -0.01:  # Невеликий негативний поріг
-                initial_signal = "SELL"
-                self.logger.info(f"[CONSENSUS] SELL сигнал (денормалізований діапазон): {raw_score:.6f} < -0.01")
+        reversal_prob = knn_results['reversal_probability']
+        knn_adjustment = 1.0 - reversal_prob
+        return raw_score * knn_adjustment, knn_adjustment
 
-        # DEAN Critic Integration (optional - skip if models not trained)
+    def _get_min_confidence_threshold(self, context_data: Dict[str, Any]) -> float:
+        """Get minimum confidence threshold from AdaptiveConfidenceAnalyzer."""
+        # Pass context_data as dict, not DataFrame, to match analyzer expectations
+        threshold_report = self.threshold_analyzer.analyze(context_data)
+        if not threshold_report:
+            return 0.5
+        return threshold_report.get('adaptive_confidence_threshold', 0.5)
+
+    def _normalize_score(self, raw_score: float) -> float:
+        """Standardize raw score into [-1, 1] range."""
+        if abs(raw_score) < 1e-9:
+            return 0.0
+
+        if 0.0 <= raw_score <= 1.0:
+            return (raw_score - 0.5) * 2.0
+
+        return max(-1.0, min(1.0, raw_score))
+
+    def _calculate_signal_threshold(self, min_confidence: float) -> float:
+        """Convert confidence threshold into normalized score space."""
+        signal_threshold = (
+            (min_confidence - 0.5) * 2.0
+            if 0.0 < min_confidence < 1.0
+            else min_confidence
+        )
+        return max(0.01, abs(signal_threshold))
+
+    def _log_consensus_inference(
+        self,
+        raw_score: float,
+        normalized_score: float,
+        signal_threshold: float,
+        context_data: Dict[str, Any],
+    ) -> None:
+        """Log decision diagnostics."""
+        self.logger.info(
+            f"[CONSENSUS] Inference: raw={raw_score:.4f} → normalized={normalized_score:.4f}, "
+            f"threshold={signal_threshold:.4f}, asset={context_data.get('ticker')}"
+        )
+
+    def _determine_initial_signal(self, normalized_score: float, signal_threshold: float) -> str:
+        """Determine BUY/SELL/HOLD based on normalized score and threshold."""
+        if normalized_score > signal_threshold:
+            return "BUY"
+        if normalized_score < -signal_threshold:
+            return "SELL"
+        return "HOLD"
+
+    def _apply_critic_filter(self, initial_signal: str, context_data: Dict[str, Any]) -> Tuple[str, float, bool]:
+        """Apply DEAN critic to potentially block risky decisions."""
         final_signal = initial_signal
         blocked_by_critic = False
         critic_score = 0.0
-        
+
         try:
             _, critique = self.dean_system.bootstrap_action_critique(context_data)
             critic_score = critique.critique_score
-            
+
             if critique.critique_score < 0 and initial_signal != "HOLD":
-                self.logger.warning(f"[CONSENSUS] Critic blocked {initial_signal}. Score: {critique.critique_score}")
+                self.logger.warning(
+                    f"[CONSENSUS] Critic protocol blocked {initial_signal}. Critique Score: {critique.critique_score}"
+                )
                 final_signal = "HOLD"
                 blocked_by_critic = True
-        except (ValueError, AttributeError) as e:
-            # DEAN models not trained yet - skip critic check
-            self.logger.debug(f"DEAN Critic not available: {e}. Proceeding without critic check.")
+        except Exception as e:
+            self.logger.debug(f"Critic module skipped: {e}. Executing nominal path.")
             critic_score = 0.0
 
-        # Create Report
-        report = ConsensusReport(
+        return final_signal, critic_score, blocked_by_critic
+
+    def _build_report(
+        self,
+        final_signal: str,
+        raw_score: float,
+        normalized_score: float,
+        regime: str,
+        fingerprint: str,
+        contributions: Dict[str, float],
+        knn_adjustment: float,
+        critic_score: float,
+        blocked_by_critic: bool,
+    ) -> ConsensusReport:
+        """Build the ConsensusReport object."""
+        return ConsensusReport(
             final_signal=final_signal,
             raw_score=raw_score,
-            confidence=abs(raw_score),
+            confidence=abs(normalized_score),
             market_regime=regime,
             context_fingerprint=fingerprint,
             model_contributions=contributions,
             knn_adjustment=knn_adjustment,
             critic_score=critic_score,
-            blocked_by_critic=blocked_by_critic
+            blocked_by_critic=blocked_by_critic,
         )
 
-        self._log_consensus_to_diary(report, context_data)
-
-        return report
-
     def _log_consensus_to_diary(self, report: ConsensusReport, context: Dict[str, Any]):
-        """Records the entire decision matrix for 'The Critic' to study later."""
+        """Persists the decision matrix for future auditing and meta-model training."""
         try:
             self.diary.record_decision_metadata({
                 'timestamp': report.timestamp.isoformat(),
@@ -215,16 +302,98 @@ class ConsensusEngine:
                 'blocked': report.blocked_by_critic
             })
         except Exception as e:
-            self.logger.error(f"Failed to log consensus metadata: {e}")
+            self.logger.error(f"Failed to synchronize decision metadata with DiaryEngine: {e}")
 
     def get_ensemble_summary(self, reports: List[ConsensusReport]) -> Dict[str, Any]:
-        """Analyzes a series of reports to find which model architectures are currently 'Leading'."""
+        """Analyzes historical reports to determine architectural leaders in the current regime."""
         if not reports:
             return {}
             
         leaderboard = {}
         for r in reports:
-            for model, contrib in r.model_contributions.items():
-                leaderboard[model] = leaderboard.get(model, 0) + abs(contrib)
+            for arch, contrib in r.model_contributions.items():
+                leaderboard[arch] = leaderboard.get(arch, 0) + abs(contrib)
         
         return dict(sorted(leaderboard.items(), key=lambda x: x[1], reverse=True))
+
+
+class EnhancedConsensusEngine(ConsensusEngine):
+    """Refined ensembling logic focusing on regime-dependent sensitivity."""
+
+    def __init__(self):
+        """Initializes EnhancedConsensusEngine with regime detection capabilities."""
+        from src.algorithms.regime_detector import MarketRegimeDetector
+        self.regime_detector = MarketRegimeDetector()
+        self.logger = ProjectLogger.get_logger("EnhancedConsensusEngine")
+        
+        # Calibrated weights for different market conditions
+        self.regime_weights = {
+            'trending_up': {
+                'transformer': 0.35,
+                'lstm': 0.25,
+                'cnn': 0.20,
+                'linear': 0.10,
+                'catboost': 0.10
+            },
+            'ranging': {
+                'linear': 0.30,
+                'catboost': 0.25,
+                'knn': 0.20,
+                'transformer': 0.15,
+                'lstm': 0.10
+            },
+            'volatile': {
+                'cnn': 0.30,
+                'transformer': 0.25,
+                'lstm': 0.20,
+                'linear': 0.15,
+                'catboost': 0.10
+            }
+        }
+
+    def _determine_regime(self, market_context: Dict[str, Any]) -> str:
+        """Identifies current market regime using provided technical context."""
+        try:
+            volatility = market_context.get('volatility', 0.01)
+            trend = market_context.get('trend', 0.0)
+            
+            if volatility > 0.03:
+                return 'volatile'
+            elif abs(trend) > 0.5:
+                return 'trending_up' if trend > 0 else 'ranging'
+            else:
+                return 'ranging'
+        except Exception as e:
+            self.logger.warning(f"Market regime determination failed: {e}. Defaulting to neutral state.")
+            return 'ranging'
+
+    def generate_weighted_ensemble(self, predictions_dict: Dict[str, float], market_context: Dict[str, Any]) -> Dict[str, Any]:
+        """Generates a weighted ensemble score based on active market regime."""
+        # Detect regime and retrieve corresponding weighting coefficients
+        regime = self._determine_regime(market_context)
+        weights = self.regime_weights.get(regime, self.regime_weights['ranging'])
+
+        # Aggregate predictions using the sensitivity matrix
+        ensemble_score = 0.0
+        total_weight = 0.0
+
+        for arch_type, arch_pred in predictions_dict.items():
+            weight = weights.get(arch_type, 0.0)
+            if weight > 0:
+                try:
+                    score_val = float(arch_pred)
+                    ensemble_score += weight * score_val
+                    total_weight += weight
+                except Exception as e:
+                    self.logger.debug(f"Prediction from architecture {arch_type} is non-numeric: {e}")
+
+        # Final normalization of the ensemble score
+        if total_weight > 0:
+            ensemble_score = ensemble_score / total_weight
+
+        return {
+            'ensemble_prediction': ensemble_score,
+            'regime': regime,
+            'active_weights': weights,
+            'participating_architectures': [arch for arch, w in weights.items() if w > 0]
+        }

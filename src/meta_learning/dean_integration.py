@@ -5,10 +5,11 @@ import pandas as pd
 import logging
 from typing import Dict, List, Any, Optional
 
-from src.core.logging.logger import Logger as ProjectLogger
+from src.core.logging.logger import ProjectLogger
 from .dean_trading_models import DeanActor, DeanCritic, DeanSimulator
 from src.analytics.context.causal_engine import CausalEngine
 from src.models.model_selector.heavy_light_comparator import HeavyLightModelComparator
+from src.algorithms.adaptive_position_sizer import AdaptivePositionSizer
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -22,6 +23,7 @@ class DeanModelIntegrator:
         self.simulator_model = None
         self.causal_engine = CausalEngine()
         self.model_comparator = HeavyLightModelComparator()
+        self.position_sizer = AdaptivePositionSizer()
         self.is_initialized = False
         
     def initialize_models(self):
@@ -63,7 +65,26 @@ class DeanModelIntegrator:
 
             # Інтеграція CausalEngine для проекцій майбутніх наслідків
             trigger_event = context['technical_signals'].get('rsi_signal') or context['trend']
-            context['causal_projections'] = self.causal_engine.generate_projections(trigger_event)
+            # CausalEngine має метод generate_causal_vectors, не generate_projections
+            # Створюємо простий trigger event DataFrame
+            import pandas as pd
+            from datetime import datetime, timedelta
+            
+            # Створюємо простий trigger event для causal engine
+            trigger_data = pd.DataFrame({
+                'event_type': [trigger_event],
+                'timestamp': [datetime.now()],
+                'impact': [0.5]
+            })
+            
+            # Генеруємо causal vectors для майбутніх дат
+            future_dates = pd.date_range(datetime.now(), periods=30, freq='D')
+            try:
+                causal_vectors = self.causal_engine.generate_causal_vectors(trigger_data, future_dates)
+                context['causal_projections'] = causal_vectors.iloc[-5:].to_dict('records')  # Останні 5 днів
+            except Exception as e:
+                logger.warning(f"[DEAN] CausalEngine failed: {e}, using empty projections")
+                context['causal_projections'] = []
             
             return context
             
@@ -85,7 +106,8 @@ class DeanModelIntegrator:
                 return "bearish"
             else:
                 return "neutral"
-        except:
+        except Exception as e:
+            logger.warning(f"[DEAN] Error determining trend: {e}")
             return "neutral"
     
     def _calculate_volatility(self, data: pd.DataFrame) -> float:
@@ -96,7 +118,8 @@ class DeanModelIntegrator:
             
             returns = data['close'].pct_change().tail(20)
             return returns.std()
-        except:
+        except Exception as e:
+            logger.warning(f"[DEAN] Error calculating volatility: {e}")
             return 0.02
     
     def _calculate_momentum(self, data: pd.DataFrame) -> float:
@@ -108,7 +131,8 @@ class DeanModelIntegrator:
             current_price = data['close'].iloc[-1]
             prev_price = data['close'].iloc[-10]
             return (current_price - prev_price) / prev_price
-        except:
+        except Exception as e:
+            logger.warning(f"[DEAN] Error calculating momentum: {e}")
             return 0.0
     
     def _find_support_resistance(self, data: pd.DataFrame) -> Dict[str, float]:
@@ -122,7 +146,8 @@ class DeanModelIntegrator:
             resistance = prices.max()
             
             return {'support': float(support), 'resistance': float(resistance)}
-        except:
+        except Exception as e:
+            logger.warning(f"[DEAN] Error finding support/resistance: {e}")
             return {'support': 95, 'resistance': 105}
     
     def _get_market_sentiment(self, data: pd.DataFrame) -> str:
@@ -139,7 +164,8 @@ class DeanModelIntegrator:
                 return "negative"
             else:
                 return "neutral"
-        except:
+        except Exception as e:
+            logger.warning(f"[DEAN] Error getting market sentiment: {e}")
             return "neutral"
     
     def _extract_technical_signals(self, latest_data: pd.Series) -> Dict[str, Any]:
@@ -167,7 +193,8 @@ class DeanModelIntegrator:
                     signals['macd_signal'] = 'bearish'
             
             return signals
-        except:
+        except Exception as e:
+            logger.warning(f"[DEAN] Error extracting technical signals: {e}")
             return {}
     
     def _calculate_risk_metrics(self, data: pd.DataFrame) -> Dict[str, float]:
@@ -191,7 +218,8 @@ class DeanModelIntegrator:
                 'var_95': float(abs(var_95)),
                 'max_drawdown': float(abs(max_drawdown))
             }
-        except:
+        except Exception as e:
+            logger.warning(f"[DEAN] Error calculating risk metrics: {e}")
             return {'var_95': 0.02, 'max_drawdown': 0.05}
     
     def _create_default_context(self) -> Dict[str, Any]:
@@ -218,12 +246,29 @@ class DeanModelIntegrator:
                 return self._create_default_signals()
             
             # Використовуємо HeavyLightModelComparator для вибору типу моделі для Актора
-            model_type_recommendation = self.model_comparator.recommend_model_type(context)
-            logger.info(f"[DEAN] Рекомендований тип моделі для виконання: {model_type_recommendation}")
+            # HeavyLightModelComparator не має метод recommend_model_type, використовуємо choose_models
+            try:
+                # Створюємо фейкові дані для вибору моделі
+                import pandas as pd
+                fake_x = pd.DataFrame({'dummy_feature': [1, 2, 3]})
+                fake_y = pd.Series([0.1, 0.2, 0.3])
+                
+                available_models = self.model_comparator.choose_models(fake_x, fake_y, memory_percent=50)
+                model_type_recommendation = available_models[0] if available_models else 'mlp'
+                logger.info(f"[DEAN] Рекомендований тип моделі для виконання: {model_type_recommendation}")
+            except Exception as e:
+                logger.warning(f"[DEAN] Model selection failed: {e}, using default 'mlp'")
+                model_type_recommendation = 'mlp'
 
             # Використовуємо Actor модель для генерації сигналів
             if self.actor_model:
-                action_data = self.actor_model.decide_action(context, model_type=model_type_recommendation)
+                # DeanActor.decide_action може не приймати model_type параметр
+                try:
+                    action_data = self.actor_model.decide_action(context, model_type=model_type_recommendation)
+                except TypeError:
+                    # Якщо метод не приймає model_type, викликаємо без нього
+                    action_data = self.actor_model.decide_action(context)
+                    logger.info("[DEAN] Actor decision made without model_type parameter")
                 
                 # Критик оцінює запропоновану дію
                 critique = self.critic_model.critique_action(action_data, context)
@@ -248,14 +293,36 @@ class DeanModelIntegrator:
             return self._create_default_signals()
     
     def _calculate_position_size(self, context: Dict[str, Any], confidence: float) -> float:
-        """Розрахунок розміру позиції"""
+        """Розрахунок розміру позиції з використанням AdaptivePositionSizer"""
         try:
+            # Отримуємо необхідні параметри з контексту
+            portfolio_value = context.get('portfolio_value', 10000)  # Default $10k
+            volatility = context.get('volatility', 0.02)
+            current_price = context.get('current_price', 100)
+            market_regime = context.get('market_regime', 'NORMAL')
+            
+            # Використовуємо AdaptivePositionSizer
+            # Правильні параметри для calculate_position_size методу
+            sizing_result = self.position_sizer.calculate_position_size(
+                portfolio_value=portfolio_value,
+                volatility=volatility,
+                confidence=confidence,
+                market_regime=market_regime,
+                current_price=current_price
+                # Інші параметри мають значення за замовчуванням
+            )
+            
+            position_size_pct = sizing_result['position_size_pct']
+            logger.debug(f"[DEAN] Adaptive position sizing: {position_size_pct:.2%} of portfolio")
+            
+            return position_size_pct
+            
+        except Exception as e:
+            logger.warning(f"[DEAN] AdaptivePositionSizer failed: {e}, using simple calculation")
+            # Fallback to simple calculation
             base_size = 0.1  # 10% базова позиція
             volatility_adjustment = min(1.0, 0.02 / max(context.get('volatility', 0.02), 0.001))
-            
             return base_size * confidence * volatility_adjustment
-        except:
-            return 0.1
     
     def _calculate_stop_loss(self, context: Dict[str, Any]) -> float:
         """Розрахунок stop loss"""
@@ -266,7 +333,8 @@ class DeanModelIntegrator:
             # 2% від ціни або 2x волатильність
             stop_loss_pct = max(0.02, volatility * 2)
             return current_price * (1 - stop_loss_pct)
-        except:
+        except (KeyError, TypeError, ValueError) as e:
+            logger.warning(f"[DEAN] Stop loss calculation failed: {e}, using default 98.0")
             return 98.0
     
     def _calculate_take_profit(self, context: Dict[str, Any]) -> float:
@@ -278,7 +346,8 @@ class DeanModelIntegrator:
             # 3% від ціни або 3x волатильність
             take_profit_pct = max(0.03, volatility * 3)
             return current_price * (1 + take_profit_pct)
-        except:
+        except (KeyError, TypeError, ValueError) as e:
+            logger.warning(f"[DEAN] Take profit calculation failed: {e}, using default 103.0")
             return 103.0
     
     def _create_default_signals(self) -> Dict[str, Any]:

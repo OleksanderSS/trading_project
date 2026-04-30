@@ -56,12 +56,12 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         if isinstance(col_name, dict):
             col_name = col_name.get('name', 'is_significant')
         
-        # ✅ Якщо колонка відсутня, створюємо її на основі волатильності або інших метрик
+        # ✅ If column is missing, create it based on volatility or other metrics
         if col_name not in data.columns:
             logger.info(f"Significance column '{col_name}' not found. Creating it based on volatility...")
             data = self._create_significance_column(data, col_name)
             if col_name not in data.columns:
-                logger.warning(f"Failed to create significance column. Skipping analysis.")
+                logger.warning(f"Failed to create significance column '{col_name}'. Skipping analysis.")
                 return data
 
         if self.mode == 'filter':
