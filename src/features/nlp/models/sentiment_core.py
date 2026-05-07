@@ -3,7 +3,7 @@
 import hashlib
 import pandas as pd
 from transformers import AutoModelForSequenceClassification
-from .news_score import compute_news_score
+from src.features.nlp.scoring.news_score import compute_news_score
 from src.utils.logging.logger import ProjectLogger
 from src.config.sentiment_config import SENTIMENT_DEFAULTS
 
@@ -38,10 +38,16 @@ def compute_score(label: str, score: float) -> dict:
     return result
 
 def compute_news_score_safe(label: str, score: float, keywords: list) -> float:
+    sentiment_dict = compute_score(label, score)
     if not keywords:
         logger.debug("[sentiment_score] [DEBUG] Keywords are empty, score is computed without them")
-        # Return the basic score without keywords
-        return compute_score(label, score)
-    result = compute_news_score(compute_score(label, score), keywords)
+        # Return a simple float representation: positive if positive, negative if negative
+        if label.lower() == "positive":
+            return float(score)
+        elif label.lower() == "negative":
+            return float(-score)
+        return 0.0
+    
+    result = compute_news_score(sentiment_dict, keywords)
     logger.debug(f"[sentiment_score] Final news_score: {result}")
-    return result
+    return float(result)

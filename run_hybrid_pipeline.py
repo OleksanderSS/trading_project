@@ -8,29 +8,34 @@ Usage:
     python run_hybrid_pipeline.py --mode prepare    # Preparation for Colab
     python run_hybrid_pipeline.py --mode light      # Light models training only
     python run_hybrid_pipeline.py --mode continue   # Continue after Colab results
+    python run_hybrid_pipeline.py --mode calibrate  # DEAN hyperparameter calibration
 """
 
-from src.core.logging.logger import ProjectLogger
-from src.pipeline.hybrid_orchestrator import HybridOrchestrator
-from src.config.unified_config_manager import UnifiedConfigManager
+import asyncio
+import json
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+import aiofiles
+
 from src.cli.argument_parser import create_argument_parser
 from src.cli.argument_validator import ArgumentValidator
 from src.cli.batch_manager import BatchManager
 from src.cli.pipeline_executor import PipelineExecutor
-import asyncio
-import json
-import sys
-import os
-import aiofiles
-import pandas as pd
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.hybrid_orchestrator import HybridOrchestrator
+from src.models.persistent_pool import PersistentModelPool
+from src.models.quality.controller import ModelQualityController
 
 # Configure console encoding for Windows
 if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')  # type: ignore[union-attr]
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(encoding='utf-8')  # type: ignore[union-attr]
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -47,18 +52,18 @@ def _check_versions(_config_manager) -> None:
 
 async def _save_runtime_params(args, batch_name: str) -> None:
     """Save runtime parameters to file ONLY for test mode.
-    
+
     Гнучка система:
     - Якщо є test параметри → створюється runtime_params.json → тестовий режим
     - Якщо НЕ має test параметрів → НЕ створюється runtime_params.json → повноцінний режим
     """
     # Перевіряємо, чи це тестовий режим
     has_test_params = args.test_ticker or args.test_target or args.test_model or getattr(args, 'epochs', None) or getattr(args, 'max_iterations', None)
-    
+
     if not has_test_params:
         logger.info("📊 Full mode: NOT creating runtime_params.json")
         return  # ← Не створюємо файл для повноцінного режиму
-    
+
     # Тільки для тестового# Only for test mode:
     runtime_params = {
         'mode': args.mode,
@@ -79,19 +84,19 @@ async def _save_runtime_params(args, batch_name: str) -> None:
             'created_at': datetime.now().isoformat()
         }
     }
-    
+
     # Save to colab data directory (same location as features/targets)
     colab_data_dir = Path("data/colab/accumulated")
     colab_data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     batch_dir = colab_data_dir / batch_name
     batch_dir.mkdir(exist_ok=True)
-    
+
     runtime_params_path = batch_dir / "runtime_params.json"
-    
+
     async with aiofiles.open(runtime_params_path, 'w') as f:
         await f.write(json.dumps(runtime_params, indent=2))
-    
+
     logger.info(f"🧪 Test mode: runtime_params.json created at {runtime_params_path}")
 
 
@@ -103,7 +108,7 @@ FULL_MODE_SUFFIX = " (all metrics)"
 def _log_batch_mode(args):
     """Log batch mode information."""
     batch_name = args.batch_name
-    
+
     # Select message components
     if _is_test_mode(args):
         mode_prefix = TEST_MODE_MESSAGE
@@ -111,7 +116,7 @@ def _log_batch_mode(args):
     else:
         mode_prefix = FULL_MODE_MESSAGE
         mode_suffix = FULL_MODE_SUFFIX
-    
+
     # Log the message
     message = f"{mode_prefix}: batch_name = {batch_name}{mode_suffix}"
     logger.info(message)
@@ -153,6 +158,17 @@ async def main():
         os.environ['MAX_ITERATIONS'] = str(args.max_iterations)
         logger.info(f"⚡ MAX_ITERATIONS: {args.max_iterations} (default: 100)")
 
+    # Initialize enhanced components
+    logger.info("🔧 Initializing enhanced components...")
+    model_pool = PersistentModelPool(
+        max_models=50,
+        cache_dir=".model_cache"
+    )
+    quality_controller = ModelQualityController(
+        drift_threshold=0.3
+    )
+    logger.info("✅ Enhanced components initialized")
+
     # Initialize orchestrator
     logger.info(f"🚀 Launching hybrid pipeline (batch: {args.batch_name})...")
     orchestrator = HybridOrchestrator(config_manager, batch_name=args.batch_name)
@@ -179,6 +195,19 @@ async def main():
         results = await PipelineExecutor.execute_full_mode(orchestrator, tickers, timeframes)
     elif args.mode == 'continue':
         results = await PipelineExecutor.execute_continue_mode(orchestrator, args)
+    elif args.mode == 'calibrate':
+        results = await PipelineExecutor.execute_calibrate_mode(orchestrator, args)
+
+    # Log enhanced component statistics
+    if model_pool:
+        pool_stats = model_pool.get_enhanced_stats()
+        logger.info(f"📊 Model Pool Stats: hits={pool_stats['hits']}, "
+                   f"hit_rate={pool_stats['hit_rate']:.1f}%, "
+                   f"avg_quality={pool_stats['avg_quality']:.2f}")
+    
+    if quality_controller:
+        quality_report = quality_controller.generate_report()
+        logger.info(f"✅ Quality Report: {quality_report['total_baselines']} baselines tracked")
 
     # Log completion
     if results:

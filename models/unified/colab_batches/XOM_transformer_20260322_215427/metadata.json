@@ -1,0 +1,11 @@
+{
+  "batch_id": "XOM_transformer_20260322_215427",
+  "ticker": "XOM",
+  "model_name": "transformer",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_direction_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T21:54:27.351922",
+  "status": "PENDING_COLAB"
+}

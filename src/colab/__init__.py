@@ -1,5 +1,6 @@
-"""Colab training module - refactored architecture"""
+"""Colab training module - refactored architecture with nested structure"""
 
+# Import from subdirectories (nested structure)
 from .memory import MemoryMonitor
 from .utils import (
     get_optimal_batch_size,
@@ -11,7 +12,7 @@ from .utils import (
     compute_metrics
 )
 from .models import create_model
-from .config import TrainingConfig, RuntimeConfigLoader
+from .config import TrainingConfig, RuntimeConfigLoader, CheckpointParams
 from .environment import ColabEnvironment
 
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     'create_model',
     'TrainingConfig',
     'RuntimeConfigLoader',
+    'CheckpointParams',
     'ColabEnvironment'
 ]

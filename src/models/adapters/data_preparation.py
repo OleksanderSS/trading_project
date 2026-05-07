@@ -73,9 +73,19 @@ def prepare_data_for_models(
         imputer = SimpleImputer(strategy='median')
         scaler = StandardScaler()
         
-        x_train_scaled = scaler.fit_transform(imputer.fit_transform(x_train))
-        x_val_scaled = scaler.transform(imputer.transform(x_val))
-        x_test_scaled = scaler.transform(imputer.transform(x_test))
+        # ELITE FIX: Preserving column names by converting back to DataFrame after scaling
+        x_train_imputed = imputer.fit_transform(x_train)
+        x_val_imputed = imputer.transform(x_val)
+        x_test_imputed = imputer.transform(x_test)
+        
+        x_train_scaled_arr = scaler.fit_transform(x_train_imputed)
+        x_val_scaled_arr = scaler.transform(x_val_imputed)
+        x_test_scaled_arr = scaler.transform(x_test_imputed)
+        
+        # Create DataFrames for Light Models (preserves feature names)
+        x_train_scaled_df = pd.DataFrame(x_train_scaled_arr, columns=feature_cols, index=x_train.index)
+        x_val_scaled_df = pd.DataFrame(x_val_scaled_arr, columns=feature_cols, index=x_val.index)
+        x_test_scaled_df = pd.DataFrame(x_test_scaled_arr, columns=feature_cols, index=x_test.index)
         
         target_scaler = None
         if scale_target:
@@ -87,14 +97,15 @@ def prepare_data_for_models(
             y_train_processed, y_val_processed, y_test_processed = y_train.values, y_val.values, y_test.values
         
         light_data = {
-            'X_train': x_train_scaled, 'X_val': x_val_scaled, 'X_test': x_test_scaled,
+            'X_train': x_train_scaled_df, 'X_val': x_val_scaled_df, 'X_test': x_test_scaled_df,
             'y_train': y_train_processed, 'y_val': y_val_processed, 'y_test': y_test_processed,
             'imputer': imputer, 'scaler': scaler, 'target_scaler': target_scaler,
             'feature_names': feature_cols, 'categorical_info': categorical_info
         }
-        
+
+        # Heavy models expect 3D sequences from numpy arrays
         heavy_data = prepare_sequence_data_optimized(
-            x_train_scaled, x_val_scaled, x_test_scaled,
+            x_train_scaled_arr, x_val_scaled_arr, x_test_scaled_arr,
             y_train_processed, y_val_processed, y_test_processed,
             seq_len
         )

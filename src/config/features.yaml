@@ -6,7 +6,7 @@ features:
   enabled_enrichers:
     time_features: true             # Creates time-based features (e.g., day of week, month)
     technical_analysis: true        # Calculates a suite of technical indicators
-    derived_features: true          # Calculates features from existing ones (e.g., price ratios)
+    derived_features: true          # Calculates features from existing ones (e.g., price ratios) - FIXED NAME
     macro_features: true            # Fetches and integrates macroeconomic data
     keyword_entity: true            # Extracts keywords and entities from news (NEW)
     news_quality: true              # News quality metrics - completeness, freshness, diversity (NEW)
@@ -15,8 +15,8 @@ features:
     news_impact: true               # Reverse impact analyzer - time-decaying news impact (NEW)
     hype_features: true             # Measures market hype or attention
     significance_features: true     # Evaluates statistical significance of events
-    decay_features: true            # Applies decay functions to features over time
-    advanced_analytics: true        # Advanced analytics - sentiment stats, macro score, market phase (NEW)
+    decay_features: true            # Applies decay functions to features over time - FIXED NAME
+    advanced_analytics: true        # Advanced analytics - sentiment stats, macro score, market phase (NEW) - FIXED NAME
     context_map: true               # Generates a dynamic context fingerprint for each data point
     market_context: true            # Adds macro/market indicators (yield curve, Fed Funds, breadth, etc.) (NEW)
 

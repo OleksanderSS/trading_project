@@ -6,7 +6,7 @@ import time
 import copy
 import aiofiles
 import pandas as pd
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, cast
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
@@ -68,6 +68,18 @@ class LightModelsTrainer:
     
     def _set_temp_light_models_config(self) -> None:
         """Set temporary light models configuration."""
+        # Force batch strategy for local light models to ensure they are trained
+        if 'modeling' not in self.config_manager.merged_config:
+            self.config_manager.merged_config['modeling'] = {}
+        
+        # Ensure we are working with a dict
+        modeling_config = self.config_manager.merged_config['modeling']
+        if not isinstance(modeling_config, dict):
+             self.config_manager.merged_config['modeling'] = {}
+             modeling_config = self.config_manager.merged_config['modeling']
+             
+        modeling_config['strategy'] = 'batch'
+        
         models_dict = self.models_config.as_dict() if hasattr(self.models_config, 'as_dict') else self.models_config
         temp_config_dict = copy.deepcopy(models_dict)
         temp_config_dict['categories'] = {'light': self.light_models}
@@ -108,7 +120,7 @@ class LightModelsTrainer:
         if results_path.exists():
             try:
                 with open(results_path, 'r', encoding='utf-8') as f:
-                    accumulated = json.load(f)
+                    accumulated = cast(Dict[str, Any], json.load(f))
                 
                 if 'runs' not in accumulated:
                     accumulated['runs'] = []
@@ -157,7 +169,7 @@ class LightModelsTrainer:
                         features_data = json.load(f)
                     
                     if features_data.get('model_name') == model_name:
-                        return features_data.get('selected_features', [])
+                        return cast(List[str], features_data.get('selected_features', []))
                 except Exception as e:
                     self.logger.warning(f"Could not load features from {features_file}: {e}")
         

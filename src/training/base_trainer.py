@@ -10,13 +10,18 @@ All trainer implementations share common workflow:
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
-from pathlib import Path
-import numpy as np
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
+import joblib
+import numpy as np
+
+from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
+from src.factories.model_factory import ModelFactory
+from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.metrics.model.ml_evaluator import MLEvaluator
 
 
 class TrainingException(Exception):
@@ -30,37 +35,93 @@ class TrainingConfigException(TrainingException):
 
 
 class TrainerConfig:
-    """Base configuration for all trainers"""
-    def __init__(self, batch_size: int = 10, max_memory_gb: float = 12.0):
+    """
+    Base configuration for all trainers.
+    
+    This is the parent class for all training configurations.
+    Subclasses can extend with additional parameters.
+    """
+    def __init__(
+        self, 
+        batch_size: int = 10, 
+        max_memory_gb: float = 12.0,
+        # Progressive-specific parameters (optional)
+        initial_batch_size: int | None = None,
+        max_batch_size: int | None = None,
+        growth_factor: float | None = None,
+        min_accuracy_threshold: float | None = None,
+        max_loss_threshold: float | None = None,
+        enable_adaptive_batching: bool = True,
+        enable_quality_filtering: bool = True,
+        enable_smart_scheduling: bool = True,
+        save_intermediate_results: bool = True,
+        checkpoint_interval: int = 5,
+        max_time_hours: float = 10.0,
+        # Adaptive-specific parameters (optional)
+        mode: str | None = None,
+        strategy: str | None = None,
+        max_targets_per_ticker: int | None = None,
+        target_diversity_threshold: float | None = None,
+        intraday_data_limit_days: int | None = None,
+        daily_data_limit_years: int | None = None,
+        enable_target_validation: bool = True
+    ):
+        # Common parameters
         self.batch_size = batch_size
         self.max_memory_gb = max_memory_gb
+        
+        # Progressive parameters
+        self.initial_batch_size = initial_batch_size
+        self.max_batch_size = max_batch_size
+        self.growth_factor = growth_factor
+        self.min_accuracy_threshold = min_accuracy_threshold
+        self.max_loss_threshold = max_loss_threshold
+        self.enable_adaptive_batching = enable_adaptive_batching
+        self.enable_quality_filtering = enable_quality_filtering
+        self.enable_smart_scheduling = enable_smart_scheduling
+        self.save_intermediate_results = save_intermediate_results
+        self.checkpoint_interval = checkpoint_interval
+        self.max_time_hours = max_time_hours
+        
+        # Adaptive parameters
+        self.mode = mode
+        self.strategy = strategy
+        self.max_targets_per_ticker = max_targets_per_ticker
+        self.target_diversity_threshold = target_diversity_threshold
+        self.intraday_data_limit_days = intraday_data_limit_days
+        self.daily_data_limit_years = daily_data_limit_years
+        self.enable_target_validation = enable_target_validation
 
 
 class BaseTrainer(ABC):
     """
     Abstract base class for training orchestration.
-    
+
     Implements template method pattern for common training workflow:
     - Prepare ticker groups
     - Train each group
     - Aggregate results and generate summary
-    
+
     Subclasses must implement:
     - _prepare_ticker_groups(): Define how to group tickers
     - _train_ticker_group(): Define how to train a group
     """
-    
-    def __init__(self, config: Optional[TrainerConfig] = None):
+
+    def __init__(self, config: TrainerConfig | None = None):
         """
         Initialize BaseTrainer.
-        
+
         Args:
             config: TrainerConfig instance with batch_size and max_memory_gb
         """
         self.config = config or TrainerConfig()
         self.config_manager = get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
-        
+
+        self.model_factory = ModelFactory()
+        self.diary = DiaryEngine()
+        self.evaluator = MLEvaluator()
+
         # Initialize output directory
         try:
             models_path = self.config_manager.get_models_path()
@@ -69,62 +130,67 @@ class BaseTrainer(ABC):
             self.logger.info(f"Output directory: {self.output_dir}")
         except Exception as e:
             self.logger.error(f"Failed to initialize output directory: {e}")
-            raise TrainingConfigException(f"Cannot initialize output directory: {e}")
-    
-    def execute_training(self, plan: Dict[str, Any], data_context: Dict[str, Any]) -> Dict[str, Any]:
+            raise TrainingConfigException(f"Cannot initialize output directory: {e}") from e
+
+    def execute_training(self, plan: dict[str, Any], data_context: dict[str, Any]) -> dict[str, Any]:
         """
         Execute complete training workflow (Template Method).
-        
+
         This is the common orchestration logic shared by all trainers.
         Subclasses override _prepare_ticker_groups() and _train_ticker_group()
         to define their specific behavior.
-        
+
         Args:
             plan: Training plan with tickers, strategy, etc.
             data_context: Prepared data for training
-        
+
         Returns:
             Dictionary with status, results, and summary
         """
         if not plan or not isinstance(plan, dict):
             raise TrainingException("Invalid training plan")
-        
+
         tickers = plan.get('tickers', [])
         if not tickers:
             self.logger.warning("No tickers provided in training plan")
             return {"status": "failed", "reason": "no_tickers"}
-        
+
         try:
             self.logger.info(
                 f"Starting {self.__class__.__name__} training for {len(tickers)} tickers. "
                 f"Strategy: {plan.get('strategy', 'unknown')}"
             )
-            
+
             # Step 1: Prepare ticker groups (batch vs progressive logic)
             ticker_groups = self._prepare_ticker_groups(plan)
             self.logger.debug(f"Created {len(ticker_groups)} ticker groups")
-            
+
             # Step 2: Train each group
             results = {}
             for group_idx, ticker_group in enumerate(ticker_groups, 1):
                 self.logger.info(f"Training group {group_idx}/{len(ticker_groups)} ({len(ticker_group)} tickers)")
-                group_results = self._train_ticker_group(ticker_group, data_context)
+
+                # Inject plan into data_context so trainers can access plan details
+                data_with_plan = data_context.copy()
+                data_with_plan['plan'] = plan
+
+                group_results = self._train_ticker_group(ticker_group, data_with_plan)
                 results.update(group_results)
-            
+
             # Step 3: Generate summary
             summary = self._generate_summary(results)
-            
+
             self.logger.info(
                 f"✅ Training complete. Success rate: {summary['success_rate']:.1%} "
                 f"({summary['successful']}/{summary['total_tickers']})"
             )
-            
+
             return {
                 "status": "success",
                 "tickers_results": results,
                 "training_summary": summary
             }
-        
+
         except Exception as e:
             self.logger.error(f"❌ Training failed: {e}", exc_info=True)
             return {
@@ -133,84 +199,182 @@ class BaseTrainer(ABC):
                 "tickers_results": {},
                 "training_summary": {}
             }
-    
+
+    def execute_batch_training(self, plan: dict[str, Any], data_context: dict[str, Any]) -> dict[str, Any]:
+        """Alias for execute_training for batch strategy."""
+        return self.execute_training(plan, data_context)
+
+    def execute_progressive_training(self, tickers: list[str], data_context: dict[str, Any]) -> dict[str, Any]:
+        """Wrapper for execute_training for progressive strategy."""
+        plan = {"tickers": tickers, "strategy": "progressive"}
+        return self.execute_training(plan, data_context)
+
     @abstractmethod
-    def _prepare_ticker_groups(self, plan: Dict[str, Any]) -> List[List[str]]:
+    def _prepare_ticker_groups(self, plan: dict[str, Any]) -> list[list[str]]:
         """
         Prepare ticker groups for training.
-        
+
         Subclasses implement their specific grouping strategy:
         - BatchTrainer: All tickers in one group
         - ProgressiveTrainer: Adaptive batches with growth factor
-        
+
         Args:
             plan: Training plan containing tickers
-        
+
         Returns:
             List of ticker groups: [[ticker1, ticker2], [ticker3, ...], ...]
         """
         pass
-    
+
     @abstractmethod
-    def _train_ticker_group(self, ticker_group: List[str], data_context: Dict[str, Any]) -> Dict[str, Any]:
+    def _train_ticker_group(self, ticker_group: list[str], data_context: dict[str, Any]) -> dict[str, Any]:
         """
         Train a group of tickers.
-        
+
         Subclasses implement their specific training strategy:
         - BatchTrainer: Parallel training using Parallel/delayed
         - ProgressiveTrainer: Sequential training with adaptation
-        
+
         Args:
             ticker_group: List of tickers to train
             data_context: Prepared data for training
-        
+
         Returns:
             Dictionary: {ticker: training_result, ...}
         """
         pass
-    
-    def _train_ticker_suite(self, ticker: str, data_context: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Train a single ticker with all configured models.
-        
-        This is the core training logic that's common to all trainers.
-        Should be called by subclasses from _train_ticker_group().
-        
-        Args:
-            ticker: Ticker symbol to train
-            data_context: Prepared data for this ticker
-        
-        Returns:
-            Training result for this ticker
-        """
-        # This method is typically overridden or implemented in subclasses
-        # to provide specific model training logic
-        raise NotImplementedError("Subclasses must implement _train_ticker_suite or override _train_ticker_group")
-    
-    def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+
+    # CodeScene: Complex Method (cc=10), Large Method (77 lines) - acceptable for training orchestration
+    def _train_ticker_suite(self, ticker: str, data: dict[str, Any]) -> dict:
+        """Train all configured models for a specific ticker."""
+        results = {"status": "success", "models": [], "metrics": {}, "ticker": ticker}
+
+        # 1. Data validation and prep
+        X_train, y_train = data.get('X_train'), data.get('y_train')
+        if X_train is None or y_train is None:
+            return {"status": "failed", "ticker": ticker, "reason": "incomplete_data"}
+
+        try:
+            # 2. Determine which models to train
+            model_types = self._prepare_model_training_list(ticker, data)
+            is_classification = 'classification' in data.get('target_type', '')
+
+            # 3. Execute training loop
+            best_score, winner_name = self._execute_model_training_cycle(
+                ticker, model_types, data, is_classification, results
+            )
+
+            # 4. Finalize results
+            return self._finalize_ticker_results(results, winner_name, best_score)
+
+        except Exception as e:
+            self.logger.error(f"Error during training for {ticker}: {e}")
+            return {"status": "failed", "ticker": ticker, "reason": str(e)}
+
+    def _prepare_model_training_list(self, ticker: str, data: dict[str, Any]) -> list[str]:
+        """Determines the set of model types to train for this ticker."""
+        plan = data.get('plan', {})
+        ticker_plan = plan.get('ticker_plans', {}).get(ticker, {})
+        model_types = ticker_plan.get('models')
+
+        if not model_types:
+            model_types = self.config_manager.get_config('models.enabled_types', ['lgbm', 'rf', 'xgb', 'linear'])
+        return list(model_types) if model_types else []
+
+    def _execute_model_training_cycle(self, ticker: str, model_types: list[str],
+                                   data: dict[str, Any], is_classif: bool,
+                                   results: dict[str, Any]) -> tuple[float, str | None]:
+        """Iterates through model types and trains each one."""
+        best_score = -np.inf
+        winner_name = None
+
+        for m_type in model_types:
+            try:
+                score_val = self._train_individual_model(ticker, m_type, data, is_classif, results)
+
+                if score_val > best_score:
+                    best_score = score_val
+                    winner_name = m_type
+            except Exception as e:
+                self.logger.error(f"Failed to train {m_type} for {ticker}: {e}")
+                continue
+
+        return best_score, winner_name
+
+    def _train_individual_model(self, ticker: str, m_type: str, data: dict[str, Any],
+                              is_classif: bool, results: dict[str, Any]) -> float:
+        """Handles creation, training, and evaluation of a single model instance."""
+        model = self.model_factory.create_model(
+            model_name=m_type,
+            config=self.config_manager.get_config(f"models.{m_type}", {}),
+            is_classification=is_classif
+        )
+
+        model.train(data['X_train'], data['y_train'])
+        preds = model.predict(data['X_test'])
+
+        score = self.evaluator.calculate(
+            data['y_test'], preds,
+            task_type="classification" if is_classif else "regression"
+        )
+
+        score_val = float(score.get('F1' if is_classif else 'R2', 0.0))
+        results['metrics'][m_type] = {
+            'score': score_val,
+            'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
+            'mse': float(score.get('MSE', 0.0)) if not is_classif else None
+        }
+
+        # Side effects: Champion saving and logging
+        self._save_champion(model, ticker, data.get('target_name', 'unknown'))
+        self.diary.log_event(
+            ticker=ticker, model_name=m_type, target=data.get('target_name', 'unknown'),
+            metrics=score_val, context_fingerprint=data.get('context_fingerprint', 'default')
+        )
+
+        return score_val
+
+    def _finalize_ticker_results(self, results: dict[str, Any], winner: str | None, best_score: float) -> dict:
+        """Packages the final results dictionary."""
+        results['winner'] = winner
+        results['best_score'] = float(best_score) if best_score > -np.inf else None
+        results['winner_metrics'] = results['metrics'].get(winner, {})
+        return results
+
+    def _save_champion(self, model: Any, ticker: str, target: str):
+        """Save best model to disk"""
+        filename = f"CHAMP_{ticker}_{target}.joblib"
+        path = self.output_dir / filename
+        try:
+            joblib.dump(model, path)
+            self.logger.debug(f"Champion saved: {path}")
+        except Exception as e:
+            self.logger.error(f"Error saving champion {filename}: {e}")
+
+    def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """
         Generate training summary statistics.
-        
+
         Common summary generation logic shared by all trainers.
-        
+
         Args:
             results: Dictionary of training results by ticker
-        
+
         Returns:
             Summary dictionary with statistics
         """
         total_tickers = len(results)
         successful_tickers = sum(1 for r in results.values() if r.get('status') == 'success')
         failed_tickers = total_tickers - successful_tickers
-        
+
         # Calculate average score if available
         scores = []
         for result in results.values():
             if 'best_score' in result:
                 scores.append(result['best_score'])
-        
+
         avg_score = np.mean(scores) if scores else None
-        
+
         return {
             "total_tickers": total_tickers,
             "successful_tickers": successful_tickers,
@@ -219,14 +383,14 @@ class BaseTrainer(ABC):
             "average_score": float(avg_score) if avg_score is not None else None,
             "timestamp": datetime.now().isoformat()
         }
-    
-    def _validate_data_context(self, data_context: Dict[str, Any]) -> bool:
+
+    def _validate_data_context(self, data_context: dict[str, Any]) -> bool:
         """
         Validate that data_context has required fields.
-        
+
         Args:
             data_context: Data context to validate
-        
+
         Returns:
             True if valid, False otherwise
         """

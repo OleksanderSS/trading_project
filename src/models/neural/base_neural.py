@@ -59,21 +59,26 @@ class BaseNeuralModel(BaseModel):
         """Визначає архітектуру нейромережі. Має бути реалізовано в нащадках."""
         pass
 
-    def train(self, x: Any, y: Any, epochs: int = 50, batch_size: int = 32, validation_split: float = 0.2, **kwargs) -> Dict[str, Any]:
+    def train(self, X: Any, y: Any, **kwargs) -> Dict[str, Any]:
         """
         Уніфікований цикл навчання для нейромереж.
         """
         try:
+            # Extract neural-specific parameters from kwargs
+            epochs = kwargs.get('epochs', 50)
+            batch_size = kwargs.get('batch_size', 32)
+            validation_split = kwargs.get('validation_split', 0.2)
+            
             # Перетворення в numpy з правильними типами даних
-            x_np = x.values if isinstance(x, pd.DataFrame) else np.asarray(x)
+            X_np = X.values if isinstance(X, pd.DataFrame) else np.asarray(X)
             y_np = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
             
             # Перетворення в числові типи для Keras
-            x_np = x_np.astype(np.float32)
+            X_np = X_np.astype(np.float32)
             y_np = y_np.astype(np.float32)
 
             # 1. Підготовка та нормалізація
-            x_norm = self._normalize_data(x_np, fit=True)
+            x_norm = self._normalize_data(X_np, fit=True)
             
             # 2. Побудова моделі, якщо ще не створена
             if self.model is None:
@@ -94,7 +99,7 @@ class BaseNeuralModel(BaseModel):
             self.is_trained = True
             self.logger.info(f"Training completed for {self.name}. Last loss: {history.history['loss'][-1]:.4f}")
             
-            return history.history
+            return dict(history.history) if hasattr(history, 'history') else {}
 
         except Exception as e:
             self.logger.error(f"Failed to train {self.model_type}: {str(e)}", exc_info=True)

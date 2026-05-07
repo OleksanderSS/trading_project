@@ -32,12 +32,16 @@ class DecisionType(Enum):
     BUY = "buy"
     SELL = "sell"
     HOLD = "hold"
+    TRAINING = "training"
+    METADATA = "metadata"
 
 class DecisionOutcome(Enum):
     PROFITABLE = "profitable"
     UNPROFITABLE = "unprofitable"
     BREAK_EVEN = "break_even"
     PENDING = "pending"
+    NEUTRAL = "neutral"
+    NOT_APPLICABLE = "not_applicable"
 
 @dataclass
 class DecisionRecord:
@@ -82,7 +86,7 @@ class DiaryEngine(BaseMetaComponent):
         
         # ✅ Phase 4 Quality: Add memory-limited in-memory buffer
         self.maxsize = maxsize
-        self.entries = deque(maxlen=maxsize)  # Auto-evict oldest entries
+        self.entries: deque[DecisionRecord] = deque(maxlen=maxsize)  # Auto-evict oldest entries
         
         self._initialize_database()
 
@@ -145,6 +149,27 @@ class DiaryEngine(BaseMetaComponent):
         """
         self.data_manager.execute_query(query)
         self.logger.info(f"ExperienceDiary initialized in DuckDB table '{self.table_name}'.")
+
+    def log_event(self, ticker: str, model_name: str, target: str, metrics: float, context_fingerprint: str = 'default'):
+        """
+        Logs a non-trading event (e.g., training result) to the experience diary.
+        """
+        record = DecisionRecord(
+            agent_id=model_name,
+            decision_timestamp=int(datetime.now(timezone.utc).timestamp()),
+            ticker=ticker,
+            decision_type=DecisionType.TRAINING,
+            reasoning=f"Model training for target {target}",
+            market_context={'target': target, 'score': float(metrics)},
+            context_fingerprint=context_fingerprint,
+            model_prediction=float(metrics),
+            model_confidence=1.0,
+            entry_price=0.0,
+            exit_price=0.0,
+            outcome=DecisionOutcome.NEUTRAL,
+            profit_loss=0.0
+        )
+        self.record_decision(record)
 
     def record_decision(self, decision: DecisionRecord):
         """Records a single trading decision in the database."""
@@ -269,7 +294,7 @@ class DiaryEngine(BaseMetaComponent):
         ORDER BY avg_pnl DESC
         LIMIT 10
         """
-        success_patterns = self.data_manager.load_data(query)
+        success_patterns = pd.DataFrame(self.data_manager.fetch_all(query))
         if success_patterns.empty:
             return {"status": "No consistent success patterns detected"}
 
@@ -283,7 +308,7 @@ class DiaryEngine(BaseMetaComponent):
 
     def _analyze_fingerprint_components(self, df: pd.DataFrame, col: str = 'loss_count') -> Dict[int, Dict[str, float]]:
         """Internal helper to decompose fingerprints into individual tri-state driver stats."""
-        component_stats = {}
+        component_stats: Dict[int, Dict[str, float]] = {}
         for _, row in df.iterrows():
             fp = str(row['context_fingerprint'])
             # Context Map 2.0 uses '|' for drivers and '__' for time
@@ -292,9 +317,9 @@ class DiaryEngine(BaseMetaComponent):
             
             for idx, val in enumerate(drivers):
                 if idx not in component_stats:
-                    component_stats[idx] = {'-1': 0, '0': 0, '1': 0}
+                    component_stats[idx] = {'-1': 0.0, '0': 0.0, '1': 0.0}
                 if val in component_stats[idx]:
-                    component_stats[idx][val] += row[col]
+                    component_stats[idx][val] += float(row[col])
         
         return component_stats
 
@@ -314,7 +339,7 @@ class DiaryEngine(BaseMetaComponent):
         WHERE agent_id = '{agent_id}'
         GROUP BY day_of_week, hour
         """
-        return self.data_manager.load_data(query)
+        return pd.DataFrame(self.data_manager.fetch_all(query))
 
     def compare_agents(self, agent_ids: List[str]) -> Dict[str, Any]:
         """
@@ -331,7 +356,7 @@ class DiaryEngine(BaseMetaComponent):
 
     def _calculate_agent_performance(self, agent_ids: List[str]) -> Dict[str, Any]:
         """Розраховує продуктивність для кожного агента."""
-        comparison_results = {}
+        comparison_results: Dict[str, Any] = {}
         
         for agent_id in agent_ids:
             df = self.get_history_by_agent(agent_id)

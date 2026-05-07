@@ -37,7 +37,7 @@ class ArticleProcessor:
         analyzer_type = sentiment_config.get('analyzer', 'simple').lower()
         
         if analyzer_type == 'roberta' and 'roberta_model' in sentiment_config:
-            self.sentiment_analyzer = RobertaSentimentAnalyzer(sentiment_config['roberta_model'])
+            self.sentiment_analyzer: RobertaSentimentAnalyzer | SimpleSentimentAnalyzer = RobertaSentimentAnalyzer(sentiment_config['roberta_model'])
             logger.info("Using RobertaSentimentAnalyzer for sentiment analysis.")
         else:
             self.sentiment_analyzer = SimpleSentimentAnalyzer(sentiment_config.get('simple_model'))
@@ -78,7 +78,7 @@ class ArticleProcessor:
         # In a real implementation, you'd extract entities here.
         # For this example, we'll simulate it with keywords or predefined tickers.
         # entities = self.entity_extractor.extract(text)
-        entities = self.keyword_extractor.extract_keywords(text) # Using keywords as a proxy for entities
+        entities = self.keyword_extractor.extract(text)  # Using keywords as a proxy for entities
 
         # Combine extracted keywords with any existing ones
         all_keywords = sorted(set(article.get('keywords', [])) | set(entities))

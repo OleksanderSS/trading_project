@@ -26,7 +26,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         """Lazy load calculators only when needed."""
         if not self._calculators_loaded:
             from src.analytics.calculators.volatility_calculator import VolatilityCalculator
-            from src.analytics.calculators.market_regime_calculator import MarketRegimeCalculator
+            from src.algorithms.regime_detector import MarketRegimeDetector  # Unified regime detection
             from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
             from src.analytics.calculators.drawdown_calculator import DrawdownCalculator
             from src.analytics.calculators.econometrics_calculator import EconometricsCalculator
@@ -34,9 +34,10 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             from src.analytics.calculators.macro_score_calculator import MacroScoreCalculator
             from src.analytics.calculators.sentiment_stats_calculator import SentimentStatsCalculator
             from src.analytics.calculators.explainability_calculator import ExplainabilityCalculator
+            from src.algorithms.regime_detector import MarketRegimeDetector
             
             self.VolatilityCalculator = VolatilityCalculator
-            self.MarketRegimeCalculator = MarketRegimeCalculator
+            self.MarketRegimeCalculator = MarketRegimeDetector  # Fixed: use MarketRegimeDetector
             self.FamaFrenchFactors = FamaFrenchFactors
             self.DrawdownCalculator = DrawdownCalculator
             self.EconometricsCalculator = EconometricsCalculator
@@ -195,9 +196,10 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         """Add market regime features (dual encoding: text + numeric)."""
         if 'close' in df_enriched.columns:
             # Text labels for humans
-            df_enriched['MARKET_REGIME'] = self.MarketRegimeCalculator.calculate_regime(df_enriched['close'], 20, return_encoded=False)
+            regime_result = self.MarketRegimeCalculator.detect_regime(df_enriched['close'].values)
+            df_enriched['MARKET_REGIME'] = regime_result.get('regime', 'UNKNOWN')
             # Numeric encoding for models
-            df_enriched['MARKET_REGIME_ENCODED'] = self.MarketRegimeCalculator.calculate_regime(df_enriched['close'], 20, return_encoded=True)
+            df_enriched['MARKET_REGIME_ENCODED'] = regime_result.get('confidence', 0.0)
             logger.info("Added market regime features (text + numeric encoding)")
     
     def _add_drawdown_features(self, df_enriched: pd.DataFrame):

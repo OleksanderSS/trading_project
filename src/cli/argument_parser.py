@@ -3,7 +3,6 @@ Argument parsing utilities for hybrid pipeline.
 """
 
 import argparse
-from typing import List
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -11,7 +10,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='Hybrid Trading Pipeline')
     parser.add_argument(
         '--mode',
-        choices=['local', 'full', 'prepare', 'light', 'continue'],
+        choices=['local', 'full', 'prepare', 'light', 'continue', 'calibrate'],
         default='local',
         help='Pipeline execution mode'
     )
@@ -59,5 +58,11 @@ def create_argument_parser() -> argparse.ArgumentParser:
         '--force',
         action='store_true',
         help='Force execution even if validation fails'
+    )
+    parser.add_argument(
+        '--n-trials',
+        type=int,
+        default=50,
+        help='Number of Optuna trials for calibration mode'
     )
     return parser

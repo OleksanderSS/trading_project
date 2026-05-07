@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, Type, Optional, List
+from typing import Dict, Any, Type, Optional, List, Union
 
 from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
 from src.core.logging.logger import ProjectLogger
@@ -30,9 +30,14 @@ class ModelFactory:
     """
     A factory for creating machine learning models based on configuration.
     It maps model names from the config to their respective classes.
+    
+    Supports two APIs for backward compatibility:
+    - create_model() - Primary API with config dict
+    - get_model() - Legacy API with kwargs (dynamic import)
     """
     
     # Mapping of canonical model names to their class definitions
+    # Note: TransformerModel is abstract and should not be instantiated directly
     _model_map: Dict[str, Type[BaseModel]] = {
         "XGBoost": XGBoostModel,
         "LightGBM": LightGBMModel,
@@ -44,7 +49,7 @@ class ModelFactory:
         "LSTM": LSTMModel,
         "GRU": GRUModel,
         "CNN": CNNModel,
-        "Transformer": TransformerModel,
+        # "Transformer": TransformerModel,  # Commented out - abstract class
         "TabNet": TabNetModel,
         "MLP": MLPModel,
         "Autoencoder": AutoencoderModel,
@@ -54,9 +59,11 @@ class ModelFactory:
     _model_aliases: Dict[str, str] = {
         "xgboost": "XGBoost",
         "lightgbm": "LightGBM",
+        "lgbm": "LightGBM",  # Additional alias
         "catboost": "CatBoost",
         "random_forest": "RandomForest",
         "randomforest": "RandomForest",
+        "rf": "RandomForest",  # Additional alias
         "linear": "Linear",
         "svm": "SVM",
         "knn": "KNN",
@@ -128,8 +135,16 @@ class ModelFactory:
         
         resolved_models = []
         for m_name in base_models_names:
-            m_instance = ModelFactory.create_model(m_name, config=config.get('per_model', {}).get(m_name, {}))
-            resolved_models.append((m_name, m_instance.model))
+            per_model_config: Dict[str, Any] = {}
+            if config:
+                per_model_config = config.get('per_model', {}).get(m_name, {})
+            
+            m_instance = ModelFactory.create_model(m_name, config=per_model_config)
+            # EnsembleModel expects (name, model) tuples, where model is the underlying sklearn/etc model
+            if hasattr(m_instance, 'model') and m_instance.model is not None:
+                resolved_models.append((m_name, m_instance.model))
+            else:
+                resolved_models.append((m_name, m_instance))
         
         return EnsembleModel(models=resolved_models, task_type=kwargs.get('task_type', 'classification'))
     
@@ -150,7 +165,7 @@ class ModelFactory:
         return model_params
     
     @staticmethod
-    def _create_model_with_filtered_params(model_class, canonical_name: str, all_params: Dict[str, Any]) -> BaseModel:
+    def _create_model_with_filtered_params(model_class: Type[BaseModel], canonical_name: str, all_params: Dict[str, Any]) -> BaseModel:
         """Create model with parameter filtering and seed injection"""
         import inspect
         
@@ -168,10 +183,12 @@ class ModelFactory:
             # Filter parameters
             filtered_params = {k: v for k, v in all_params.items() if k in accepted_params}
             logger.debug(f"Filtered params for {canonical_name}: {list(filtered_params.keys())}")
-            return model_class(**filtered_params)
+            model_instance: BaseModel = model_class(**filtered_params)
+            return model_instance
         except Exception as inspect_error:
             logger.warning(f"Could not inspect {canonical_name} constructor signature: {inspect_error}. Passing all params.")
-            return model_class(**all_params)
+            model_instance_fallback: BaseModel = model_class(**all_params)
+            return model_instance_fallback
     
     @staticmethod
     def _add_random_seed_if_supported(all_params: Dict[str, Any], accepted_params: set, global_seed: int) -> None:
@@ -187,3 +204,38 @@ class ModelFactory:
         Returns a list of all available model names.
         """
         return list(ModelFactory._model_map.keys())
+
+    @staticmethod
+    def get_model(model_name: str, **kwargs) -> Optional[BaseModel]:
+        """
+        Legacy API: Get model instance with kwargs (backward compatible with src/models/factory.py).
+        
+        This method provides backward compatibility for code that uses get_model() instead of create_model().
+        It dynamically handles missing dependencies and returns None gracefully.
+        
+        Args:
+            model_name: The identifier of the model (e.g., 'catboost', 'cnn', 'xgboost').
+            **kwargs: Configuration parameters for the model constructor.
+        
+        Returns:
+            An instance of a BaseModel subclass, or None if dependencies are missing.
+        
+        Raises:
+            ValueError: If the model_name is not found in the factory's map.
+        
+        Example:
+            model = ModelFactory.get_model('catboost', iterations=100)
+            model = ModelFactory.get_model('lstm', hidden_size=128)
+        """
+        try:
+            # Use create_model internally for consistency
+            return ModelFactory.create_model(model_name, config=None, **kwargs)
+        except ImportError as e:
+            logger.warning(
+                f"Could not import dependencies for model '{model_name}'. "
+                f"Skipping. Please install required libraries if you need this model. Error: {e}"
+            )
+            return None  # Gracefully fail
+        except Exception as e:
+            logger.error(f"Failed to instantiate model '{model_name}': {e}")
+            raise

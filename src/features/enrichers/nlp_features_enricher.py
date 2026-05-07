@@ -21,6 +21,7 @@ class NLPFeaturesEnricher(BaseEnricher):
     """
 
     def __init__(self):
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         self.config = get_current_config().get('enrichment.nlp_features', {})
         self.analyzer = NewsAnalyzer(
             n_clusters=self.config.get('n_clusters', 5),
@@ -40,7 +41,7 @@ class NLPFeaturesEnricher(BaseEnricher):
         """
         return 30
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Processes news data and merges NLP features into the main price DataFrame.
 
@@ -56,8 +57,8 @@ class NLPFeaturesEnricher(BaseEnricher):
         if not self._validate_inputs(df, news_df):
             return df
 
-        logger.info(f"Starting NLP analysis for {len(news_df)} news items...")
-        logger.info(f"News columns: {news_df.columns.tolist()}")
+        logger.info(f"Starting NLP analysis for {len(news_df) if news_df is not None else 0} news items...")
+        logger.info(f"News columns: {news_df.columns.tolist() if news_df is not None else []}")
 
         try:
             analyzed_news = self._analyze_news(news_df)

@@ -14,6 +14,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
     """
 
     def __init__(self, target_column: str = 'close', returns_column: str = 'returns'):
+        super().__init__()  # Initialize base class (sets up self.logger)
         self.config = get_current_config().get('derived_features', {})
         # Default configuration if not found
         if not self.config:
@@ -47,7 +48,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
         """Execution order (Lower = earlier, Higher = later)."""
         return 25  # After technical (20), before NLP (30)
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Adds derived features and target labels to the DataFrame.
 

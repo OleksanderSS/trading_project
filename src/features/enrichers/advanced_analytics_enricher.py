@@ -1,13 +1,14 @@
-import pandas as pd
-import numpy as np
 import logging
-from typing import Dict, Any, Optional
+from typing import Any
 
-from src.features.enrichers.base import BaseEnricher
-from src.analytics.calculators.sentiment_stats_calculator import SentimentStatsCalculator
+import numpy as np
+import pandas as pd
+
 from src.analytics.calculators.macro_score_calculator import MacroScoreCalculator
+from src.analytics.calculators.sentiment_stats_calculator import SentimentStatsCalculator
 from src.analytics.context.market_phase_analyzer import MarketPhaseAnalyzer
 from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
 
 logger = ProjectLogger.get_logger("AdvancedAnalyticsEnricher")
 
@@ -19,9 +20,14 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
     - Market phase detection
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """Initialize with optional config from FeatureOrchestrator."""
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         self.config = config or {}
+        
+        # Explicit type annotations to satisfy Mypy for Optional assignments
+        self.macro_calculator: MacroScoreCalculator | None = None
+        self.phase_analyzer: MarketPhaseAnalyzer | None = None
         
         # Initialize calculators
         self.sentiment_calculator = SentimentStatsCalculator()
@@ -74,7 +80,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
         """Run after all basic enrichers, before context_map (80)"""
         return 78
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Adds advanced analytics features to the DataFrame.
 
@@ -106,7 +112,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
         logger.info("Advanced analytics enrichment completed")
         return df_enriched
 
-    def _add_sentiment_statistics(self, df_enriched: pd.DataFrame, news_df: Optional[pd.DataFrame]) -> None:
+    def _add_sentiment_statistics(self, df_enriched: pd.DataFrame, news_df: pd.DataFrame | None) -> None:
         """Add sentiment statistics to DataFrame."""
         if news_df is None or not isinstance(news_df, pd.DataFrame) or news_df.empty:
             return
@@ -193,7 +199,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
         except Exception as e:
             logger.error(f"Error detecting market phase: {e}", exc_info=True)
 
-    def _get_phase_mapping(self) -> Dict[str, int]:
+    def _get_phase_mapping(self) -> dict[str, int]:
         """Get market phase mapping to numeric values."""
         return {
             'calm_bull': 0,

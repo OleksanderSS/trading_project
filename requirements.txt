@@ -46,5 +46,7 @@ uvicorn
 pydantic-settings
 prometheus-client
 slack-sdk
-smtplib
 email-validator
+mlflow
+mlflow-skinny
+optuna

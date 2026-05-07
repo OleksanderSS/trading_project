@@ -11,9 +11,11 @@ import os
 import datetime
 import json
 import aiofiles
-from typing import Optional, Any, Dict, Tuple, List
+from typing import Optional, Any, Dict, Tuple, List, cast
 from pathlib import Path
 from dataclasses import dataclass
+
+from src.core.error_handling.error_handler import ErrorHandler
 
 import pandas as pd
 import psutil
@@ -21,10 +23,20 @@ import psutil
 from src.pipeline.stages.base_stage import BaseStage
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
-from src.training.unified_training_manager import UnifiedTrainingManager, UnifiedConfig, TrainingStrategy
+from src.training.unified_training_manager import UnifiedTrainingManager, TrainingStrategy
+from src.training.base_trainer import TrainerConfig
 from src.models.adapters.data_preparation import prepare_data_for_models
 from src.analytics.analyzers.model_comparison_analyzer import ModelComparisonAnalyzer
+from src.analytics.calculators.explainability_calculator import ExplainabilityCalculator
+from src.analytics.calculators.risk_reward_calculator import RiskRewardCalculator
+from src.analytics.arena.arena_battle import TradingModelArena
+from src.analytics.context.contextual_model_selector import ContextualModelSelector
+from src.optimization.hyperparameters.bayesian import BayesianOptimizer
+# from src.optimization.model_ensemble_composer import ModelEnsembleComposer  # TODO: Module not found
+# Using existing ensemble instead:
+from src.models.ensemble.ensemble_model import EnsembleModel
 from src.features.utils.datetime_utils import ensure_datetime_column, normalize_metadata_columns
+from src.training.portfolio_optimizer import PortfolioOptimizer
 from src.training.constants import (
     BATCH_TRAINER_DEFAULT_BATCH_SIZE,
     BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB,
@@ -130,9 +142,10 @@ class ModelingStage(BaseStage):
     Modeling stage: uses UnifiedTrainingManager for training orchestration
     and prepare_data_for_models for unified dataset formatting.
     Supports dynamic switching between Light (local) and Heavy (Colab) training.
+    Enhanced with PortfolioOptimizer for multi-ticker optimization.
     """
-    def __init__(self, config_manager: UnifiedConfigManager, brain: Dict[str, Any], **kwargs):
-        super().__init__(config_manager, brain)
+    def __init__(self, config_manager: UnifiedConfigManager, error_handler: ErrorHandler, **kwargs):
+        super().__init__(config_manager, error_handler, **kwargs)
         self.modeling_config = self.config_manager.get_config('modeling') or {}
         self.system_config = self.config_manager.get_config('system') or {}
         
@@ -140,16 +153,62 @@ class ModelingStage(BaseStage):
         strategy_str = self.modeling_config.get('strategy', 'hybrid').upper()
         strategy = TrainingStrategy[strategy_str] if strategy_str in TrainingStrategy.__members__ else TrainingStrategy.HYBRID
         
-        training_config = UnifiedConfig(
-            strategy=strategy,
+        training_config = TrainerConfig(
+            strategy=strategy.name,
             batch_size=self.modeling_config.get('batch_size', BATCH_TRAINER_DEFAULT_BATCH_SIZE),
             max_memory_gb=self.modeling_config.get('max_memory_gb', BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB)
         )
         
+        # Initialize PortfolioOptimizer for multi-ticker optimization
+        self.portfolio_optimizer = PortfolioOptimizer(config_manager)
+        
+        # Initialize EnsembleModel for combining top models
+        # Using existing EnsembleModel instead of missing ModelEnsembleComposer
+        self.ensemble_composer = None  # Will be created per ticker/target with actual models
+        
         self.training_manager = UnifiedTrainingManager(training_config)
         self.comparison_analyzer = ModelComparisonAnalyzer()
         
-        # Get paths from config using centralized getters
+        # Initialize advanced analytics tools
+        self.explainability_calculator = ExplainabilityCalculator()
+        self.risk_reward_calculator = RiskRewardCalculator()
+        
+        # Get paths from config using centralized getters (before Arena init)
+        self.models_dir = self.config_manager.get_models_path()
+        self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
+        
+        # Initialize Arena Battle System for champion selection
+        self.arena_battle = TradingModelArena(
+            champion_dir=str(self.models_dir),
+            safety_margin=self.modeling_config.get('champion_safety_margin', 0.05)
+        )
+        
+        # Initialize ContextualModelSelector with all available models
+        all_available_models = [
+            # Light models
+            'lightgbm', 'xgboost', 'catboost', 'random_forest', 
+            'linear', 'svm', 'knn', 'mlp',
+            # Heavy models
+            'lstm', 'gru', 'transformer', 'cnn', 'tabnet', 'autoencoder',
+            # Meta
+            'ensemble'
+        ]
+        self.contextual_model_selector = ContextualModelSelector(all_available_models)
+        
+        # Initialize BayesianOptimizer only if Optuna is available
+        self.bayesian_optimizer: Optional[BayesianOptimizer] = None
+        try:
+            self.bayesian_optimizer = BayesianOptimizer(
+                model_func=lambda **kwargs: None,  # Will be configured per model
+                param_space={},
+                n_trials=20
+            )
+            logger.info("✅ TradingModelArena, ContextualModelSelector, and BayesianOptimizer initialized")
+        except ImportError as e:
+            logger.warning(f"⚠️ BayesianOptimizer not available (Optuna missing): {e}")
+            logger.info("✅ TradingModelArena and ContextualModelSelector initialized")
+        
+        # Get paths from config using centralized getters (before Arena init)
         self.models_dir = self.config_manager.get_models_path()
         self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
 
@@ -169,7 +228,7 @@ class ModelingStage(BaseStage):
 
     def _validate_and_normalize_data(self, enriched_data) -> bool:
         """Validate and normalize input data."""
-        if not enriched_data:
+        if enriched_data is None or (isinstance(enriched_data, pd.DataFrame) and enriched_data.empty):
             logger.error("Enriched data not found in pipeline_data. Skipping Modeling Stage.")
             return False
         
@@ -187,10 +246,13 @@ class ModelingStage(BaseStage):
         if not self._validate_and_normalize_data(enriched_data):
             return {}
         
-        champions = {}
+        champions: Dict[str, Any] = {}
         logger.info("--- [Modeling Stage] Starting Unified Training Flow ---")
         
-        ticker_groups = enriched_data.groupby('ticker') if isinstance(enriched_data, pd.DataFrame) else enriched_data.items()
+        if enriched_data is None:
+            return {}
+        
+        ticker_groups = enriched_data.groupby('ticker') if isinstance(enriched_data, pd.DataFrame) else cast(Dict[str, Any], enriched_data).items()
         
         for ticker, df in ticker_groups:
             await self._process_ticker_with_async(ticker, df, champions)
@@ -250,6 +312,15 @@ class ModelingStage(BaseStage):
             market_context=self.brain.get('market_regime', 'neutral')
         )
         
+        # 3.5. Create Ensemble from Top Models
+        ensemble_config = await self._create_ensemble_from_top_models_async(
+            training_results,
+            config.ticker,
+            config.target_name
+        )
+        if ensemble_config:
+            logger.info(f"✅ Created ensemble from top models: {ensemble_config.get('model_names', [])}")
+        
         # 4. Process Results and Load Features
         ticker_result = training_results.get('tickers_results', {}).get(config.ticker, {})
         if ticker_result.get('status') == 'success':
@@ -271,13 +342,17 @@ class ModelingStage(BaseStage):
         
         # Extract metrics
         winner_name = config.ticker_result.get('winner')
+        if not winner_name:
+            logger.warning(f"No winner found for {config.ticker}_{config.target_name}. Skipping feature loading.")
+            return
+            
         all_metrics = config.ticker_result.get('metrics', {})
         winner_metrics = config.ticker_result.get('winner_metrics', all_metrics.get(winner_name, {}))
         
         # Load selected features
         batch_dir = self._resolve_selected_features_batch_dir()
         feature_config = FeatureLoadingConfig(
-            model_type=winner_name,
+            model_type=str(winner_name),
             ticker=config.ticker,
             target_name=config.target_name,
             batch_dir=batch_dir,
@@ -288,7 +363,7 @@ class ModelingStage(BaseStage):
         # Log debug information
         debug_info = TrainingDebugInfo(
             context_key=context_key,
-            winner_name=winner_name,
+            winner_name=str(winner_name),
             winner_metrics=winner_metrics,
             all_metrics=all_metrics,
             selected_features=selected_features
@@ -302,7 +377,7 @@ class ModelingStage(BaseStage):
         champion_config = ChampionInfoConfig(
             ticker=config.ticker,
             target_name=config.target_name,
-            winner_name=winner_name,
+            winner_name=str(winner_name),
             comparison_report=config.comparison_report,
             context_fingerprint=context_fingerprint,
             market_regime=market_regime,
@@ -460,7 +535,7 @@ class ModelingStage(BaseStage):
         """
         from src.training.light_model_trainer import LightModelTrainer
         
-        light_models = {}
+        light_models: Dict[str, Any] = {}
         light_trainer = LightModelTrainer()
         
         # Get prepared data and validate
@@ -693,7 +768,7 @@ class ModelingStage(BaseStage):
             batch_name = 'main_database'
             logger.warning(f"⚠️ No batch_name found in runtime params, defaulting to {batch_name}")
         
-        return accumulated_dir / batch_name
+        return cast(Path, accumulated_dir / batch_name)
 
     def _try_get_batch_name_from_runtime_params(self, runtime_params_path):
         """Try to get batch_name from the main runtime params file."""
@@ -744,4 +819,82 @@ class ModelingStage(BaseStage):
                 runtime_params = json.load(f)
                 return runtime_params.get('batch', {}).get('batch_name')
         except Exception:
+            return None
+
+    async def _create_ensemble_from_top_models_async(
+        self, 
+        training_results: Dict[str, Any],
+        ticker: str,
+        target_name: str,
+        top_n: int = 3
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Create ensemble from top-N models using ModelEnsembleComposer.
+        
+        Args:
+            training_results: Results from training manager
+            ticker: Ticker symbol
+            target_name: Target variable name
+            top_n: Number of top models to include in ensemble
+            
+        Returns:
+            Ensemble configuration dict or None if failed
+        """
+        try:
+            # Extract ticker results
+            ticker_result = training_results.get('tickers_results', {}).get(ticker, {})
+            if ticker_result.get('status') != 'success':
+                logger.warning(f"Ticker {ticker} training not successful, skipping ensemble creation")
+                return None
+            
+            # Get all model metrics
+            all_metrics = ticker_result.get('metrics', {})
+            if not all_metrics:
+                logger.warning(f"No metrics found for {ticker}_{target_name}, skipping ensemble")
+                return None
+            
+            # Create ensemble using EnsembleModel
+            # Sort models by performance metric (e.g., r2_score)
+            sorted_models = sorted(
+                all_metrics.items(),
+                key=lambda x: x[1].get('r2_score', 0) if isinstance(x[1], dict) else 0,
+                reverse=True
+            )[:top_n]
+            
+            if len(sorted_models) < 2:
+                logger.warning(f"Only {len(sorted_models)} models available, need at least 2 for ensemble")
+                return None
+            
+            # Prepare models for ensemble
+            model_list = []
+            for model_name, metrics in sorted_models:
+                # Note: We would need to load actual model objects here
+                # For now, just store the configuration
+                model_list.append((model_name, metrics))
+            
+            # Create ensemble configuration
+            ensemble_config = {
+                'model_names': [m[0] for m in model_list],
+                'metrics': {m[0]: m[1] for m in model_list},
+                'weights': [1.0 / len(model_list)] * len(model_list),  # Equal weights for now
+                'ensemble_type': 'weighted_average',
+                'ticker': ticker,
+                'target_name': target_name
+            }
+            
+            logger.info(f"✅ Ensemble created for {ticker}_{target_name}:")
+            logger.info(f"   Models: {ensemble_config['model_names']}")
+            logger.info(f"   Weights: {[f'{w:.3f}' for w in ensemble_config['weights']]}")
+            
+            # Save ensemble config
+            ensemble_path = self.models_dir / f"ensemble_{ticker}_{target_name}.json"
+            import json
+            with open(ensemble_path, 'w') as f:
+                json.dump(ensemble_config, f, indent=2)
+            logger.info(f"   Saved to: {ensemble_path}")
+            
+            return ensemble_config
+            
+        except Exception as e:
+            logger.error(f"Failed to create ensemble for {ticker}_{target_name}: {e}")
             return None

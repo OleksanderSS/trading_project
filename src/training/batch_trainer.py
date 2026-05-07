@@ -21,13 +21,6 @@ from src.training.constants import (
 )
 from src.training.base_trainer import BaseTrainer, TrainerConfig
 
-from dataclasses import dataclass
-
-@dataclass
-class BatchConfig:
-    batch_size: int = BATCH_TRAINER_DEFAULT_BATCH_SIZE
-    max_memory_gb: float = BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
-
 logger = ProjectLogger.get_logger("BatchTrainer")
 
 class BatchTrainer(BaseTrainer):
@@ -43,9 +36,6 @@ class BatchTrainer(BaseTrainer):
             batch_size=BATCH_TRAINER_DEFAULT_BATCH_SIZE,
             max_memory_gb=BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
         ))
-        self.model_factory = ModelFactory()
-        self.diary = DiaryEngine()
-        self.evaluator = MLEvaluator()
     
     def _prepare_ticker_groups(self, plan: Dict[str, Any]) -> List[List[str]]:
         """
@@ -80,97 +70,6 @@ class BatchTrainer(BaseTrainer):
         )
         
         return dict(zip(ticker_group, batch_results))
-
-    def _train_ticker_suite(self, ticker: str, data: Dict[str, Any]) -> Dict:
-        """
-        Train all configured models for a specific ticker.
-        
-        Args:
-            ticker: Ticker symbol
-            data: Prepared data with X_train, y_train, X_test, y_test, target_name, etc.
-        
-        Returns:
-            Training result with winner, metrics, and best_score
-        """
-        ticker_results = {"status": "success", "models": [], "metrics": {}, "ticker": ticker}
-        
-        X_train = data.get('X_train')
-        y_train = data.get('y_train')
-        X_test = data.get('X_test')
-        y_test = data.get('y_test')
-        target_name = data.get('target_name', 'unknown')
-
-        if X_train is None or y_train is None:
-            ticker_results["status"] = "failed"
-            ticker_results["reason"] = "incomplete_data"
-            return ticker_results
-        
-        try:
-            is_classification = 'classification' in data.get('target_type', '')
-            model_types = self.config_manager.get_config('models.enabled_types', ['lgbm', 'rf', 'xgb', 'linear'])
-            
-            best_score = -np.inf
-            winner_name = None
-            
-            for m_type in model_types:
-                try:
-                    # Create and train model
-                    model_instance = self.model_factory.create_model(
-                        model_type=m_type,
-                        is_classification=is_classification,
-                        params=self.config_manager.get_config(f"models.{m_type}", {})
-                    )
-                    
-                    model_instance.fit(X_train, y_train)
-                    predictions = model_instance.predict(X_test)
-                    score = self.evaluator.evaluate(y_test, predictions, is_classification)
-                    
-                    # Store metrics
-                    metrics_dict = {
-                        'score': float(score),
-                        'accuracy': float(score) if is_classification else float(-score),
-                        'mse': float(score) if not is_classification else None
-                    }
-                    ticker_results['metrics'][m_type] = metrics_dict
-                    
-                    # Track best model
-                    if score > best_score:
-                        best_score = score
-                        winner_name = m_type
-                        self._save_champion(model_instance, ticker, target_name)
-                    
-                    # Log to diary
-                    self.diary.log_event(
-                        ticker=ticker,
-                        model_name=m_type,
-                        target=target_name,
-                        metrics=float(score),
-                        context_fingerprint=data.get('context_fingerprint', 'default')
-                    )
-
-                except Exception as e:
-                    self.logger.error(f"Failed to train {m_type} for {ticker}: {e}")
-                    continue
-            
-            ticker_results['winner'] = winner_name
-            ticker_results['best_score'] = float(best_score) if best_score > -np.inf else None
-            ticker_results['winner_metrics'] = ticker_results['metrics'].get(winner_name, {})
-            
-            return ticker_results
-        
-        except Exception as e:
-            self.logger.error(f"Error during training for {ticker}: {e}")
-            return {"status": "failed", "ticker": ticker, "reason": str(e)}
-
-    def _save_champion(self, model: Any, ticker: str, target: str):
-        """Save best model to disk"""
-        filename = f"CHAMP_{ticker}_{target}.joblib"
-        path = self.output_dir / filename
-        try:
-            joblib.dump(model, path)
-            self.logger.debug(f"Champion saved: {path}")
-        except Exception as e:
-            self.logger.error(f"Error saving champion {filename}: {e}")
 
     def create_batch_plan(self, tickers: List[str], strategy: str = 'batch') -> Dict[str, Any]:
         """

@@ -4,10 +4,10 @@ Base class for all modes using the project's new standards and UnifiedConfigMana
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Any
 
-from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
 
 
 class BaseMode(ABC):
@@ -15,8 +15,8 @@ class BaseMode(ABC):
     Абстрактний базовий клас для всіх режимів роботи системи.
     Забезпечує доступ до конфігурації, логування та спільний інтерфейс виконання.
     """
-    
-    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None):
+
+    def __init__(self, config_manager: UnifiedConfigManager | None = None):
         """
         Ініціалізує базовий режим.
 
@@ -26,9 +26,9 @@ class BaseMode(ABC):
         from src.config.unified_config_manager import get_current_config
         self.config_manager = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
-    
+
     @abstractmethod
-    def run(self, **kwargs) -> Dict[str, Any]:
+    def run(self, **kwargs) -> dict[str, Any]:
         """
         Основний метод виконання режиму. Має бути реалізований у нащадках.
 
@@ -36,24 +36,24 @@ class BaseMode(ABC):
             **kwargs: Додаткові параметри для запуску конкретного режиму.
 
         Returns:
-            Dict[str, Any]: Результати виконання режиму (статус, метрики тощо).
+            dict[str, Any]: Результати виконання режиму (статус, метрики тощо).
         """
         pass
-    
+
     def validate_prerequisites(self) -> bool:
         """
         Перевірка передумов (наявність даних, підключень) перед виконанням.
         Повертає True за замовчуванням.
         """
         return True
-    
+
     def cleanup(self) -> None:
         """
         Очищення ресурсів після завершення роботи режиму.
         """
         pass
-    
-    def get_mode_info(self) -> Dict[str, Any]:
+
+    def get_mode_info(self) -> dict[str, Any]:
         """
         Повертає базову інформацію про поточний режим.
         """

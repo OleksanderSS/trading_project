@@ -9,19 +9,22 @@ Advanced Backtesting Framework - Розширена система бектес�
 - Statistical Significance Testing
 """
 
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Callable
-from datetime import datetime, timedelta
-from src.core.logging.logger import ProjectLogger
+
 from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("AdvancedBacktesting")
 
 class TransactionCostModel:
     """Моделювання транзакційних витрат"""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.commission_pct = self.config.get('commission_pct', 0.001)  # 0.1%
         self.spread_bps = self.config.get('spread_bps', 5)  # 5 basis points
@@ -32,7 +35,7 @@ class TransactionCostModel:
                                  trade_value: float,
                                  daily_volume: float,
                                  volatility: float,
-                                 order_size_pct: Optional[float] = None) -> Dict[str, float]:
+                                 order_size_pct: float | None = None) -> dict[str, float]:
         """
         Розраховує всі компоненти витрат виконання
 
@@ -81,38 +84,39 @@ class BiasDetector:
     def detect_look_ahead_bias(self,
                                signals: pd.DataFrame,
                                future_prices: pd.DataFrame,
-                               lag_periods: int = 1) -> Dict[str, Any]:
+                               lag_periods: int = 1) -> dict[str, Any]:
         """
-        Виявлення look-ahead bias
-
-        Look-ahead bias виникає коли сигнали використовують дані що недоступні під час торгівлі
+        Виявлення look-ahead bias через векторизований аналіз кореляцій.
         """
         try:
-            # Проверка кореляції між сигналами та будущими цінами
-            correlations = {}
-            for col in signals.columns:
-                if col in future_prices.columns:
-                    # Correlation between signal and future price
-                    corr = signals[col].corr(future_prices[col].shift(-lag_periods))
-                    correlations[col] = float(corr)
+            # 1. Знаходимо спільні колонки
+            common_cols = signals.columns.intersection(future_prices.columns)
+            if common_cols.empty:
+                return {'has_look_ahead_bias': False, 'suspicious_signals': [], 'message': 'Немає спільних тікерів'}
 
+            # 2. Векторизований розрахунок кореляцій
+            correlations = signals[common_cols].corrwith(future_prices[common_cols].shift(-lag_periods))
+            
             # Статистична значимість
             n = len(signals)
-            critical_corr = 1.96 / np.sqrt(n)  # 95% significance
-
-            suspicious_signals = []
-            for signal, corr in correlations.items():
-                if abs(corr) > critical_corr:
-                    suspicious_signals.append({
-                        'signal': signal,
-                        'correlation': corr,
-                        'is_suspicious': abs(corr) > critical_corr * 1.5,
-                        'message': 'Можливо look-ahead bias' if abs(corr) > critical_corr * 1.5 else 'Підозріло високо'
-                    })
+            critical_corr = 1.96 / np.sqrt(n)
+            
+            # 4. Фільтрація підозрілих сигналів
+            suspicious_mask = correlations.abs() > critical_corr
+            suspicious_results = []
+            
+            for ticker, corr in correlations[suspicious_mask].items():
+                is_bias = abs(corr) > critical_corr * 1.5
+                suspicious_results.append({
+                    'signal': ticker,
+                    'correlation': float(corr),
+                    'is_suspicious': is_bias,
+                    'message': 'Виявлено look-ahead bias' if is_bias else 'Підозріло висока кореляція'
+                })
 
             return {
-                'has_look_ahead_bias': len(suspicious_signals) > 0,
-                'suspicious_signals': suspicious_signals,
+                'has_look_ahead_bias': len(suspicious_results) > 0,
+                'suspicious_signals': suspicious_results,
                 'critical_threshold': float(critical_corr),
                 'sample_size': n
             }
@@ -122,9 +126,9 @@ class BiasDetector:
             return {'error': str(e)}
 
     def detect_survivorship_bias(self,
-                                historical_universe: List[str],
-                                current_universe: List[str],
-                                delisted_dates: Dict[str, datetime]) -> Dict[str, Any]:
+                                historical_universe: list[str],
+                                current_universe: list[str],
+                                delisted_dates: dict[str, datetime]) -> dict[str, Any]:
         """
         Виявлення survivorship bias
 
@@ -132,7 +136,7 @@ class BiasDetector:
         """
         try:
             delisted = set(historical_universe) - set(current_universe)
-            
+
             # Аналіз performance делистед акцій перед делістингом
             delisted_performance_warning = []
             for ticker, delisted_date in delisted_dates.items():
@@ -161,14 +165,14 @@ class WalkForwardOptimizer:
     Ділить дані на in-sample (тренування) та out-of-sample (тестування) вікна
     """
 
-    def __init__(self, config_manager: Optional[Any] = None):
+    def __init__(self, config_manager: Any | None = None):
         self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("WalkForwardOptimizer")
 
     def walk_forward_optimization(self, data: pd.DataFrame,
                                   optimization_func: Callable,
                                   in_sample_months: int = 12,
-                                  out_sample_months: int = 3) -> Dict[str, Any]:
+                                  out_sample_months: int = 3) -> dict[str, Any]:
         """
         Виконує Walk-Forward Optimization
 
@@ -182,7 +186,7 @@ class WalkForwardOptimizer:
         try:
             results = []
             total_rows = len(data)
-            
+
             in_sample_size = int(total_rows * (in_sample_months / (in_sample_months + out_sample_months)))
             step_size = int(total_rows * (out_sample_months / 12))  # Move forward by out-sample period
 
@@ -191,7 +195,7 @@ class WalkForwardOptimizer:
                 # In-sample window
                 in_start = window_idx * step_size
                 in_end = in_start + in_sample_size
-                
+
                 # Out-of-sample window
                 out_start = in_end
                 out_end = min(out_start + step_size, total_rows)
@@ -205,10 +209,10 @@ class WalkForwardOptimizer:
                 # Optimize on in-sample
                 try:
                     best_params = optimization_func(in_sample_data)
-                    
+
                     # Evaluate on out-of-sample
                     performance = self._evaluate_parameters()
-                    
+
                     results.append({
                         'window': window_idx,
                         'in_sample_period': f"{data.index[in_start]} to {data.index[in_end-1]}",
@@ -234,7 +238,7 @@ class WalkForwardOptimizer:
             self.logger.error(f"Помилка Walk-Forward Optimization: {e}")
             return {'error': str(e)}
 
-    def _evaluate_parameters(self) -> Dict[str, float]:
+    def _evaluate_parameters(self) -> dict[str, float]:
         """Оцінка параметрів на out-of-sample даних (спрощено)"""
         return {
             'return': 0.05,  # Placeholder
@@ -242,11 +246,11 @@ class WalkForwardOptimizer:
             'max_drawdown': 0.10
         }
 
-    def _calculate_average_performance(self, results: List[Dict]) -> Dict[str, float]:
+    def _calculate_average_performance(self, results: list[dict]) -> dict[str, float]:
         """Розрахунок середньої performance"""
         if not results:
             return {}
-        
+
         avg_return = np.mean([r['out_sample_performance'].get('return', 0) for r in results])
         avg_sharpe = np.mean([r['out_sample_performance'].get('sharpe', 0) for r in results])
         avg_dd = np.mean([r['out_sample_performance'].get('max_drawdown', 0) for r in results])
@@ -262,10 +266,10 @@ class AdvancedBacktestEngine:
     Головний engine для розширеного бектестингу
     """
 
-    def __init__(self, config_manager: Optional[Any] = None):
+    def __init__(self, config_manager: Any | None = None):
         self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("AdvancedBacktest")
-        
+
         # Ініціалізація компонентів
         backtest_config = self.config.get('backtesting', {})
         self.cost_model = TransactionCostModel(backtest_config.get('transaction_costs', {}))
@@ -275,22 +279,18 @@ class AdvancedBacktestEngine:
     def run_comprehensive_backtest(self,
                                   price_data: pd.DataFrame,
                                   signals: pd.DataFrame,
-                                  initial_capital: float = 100000.0,
-                                  slippage_adjustment: bool = True,
-                                  bias_detection: bool = True,
-                                  **kwargs) -> Dict[str, Any]:
+                                  backtest_config: dict[str, Any] | None = None,
+                                  **kwargs: Any) -> dict[str, Any]:
         """
-        Комплексний бектест з усіма покращеннями
-
-        Args:
-            price_data: Дані цін
-            signals: Торгові сигнали
-            initial_capital: Початковий капітал
-            slippage_adjustment: Враховувати ковзання та комісії
-            bias_detection: Виявляти упередження
+        Комплексний бектест з усіма покращеннями.
         """
         try:
-            report = {
+            config = backtest_config or {}
+            initial_capital = config.get('initial_capital', 100000.0)
+            slippage_adj = config.get('slippage_adjustment', True)
+            bias_detect = config.get('bias_detection', True)
+
+            report: dict[str, Any] = {
                 'timestamp': datetime.now().isoformat(),
                 'initial_capital': initial_capital,
                 'performance_metrics': {},
@@ -301,14 +301,15 @@ class AdvancedBacktestEngine:
             }
 
             # 1. Performance calculations with transaction costs
-            if slippage_adjustment:
+            if slippage_adj:
                 report['transaction_analysis'] = self._analyze_transaction_costs(
                     signals, price_data
                 )
 
             # 2. Bias detection
-            if bias_detection:
-                report['bias_analysis']['look_ahead'] = self.bias_detector.detect_look_ahead_bias(
+            if bias_detect:
+                bias_analysis: dict[str, Any] = report['bias_analysis']  # type: ignore[assignment]
+                bias_analysis['look_ahead'] = self.bias_detector.detect_look_ahead_bias(
                     signals, price_data
                 )
 
@@ -323,8 +324,12 @@ class AdvancedBacktestEngine:
             }
 
             # 4. Generate alerts
-            if report['bias_analysis'].get('look_ahead', {}).get('has_look_ahead_bias'):
-                report['alerts'].append("УВАГА: Виявлено look-ahead bias у сигналах!")
+            bias_analysis_result = report['bias_analysis']
+            if isinstance(bias_analysis_result, dict):
+                look_ahead = bias_analysis_result.get('look_ahead', {})
+                if isinstance(look_ahead, dict) and look_ahead.get('has_look_ahead_bias'):
+                    alerts: list[str] = report['alerts']  # type: ignore[assignment]
+                    alerts.append("УВАГА: Виявлено look-ahead bias у сигналах!")
 
             self.logger.info("Комплексний бектест завершено")
             return report
@@ -333,16 +338,16 @@ class AdvancedBacktestEngine:
             self.logger.error(f"Помилка комплексного бектесту: {e}")
             return {'error': str(e)}
 
-    def _analyze_transaction_costs(self, signals: pd.DataFrame, prices: pd.DataFrame) -> Dict[str, Any]:
+    def _analyze_transaction_costs(self, signals: pd.DataFrame, prices: pd.DataFrame) -> dict[str, Any]:
         """Аналіз транзакційних витрат"""
         total_trades = (signals != signals.shift()).sum().sum()
-        
+
         costs = []
         for col in signals.columns:
             if col in prices.columns:
                 trades = signals[col] != signals[col].shift()
                 n_trades = trades.sum()
-                
+
                 if n_trades > 0:
                     avg_volatility = prices[col].pct_change().std()
                     cost_estimate = self.cost_model.calculate_execution_costs(

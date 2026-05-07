@@ -10,7 +10,7 @@ secrets/
 
 # Large data and model files (keep locally, don't push to Git)
 data/
-# models/  # Temporarily commented for debugging
+models/  # Ignored large model files
 logs/
 cache/
 backups/

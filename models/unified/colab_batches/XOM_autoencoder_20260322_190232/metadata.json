@@ -1,0 +1,11 @@
+{
+  "batch_id": "XOM_autoencoder_20260322_190232",
+  "ticker": "XOM",
+  "model_name": "autoencoder",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_macd_hist_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T19:02:32.992413",
+  "status": "PENDING_COLAB"
+}

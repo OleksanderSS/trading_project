@@ -58,7 +58,8 @@ def load_checkpoint(checkpoint_path, model, optimizer):
         print("   ⚠️ torch не доступний, checkpoint не завантажено")
         return 0, float('inf')
         
-    checkpoint = torch.load(checkpoint_path)
+    # SEC-3: weights_only=True prevents arbitrary code execution from checkpoint files
+    checkpoint = torch.load(checkpoint_path, weights_only=True)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']

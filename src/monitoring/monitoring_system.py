@@ -16,16 +16,14 @@ Features:
 - Automated reporting
 """
 
-import os
-import json
+import threading
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional, Callable
 from enum import Enum
-import threading
-import psutil
-import logging
+from typing import Any
+
 import numpy as np
+import psutil
 
 from src.core.logging.logger import ProjectLogger
 
@@ -52,12 +50,12 @@ class MetricType(Enum):
 class BaseMonitor:
     """Base class for all monitoring components."""
 
-    def __init__(self, name: str, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, name: str, config: dict[str, Any] | None = None):
         self.name = name
         self.config = config or {}
         self.logger = ProjectLogger.get_logger(f"Monitor.{name}")
-        self.metrics = {}
-        self.alerts = []
+        self.metrics: dict[str, Any] = {}
+        self.alerts: list[dict[str, Any]] = []
         self.is_running = False
 
     def start(self):
@@ -70,7 +68,7 @@ class BaseMonitor:
         self.is_running = False
         self.logger.info(f"Stopped monitoring: {self.name}")
 
-    def collect_metrics(self) -> Dict[str, Any]:
+    def collect_metrics(self) -> dict[str, Any]:
         """Collects metrics (to be overridden by subclasses)."""
         return {}
 
@@ -78,7 +76,7 @@ class BaseMonitor:
         """Checks collected metrics against defined thresholds."""
         pass
 
-    def generate_report(self) -> Dict[str, Any]:
+    def generate_report(self) -> dict[str, Any]:
         """Generates a status report for the monitor."""
         return {
             'monitor_name': self.name,
@@ -91,7 +89,7 @@ class BaseMonitor:
 class SystemHealthMonitor(BaseMonitor):
     """Monitors system hardware resources (CPU, Memory, Disk, etc)."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__("system_health", config)
 
         # Thresholds
@@ -101,10 +99,10 @@ class SystemHealthMonitor(BaseMonitor):
         self.network_timeout = self.config.get('network_timeout', 30)
 
         # Metrics History
-        self.metrics_history = []
+        self.metrics_history: list[dict[str, Any]] = []
         self.history_size = self.config.get('history_size', 100)
 
-    def collect_metrics(self) -> Dict[str, Any]:
+    def collect_metrics(self) -> dict[str, Any]:
         """Collects hardware system metrics."""
         try:
             # CPU
@@ -185,7 +183,7 @@ class SystemHealthMonitor(BaseMonitor):
                 {'disk_percent': self.metrics['disk_percent']}
             )
 
-    def _create_alert(self, message: str, severity: alertseverity, details: Dict[str, Any]):
+    def _create_alert(self, message: str, severity: alertseverity, details: dict[str, Any]):
         """Internal helper to register an alert."""
         alert = {
             'id': f"{self.name}_{int(time.time())}",
@@ -199,10 +197,11 @@ class SystemHealthMonitor(BaseMonitor):
         self.alerts.append(alert)
         self.logger.warning(f"Alert created: {message}")
 
+
 class ModelPerformanceMonitor(BaseMonitor):
     """Monitors ML model metrics and detects performance drift."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__("model_performance", config)
 
         # Performance Thresholds
@@ -211,10 +210,10 @@ class ModelPerformanceMonitor(BaseMonitor):
         self.drift_threshold = self.config.get('drift_threshold', 0.05)
 
         # Model state
-        self.model_metrics = {}
-        self.baseline_metrics = {}
+        self.model_metrics: dict[str, Any] = {}
+        self.baseline_metrics: dict[str, Any] = {}
 
-    def collect_metrics(self) -> Dict[str, Any]:
+    def collect_metrics(self) -> dict[str, Any]:
         """Summarizes current model performance statistics."""
         try:
             metrics = {
@@ -232,7 +231,7 @@ class ModelPerformanceMonitor(BaseMonitor):
             self.logger.error(f"Error collecting model metrics: {e}")
             return {}
 
-    def update_model_metrics(self, model_name: str, metrics: Dict[str, Any]):
+    def update_model_metrics(self, model_name: str, metrics: dict[str, Any]):
         """Updates metrics for a specific model context."""
         if model_name not in self.baseline_metrics:
             self.baseline_metrics[model_name] = metrics.copy()
@@ -269,7 +268,7 @@ class ModelPerformanceMonitor(BaseMonitor):
 class DataQualityMonitor(BaseMonitor):
     """Monitors data integrity, missing values, and statistical properties."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         super().__init__("data_quality", config)
 
         # Quality Thresholds
@@ -278,10 +277,10 @@ class DataQualityMonitor(BaseMonitor):
         self.consistency_threshold = self.config.get('consistency_threshold', 0.95)  # 95%
 
         # Data sources
-        self.data_sources = {}
-        self.quality_history = {}
+        self.data_sources: dict[str, Any] = {}
+        self.quality_history: dict[str, Any] = {}
 
-    def collect_metrics(self) -> Dict[str, Any]:
+    def collect_metrics(self) -> dict[str, Any]:
         """Summarizes data quality across all tracked sources."""
         try:
             metrics = {
@@ -299,7 +298,7 @@ class DataQualityMonitor(BaseMonitor):
             self.logger.error(f"Error collecting data quality metrics: {e}")
             return {}
 
-    def update_data_quality(self, source_name: str, data_quality_report: Dict[str, Any]):
+    def update_data_quality(self, source_name: str, data_quality_report: dict[str, Any]):
         """Updates quality report for a specific data source."""
         self.data_sources[source_name] = data_quality_report
 
@@ -312,7 +311,7 @@ class DataQualityMonitor(BaseMonitor):
                 {'source': source_name, 'completeness': completeness}
             )
 
-    def _create_quality_alert(self, message: str, severity: alertseverity, details: Dict[str, Any]):
+    def _create_quality_alert(self, message: str, severity: alertseverity, details: dict[str, Any]):
         """Creates an alert regarding data quality issues."""
         alert = {
             'id': f"{self.name}_{int(time.time())}",
@@ -329,19 +328,19 @@ class DataQualityMonitor(BaseMonitor):
 class AlertManager:
     """Handles alert processing, routing, and lifecycle management."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.logger = ProjectLogger.get_logger("AlertManager")
 
         # Routing configuration
-        self.alert_channels = self.config.get('channels', ['log'])  # log, email, slack, etc.
-        self.alert_history = []
-        self.active_alerts = {}
+        self.alert_channels: list[str] = self.config.get('channels', ['log'])  # log, email, slack, etc.
+        self.alert_history: list[dict[str, Any]] = []
+        self.active_alerts: dict[str, dict[str, Any]] = {}
 
         # Auto-resolution
         self.auto_resolve_hours = self.config.get('auto_resolve_hours', 24)
 
-    def process_alert(self, alert: Dict[str, Any]):
+    def process_alert(self, alert: dict[str, Any]):
         """Processes a new alert, avoiding duplicates and routing to channels."""
         alert_id = alert['id']
 
@@ -369,7 +368,7 @@ class AlertManager:
             del self.active_alerts[alert_id]
             self.logger.info(f"Alert resolved: {alert_id}")
 
-    def get_active_alerts(self, severity: Optional[alertseverity] = None) -> List[Dict[str, Any]]:
+    def get_active_alerts(self, severity: alertseverity | None = None) -> list[dict[str, Any]]:
         """Returns currently active alerts, optionally filtered by severity."""
         alerts = list(self.active_alerts.values())
 
@@ -391,7 +390,7 @@ class AlertManager:
         for alert_id in to_resolve:
             self.resolve_alert(alert_id, "auto_resolved_by_timeout")
 
-    def _send_notifications(self, alert: Dict[str, Any]):
+    def _send_notifications(self, alert: dict[str, Any]):
         """Routes notification to configured output channels."""
         for channel in self.alert_channels:
             try:
@@ -404,7 +403,7 @@ class AlertManager:
             except Exception as e:
                 self.logger.error(f"Error sending {channel} notification: {e}")
 
-    def _send_log_notification(self, alert: Dict[str, Any]):
+    def _send_log_notification(self, alert: dict[str, Any]):
         """Logs the alert message with appropriate severity level."""
         severity = alert['severity'].upper()
         message = f"[{severity}] {alert['message']}"
@@ -415,19 +414,19 @@ class AlertManager:
         else:
             self.logger.info(message)
 
-    def _send_email_notification(self, alert: Dict[str, Any]):
+    def _send_email_notification(self, alert: dict[str, Any]):
         """Mock behavior for email notifications."""
         pass
 
-    def _send_slack_notification(self, alert: Dict[str, Any]):
+    def _send_slack_notification(self, alert: dict[str, Any]):
         """Mock behavior for Slack notifications."""
         pass
 
 class MonitoringDashboard:
     """Generates human-readable dashboard payloads from monitors and alerts."""
 
-    def __init__(self, monitors: List[BaseMonitor], alert_manager: AlertManager,
-                 config: Optional[Dict[str, Any]] = None):
+    def __init__(self, monitors: list[BaseMonitor], alert_manager: AlertManager,
+                 config: dict[str, Any] | None = None):
         self.monitors = monitors
         self.alert_manager = alert_manager
         self.config = config or {}
@@ -437,13 +436,14 @@ class MonitoringDashboard:
         self.refresh_interval = self.config.get('refresh_interval', 60)
         self.history_days = self.config.get('history_days', 7)
 
-    def generate_dashboard_data(self) -> Dict[str, Any]:
+    def generate_dashboard_data(self) -> dict[str, Any]:
         """Provides a complete snapshot of the system's current monitoring state."""
         try:
-            dashboard_data = {
+            monitors_data: dict[str, Any] = {}
+            dashboard_data: dict[str, Any] = {
                 'timestamp': datetime.now().isoformat(),
                 'system_status': 'healthy',
-                'monitors': {},
+                'monitors': monitors_data,
                 'alerts': {
                     'active': self.alert_manager.get_active_alerts(),
                     'by_severity': self._group_alerts_by_severity(),
@@ -455,7 +455,7 @@ class MonitoringDashboard:
             # Collect monitor snapshots
             for monitor in self.monitors:
                 monitor_data = monitor.generate_report()
-                dashboard_data['monitors'][monitor.name] = monitor_data
+                monitors_data[monitor.name] = monitor_data
 
                 # Propagate status to root
                 if monitor_data.get('status') != 'running':
@@ -469,20 +469,20 @@ class MonitoringDashboard:
             self.logger.error(f"Error generating dashboard data: {e}")
             return {'error': str(e)}
 
-    def _group_alerts_by_severity(self) -> Dict[str, int]:
+    def _group_alerts_by_severity(self) -> dict[str, int]:
         """Counts active alerts grouped by severity level."""
         alerts = self.alert_manager.get_active_alerts()
-        grouped = {}
+        grouped: dict[str, int] = {}
 
         for severity in alertseverity:
             grouped[severity.value] = sum(1 for a in alerts if a['severity'] == severity.value)
 
         return grouped
 
-    def _get_recent_alerts(self, hours: int) -> List[Dict[str, Any]]:
+    def _get_recent_alerts(self, hours: int) -> list[dict[str, Any]]:
         """Retrieves alerts occurred within the past X hours."""
         cutoff_time = datetime.now() - timedelta(hours=hours)
-        recent_alerts = []
+        recent_alerts: list[dict[str, Any]] = []
 
         for alert in self.alert_manager.alert_history:
             alert_time = datetime.fromisoformat(alert['timestamp'])
@@ -491,7 +491,7 @@ class MonitoringDashboard:
 
         return recent_alerts[-20:]
 
-    def _generate_summary(self) -> Dict[str, Any]:
+    def _generate_summary(self) -> dict[str, Any]:
         """Generates a high-level summary of monitoring status."""
         try:
             total_monitors = len(self.monitors)
@@ -523,7 +523,7 @@ class MonitoringDashboard:
 class MonitoringSystem:
     """Global Monitoring System entry point."""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
         self.logger = ProjectLogger.get_logger("MonitoringSystem")
 
@@ -537,7 +537,7 @@ class MonitoringSystem:
         self.dashboard = MonitoringDashboard(self.monitors, self.alert_manager, self.config.get('dashboard', {}))
 
         # Monitoring loop state
-        self.monitoring_thread = None
+        self.monitoring_thread: threading.Thread | None = None
         self.is_running = False
         self.collection_interval = self.config.get('collection_interval', 30)
 
@@ -592,11 +592,11 @@ class MonitoringSystem:
                 self.logger.error(f"Error in monitoring loop: {e}")
                 time.sleep(5)
 
-    def get_dashboard_data(self) -> Dict[str, Any]:
+    def get_dashboard_data(self) -> dict[str, Any]:
         """Provides latest dashboard view object."""
         return self.dashboard.generate_dashboard_data()
 
-    def get_health_report(self) -> Dict[str, Any]:
+    def get_health_report(self) -> dict[str, Any]:
         """Provides a simple health summary report."""
         return {
             'system_status': 'running' if self.is_running else 'stopped',
@@ -605,10 +605,10 @@ class MonitoringSystem:
             'last_collection': datetime.now().isoformat()
         }
 
-    def update_model_metrics(self, model_name: str, metrics: Dict[str, Any]):
+    def update_model_metrics(self, model_name: str, metrics: dict[str, Any]):
         """Externally injects metrics for model performance tracking."""
         self.model_monitor.update_model_metrics(model_name, metrics)
 
-    def update_data_quality(self, source_name: str, quality_report: Dict[str, Any]):
+    def update_data_quality(self, source_name: str, quality_report: dict[str, Any]):
         """Externally injects data quality report for source tracking."""
         self.data_monitor.update_data_quality(source_name, quality_report)

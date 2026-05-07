@@ -1,0 +1,11 @@
+{
+  "batch_id": "SPY_cnn_20260323_101231",
+  "ticker": "SPY",
+  "model_name": "cnn",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_return_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T10:12:31.615999",
+  "status": "PENDING_COLAB"
+}

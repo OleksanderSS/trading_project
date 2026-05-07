@@ -21,6 +21,7 @@ class NewsQualityEnricher(BaseEnricher):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize with optional config from FeatureOrchestrator."""
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         self.config = config or {}
         logger.info("NewsQualityEnricher initialized")
 
@@ -33,7 +34,7 @@ class NewsQualityEnricher(BaseEnricher):
         """Run after keyword_entity (35), before sentiment (40)"""
         return 38
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Adds news quality features to the DataFrame.
 

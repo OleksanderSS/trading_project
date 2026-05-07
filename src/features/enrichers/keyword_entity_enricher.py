@@ -22,6 +22,7 @@ class KeywordEntityEnricher(BaseEnricher):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize with optional config from FeatureOrchestrator."""
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         self.config = config or {}
         
         # Initialize keyword extractor
@@ -33,6 +34,7 @@ class KeywordEntityEnricher(BaseEnricher):
             'spacy_model': 'en_core_web_sm',
             'disable_components': ['parser', 'lemmatizer', 'attribute_ruler']
         })
+        self.entity_extractor: Optional[EntityExtractor] = None
         try:
             self.entity_extractor = EntityExtractor(entity_config)
         except Exception as e:
@@ -50,7 +52,7 @@ class KeywordEntityEnricher(BaseEnricher):
         """Run after NLP (30), before sentiment (40)"""
         return 35
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Adds keyword and entity features to the DataFrame.
 

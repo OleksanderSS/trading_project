@@ -77,8 +77,8 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
     logger.warning("No datetime column found in DataFrame")
     logger.warning("   Available columns: {}".format(df.columns.tolist()[:10]))
     
-    # Create a default datetime if needed
-    df['datetime'] = pd.Timestamp.now()
+    # Create a default datetime if needed (timezone-naive to avoid comparison errors)
+    df['datetime'] = pd.Timestamp.now().tz_localize(None)
     return df
 
 

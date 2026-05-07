@@ -48,7 +48,53 @@ class NewsContextDatasetBuilder:
         ]
         
         logger.info(f"NewsDatasetBuilder initialized: {len(self.tickers)} tickers, {len(self.timeframes)} timeframes")
-        logger.info(f"NewsImpactClassifier integrated successfully")
+    
+    @staticmethod
+    def _normalize_datetime(dt: Any) -> pd.Timestamp:
+        """
+        Нормалізувати datetime до naive Timestamp (без timezone).
+        
+        Args:
+            dt: datetime, pd.Timestamp, або будь-який datetime-like об'єкт
+            
+        Returns:
+            pd.Timestamp без timezone (naive)
+        """
+        # Конвертувати до pd.Timestamp
+        if not isinstance(dt, pd.Timestamp):
+            dt = pd.to_datetime(dt)
+        
+        # Видалити timezone якщо є
+        if dt.tz is not None:
+            # Конвертувати до UTC, потім видалити timezone
+            dt = dt.tz_convert('UTC').tz_localize(None)
+        
+        return dt
+    
+    @staticmethod
+    def _normalize_datetime_series(series: pd.Series) -> pd.Series:
+        """
+        Нормалізувати Series з datetime до naive datetime (без timezone).
+        
+        Args:
+            series: pd.Series з datetime значеннями
+            
+        Returns:
+            pd.Series з naive datetime
+        """
+        # Якщо вже datetime з timezone - просто видалити timezone
+        if hasattr(series.dtype, 'tz') and series.dt.tz is not None:
+            return series.dt.tz_convert('UTC').dt.tz_localize(None)
+        
+        # Якщо не datetime - конвертувати
+        if not pd.api.types.is_datetime64_any_dtype(series):
+            series = pd.to_datetime(series)
+            
+            # Після конвертації перевірити timezone
+            if hasattr(series.dtype, 'tz') and series.dt.tz is not None:
+                series = series.dt.tz_convert('UTC').dt.tz_localize(None)
+        
+        return series
     
     def _get_tickers(self) -> List[str]:
         """Отримати список тікерів з конфігурації"""
@@ -60,7 +106,9 @@ class NewsContextDatasetBuilder:
             presets = assets_config.get('presets', {})
             preset_config = presets.get(active_preset, {})
             if 'tickers' in preset_config:
-                return preset_config['tickers']
+                tickers = preset_config['tickers']
+                if isinstance(tickers, list):
+                    return [str(t) for t in tickers]
         
         # Спробувати отримати з sectors
         all_tickers = set()
@@ -138,17 +186,18 @@ class NewsContextDatasetBuilder:
                         removed_reasons['datetime_error'] += 1
                         continue
                     
-                    # Нормалізувати datetime
-                    ticker_prices['datetime'] = pd.to_datetime(ticker_prices['datetime'])
-                    news_time = pd.to_datetime(news_row['published_date'], utc=True)
-                    if news_time.tz is not None:
-                        news_time = news_time.tz_localize(None)
+                    # Нормалізувати datetime (видалити timezone для коректного порівняння)
+                    ticker_prices['datetime'] = self._normalize_datetime_series(ticker_prices['datetime'])
                     
-                    # Перевірити свічки
+                    # Конвертувати news_time до naive datetime
+                    news_time = self._normalize_datetime(news_row['published_date'])
+                    
+                    # Перевірити свічки - ГНУЧКА ЛОГІКА
+                    # Мінімум: 1 свічка до та 1 свічка після (замість 2+2)
                     before_candles = ticker_prices[ticker_prices['datetime'] < news_time]
                     after_candles = ticker_prices[ticker_prices['datetime'] > news_time]
                     
-                    if len(before_candles) >= 2 and len(after_candles) >= 2:
+                    if len(before_candles) >= 1 and len(after_candles) >= 1:
                         valid_combinations.append((ticker, timeframe))
                         has_valid_combination = True
                 
@@ -167,6 +216,9 @@ class NewsContextDatasetBuilder:
         
         # Логування результатів фільтрації
         removed_count = len(news_df) - len(filtered_rows)
+        error_rate = removed_reasons['datetime_error'] / len(news_df) if len(news_df) > 0 else 0
+        retention_rate = len(filtered_rows) / len(news_df) if len(news_df) > 0 else 0
+        
         logger.info(f"✅ Intelligent news filtering: {len(news_df)} → {len(filtered_rows)} (removed {removed_count})")
         
         if removed_count > 0:
@@ -174,6 +226,20 @@ class NewsContextDatasetBuilder:
             logger.info(f"      No relevant combinations: {removed_reasons['no_relevant_combinations']}")
             logger.info(f"      Insufficient candles: {removed_reasons['insufficient_candles']}")
             logger.info(f"      Datetime errors: {removed_reasons['datetime_error']}")
+        
+        # ⚠️ ВАЛІДАЦІЯ: Попередження про високий рівень помилок
+        if error_rate > 0.1:
+            logger.warning(f"⚠️ HIGH ERROR RATE: {error_rate*100:.1f}% of news failed due to datetime errors")
+            logger.warning(f"   This may indicate timezone handling issues in news data")
+        
+        if error_rate > 0.5:
+            logger.error(f"❌ CRITICAL: {error_rate*100:.1f}% of news failed processing!")
+            logger.error(f"   News features will be incomplete or missing")
+            logger.error(f"   Check datetime format in news data and timezone handling")
+        
+        if retention_rate < 0.1 and len(news_df) > 100:
+            logger.error(f"❌ CRITICAL: Only {retention_rate*100:.1f}% of news retained!")
+            logger.error(f"   This will significantly impact model quality")
         
         # Повернути відфільтровані новини
         return news_df.loc[filtered_rows].reset_index(drop=True)
@@ -199,9 +265,9 @@ class NewsContextDatasetBuilder:
         """
         logger.info(f"Building news context dataset for {len(news_df)} news articles")
         
-        # ✅ КРОК 1: Фільтрація новин - залишаємо тільки ті, що мають 2+ свічки після
+        # ✅ КРОК 1: Фільтрація новин - залишаємо тільки ті, що мають 1+ свічки після
         news_df_filtered = self._filter_news_with_sufficient_candles(news_df, prices_dict)
-        logger.info(f"✅ Filtered news: {len(news_df)} → {len(news_df_filtered)} (removed {len(news_df) - len(news_df_filtered)} without 2+ candles after)")
+        logger.info(f"✅ Filtered news: {len(news_df)} → {len(news_df_filtered)} (removed {len(news_df) - len(news_df_filtered)} without 1+ candles after)")
         
         if news_df_filtered.empty:
             logger.warning("No news articles with sufficient candles after publication!")
@@ -250,19 +316,21 @@ class NewsContextDatasetBuilder:
     ) -> Optional[Dict[str, Any]]:
         """
         ✅ ПРАВИЛЬНА СТРУКТУРА ДЛЯ ML:
-        [НОВИНА + МАКРО] → [КОНТЕКСТ ДО: 2 свічки + ВСІ фічі] → [РЕАКЦІЯ ПІСЛЯ: 2 свічки + ВСІ фічі]
+        [НОВИНА + МАКРО] → [КОНТЕКСТ ДО: до 2 свічок + ВСІ фічі] → [РЕАКЦІЯ ПІСЛЯ: до 2 свічок + ВСІ фічі]
         
         Один рядок = одна новина з повним контекстом
         
         Структура:
         1. Новина (6 колонок): id, timestamp, title, sentiment, type, source
         2. Макро контекст (~30 колонок): Fed, yields, VIX, час дня, тощо
-        3. Контекст ДО (18 тікерів × 3 таймфрейми × 2 свічки × ~200 фічей):
+        3. Контекст ДО (18 тікерів × 3 таймфрейми × до 2 свічок × ~200 фічей):
            - Для кожної свічки: datetime + ВСІ фічі (OHLCV + технічні + сентимент + макро + ...)
-        4. Реакція ПІСЛЯ (18 тікерів × 3 таймфрейми × 2 свічки × ~200 фічей):
+        4. Реакція ПІСЛЯ (18 тікерів × 3 таймфрейми × до 2 свічок × ~200 фічей):
            - Для кожної свічки: datetime + ВСІ фічі (OHLCV + технічні + сентимент + макро + ...)
         
         Всього: ~43,236 колонок на рядок
+        
+        ГНУЧКА ЛОГІКА: Якщо немає 2 свічок - використовуємо скільки є (мінімум 1)
         """
         
         row = {}
@@ -303,20 +371,24 @@ class NewsContextDatasetBuilder:
                     else:
                         continue
                 
-                # ✅ 2 СВІЧКИ ДО НОВИНИ + ВСІ ФІЧІ
-                # Fix datetime comparison
-                news_time_pd = pd.to_datetime(news_time)
-                before_candles = ticker_prices[ticker_prices['datetime'] < news_time_pd].tail(2)
-                for i, (idx, candle) in enumerate(before_candles.iterrows(), start=1):
-                    prefix = f"{ticker}_{timeframe}_before_{i}"
-                    
-                    # Додати datetime
-                    row[f"{prefix}_datetime"] = candle.get('datetime')
-                    
-                    # Додати ВСІ фічі (OHLCV + технічні + сентимент + макро + ...)
-                    for col in ticker_prices.columns:
-                        if col not in ['datetime', 'ticker', 'interval']:
-                            row[f"{prefix}_{col}"] = candle.get(col, np.nan)
+                # ✅ ДО 2 СВІЧОК ДО НОВИНИ + ВСІ ФІЧІ (гнучка логіка)
+                # Normalize datetime for comparison
+                ticker_prices['datetime'] = self._normalize_datetime_series(ticker_prices['datetime'])
+                news_time_normalized = self._normalize_datetime(news_time)
+                before_candles = ticker_prices[ticker_prices['datetime'] < news_time_normalized].tail(2)
+                
+                # Якщо є хоча б 1 свічка - додаємо
+                if len(before_candles) > 0:
+                    for i, (idx, candle) in enumerate(before_candles.iterrows(), start=1):
+                        prefix = f"{ticker}_{timeframe}_before_{i}"
+                        
+                        # Додати datetime
+                        row[f"{prefix}_datetime"] = candle.get('datetime')
+                        
+                        # Додати ВСІ фічі (OHLCV + технічні + сентимент + макро + ...)
+                        for col in ticker_prices.columns:
+                            if col not in ['datetime', 'ticker', 'interval']:
+                                row[f"{prefix}_{col}"] = candle.get(col, np.nan)
         
         # ========== БЛОК 4: РЕАКЦІЯ ПІСЛЯ НОВИНИ - ВСІ ТІКЕРИ × ВСІ ТАЙМФРЕЙМИ ==========
         # Для кожного тікера/таймфрейму: 2 свічки ПІСЛЯ + ВСІ їх фічі
@@ -340,20 +412,24 @@ class NewsContextDatasetBuilder:
                     else:
                         continue
                 
-                # ✅ 2 СВІЧКИ ПІСЛЯ НОВИНИ + ВСІ ФІЧІ
-                # Fix datetime comparison
-                news_time_pd = pd.to_datetime(news_time)
-                after_candles = ticker_prices[ticker_prices['datetime'] > news_time_pd].head(2)
-                for i, (idx, candle) in enumerate(after_candles.iterrows(), start=1):
-                    prefix = f"{ticker}_{timeframe}_after_{i}"
-                    
-                    # Додати datetime
-                    row[f"{prefix}_datetime"] = candle.get('datetime')
-                    
-                    # Додати ВСІ фічі (OHLCV + технічні + сентимент + макро + ...)
-                    for col in ticker_prices.columns:
-                        if col not in ['datetime', 'ticker', 'interval']:
-                            row[f"{prefix}_{col}"] = candle.get(col, np.nan)
+                # ✅ ДО 2 СВІЧОК ПІСЛЯ НОВИНИ + ВСІ ФІЧІ (гнучка логіка)
+                # Normalize datetime for comparison
+                ticker_prices['datetime'] = self._normalize_datetime_series(ticker_prices['datetime'])
+                news_time_normalized = self._normalize_datetime(news_time)
+                after_candles = ticker_prices[ticker_prices['datetime'] > news_time_normalized].head(2)
+                
+                # Якщо є хоча б 1 свічка - додаємо
+                if len(after_candles) > 0:
+                    for i, (idx, candle) in enumerate(after_candles.iterrows(), start=1):
+                        prefix = f"{ticker}_{timeframe}_after_{i}"
+                        
+                        # Додати datetime
+                        row[f"{prefix}_datetime"] = candle.get('datetime')
+                        
+                        # Додати ВСІ фічі (OHLCV + технічні + сентимент + макро + ...)
+                        for col in ticker_prices.columns:
+                            if col not in ['datetime', 'ticker', 'interval']:
+                                row[f"{prefix}_{col}"] = candle.get(col, np.nan)
         
         return row if len(row) > 10 else None  # Перевірка мінімальної кількості даних
     

@@ -1,3 +1,5 @@
+import re
+import operator
 import pandas as pd
 import logging
 from typing import Dict, Any, List, Optional
@@ -38,11 +40,13 @@ class MarketPhaseAnalyzer(IAnalyzer):
         """
         validation_result = self._validate_market_data(data)
         if not validation_result['valid']:
-            return validation_result['result']
+            # ✅ FIX: Explicitly cast to Dict[str, Any]
+            result: Dict[str, Any] = validation_result['result']
+            return result
 
         try:
             market_phase = self._determine_market_phase(validation_result['market_data'])
-            logger.info(f"Determinated market phase: {market_phase}")
+            logger.info(f"Determined market phase: {market_phase}")
             return {"market_phase": market_phase}
         except KeyError as e:
             logger.error(f"A required indicator column was not found in the market data: {e}", exc_info=True)
@@ -121,7 +125,9 @@ class MarketPhaseAnalyzer(IAnalyzer):
         """Evaluate phase rules against latest values."""
         for rule in self.rules:
             if self._evaluate_condition(rule.get('condition', 'False'), latest_values):
-                return rule.get('phase', 'unknown')
+                # ✅ FIX: Explicitly cast to str
+                phase: str = rule.get('phase', 'unknown')
+                return phase
         return "unknown"
 
     def _evaluate_condition(self, condition_str: str, values: Dict[str, float]) -> bool:
@@ -138,13 +144,52 @@ class MarketPhaseAnalyzer(IAnalyzer):
             self._log_evaluation_error(condition_str, values, e)
             return False
 
+    # Allowed tokens in condition strings: identifiers, numbers, operators, spaces
+    _CONDITION_ALLOWED = re.compile(r'^[\w\s<>=!.&|()+-]+$')
+    # Allowed comparison operators
+    _OPS = {
+        '>': operator.gt, '>=': operator.ge,
+        '<': operator.lt, '<=': operator.le,
+        '==': operator.eq, '!=': operator.ne,
+    }
+
     def _is_valid_condition_string(self, condition_str: str) -> bool:
-        """Check if condition string is valid for evaluation."""
-        return bool(condition_str)
+        """Validates that condition string contains only safe tokens (whitelist)."""
+        if not condition_str:
+            return False
+        # CQ-5/SEC-1: reject anything outside identifier chars, numbers, and comparison ops
+        return bool(self._CONDITION_ALLOWED.match(condition_str))
 
     def _safe_eval_condition(self, condition_str: str, values: Dict[str, float]) -> bool:
-        """Safely evaluate condition string."""
-        return bool(pd.eval(condition_str, engine='python', local_dict=values))
+        """
+        Safely evaluate a simple comparison condition without using eval().
+        Supports: 'key op value' and 'key op value and/or key op value' patterns.
+        SEC-1: pd.eval() replaced by explicit operator dispatch to prevent code injection.
+        """
+        # Normalize 'and'/'or' for splitting
+        sub_conditions = re.split(r'\band\b', condition_str, flags=re.IGNORECASE)
+        for sub in sub_conditions:
+            sub = sub.strip()
+            matched = False
+            for op_str, op_fn in self._OPS.items():
+                parts = sub.split(op_str)
+                if len(parts) == 2:
+                    lhs, rhs = parts[0].strip(), parts[1].strip()
+                    lhs_val = values.get(lhs)
+                    if lhs_val is None:
+                        return False
+                    try:
+                        rhs_val = float(rhs)
+                    except ValueError:
+                        return False
+                    if not op_fn(lhs_val, rhs_val):
+                        return False
+                    matched = True
+                    break
+            if not matched:
+                logger.warning(f"Unrecognized sub-condition: '{sub}'")
+                return False
+        return True
 
     def _log_evaluation_error(self, condition_str: str, values: Dict[str, float], error: Exception):
         """Log condition evaluation error."""

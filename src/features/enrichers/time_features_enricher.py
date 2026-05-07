@@ -1,7 +1,7 @@
+from typing import Any
 import pandas as pd
 from src.features.enrichers.base import BaseEnricher
 from src.features.utils.time_utils import add_time_features
-from src.config.unified_config_manager import get_current_config
 
 class TimeFeaturesEnricher(BaseEnricher):
     """
@@ -13,7 +13,7 @@ class TimeFeaturesEnricher(BaseEnricher):
     def __init__(self):
         super().__init__()
         # TimeFeaturesEnricher is enabled via enabled_enrichers, not separate config
-        self.config = {
+        self.config: dict[str, Any] = {
             'enabled': True,
             'timestamp_col': 'datetime',
             'enabled_features': [
@@ -27,7 +27,8 @@ class TimeFeaturesEnricher(BaseEnricher):
                 'day_of_week_sin', 'day_of_week_cos'
             ]
         }
-        self.logger.info(f"TimeFeaturesEnricher initialized with {len(self.config['enabled_features'])} features.")
+        enabled_features = self.config['enabled_features']
+        self.logger.info(f"TimeFeaturesEnricher initialized with {len(enabled_features)} features.")
 
     @property
     def name(self) -> str:
@@ -48,8 +49,8 @@ class TimeFeaturesEnricher(BaseEnricher):
             return df
 
         df_enriched = df.copy()
-        timestamp_col = self.config.get('timestamp_col', 'datetime')
-        enabled_features = self.config.get('enabled_features', [])
+        timestamp_col = str(self.config.get('timestamp_col', 'datetime'))
+        enabled_features = list(self.config.get('enabled_features', []))
 
         if timestamp_col not in df_enriched.columns:
             if isinstance(df_enriched.index, pd.DatetimeIndex):
@@ -72,3 +73,4 @@ class TimeFeaturesEnricher(BaseEnricher):
             df_enriched = df_enriched.drop(columns=[timestamp_col])
 
         return df_enriched
+

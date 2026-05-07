@@ -8,7 +8,7 @@ Orchestrates stages 4-7 (light models + predictions) and finalizes results.
 import time
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional, Tuple, cast
 from datetime import datetime
 import aiofiles
 import pandas as pd
@@ -68,7 +68,7 @@ class FinalStagesOrchestrator:
             stages_to_run=valid_stages
         )
         
-        return await orchestrator.run(
+        return cast(Dict[str, Any], await orchestrator.run(
             tickers=tickers, 
             timeframes=timeframes, 
             run_mode='predict', 
@@ -78,7 +78,7 @@ class FinalStagesOrchestrator:
             models_metadata=models_metadata, 
             batch_name=batch_name, 
             stages_to_run=valid_stages
-        )
+        ))
     
     def _create_final_summary(self, results: Dict[str, Any], tickers: Optional[List[str]]) -> Dict[str, Any]:
         """Create final summary dictionary."""
@@ -102,9 +102,9 @@ class FinalStagesOrchestrator:
 
     async def run_final_stages(self, request) -> Dict[str, Any]:
         """Main entry point for final stages execution."""
-        from src.pipeline.hybrid_orchestrator import FinalStagesRequest
+        from src.pipeline.hybrid_orchestrator import HybridFinalStagesRequest
         
-        if not isinstance(request, FinalStagesRequest):
+        if not isinstance(request, HybridFinalStagesRequest):
             self.logger.error("Invalid request type for run_final_stages")
             return {'status': 'error', 'message': 'Invalid request type'}
 
@@ -122,7 +122,7 @@ class FinalStagesOrchestrator:
             targets_df=request.targets_df,
             tickers=request.tickers,
             timeframes=request.timeframes or ['15m', '60m', '1d'],
-            batch_name=request.batch_name,
+            batch_name=request.batch_name or self.batch_name,
             stages_to_run=stages_to_run,
             models_metadata=models_metadata
         )

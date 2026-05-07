@@ -4,22 +4,24 @@ Portfolio Optimization Module
 Оптимізація портфоліо: Markowitz, Black-Litterman, Risk Parity, Hierarchical Risk Parity, Kelly Criterion
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+import pandas as pd
 from scipy.optimize import minimize
-from scipy.cluster.hierarchy import linkage, dendrogram
-from scipy.spatial.distance import squareform
-from sklearn.covariance import LedoitWolf
+
 from src.core.logging.logger import ProjectLogger
 from src.metrics.calculator import MetricsCalculator
-from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
+
+from src.core.logging.logger import ProjectLogger
+from src.metrics.calculator import MetricsCalculator
+from src.optimization.base import BaseOptimizer
 
 @dataclass
 class BlackLittermanParams:
     """Parameters for Black-Litterman optimization"""
-    views: Optional[Dict[str, float]] = None
+    views: dict[str, float] | None = None
     tau: float = 0.025
     risk_free_rate: float = 0.02
     benchmark_ticker: str = 'SPY'
@@ -27,26 +29,27 @@ class BlackLittermanParams:
 # Constants to avoid duplication
 SHARPE_RATIO = "Sharpe Ratio"
 
+
 class PortfolioOptimizer(BaseOptimizer):
     """
     Оптимізатор портфоліо з різними методами та підтримкою мульти-таймфреймів.
     """
-    
+
     def __init__(self, timeframe: str = '1d', transaction_cost_lambda: float = 0.001):
-        self.logger = ProjectLogger.get_logger("PortfolioOptimizer")
+        super().__init__()
         self.timeframe = timeframe
         self.transaction_cost_lambda = transaction_cost_lambda
         self.metrics_calculator = MetricsCalculator()
-        
+
         # Динамічний розрахунок періодів на рік
         self.periods_per_year = self._calculate_periods_per_year(timeframe)
-        
+
         # Методи оптимізації
         self.optimization_methods = [
-            'markowitz', 'min_variance', 'max_sharpe', 'risk_parity', 
+            'markowitz', 'min_variance', 'max_sharpe', 'risk_parity',
             'hrp', 'black_litterman', 'equal_weight', 'inverse_volatility', 'kelly'
         ]
-        
+
         # Обмеження оптимізації
         self.constraints = {
             'min_weight': 0.0,
@@ -56,23 +59,25 @@ class PortfolioOptimizer(BaseOptimizer):
             'sector_limit': 0.3,
             'supports_fractional': True
         }
-        
+
         self.logger.info(f"PortfolioOptimizer initialized for {timeframe} ({self.periods_per_year} periods/year)")
 
     @property
     def optimizer_type(self) -> str:
         return "portfolio"
 
-    def optimize(self, returns: pd.DataFrame, method: str = 'max_sharpe', **kwargs) -> Dict[str, Any]:
+    def optimize(
+        self, data: pd.DataFrame, target: Any = None, method: str = "max_sharpe", **kwargs
+    ) -> dict[str, Any]:
         """
         Головна точка входу для оптимізації портфоліо.
         """
         try:
-            return self._dispatch_optimization(returns, method, **kwargs)
+            return self._dispatch_optimization(data, method, **kwargs)
         except Exception as e:
             return self._handle_optimization_error(e, method)
-    
-    def _dispatch_optimization(self, returns: pd.DataFrame, method: str, **kwargs) -> Dict[str, Any]:
+
+    def _dispatch_optimization(self, returns: pd.DataFrame, method: str, **kwargs) -> dict[str, Any]:
         """Dispatch optimization to appropriate method"""
         optimization_methods = {
             'markowitz': lambda: self.markowitz_optimization(returns, **kwargs),
@@ -84,24 +89,24 @@ class PortfolioOptimizer(BaseOptimizer):
             'equal_weight': lambda: self.equal_weight_portfolio(returns, **kwargs),
             'inverse_volatility': lambda: self.inverse_volatility_portfolio(returns, **kwargs),
             'kelly': lambda: self.kelly_optimization(
-                kwargs.get('win_rate', 0.5), 
-                kwargs.get('profit_factor', 2.0), 
+                kwargs.get('win_rate', 0.5),
+                kwargs.get('profit_factor', 2.0),
                 list(returns.columns)
             )
         }
-        
+
         if method not in optimization_methods:
             self.logger.error(f"Unknown optimization method: {method}")
             return {'success': False, 'error': f'Unknown method: {method}'}
-        
+
         return optimization_methods[method]()
-    
-    def _handle_optimization_error(self, error: Exception, method: str) -> Dict[str, Any]:
+
+    def _handle_optimization_error(self, error: Exception, method: str) -> dict[str, Any]:
         """Handle optimization errors consistently"""
         self.logger.error(f"Error in portfolio optimization ({method}): {error}", exc_info=True)
         return {'success': False, 'error': str(error)}
-    
-    def _black_litterman_with_params(self, returns: pd.DataFrame, **kwargs) -> Dict[str, Any]:
+
+    def _black_litterman_with_params(self, returns: pd.DataFrame, **kwargs) -> dict[str, Any]:
         """Black-Litterman optimization with parameter object"""
         if 'params' in kwargs and isinstance(kwargs['params'], BlackLittermanParams):
             params = kwargs['params']
@@ -112,11 +117,16 @@ class PortfolioOptimizer(BaseOptimizer):
     def _calculate_periods_per_year(self, timeframe: str) -> float:
         """Розраховує кількість торгових періодів у році для заданого таймфрейму."""
         base_days = 252
-        if timeframe == '1d': return float(base_days)
-        elif timeframe in ['1h', '60m']: return float(base_days * 6.5)
-        elif timeframe == '15m': return float(base_days * 26)
-        elif timeframe == '5m': return float(base_days * 78)
-        elif timeframe == '1m': return float(base_days * 390)
+        if timeframe == '1d':
+            return float(base_days)
+        elif timeframe in ['1h', '60m']:
+            return float(base_days * 6.5)
+        elif timeframe == '15m':
+            return float(base_days * 26)
+        elif timeframe == '5m':
+            return float(base_days * 78)
+        elif timeframe == '1m':
+            return float(base_days * 390)
         return float(base_days)
 
     def calculate_returns(self, prices: pd.DataFrame) -> pd.DataFrame:
@@ -128,8 +138,8 @@ class PortfolioOptimizer(BaseOptimizer):
         except Exception as e:
             self.logger.error(f"Error calculating returns: {e}")
             return pd.DataFrame()
-    
-    def calculate_covariance_matrix(self, returns: pd.DataFrame, method: Union[str, pd.DataFrame] = 'ledoit-wolf') -> pd.DataFrame:
+
+    def calculate_covariance_matrix(self, returns: pd.DataFrame, method: str | pd.DataFrame = 'ledoit-wolf') -> pd.DataFrame:
         """Розрахувати коваріаційну матрицю або використати надану."""
         try:
             if isinstance(method, pd.DataFrame):
@@ -139,23 +149,23 @@ class PortfolioOptimizer(BaseOptimizer):
             if method == 'sample':
                 cov_matrix = returns.cov()
             elif method in ['ledoit-wolf', 'shrinkage']:
-                from sklearn.covariance import LedoitWolf
-                lw = LedoitWolf().fit(returns)
+                from sklearn.covariance import LedoitWolf as LW
+                lw = LW().fit(returns)
                 cov_matrix = pd.DataFrame(lw.covariance_, index=returns.columns, columns=returns.columns)
             else:
                 cov_matrix = returns.cov()
-            
+
             cov_matrix = self._ensure_positive_definite(cov_matrix)
             self.logger.info(f"Covariance matrix calculated: method={method}")
             return cov_matrix
         except Exception as e:
             self.logger.error(f"Error calculating covariance matrix: {e}")
             return returns.cov()
-    
-    def markowitz_optimization(self, returns: pd.DataFrame, 
+
+    def markowitz_optimization(self, returns: pd.DataFrame,
                              risk_free_rate: float = 0.02,
-                             target_return: float = None,
-                             current_weights: Optional[np.ndarray] = None) -> Dict[str, Any]:
+                             target_return: float | None = None,
+                             current_weights: np.ndarray | None = None) -> dict[str, Any]:
         """Markowitz mean-variance оптимізація."""
         try:
             mu = returns.mean() * self.periods_per_year
@@ -167,35 +177,40 @@ class PortfolioOptimizer(BaseOptimizer):
                 port_variance = np.dot(weights.T, np.dot(cov_matrix.values, weights))
                 turnover_penalty = self.transaction_cost_lambda * np.sum(np.abs(weights - current_weights))
                 return port_variance + turnover_penalty
-            
-            def portfolio_return(weights): return np.dot(weights.T, mu)
-            
+
+            def portfolio_return(weights):
+                return np.dot(weights.T, mu)
+
             constraints = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]
             if target_return is not None:
                 constraints.append({'type': 'eq', 'fun': lambda x: portfolio_return(x) - target_return})
-            
+
             bounds = tuple((self.constraints['min_weight'], self.constraints['max_weight']) for _ in range(n_assets))
             x0 = np.array([1/n_assets] * n_assets)
-            
+
             result = minimize(objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
-            
+
             if result.success:
                 weights = self._apply_fractional_constraints(pd.Series(result.x, index=mu.index))
                 ret = portfolio_return(weights.values)
                 vol = np.sqrt(np.dot(weights.T, np.dot(cov_matrix.values, weights)))
                 sharpe = (ret - risk_free_rate) / vol if vol != 0 else 0
                 return {
-                    'weights': weights, 'expected_return': ret, 'volatility': vol,
-                    'sharpe_ratio': sharpe, 'method': 'markowitz', 'success': True
+                    'weights': weights,
+                    'expected_return': ret,
+                    'volatility': vol,
+                    'sharpe_ratio': sharpe,
+                    'method': 'markowitz',
+                    'success': True
                 }
             return {'success': False, 'error': result.message}
         except Exception as e:
             self.logger.error(f"Error in Markowitz optimization: {e}")
             return {'success': False, 'error': str(e)}
-    
-    def max_sharpe_optimization(self, returns: pd.DataFrame, 
+
+    def max_sharpe_optimization(self, returns: pd.DataFrame,
                                risk_free_rate: float = 0.02,
-                               current_weights: Optional[np.ndarray] = None) -> Dict[str, Any]:
+                               current_weights: np.ndarray | None = None) -> dict[str, Any]:
         """Максимізація Sharpe ratio."""
         try:
             mu = returns.mean() * self.periods_per_year
@@ -206,68 +221,73 @@ class PortfolioOptimizer(BaseOptimizer):
             def objective(weights):
                 port_return = np.dot(weights.T, mu)
                 port_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix.values, weights)))
-                if port_volatility == 0: return 1e10
+                if port_volatility == 0:
+                    return 1e10
                 sharpe = (port_return - risk_free_rate) / port_volatility
                 turnover_penalty = self.transaction_cost_lambda * np.sum(np.abs(weights - current_weights))
                 return -sharpe + turnover_penalty
-            
+
             constraints = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]
             bounds = tuple((self.constraints['min_weight'], self.constraints['max_weight']) for _ in range(n_assets))
             x0 = np.array([1/n_assets] * n_assets)
-            
+
             result = minimize(objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
-            
+
             if result.success:
                 weights = self._apply_fractional_constraints(pd.Series(result.x, index=mu.index))
                 port_ret = np.dot(weights.T, mu)
                 port_vol = np.sqrt(np.dot(weights.T, np.dot(cov_matrix.values, weights)))
                 return {
-                    'weights': weights, 'expected_return': port_ret, 'volatility': port_vol,
-                    'sharpe_ratio': (port_ret - risk_free_rate) / port_vol, 'method': 'max_sharpe', 'success': True
+                    'weights': weights,
+                    'expected_return': port_ret,
+                    'volatility': port_vol,
+                    'sharpe_ratio': (port_ret - risk_free_rate) / port_vol,
+                    'method': 'max_sharpe',
+                    'success': True
                 }
             return {'success': False, 'error': result.message}
         except Exception as e:
             self.logger.error(f"Error in Max Sharpe optimization: {e}")
             return {'success': False, 'error': str(e)}
 
-    def kelly_optimization(self, win_rate: float, profit_factor: float, tickers: List[str]) -> Dict[str, Any]:
+    def kelly_optimization(self, win_rate: float, profit_factor: float, tickers: list[str]) -> dict[str, Any]:
         """Kelly Criterion optimization with robust constraints."""
         try:
             p, b = win_rate, profit_factor
             if b <= 0:
                 self.logger.warning(f"Invalid profit factor {b} for Kelly. Setting weights to zero.")
                 return {'weights': pd.Series(0.0, index=tickers), 'kelly_fraction': 0.0, 'method': 'kelly', 'success': True}
-            
+
             q = 1 - p
             kelly_f = (p * b - q) / b
             # Use fractional Kelly (e.g., half-Kelly) and clip to avoid extreme leverage
             kelly_f = max(0, min(kelly_f * 0.5, 0.25))
-            
+
             n_assets = len(tickers)
             if n_assets == 0:
                 return {'success': False, 'error': 'No tickers provided'}
-                
+
             weights = pd.Series(kelly_f / n_assets, index=tickers)
             return {'weights': weights, 'kelly_fraction': kelly_f, 'method': 'kelly', 'success': True}
         except Exception as e:
             self.logger.error(f"Error in Kelly optimization: {e}")
             return {'success': False, 'error': str(e)}
 
-    def black_litterman_optimization(self, returns: pd.DataFrame, params: Optional[BlackLittermanParams] = None) -> Dict[str, Any]:
+    def black_litterman_optimization(self, returns: pd.DataFrame, params: BlackLittermanParams | None = None) -> dict[str, Any]:
         """Black-Litterman оптимізація."""
         if params is None:
             params = BlackLittermanParams()
-        
+
         return self._black_litterman_calculation(returns, params)
-    
-    def black_litterman_optimization_legacy(self, returns: pd.DataFrame, 
-                                   params: BlackLittermanParams = None) -> Dict[str, Any]:
+
+    def black_litterman_optimization_legacy(self, returns: pd.DataFrame,
+                                   params: BlackLittermanParams | None = None) -> dict[str, Any]:
         """Legacy Black-Litterman optimization for backward compatibility"""
         if params is None:
             params = BlackLittermanParams()
         return self._black_litterman_calculation(returns, params)
-    
-    def _black_litterman_calculation(self, returns: pd.DataFrame, params: BlackLittermanParams) -> Dict[str, Any]:
+
+    def _black_litterman_calculation(self, returns: pd.DataFrame, params: BlackLittermanParams) -> dict[str, Any]:
         """Black-Litterman оптимізація."""
         try:
             mu = returns.mean() * self.periods_per_year
@@ -276,8 +296,8 @@ class PortfolioOptimizer(BaseOptimizer):
             market_weights = np.array([1/n_assets] * n_assets)
             risk_aversion = 3.0
             implied_returns = risk_aversion * np.dot(cov_matrix.values, market_weights)
-            
-            if params.views is None: 
+
+            if params.views is None:
                 params.views = {asset: implied_returns[i] for i, asset in enumerate(mu.index)}
             P = np.eye(n_assets)
             Q = np.array([params.views.get(asset, implied_returns[i]) for i, asset in enumerate(mu.index)])
@@ -296,11 +316,12 @@ class PortfolioOptimizer(BaseOptimizer):
 
     def _apply_fractional_constraints(self, weights: pd.Series) -> pd.Series:
         """Обробка обмежень на дробові акції."""
-        if self.constraints['supports_fractional']: return weights
+        if self.constraints['supports_fractional']:
+            return weights
         rounded = (weights * 100).round() / 100
         return rounded / rounded.sum() if rounded.sum() > 0 else rounded
 
-    def risk_parity_optimization(self, returns: pd.DataFrame) -> Dict[str, Any]:
+    def risk_parity_optimization(self, returns: pd.DataFrame) -> dict[str, Any]:
         """Risk Parity оптимізація."""
         try:
             cov_matrix = self.calculate_covariance_matrix(returns)
@@ -311,27 +332,31 @@ class PortfolioOptimizer(BaseOptimizer):
                 contrib = weights * marginal_contrib
                 target_risk = 1.0 / n_assets
                 return np.sum((contrib - target_risk) ** 2)
-            
+
             constraints = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]
             bounds = tuple((0.01, 1.0) for _ in range(n_assets))
             x0 = np.array([1/n_assets] * n_assets)
-            result = opt.minimize(risk_budget_objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
-            
+            result = minimize(risk_budget_objective, x0, method='SLSQP', bounds=bounds, constraints=constraints)
+
             if result.success:
                 weights = pd.Series(result.x, index=returns.columns)
                 mu = returns.mean() * self.periods_per_year
                 portfolio_return = np.dot(weights.T, mu)
                 portfolio_volatility = np.sqrt(np.dot(weights.T, np.dot(cov_matrix.values, weights)))
                 return {
-                    'weights': weights, 'expected_return': portfolio_return, 'volatility': portfolio_volatility,
-                    'sharpe_ratio': portfolio_return / portfolio_volatility, 'method': 'risk_parity', 'success': True
+                    'weights': weights,
+                    'expected_return': portfolio_return,
+                    'volatility': portfolio_volatility,
+                    'sharpe_ratio': portfolio_return / portfolio_volatility,
+                    'method': 'risk_parity',
+                    'success': True
                 }
             return {'success': False, 'error': result.message}
         except Exception as e:
             self.logger.error(f"Error in Risk Parity optimization: {e}")
             return {'success': False, 'error': str(e)}
 
-    def hierarchical_risk_parity(self, returns: pd.DataFrame) -> Dict[str, Any]:
+    def hierarchical_risk_parity(self, returns: pd.DataFrame) -> dict[str, Any]:
         """Hierarchical Risk Parity (HRP)"""
         try:
             cov_matrix = self.calculate_covariance_matrix(returns)
@@ -351,7 +376,7 @@ class PortfolioOptimizer(BaseOptimizer):
             self.logger.error(f"Error in HRP optimization: {e}")
             return {'success': False, 'error': str(e)}
 
-    def equal_weight_portfolio(self, returns: pd.DataFrame) -> Dict[str, Any]:
+    def equal_weight_portfolio(self, returns: pd.DataFrame) -> dict[str, Any]:
         """Рівноваговий портфоліо"""
         try:
             n_assets = len(returns.columns)
@@ -369,7 +394,7 @@ class PortfolioOptimizer(BaseOptimizer):
             self.logger.error(f"Error in equal weight portfolio: {e}")
             return {'success': False, 'error': str(e)}
 
-    def inverse_volatility_portfolio(self, returns: pd.DataFrame) -> Dict[str, Any]:
+    def inverse_volatility_portfolio(self, returns: pd.DataFrame) -> dict[str, Any]:
         """Портфоліо з оберненою волатильністю"""
         try:
             volatilities = returns.std() * np.sqrt(self.periods_per_year)
@@ -388,7 +413,7 @@ class PortfolioOptimizer(BaseOptimizer):
             self.logger.error(f"Error in inverse volatility portfolio: {e}")
             return {'success': False, 'error': str(e)}
 
-    def compare_optimization_methods(self, returns: pd.DataFrame) -> Dict[str, Dict]:
+    def compare_optimization_methods(self, returns: pd.DataFrame) -> dict[str, dict]:
         """Порівняти різні методи оптимізації"""
         try:
             results = {}
@@ -405,7 +430,8 @@ class PortfolioOptimizer(BaseOptimizer):
     def _ensure_positive_definite(self, cov_matrix: pd.DataFrame) -> pd.DataFrame:
         try:
             eigenvalues = np.linalg.eigvals(cov_matrix.values)
-            if np.all(eigenvalues > 0): return cov_matrix
+            if np.all(eigenvalues > 0):
+                return cov_matrix
             noise = abs(np.min(eigenvalues)) + 1e-8
             cov_matrix_fixed = cov_matrix.copy()
             np.fill_diagonal(cov_matrix_fixed.values, np.diag(cov_matrix_fixed.values) + noise)
@@ -423,28 +449,34 @@ class PortfolioOptimizer(BaseOptimizer):
         condensed_distance = []
         n = distance_matrix.shape[0]
         for i in range(n):
-            for j in range(i + 1, n): condensed_distance.append(distance_matrix[i, j])
+            for j in range(i + 1, n):
+                condensed_distance.append(distance_matrix[i, j])
         return linkage(condensed_distance, method='single')
 
-    def _get_cluster_order(self, linkage_matrix: np.ndarray) -> List[int]:
+    def _get_cluster_order(self, linkage_matrix: np.ndarray) -> list[int]:
         from scipy.cluster.hierarchy import dendrogram
-        return dendrogram(linkage_matrix, no_plot=True)['leaves']
+        result = dendrogram(linkage_matrix, no_plot=True)['leaves']
+        return list(result)
 
-    def _recursive_bisection(self, cov_matrix: pd.DataFrame, clusters: List[int]) -> np.ndarray:
+    def _recursive_bisection(self, cov_matrix: pd.DataFrame, clusters: list[int]) -> np.ndarray:
         n_assets = len(cov_matrix)
         weights = np.zeros(n_assets)
+
         def allocate_cluster(cluster_indices, cluster_weight):
-            if len(cluster_indices) == 1: weights[cluster_indices[0]] = cluster_weight
+            if len(cluster_indices) == 1:
+                weights[cluster_indices[0]] = cluster_weight
             else:
                 cluster_cov = cov_matrix.iloc[cluster_indices, cluster_indices]
                 cluster_var = np.diag(cluster_cov)
                 inv_var = 1 / cluster_var
                 sub_weights = inv_var / inv_var.sum()
-                for i, idx in enumerate(cluster_indices): weights[idx] = cluster_weight * sub_weights[i]
+                for i, idx in enumerate(cluster_indices):
+                    weights[idx] = cluster_weight * sub_weights[i]
+
         allocate_cluster(clusters, 1.0)
         return weights
 
-    def _create_comparison_table(self, results: Dict[str, Dict]) -> pd.DataFrame:
+    def _create_comparison_table(self, results: dict[str, dict]) -> pd.DataFrame:
         comparison_data = []
         for method, result in results.items():
             if result.get('success', False):

@@ -15,7 +15,8 @@ class SmartFeatureSelector:
     Selects features based on a voting ensemble of methods, now with regime-specific caching.
     """
 
-    def __init__(self, storage_path: str = None, min_volatility: float = 0.0001):
+    def __init__(self, storage_path: Optional[str] = None, min_volatility: float = 0.0001):
+        self.logger = logger  # Initialize logger from module level
         if storage_path is None:
             storage_path = os.path.join('data', 'cache', 'selected_features.json')
         self.storage_path = storage_path
@@ -47,7 +48,10 @@ class SmartFeatureSelector:
         if os.path.exists(self.storage_path):
             try:
                 with open(self.storage_path, 'r') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        return data
+                    return {}
             except (json.JSONDecodeError, IOError) as e:
                 logger.error(f"Failed to load feature cache from {self.storage_path}: {e}")
         return {}
@@ -62,7 +66,7 @@ class SmartFeatureSelector:
 
     def select(self, features_df: pd.DataFrame, target_series: pd.Series, context_id: str,
                is_classification: bool = True, market_regime: str = "normal",
-               force_recalculate: bool = False, max_features: int = None) -> List[str]:
+               force_recalculate: bool = False, max_features: Optional[int] = None) -> List[str]:
         """
         Selects features, caching them based on both context, market regime, and max_features.
         
@@ -83,7 +87,10 @@ class SmartFeatureSelector:
             # Basic validation: ensure input columns match cached ones.
             if set(cached_data.get("input_features", [])) == set(features_df.columns):
                 logger.info(f"Using cached features for {regime_context_id}...")
-                return cached_data["selected_features"]
+                selected_features = cached_data.get("selected_features", [])
+                if isinstance(selected_features, list):
+                    return [str(f) for f in selected_features]
+                return []
 
         logger.info(f"Running dynamic feature selection for {regime_context_id}...")
 
@@ -99,7 +106,7 @@ class SmartFeatureSelector:
 
         # Dynamic voting based on regime
         methods = self._get_methods_for_regime(market_regime)
-        scores = pd.Series(0.0, index=features_clean.columns, dtype=float)  # ✅ FIX: Explicitly specify float dtype
+        scores = pd.Series(0.0, index=features_clean.columns, dtype=float)  # 
 
         for method_func, weight in methods.items():
             try:
@@ -141,7 +148,9 @@ class SmartFeatureSelector:
         self._save_storage()
 
         logger.info(f"Selected {len(selected)} features for {regime_context_id} with threshold {selection_threshold:.2f}")
-        return selected
+        if isinstance(selected, list):
+            return [str(f) for f in selected]
+        return []
 
     def _clean_data(self, features_df: pd.DataFrame) -> pd.DataFrame:
         features_clean = features_df.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='all')
@@ -221,7 +230,11 @@ class SmartFeatureSelector:
             # Ensure all required hyperparameters are explicitly set
             params['random_state'] = params.get('random_state', 42)
             params['min_samples_leaf'] = params.get('min_samples_leaf', 1)
-            params['max_features'] = params.get('max_features', 'sqrt')
+            max_features_value = params.get('max_features', 'sqrt')
+            if isinstance(max_features_value, int):
+                params['max_features'] = max_features_value
+            else:
+                params['max_features'] = 'sqrt'
             
             # Explicitly create models with all required parameters
             if is_classification:

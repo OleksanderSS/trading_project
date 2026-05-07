@@ -1,0 +1,11 @@
+{
+  "batch_id": "TSLA_gru_20260322_235337",
+  "ticker": "TSLA",
+  "model_name": "gru",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_volume_change_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T23:53:37.677393",
+  "status": "PENDING_COLAB"
+}

@@ -95,8 +95,20 @@ class FeatureCache:
             # Load cached features
             features = pd.read_parquet(cache_file)
             
+            # ✅ CRITICAL FIX: Verify datetime column exists after loading
+            if 'datetime' not in features.columns:
+                self.logger.warning(f"⚠️ Cached features missing datetime column: {ticker} {date}")
+                self.logger.warning(f"   This cache file is corrupted. Removing it.")
+                cache_file.unlink()
+                self.stats['errors'] += 1
+                return None
+            
             # Validate cache integrity
             if self._validate_cache(features, ticker, date):
+                # ✅ CRITICAL FIX: Remove metadata columns before returning
+                metadata_cols = ['_cache_ticker', '_cache_date', '_cache_config_hash']
+                features = features.drop(columns=[col for col in metadata_cols if col in features.columns])
+                
                 self.stats['hits'] += 1
                 self.logger.debug(f"✅ Feature cache hit: {ticker} {date} ({len(features)} rows)")
                 return features
@@ -138,8 +150,22 @@ class FeatureCache:
             cache_key = self._generate_cache_key(ticker, date, config_hash)
             cache_file = self.cache_dir / f"{cache_key}.parquet"
             
+            # ✅ CRITICAL FIX: Ensure datetime is a column, not index
+            # This prevents loss of datetime when loading from cache
+            if isinstance(features.index, pd.DatetimeIndex):
+                features_to_save = features.reset_index()
+                if 'index' in features_to_save.columns:
+                    features_to_save = features_to_save.rename(columns={'index': 'datetime'})
+                self.logger.debug(f"✅ Converted DatetimeIndex to datetime column before caching")
+            else:
+                features_to_save = features.copy()
+            
+            # Verify datetime column exists
+            if 'datetime' not in features_to_save.columns:
+                self.logger.warning(f"⚠️ No datetime column found in features for {ticker} {date}")
+                self.logger.warning(f"   Available columns: {features_to_save.columns.tolist()}")
+            
             # Add metadata columns for validation
-            features_to_save = features.copy()
             features_to_save['_cache_ticker'] = ticker
             features_to_save['_cache_date'] = date
             features_to_save['_cache_config_hash'] = config_hash

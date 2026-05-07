@@ -5,7 +5,7 @@ Facilitates champion model selection by contrasting heavy vs. light model result
 """
 import pandas as pd
 import numpy as np
-from typing import Dict, Any, List, Optional
+from typing import Any, cast, Dict, List, Optional, Tuple
 from src.core.logging.logger import ProjectLogger
 
 from ..interfaces import IAnalyzer
@@ -32,7 +32,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
         self.configured_heavy_models = self.config.get('heavy_models', self.HEAVY_MODELS)
         logger.info("ModelComparisonAnalyzer initialized for comparative benchmarking.")
 
-    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs: Any) -> Dict[str, Any]:
         """
         Main interface for UnifiedAnalyticsEngine.
         
@@ -51,7 +51,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
                 lambda x: 'heavy' if str(x).lower() in [m.lower() for m in self.configured_heavy_models] else 'light'
             )
 
-        analysis_payload = {}
+        analysis_payload: Dict[str, Any] = {}
 
         # Architecture Benchmarking Routine
         if kwargs.get("run_architecture_comparison", True):
@@ -94,7 +94,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
         if 'accuracy' not in results_df.columns:
             return {}
         
-        leaders = {'light': {}, 'heavy': {}}
+        leaders: Dict[str, Dict[str, Any]] = {'light': {}, 'heavy': {}}
         
         # Determine champion indices via group maximization
         try:
@@ -132,7 +132,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
         
         return summary
 
-    def compare_models(self, training_results: Dict[str, Any]) -> Dict[str, Any]:
+    def compare_models(self, training_results: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
         """
         Contrasts live training results to select the final 'Champion' for production.
         
@@ -143,6 +143,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
         
         Args:
             training_results: Output dictionary from UnifiedTrainingManager.
+            **kwargs: Additional context parameters like market_context.
             
         Returns:
             Selection summary with champion_model, methodology, and cluster leaders.
@@ -212,7 +213,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
 
     def _extract_performance_metric(self, metrics: Dict[str, Any]) -> float:
         """Extract primary performance metric from metrics dictionary."""
-        return metrics.get('accuracy', metrics.get('test_accuracy', metrics.get('r2', 0.0)))
+        return float(metrics.get('accuracy', metrics.get('test_accuracy', metrics.get('r2', 0.0))))
 
     def _identify_cluster_leaders(self, model_cohort: List[Dict[str, Any]]) -> tuple:
         """Identify best performing models in each cluster."""
@@ -230,7 +231,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
         
         return best_heavy, best_light
 
-    def _arbitrate_champion(self, best_heavy: Optional[Dict[str, Any]], best_light: Optional[Dict[str, Any]]) -> tuple:
+    def _arbitrate_champion(self, best_heavy: dict[str, Any] | None, best_light: dict[str, Any] | None) -> tuple[str, str]:
         """Arbitrate final champion from cluster leaders."""
         if best_heavy and best_light:
             if best_heavy['performance_score'] >= best_light['performance_score']:

@@ -6,14 +6,44 @@ import pandas as pd
 import numpy as np
 import logging
 from typing import Dict, List, Any, Optional
-from statsmodels.tsa.stattools import grangercausalitytests
+from statsmodels.tsa.stattools import grangercausalitytests, adfuller
 from statsmodels.tsa.api import VAR
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
+from statsmodels.stats.diagnostic import acorr_ljungbox
 
 logger = logging.getLogger(__name__)
 
 class EconometricsCalculator:
     """A collection of static methods for performing econometric tests and models."""
 
+    @staticmethod
+    def run_advanced_granger_test(df: pd.DataFrame, target_col: str, predictor_cols: List[str], 
+                                  maxlag: int = 10, lag_selection: str = 'aic') -> Dict[str, Any]:
+        """
+        Advanced Granger causality testing with optimal lag selection and validation.
+        
+        Args:
+            df: DataFrame with time series data
+            target_col: Target variable column name
+            predictor_cols: List of predictor variable column names
+            maxlag: Maximum lag to consider
+            lag_selection: Lag selection method ('aic', 'bic', 'hqic')
+            
+        Returns:
+            Dictionary with comprehensive causality analysis results
+        """
+        causality_results = {}
+        
+        for col in predictor_cols:
+            result = EconometricsCalculator._test_single_predictor(df, target_col, col, maxlag)  # type: ignore
+            if result:
+                causality_results[col] = result
+                
+        # Add overall analysis summary
+        causality_results['_summary'] = EconometricsCalculator._generate_simple_summary(causality_results)  # type: ignore
+        
+        return causality_results
+    
     @staticmethod
     def run_granger_test(df: pd.DataFrame, target_col: str, predictor_cols: List[str], maxlag: int = 5) -> Dict[str, Any]:
         """
@@ -33,11 +63,11 @@ class EconometricsCalculator:
     def _test_single_predictor(df: pd.DataFrame, target_col: str, predictor_col: str, maxlag: int) -> Dict[str, Any]:
         """Test Granger causality for a single predictor variable."""
         if not EconometricsCalculator._validate_columns(df, target_col, predictor_col):
-            return None
+            return None  # type: ignore
             
         test_data = df[[target_col, predictor_col]].dropna()
         if not EconometricsCalculator._validate_data_length(test_data, maxlag, predictor_col):
-            return None
+            return None  # type: ignore
 
         correlation = test_data[target_col].corr(test_data[predictor_col])
         
@@ -66,7 +96,7 @@ class EconometricsCalculator:
         """Calculate minimum p-value from Granger causality test."""
         test_result = grangercausalitytests(test_data, maxlag=maxlag, verbose=False)
         p_values = [round(test_result[i+1][0]['ssr_ftest'][1], 4) for i in range(maxlag)]
-        return min(p_values)
+        return float(min(p_values))  # type: ignore
 
     @staticmethod
     def _build_causality_result(predictor_col: str, target_col: str, correlation: float, p_value: float) -> Dict[str, Any]:
@@ -78,6 +108,25 @@ class EconometricsCalculator:
             logger.warning(f"Spurious Correlation Alert: {predictor_col} and {target_col} are highly correlated ({correlation:.2f}) but lack Granger causality (p={p_value:.4f}).")
         
         return result
+
+    @staticmethod
+    def _generate_simple_summary(causality_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate simple summary statistics for causality analysis."""
+        if not causality_results:
+            return {'error': 'No causality results to summarize'}
+        
+        # Filter out actual results (ignore summary key)
+        results = {k: v for k, v in causality_results.items() if not k.startswith('_')}
+        
+        significant_count = sum(1 for r in results.values() if r.get('is_causal', False))
+        total_count = len(results)
+        
+        return {
+            'total_tests': total_count,
+            'significant_relationships': significant_count,
+            'significance_rate': significant_count / total_count if total_count > 0 else 0,
+            'recommendation': 'Causal relationships found' if significant_count > 0 else 'No significant causal relationships'
+        }
 
     @staticmethod
     def get_var_forecast(df: pd.DataFrame, target_cols: List[str], steps: int = 5, maxlags: int = 15, ic='aic') -> pd.DataFrame:

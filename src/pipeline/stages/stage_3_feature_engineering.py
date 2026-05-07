@@ -9,10 +9,16 @@ import psutil
 from pathlib import Path
 
 from src.pipeline.stages.base_stage import BaseStage
+from src.pipeline.stages.stage_3_improvements import (
+    validate_and_align_features_targets,
+    calculate_data_quality_metrics,
+    log_data_quality_report
+)
 from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
 from src.core.error_handling.error_handler import ErrorHandler
 from src.features.feature_orchestrator import FeatureOrchestrator
 from src.features.selection.smart_selector import SmartFeatureSelector
+from src.features.selection.enhanced_smart_selector import get_enhanced_smart_selector
 from src.features.news_dataset_builder import NewsContextDatasetBuilder
 from src.features.news_clusterer import cluster_news_simple
 from src.features.validation.feature_leakage_guard import get_leakage_guard
@@ -21,6 +27,18 @@ from src.utils.trading_calendar import TradingCalendar
 from src.core.logging.logger import ProjectLogger
 from src.features.utils.datetime_utils import ensure_datetime_column, normalize_metadata_columns, deduplicate_on_metadata, ensure_datetime_sorted
 from src.data.validation.event_dataset_validator import EventDatasetValidator
+
+# ✅ NEW: Temporal safety guards
+from src.pipeline.guards.timeframe_alignment_guard import get_timeframe_alignment_guard
+from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
+from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard
+from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
+from src.pipeline.guards.macro_release_timing_guard import get_macro_release_timing_guard
+
+# ✅ NEW: Enhanced monitoring components
+from src.monitoring.feature_drift_monitor import get_feature_drift_monitor
+from src.monitoring.data_freshness_monitor import get_data_freshness_monitor
+from src.features.analysis.regime_importance_tracker import get_regime_importance_tracker
 
 # Advanced financial and context modules
 from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
@@ -54,7 +72,8 @@ class FeatureEngineeringStage(BaseStage):
         targets_list = self.config_manager.get('targets').as_dict() if hasattr(self.config_manager.get('targets'), 'as_dict') else self.config_manager.get('targets')
         self.target_orchestrator = TargetOrchestrator(targets_list=targets_list)
 
-        self.selector = SmartFeatureSelector()
+        # ✅ ENHANCED: Use Enhanced Smart Feature Selector with full monitoring integration
+        self.selector = get_enhanced_smart_selector(config_manager)
         self.event_dataset_validator = EventDatasetValidator()
 
         self.output_dir = Path('data/processed/features')
@@ -67,6 +86,19 @@ class FeatureEngineeringStage(BaseStage):
         cache_dir = self.config_manager.get('performance.feature_cache_dir', 'data/cache/features')
         self.feature_cache = get_feature_cache(cache_dir=cache_dir)
         logger.info("✅ Feature cache enabled (disk-based, parquet compression)")
+        
+        # ✅ NEW: Initialize temporal safety guards (will be configured in run method based on mode)
+        self.timeframe_guard = None
+        self.safe_combiner = None
+        self.temporal_target_guard = None
+        self.temporal_leakage_guard = None
+        self.macro_guard = None
+        
+        # ✅ NEW: Initialize enhanced monitoring components
+        self.drift_monitor = get_feature_drift_monitor()
+        self.freshness_monitor = get_data_freshness_monitor()
+        self.regime_tracker = get_regime_importance_tracker()
+        logger.info("✅ Enhanced monitoring components initialized")
 
     def _validate_and_prepare_market_data(self, **kwargs) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Validate and prepare market data for processing."""
@@ -112,6 +144,29 @@ class FeatureEngineeringStage(BaseStage):
             except Exception as e:
                 logger.warning(f"Could not load runtime_params.json: {e}")
         return runtime_params
+    
+    def _initialize_guards_based_on_mode(self, mode: str = "full"):
+        """Initialize temporal safety guards based on pipeline mode.
+        
+        Args:
+            mode: Pipeline mode - "prepare" for data accumulation, "full" for live trading
+        """
+        from src.pipeline.guards.timeframe_alignment_guard import get_timeframe_alignment_guard
+        from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
+        from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard
+        from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
+        from src.pipeline.guards.macro_release_timing_guard import get_macro_release_timing_guard
+        
+        # Use strict mode for live trading, non-strict for data accumulation
+        strict_mode = mode != "prepare"
+        
+        self.timeframe_guard = get_timeframe_alignment_guard(strict_mode=strict_mode)
+        self.safe_combiner = get_safe_feature_combiner(self.timeframe_guard)
+        self.temporal_target_guard = get_temporal_target_guard()
+        self.temporal_leakage_guard = get_temporal_leakage_guard()
+        self.macro_guard = get_macro_release_timing_guard()
+        
+        logger.info(f"✅ Temporal safety guards initialized (mode: {mode}, strict: {strict_mode})")
 
     def _process_single_timeframe(self, tf: str, df_temp: pd.DataFrame, cleaned_data: Dict[str, Any], 
                                 test_ticker: Optional[str]) -> Optional[pd.DataFrame]:
@@ -134,32 +189,102 @@ class FeatureEngineeringStage(BaseStage):
             logger.warning(f"Market data is empty for tf {tf} after filtering.")
             return None
         
-        # ✅ FIX: Ensure datetime is a column, not just an index
-        if 'datetime' not in df_temp.columns:
-            if isinstance(df_temp.index, pd.DatetimeIndex):
-                df_temp = df_temp.reset_index()
-                if 'index' in df_temp.columns:
-                    df_temp = df_temp.rename(columns={'index': 'datetime'})
-                logger.info(f"✅ Converted DatetimeIndex to datetime column for {actual_tf}")
-            else:
-                logger.warning(f"⚠️ Timeframe {actual_tf} has no datetime column or DatetimeIndex")
-                # Додамо datetime з інших джерел
-                if 'timestamp' in df_temp.columns:
-                    df_temp['datetime'] = pd.to_datetime(df_temp['timestamp'])
-                    logger.info(f"✅ Converted timestamp to datetime column for {actual_tf}")
-                elif 'date' in df_temp.columns:
-                    df_temp['datetime'] = pd.to_datetime(df_temp['date'])
-                    logger.info(f"✅ Converted date to datetime column for {actual_tf}")
-                else:
-                    # Якщо немає datetime, timestamp, або date, створимо синтетичний datetime
-                    logger.warning(f"⚠️ Timeframe {actual_tf} has no datetime column. Creating synthetic datetime.")
-                    # Створимо datetime на основі індексу
-                    df_temp['datetime'] = pd.date_range(start='2024-01-01', periods=len(df_temp), freq='D')
-                    logger.info(f"✅ Created synthetic datetime column for {actual_tf}")
+        # ✅ FIX: Ensure datetime is a column BEFORE any processing
+        df_temp = self._ensure_datetime_column(df_temp, actual_tf)
+        
+        # ✅ FIX: Remove any NaT values BEFORE enrichment
+        if 'datetime' in df_temp.columns and df_temp['datetime'].isna().any():
+            nat_count = df_temp['datetime'].isna().sum()
+            logger.warning(f"⚠️ Found {nat_count} NaT values in {actual_tf} datetime column BEFORE enrichment")
+            
+            # Drop rows with NaT datetime (can't be enriched properly)
+            df_temp = df_temp.dropna(subset=['datetime'])
+            logger.info(f"✅ Dropped {nat_count} rows with NaT datetime, remaining: {len(df_temp)} rows")
+            
+            if df_temp.empty:
+                logger.error(f"❌ All rows had NaT datetime for {actual_tf}")
+                return None
         
         df_temp = self._add_missing_columns(df_temp, actual_tf)
         
-        return self._enrich_with_cache(df_temp, actual_tf, cleaned_data)
+        # Enrich with cache
+        df_enriched = self._enrich_with_cache(df_temp, actual_tf, cleaned_data)
+        
+        # ✅ CRITICAL FIX: Ensure the enriched DataFrame has datetime column
+        if df_enriched is not None and not df_enriched.empty:
+            # ✅ DEBUG: Log datetime status before _ensure_enriched_datetime
+            has_datetime_before = 'datetime' in df_enriched.columns
+            logger.debug(f"🔍 Before _ensure_enriched_datetime for {actual_tf}: datetime={'✅' if has_datetime_before else '❌'}")
+            
+            df_enriched = self._ensure_enriched_datetime(df_enriched, df_temp, actual_tf)
+            
+            # ✅ DEBUG: Log datetime status after _ensure_enriched_datetime
+            has_datetime_after = 'datetime' in df_enriched.columns
+            logger.debug(f"🔍 After _ensure_enriched_datetime for {actual_tf}: datetime={'✅' if has_datetime_after else '❌'}")
+            
+            if not has_datetime_after:
+                logger.error(f"❌ CRITICAL: datetime column lost for {actual_tf}!")
+                logger.error(f"   Columns: {df_enriched.columns.tolist()[:20]}")
+        
+        return df_enriched
+    
+    def _ensure_datetime_column(self, df: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+        """Ensure datetime column exists and is valid."""
+        if 'datetime' not in df.columns:
+            if isinstance(df.index, pd.DatetimeIndex):
+                df = df.reset_index()
+                if 'index' in df.columns:
+                    df = df.rename(columns={'index': 'datetime'})
+                logger.info(f"✅ Converted DatetimeIndex to datetime column for {timeframe}")
+            elif 'timestamp' in df.columns:
+                df['datetime'] = pd.to_datetime(df['timestamp'])
+                logger.info(f"✅ Converted timestamp to datetime column for {timeframe}")
+            elif 'date' in df.columns:
+                df['datetime'] = pd.to_datetime(df['date'])
+                logger.info(f"✅ Converted date to datetime column for {timeframe}")
+            else:
+                logger.error(f"❌ No datetime source found for {timeframe}")
+                logger.error(f"   Available columns: {df.columns.tolist()}")
+                raise ValueError(f"No datetime column found for {timeframe}")
+        
+        # Ensure datetime is timezone-naive to avoid comparison issues
+        if hasattr(df['datetime'].dt, 'tz') and df['datetime'].dt.tz is not None:
+            df['datetime'] = df['datetime'].dt.tz_localize(None)
+        
+        return df
+    
+    def _ensure_enriched_datetime(self, df_enriched: pd.DataFrame, df_temp: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+        """Ensure enriched DataFrame has valid datetime column."""
+        if 'datetime' not in df_enriched.columns:
+            logger.warning(f"⚠️ Enriched DataFrame for {timeframe} missing datetime column. Adding from original.")
+            
+            # Try to get datetime from original df_temp
+            if 'datetime' in df_temp.columns:
+                # Check if lengths match
+                if len(df_enriched) == len(df_temp):
+                    df_enriched['datetime'] = df_temp['datetime'].values
+                    logger.info(f"✅ Copied datetime from original data for {timeframe}")
+                else:
+                    logger.error(f"❌ Length mismatch: enriched={len(df_enriched)}, original={len(df_temp)}")
+                    logger.error(f"   Cannot copy datetime - creating synthetic datetime")
+                    df_enriched['datetime'] = pd.date_range(start='2024-01-01', periods=len(df_enriched), freq='D')
+            else:
+                logger.error(f"❌ Original data has no datetime column for {timeframe}")
+                df_enriched['datetime'] = pd.date_range(start='2024-01-01', periods=len(df_enriched), freq='D')
+        else:
+            # Ensure existing datetime column is timezone-naive
+            if hasattr(df_enriched['datetime'].dt, 'tz') and df_enriched['datetime'].dt.tz is not None:
+                df_enriched['datetime'] = df_enriched['datetime'].dt.tz_localize(None)
+        
+        # ✅ FIX: Check for NaT values in enriched datetime
+        if df_enriched['datetime'].isna().any():
+            nat_count = df_enriched['datetime'].isna().sum()
+            logger.error(f"❌ Enriched DataFrame for {timeframe} has {nat_count} NaT values in datetime column")
+            logger.error(f"   This should not happen - dropping rows with NaT datetime")
+            df_enriched = df_enriched.dropna(subset=['datetime'])
+            logger.info(f"✅ Dropped {nat_count} rows with NaT datetime, remaining: {len(df_enriched)} rows")
+        
+        return df_enriched
 
     def _filter_test_ticker(self, df_temp: pd.DataFrame, test_ticker: Optional[str]) -> pd.DataFrame:
         """Filter dataframe for test ticker."""
@@ -208,8 +333,15 @@ class FeatureEngineeringStage(BaseStage):
             logger.info(f"🔄 Computing features for {ticker_for_cache} {actual_tf}...")
             df_enriched_tf = self.orchestrator.run(df_temp, **cleaned_data)
             
-            # Save to cache for future use
+            # ✅ CRITICAL FIX: Ensure datetime is a column after enrichment
             if df_enriched_tf is not None and not df_enriched_tf.empty:
+                if isinstance(df_enriched_tf.index, pd.DatetimeIndex) and 'datetime' not in df_enriched_tf.columns:
+                    df_enriched_tf = df_enriched_tf.reset_index()
+                    if 'index' in df_enriched_tf.columns:
+                        df_enriched_tf = df_enriched_tf.rename(columns={'index': 'datetime'})
+                    logger.debug(f"✅ Converted DatetimeIndex to datetime column after enrichment for {actual_tf}")
+                
+                # Save to cache for future use
                 self.feature_cache.save_features(ticker_for_cache, cache_date_key, config_hash, df_enriched_tf)
                 logger.debug(f"💾 Cached enriched features for {ticker_for_cache} {actual_tf}")
         
@@ -278,8 +410,13 @@ class FeatureEngineeringStage(BaseStage):
             
             # ✅ Читаємо runtime_params з batch-specific директорії
             runtime_params = self._load_runtime_params(batch_name)
+            mode = runtime_params.get('mode', 'full')
             test_mode = runtime_params.get('test_mode', {})
             test_ticker = test_mode.get('test_ticker') or runtime_params.get('test_ticker')
+            
+            # ✅ Initialize guards based on pipeline mode
+            if self.timeframe_guard is None:
+                self._initialize_guards_based_on_mode(mode)
 
             enriched_prices = {}
             all_targets = {}  # ✅ Окремий dict для таргетів
@@ -288,17 +425,144 @@ class FeatureEngineeringStage(BaseStage):
             for tf, df_temp in market_data_raw.items():
                 df_enriched_tf = self._process_single_timeframe(tf, df_temp, cleaned_data, test_ticker)
                 if df_enriched_tf is not None:
+                    # ✅ CRITICAL: Verify datetime column exists before any validation
+                    if 'datetime' not in df_enriched_tf.columns:
+                        logger.error(f"❌ Enriched DataFrame for {tf} missing datetime column after processing!")
+                        logger.error(f"   Available columns: {df_enriched_tf.columns.tolist()[:20]}")
+                        continue
+                    
                     # ✅ Зберігаємо ТІЛЬКИ ФІЧІ (без таргетів)
                     enriched_prices[tf if tf != 'mixed' else '1d'] = df_enriched_tf
                     
-                    # ✅ Генеруємо таргети ОКРЕМО
-                    logger.info(f"Generating targets for {tf} timeframe...")
-                    targets_df = self._generate_targets(df_enriched_tf, **cleaned_data)
+                    # ✅ Генеруємо таргети ОКРЕМО з часовою валідацією
+                    logger.info(f"Generating safe targets for {tf} timeframe...")
+                    current_time = pd.Timestamp.now()
+                    
+                    # ✅ NEW: Use TemporalTargetGuard for safe target generation
+                    targets_df = self.temporal_target_guard.generate_targets_safe(
+                        df_enriched_tf, tf, current_time
+                    )
+                    
+                    # ✅ NEW: Validate alignment between features and targets
+                    # This now happens AFTER datetime is ensured to exist
+                    df_enriched_tf, targets_df = validate_and_align_features_targets(
+                        df_enriched_tf, targets_df, tf
+                    )
+                    
+                    if df_enriched_tf.empty or targets_df.empty:
+                        logger.error(f"❌ Alignment validation failed for {tf}. Skipping.")
+                        continue
+                    
+                    # Update enriched_prices with aligned features
+                    enriched_prices[tf if tf != 'mixed' else '1d'] = df_enriched_tf
                     all_targets[tf if tf != 'mixed' else '1d'] = targets_df
             
             if not enriched_prices:
                 logger.error("No valid enriched price data generated across any timeframes.")
                 return {"status": "failed", "reason": "no_enriched_prices"}
+            
+            # ✅ In prepare mode, skip complex validations and just return data
+            if mode == "prepare":
+                logger.info("📦 Prepare mode: Skipping temporal validations, returning raw data")
+                
+                # Prepare features DataFrame (concat all timeframes)
+                features_dfs = []
+                for tf, df in enriched_prices.items():
+                    # Ensure datetime column exists
+                    if 'datetime' not in df.columns:
+                        if isinstance(df.index, pd.DatetimeIndex):
+                            df = df.reset_index()
+                            if 'index' in df.columns:
+                                df = df.rename(columns={'index': 'datetime'})
+                    features_dfs.append(df)
+                
+                features_df = pd.concat(features_dfs, ignore_index=True) if features_dfs else pd.DataFrame()
+                logger.info(f"✅ Features combined: {features_df.shape}")
+                
+                # ✅ NEW: Calculate and log data quality metrics
+                quality_metrics = calculate_data_quality_metrics(
+                    enriched_prices, 
+                    all_targets, 
+                    len(self.orchestrator.enrichers) if hasattr(self.orchestrator, 'enrichers') else 0
+                )
+                log_data_quality_report(quality_metrics)
+                
+                # Prepare targets DataFrame (concat all timeframes)
+                targets_dfs = []
+                for tf, df in all_targets.items():
+                    # Ensure datetime column exists
+                    if 'datetime' not in df.columns:
+                        if isinstance(df.index, pd.DatetimeIndex):
+                            df = df.reset_index()
+                            if 'index' in df.columns:
+                                df = df.rename(columns={'index': 'datetime'})
+                    
+                    targets_dfs.append(df)
+                    target_cols = [col for col in df.columns if col.startswith('target_')]
+                    logger.info(f"✅ Extracted {len(target_cols)} targets from {tf}: {len(df)} rows")
+                
+                targets_df = pd.concat(targets_dfs, ignore_index=True) if targets_dfs else pd.DataFrame()
+                logger.info(f"✅ Total targets: {targets_df.shape} from {len(targets_dfs)} timeframes")
+                
+                # Add required fields for EnrichedDataSchema
+                feature_columns = [col for col in features_df.columns if col not in ['datetime', 'ticker', 'interval']]
+                
+                return {
+                    "status": "success",
+                    "enriched_prices": enriched_prices,
+                    "all_targets": all_targets,
+                    "combined_features": features_df,  # Simple concat for prepare mode
+                    "selected_features": feature_columns,
+                    "feature_importance": {},
+                    "features_metadata": {
+                        "total_features": len(feature_columns),
+                        "timeframes": list(enriched_prices.keys()),
+                        "rows": len(features_df),
+                        "mode": "prepare"
+                    },
+                    "models_metadata": {
+                        "feature_models": {
+                            "feature_orchestrator": "FeatureOrchestrator",
+                            "target_orchestrator": "TargetOrchestrator"
+                        },
+                        "version": "1.0",
+                        "timestamp": pd.Timestamp.now().isoformat()
+                    }
+                }
+            
+            # ✅ Full mode: Run all validations
+            # ✅ NEW: Step 1.5: Validate temporal leakage and combine features safely
+            current_time = pd.Timestamp.now()
+            
+            # Validate temporal leakage for each timeframe
+            temporal_validation_results = {}
+            for tf, df in enriched_prices.items():
+                logger.info(f"🔍 Checking temporal leakage for {tf} timeframe...")
+                validation_result = self.temporal_leakage_guard.validate_rolling_windows(
+                    df, current_time, tf
+                )
+                temporal_validation_results[tf] = validation_result
+                
+                if validation_result['status'] == 'invalid':
+                    logger.error(f"❌ Temporal leakage detected in {tf}: {validation_result['issues']}")
+                else:
+                    logger.info(f"✅ {tf} timeframe passed temporal validation")
+            
+            # Safely combine features from multiple timeframes
+            logger.info("🔗 Safely combining multi-timeframe features...")
+            combined_features, combination_result = self.safe_combiner.combine_features_safe(
+                enriched_prices, current_time
+            )
+            
+            if combination_result['status'] == 'failed':
+                logger.error(f"❌ Feature combination failed: {combination_result['issues']}")
+                return {
+                    "status": "failed", 
+                    "reason": "feature_combination_failed",
+                    "issues": combination_result['issues']
+                }
+            
+            logger.info(f"✅ Combined features: {combined_features.shape}")
             
             # ✅ Step 2: Generate news-based dataset (if news available)
             news_df = cleaned_data.get('news')
@@ -422,9 +686,11 @@ class FeatureEngineeringStage(BaseStage):
             return {
                 "status": "success",
                 "enriched_prices": enriched_prices,
-                "features_df": features_df,
-                "targets_df": targets_df,
-                "news_features_df": news_features_df,  # ✅ Додано news датасет
+                "all_targets": all_targets,
+                "combined_features": combined_features,
+                "temporal_validation": temporal_validation_results,
+                "feature_combination": combination_result,
+                "leakage_check": leakage_report,
                 "selected_features": feature_columns,  # Required by schema
                 "feature_importance": {},  # Required by schema (empty for prepare mode)
                 "features_metadata": {

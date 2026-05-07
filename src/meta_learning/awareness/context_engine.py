@@ -93,10 +93,17 @@ class ContextAwarenessEngine(BaseMetaComponent):
     def __init__(self, db_path: str = "realtime_context_awareness.db"):
         self.logger = ProjectLogger.get_logger("ContextAwarenessEngine")
         self.db_path = db_path
-        self.conn = None
+        # ✅ FIX: Add proper type hint for conn
+        self.conn: Optional[sqlite3.Connection] = None
+        
+    def _ensure_connection(self) -> sqlite3.Connection:
+        """Ensure database connection is initialized."""
+        if self.conn is None:
+            raise RuntimeError("Database not initialized. Call _initialize_database() first.")
+        return self.conn
         
         # Configuration of data sources
-        self.news_sources = {
+        self.news_sources: Dict[str, str] = {
             "financial_times": "https://www.ft.com",
             "reuters": "https://www.reuters.com",
             "bloomberg": "https://www.bloomberg.com",
@@ -112,7 +119,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
         }
         
         # Sectors for tracking
-        self.sectors = [
+        self.sectors: List[str] = [
             "technology", "healthcare", "finance", "energy", 
             "consumer", "industrial", "materials", "utilities"
         ]
@@ -157,6 +164,8 @@ class ContextAwarenessEngine(BaseMetaComponent):
         self.conn.execute("PRAGMA foreign_keys = ON")
         
         # Events table
+        # ✅ FIX: conn is now guaranteed to be non-None after this point
+        assert self.conn is not None, "Database connection failed"
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS market_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -229,7 +238,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
     def _initialize_news_sources(self):
         """Initialize news sources"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         
         for source_name, source_url in self.news_sources.items():
             cursor.execute("""
@@ -237,7 +246,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
                 VALUES (?, ?, ?, ?)
             """, (source_name, source_url, True, 0.8))
         
-        self.conn.commit()
+        self._ensure_connection().commit()
     
     def scan_news_sources(self) -> List[MarketEvent]:
         """Scan news sources"""
@@ -369,10 +378,10 @@ class ContextAwarenessEngine(BaseMetaComponent):
             ]
         }
     
-    def update_sentiment_analysis(self, ticker: str, text_data: List[str]) -> Dict[str, float]:
+    def update_sentiment_analysis(self, ticker: str, text_data: List[str]) -> Dict[str, Any]:
         """Update sentiment analysis"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         
         sentiment_scores = []
         
@@ -395,7 +404,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
             
             sentiment_scores.append(sentiment["score"])
         
-        self.conn.commit()
+        self._ensure_connection().commit()
         
         # Calculate average sentiment
         avg_sentiment = np.mean(sentiment_scores) if sentiment_scores else 0.0
@@ -403,8 +412,8 @@ class ContextAwarenessEngine(BaseMetaComponent):
         self.logger.info(f"Updated sentiment for {ticker}: {avg_sentiment:.3f}")
         
         return {
-            "ticker": ticker,
-            "average_sentiment": avg_sentiment,
+            "ticker": str(ticker),
+            "average_sentiment": float(avg_sentiment),
             "sample_count": len(sentiment_scores),
             "sentiment_distribution": {
                 "positive": sum(1 for s in sentiment_scores if s > 0.1),
@@ -418,7 +427,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
         """Get event history"""
         
         query = "SELECT * FROM market_events"
-        params = []
+        params: List[Any] = []
         
         if event_type:
             query += " WHERE event_type = ?"
@@ -427,7 +436,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
         query += " ORDER BY timestamp DESC LIMIT ?"
         params.append(limit)
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         cursor.execute(query, params)
         
         events = []
@@ -440,7 +449,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
     def analyze_context_effectiveness(self) -> Dict[str, Any]:
         """Analyze the effectiveness of context awareness"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         
         # Event statistics
         cursor.execute("""
@@ -518,15 +527,55 @@ class ContextAwarenessEngine(BaseMetaComponent):
     def _fetch_news_from_source(self, source_name: str) -> List[MarketEvent]:
         """
         Fetch news from a source.
-        TODO: Integrate with real news collectors.
+        Implemented basic fetching for Yahoo Finance via yfinance.
+        Other sources raise NotImplementedError to enforce explicit integration.
         """
-        self.logger.warning(f"Real news fetching not yet implemented for {source_name}. Returning empty list.")
-        return []
+        events = []
+        if source_name == "yahoo_finance":
+            try:
+                import yfinance as yf
+                # Fetch general market news using SPY as proxy
+                spy = yf.Ticker("SPY")
+                news = spy.news
+                if news:
+                    for item in news[:10]:
+                        # Handle varied yfinance news formats
+                        pub_time = item.get('providerPublishTime')
+                        dt = datetime.fromtimestamp(pub_time) if pub_time else datetime.now()
+                        
+                        event = MarketEvent(
+                            id=None,
+                            timestamp=dt,
+                            event_type=EventType.MARKET_EVENT,
+                            title=item.get('title', 'Market News'),
+                            description=item.get('summary', '') or item.get('title', ''),
+                            source=source_name,
+                            impact_level=EventImpact.MEDIUM,
+                            affected_tickers=item.get('relatedTickers', []),
+                            affected_sectors=[],
+                            keywords=[],
+                            sentiment_score=0.0, # Neutral default, NLP stage handles sentiment
+                            confidence=0.5,
+                            relevance_score=0.8,
+                            expiration_time=datetime.now() + timedelta(days=1),
+                            processed=False,
+                            impact_assessment={}
+                        )
+                        events.append(event)
+            except Exception as e:
+                self.logger.warning(f"Yahoo Finance news fetch failed: {e}")
+        else:
+            raise NotImplementedError(
+                f"News fetching for {source_name} is not implemented. "
+                "Please add API keys and integration logic."
+            )
+            
+        return events
     
     def _save_market_event(self, event: MarketEvent):
         """Save a market event"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         cursor.execute("""
             INSERT INTO market_events (
                 timestamp, event_type, title, description, source, impact_level,
@@ -551,12 +600,12 @@ class ContextAwarenessEngine(BaseMetaComponent):
             json.dumps(event.impact_assessment)
         ))
         
-        self.conn.commit()
+        self._ensure_connection().commit()
     
     def _save_market_context(self, context: MarketContext):
         """Save the market context"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         cursor.execute("""
             INSERT INTO market_context (
                 timestamp, market_regime, volatility_regime, sentiment_index,
@@ -577,12 +626,12 @@ class ContextAwarenessEngine(BaseMetaComponent):
             json.dumps(context.opportunities)
         ))
         
-        self.conn.commit()
+        self._ensure_connection().commit()
     
     def _get_recent_events(self, hours: int = 24) -> List[MarketEvent]:
         """Get recent events"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         cursor.execute("""
             SELECT * FROM market_events 
             WHERE timestamp >= datetime('now', '-{} hours')
@@ -666,7 +715,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
                     latest = data["fear_and_greed"]["history"][-1]
                     return float(latest.get("value", 50.0))
         except Exception as e:
-            logger.debug(f"Failed to fetch Fear & Greed Index: {e}")
+            self.logger.debug(f"Failed to fetch Fear & Greed Index: {e}")
         
         # Return neutral value if fetching fails
         return 50.0
@@ -680,7 +729,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
             if not vix_data.empty:
                 return float(vix_data["Close"].iloc[-1])
         except Exception as e:
-            logger.debug(f"Failed to fetch VIX level: {e}")
+            self.logger.debug(f"Failed to fetch VIX level: {e}")
         
         # Return default VIX level if fetching fails
         return 20.0
@@ -702,14 +751,30 @@ class ContextAwarenessEngine(BaseMetaComponent):
         return sector_performance
     
     def _get_macro_indicators(self) -> Dict[str, float]:
-        """Get macro indicators from FRED collector (TODO)"""
-        return {
+        """Get macro indicators using yfinance proxies where possible."""
+        indicators = {
             "gdp_growth": 0.0,
             "inflation_rate": 0.0,
             "unemployment_rate": 0.0,
             "interest_rate": 0.0,
             "consumer_confidence": 0.0
         }
+        try:
+            import yfinance as yf
+            import pandas as pd
+            # 10-Year Treasury Yield (proxy for interest rates)
+            tnx = yf.download("^TNX", period="1d", progress=False)
+            if isinstance(tnx, pd.DataFrame) and not tnx.empty:
+                # Handle MultiIndex if necessary, otherwise standard column access
+                close_val = tnx["Close"].iloc[-1] if "Close" in tnx else tnx.iloc[-1, 0]
+                # If close_val is still a Series (e.g. multi-ticker), extract the first float
+                if isinstance(close_val, pd.Series):
+                    close_val = close_val.iloc[0]
+                indicators["interest_rate"] = float(close_val)
+        except Exception as e:
+            self.logger.debug(f"Failed to fetch macro indicators via yfinance: {e}")
+            
+        return indicators
     
     def _identify_risk_factors(self, events: List[MarketEvent]) -> List[str]:
         """Identify risk factors"""
@@ -749,7 +814,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
     def _get_latest_context(self) -> Optional[MarketContext]:
         """Get the latest context"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         cursor.execute("""
             SELECT * FROM market_context 
             ORDER BY timestamp DESC 
@@ -765,7 +830,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
     def _get_ticker_events(self, ticker: str, hours: int = 48) -> List[MarketEvent]:
         """Get events for a ticker"""
         
-        cursor = self.conn.cursor()
+        cursor = self._ensure_connection().cursor()
         cursor.execute("""
             SELECT * FROM market_events 
             WHERE timestamp >= datetime('now', '-{} hours')

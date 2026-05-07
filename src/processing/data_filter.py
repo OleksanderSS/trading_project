@@ -363,7 +363,11 @@ class IntelligentDataFilter:
         if 'Datetime' not in price_data.columns:
             return gaps
             
-        timestamps = pd.to_datetime(price_data['Datetime']).sort_values()
+        # Convert to datetime and remove timezone to avoid comparison issues
+        timestamps = pd.to_datetime(price_data['Datetime'])
+        if timestamps.dt.tz is not None:
+            timestamps = timestamps.dt.tz_localize(None)
+        timestamps = timestamps.sort_values()
         
         for i in range(1, len(timestamps)):
             gap_duration = timestamps.iloc[i] - timestamps.iloc[i-1]

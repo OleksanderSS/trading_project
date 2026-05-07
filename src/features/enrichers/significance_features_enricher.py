@@ -31,6 +31,8 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             min_events_per_ticker (int): The minimum number of significant events required for a ticker to be included in 'filter' mode.
             mode (str): The operational mode. Can be 'filter', 'balance', or 'feature_engineering'.
         """
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
+        
         # Ensure significance_col is a string, not a dict
         if isinstance(significance_col, dict):
             significance_col = significance_col.get('name', 'is_significant')
@@ -40,12 +42,12 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         self.mode = mode
         logger.info(f"SignificanceAnalyzer initialized in '{self.mode}' mode.")
 
-    def enrich(self, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
         """
-        Analyzes the data to filter, balance, or create features based on event significance.
+        Analyzes data to filter, balance, or create features based on event significance.
 
         Args:
-            data (pd.DataFrame): The input data with a significance column.
+            df (pd.DataFrame): The input data with a significance column.
             **kwargs: Not used in this implementation.
 
         Returns:
@@ -57,23 +59,23 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             col_name = col_name.get('name', 'is_significant')
         
         # ✅ If column is missing, create it based on volatility or other metrics
-        if col_name not in data.columns:
+        if col_name not in df.columns:
             logger.info(f"Significance column '{col_name}' not found. Creating it based on volatility...")
-            data = self._create_significance_column(data, col_name)
-            if col_name not in data.columns:
+            df = self._create_significance_column(df, col_name)
+            if col_name not in df.columns:
                 logger.warning(f"Failed to create significance column '{col_name}'. Skipping analysis.")
-                return data
+                return df
 
         if self.mode == 'filter':
-            return self._filter_significant_events(data)
+            return self._filter_significant_events(df)
         elif self.mode == 'feature_engineering':
-            return self._create_significance_features(data)
+            return self._create_significance_features(df)
         elif self.mode == 'balance':
             logger.warning("Mode 'balance' is not implemented. A dedicated preprocessor should be used.")
-            return data
+            return df
         else:
             logger.warning(f"Unknown mode '{self.mode}'. Returning original data.")
-            return data
+            return df
 
     def _filter_significant_events(self, df: pd.DataFrame) -> pd.DataFrame:
         """

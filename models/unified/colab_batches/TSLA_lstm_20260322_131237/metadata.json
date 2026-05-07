@@ -1,0 +1,11 @@
+{
+  "batch_id": "TSLA_lstm_20260322_131237",
+  "ticker": "TSLA",
+  "model_name": "lstm",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_return_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T13:12:37.384386",
+  "status": "PENDING_COLAB"
+}

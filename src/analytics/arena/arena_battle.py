@@ -17,6 +17,7 @@ from pathlib import Path
 from sklearn.metrics import log_loss
 
 from src.core.logging.logger import ProjectLogger
+from .battle_groups import BattleGroupManager, get_battle_group_manager
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -68,16 +69,17 @@ class TradingModelArena:
     """
     
     def __init__(self, champion_dir: str = "trained_models", safety_margin: float = 0.05):
-        self.models = {}
-        self.battle_history = []
-        self.leaderboard = {}
-        self.battle_groups = {}
+        self.models: Dict[str, Any] = {}
+        self.battle_history: List[Battle] = []
+        self.leaderboard: Dict[str, float] = {}
+        self.battle_group_manager = get_battle_group_manager()
         self.performance_tracker = None
-        self.current_battles = []
+        self.current_battles: List[Battle] = []
         self.champion_dir = Path(champion_dir)
         self.safety_margin = safety_margin # X% improvement required to replace champion
         
         logger.info(f"[ARENA] Trading Model Arena initialized. Safety margin: {safety_margin*100}%")
+        logger.info(f"[ARENA] Available battle groups: {self.battle_group_manager.list_groups()}")
     
     def register_model(self, model_name: str, model_instance: Any, model_type: str = "traditional"):
         """Реєстрація моделі для арени"""
@@ -311,11 +313,46 @@ class TradingModelArena:
             
             battle = Battle(model1_name=model1_name, model2_name=model2_name, battle_group=battle_group, start_time=datetime.now())
             self.current_battles.append(battle)
-            logger.info(f"[ARENA] Battle created: {model1_name} vs {model2_name}")
+            logger.info(f"[ARENA] Battle created: {model1_name} vs {model2_name} (group: {battle_group})")
             return True
         except Exception as e:
             logger.error(f"[ARENA] Failed to create battle: {e}")
             return False
+    
+    def create_battles_from_group(self, group_name: str) -> int:
+        """
+        Створює бої на основі попередньо визначеної групи боїв.
+        
+        Args:
+            group_name: Назва групи боїв (наприклад, 'light_vs_heavy', 'traditional_vs_enhanced')
+            
+        Returns:
+            Кількість створених боїв
+        """
+        try:
+            # Отримуємо доступні моделі
+            available_models = list(self.models.keys())
+            
+            # Генеруємо розклад боїв
+            battle_schedule = self.battle_group_manager.generate_battle_schedule(group_name, available_models)
+            
+            # Створюємо бої
+            battles_created = 0
+            for model1, model2 in battle_schedule:
+                if self.create_battle(model1, model2, battle_group=group_name):
+                    battles_created += 1
+            
+            logger.info(f"[ARENA] Created {battles_created} battles from group '{group_name}'")
+            return battles_created
+            
+        except Exception as e:
+            logger.error(f"[ARENA] Failed to create battles from group '{group_name}': {e}")
+            return 0
+    
+    def get_recommended_battle_groups(self) -> list[str]:
+        """Отримує рекомендовані групи боїв на основі зареєстрованих моделей."""
+        available_models = list(self.models.keys())
+        return self.battle_group_manager.get_recommended_groups(available_models)
     
     def run_battle(self, test_data: pd.DataFrame, actual_targets: pd.Series) -> Dict[str, Any]:
         """Виконання бою між моделями"""
@@ -381,7 +418,7 @@ class TradingModelArena:
             cumulative = np.cumprod(1 + returns)
             running_max = np.maximum.accumulate(cumulative)
             drawdown = (cumulative - running_max) / running_max
-            return np.min(drawdown)
+            return float(np.min(drawdown))
         except Exception as e:
             logger.warning(f"[ARENA] Error calculating max drawdown: {e}")
             return 0.0
@@ -434,7 +471,10 @@ class TradingModelArena:
             logger.warning(f"[ARENA] Failed to load arena state: {e}")
             return False
 
+_trading_arena: Optional[TradingModelArena] = None
+
 def get_trading_arena() -> TradingModelArena:
     global _trading_arena
-    if '_trading_arena' not in globals(): _trading_arena = TradingModelArena()
+    if _trading_arena is None:
+        _trading_arena = TradingModelArena()
     return _trading_arena

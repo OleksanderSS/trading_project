@@ -1,0 +1,11 @@
+{
+  "batch_id": "WMT_tabnet_20260323_092629",
+  "ticker": "WMT",
+  "model_name": "tabnet",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_direction_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T09:26:29.214594",
+  "status": "PENDING_COLAB"
+}

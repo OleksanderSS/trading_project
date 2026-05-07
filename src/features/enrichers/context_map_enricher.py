@@ -76,13 +76,17 @@ class ContextMapEnricher(BaseEnricher):
     def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """Generates a contextual fingerprint."""
         if df.empty:
+            logger.warning("⚠️ Empty DataFrame received. Returning original DataFrame.")
+            # ✅ FIX: Return original empty DataFrame instead of adding columns
+            # This prevents validation error in BaseEnricher
             return df
 
         res_df = df.copy()
         context_columns = self._get_context_columns(df)
         
         if not context_columns:
-            logger.warning("No numeric columns found for context map. Skipping.")
+            logger.warning("No numeric columns found for context map. Skipping enrichment.")
+            # ✅ FIX: Return original DataFrame when no columns to process
             return df
 
         logger.info(f"Generating context map from {len(context_columns)} indicators")
@@ -93,7 +97,9 @@ class ContextMapEnricher(BaseEnricher):
             self._generate_context_features(res_df, state_cols, temporal_cols)
             self._log_context_statistics(res_df, state_cols, temporal_cols)
         else:
-            logger.warning("No state columns were processed for the context map.")
+            logger.warning("No state columns were processed. Skipping enrichment.")
+            # ✅ FIX: Return original DataFrame when no state columns
+            return df
 
         return res_df
 
@@ -107,8 +113,8 @@ class ContextMapEnricher(BaseEnricher):
 
     def _process_context_columns(self, res_df: pd.DataFrame, context_columns: List[str]) -> tuple:
         """Process all context columns and return state and temporal column lists."""
-        state_cols = []
-        temporal_cols = []
+        state_cols: list[str] = []
+        temporal_cols: list[str] = []
         
         for col in context_columns:
             if col not in res_df.columns:
@@ -186,12 +192,12 @@ class ContextMapEnricher(BaseEnricher):
         """
         # Direct match
         if col in self.noise_filter_thresholds:
-            return self.noise_filter_thresholds[col]
+            return float(self.noise_filter_thresholds[col])  # type: ignore
         
         # Partial match (e.g. 'AMD_close' contains 'close')
         for key, threshold in self.noise_filter_thresholds.items():
             if key in col:
-                return threshold
+                return float(threshold)  # type: ignore
         
         # Dynamic threshold based on volatility (IQR)
         changes = df[col].diff().abs().dropna()
@@ -199,9 +205,9 @@ class ContextMapEnricher(BaseEnricher):
             q1, q3 = changes.quantile(0.25), changes.quantile(0.75)
             iqr = q3 - q1
             if iqr > 0:
-                dynamic_threshold = max(iqr * self.noise_sensitivity, 1e-7)
+                dynamic_threshold = float(max(iqr * self.noise_sensitivity, 1e-7))
                 logger.debug(f"Dynamic threshold for {col}: {dynamic_threshold:.6f} (IQR={iqr:.6f})")
-                return dynamic_threshold
+                return dynamic_threshold  # type: ignore
         
         # Fallback
         return self.default_dynamic_threshold

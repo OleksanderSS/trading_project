@@ -5,7 +5,7 @@ Handles pipeline execution and coordination.
 
 import asyncio
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, cast
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
@@ -21,7 +21,7 @@ class PipelineManager:
         self.orchestrator = orchestrator
         self.logger = ProjectLogger.get_logger(__name__)
     
-    async def run_full_hybrid_pipeline(self, params: PipelineParams = None) -> Dict[str, Any]:
+    async def run_full_hybrid_pipeline(self, params: Optional[PipelineParams] = None) -> Dict[str, Any]:
         """Full hybrid pipeline with smart caching logic."""
         if params is None:
             params = PipelineParams()
@@ -51,15 +51,15 @@ class PipelineManager:
         else:
             return self._handle_colab_path(b_info)
     
-    async def run_final_stages(self, params: FinalStagesParams = None) -> Dict[str, Any]:
+    async def run_final_stages(self, params: Optional[FinalStagesParams] = None) -> Dict[str, Any]:
         """Run final stages 4-7 of pipeline."""
         if params is None:
             params = FinalStagesParams()
             
         # Delegate to final_stages_orchestrator for real execution
-        from src.pipeline.hybrid_orchestrator import FinalStagesRequest
+        from src.pipeline.hybrid_orchestrator import HybridFinalStagesRequest
         
-        request = FinalStagesRequest(
+        request = HybridFinalStagesRequest(
             features_df=params.features_df,
             targets_df=params.targets_df,
             colab_results=params.colab_results,
@@ -69,26 +69,26 @@ class PipelineManager:
             batch_name=params.batch_name or self.orchestrator.batch_name
         )
         
-        return await self.orchestrator.final_stages_orchestrator.run_final_stages(request)
+        return cast(Dict[str, Any], await self.orchestrator.final_stages_orchestrator.run_final_stages(request))
     
     async def _collect_local_data(self, tickers: Optional[List[str]], 
                                   timeframes: Optional[List[str]]) -> Dict[str, Any]:
         """Collect local pipeline data."""
         self.logger.info("Collecting new data...")
-        return await self.orchestrator.run_local_pipeline(tickers, timeframes)
+        return cast(Dict[str, Any], await self.orchestrator.run_local_pipeline(tickers, timeframes))
     
     def _handle_data_caching(self, local_res: Dict[str, Any], force_training: bool) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
         """Handle data caching logic."""
-        return self.orchestrator.cache_manager.handle_data_caching(
+        return cast(Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]], self.orchestrator.cache_manager.handle_data_caching(
             local_res, force_training, self.orchestrator.batch_name, self.orchestrator.output_dir
-        )
+        ))
     
     async def _handle_skip_colab_path(self, b_info: Dict[str, Any], n_f: pd.DataFrame, 
                                      tickers: Optional[List[str]], 
                                      timeframes: Optional[List[str]]) -> Dict[str, Any]:
         """Handle skip Colab path."""
         self._create_fallback_selected_features(b_info, n_f)
-        final_results = await self.run_final_stages(None, None, None, None, tickers, timeframes, self.orchestrator.batch_name)
+        final_results = await self.run_final_stages()
         return {'status': 'completed_without_colab', 'final_results': final_results}
     
     def _handle_colab_path(self, b_info: Dict[str, Any]) -> Dict[str, Any]:

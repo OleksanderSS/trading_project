@@ -17,9 +17,9 @@ from src.config.unified_config_manager import get_current_config
 from src.config.tickers import get_tickers
 from src.training.adaptive_training_manager import (
     AdaptiveTrainingManager, 
-    AdaptiveTrainingConfig, 
     TrainingMode
 )
+from src.training.base_trainer import TrainerConfig
 
 ProjectLogger.setup_logging()
 logger = ProjectLogger.get_logger("TrainingRunner")
@@ -71,7 +71,7 @@ def main():
 
     # --- 2. Initialize the Manager ---
     # The manager will create a training plan based on its analysis
-    config = AdaptiveTrainingConfig(mode=TrainingMode(args.mode))
+    config = TrainerConfig(mode=TrainingMode(args.mode))
     manager = AdaptiveTrainingManager(config)
 
     # --- 3. Create or Execute Plan ---

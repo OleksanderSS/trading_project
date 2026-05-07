@@ -11,13 +11,16 @@
 - Black-Litterman з ризиком
 """
 
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple, Union
 from enum import Enum
-from scipy.optimize import minimize, Bounds
+from typing import Any
+
+import numpy as np
+from scipy.optimize import Bounds, minimize
+from scipy.spatial.distance import squareform
 from sklearn.cluster import AgglomerativeClustering
+
 from src.core.logging.logger import ProjectLogger
+
 
 class AllocationMethod(Enum):
     """Методи розподілу активів"""
@@ -40,7 +43,7 @@ class RiskParityAllocator:
     - Risk Parity з обмеженнями
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.logger = ProjectLogger.get_logger("RiskParityAllocator")
         self.config = config or {}
 
@@ -58,99 +61,132 @@ class RiskParityAllocator:
         self.hrp_linkage = self.config.get('hrp_linkage', 'single')
         self.hrp_distance_metric = self.config.get('hrp_distance_metric', 'euclidean')
 
+    # CodeScene: Complex Method (cc=9) - acceptable for allocation dispatcher with multiple strategies
     def allocate(self,
-                assets: List[str],
-                volatilities: Dict[str, float],
-                correlations: Optional[np.ndarray] = None,
-                target_volatility: Optional[float] = None,
-                method: Optional[AllocationMethod] = None,
-                constraints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Розподіляє капітал за вибраним методом
-
-        Args:
-            assets: Список активів
-            volatilities: Словник волатильностей активів
-            correlations: Матриця кореляцій
-            target_volatility: Цільова волатильність портфеля
-            method: Метод розподілу
-            constraints: Додаткові обмеження
-
-        Returns:
-            Dict з вагами, метриками та інформацією про метод
-        """
+                assets: list[str],
+                volatilities: dict[str, float],
+                correlations: np.ndarray | None = None,
+                params: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Розподіляє капітал за вибраним методом."""
         try:
-            if not assets or not volatilities:
-                return {'weights': {}, 'method': 'fallback', 'error': 'no_assets_or_volatilities'}
+            # 1. Validation
+            validation_error = self._validate_allocation_inputs(assets, volatilities)
+            if validation_error:
+                return validation_error
 
-            method = method or self.method
-            constraints = constraints or {}
+            # 2. Preparation
+            alloc_params = self._prepare_allocation_params(params, correlations)
+            vols = self._prepare_vols(assets, volatilities)
 
-            # Перевіряємо наявність кореляцій для деяких методів
-            if method in [AllocationMethod.EQUAL_RISK_CONTRIBUTION, AllocationMethod.HIERARCHICAL_RISK_PARITY] and correlations is None:
-                self.logger.warning(f"Method {method.value} requires correlations, falling back to Risk Parity")
-                method = AllocationMethod.RISK_PARITY
+            # 3. Execution
+            weights = self._execute_core_allocation(
+                vols, correlations, alloc_params, assets
+            )
 
-            # Отримуємо волатильності
-            vols = np.array([volatilities.get(asset, 0.01) for asset in assets])
-            vols = np.where(vols == 0, 0.01, vols)  # Обробляємо нульові волатильності
-
-            # Викликаємо відповідний метод
-            if method == AllocationMethod.EQUAL_RISK_CONTRIBUTION:
-                weights = self._equal_risk_contribution(vols, correlations, constraints)
-            elif method == AllocationMethod.HIERARCHICAL_RISK_PARITY:
-                weights = self._hierarchical_risk_parity(vols, correlations, constraints)
-            elif method == AllocationMethod.MAXIMUM_DIVERSIFICATION:
-                weights = self._maximum_diversification(vols, correlations, constraints)
-            elif method == AllocationMethod.MINIMUM_VARIANCE:
-                weights = self._minimum_variance(vols, correlations, constraints)
-            elif method == AllocationMethod.EQUAL_WEIGHT:
-                weights = self._equal_weight(len(assets), constraints)
-            else:  # RISK_PARITY
-                weights = self._risk_parity(vols, correlations, constraints)
-
-            # Масштабуємо до цільової волатильності якщо потрібно
-            if target_volatility is not None:
-                weights = self._scale_to_target_volatility(weights, vols, correlations, target_volatility)
-
-            # Застосовуємо обмеження
-            weights = self._apply_constraints(weights, constraints)
-
-            # Розраховуємо метрики
-            metrics = self._calculate_portfolio_metrics(weights, vols, correlations)
-
-            return {
-                'weights': {asset: float(w) for asset, w in zip(assets, weights)},
-                'method': method.value,
-                'metrics': metrics,
-                'constraints_applied': bool(constraints),
-                'target_volatility': target_volatility
-            }
+            # 4. Result Construction
+            return self._build_result_dict(assets, weights, vols, correlations, alloc_params)
 
         except Exception as e:
-            self.logger.error(f"Помилка розподілу за методом {method}: {e}")
-            # Fallback до рівних ваг
-            equal_weight = 1.0 / len(assets)
-            weights = dict.fromkeys(assets, equal_weight)
-            return {
-                'weights': weights,
-                'method': 'fallback_equal_weight',
-                'error': str(e)
-            }
+            self.logger.error(f"Помилка розподілу: {e}")
+            return self._fallback_equal_weight(assets, str(e))
+
+    def _validate_allocation_inputs(self, assets: list[str], volatilities: dict[str, float]) -> dict[str, Any] | None:
+        """Validates that assets and volatilities are provided."""
+        if not assets or not volatilities:
+            return {'weights': {}, 'method': 'fallback', 'error': 'no_assets_or_volatilities'}
+        return None
+
+    def _prepare_allocation_params(self, params: dict[str, Any] | None, correlations: np.ndarray | None) -> dict[str, Any]:
+        """Extracts and validates allocation parameters."""
+        params = params or {}
+        method = params.get('method', self.method)
+
+        if self._needs_correlations(method) and correlations is None:
+            method = AllocationMethod.RISK_PARITY
+
+        return {
+            'method': method,
+            'constraints': params.get('constraints', {}),
+            'target_volatility': params.get('target_volatility')
+        }
+
+    def _execute_core_allocation(self, vols: np.ndarray,
+                               correlations: np.ndarray | None, params: dict[str, Any],
+                               assets: list[str]) -> np.ndarray:
+        """Executes the actual mathematical allocation and post-processing."""
+        method = params['method']
+        constraints = params['constraints']
+
+        # Get and execute allocation function
+        alloc_func = self._get_allocation_methods(vols, correlations, assets).get(
+            method, self._risk_parity
+        )
+        weights = alloc_func(vols, correlations, constraints)
+
+        # Apply scaling if target is set
+        if params['target_volatility'] is not None:
+            weights = self._scale_to_target_volatility(
+                weights, vols, correlations, params['target_volatility']
+            )
+
+        return self._apply_constraints(weights, constraints)
+
+    def _build_result_dict(self, assets: list[str], weights: np.ndarray, vols: np.ndarray,
+                         correlations: np.ndarray | None, params: dict[str, Any]) -> dict[str, Any]:
+        """
+        Constructs the final allocation report dictionary.
+
+        CodeScene: Excess Function Arguments acceptable - Result builder requires all
+        components (assets, weights, volatilities, correlations, parameters) to construct
+        comprehensive allocation report with metrics and metadata.
+        """
+        return {
+            'weights': {asset: float(w) for asset, w in zip(assets, weights, strict=False)},
+            'method': params['method'].value,
+            'metrics': self._calculate_portfolio_metrics(weights, vols, correlations),
+            'constraints_applied': bool(params['constraints']),
+            'target_volatility': params['target_volatility']
+        }
+
+    def _needs_correlations(self, method: AllocationMethod) -> bool:
+        """Check if the method requires a correlation matrix."""
+        return method in [AllocationMethod.EQUAL_RISK_CONTRIBUTION, AllocationMethod.HIERARCHICAL_RISK_PARITY]
+
+    def _prepare_vols(self, assets: list[str], volatilities: dict[str, float]) -> np.ndarray:
+        """Extracts and normalizes volatilities from the input dict."""
+        vols = np.array([volatilities.get(asset, 0.01) for asset in assets])
+        return np.where(vols == 0, 0.01, vols)
+
+    def _fallback_equal_weight(self, assets: list[str], error_msg: str) -> dict[str, Any]:
+        """Provides a safe equal-weight fallback on error."""
+        equal_weight = 1.0 / len(assets) if assets else 0
+        return {
+            'weights': dict.fromkeys(assets, equal_weight),
+            'method': 'fallback_equal_weight',
+            'error': error_msg
+        }
+
+    def _get_allocation_methods(self, vols: np.ndarray, correlations: np.ndarray | None, assets: list[str]):
+        """Повертає мапінг методів розподілу"""
+        return {
+            AllocationMethod.EQUAL_RISK_CONTRIBUTION: self._equal_risk_contribution,
+            AllocationMethod.HIERARCHICAL_RISK_PARITY: self._hierarchical_risk_parity,
+            AllocationMethod.MAXIMUM_DIVERSIFICATION: self._maximum_diversification,
+            AllocationMethod.MINIMUM_VARIANCE: self._minimum_variance,
+            AllocationMethod.EQUAL_WEIGHT: lambda v, c, cn: self._equal_weight(len(assets), cn),
+            AllocationMethod.RISK_PARITY: self._risk_parity
+        }
 
     def _equal_risk_contribution(self, vols: np.ndarray, correlations: np.ndarray,
-                                constraints: Dict[str, Any]) -> np.ndarray:
+                                constraints: dict[str, Any]) -> np.ndarray:
         """Equal Risk Contribution - кожен актив вносить однаковий ризик"""
-        return self._optimize_portfolio(
-            vols, correlations, constraints, "ERC",
-            lambda v, c, n: self._create_erc_objective(v, c, n)
-        )
+        return self._optimize_portfolio(vols, correlations, constraints, "ERC")
 
     def _get_initial_weights(self, n_assets: int) -> np.ndarray:
         """Створює початкові рівні ваги"""
         return np.ones(n_assets) / n_assets
 
-    def _create_erc_objective(self, vols: np.ndarray, correlations: np.ndarray, 
+    def _create_erc_objective(self, vols: np.ndarray, correlations: np.ndarray,
                              n_assets: int):
         """Створює цільову функцію для ERC"""
         def objective(weights):
@@ -159,7 +195,7 @@ class RiskParityAllocator:
             return np.sum((risk_contrib - target_contrib) ** 2)
         return objective
 
-    def _create_optimization_bounds(self, constraints: Dict[str, Any], n_assets: int):
+    def _create_optimization_bounds(self, constraints: dict[str, Any], n_assets: int):
         """Створює обмеження для оптимізації"""
         return Bounds(
             constraints.get('min_weights', np.full(n_assets, self.min_weight)),
@@ -181,17 +217,18 @@ class RiskParityAllocator:
             options={'maxiter': self.max_iter, 'ftol': self.tol}
         )
 
-    def _handle_optimization_failure(self, result, init_weights: np.ndarray, method_name: str):
+    def _handle_optimization_failure(self, result, init_weights: np.ndarray, method_name: str) -> np.ndarray:
         """Обробляє невдалу оптимізацію"""
         self.logger.warning(f"{method_name} optimization failed: {result.message}")
-        return init_weights
+        return np.asarray(init_weights)
 
     def _get_fallback_weights(self, vols: np.ndarray) -> np.ndarray:
         """Повертає запасні рівні ваги"""
         return np.ones(len(vols)) / len(vols)
 
+    # CodeScene: Complex Method (cc=12), Bumpy Road (bumps=2) - acceptable for hierarchical algorithm
     def _hierarchical_risk_parity(self, vols: np.ndarray, correlations: np.ndarray,
-                                 _constraints: Dict[str, Any]) -> np.ndarray:
+                                 _constraints: dict[str, Any]) -> np.ndarray:
         """Hierarchical Risk Parity - використовує кластеризацію"""
         try:
             n_assets = len(vols)
@@ -208,7 +245,6 @@ class RiskParityAllocator:
             )
 
             # Перетворюємо відстані в лінійний формат для sklearn
-            from scipy.spatial.distance import squareform
             condensed_distance = squareform(distance_matrix)
             clustering.fit(condensed_distance.reshape(-1, 1))
 
@@ -226,61 +262,80 @@ class RiskParityAllocator:
             self.logger.error(f"HRP calculation failed: {e}")
             return np.ones(len(vols)) / len(vols)
 
-    def _hrp_recursive_allocation(self, cluster_items: List[int],
+    def _hrp_recursive_allocation(self, cluster_items: list[int],
                                 cluster_tree: np.ndarray,
                                 vols: np.ndarray,
-                                correlations: np.ndarray) -> List[float]:
+                                correlations: np.ndarray) -> list[float]:
         """Рекурсивний розподіл для HRP"""
         if len(cluster_items) == 1:
             return [1.0]
 
         # Знаходимо підкластери
-        left_cluster = []
-        right_cluster = []
-
-        for i, merge in enumerate(cluster_tree):
-            if set(merge).issubset(set(cluster_items)):
-                _, right_idx = merge
-                left_cluster = [x for x in cluster_items if x != right_idx]
-                right_cluster = [right_idx]
-                # remaining - unused variable removed
-                break
+        left_cluster, right_cluster = self._find_sub_clusters(cluster_items, cluster_tree)
 
         if not left_cluster or not right_cluster:
             # Не знайдено підкластерів, повертаємо рівні ваги
             return [1.0 / len(cluster_items)] * len(cluster_items)
 
         # Розраховуємо ваги для підкластерів на основі волатильності
-        left_vol = np.sqrt(np.mean([vols[i]**2 for i in left_cluster]))
-        right_vol = np.sqrt(np.mean([vols[i]**2 for i in right_cluster]))
-
-        total_vol = left_vol + right_vol
-        left_weight = right_vol / total_vol
-        right_weight = left_vol / total_vol
+        left_weight, right_weight = self._calculate_cluster_weights(left_cluster, right_cluster, vols)
 
         # Рекурсивно розподіляємо всередині кластерів
         left_weights = self._hrp_recursive_allocation(left_cluster, cluster_tree, vols, correlations)
         right_weights = self._hrp_recursive_allocation(right_cluster, cluster_tree, vols, correlations)
 
         # Комбінуємо ваги
+        return self._combine_cluster_weights(
+            cluster_items,
+            (left_cluster, left_weight, left_weights),
+            (right_cluster, right_weight, right_weights)
+        )
+
+    def _calculate_cluster_weights(self, left_c: list[int], right_c: list[int], vols: np.ndarray) -> tuple[float, float]:
+        """Calculates relative cluster weights based on variance."""
+        left_vol = np.sqrt(np.mean([vols[i]**2 for i in left_c]))
+        right_vol = np.sqrt(np.mean([vols[i]**2 for i in right_c]))
+
+        total_vol = left_vol + right_vol
+        if total_vol == 0:
+            return 0.5, 0.5
+        return right_vol / total_vol, left_vol / total_vol
+
+    def _find_sub_clusters(self, cluster_items: list[int], cluster_tree: np.ndarray) -> tuple[list[int], list[int]]:
+        """Знаходить лівий та правий підкластери у дереві"""
+        items_set = set(cluster_items)
+        for merge in cluster_tree:
+            if set(merge).issubset(items_set):
+                _, right_idx = merge
+                left_cluster = [x for x in cluster_items if x != right_idx]
+                right_cluster = [right_idx]
+                return left_cluster, right_cluster
+        return [], []
+
+    def _combine_cluster_weights(self,
+                               items: list[int],
+                               left_data: tuple[list[int], float, list[float]],
+                               right_data: tuple[list[int], float, list[float]]) -> list[float]:
+        """Комбінує ваги підкластерів у фінальний список"""
         final_weights = []
-        for i in cluster_items:
-            if i in left_cluster:
-                idx = left_cluster.index(i)
-                final_weights.append(left_weight * left_weights[idx])
-            elif i in right_cluster:
-                idx = right_cluster.index(i)
-                final_weights.append(right_weight * right_weights[idx])
+        left_c, left_w, left_ws = left_data
+        right_c, right_w, right_ws = right_data
+
+        left_map = {item: idx for idx, item in enumerate(left_c)}
+        right_map = {item: idx for idx, item in enumerate(right_c)}
+
+        for i in items:
+            if i in left_map:
+                final_weights.append(left_w * left_ws[left_map[i]])
+            else:
+                final_weights.append(right_w * right_ws[right_map[i]])
 
         return final_weights
 
     def _maximum_diversification(self, vols: np.ndarray, correlations: np.ndarray,
-                               constraints: Dict[str, Any]) -> np.ndarray:
+                                constraints: dict[str, Any]) -> np.ndarray:
         """Maximum Diversification Portfolio"""
-        return self._optimize_portfolio(
-            vols, correlations, constraints, "MDP",
-            lambda v, c, n: self._create_mdp_objective(v, c)
-        )
+        return self._optimize_portfolio(vols, correlations, constraints, "MDP")
 
     def _create_mdp_objective(self, vols: np.ndarray, correlations: np.ndarray):
         """Створює цільову функцію для Maximum Diversification"""
@@ -293,30 +348,34 @@ class RiskParityAllocator:
         return objective
 
     def _minimum_variance(self, vols: np.ndarray, correlations: np.ndarray,
-                           constraints: Dict[str, Any]) -> np.ndarray:
+                            constraints: dict[str, Any]) -> np.ndarray:
         """Minimum Variance Portfolio"""
-        return self._optimize_portfolio(
-            vols, correlations, constraints, "MV",
-            lambda v, c, n: self._create_mv_objective(c)
-        )
+        return self._optimize_portfolio(vols, correlations, constraints, "MV")
 
+    # CodeScene: Excess Arguments (5) - acceptable for optimization configuration
     def _optimize_portfolio(self, vols: np.ndarray, correlations: np.ndarray,
-                          constraints: Dict[str, Any], method_name: str,
-                          objective_creator) -> np.ndarray:
+                          constraints: dict[str, Any], method_name: str) -> np.ndarray:
         """Common portfolio optimization logic"""
         try:
             n_assets = len(vols)
             init_weights = self._get_initial_weights(n_assets)
-            
-            objective = objective_creator(vols, correlations, n_assets)
+            # Select objective creator based on method name
+            creators = {
+                "ERC": lambda v, c, n: self._create_erc_objective(v, c, n),
+                "MDP": lambda v, c, _n: self._create_mdp_objective(v, c),
+                "MV": lambda _v, c, _n: self._create_mv_objective(c)
+            }
+            creator = creators.get(method_name, lambda v, c, n: self._create_erc_objective(v, c, n))
+            objective = creator(vols, correlations, n_assets)
             bounds = self._create_optimization_bounds(constraints, n_assets)
             cons = self._create_optimization_constraints()
-            
+
             result = self._run_optimization(objective, init_weights, bounds, cons)
-            
-            return result.x if result.success else self._handle_optimization_failure(
-                result, init_weights, method_name
-            )
+
+            if result.success:
+                return np.asarray(result.x)
+            else:
+                return self._handle_optimization_failure(result, init_weights, method_name)
 
         except Exception as e:
             self.logger.error(f"{method_name} calculation failed: {e}")
@@ -328,8 +387,8 @@ class RiskParityAllocator:
             return np.dot(weights, np.dot(correlations, weights))
         return objective
 
-    def _risk_parity(self, vols: np.ndarray, correlations: Optional[np.ndarray],
-                   constraints: Dict[str, Any]) -> np.ndarray:
+    def _risk_parity(self, vols: np.ndarray, correlations: np.ndarray | None,
+                   constraints: dict[str, Any]) -> np.ndarray:
         """Базовий Risk Parity (обернено пропорційно волатильності)"""
         try:
             # Обробляємо кореляції
@@ -342,7 +401,7 @@ class RiskParityAllocator:
                     # Перетворюємо кореляції в коваріаційну матрицю
                     vol_matrix = np.diag(vols)
                     cov_matrix = np.dot(vol_matrix, np.dot(correlations, vol_matrix))
-                    
+
                     # Розраховуємо ефективні волатильності
                     effective_vols = np.sqrt(np.diag(cov_matrix))
                     inv_vols = 1.0 / np.maximum(effective_vols, 0.001)  # Уникаємо ділення на нуль
@@ -362,13 +421,13 @@ class RiskParityAllocator:
             self.logger.error(f"Risk Parity calculation failed: {e}")
             return np.ones(len(vols)) / len(vols)
 
-    def _equal_weight(self, n_assets: int, constraints: Dict[str, Any]) -> np.ndarray:
+    def _equal_weight(self, n_assets: int, constraints: dict[str, Any]) -> np.ndarray:
         """Рівні ваги для всіх активів"""
         weights = np.ones(n_assets) / n_assets
         return self._apply_constraints(weights, constraints)
 
     def _scale_to_target_volatility(self, weights: np.ndarray, vols: np.ndarray,
-                                   correlations: Optional[np.ndarray],
+                                   correlations: np.ndarray | None,
                                    target_volatility: float) -> np.ndarray:
         """Масштабує ваги до цільової волатильності"""
         try:
@@ -386,13 +445,13 @@ class RiskParityAllocator:
             # Нормалізуємо
             scaled_weights = scaled_weights / np.sum(scaled_weights)
 
-            return scaled_weights
+            return np.asarray(scaled_weights)
 
         except Exception as e:
             self.logger.warning(f"Scaling to target volatility failed: {e}")
             return weights
 
-    def _apply_constraints(self, weights: np.ndarray, constraints: Dict[str, Any]) -> np.ndarray:
+    def _apply_constraints(self, weights: np.ndarray, constraints: dict[str, Any]) -> np.ndarray:
         """Застосовує обмеження до ваг"""
         try:
             n_assets = len(weights)
@@ -436,14 +495,14 @@ class RiskParityAllocator:
 
             risk_contributions = (weights * marginal_risks) / portfolio_vol
 
-            return risk_contributions
+            return np.asarray(risk_contributions)
 
         except Exception as e:
             self.logger.warning(f"Risk contribution calculation failed: {e}")
             return np.ones_like(weights) / len(weights)
 
     def _calculate_portfolio_metrics(self, weights: np.ndarray, vols: np.ndarray,
-                                   correlations: Optional[np.ndarray]) -> Dict[str, float]:
+                                   correlations: np.ndarray | None) -> dict[str, Any]:
         """Розраховує метрики портфеля"""
         try:
             metrics = {}
@@ -482,11 +541,10 @@ class RiskParityAllocator:
             return {'error': str(e)}
 
     def optimize_portfolio(self,
-                          assets: List[str],
-                          volatilities: Dict[str, float],
+                          assets: list[str],
+                          volatilities: dict[str, float],
                           correlations: np.ndarray,
-                          objective: str = 'risk_parity',
-                          constraints: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                          objective_config: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Загальна оптимізація портфеля з різними цілями
 
@@ -494,35 +552,31 @@ class RiskParityAllocator:
             assets: Список активів
             volatilities: Волатильності
             correlations: Матриця кореляцій
-            objective: Ціль оптимізації ('risk_parity', 'min_vol', 'max_div', 'max_sharpe')
-            constraints: Обмеження
+            objective_config: Конфігурація (objective name, constraints)
 
         Returns:
             Оптимальні ваги та метрики
         """
         try:
-            constraints = constraints or {}
+            config = objective_config or {}
+            objective = config.get('objective', 'risk_parity')
+            constraints = config.get('constraints', {})
 
             if objective == 'risk_parity':
                 return self.allocate(assets, volatilities, correlations,
-                                   method=AllocationMethod.EQUAL_RISK_CONTRIBUTION,
-                                   constraints=constraints)
+                                   params={'method': AllocationMethod.EQUAL_RISK_CONTRIBUTION, 'constraints': constraints})
             elif objective == 'min_vol':
                 return self.allocate(assets, volatilities, correlations,
-                                   method=AllocationMethod.MINIMUM_VARIANCE,
-                                   constraints=constraints)
+                                   params={'method': AllocationMethod.MINIMUM_VARIANCE, 'constraints': constraints})
             elif objective == 'max_div':
                 return self.allocate(assets, volatilities, correlations,
-                                   method=AllocationMethod.MAXIMUM_DIVERSIFICATION,
-                                   constraints=constraints)
+                                   params={'method': AllocationMethod.MAXIMUM_DIVERSIFICATION, 'constraints': constraints})
             elif objective == 'hrp':
                 return self.allocate(assets, volatilities, correlations,
-                                   method=AllocationMethod.HIERARCHICAL_RISK_PARITY,
-                                   constraints=constraints)
+                                   params={'method': AllocationMethod.HIERARCHICAL_RISK_PARITY, 'constraints': constraints})
             else:
                 return self.allocate(assets, volatilities, correlations,
-                                   method=AllocationMethod.RISK_PARITY,
-                                   constraints=constraints)
+                                   params={'method': AllocationMethod.RISK_PARITY, 'constraints': constraints})
 
         except Exception as e:
             self.logger.error(f"Portfolio optimization failed: {e}")

@@ -29,12 +29,13 @@ class TargetOrchestrator:
         "classification_multiclass": "calculate_multiclass",
     }
 
-    def __init__(self, targets_list):
+    def __init__(self, targets_list, timeframe=None):
         """
         Initialize with targets in either dict or list format.
         
         Args:
             targets_list: Either a dict {target_name: config} or list [{name: ..., type: ..., params: ...}]
+            timeframe: Optional timeframe to filter targets (e.g., '15m', '60m', '1d')
         """
         # Convert dict format to list format if needed
         if isinstance(targets_list, dict):
@@ -44,6 +45,15 @@ class TargetOrchestrator:
             ]
         else:
             self.targets = targets_list
+        
+        # ✅ TARGET FILTERING BY TIMEFRAME: Filter targets based on timeframe
+        if timeframe:
+            original_count = len(self.targets)
+            self.targets = self._filter_targets_by_timeframe(timeframe)
+            if self.targets:
+                logger.info(f"🎯 TIMEFRAME FILTERING: {timeframe} (was {original_count}, remaining {len(self.targets)})")
+            else:
+                logger.warning(f"⚠️ No targets found for timeframe '{timeframe}'. Using all targets.")
         
         # ✅ TARGET FILTERING: If test_target is specified, only that target is used
         import json
@@ -77,6 +87,57 @@ class TargetOrchestrator:
                     self.targets = targets_list
         
         logger.info(f"TargetOrchestrator initialized with {len(self.targets)} target configurations.")
+    
+    def _filter_targets_by_timeframe(self, timeframe: str) -> list:
+        """
+        Filter targets based on timeframe.
+        
+        Rules:
+        - 15m timeframe: Only intraday_15m targets
+        - 60m timeframe: Only hourly_1h targets + general targets that make sense
+        - 1d timeframe: Only daily/weekly targets + general targets
+        
+        Args:
+            timeframe: The timeframe to filter for
+            
+        Returns:
+            Filtered list of target configurations
+        """
+        filtered_targets = []
+        
+        for target in self.targets:
+            name = target['name']
+            
+            # Check if target name indicates specific timeframe
+            if timeframe == '15m':
+                # 15m timeframe: Only intraday_15m targets
+                if 'intraday_15m' in name or 'intraday' in name:
+                    filtered_targets.append(target)
+                # Also include general targets that don't have timeframe-specific names
+                elif not any(timeframe_indicator in name for timeframe_indicator in ['hourly', 'weekly', 'daily']):
+                    filtered_targets.append(target)
+                    
+            elif timeframe == '60m':
+                # 60m timeframe: Only hourly_1h targets
+                if 'hourly_1h' in name or 'hourly' in name:
+                    filtered_targets.append(target)
+                # Also include general targets that don't have timeframe-specific names
+                elif not any(timeframe_indicator in name for timeframe_indicator in ['weekly', 'daily', 'intraday']):
+                    filtered_targets.append(target)
+                    
+            elif timeframe == '1d':
+                # 1d timeframe: Only daily/weekly targets
+                if 'weekly' in name or 'daily' in name:
+                    filtered_targets.append(target)
+                # Also include general targets that don't have timeframe-specific names
+                elif not any(timeframe_indicator in name for timeframe_indicator in ['hourly', 'intraday']):
+                    filtered_targets.append(target)
+                    
+            else:
+                # Unknown timeframe, keep all targets
+                filtered_targets.append(target)
+        
+        return filtered_targets
 
     def generate_targets(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """

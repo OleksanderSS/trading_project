@@ -45,13 +45,15 @@ class ConsensusEngine:
                  experience_diary: Any,
                  threshold_analyzer: Any,
                  config_manager: Optional[Any] = None,
-                 meta_model_path: Optional[str] = None):
+                 meta_model_path: Optional[str] = None,
+                 live_ensemble: Optional[Any] = None):
         """Initializes the ConsensusEngine with its required dependencies."""
         self.config_manager = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
         self.diary = experience_diary
         self.threshold_analyzer = threshold_analyzer
         self.dean_system = get_dean_system()
+        self.live_ensemble = live_ensemble
         
         # Resolve meta_model_path from configuration
         if meta_model_path is None:
@@ -68,7 +70,7 @@ class ConsensusEngine:
             except Exception as e:
                 self.logger.error(f"Failed to load Meta-model at {meta_model_path}: {e}")
         else:
-            self.logger.warning(f"Meta-model not found at {meta_model_path}. Falling back to weighted averaging.")
+            self.logger.warning(f"Meta-model not found at {meta_model_path}. Falling back to live-adaptive ensembling.")
 
     def generate_consensus(self, 
                            model_predictions: Dict[str, float], 
@@ -80,12 +82,17 @@ class ConsensusEngine:
         fingerprint = context_data.get('fingerprint', '0|0|0')
         regime = context_data.get('regime', 'neutral')
         
-        raw_score, contributions = self._calculate_raw_score(
-            model_predictions=model_predictions,
-            context_data=context_data,
-            regime=regime,
-            fingerprint=fingerprint,
-        )
+        # ELITE INTEGRATION: Use LiveAdaptiveEnsemble if meta-model is not available
+        if self.meta_model and self.meta_model.is_trained:
+            raw_score, contributions = self._predict_with_meta_model(model_predictions, context_data, regime)
+        elif self.live_ensemble:
+            # Use LiveAdaptiveEnsemble for dynamic weighting based on performance
+            raw_score, contributions = self.live_ensemble.get_weighted_ensemble_prediction(
+                model_predictions, regime
+            )
+            self.logger.info(f"[CONSENSUS] Using Live-Adaptive weights for {regime}")
+        else:
+            raw_score, contributions = self._predict_with_weighted_aggregation(model_predictions, fingerprint)
 
         raw_score, knn_adjustment = self._apply_knn_adjustment(raw_score, knn_results)
 
@@ -98,34 +105,19 @@ class ConsensusEngine:
         initial_signal = self._determine_initial_signal(normalized_score, signal_threshold)
         final_signal, critic_score, blocked_by_critic = self._apply_critic_filter(initial_signal, context_data)
 
-        report = self._build_report(
+        report = ConsensusReport(
             final_signal=final_signal,
             raw_score=raw_score,
-            normalized_score=normalized_score,
-            regime=regime,
-            fingerprint=fingerprint,
-            contributions=contributions,
+            confidence=abs(normalized_score),
+            market_regime=regime,
+            context_fingerprint=fingerprint,
+            model_contributions=contributions,
             knn_adjustment=knn_adjustment,
             critic_score=critic_score,
             blocked_by_critic=blocked_by_critic,
         )
 
-        self._log_consensus_to_diary(report, context_data)
         return report
-
-    def _calculate_raw_score(
-        self,
-        model_predictions: Dict[str, float],
-        context_data: Dict[str, Any],
-        regime: str,
-        fingerprint: str,
-    ) -> Tuple[float, Dict[str, float]]:
-        """Calculate raw consensus score and per-model contributions."""
-        if self.meta_model and self.meta_model.is_trained:
-            return self._predict_with_meta_model(model_predictions, context_data, regime)
-
-        self.logger.debug("Initiating failover weighted aggregation protocol.")
-        return self._predict_with_weighted_aggregation(model_predictions, fingerprint)
 
     def _predict_with_meta_model(
         self,
@@ -134,10 +126,14 @@ class ConsensusEngine:
         regime: str,
     ) -> Tuple[float, Dict[str, float]]:
         """Predict consensus score using the trained meta-model."""
+        if self.meta_model is None:
+            raise RuntimeError("Meta-model must be loaded before calling _predict_with_meta_model")
+        
+        meta_model = self.meta_model  # Type narrowing
         predictions_df = pd.DataFrame([model_predictions])
-        predictions_df = predictions_df.reindex(columns=self.meta_model.feature_names, fill_value=0.0)
+        predictions_df = predictions_df.reindex(columns=meta_model.feature_names, fill_value=0.0)
 
-        ensemble_result = self.meta_model.predict(
+        ensemble_result = meta_model.predict(
             predictions_df,
             context_params={
                 'ticker': context_data.get('ticker', 'any'),
@@ -199,7 +195,7 @@ class ConsensusEngine:
         threshold_report = self.threshold_analyzer.analyze(context_data)
         if not threshold_report:
             return 0.5
-        return threshold_report.get('adaptive_confidence_threshold', 0.5)
+        return float(threshold_report.get('adaptive_confidence_threshold', 0.5))
 
     def _normalize_score(self, raw_score: float) -> float:
         """Standardize raw score into [-1, 1] range."""
@@ -242,77 +238,49 @@ class ConsensusEngine:
         return "HOLD"
 
     def _apply_critic_filter(self, initial_signal: str, context_data: Dict[str, Any]) -> Tuple[str, float, bool]:
-        """Apply DEAN critic to potentially block risky decisions."""
+        """Apply DEAN critic and Anomaly hard-block to potentially block risky decisions."""
         final_signal = initial_signal
         blocked_by_critic = False
         critic_score = 0.0
 
+        # 1. DEAN Bootstrap Critique (Actor/Critic)
         try:
             _, critique = self.dean_system.bootstrap_action_critique(context_data)
             critic_score = critique.critique_score
 
             if critique.critique_score < 0 and initial_signal != "HOLD":
                 self.logger.warning(
-                    f"[CONSENSUS] Critic protocol blocked {initial_signal}. Critique Score: {critique.critique_score}"
+                    f"[CONSENSUS] DEAN Critic blocked {initial_signal}. Critique Score: {critique.critique_score}"
                 )
                 final_signal = "HOLD"
                 blocked_by_critic = True
         except Exception as e:
-            self.logger.debug(f"Critic module skipped: {e}. Executing nominal path.")
+            # self.logger.debug(f"Critic module skipped: {e}. Executing nominal path.")
             critic_score = 0.0
 
+        # 2. ELITE HARD-BLOCK: Anomaly Score from Stage 5
+        # If the environment or data is anomalous, we hold.
+        anomaly_score = context_data.get('anomaly_score', 0.0)
+        anomaly_threshold = self.config_manager.get('strategy.risk_management.anomaly_threshold', 0.8)
+        
+        if anomaly_score >= anomaly_threshold and initial_signal != "HOLD":
+            self.logger.warning(
+                f"[CONSENSUS] ANOMALY BLOCK: score {anomaly_score:.2f} >= {anomaly_threshold}. Blocking {initial_signal}."
+            )
+            final_signal = "HOLD"
+            blocked_by_critic = True
+
         return final_signal, critic_score, blocked_by_critic
-
-    def _build_report(
-        self,
-        final_signal: str,
-        raw_score: float,
-        normalized_score: float,
-        regime: str,
-        fingerprint: str,
-        contributions: Dict[str, float],
-        knn_adjustment: float,
-        critic_score: float,
-        blocked_by_critic: bool,
-    ) -> ConsensusReport:
-        """Build the ConsensusReport object."""
-        return ConsensusReport(
-            final_signal=final_signal,
-            raw_score=raw_score,
-            confidence=abs(normalized_score),
-            market_regime=regime,
-            context_fingerprint=fingerprint,
-            model_contributions=contributions,
-            knn_adjustment=knn_adjustment,
-            critic_score=critic_score,
-            blocked_by_critic=blocked_by_critic,
-        )
-
-    def _log_consensus_to_diary(self, report: ConsensusReport, context: Dict[str, Any]):
-        """Persists the decision matrix for future auditing and meta-model training."""
-        try:
-            self.diary.record_decision_metadata({
-                'timestamp': report.timestamp.isoformat(),
-                'fingerprint': report.context_fingerprint,
-                'regime': report.market_regime,
-                'final_signal': report.final_signal,
-                'raw_score': report.raw_score,
-                'critic_score': report.critic_score,
-                'model_weights': list(report.model_contributions.keys()),
-                'blocked': report.blocked_by_critic
-            })
-        except Exception as e:
-            self.logger.error(f"Failed to synchronize decision metadata with DiaryEngine: {e}")
 
     def get_ensemble_summary(self, reports: List[ConsensusReport]) -> Dict[str, Any]:
         """Analyzes historical reports to determine architectural leaders in the current regime."""
         if not reports:
             return {}
             
-        leaderboard = {}
+        leaderboard: Dict[str, float] = {}
         for r in reports:
             for arch, contrib in r.model_contributions.items():
-                leaderboard[arch] = leaderboard.get(arch, 0) + abs(contrib)
+                leaderboard[arch] = leaderboard.get(arch, 0.0) + abs(contrib)
         
         return dict(sorted(leaderboard.items(), key=lambda x: x[1], reverse=True))
 

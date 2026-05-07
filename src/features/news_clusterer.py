@@ -5,7 +5,7 @@ News Clusterer
 
 import pandas as pd
 import numpy as np
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Any
 from datetime import datetime
 from pathlib import Path
 import json
@@ -54,7 +54,7 @@ class NewsClusterer:
                 try:
                     self.model = SentenceTransformer('ProsusAI/finbert')
                     logger.info("✅ Loaded FinBERT for news clustering")
-                except:
+                except Exception:
                     # Fallback до загальної моделі
                     self.model = SentenceTransformer('all-MiniLM-L6-v2')
                     logger.info("✅ Loaded MiniLM for news clustering")
@@ -133,6 +133,10 @@ class NewsClusterer:
     
     def _compute_embeddings(self, texts: List[str]) -> np.ndarray:
         """Обчислити ембедінги для текстів"""
+        # ✅ FIX: Check if model is initialized
+        if self.model is None:
+            raise ValueError("Model not initialized. Call _initialize_model() first.")
+        
         if self.use_embeddings:
             # Sentence-BERT embeddings
             embeddings = self.model.encode(
@@ -179,7 +183,8 @@ class NewsClusterer:
             unique_ids = np.arange(max_cluster + 1, max_cluster + 1 + outlier_mask.sum())
             cluster_labels[outlier_mask] = unique_ids
         
-        return cluster_labels
+        # ✅ FIX: Explicitly return as ndarray
+        return np.asarray(cluster_labels)
     
     def _select_representatives(
         self,
@@ -213,7 +218,7 @@ class NewsClusterer:
         
         return representatives
     
-    def get_cluster_statistics(self, news_df: pd.DataFrame) -> Dict[str, any]:
+    def get_cluster_statistics(self, news_df: pd.DataFrame) -> Dict[str, Any]:
         """Отримати статистику кластеризації"""
         if 'cluster_id' not in news_df.columns:
             return {}

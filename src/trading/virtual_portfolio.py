@@ -14,6 +14,7 @@ from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import get_current_config
 from src.metrics.financial.portfolio_metrics import PortfolioMetricsCalculator
 from src.core.error_handling.error_handler import get_error_handler
+from src.backtesting.advanced.advanced_engine import TransactionCostModel
 
 logger = ProjectLogger.get_logger("VirtualPortfolio")
 error_handler = get_error_handler()
@@ -48,6 +49,10 @@ class VirtualPortfolio:
         self.max_total_risk = risk_config.get('max_total_risk', 0.3)
         self.stop_loss_pct = risk_config.get('stop_loss_pct', 0.05)
         self.take_profit_pct = risk_config.get('take_profit_pct', 0.10)
+        
+        # Initialize transaction cost model
+        cost_config = self.config_manager.get_config('backtest.transaction_costs', {})
+        self.transaction_cost_model = TransactionCostModel(cost_config)
         
         # Portfolio persistence
         portfolio_dir = Path("data/portfolios")
@@ -150,43 +155,60 @@ class VirtualPortfolio:
         return total_value
     
     def buy_stock(self, order_params: Dict[str, Any]) -> Dict[str, Any]:
-        """Executes a virtual buy order."""
+        """Executes a virtual buy order with transaction costs."""
         try:
             ticker = order_params['ticker']
             quantity = order_params['quantity']
             price = order_params['price']
             confidence = order_params.get('confidence', 0.8)
             
-            total_cost = quantity * price
-            if total_cost > self.current_balance:
-                return {'success': False, 'error': 'Insufficient funds'}
+            # Calculate transaction costs
+            trade_value = quantity * price
+            daily_volume = order_params.get('daily_volume', 1000000)  # Default volume
+            volatility = order_params.get('volatility', 0.02)  # Default volatility
+            order_size_pct = (quantity * price) / daily_volume if daily_volume > 0 else 0.01
             
-            transaction = self._create_buy_transaction(order_params, total_cost)
-            self._process_buy_order(ticker, quantity, price, total_cost, confidence)
+            cost_breakdown = self.transaction_cost_model.calculate_execution_costs(
+                trade_value=trade_value,
+                daily_volume=daily_volume,
+                volatility=volatility,
+                order_size_pct=order_size_pct
+            )
+            
+            # Total cost including transaction costs
+            total_cost = trade_value + cost_breakdown['total']
+            
+            if total_cost > self.current_balance:
+                return {'success': False, 'error': 'Insufficient funds including transaction costs'}
+            
+            transaction = self._create_buy_transaction(order_params, trade_value, cost_breakdown)
+            self._process_buy_order(ticker, quantity, price, trade_value, total_cost, confidence)
             
             self.transactions.append(transaction)
             self.save_portfolio()
-            logger.info(f"BOUGHT {quantity} {ticker} at ${price:.2f}")
+            logger.info(f"BOUGHT {quantity} {ticker} at ${price:.2f} (Costs: ${cost_breakdown['total']:.2f})")
             return {'success': True, 'transaction': transaction}
             
         except Exception as e:
             error_handler.handle_error(e, f"Buy Stock {order_params.get('ticker', 'unknown')}")
             return {'success': False, 'error': str(e)}
     
-    def _create_buy_transaction(self, order_params: Dict[str, Any], total_cost: float) -> Dict[str, Any]:
-        """Create buy transaction record."""
+    def _create_buy_transaction(self, order_params: Dict[str, Any], trade_value: float, cost_breakdown: Dict[str, Any]) -> Dict[str, Any]:
+        """Create buy transaction record with cost breakdown."""
         return {
             'timestamp': datetime.now(),
             'type': 'BUY',
             'ticker': order_params['ticker'],
             'quantity': order_params['quantity'],
             'price': order_params['price'],
-            'total_cost': total_cost,
+            'trade_value': trade_value,
+            'transaction_costs': cost_breakdown,
+            'total_cost': trade_value + cost_breakdown['total'],
             'reason': order_params.get('reason', ''),
             'confidence': order_params.get('confidence', 0.8)
         }
     
-    def _process_buy_order(self, ticker: str, quantity: int, price: float, total_cost: float, confidence: float):
+    def _process_buy_order(self, ticker: str, quantity: int, price: float, trade_value: float, total_cost: float, confidence: float):
         """Process buy order and update positions."""
         self.current_balance -= total_cost
         
@@ -194,26 +216,41 @@ class VirtualPortfolio:
             old_qty = self.positions[ticker]['quantity']
             old_avg = self.positions[ticker]['avg_price']
             new_qty = old_qty + quantity
+            # Include transaction costs in average price calculation
             self.positions[ticker]['avg_price'] = ((old_qty * old_avg) + total_cost) / new_qty
             self.positions[ticker]['quantity'] = new_qty
         else:
             self.positions[ticker] = {
                 'quantity': quantity,
-                'avg_price': price,
+                'avg_price': total_cost / quantity,  # Include costs in avg price
                 'entry_time': datetime.now(),
                 'confidence': confidence
             }
     
-    def sell_stock(self, ticker: str, quantity: int, price: float, reason: str = "") -> Dict[str, Any]:
-        """Executes a virtual sell order."""
+    def sell_stock(self, ticker: str, quantity: int, price: float, reason: str = "", 
+                daily_volume: float = 1000000, volatility: float = 0.02) -> Dict[str, Any]:
+        """Executes a virtual sell order with transaction costs."""
         try:
             if ticker not in self.positions or self.positions[ticker]['quantity'] < quantity:
                 return {'success': False, 'error': 'Insufficient position'}
             
             pos = self.positions[ticker]
-            revenue = quantity * price
+            trade_value = quantity * price
             cost_basis = quantity * pos['avg_price']
-            pnl = revenue - cost_basis
+            
+            # Calculate transaction costs for selling
+            order_size_pct = (quantity * price) / daily_volume if daily_volume > 0 else 0.01
+            
+            cost_breakdown = self.transaction_cost_model.calculate_execution_costs(
+                trade_value=trade_value,
+                daily_volume=daily_volume,
+                volatility=volatility,
+                order_size_pct=order_size_pct
+            )
+            
+            # Net revenue after transaction costs
+            net_revenue = trade_value - cost_breakdown['total']
+            pnl = net_revenue - cost_basis
             
             transaction = {
                 'timestamp': datetime.now(),
@@ -221,13 +258,15 @@ class VirtualPortfolio:
                 'ticker': ticker,
                 'quantity': quantity,
                 'price': price,
-                'total_revenue': revenue,
+                'trade_value': trade_value,
+                'transaction_costs': cost_breakdown,
+                'net_revenue': net_revenue,
                 'pnl': pnl,
                 'pnl_pct': (pnl / cost_basis) * 100 if cost_basis != 0 else 0,
                 'reason': reason
             }
             
-            self.current_balance += revenue
+            self.current_balance += net_revenue
             if quantity == pos['quantity']:
                 del self.positions[ticker]
             else:
@@ -235,7 +274,7 @@ class VirtualPortfolio:
             
             self.transactions.append(transaction)
             self.save_portfolio()
-            logger.info(f"SOLD {quantity} {ticker} at ${price:.2f} (PnL: ${pnl:.2f})")
+            logger.info(f"SOLD {quantity} {ticker} at ${price:.2f} (Net: ${net_revenue:.2f}, Costs: ${cost_breakdown['total']:.2f}, PnL: ${pnl:.2f})")
             return {'success': True, 'transaction': transaction}
             
         except Exception as e:

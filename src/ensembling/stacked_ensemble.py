@@ -22,24 +22,65 @@ class StackedEnsemble:
     A meta-model that learns the optimal way to combine base model predictions.
     Uses Ridge regression as the default meta-learner to prevent overfitting.
     Now integrates 'Live Efficiency Weighting' via Meta-Learning.
+    
+    Supports multiple ensemble methods:
+    - stacked: Ridge meta-model with live performance weighting
+    - weighted_average: Weighted by model metrics (R², RMSE, MAPE)
+    - median: Robust to outliers
+    - voting: For directional predictions
     """
-    def __init__(self, meta_model=None, config_manager=None):
+    def __init__(self, meta_model=None, config_manager=None, method='stacked', weighting_metric='r2'):
+        """
+        Args:
+            meta_model: Meta-learner for stacked method (default: Ridge)
+            config_manager: Configuration manager
+            method: Ensemble method ('stacked', 'weighted_average', 'median', 'voting')
+            weighting_metric: Metric for weighted_average ('r2', 'rmse', 'mape', 'equal')
+        """
         self.meta_model = meta_model or Ridge(alpha=1.0)
         self.config_manager = config_manager
+        self.method = method
+        self.weighting_metric = weighting_metric
         self.diary_engine = DiaryEngine()
         self.is_trained = False
         self.feature_names = []
+        self.model_metrics = {}  # Store model metrics for weighted_average method
+        logger.info(f"[StackedEnsemble] Initialized with method='{method}', weighting_metric='{weighting_metric}'")
 
-    def train(self, X: pd.DataFrame, y: pd.Series):
-        """Trains the meta-model on base model predictions."""
+    def train(self, X: pd.DataFrame, y: pd.Series, model_metrics: Optional[Dict[str, Dict[str, float]]] = None):
+        """
+        Trains the meta-model on base model predictions.
+        
+        Args:
+            X: DataFrame with base model predictions as columns
+            y: Target values
+            model_metrics: Optional dict of model metrics for weighted_average method
+                          Format: {'model_name': {'r2': 0.85, 'rmse': 0.02, 'mape': 5.0}}
+        """
         self.feature_names = X.columns.tolist()
-        self.meta_model.fit(X, y)
+        
+        if model_metrics:
+            self.model_metrics = model_metrics
+            logger.info(f"[StackedEnsemble] Stored metrics for {len(model_metrics)} models")
+        
+        if self.method == 'stacked':
+            self.meta_model.fit(X, y)
+            logger.info(f"[StackedEnsemble] Trained meta-model on {len(X)} samples with {len(self.feature_names)} base models.")
+        else:
+            logger.info(f"[StackedEnsemble] Method '{self.method}' doesn't require meta-model training.")
+        
         self.is_trained = True
-        logger.info(f"[StackedEnsemble] Trained on {len(X)} samples with {len(self.feature_names)} base models.")
 
     def predict(self, X: pd.DataFrame, context_params: Optional[Dict[str, str]] = None) -> EnsembleResult:
         """
-        Generates ensemble predictions using dynamic live efficiency weighting from Experience Diary.
+        Generates ensemble predictions using selected method.
+        
+        Args:
+            X: DataFrame with base model predictions
+            context_params: Optional context for live performance weighting (stacked method only)
+        
+        Returns:
+            EnsembleResult with predictions, confidence, divergence, weights, and stats
         """
         if not self.is_trained:
             logger.warning("[StackedEnsemble] Model not trained. Returning simple average.")
@@ -49,8 +90,24 @@ class StackedEnsemble:
                 confidence=np.ones(len(X)) * 0.5,
                 divergence=X.std(axis=1).to_numpy(),
                 active_weights={m: 1.0/len(X.columns) for m in X.columns},
-                stats={"trained": False}
+                stats={"trained": False, "method": "fallback"}
             )
+        
+        # Route to appropriate method
+        if self.method == 'stacked':
+            return self._predict_stacked(X, context_params)
+        elif self.method == 'weighted_average':
+            return self._predict_weighted_average(X)
+        elif self.method == 'median':
+            return self._predict_median(X)
+        elif self.method == 'voting':
+            return self._predict_voting(X)
+        else:
+            logger.warning(f"[StackedEnsemble] Unknown method '{self.method}', using stacked")
+            return self._predict_stacked(X, context_params)
+    
+    def _predict_stacked(self, X: pd.DataFrame, context_params: Optional[Dict[str, str]] = None) -> EnsembleResult:
+        """Original stacked ensemble with live performance weighting."""
 
         context_fingerprint = "unknown"
         if context_params:
@@ -58,11 +115,7 @@ class StackedEnsemble:
             context_fingerprint = f"{context_params.get('ticker', 'any')}_{context_params.get('tf', 'any')}_{context_params.get('regime', 'any')}"
 
         # 1. Retrieve Recent Live Performance from Experience Diary
-        live_stats = self.diary_engine.get_recent_performance(
-            models=self.feature_names, 
-            context=context_fingerprint,
-            window=20
-        )
+        contextual_weights = self.diary_engine.get_contextual_model_weights(context_fingerprint)
 
         # 2. Dynamically Adjust Weights
         # Get base weights from meta-model (Ridge coefficients)
@@ -72,18 +125,16 @@ class StackedEnsemble:
         active_weights_map = {}
 
         for i, model_name in enumerate(self.feature_names):
-            perf = live_stats.get(model_name, {})
-            accuracy = perf.get('accuracy', 0.5)
-            is_champion = perf.get('is_champion', False)
+            # Use contextual weight if available
+            contextual_weight = contextual_weights.get(model_name, 1.0)
             
-            # Logic 3: Weight Penalties and Bonuses
-            if accuracy < 0.5:
-                adjusted_weights[i] *= 0.5
-                logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Accuracy {accuracy:.2%}")
+            # Logic 3: Apply contextual weighting
+            adjusted_weights[i] *= contextual_weight
             
-            if is_champion:
-                adjusted_weights[i] *= 1.5
-                logger.debug(f"[StackedEnsemble] Boosting Champion {model_name}")
+            if contextual_weight < 0.5:
+                logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Contextual weight {contextual_weight:.2f}")
+            elif contextual_weight > 1.5:
+                logger.debug(f"[StackedEnsemble] Boosting {model_name}: Contextual weight {contextual_weight:.2f}")
             
             active_weights_map[model_name] = float(adjusted_weights[i])
 
@@ -118,10 +169,115 @@ class StackedEnsemble:
             divergence=divergence,
             active_weights=active_weights_map,
             stats={
+                "method": "stacked",
                 "context": context_fingerprint,
                 "n_models": len(self.feature_names),
-                "accuracy_penalties": sum(1 for m in self.feature_names if live_stats.get(m, {}).get('accuracy', 0.5) < 0.5)
+                "contextual_models": len(contextual_weights)
             }
+        )
+    
+    def _predict_weighted_average(self, X: pd.DataFrame) -> EnsembleResult:
+        """Weighted average based on model metrics (R², RMSE, MAPE)."""
+        preds_matrix = X[self.feature_names].to_numpy()
+        
+        # Calculate weights based on metrics
+        if self.weighting_metric == 'r2':
+            r2_scores = [max(0, self.model_metrics.get(m, {}).get('r2', 0.5)) for m in self.feature_names]
+            total_r2 = sum(r2_scores)
+            weights = np.array([r2 / total_r2 if total_r2 > 0 else 1/len(self.feature_names) for r2 in r2_scores])
+        
+        elif self.weighting_metric == 'rmse':
+            rmse_scores = [self.model_metrics.get(m, {}).get('rmse', 0.1) for m in self.feature_names]
+            inverse_rmse = [1 / (rmse + 1e-6) for rmse in rmse_scores]
+            total = sum(inverse_rmse)
+            weights = np.array([w / total for w in inverse_rmse])
+        
+        elif self.weighting_metric == 'mape':
+            mape_scores = [self.model_metrics.get(m, {}).get('mape', 10.0) for m in self.feature_names]
+            inverse_mape = [1 / (mape + 1e-6) for mape in mape_scores]
+            total = sum(inverse_mape)
+            weights = np.array([w / total for w in inverse_mape])
+        
+        else:  # equal weights
+            weights = np.ones(len(self.feature_names)) / len(self.feature_names)
+        
+        # Generate prediction
+        final_preds = np.dot(preds_matrix, weights)
+        divergence = np.std(preds_matrix, axis=1)
+        
+        # Confidence based on agreement
+        base_confidence = 0.8
+        final_confidence = np.full(len(X), base_confidence)
+        extreme_mask = divergence > 0.7
+        final_confidence[extreme_mask] *= 0.3
+        
+        active_weights_map = {m: float(w) for m, w in zip(self.feature_names, weights)}
+        
+        logger.info(f"[StackedEnsemble] Weighted average: metric={self.weighting_metric}")
+        
+        return EnsembleResult(
+            final_signal=final_preds,
+            confidence=final_confidence,
+            divergence=divergence,
+            active_weights=active_weights_map,
+            stats={"method": "weighted_average", "weighting_metric": self.weighting_metric, "n_models": len(self.feature_names)}
+        )
+    
+    def _predict_median(self, X: pd.DataFrame) -> EnsembleResult:
+        """Median ensemble - robust to outliers."""
+        preds_matrix = X[self.feature_names].to_numpy()
+        
+        # Median prediction
+        final_preds = np.median(preds_matrix, axis=1)
+        divergence = np.std(preds_matrix, axis=1)
+        
+        # Equal weights for median
+        weights = np.ones(len(self.feature_names)) / len(self.feature_names)
+        active_weights_map = {m: float(w) for m, w in zip(self.feature_names, weights)}
+        
+        # Confidence based on agreement
+        base_confidence = 0.75
+        final_confidence = np.full(len(X), base_confidence)
+        extreme_mask = divergence > 0.7
+        final_confidence[extreme_mask] *= 0.4
+        
+        logger.info(f"[StackedEnsemble] Median ensemble with {len(self.feature_names)} models")
+        
+        return EnsembleResult(
+            final_signal=final_preds,
+            confidence=final_confidence,
+            divergence=divergence,
+            active_weights=active_weights_map,
+            stats={"method": "median", "n_models": len(self.feature_names)}
+        )
+    
+    def _predict_voting(self, X: pd.DataFrame) -> EnsembleResult:
+        """Voting ensemble - for directional predictions."""
+        preds_matrix = X[self.feature_names].to_numpy()
+        
+        # Voting: sign of sum
+        signs = np.sign(preds_matrix)
+        votes = np.sum(signs, axis=1)
+        final_preds = np.sign(votes)
+        
+        divergence = np.std(preds_matrix, axis=1)
+        
+        # Equal weights for voting
+        weights = np.ones(len(self.feature_names)) / len(self.feature_names)
+        active_weights_map = {m: float(w) for m, w in zip(self.feature_names, weights)}
+        
+        # Confidence based on vote unanimity
+        vote_ratio = np.abs(votes) / len(self.feature_names)
+        final_confidence = vote_ratio  # 1.0 = unanimous, 0.0 = split
+        
+        logger.info(f"[StackedEnsemble] Voting ensemble with {len(self.feature_names)} models")
+        
+        return EnsembleResult(
+            final_signal=final_preds,
+            confidence=final_confidence,
+            divergence=divergence,
+            active_weights=active_weights_map,
+            stats={"method": "voting", "n_models": len(self.feature_names), "avg_vote_ratio": float(np.mean(vote_ratio))}
         )
 
     def save(self, path: str):

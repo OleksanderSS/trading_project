@@ -9,7 +9,7 @@ import logging
 import numpy as np
 import pandas as pd
 from enum import Enum
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 
 from src.core.logging.logger import ProjectLogger
@@ -31,28 +31,28 @@ class AssetClass(Enum):
 class AdaptiveParameters:
     """Set of parameters for specific context"""
     # Signal thresholds
-    buy_threshold: float  # Minimum prediction value for BUY
-    sell_threshold: float  # Maximum prediction value for SELL
-    hold_threshold: float  # Range for HOLD
+    buy_threshold: float = 0.02 # Minimum prediction value for BUY
+    sell_threshold: float = -0.02 # Maximum prediction value for SELL
+    hold_threshold: float = 0.005 # Range for HOLD
     
     # Confidence adjustment
-    confidence_min_accepted: float  # Do not trade if confidence < this
-    confidence_boost_trending: float  # Boost when in trend
-    confidence_penalty_volatile: float  # Penalty when volatile
+    confidence_min_accepted: float = 0.50 # Do not trade if confidence < this
+    confidence_boost_trending: float = 1.0 # Boost when in trend
+    confidence_penalty_volatile: float = 0.9 # Penalty when volatile
     
     # Risk sizing
-    risk_per_trade_pct: float  # % equity per trade
-    max_position_size_pct: float  # Max % in one position
-    max_daily_drawdown_pct: float  # Kill switch
+    risk_per_trade_pct: float = 0.02 # % equity per trade
+    max_position_size_pct: float = 0.10 # Max % in one position
+    max_daily_drawdown_pct: float = 0.05 # Kill switch
     
     # News impact
-    news_negative_threshold: float  # Threshold for negative news
-    news_positive_threshold: float  # Threshold for positive news
-    news_decay_hours: float  # How fast to forget new news
+    news_negative_threshold: float = -0.6 # Threshold for negative news
+    news_positive_threshold: float = 0.6 # Threshold for positive news
+    news_decay_hours: float = 24.0 # How fast to forget new news
     
     # Model weighting
-    model_decay_days: float  # How fast to forget old models
-    ensemble_reweight_days: float  # How often to reweight ensemble
+    model_decay_days: float = 30.0 # How fast to forget old models
+    ensemble_reweight_days: float = 7.0 # How often to reweight ensemble
     
     regime: MarketRegime = MarketRegime.RANGING
     asset_class: AssetClass = AssetClass.LARGE_CAP
@@ -61,14 +61,31 @@ class AdaptiveParameters:
 class AdaptiveParameterManager:
     """Elite-grade parameter management"""
     
-    def __init__(self, logger=None):
+    def __init__(self, config: Optional[Dict] = None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
+        self.config = config or {}
         
         # Base parameters for each regime/asset combination
         self.regime_presets = self._build_regime_presets()
         self.asset_presets = self._build_asset_presets()
-        self.current_params = None
-        self.param_history = []  # Track changes
+        
+        # Override with config if available
+        self._apply_config_overrides()
+        
+        self.current_params: Optional[AdaptiveParameters] = None
+        self.param_history: List[Dict[str, Any]] = []  # Track changes
+    
+    def _apply_config_overrides(self):
+        """Override hardcoded presets with values from config_manager/params.json"""
+        config_presets = self.config.get('regime_presets', {})
+        for regime_str, overrides in config_presets.items():
+            try:
+                regime_enum = MarketRegime(regime_str.lower())
+                if regime_enum in self.regime_presets:
+                    self.regime_presets[regime_enum].update(overrides)
+                    self.logger.info(f"✅ Applied config overrides for regime: {regime_str}")
+            except (ValueError, KeyError):
+                continue
     
     def _build_regime_presets(self) -> Dict[MarketRegime, Dict[str, float]]:
         """
@@ -76,54 +93,84 @@ class AdaptiveParameterManager:
         """
         return {
             MarketRegime.TRENDING_UP: {
-                'buy_threshold': 0.02,  # Higher threshold - allow only strong signals
+                'buy_threshold': 0.02,
                 'sell_threshold': -0.02,
                 'hold_threshold': 0.005,
-                'confidence_min_accepted': 0.55,  # Higher minimum
-                'confidence_boost_trending': 1.15,  # Boost 15% in trend
-                'risk_per_trade_pct': 0.04,  # More risk in trend
+                'confidence_min_accepted': 0.55,
+                'confidence_boost_trending': 1.15,
+                'confidence_penalty_volatile': 0.95,
+                'risk_per_trade_pct': 0.04,
                 'max_position_size_pct': 0.12,
                 'max_daily_drawdown_pct': 0.06,
+                'news_negative_threshold': -0.5,
+                'news_positive_threshold': 0.4,
+                'news_decay_hours': 12.0,
+                'model_decay_days': 45.0,
+                'ensemble_reweight_days': 5.0,
             },
             MarketRegime.TRENDING_DOWN: {
-                'buy_threshold': 0.02,  # More cautious
+                'buy_threshold': 0.02,
                 'sell_threshold': -0.02,
                 'hold_threshold': 0.005,
-                'confidence_min_accepted': 0.60,  # Significantly higher
-                'confidence_boost_trending': 0.90,  # Penalty in downtrend
-                'risk_per_trade_pct': 0.02,  # Less risk
+                'confidence_min_accepted': 0.60,
+                'confidence_boost_trending': 0.90,
+                'confidence_penalty_volatile': 0.85,
+                'risk_per_trade_pct': 0.02,
                 'max_position_size_pct': 0.06,
                 'max_daily_drawdown_pct': 0.04,
+                'news_negative_threshold': -0.7,
+                'news_positive_threshold': 0.6,
+                'news_decay_hours': 48.0,
+                'model_decay_days': 20.0,
+                'ensemble_reweight_days': 3.0,
             },
             MarketRegime.RANGING: {
-                'buy_threshold': 0.01,  # Lower - catch reversal
+                'buy_threshold': 0.01,
                 'sell_threshold': -0.01,
                 'hold_threshold': 0.003,
-                'confidence_min_accepted': 0.50,  # Accept weaker signals
-                'confidence_boost_trending': 0.85,  # Penalty for weakness
-                'risk_per_trade_pct': 0.025,  # Medium risk
+                'confidence_min_accepted': 0.50,
+                'confidence_boost_trending': 0.85,
+                'confidence_penalty_volatile': 0.90,
+                'risk_per_trade_pct': 0.025,
                 'max_position_size_pct': 0.08,
                 'max_daily_drawdown_pct': 0.05,
+                'news_negative_threshold': -0.6,
+                'news_positive_threshold': 0.6,
+                'news_decay_hours': 24.0,
+                'model_decay_days': 30.0,
+                'ensemble_reweight_days': 7.0,
             },
             MarketRegime.VOLATILE: {
-                'buy_threshold': 0.03,  # Very high - only strong signals
+                'buy_threshold': 0.03,
                 'sell_threshold': -0.03,
                 'hold_threshold': 0.01,
-                'confidence_min_accepted': 0.65,  # Very cautious
-                'confidence_boost_trending': 0.75,  # Penalty 25%
-                'risk_per_trade_pct': 0.01,  # Minimum risk
+                'confidence_min_accepted': 0.65,
+                'confidence_boost_trending': 0.75,
+                'confidence_penalty_volatile': 0.70,
+                'risk_per_trade_pct': 0.01,
                 'max_position_size_pct': 0.03,
                 'max_daily_drawdown_pct': 0.03,
+                'news_negative_threshold': -0.8,
+                'news_positive_threshold': 0.7,
+                'news_decay_hours': 72.0,
+                'model_decay_days': 10.0,
+                'ensemble_reweight_days': 2.0,
             },
             MarketRegime.DEAD: {
-                'buy_threshold': 1.0,  # Practically do not trade
+                'buy_threshold': 1.0,
                 'sell_threshold': -1.0,
                 'hold_threshold': 0.5,
-                'confidence_min_accepted': 0.99,  # Wait for clear signal
+                'confidence_min_accepted': 0.99,
                 'confidence_boost_trending': 0.0,
-                'risk_per_trade_pct': 0.001,  # Мінімум
+                'confidence_penalty_volatile': 0.5,
+                'risk_per_trade_pct': 0.001,
                 'max_position_size_pct': 0.01,
                 'max_daily_drawdown_pct': 0.01,
+                'news_negative_threshold': -0.99,
+                'news_positive_threshold': 0.99,
+                'news_decay_hours': 168.0,
+                'model_decay_days': 90.0,
+                'ensemble_reweight_days': 30.0,
             }
         }
     
@@ -184,7 +231,11 @@ class AdaptiveParameterManager:
                 self.logger.warning(f"Unknown asset class '{asset_class}', defaulting to LARGE_CAP")
                 asset_class = AssetClass.LARGE_CAP
                 
-        # 1. Start з regime-based параметрів
+        # Normalize volatility_percentile if passed as 0-100 instead of 0-1
+        if volatility_percentile > 1.0:
+            volatility_percentile /= 100.0
+        
+        # 1. Start with regime-based parameters
         regime_params = self.regime_presets[regime].copy()
         
         # 2. Apply asset class adjustments

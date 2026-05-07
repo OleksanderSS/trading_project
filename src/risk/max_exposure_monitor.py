@@ -1,0 +1,2979 @@
+#!/usr/bin/env python3
+"""
+Max Exposure Monitor - Maximum Exposure Monitoring and Enforcement
+Monitors and enforces maximum exposure limits for portfolio protection.
+"""
+
+import numpy as np
+import pandas as pd
+from typing import Dict, List, Any, Optional, Tuple
+from datetime import datetime, timedelta
+import logging
+from enum import Enum
+import json
+from pathlib import Path
+import asyncio
+from scipy.cluster.hierarchy import linkage, dendrogram
+from sklearn.metrics import silhouette_score
+
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger("MaxExposureMonitor")
+
+class MaxExposureMonitor:
+    """
+    Maximum exposure monitoring and enforcement system.
+    
+    This monitor provides:
+    - Real-time exposure tracking and analysis
+    - Asset-level and sector-level exposure limits
+    - Concentration risk analysis and optimization
+    - Correlation-based exposure optimization
+    - Dynamic exposure limit enforcement
+    - Historical exposure tracking and analysis
+    
+    Critical for preventing concentration risk and ensuring diversification.
+    """
+    
+    # Exposure types
+    EXPOSURE_TYPES = {
+        'asset': {
+            'description': 'Individual asset exposure',
+            'typical_limit': 0.10  # 10% of portfolio
+            'max_limit': 0.25  # 25% of portfolio
+        },
+        'sector': {
+            'description': 'Sector-based exposure',
+            'typical_limit': 0.15,  # 15% of portfolio
+            'max_limit': 0.30  # 30% of portfolio
+        },
+        'correlation_group': {
+            'analysis': 'group',
+            'description': 'Correlation-based exposure groups',
+            'typical_limit': 0.20,  # 20% of portfolio
+            'max_limit': 0.40  # 40% of portfolio
+        }
+    }
+    
+    # Concentration risk metrics
+    CONCENTRATION_METRICS = {
+        'herfindahl_index': {
+            'description': 'Herfindahl-Hirschman index',
+            'lower_better': True,
+            'threshold': 0.1
+        },
+        'concentration_ratio': {
+            'portfolio': 'max_weight / min_weight',
+            'lower_better': False,
+            'threshold': 5.0
+        },
+        'diversification_ratio': {
+            'portfolio_volatility / weighted_avg_volatility',
+            'lower_better': True,
+            'threshold': 1.2
+        },
+        'entropy': {
+            'portfolio_entropy',
+            'lower_better': True,
+            'threshold': 2.0
+        }
+    }
+    
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """
+        Initialize Max Exposure Monitor.
+        
+        Args:
+            config: Configuration dictionary for exposure monitoring
+        """
+        self.logger = logger
+        self.config = config or {}
+        
+        # Exposure limits
+        self.exposure_limits = self.config.get('exposure_limits', {})
+        self.exposure_triggers = self.config.get('exposure_triggers', {})
+        
+        # Concentration analysis settings
+        self.concentration_threshold = self.config.get('concentration_threshold', 0.25)
+        self.correlation_threshold = self.config.get('correlation_threshold', 0.7)
+        
+        # Monitoring state
+        self.current_exposures = {}
+        self.exposure_history = []
+        self.exposure_events = []
+        
+        # Analysis components
+        self.correlation_analyzer = CorrelationAnalyzer()
+        self.concentration_analyzer = ConcentrationAnalyzer()
+        
+        # Storage paths
+        self.storage_path = Path(self.config.get('storage_path', 'data/risk/max_exposure'))
+        self.storage_path.mkdir(parents=True, exist_ok=True)
+        
+        self.logger.info("✅ MaxExposureMonitor initialized")
+    
+    async def monitor_exposure(self, 
+                           portfolio_data: Dict[str, Any],
+                           market_data: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Monitor portfolio exposure and enforce limits.
+        
+        Args:
+            portfolio_data: Current portfolio positions
+            market_data: Current market data
+            
+        Returns:
+            Dict with exposure analysis and recommendations
+        """
+        self.logger.info("🔍 Starting exposure monitoring")
+        
+        results = {
+            'timestamp': datetime.now(),
+            'exposure_analysis': {},
+            'exposure_breaches': [],
+            'recommendations': []
+        }
+        
+        try:
+            # 1. Update current exposures
+            self._update_current_exposures(portfolio_data)
+            
+            # 2. Calculate exposure analysis
+            exposure_analysis = self._calculate_exposure_analysis(portfolio_data, market_data)
+            results['exposure_analysis'] = exposure_analysis
+            
+            # 3. Check for exposure breaches
+            exposure_breaches = self._check_exposure_breaches(exposure_analysis)
+            results['exposure_breaches'] = exposure_breaches
+            
+            # 4. Generate recommendations
+            recommendations = self._generate_exposure_recommendations(
+                exposure_analysis, exposure_breaches
+            )
+            results['recommendations'] = recommendations
+            
+            # 5. Store results
+            self._store_exposure_results(results)
+            
+            self.logger.info(f"✅ Exposure monitoring complete. Breaches: {len(exposure_breaches)}")
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"Error in exposure monitoring: {e}", exc_info=True)
+            results['error'] = str(e)
+            return results
+    
+    def _update_current_exposures(self, portfolio_data: Dict[str, Any]) -> None:
+        """Update current exposure tracking."""
+        
+        try:
+            self.current_exposures = {}
+            
+            # Calculate current exposures
+            total_portfolio_value = sum(
+                position.get('current_value', 0.0)
+            )
+            
+            for symbol, position in portfolio_data.items():
+                if 'current_value' in position:
+                    exposure = position['current_value'] / total_portfolio_value
+                    self.current_exposures[symbol] = {
+                        'exposure': exposure,
+                        'value': position['current_value'],
+                        'quantity': position['quantity'],
+                        'weight': exposure
+                    }
+            
+            self.logger.debug(f"Updated exposures for {len(self.current_exposures)} assets")
+            
+        except Exception as e:
+            self.logger.error(f"Error updating current exposures: {e}")
+    
+    def _calculate_exposure_analysis(self, 
+                                portfolio_data: Dict[str, Any],
+                                market_data: pd.DataFrame) -> Dict[str, Any]:
+        """Calculate comprehensive exposure analysis."""
+        
+        try:
+            exposure_analysis = {
+                'total_exposure': 0.0,
+                'asset_exposures': {},
+                'sector_exposures': {},
+                'correlation_groups': {},
+                'concentration_metrics': {},
+                'diversification_metrics': {},
+                'breach_count': 0
+            }
+            
+            if not self.current_exposures:
+                return exposure_analysis
+            
+            # Calculate total exposure
+            total_exposure = sum(exposure['exposure'] for exposure in self.current_exposures.values())
+            exposure_analysis['total_exposure'] = total_exposure
+            
+            # Asset-level exposure analysis
+            asset_exposures = {}
+            for symbol, exposure in self.current_exposures.items():
+                exposure_analysis['asset_exposures'][symbol] = {
+                    'exposure': exposure['exposure'],
+                    'weight': exposure['weight'],
+                    'value': exposure['value'],
+                    'quantity': exposure['quantity']
+                }
+            
+            # Sector exposure analysis
+            sector_exposures = self._calculate_sector_exposures(portfolio_data)
+            exposure_analysis['sector_exposures'] = sector_exposures
+            
+            # Correlation-based exposure analysis
+            correlation_groups = self._analyze_correlation_groups(portfolio_data, market_data)
+            exposure_analysis['correlation_groups'] = correlation_groups
+            
+            # Concentration metrics
+            concentration_metrics = self._calculate_concentration_metrics()
+            exposure_analysis['concentration_metrics'] = concentration_metrics
+            
+            # Diversification metrics
+            diversification_metrics = self._calculate_diversification_metrics(
+                portfolio_data, market_data
+            )
+            exposure_analysis['diversification_metrics'] = diversification_metrics
+            
+            # Check for breaches
+            breach_count = self._check_exposure_breaches(exposure_analysis)
+            exposure_analysis['breach_count'] = breach_count
+            exposure_analysis['breach_details'] = self._get_exposure_breach_details(exposure_analysis)
+            
+            return exposure_analysis
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating exposure analysis: {e}")
+            return {'error': str(e)}
+    
+    def _calculate_sector_exposures(self, portfolio_data: Dict[str, Any]) -> Dict[str, float]:
+        """Calculate sector-level exposures."""
+        
+        try:
+            sector_exposures = {}
+            
+            # Group positions by sector (assuming sector info in position data)
+            for symbol, position in portfolio_data.items():
+                sector = position.get('sector', 'unknown')
+                current_value = position.get('current_value', 0.0)
+                
+                sector_exposures[sector] = sector_exposures.get(sector, 0.0) + current_value
+            
+            # Normalize to percentage
+            if sector_exposures:
+                total_sector_value = sum(sector_exposures.values())
+                for sector, exposure in sector_exposures.items():
+                    sector_exposures[sector] = exposure / total_sector_value
+            
+            return sector_exposures
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating sector exposures: {e}")
+            return {}
+    
+    def _analyze_correlation_groups(self, 
+                             portfolio_data: Dict[str, Any],
+                             market_data: pd.DataFrame) -> Dict[str, Dict[str, Any]]:
+        """Analyze correlation-based exposure groups."""
+        
+        try:
+            if len(portfolio_data) < 2:
+                return {'correlation_groups': {}}
+            
+            # Get price data for portfolio assets
+            symbols = list(portfolio_data.keys())
+            price_matrix = market_data['close'][symbols]
+            
+            # Calculate correlation matrix
+            correlation_matrix = price_matrix.pct_change().corr()
+            
+            # Perform hierarchical clustering
+            correlation_matrix = np.abs(correlation_matrix)
+            distance_matrix = 1 - correlation_matrix  # Convert to distance matrix
+            
+            # Perform hierarchical clustering
+            clustering = linkage(
+                squareform(distance_matrix),
+                method='complete',
+                metric='euclidean'
+            )
+            
+            # Create correlation groups
+            correlation_groups = {}
+            cluster_labels = fcluster_labels(clustering, range(len(symbols))
+            
+            for i, label in enumerate(cluster_labels):
+                group_symbols = [symbols[j] for j, label in enumerate(cluster_labels) if label == i]
+                correlation_groups[f'group_{i}'] = {
+                    'symbols': group_symbols,
+                    'avg_correlation': self._calculate_group_correlation(
+                        correlation_matrix, group_symbols
+                    ),
+                    'group_size': len(group_symbols),
+                    'exposure': sum([
+                        self.current_exposures.get(symbol, {}).get('exposure', 0.0)
+                        for symbol in group_symbols
+                    ]),
+                    'weight': sum([
+                        self.current_exposures.get(symbol, {}).get('weight', 0.0)
+                        for symbol in group_symbols
+                    ])
+                }
+            
+            return correlation_groups
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing correlation groups: {e}")
+            return {'correlation_groups': {}}
+    
+    def _calculate_group_correlation(self, correlation_matrix: pd.DataFrame, symbols: List[str]) -> float:
+        """Calculate average correlation for a group of symbols."""
+        
+        try:
+            # Extract submatrix for group
+            submatrix = correlation_matrix.loc[symbols, symbols]
+            return submatrix.mean().mean()
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating group correlation: {e}")
+            return 0.0
+    
+    def _calculate_concentration_metrics(self) -> Dict[str, float]:
+        """Calculate concentration metrics for portfolio."""
+        
+        try:
+            if not self.current_exposures:
+                return {}
+            
+            # Calculate concentration ratio
+            weights = [exposure['weight'] for exposure in self.current_exposures.values()]
+            max_weight = max(weights) if weights else 0.0
+            min_weight = min(weights) if weights else 0.0
+            
+            if min_weight > 0:
+                concentration_ratio = max_weight / min_weight
+            else:
+                concentration_ratio = 1.0
+            
+            # Calculate Herfindahl index
+            weights = np.array(weights)
+            n_assets = len(weights)
+            
+            if n_assets > 1:
+                # Calculate effective number of assets
+                effective_n_assets = 1.0 / np.sum(weights ** 2)
+                herfindahl_index = effective_n_assets / n_assets
+            else:
+                herfindahl_index = 1.0
+            
+            # Calculate entropy
+            if weights.sum() > 0:
+                normalized_weights = weights / weights.sum()
+                entropy = -np.sum(normalized_weights * np.log(normalized_weights + 1e-10))
+            else:
+                entropy = 0.0
+            
+            return {
+                'concentration_ratio': concentration_ratio,
+                'herfindahl_index': herfindahl_index,
+                'entropy': entropy,
+                'n_assets': n_assets
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating concentration metrics: {e}")
+            return {}
+    
+    def _calculate_diversification_metrics(self, 
+                                     portfolio_data: Dict[str, Any],
+                                     market_data: pd.DataFrame) -> Dict[str, float]:
+        """Calculate diversification metrics."""
+        
+        try:
+            if not portfolio_data or market_data.empty():
+                return {}
+            
+            # Get returns for portfolio
+            portfolio_returns = self._calculate_portfolio_returns(portfolio_data, market_data)
+            portfolio_volatility = np.std(portfolio_returns) * np.sqrt(252) if len(portfolio_returns) > 1 else 0
+            
+            # Get individual asset volatilities
+            asset_volatilities = []
+            for symbol in portfolio_data.keys():
+                if symbol in market_data['close'].columns:
+                    symbol_returns = market_data['close'][symbol].pct_change().dropna()
+                    asset_volatilities.append(symbol_returns.std() * np.sqrt(252))
+            
+            if asset_volatilities:
+                weighted_avg_volatility = np.sum([
+                    exposure['weight'] * vol for exposure, exposure in self.current_exposures.items()
+                ]) / sum(exposure['weight'] for exposure in self.current_exposures.values())
+            else:
+                weighted_avg_volatility = 0.0
+            
+            if weighted_avg_volatility > 0:
+                diversification_ratio = portfolio_volatility / weighted_avg_volatility
+            else:
+                diversification_ratio = 1.0
+            
+            return {
+                'diversification_ratio': diversification_ratio,
+                'portfolio_volatility': portfolio_volatility,
+                'weighted_avg_volatility': weighted_avg_volatility
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating diversification metrics: {e}")
+            return {}
+    
+    def _check_exposure_breaches(self, exposure_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Check for exposure limit breaches."""
+        
+        try:
+            breaches = {'total_breached': False, 'asset_breaches': [], 'sector_breaches': [], 'group_breaches': []}
+            
+            # Check total exposure limit
+            total_exposure = exposure_analysis.get('total_exposure', 0.0)
+            max_total_exposure = self.risk_limits.get('max_total_exposure', 1.0)
+            
+            if total_exposure > max_total_exposure:
+                breaches['total_breached'] = True
+                breaches['total_breached'] = total_exposure
+                breaches['total_excess'] = total_exposure - max_total_exposure
+            
+            # Check asset exposure limits
+            asset_exposures = exposure_analysis.get('asset_exposures', {})
+            max_asset_exposure = self.risk_limits.get('max_asset_exposure', 0.25)
+            
+            asset_breaches = []
+            for symbol, exposure in asset_exposures.items():
+                if exposure > max_asset_exposure:
+                    asset_breaches.append(symbol)
+                    breaches['asset_breaches'].append(exposure)
+            
+            # Check sector exposure limits
+            sector_exposures = exposure_analysis.get('sector_exposures', {})
+            max_sector_exposure = self.risk_limits.get('max_sector_exposure', 0.30)
+            
+            sector_breaches = []
+            for sector, exposure in sector_exposures.items():
+                if exposure > max_sector_exposure:
+                    sector_breaches.append(sector)
+                    breaches['sector_breaches'].append(exposure)
+            
+            # Check correlation group limits
+            correlation_groups = exposure_analysis.get('correlation_groups', {})
+            max_group_exposure = self.risk_limits.get('max_group_exposure', 0.40)
+            
+            group_breaches = []
+            for group_name, group_info in correlation_groups.items():
+                group_exposure = group_info.get('exposure', 0.0)
+                if group_exposure > max_group_exposure:
+                    group_breaches.append(group_name)
+                    breaches['group_breaches'].append(group_exposure)
+            
+            # Update breach count
+            total_breaches = (
+                breaches['total_breached'] +
+                len(asset_breaches) +
+                len(sector_breaches) +
+                len(group_breaches)
+            )
+            
+            breaches['breach_count'] = total_breaches
+            
+            # Get breach details
+            breach_details = []
+            
+            if breaches['total_breached']:
+                breach_details.append({
+                    'type': 'total',
+                    'current_value': total_exposure,
+                    'threshold': max_total_exposure,
+                    'excess': total_excess
+                })
+            
+            for symbol in asset_breaches:
+                breach_details.append({
+                    'type': 'asset',
+                    'symbol': symbol,
+                    'current_value': self.current_exposures.get(symbol, {}).get('value', 0.0),
+                    'current_exposure': asset_exposures.get(symbol, {}).get('exposure', 0.0),
+                    'threshold': max_asset_exposure,
+                    'excess': asset_exposures.get(symbol, {}).get('exposure', 0.0) - max_asset_exposure
+                })
+            
+            for sector in sector_breaches:
+                breach_details.append({
+                    'type': 'sector',
+                    'sector': sector,
+                    'current_exposure': sector_exposures.get(sector, 0.0),
+                    'threshold': max_sector_exposure,
+                    'excess': sector_exposures.get(sector, 0.0) - max_sector_exposure
+                })
+            
+            for group_name in group_breaches:
+                group_info = correlation_groups.get(group_name, {})
+                breach_details.append({
+                    'type': 'correlation_group',
+                    'group_name': group_name,
+                    'current_exposure': group_info.get('exposure', 0.0),
+                    'threshold': max_group_exposure,
+                    'excess': group_info.get('exposure', 0.0) - max_group_exposure
+                })
+            
+            breaches['breach_details'] = breach_details
+            
+            return breaches
+            
+        except Exception as e:
+            self.logger.error(f"Error checking exposure breaches: {e}")
+            return {'total_breached': False, 'error': str(e)}
+    
+    def _get_exposure_breach_details(self, breaches: Dict[str, Any]) -> List[str]:
+        """Get detailed breach information."""
+        
+        try:
+            breach_details = []
+            
+            if 'breach_details' in breaches:
+                breach_details = [
+                    f"{breach['type'].title()}: "
+                    f"Current: {breach['current_value']:.4f}, "
+                    f"Threshold: {breach['threshold']:.4f}"
+                ]
+            
+            return breach_details
+            
+        except Exception as e:
+            self.logger.error(f"Error getting breach details: {e}")
+            return []
+    
+    async def enforce_exposure_limits(self, 
+                                 portfolio_data: Dict[str, Any],
+                                 reduction_factor: float = 0.5,
+                                 target_exposures: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+        """Enforce exposure limits through position reduction."""
+        
+        try:
+            self.logger.warning(f"🔥 Enforcing exposure limits (reduction factor: {reduction_factor})")
+            
+            # Calculate reduction targets
+            if target_exposures:
+                reduction_targets = target_exposures
+            else:
+                # Calculate target exposures based on risk level
+                current_exposures = self.current_exposures
+                risk_level = self.current_risk_level
+                
+                if risk_level == 'critical':
+                    reduction_factor = 0.8
+                elif risk_level == 'high':
+                    reduction_factor = 0.6
+                elif risk_level == 'elevated':
+                    reduction_factor = 0.8
+                else:
+                    reduction_factor = 0.9
+                
+                reduction_targets = {
+                    symbol: exposure * reduction_factor
+                    for symbol, exposure in current_exposures.items()
+                }
+            else:
+                # Default reduction
+                reduction_targets = {
+                    symbol: exposure * reduction_factor
+                    for symbol, exposure in current_exposures.items()
+                }
+            
+            # Apply position reductions
+            reduced_portfolio = await self._apply_position_reductions(
+                portfolio_data, reduction_targets
+            )
+            
+            # Update positions
+            self._update_positions(reduced_portfolio)
+            
+            # Generate action report
+            action_report = {
+                'timestamp': datetime.now(),
+                'action': 'exposure_enforced',
+                'reduction_factor': reduction_factor,
+                'original_count': len(portfolio_data),
+                'reduced_count': len(reduced_portfolio),
+                'target_exposures': target_exposures,
+                'breach_count': len(self._check_exposure_breaches(
+                    self._calculate_exposure_analysis(reduced_portfolio)
+                )
+            }
+            
+            self.logger.info(f"✅ Exposure limits enforced. Reduction factor: {reduction_factor}")
+            
+            return action_report
+            
+        except Exception as e:
+            self.logger.error(f"Error enforcing exposure limits: {e}")
+            return {'error': str(e)}
+    
+    async def _apply_position_reductions(self, 
+                                     portfolio_data: Dict[str, Any],
+                                     reduction_targets: Dict[str, float]) -> Dict[str, Any]:
+        """Apply position reductions systematically."""
+        
+        try:
+            self.logger.info(f"🔥 Applying position reductions")
+            
+            reduced_portfolio = {}
+            reduction_count = 0
+            
+            for symbol, target_exposure in reduction_targets.items():
+                if symbol in portfolio_data:
+                    original_quantity = portfolio_data[symbol]['quantity']
+                    target_quantity = int(target_exposure / portfolio_data[symbol].get('current_price', 1.0))
+                    
+                    if target_quantity < 1:
+                        target_quantity = 1
+                    
+                    reduced_portfolio[symbol] = {
+                        'quantity': target_quantity,
+                        'original_quantity': original_quantity,
+                        'reduction_factor': target_exposure / portfolio_data[symbol].get('current_price', 1.0),
+                        'reduction_reason': 'exposure_limit_enforcement'
+                    }
+                    reduction_count += 1
+                else:
+                    reduced_portfolio[symbol] = portfolio_data[symbol]
+                    reduction_count += 0
+            
+            # Update positions
+            self._update_positions(reduced_portfolio)
+            
+            self.logger.info(f"Applied {reduction_count} position reductions")
+            
+            return reduced_portfolio
+            
+        except Exception as e:
+            self.logger.error(f"Error applying position reductions: {e}")
+            return portfolio_data
+    
+    def optimize_diversification(self, 
+                           portfolio_data: Dict[str, Any],
+                           market_data: pd.DataFrame) -> Dict[str, Any]:
+        """Optimize portfolio diversification through correlation analysis."""
+        
+        try:
+            self.logger.info("🔍 Optimizing portfolio diversification")
+            
+            # Calculate correlation matrix
+            symbols = list(portfolio_data.keys())
+            if len(symbols) < 2:
+                return {'status': 'insufficient_data'}
+            
+            price_matrix = market_data['close'][symbols]
+            correlation_matrix = price_matrix.pct_change().corr()
+            
+            # Find optimal subset using correlation analysis
+            optimal_subset = self._find_optimal_diverse_subset(
+                symbols, correlation_matrix, portfolio_data, market_data
+            )
+            
+            if optimal_subset:
+                optimized_portfolio = {
+                    symbol: symbol for symbol in optimal_subset,
+                    'quantity': portfolio_data[symbol]['quantity']
+                }
+                
+                return {
+                    'status': 'completed',
+                    'original_count': len(portfolio_data),
+                    'optimized_count': len(optimized_portfolio),
+                    'diversification_improvement': self._calculate_diversification_improvement(
+                        portfolio_data, optimized_portfolio, market_data
+                    )
+                }
+            
+            else:
+                return {'status': 'no_optimization_needed'}
+                
+        except Exception as e:
+            self.logger.error(f"Error optimizing diversification: {e}")
+            return {'status': 'error', 'error': str(e)}
+    
+    def _find_optimal_diverse_subset(self, 
+                                     symbols: List[str],
+                                     correlation_matrix: pd.DataFrame,
+                                     portfolio_data: Dict[str, Any],
+                                     market_data: pd.DataFrame,
+                                     max_assets: int = 10) -> Optional[List[str]]:
+        """Find optimal diverse subset of assets using correlation analysis."""
+        
+        try:
+            # Calculate diversification score for each asset
+            diversification_scores = {}
+            
+            for symbol in symbols:
+                # Calculate average correlation with other assets
+                other_symbols = [s for s in symbols if s != symbol]
+                
+                if other_symbols:
+                    avg_correlation = np.mean([
+                        abs(correlation_matrix.loc[symbol, s])
+                    ])
+                    diversification_scores[symbol] = avg_correlation
+                else:
+                    diversification_scores[symbol] = 1.0
+            
+            # Sort by diversification score (lower is better)
+            sorted_symbols = sorted(
+                diversification_scores.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+            
+            # Select top assets
+            optimal_subset = [symbol for symbol, _ in sorted_symbols[:max_assets]]
+            
+            return optimal_subset
+            
+        except Exception as e:
+            self.logger.error(f"Error finding optimal diverse subset: {e}")
+            return None
+    
+    def _calculate_diversification_improvement(self, 
+                                       portfolio_data: Dict[str, Any],
+                                       optimized_portfolio: Dict[str, Any],
+                                       market_data: pd.DataFrame) -> float:
+        """Calculate diversification improvement from optimization."""
+        
+        try:
+            # Calculate metrics for original portfolio
+            original_metrics = self._calculate_diversification_metrics(portfolio_data, market_data)
+            
+            # Calculate metrics for optimized portfolio
+            optimized_metrics = self._calculate_diversification_metrics(optimized_portfolio, market_data)
+            
+            # Calculate improvement
+            diversification_improvement = (
+                optimized_metrics['diversification_ratio'] / 
+                original_metrics['diversification_ratio']
+            )
+            
+            return diversification_improvement
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating diversification improvement: {e}")
+            return 0.0
+    
+    def _calculate_diversification_metrics(self, 
+                                portfolio_data: Dict[str, Any],
+                                market_data: pd.DataFrame) -> Dict[str, float]:
+        """Calculate diversification metrics."""
+        
+        try:
+            if not portfolio_data or market_data.empty():
+                return {}
+            
+            # Get returns for portfolio
+            portfolio_returns = self._calculate_portfolio_returns(portfolio_data, market_data)
+            portfolio_volatility = np.std(portfolio_returns) * np.sqrt(252) if len(portfolio_returns) > 1 else 0
+            
+            # Get individual asset volatilities
+            asset_volatilities = []
+            for symbol in portfolio_data.keys():
+                if symbol in market_data['close'].columns:
+                    symbol_returns = market_data['close'][symbol].pct_change().dropna()
+                    asset_volatilities.append(symbol_returns.std() * np.sqrt(252))
+            
+            if asset_volatilities:
+                weighted_avg_volatility = np.sum([
+                    exposure['weight'] * vol for exposure, exposure in self.current_exposures.items()
+                ]) / sum(exposure['weight'] for exposure in self.current_exposures.values())
+            else:
+                weighted_avg_volatility = 0.0
+            
+            # Calculate diversification ratio
+            if weighted_avg_volatility > 0:
+                diversification_ratio = portfolio_volatility / weighted_avg_volatility
+            else:
+                diversification_ratio = 1.0
+            
+            return {
+                'diversification_ratio': diversification_ratio,
+                'portfolio_volatility': portfolio_volatility,
+                'weighted_avg_volatility': weighted_avg_volatility
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating diversification metrics: {e}")
+            return {}
+    
+    def _calculate_portfolio_returns(self, 
+                                portfolio_data: Dict[str, Any],
+                                market_data: pd.DataFrame) -> List[float]:
+        """Calculate portfolio returns for risk analysis."""
+        
+        try:
+            if not portfolio_data or market_data.empty():
+                return []
+            
+            # Get portfolio returns
+            portfolio_returns = []
+            
+            # Calculate portfolio returns
+            for symbol, position in portfolio_data.items():
+                if symbol in market_data['close'].columns:
+                    symbol_returns = market_data['close'][symbol].pct_change().dropna()
+                    
+                    # Calculate position return
+                    position_pnl = position['unrealized_pnl']
+                    position_return = position_pnl / position['entry_price'] if position['entry_price'] > 0 else 0
+                    
+                    portfolio_returns.append(position_return)
+            
+            return portfolio_returns
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating portfolio returns: {e}")
+            return []
+    
+    def get_exposure_summary(self, days: int = 30) -> Dict[str, Any]:
+        """Get summary of exposure monitoring over time period."""
+        
+        try:
+            cutoff_time = datetime.now() - timedelta(days=days)
+            
+            # Filter recent events
+            recent_events = [
+                event for event in self.exposure_events
+                if event['timestamp'] >= cutoff_time
+            ]
+            
+            if not recent_events:
+                return {'error': 'No recent exposure monitoring data available'}
+            
+            # Calculate summary statistics
+            summary = {
+                'period_days': days,
+                'total_events': len(recent_events),
+                'current_exposure': sum(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'max_exposure': max(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'exposure_breach_count': len(self._check_exposure_breaches(
+                    self._calculate_exposure_analysis(
+                        self._calculate_exposure_analysis(
+                            self.current_exposures, market_data
+                        )
+                    )
+                ),
+                'asset_exposure_count': len(self.current_exposures),
+                'sector_exposure_count': len(
+                    self._calculate_sector_exposures(
+                        self.current_exposures
+                    )
+                ),
+                'correlation_group_count': len(
+                    self._analyze_correlation_groups(
+                        self.current_exposures, market_data
+                    )
+                ),
+                'alert_count': len(self._get_risk_alerts(recent_events))
+            }
+            
+            return summary
+            
+        except Exception as e:
+            self.logger.error(f"Error getting exposure summary: {e}")
+            return {'error': str(e)}
+    
+    def _get_risk_alerts(self, recent_events: List[Dict[str, Any]]) -> List[str]:
+        """Get recent risk alerts."""
+        
+        try:
+            cutoff_time = datetime.now() - timedelta(days=30)
+            
+            recent_alerts = [
+                alert for alert in recent_events
+                if alert['timestamp'] >= cutoff_time
+            ]
+            
+            return [alert['message'] for alert in recent_alerts]
+            
+        except Exception as e:
+            self.logger.error(f"Error getting risk alerts: {e}")
+            return []
+    
+    def _calculate_exposure_analysis(self, 
+                                portfolio_data: Dict[str, Any],
+                                market_data: pd.DataFrame) -> Dict[str, Any]:
+        """Calculate detailed exposure analysis."""
+        
+        try:
+            if not self.current_exposures:
+                return {}
+            
+            # Calculate exposure metrics
+            total_exposure = sum(exposure['exposure'] for exposure in self.current_exposures.values())
+            max_exposure = max(exposure['exposure'] for exposure in self.current_exposures.values())
+            
+            # Asset exposure analysis
+            asset_exposures = {}
+            high_exposure_assets = []
+            
+            for symbol, exposure in self.current_exposures.items():
+                if exposure > self.risk_limits.get('max_asset_exposure', 0.25):
+                    high_exposure_assets.append(symbol)
+            
+            # Sector exposure analysis
+            sector_exposures = self._calculate_sector_exposures(self.current_exposures)
+            
+            # Correlation group analysis
+            correlation_groups = self._analyze_correlation_groups(self.current_exposures, market_data)
+            
+            # Concentration metrics
+            concentration_metrics = self._calculate_concentration_metrics()
+            
+            # Diversification metrics
+            diversification_metrics = self._calculate_diversification_metrics(
+                portfolio_data, market_data
+            )
+            
+            return {
+                'total_exposure': total_exposure,
+                'max_exposure': max_exposure,
+                'asset_exposures': asset_exposures,
+                'high_exposure_assets': high_exposure_assets,
+                'sector_exposures': sector_exposures,
+                'correlation_groups': correlation_groups,
+                'concentration_metrics': concentration_metrics,
+                'diversification_metrics': diversification_metrics,
+                'breach_count': len(self._check_exposure_breaches(
+                    self._calculate_exposure_analysis(
+                        portfolio_data, market_data
+                    )
+                )
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating exposure analysis: {e}")
+            return {}
+    
+    def _check_exposure_breaches(self, exposure_analysis: Dict[str, Any]) -> int:
+        """Count exposure limit breaches."""
+        
+        try:
+            breaches = 0
+            
+            # Check total exposure
+            total_exposure = exposure_analysis.get('total_exposure', 0.0)
+            max_total_exposure = self.risk_limits.get('max_total_exposure', 1.0)
+            
+            if total_exposure > max_total_exposure:
+                breaches += 1
+            
+            # Check asset exposure limits
+            asset_exposures = exposure_analysis.get('asset_exposures', {})
+            max_asset_exposure = self.risk_limits.get('max_asset_exposure', 0.25)
+            
+            for symbol, exposure in asset_exposures.items():
+                if exposure > max_asset_exposure:
+                    breaches += 1
+            
+            # Check sector exposure limits
+            sector_exposures = exposure_analysis.get('sector_exposures', {})
+            max_sector_exposure = self.risk_limits.get('max_sector_exposure', 0.30)
+            
+            for sector, exposure in sector_exposures.items():
+                if exposure > max_sector_exposure:
+                    breaches += 1
+            
+            # Check correlation group limits
+            correlation_groups = exposure_analysis.get('correlation_groups', {})
+            max_group_exposure = self.risk_limits.get('max_group_exposure', 0.40)
+            
+            for group_name, group_info in correlation_groups.items():
+                group_exposure = group_info.get('exposure', 0.0)
+                if group_exposure > max_group_exposure:
+                    breaches += 1
+            
+            return breaches
+            
+        except Exception as e:
+            self.logger.error(f"Error checking exposure breaches: {e}")
+            return 0
+    
+    def _get_exposure_breach_details(self, exposure_analysis: Dict[str, Any]) -> List[str]:
+        """Get detailed exposure breach information."""
+        
+        try:
+            breach_details = []
+            
+            if 'breach_details' in exposure_analysis:
+                breach_details = [
+                    f"{breach['type'].title()}: "
+                    f"Current: {breach['current_value']:.4f}, "
+                    f"Threshold: {breach['threshold']:.4f}"
+                ]
+            
+            return breach_details
+            
+        except Exception as e:
+            self.logger.error(f"Error getting exposure breach details: {e}")
+            return []
+    
+    def _store_exposure_results(self, results: Dict[str, Any]) -> None:
+        """Store exposure monitoring results for historical tracking."""
+        
+        try:
+            # Store exposure analysis
+            self.exposure_history.append({
+                'timestamp': results['timestamp'],
+                'exposure_analysis': results['exposure_analysis'],
+                'breach_count': results['exposure_breaches']['breach_count'],
+                'recommendations': results['recommendations']
+            })
+            
+            # Keep only last 1000 records
+            if len(self.exposure_history) > 1000:
+                self.exposure_history = self.exposure_history[-1000:]
+            
+            # Keep only last 500 exposure events
+            if len(self.exposure_events) > 500:
+                self.exposure_events = self.exposure_events[-500:]
+            
+            # Store in JSON file
+            timestamp = results['timestamp'].strftime('%Y%m%d_%H%M%S')
+            filename = f"exposure_monitoring_{timestamp}.json"
+            filepath = self.storage_path / filename
+            
+            with open(filepath, 'w') as f:
+                json.dump(results, f, indent=2, default=str)
+            
+            self.logger.info(f"Exposure monitoring results stored to {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to store exposure results: {e}")
+    
+    async def optimize_portfolio_for_risk(self, 
+                                   portfolio_data: Dict[str, Any],
+                                   market_data: pd.DataFrame,
+                                   risk_level: str = 'normal') -> Dict[str, Any]:
+        """Optimize portfolio for specific risk level."""
+        
+        try:
+            self.logger.info(f"🎯 Optimizing portfolio for {risk_level} risk level")
+            
+            if risk_level == 'normal':
+                # Normal risk - maintain current positions
+                return {
+                    'status': 'no_action_needed',
+                    'portfolio_data': portfolio_data,
+                    'recommendations': ['Maintain current positions']
+                }
+            
+            elif risk_level == 'elevated':
+                # Elevated risk - moderate position reduction
+                reduced_portfolio = await self._reduce_all_positions(
+                    portfolio_data, 0.8
+                )
+                return {
+                    'status': 'positions_reduced',
+                    'portfolio_data': reduced_portfolio,
+                    'recommendations': [
+                        f"Reduced positions by 20% due to elevated risk",
+                        "Consider further position reduction"
+                    ]
+                }
+            
+            elif risk_level == 'high':
+                # High risk - aggressive position reduction
+                reduced_portfolio = await self._reduce_all_positions(
+                    portfolio_data, 0.6
+                )
+                return {
+                    'status': 'positions_reduced',
+                    'portfolio_data': reduced_portfolio,
+                    'recommendations': [
+                        f"Reduced positions by 40% due to high risk",
+                        "Consider emergency action"
+                    ]
+                }
+            
+            elif risk_level == 'critical':
+                # Critical risk - aggressive position reduction
+                reduced_portfolio = await self._reduce_all_positions(
+                    portfolio_data, 0.8
+                )
+                return {
+                    'status': 'emergency_reduction',
+                    'portfolio_data': reduced_portfolio,
+                    'recommendations': [
+                        f"EMERGENCY: Reduced positions by 20% due to critical risk",
+                        "Immediate action required"
+                    ]
+                }
+            
+            elif risk_level == 'emergency':
+                # Emergency - immediate closure
+                await self._emergency_closure(portfolio_data)
+                return {
+                    'status': 'emergency_closure',
+                    'portfolio_data': {},
+                    'recommendations': [
+                        f"EMERGENCY: All positions closed immediately",
+                        "Immediate action required"
+                    ]
+                }
+            
+            else:
+                # Default monitoring
+                return {
+                    'status': 'monitoring',
+                    'recommendations': ['Continue monitoring risk levels']
+                }
+            
+        except Exception as e:
+            self.logger.error(f"Error optimizing portfolio for risk: {e}")
+            return {
+                'status': 'error',
+                'error': str(e)
+            }
+    
+    def get_exposure_summary(self, days: int = 30) -> Dict[str, Any]:
+        """Get summary of exposure monitoring over time period."""
+        
+        try:
+            cutoff_time = datetime.now() - timedelta(days=days)
+            
+            # Filter recent events
+            recent_events = [
+                event for event in self.exposure_events
+                if event['timestamp'] >= cutoff_time
+            ]
+            
+            if not recent_events:
+                return {'error': 'No recent exposure monitoring data available'}
+            
+            # Calculate summary statistics
+            summary = {
+                'period_days': days,
+                'total_events': len(recent_events),
+                'current_total_exposure': sum(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'max_exposure': max(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'asset_exposure_count': len(self.current_exposures),
+                'sector_exposure_count': len(
+                    self._calculate_sector_exposures(
+                        self.current_exposures
+                    )
+                ),
+                'correlation_group_count': len(
+                    self._analyze_correlation_groups(
+                        self.current_exposures, market_data
+                    )
+                ),
+                'alert_count': len(self._get_risk_alerts(recent_events)),
+                'most_frequent_breach': self._get_most_frequent_breach(
+                    recent_events
+                ),
+                'exposure_trend': self._analyze_exposure_trend(recent_events),
+                'diversification_trend': self._analyze_diversification_trend(recent_events)
+            }
+            
+            return summary
+            
+        except Exception as e:
+            self.logger.error(f"Error getting exposure summary: {e}")
+            return {'error': str(e)}
+    
+    def _calculate_exposure_trend(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Analyze exposure trend over time period."""
+        
+        try:
+            if len(recent_events) < 5:
+                return 'stable'
+            
+            # Calculate exposure trend
+            exposure_trends = [
+                event['total_exposure'] for event in recent_events
+            ]
+            
+            if len(exposure_trends) >= 3:
+                # Calculate trend
+                x = np.arange(len(exposure_trends))
+                slope = np.polyfit(x, exposure_trends, 1)[0]
+                
+                if slope > 0.01:
+                    return 'increasing'
+                elif slope < -0.01:
+                    return 'decreasing'
+                else:
+                    return 'stable'
+            
+            return 'stable'
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating exposure trend: {e}")
+            return 'stable'
+    
+    def _analyze_diversification_trend(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Analyze diversification trend over time period."""
+        
+        try:
+            if len(recent_events) < 5:
+                return 'stable'
+            
+            # Calculate diversification trends
+            diversification_trends = [
+                event['diversification_ratio'] for event in recent_events
+            ]
+            
+            if len(diversification_trends) >= 3:
+                # Calculate trend
+                x = np.arange(len(diversification_trends))
+                slope = np.polyfit(x, diversification_trends, 1)[0]
+                
+                if slope > 0.01:
+                    return 'improving'
+                elif slope < -0.01:
+                    return 'degrading'
+                else:
+                    return 'stable'
+            
+            return 'stable'
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing diversification trend: {e}")
+            return 'stable'
+    
+    def _get_most_frequent_breach(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Get most frequent exposure breach type."""
+        
+        try:
+            breach_counts = {}
+            
+            for event in recent_events:
+                breach_type = event.get('type', 'unknown')
+                breach_counts[breach_type] = breach_counts.get(breach_type, 0) + 1
+            
+            if breach_counts:
+                most_frequent = max(breach_counts.items(), key=lambda x: x[1], key=lambda x: x[1], reverse=True)[0][0]
+                return most_frequent
+            
+            return most_frequent
+            
+        except Exception as e:
+            self.logger.error(f"Error getting most frequent breach: {e}")
+            return 'unknown'
+    
+    def update_config(self, new_config: Dict[str, Any]) -> None:
+        """Update configuration with new settings."""
+        
+        try:
+            self.config.update(new_config)
+            self.logger.info("✅ KillSwitchManager configuration updated")
+            
+            # Update risk limits
+            self.risk_limits.update(self.config.get('risk_limits', {}))
+            self.exposure_triggers.update(self.config.get('emergency_triggers', {}))
+            
+            # Update thresholds
+            self.concentration_threshold = self.config.get('concentration_threshold', 0.25)
+            self.correlation_threshold = self.config.get('correlation_threshold', 0.7)
+            
+            self.logger.info("✅ Configuration updated")
+            
+        except Exception as e:
+            self.logger.error(f"Error updating config: {e}")
+    
+    def set_risk_level(self, risk_level: str) -> None:
+        """Set current risk level."""
+        
+        try:
+            old_risk_level = self.current_risk_level
+            self.current_risk_level = risk_level
+            self.logger.info(f"Risk level changed: {old_risk_level} -> {risk_level}")
+            
+        except Exception as e:
+            self.logger.error(f"Error setting risk level: {e}")
+    
+    def set_emergency_mode(self, emergency_mode: bool) -> None:
+        """Enable or disable emergency mode."""
+        
+        try:
+            self.emergency_mode = emergency_mode
+            self.logger.warning(f"Emergency mode: {'enabled': emergency_mode}")
+            
+        except Exception as e:
+            self.logger.error(f"Error setting emergency mode: {e}")
+    
+    def reset_history(self) -> None:
+        """Reset all historical data."""
+        
+        try:
+            self.exposure_history = []
+            self.position_metrics_history = []
+            self.risk_events = []
+            self.kill_switch_history = []
+            self.exposure_events = []
+            self.current_exposures = {}
+            
+            self.logger.info("✅ History reset")
+            
+        except Exception as e:
+            self.logger.error(f"Error resetting history: {e}")
+    
+    def get_position_risk_summary(self, symbol: str) -> Dict[str, Any]:
+        """Get risk summary for specific position."""
+        
+        try:
+            if symbol not in self.position_metrics:
+                return {'error': f"Position {symbol} not found"}
+            
+            position_metrics = self.position_metrics.get(symbol, {})
+            
+            return {
+                'symbol': symbol,
+                'current_exposure': position_metrics['exposure'],
+                'current_value': position_metrics.get('current_value', 0.0),
+                'unrealized_pnl': position_metrics.get('unrealized_pnl', 0.0),
+                'var_ratio': position_metrics.get('var_ratio', 0.0),
+                'max_drawdown': position_metrics.get('max_drawdown', 0.0),
+                'risk_level': self._determine_position_risk_level(
+                    position_metrics
+                )
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting position risk summary: {e}")
+            return {'error': f"Position {symbol} not found"}
+    
+    def _determine_position_risk_level(self, position_metrics: Dict[str, Any]) -> str:
+        """Determine risk level for a position."""
+        
+        try:
+            position_var = position_metrics.get('var_ratio', 0.0)
+            max_drawdown = position_metrics.get('max_drawdown', 0.0)
+            
+            if position_var > 0.5 or max_drawdown > 0.05:
+                return 'critical'
+            elif position_var > 0.3 or max_drawdown > 0.02:
+                return 'high'
+            elif position_var > 0.2 or max_drawdown > 0.01:
+                return 'elevated'
+            else:
+                return 'normal'
+                
+        except Exception as e:
+            self.logger.error(f"Error determining position risk level: {e}")
+            return 'normal'
+    
+    def _calculate_sector_exposures(self, current_exposures: Dict[str, Any]) -> Dict[str, float]:
+        """Calculate sector exposures from current positions."""
+        
+        try:
+            sector_exposures = {}
+            
+            # Group positions by sector
+            for symbol, position in current_exposures.items():
+                sector = position.get('sector', 'unknown')
+                current_value = position.get('current_value', 0.0)
+                
+                sector_exposures[sector] = sector_exposures.get(sector, 0.0) + current_value
+                sector_exposures[sector] = sector_exposures.get(sector, 0.0) + current_value
+            
+            # Normalize to percentage
+            if sector_exposures:
+                total_sector_value = sum(sector_exposures.values())
+                for sector, exposure in sector_exposures.items():
+                    sector_exposures[sector] = exposure / total_sector_value
+            
+            return sector_exposures
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating sector exposures: {e}")
+            return {}
+    
+    def _analyze_correlation_groups(self, current_exposures: Dict[str, Any], market_data: pd.DataFrame) -> Dict[str, Dict[str, Any]]:
+        """Analyze correlation-based exposure groups."""
+        
+        try:
+            if len(current_exposures) < 2:
+                return {'correlation_groups': {}}
+            
+            # Get price data for portfolio assets
+            symbols = list(current_exposures.keys())
+            if len(symbols) < 2:
+                return {'correlation_groups': {}}
+            
+            # Calculate correlation matrix
+            price_matrix = market_data['close'][symbols]
+            correlation_matrix = price_matrix.pct_change().corr()
+            
+            # Perform hierarchical clustering
+            correlation_matrix = np.abs(correlation_matrix)
+            distance_matrix = 1 - correlation_matrix  # Convert to distance matrix
+            
+            # Perform hierarchical clustering
+            clustering = linkage(
+                squareform(distance_matrix),
+                method='complete',
+                metric='euclidean'
+            )
+            
+            # Create correlation groups
+            correlation_groups = {}
+            cluster_labels = fcluster_labels(clustering, range(len(symbols))
+            
+            for i, label in enumerate(cluster_labels):
+                group_symbols = [s for j, label in enumerate(cluster_labels) if label == i]
+                correlation_groups[f'group_{i}'] = {
+                    'symbols': group_symbols,
+                    'avg_correlation': self._calculate_group_correlation(
+                        correlation_matrix, group_symbols
+                    ),
+                    'group_size': len(group_symbols),
+                    'exposure': sum([
+                        self.current_exposures.get(symbol, {}).get('exposure', 0.0)
+                        for symbol in group_symbols
+                    ])
+                }
+            
+            return correlation_groups
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing correlation groups: {e}")
+            return {'correlation_groups': {}}
+    
+    def _get_most_frequent_breach(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Get most frequent exposure breach type."""
+        
+        try:
+            breach_counts = {}
+            
+            for event in recent_events:
+                breach_type = event.get('type', 'unknown')
+                breach_counts[breach_type] = breach_counts.get(breach_type, 0) + 1
+            
+            if breach_counts:
+                most_frequent = max(breach_counts.items(), key=lambda x: x[1], reverse=True)[0][0]
+                return most_frequent
+            
+        except Exception as e:
+            self.logger.error(f"Error getting most frequent breach: {e}")
+            return 'unknown'
+    
+    def _analyze_exposure_trend(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Analyze exposure trend over time period."""
+        
+        try:
+            if len(recent_events) < 5:
+                return 'stable'
+            
+            # Calculate exposure trends
+            exposure_trends = [
+                event['total_exposure'] for event in recent_events
+            ]
+            
+            # Calculate trend
+            if len(exposure_trends) >= 3:
+                # Calculate trend
+                x = np.arange(len(exposure_trends))
+                slope = np.polyfit(x, exposure_trends, 1)[0]
+                
+                if slope > 0.01:
+                    return 'increasing'
+                elif slope < -0.01:
+                    return 'decreasing'
+                else:
+                    return 'stable'
+            
+            return 'stable'
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing exposure trend: {e}")
+            return 'stable'
+    
+    def _analyze_diversification_trend(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Analyze diversification trend over time period."""
+        
+        try:
+            if len(recent_events) < 5:
+                return 'stable'
+            
+            # Calculate diversification trends
+            diversification_trends = [
+                event['diversification_ratio'] for event in recent_events
+            ]
+            
+            # Calculate trend
+            if len(diversification_trends) >= 3:
+                # Calculate trend
+                x = np.arange(len(diversification_trends))
+                slope = np.polyfit(x, diversification_trends, 1)[0]
+                
+                if slope > 0.01:
+                    return 'improving'
+                elif slope < -0.01:
+                    return 'degrading'
+                else:
+                    return 'stable'
+            
+            return 'stable'
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing diversification trend: {e}")
+            return 'stable'
+    
+    def get_position_risk_summary(self) -> Dict[str, Any]:
+        """Get risk summary for all positions."""
+        
+        try:
+            if not self.current_exposures:
+                return {'error': 'No positions found'}
+            
+            position_risk_summaries = {}
+            
+            for symbol, position in self.current_exposures.items():
+                position_risk_summary[symbol] = self.get_position_risk_summary(symbol)
+            
+            return position_risk_summaries
+            
+        except Exception as e:
+            self.logger.error(f"Error getting position risk summary: {e}")
+            return {'error': str(e)}
+    
+    def _get_position_risk_summary(self, symbol: str) -> Dict[str, Any]:
+        """Get detailed risk summary for specific position."""
+        
+        try:
+            if symbol not in self.current_exposures:
+                return {'error': f"Position {symbol} not found"}
+            
+            position_metrics = self.position_metrics.get(symbol, {})
+            
+            return {
+                'symbol': symbol,
+                'current_exposure': position_metrics['exposure'],
+                'current_value': position_metrics['current_value'],
+                'unrealized_pnl': position_metrics.get('unrealized_pnl', 0.0),
+                'var_ratio': position_metrics.get('var_ratio', 0.0),
+                'max_drawdown': position_metrics.get('max_drawdown', 0.0),
+                'risk_level': self._determine_position_risk_level(
+                    position_metrics
+                ),
+                'recommendations': self._generate_position_recommendations(position_metrics)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting position risk summary: {e}")
+            return {'error': f"Position {symbol} not found"}
+    
+    def _generate_position_recommendations(self, position_metrics: Dict[str, Any]) -> List[str]:
+        """Generate position-specific recommendations."""
+        
+        try:
+            recommendations = []
+            
+            risk_level = self._determine_position_risk_level(position_metrics)
+            
+            if risk_level == 'critical':
+                recommendations.append(
+                    f"🚨️ CRITICAL: {symbol} risk level is critical. "
+                    f"Immediate position reduction required. "
+                    f"Consider closing position entirely."
+                )
+                
+            elif risk_level == 'high':
+                recommendations.append(
+                    f"⚠️ HIGH: {symbol} risk level is high. "
+                    f"Consider aggressive position reduction."
+                )
+                
+            elif risk_level == 'elevated':
+                recommendations.append(
+                    f"⚠️ ELEVATED: {symbol} risk level is elevated. "
+                    f"Consider moderate position reduction."
+                )
+                
+            elif risk_level == 'normal':
+                recommendations.append(
+                    f"✅ NORMAL: {symbol} risk level is normal. "
+                    f"Continue monitoring position."
+                )
+            
+            else:
+                recommendations.append(
+                    f"📊 MONITOR: {symbol} risk level is {risk_level}. "
+                    f"Monitor risk level changes."
+                )
+            
+            return recommendations
+            
+        except Exception as e:
+            self.logger.error(f"Error generating recommendations: {e}")
+            return recommendations
+    
+    def _generate_portfolio_recommendations(self, 
+                                   exposure_analysis: Dict[str, Any],
+                                   exposure_breaches: Dict[str, Any]) -> List[str]:
+        """Generate portfolio-level recommendations."""
+        
+        try:
+            recommendations = []
+            
+            total_breaches = exposure_breaches['breach_count']
+            
+            if total_breaches > 0:
+                recommendations.append(
+                    f"🚨️ CRITICAL: Total exposure ({total_breach:.2f}) exceeds limit. "
+                    f"Immediate portfolio reduction required."
+                )
+                
+            if len(exposure_breaches) > 2:
+                recommendations.append(
+                    f"⚠️ HIGH: Multiple exposure breaches detected. "
+                    f"Systematic portfolio reduction required."
+                )
+            
+            # Asset-specific recommendations based on exposure breaches
+            for breach_detail in exposure_breaches['breach_details']:
+                if breach_detail['type'] == 'asset':
+                    symbol = breach_detail['symbol']
+                    exposure = breach_detail['current_exposure']
+                    
+                    if exposure > 0.5:
+                        recommendations.append(
+                            f"🔥️ HIGH: {symbol} exposure ({exposure:.2f}) is excessive."
+                        )
+                    elif exposure > 0.3:
+                        recommendations.append(
+                            f"⚠️ MEDIUM: {symbol} exposure ({exposure:.2f}) is elevated."
+                        )
+                    else:
+                        recommendations.append(
+                            f"⚠️ LOW: {symbol} exposure ({exposure:.2f}) is acceptable."
+                        )
+                
+                elif breach_detail['type'] == 'sector':
+                    sector = breach_detail['sector']
+                    exposure = breach_detail['current_exposure']
+                    
+                    if exposure > 0.15:
+                        recommendations.append(
+                            f"⚠️ HIGH: {sector} exposure ({exposure:.2f}) is excessive."
+                        )
+                    else:
+                        recommendations.append(
+                            f"⚠️ MEDIUM: {sector} exposure ({exposure:.2f}) is elevated."
+                        )
+                
+                elif breach_detail['type'] == 'correlation_group':
+                    group_name = breach_detail['group_name']
+                    exposure = breach_detail['current_exposure']
+                    
+                    if exposure > 0.2:
+                        recommendations.append(
+                            f"⚠️ HIGH: Correlation group {group_name} exposure ({exposure:.2f}) is excessive."
+                        )
+                    else:
+                        recommendations.append(
+                            f"⚠️ MEDIUM: Correlation group {group_name} exposure ({exposure:.2f}) is acceptable."
+                        )
+                
+                elif breach_detail['type'] == 'total':
+                    recommendations.append(
+                        f"🚨️ CRITICAL: Total portfolio exposure ({exposure:.2f}) is critical."
+                    )
+                
+                else:
+                    recommendations.append(
+                        f"📊 MONITOR: {breach_detail['type']} breach detected."
+                    )
+            
+            # Portfolio-level recommendations
+            if total_breaches > 0:
+                recommendations.append(
+                    f"🚨️ PORTFOLIO EXPOSURE: {total_breach:.2f} exceeds limit. "
+                    f"Immediate portfolio reduction required."
+                )
+            
+            # Concentration risk analysis
+            concentration_metrics = exposure_analysis.get('concentration_metrics', {})
+            
+            if concentration_metrics.get('concentration_ratio', 0) > 5.0:
+                recommendations.append(
+                    f"🚨️ HIGH: Concentration ratio ({concentration_ratio:.2f}) is excessive."
+                )
+            
+            # Diversification analysis
+            diversification_metrics = exposure_analysis.get('diversification_metrics', {})
+            
+            if diversification_metrics.get('diversification_ratio', 1.2):
+                recommendations.append(
+                    f"✅ GOOD: High diversification ratio ({diversification_ratio:.2f})."
+                )
+            elif diversification_metrics.get('diversification_ratio', 0.8):
+                recommendations.append(
+                    f"⚠️ ACCEPTABLE: Moderate diversification ratio ({diversification_ratio:.2f})."
+                )
+            else:
+                recommendations.append(
+                    f"⚠️ LOW: Low diversification ratio ({diversification_ratio:.2f})."
+                )
+            
+            # Market condition recommendations
+            market_conditions = exposure_analysis.get('market_conditions', {})
+            
+            if market_conditions.get('market_stress', False):
+                recommendations.append(
+                    f"⚠️ MARKET STRESS: Market stress detected. "
+                    f"Consider reducing all positions."
+                )
+            
+            if market_conditions.get('volatility_spike', False):
+                recommendations.append(
+                    f"📊 VOLATILITY SPIKE: Market volatility is normal. "
+                    f"Consider volatility scaling adjustments."
+                )
+            
+            else:
+                recommendations.append(
+                    f"📊 MARKET CONDITIONS: Normal market conditions."
+                )
+            
+            # Overall portfolio recommendation
+            if recommendations:
+                recommendations:
+                    recommendations.append(
+                        f"📊 PORTFOLIO HEALTH: {total_breach:.2f} (limit: {max_total_exposure:.2f}). "
+                        f"Risk level: {risk_level}."
+                    )
+                else:
+                    recommendations.append(
+                        f"✅ PORTFOLIO HEALTH: {total_breach:.2f} (within limit: {max_total_exposure:.2f}). "
+                        f"Risk level: {risk_level}."
+                    )
+            
+            return recommendations
+            
+        except Exception as e:
+            self.logger.error(f"Error generating portfolio recommendations: {e}")
+            return []
+    
+    def apply_risk_adjustments(self, 
+                               portfolio_data: Dict[str, Any],
+                               market_data: pd.DataFrame,
+                               adjustments: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply risk adjustments to portfolio."""
+        
+        try:
+            self.logger.info(f"🔧 Applying risk adjustments")
+            
+            # Apply position adjustments
+            adjusted_portfolio = portfolio_data.copy()
+            
+            # Apply position reductions if specified
+            if 'position_reductions' in adjustments:
+                for symbol, reduction_factor in adjustments.items():
+                    if symbol in portfolio_data:
+                        original_quantity = portfolio_data[symbol]['quantity']
+                        adjusted_quantity = int(original_quantity * reduction_factor)
+                        
+                        if adjusted_quantity < 1:
+                            adjusted_quantity = 1
+                        
+                        adjusted_portfolio[symbol] = {
+                            'quantity': adjusted_quantity,
+                            'original_quantity': original_quantity,
+                            'reduction_factor': reduction_factor,
+                            'reduction_reason': 'risk_adjustment'
+                        }
+            
+            # Apply weight adjustments if specified
+            if 'weight_adjustments' in adjustments:
+                for symbol, weight_adjustment in adjustments.items():
+                    if symbol in portfolio_data:
+                        current_weight = portfolio_data[symbol].get('weight', 0.0)
+                        new_weight = current_weight * weight_adjustment
+                        portfolio_data[symbol]['weight'] = new_weight
+                        portfolio_data[symbol]['weight'] = new_weight
+                        portfolio_data[symbol]['reduction_reason'] = 'weight_adjustment'
+            
+            # Normalize weights
+            total_weight = sum(
+                position.get('weight', 0.0) 
+                for position in adjusted_portfolio.values()
+            )
+            
+            # Normalize weights
+            for symbol in adjusted_portfolio:
+                portfolio_data[symbol]['weight'] = portfolio_data[symbol]['weight'] / total_weight
+            
+            return adjusted_portfolio
+            
+        except Exception as e:
+            self.logger.error(f"Error applying risk adjustments: {e}")
+            return portfolio_data
+    
+    def apply_dynamic_correlation_adjustments(self, 
+                                        portfolio_data: Dict[str, Any],
+                                        market_data: pd.DataFrame,
+                                        correlation_adjustments: Dict[str, Any]) -> Dict[str, Any]:
+        """Apply correlation-based position adjustments."""
+        
+        try:
+            self.logger.info("🔧 Applying correlation-based adjustments")
+            
+            if not correlation_adjustments:
+                return portfolio_data
+            
+            # Get correlation matrix
+            symbols = list(portfolio_data.keys())
+            if len(symbols) < 2:
+                return portfolio_data
+            
+            # Get price data for portfolio assets
+            price_matrix = market_data['close'][symbols]
+            
+            # Calculate correlation matrix
+            correlation_matrix = price_matrix.pct_change().corr()
+            
+            # Apply correlation adjustments
+            adjusted_portfolio = portfolio_data.copy()
+            
+            for symbol in portfolio_data:
+                # Get correlation with other assets
+                other_symbols = [s for s in symbols if s != symbol]
+                if other_symbols:
+                    avg_correlation = np.mean([
+                        abs(correlation_matrix.loc[symbol, s])
+                    ])
+                else:
+                    avg_correlation = 0.5
+                
+                # Adjust weight based on correlation
+                correlation_adjustment = 1.0 + (avg_correlation - 0.5) / 2.0
+                new_weight = portfolio_data[symbol]['weight'] * correlation_adjustment
+                portfolio_data[symbol]['weight'] = new_weight
+                portfolio_data[symbol]['correlation_adjustment'] = correlation_adjustment
+                portfolio_data[symbol]['correlation_adjustment'] = correlation_adjustment
+                portfolio_data[symbol]['reduction_reason'] = 'correlation_adjustment'
+            
+            # Normalize weights
+            total_weight = sum(
+                position.get('weight', 0.0) 
+                for position in adjusted_portfolio.values()
+            )
+            
+            # Normalize weights
+            for symbol in adjusted_portfolio:
+                portfolio_data[symbol]['weight'] = portfolio_data[symbol]['weight'] / total_weight
+            
+            return adjusted_portfolio
+            
+        except Exception as e:
+            self.logger.error(f"Error applying correlation adjustments: {e}")
+            return portfolio_data
+    
+    def _store_exposure_results(self, results: Dict[str, Any]) -> None:
+        """Store exposure monitoring results."""
+        
+        try:
+            # Store in JSON file
+            timestamp = results['timestamp'].strftime('%Y%m%d_%H%M_%S')
+            filename = f"exposure_monitoring_{timestamp}.json"
+            filepath = self.storage_path / filename
+            
+            with open(filepath, 'w') as f:
+                json.dump(results, f, indent=2, default=str)
+            
+            self.logger.info(f"Exposure monitoring results stored to {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to store exposure results: {e}")
+    
+    def _store_position_risk_summary(self, results: Dict[str, Any]) -> None:
+        """Store position risk summary for historical tracking."""
+        
+        try:
+            # Store position risk summary
+            for symbol, position in self.current_exposures.items():
+                position_risk_summary[symbol] = self._get_position_risk_summary(symbol)
+            
+            # Store in JSON file
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M_%S')
+            filename = f"position_risk_summary_{timestamp}.json"
+            filepath = self.storage_path / filename
+            
+            with open(filepath, 'w') as f:
+                json.dump(position_risk_summary, f, indent=2, default=str)
+            
+            self.logger.info(f"Position risk summary stored to {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to store position risk summary: {e}")
+    
+    def _store_position_risk_summary(self, results: Dict[str, Any]) -> None:
+        """Store position risk summary for historical tracking."""
+        
+        try:
+            # Store in JSON file
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M_%S')
+            filename = f"position_risk_summary_{timestamp}.json"
+            filepath = self.storage_path / filename
+            
+            with open(filepath, 'w') as f:
+                json.dump(results, f, indent=2, default=str)
+            
+            self.logger.info(f"Position risk summary stored to {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to store position risk summary: {e}")
+    
+    def _store_position_risk_summary(self, results: Dict[str, Any]) -> None:
+        """Store position risk summary for historical tracking."""
+        
+        try:
+            # Store in JSON file
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M_%S')
+            filename = f"position_risk_summary_{timestamp}.json"
+            filepath = self.storage_path / filename
+            
+            with open(filepath, 'w') as f:
+                json.dump(results, f, indent=2, default=str)
+            
+            self.logger.info(f"Position risk summary stored to {filepath}")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to store position risk summary: {e}")
+    
+    def _get_position_risk_summary(self) -> Dict[str, Any]:
+        """Get current position risk summary."""
+        
+        try:
+            if not self.current_exposures:
+                return {'error': 'No positions found'}
+            
+            position_risk_summaries = {}
+            
+            for symbol, position in self.current_exposures.items():
+                position_risk_summaries[symbol] = self._get_position_risk_summary(symbol)
+            
+            return position_risk_summaries
+            
+        except Exception as e:
+            self.logger.error(f"Error getting position risk summary: {e}")
+            return {'error': 'No positions found'}
+    
+    def _get_position_risk_summary(self, symbol: str) -> Dict[str, Any]:
+        """Get detailed risk summary for a specific position."""
+        
+        try:
+            if symbol not in self.current_exposures:
+                return {'error': f"Position {symbol} not found"}
+            
+            position_metrics = self.position_metrics.get(symbol, {})
+            
+            return {
+                'symbol': symbol,
+                'current_exposure': position_metrics['exposure'],
+                'current_value': position_metrics['current_value'],
+                'unrealized_pnl': position_metrics['unrealized_pnl'],
+                'var_ratio': position_metrics['var_ratio'],
+                'max_drawdown': position_metrics['max_drawdown'],
+                'risk_level': self._determine_position_risk_level(
+                    position_metrics
+                ),
+                'recommendations': self._generate_position_recommendations(position_metrics)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting position risk summary: {e}")
+            return {'error': f"Position {symbol} not found"}
+    
+    def _generate_position_recommendations(self, position_metrics: Dict[str, Any]) -> List[str]:
+        """Generate position-specific recommendations based on risk level."""
+        
+        try:
+            risk_level = self._determine_position_risk_level(position_metrics)
+            
+            if risk_level == 'critical':
+                recommendations.append(
+                    f"🚨️ CRITICAL: {symbol} risk level is CRITICAL. "
+                    f"IMMEDIATE POSITION REDUCTION REQUIRED. "
+                    f"Close {position} position immediately."
+                )
+                
+            elif risk_level == 'high':
+                recommendations.append(
+                    f"⚠️ HIGH: {symbol} risk level is HIGH. "
+                    f"Aggressive position reduction required. "
+                    f"Consider emergency closure."
+                )
+                
+            elif risk_level == 'elevated':
+                recommendations.append(
+                    f"⚠️ ELEVATED: {symbol} risk level is elevated. "
+                    f"Moderate position reduction required. "
+                    f"Monitor risk level changes."
+                )
+                
+            elif risk_level == 'normal':
+                recommendations.append(
+                    f"✅ NORMAL: {symbol} risk level is normal. "
+                    f"Continue monitoring position."
+                )
+            
+            elif risk_level == 'unknown':
+                recommendations.append(
+                    f"📊 MONITOR: {symbol} risk level unknown. "
+                    f"Check position risk metrics."
+                )
+            
+            # Asset-specific recommendations
+            if position_metrics['var_ratio'] > 0.5:
+                recommendations.append(
+                    f"📊️ HIGH: {symbol} variance ratio is excessive. "
+                    f"Consider reducing position size."
+                )
+            
+            if position_metrics['max_drawdown'] > 0.05:
+                recommendations.append(
+                    f"⚠️ HIGH: {symbol} max drawdown is {position_metrics['max_drawdown']:.2f}. "
+                    f"Immediate position closure recommended."
+                )
+            
+            if position_metrics['unrealized_pnl'] < 0:
+                recommendations.append(
+                    f"🔥 NEGATIVE PNL: {symbol} has unrealized PnL. "
+                    f"Consider position closure."
+                )
+            
+            # Market condition recommendations
+            market_conditions = self._analyze_market_conditions(
+                self._get_market_data()
+            )
+            
+            if market_conditions.get('market_stress', False):
+                recommendations.append(
+                    f"🔥️ MARKET STRESS: Market stress detected. "
+                    f"Reduce all positions immediately."
+                )
+            
+            else:
+                recommendations.append(
+                    f"📊 NORMAL: Market conditions are stable. "
+                    f"Continue normal trading."
+                )
+            
+            return recommendations
+            
+        except Exception as e:
+            self.logger.error(f"Error generating recommendations: {e}")
+            return []
+    
+    def _update_position_risk_summary(self, results: Dict[str, Any]) -> None:
+        """Update position risk summary with current data."""
+        
+        try:
+            # Update position tracking
+            self.position_metrics_history.append({
+                'timestamp': results['timestamp'],
+                'position_count': len(self.current_exposures),
+                'max_exposure': max(
+                    exposure['exposure'] 
+                    for exposure in self.current_exposures.values()
+                ),
+                'avg_risk_ratio': np.mean([
+                    position_metrics.get('var_ratio', 0.0)
+                ]
+            })
+            
+            # Store in history
+            self.position_metrics_history.append({
+                'timestamp': results['timestamp'],
+                'position_count': len(self.current_exposures),
+                'avg_risk_ratio': avg_risk_ratio,
+                'max_risk_exposure': max_exposure,
+                'max_var_ratio': max(
+                    position_metrics.get('var_ratio', 0.0)
+                )
+            })
+            
+            self.logger.debug(f"Updated position risk summary for {len(self.position_metrics)} positions")
+            
+        except Exception as e:
+            self.logger.error(f"Error updating position risk summary: {e}")
+    
+    def _get_market_data(self) -> Optional[pd.DataFrame]:
+        """Get current market data for analysis."""
+        
+        try:
+            # Return cached market data if available
+            if hasattr(self, '_market_data_cache') and self._market_data_cache is not None:
+                return self._market_data_cache
+            
+            # Get market data from portfolio
+            symbols = list(self.current_exposures.keys())
+            
+            if symbols and symbols[0] in market_data['close'].columns:
+                return market_data[['close']]
+            
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error getting market data: {e}")
+            return None
+    
+    def _get_market_data(self) -> Optional[pd.DataFrame]:
+        """Get cached market data or fetch fresh data."""
+        
+        try:
+            # Try to get market data from portfolio
+            symbols = list(self.current_exposures.keys())
+            
+            if symbols and symbols[0] in market_data['close'].columns:
+                return market_data[['close']]
+            
+            # Get market data from market_data
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error getting market data: {e}")
+            return None
+    
+    def _get_market_data_from_portfolio(self, portfolio_data: Dict[str, Any]) -> Optional[pd.DataFrame]:
+        """Get market data from portfolio data."""
+        
+        try:
+            # Get price data for portfolio assets
+            symbols = list(portfolio_data.keys())
+            
+            if symbols and symbols[0] in market_data['close'].columns:
+                return market_data[['close']]
+            
+            # Construct synthetic market data
+            synthetic_market_data = pd.DataFrame(
+                {'close': market_data['close'][symbols]}
+            )
+            
+            return synthetic_market_data
+            
+        except Exception as e:
+            self.logger.error(f"Error getting market data from portfolio data: {e}")
+            return None
+
+# Factory function for easy instantiation
+def get_kill_switch_manager(config: Optional[Dict[str, Any]] = None) -> KillSwitchManager:
+    """Factory function to get KillSwitchManager instance."""
+    return KillSwitchManager(config)
+
+# Alert Manager for kill-switch system
+class AlertManager:
+    """Simple alert management for kill-switch system."""
+    
+    def __init__(self):
+        self.alerts = []
+    
+    def send_alert(self, level: str, message: str, timestamp: Optional[datetime] = None):
+        """Send alert notification."""
+        
+        alert = {
+            'level': level,
+            'message': message,
+            'timestamp': timestamp or datetime.now()
+        }
+        
+        self.alerts.append(alert)
+        
+        # Integration points
+        # Email notifications
+        # Slack notifications
+        # SMS alerts
+        # Dashboard alerts
+        # Trading platform integration
+        pass
+
+# Factory function for quick emergency monitoring
+async def monitor_risk_emergency_quick(portfolio_data: Dict[str, Any],
+                                         market_data: pd.DataFrame,
+                                         config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Quick emergency risk monitoring.
+    
+    Args:
+        portfolio_data: Current portfolio positions
+        market_data: Current market data
+        config: Configuration dictionary
+        
+    Returns:
+        Risk monitoring result dictionary
+    """
+    manager = get_kill_switch_manager(config)
+    return await manager.monitor_and_execute(portfolio_data, market_data)
+
+# Concentration Analyzer for concentration analysis
+class ConcentrationAnalyzer:
+    """Analysis of portfolio concentration and diversification."""
+    
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """Initialize concentration analyzer."""
+        
+        self.logger = logger
+        self.config = config or {}
+        
+        # Concentration thresholds
+        self.concentration_threshold = config.get('concentration_threshold', 0.25)
+        self.diversification_threshold = config.get('diversification_threshold', 1.2)
+        
+    def calculate_concentration_ratio(self, weights: np.ndarray) -> float:
+        """Calculate concentration ratio (max_weight / min_weight)."""
+        
+        try:
+            if len(weights) < 2:
+                return 1.0
+            
+            max_weight = max(weights)
+            min_weight = min(weights)
+            
+            if min_weight > 0:
+                return max_weight / min_weight
+            else:
+                return max_weight / min_weight
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating concentration ratio: {e}")
+            return 1.0
+    
+    def calculate_herfindahl_index(self, weights: np.ndarray) -> float:
+        """Calculate Herfindahl-Hirschman index."""
+        
+        try:
+            # Calculate effective number of assets
+            n_assets = len(weights)
+            effective_n = 1.0 / np.sum(weights ** 2)
+            
+            # Calculate Herfindahl-Hirschman index
+            if n_assets > 1:
+                # Calculate portfolio variance
+                portfolio_variance = np.sum(weights ** 2)
+                portfolio_volatility = np.sqrt(portfolio_variance)
+                
+                # Calculate average correlation
+                avg_correlation = np.mean([
+                    abs(correlation_matrix[i, j])
+                    for i in range(n_assets)
+                    for j in range(n_assets)
+                ])
+                
+                if portfolio_volatility > 0:
+                    herfindahl_index = n_assets / (portfolio_volatility ** 2)
+                else:
+                    herfindahl_index = 1.0
+                
+                return herfindahl_index
+                
+        except Exception as e:
+            self.logger.error(f"Error calculating Herfindahl index: {e}")
+            return 1.0
+    
+    def calculate_entropy(self, weights: np.ndarray) -> float:
+        """Calculate entropy for portfolio weights."""
+        
+        try:
+            if len(weights) < 2:
+                return 0.0
+            
+            # Normalize weights
+            normalized_weights = weights / np.sum(weights)
+            
+            # Calculate entropy
+            entropy = -np.sum(
+                normalized_weights * np.log(normalized_weights + 1e-10)
+            )
+            
+            return entropy
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating entropy: {e}")
+            return 0.0
+    
+    def get_concentration_ratio(self, weights: np.ndarray) -> float:
+        """Calculate concentration ratio (max_weight / min_weight)."""
+        
+        try:
+            if len(weights) < 2:
+                return 1.0
+            
+            max_weight = max(weights)
+            min_weight = min(weights)
+            
+            if min_weight > 0:
+                return max_weight / min_weight
+            else:
+                return max_weight / min_weight
+                
+        except Exception as e:
+            self.logger.error(f"Error calculating concentration ratio: {e}")
+            return 1.0
+    
+    def get_inefficient_n_assets(self, 
+                                   n_assets: int,
+                                   target_diversification: float = 0.7,
+                                   max_correlation: float = 0.7) -> float:
+        """Calculate optimal number of assets for diversification."""
+        
+        try:
+            # Calculate optimal number of assets for diversification
+            n_efficient = int(np.ceil(target_diversification * n_assets))
+            
+            if n_efficient >= 2:
+                return n_efficient
+            
+            # If insufficient assets, return minimum
+            return n_assets
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating efficient n assets: {e}")
+            return n_assets
+
+# Factory function for easy instantiation
+def get_max_exposure_monitor(config: Optional[Dict[str, Any]] = None) -> MaxExposureMonitor:
+    """Factory function to get MaxExposureMonitor instance."""
+    return MaxExposureMonitor(config)
+
+# Concentration Analyzer for concentration analysis
+class ConcentrationAnalyzer:
+    """Analysis of portfolio concentration and diversification."""
+    
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """Initialize concentration analyzer."""
+        
+        self.logger = logger
+        self.config = config or {}
+        
+        # Concentration thresholds
+        self.concentration_threshold = config.get('concentration_threshold', 0.25)
+        self.diversification_threshold = config.get('diversification_threshold', 1.2)
+        
+        # Analysis components
+        self.correlation_analyzer = CorrelationAnalyzer()
+        self.diversification_analyzer = ConcentrationAnalyzer()
+        
+        self.logger.info("✅ ConcentrationAnalyzer initialized")
+    
+    def analyze_concentration(self, 
+                           portfolio_data: Dict[str, Any],
+                           market_data: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze portfolio concentration and diversification."""
+        
+        try:
+            concentration_analysis = {
+                'timestamp': datetime.now(),
+                'total_exposure': sum(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'asset_exposures': len(self.current_exposures),
+                'sector_exposures': self._calculate_sector_exposures(
+                    self.current_exposures
+                ),
+                'correlation_groups': self._analyze_correlation_groups(
+                    self.current_exposures, market_data
+                ),
+                'concentration_metrics': self._calculate_concentration_metrics(
+                    self.current_exposures, market_data
+                ),
+                'diversification_metrics': self._calculate_diversification_metrics(
+                    portfolio_data, market_data
+                ),
+                'concentration_ratio': self._calculate_concentration_ratio(
+                    self.current_exposures, market_data
+                ),
+                'risk_alerts': self._generate_concentration_alerts(
+                    concentration_analysis
+                ),
+                'recommendations': self._generate_concentration_recommendations(
+                    concentration_analysis
+                )
+            }
+            
+            return concentration_analysis
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing concentration: {e}")
+            return {}
+    
+    def _generate_concentration_alerts(self, concentration_analysis: Dict[str, Any]) -> List[str]:
+        """Generate concentration risk alerts."""
+        
+        try:
+            alerts = []
+            
+            # Concentration risk alerts
+            if concentration_analysis['concentration_ratio'] > self.concentration_threshold:
+                alerts.append({
+                    'level': 'critical',
+                    'message': f"CONCENTRATION RISK: {concentration_analysis['concentration_ratio']:.2f}. "
+                })
+            
+            # Concentration alerts
+            if concentration_analysis['concentration_ratio'] > 0.25:
+                alerts.append({
+                    'level': 'warning',
+                    'message': f"CONCENTRATION RISK: {concentration_analysis['concentration_ratio']:.2f}. "
+                })
+            
+            # Asset concentration alerts
+            high_risk_assets = [
+                symbol for symbol in concentration_analysis['high_risk_assets']
+            if symbol:
+                alerts.append({
+                    'level': 'warning',
+                    'message': f"HIGH CONCENTRATION: {symbol} exposure ({exposure:.2f}) exceeds threshold."
+                })
+            
+            # Sector concentration alerts
+            sector_concentration_risk = [
+                sector for sector, exposure in concentration_analysis['sector_exposures']
+                if exposure > 0.15:
+                    alerts.append({
+                        'level': 'warning',
+                        'message': f"HIGH SECTOR CONCENTRATION: {sector} exposure ({exposure:.2f}). "
+                    })
+            
+            # Overall concentration alert
+            if concentration_analysis['concentration_ratio'] > 0.3:
+                alerts.append({
+                    'level': 'warning',
+                    'message': f"CONCENTRATION RISK: {concentration_analysis['concentration_ratio']:.2f}. "
+                })
+            
+            # Return alerts
+            return alerts
+            
+        except Exception as e:
+            self.logger.error(f"Error generating concentration alerts: {e}")
+            return []
+    
+    def _generate_concentration_recommendations(self, concentration_analysis: Dict[str, Any]) -> List[str]:
+        """Generate concentration recommendations."""
+        
+        try:
+            concentration_metrics = concentration_analysis['concentration_metrics']
+            
+            # Concentration risk alerts
+            if concentration_metrics['concentration_ratio'] > 0.3:
+                recommendations.append(
+                    f"🚨️ HIGH: Concentration risk: {concentration_metrics['concentration_ratio']:.2f}. "
+                    f"Consider rebalancing positions."
+                )
+            
+            # Diversification alerts
+            diversification_ratio = concentration_metrics.get('diversification_ratio', 0.0)
+            
+            if diversification_ratio < 1.0:
+                recommendations.append(
+                    f"✅ GOOD: Diversification ratio: {diversification_ratio:.2f}. "
+                )
+            elif diversification_ratio < 0.8:
+                recommendations.append(
+                    f"⚠️ ACCEPTABLE: Diversification ratio: {diversification_ratio:.2f}. "
+                )
+            
+            # Asset concentration alerts
+            high_risk_assets = [
+                symbol for symbol in concentration_analysis['high_risk_assets']
+                if symbol:
+                    alerts.append({
+                        'level': 'warning',
+                        'message': f"HIGH CONCENTRATION: {symbol} exposure ({exposure:.2f}). "
+                    })
+            
+            # Overall portfolio alerts
+            if concentration_metrics['concentration_ratio'] > 0.4:
+                recommendations.append(
+                    f"🚨️ HIGH: Portfolio concentration risk: {concentration_metrics['concentration_ratio']:.2f}. "
+                )
+            
+            # Market condition alerts
+            market_conditions = concentration_analysis.get('market_conditions', {})
+            
+            if market_conditions.get('market_stress', False):
+                recommendations.append(
+                    f"🔥️ MARKET STRESS: Market stress detected. "
+                    f"Consider immediate position reduction."
+                )
+            
+            else:
+                recommendations.append(
+                    f"✅ NORMAL: Market conditions are stable. "
+                    f"Continue monitoring."
+                )
+            
+            return recommendations
+            
+        except Exception as e:
+            self.logger.error(f"Error generating concentration recommendations: {e}")
+            return []
+    
+    def _get_concentration_recommendations(self, concentration_analysis: Dict[str, Any]) -> List[str]:
+        """Generate concentration recommendations."""
+        
+        try:
+            concentration_metrics = concentration_analysis['concentration_metrics']
+            
+            # Concentration alerts
+            if concentration_metrics['concentration_ratio'] > 0.3:
+                recommendations.append(
+                    f"🔥 HIGH: Concentration risk: {concentration_metrics['concentration_ratio']:.2f}. "
+                    f"Consider rebalancing positions."
+                )
+            
+            # Asset concentration alerts
+            high_risk_assets = [
+                symbol for symbol in concentration_analysis['high_risk_assets']
+                if symbol:
+                    alerts.append({
+                        'level': 'warning',
+                        'message': f"HIGH CONCENTRATION: {symbol} exposure ({exposure:.2f}). "
+                    })
+            
+            # Sector concentration alerts
+            sector_concentration_risk = {
+                sector: sector for sector, exposure in concentration_analysis['sector_exposures']
+                for sector, exposure in concentration_analysis['sector_exposures']
+            }
+            
+            # Most concentrated sectors
+            if sector_concentration_risk:
+                most_concentrated_sector = max(
+                    sector_concentration_risk.items(),
+                    key=lambda x: sector_concentration_risk[risk]
+                )
+                
+                if most_concentrated_sector:
+                    recommendations.append(
+                    f"🔥️ PRIORITY: {most_concentrated_sector} has {sector_concentration_risk[risk]} exposure."
+                    f"Consider rebalancing sector exposure."
+                    )
+            
+            # Overall portfolio alerts
+            if concentration_metrics['concentration_ratio'] > 0.25:
+                recommendations.append(
+                    f"🔥 HIGH: Portfolio concentration risk: {concentration_metrics['concentration_ratio']:.2f}. "
+                    f"Consider portfolio rebalancing."
+                )
+            
+            return recommendations
+            
+        except Exception as e:
+            self.logger.error(f"Error generating concentration recommendations: {e}")
+            return []
+    
+    def get_concentration_risk_summary(self, days: int = 30) -> Dict[str, Any]:
+        """Get concentration risk summary over time period."""
+        
+        try:
+            cutoff_time = datetime.now() - timedelta(days=days)
+            
+            # Filter recent events
+            recent_events = [
+                event for event in self.exposure_events
+                if event['timestamp'] >= cutoff_time
+            ]
+            
+            if not recent_events:
+                return {'error': 'No recent exposure monitoring data available'}
+            
+            # Calculate summary statistics
+            summary = {
+                'period_days': days,
+                'total_events': len(recent_events),
+                'current_total_exposure': sum(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'max_exposure': max(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'asset_exposure_count': len(self.current_exposures),
+                'sector_exposure_count': len(self._calculate_sector_exposures(
+                    self.current_exposures
+                ),
+                'correlation_group_count': len(
+                    self._calculate_correlation_groups(
+                        self.current_exposures, market_data
+                    )
+                ),
+                'alert_count': len(self._get_risk_alerts(recent_events)),
+                'most_frequent_breach': self._get_most_frequent_breach(
+                    recent_events
+                ),
+                'exposure_trend': self._analyze_exposure_trend(
+                    recent_events
+                ),
+                'diversification_trend': self._analyze_diversification_trend(
+                    recent_events
+                )
+            }
+            
+            return summary
+            
+        except Exception as e:
+            self.logger.error(f"Error getting concentration risk summary: {e}")
+            return {'error': str(e)}
+    
+    def _find_optimal_diverse_subset(self, 
+                                 symbols: List[str],
+                                 correlation_matrix: pd.DataFrame,
+                                 portfolio_data: Dict[str, Any],
+                                 market_data: pd.DataFrame,
+                                 max_assets: int = 10) -> Optional[List[str]]:
+        """Find optimal diverse subset using correlation analysis."""
+        
+        try:
+            if len(symbols) < 2:
+                return None
+            
+            # Calculate diversification scores for each asset
+            diversification_scores = {}
+            
+            for symbol in symbols:
+                # Calculate average correlation with other assets
+                other_symbols = [s for s in symbols if s != symbol]
+                if other_symbols:
+                    avg_correlation = np.mean([
+                        abs(correlation_matrix.loc[symbol, s])
+                    ])
+                else:
+                    avg_correlation = 0.5
+                
+                diversification_scores[symbol] = avg_correlation
+            
+            # Sort by diversification score (lower is better)
+            sorted_symbols = sorted(
+                diversification_scores.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+            
+            # Select top assets
+            optimal_subset = sorted_symbols[:max_assets]
+            
+            return optimal_subset
+            
+        except Exception as e:
+            self.logger.error(f"Error finding optimal diverse subset: {e}")
+            return None
+    
+    def _get_most_frequent_breach(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Get most frequent exposure breach type."""
+        
+        try:
+            breach_counts = {}
+            
+            for event in recent_events:
+                breach_type = event['type']
+                breach_counts[breach_type] = breach_counts.get(breach_type, 0) + 1
+                breach_counts[breach_type] += 1
+            
+            if breach_counts:
+                most_frequent = max(breach_counts.items(), key=lambda x: x[1], reverse=True)[0][0])
+                return most_frequent
+            
+            return most_frequent
+            
+        except Exception as e:
+            self.logger.error(f"Error getting most frequent breach: {e}")
+            return 'unknown'
+    
+    def _analyze_exposure_trend(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Analyze exposure trend over time period."""
+        
+        try:
+            if len(recent_events) < 5:
+                return 'insufficient_data'
+            
+            # Calculate exposure trends
+            exposure_trends = [
+                event['total_exposure'] for event in recent_events
+            ]
+            
+            # Calculate trend
+            if len(exposure_trends) >= 3:
+                # Calculate trend
+                x = np.arange(len(exposure_trends))
+                slope = np.polyfit(x, exposure_trends, 1)[0]
+                
+                if slope > 0.01:
+                    return 'increasing'
+                elif slope < -0.01:
+                    return 'decreasing'
+                else:
+                    return 'stable'
+            
+            return 'stable'
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing exposure trend: {e}")
+            return 'stable'
+    
+    def _analyze_diversification_trend(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Analyze diversification trend over time period."""
+        
+        try:
+            if len(recent_events) < 5:
+                return 'insufficient_data'
+            
+            # Calculate diversification trends
+            diversification_trends = [
+                event['diversification_ratio'] for event in recent_events
+            ]
+            
+            # Calculate trend
+            if len(diversification_trends) >= 3):
+                # Calculate trend
+                x = np.arange(len(diversification_trends))
+                slope = np.polyfit(x, diversification_trends, 1)[0]
+                
+                if slope > 0.01:
+                    return 'improving'
+                elif slope < -0.01:
+                    return 'degrading'
+                else:
+                    return 'stable'
+                else:
+                    return 'stable'
+            
+            return 'stable'
+            
+        except Exception as e:
+            self.logger.error(f"Error analyzing diversification trend: {e}")
+            return 'stable'
+    
+    def _get_most_frequent_breach(self, recent_events: List[Dict[str, Any]]) -> str:
+        """Get most frequent exposure breach type."""
+        
+        try:
+            breach_counts = {}
+            
+            for event in recent_events:
+                breach_type = event['type']
+                breach_counts[breach_type] = breach_counts.get(breach_type, 0) + 1
+                
+                if breach_counts[breach_type] > 1:
+                    most_frequent = max(breach_counts.items(), key=lambda x: x[1], reverse=True)[0])[0]
+                return most_frequent
+                
+            return most_frequent
+            
+        except Exception as e:
+            self.logger.error(f"Error getting most frequent breach: {e}")
+            return 'unknown'
+    
+    def get_exposure_summary(self) -> Dict[str, Any]:
+        """Get comprehensive exposure summary."""
+        
+        try:
+            if not self.current_exposures:
+                return {'error': 'No positions found'}
+            
+            # Calculate summary statistics
+            summary = {
+                'total_exposure': sum(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'max_exposure': max(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'count': len(self.current_exposures),
+                'asset_exposure_count': len(self.current_exposures),
+                'sector_exposure_count': len(
+                    self._calculate_sector_exposures(self.current_exposures)
+                ),
+                'correlation_group_count': len(
+                    self._analyze_correlation_groups(
+                        self.current_exposures, market_data
+                    ),
+                'max_exposure': max(
+                    exposure['exposure'] for exposure in self.current_exposures.values()
+                ),
+                'max_sector_exposure': max(
+                    sector_exposure_count > 0 
+                    if sector_exposure_count > 0 else 0
+                ),
+                'diversification_ratio': diversification_metrics.get('diversification_ratio', 1.0),
+                'effective_n_assets': diversification_metrics.get('effective_n_assets', 0.0)
+            }
+            
+            return summary
+            
+        except Exception as e:
+            self.logger.error(f"Error getting exposure summary: {e}")
+            return {'error': str(e)}
+    
+    def update_config(self, new_config: Dict[str, Any]) -> None:
+        """Update configuration with new settings."""
+        
+        try:
+            self.config.update(new_config)
+            
+            # Update risk limits
+            self.risk_limits.update(new_config.get('risk_limits', {}))
+            self.exposure_triggers.update(new_config.get('emergency_triggers', {}))
+            
+            # Update thresholds
+            self.concentration_threshold = new_config.get('concentration_threshold', 0.25)
+            self.correlation_threshold = new_config.get('correlation_threshold', 0.7)
+            
+            # Update thresholds
+            self.diversification_threshold = new_config.get('diversification_threshold', 1.2)
+            
+            # Update state
+            if new_config.get('emergency_mode', False):
+                self.emergency_mode = False
+                self.logger.info("🔥 Emergency mode disabled")
+            
+            self.logger.info("✅ Configuration updated")
+            
+        except Exception as e:
+            self.logger.error(f"Error updating config: {e}")
+    
+    def get_risk_alerts(self, days: int = 30) -> List[str]:
+        """Get recent risk alerts."""
+        
+        try:
+            cutoff_time = datetime.now() - timedelta(days=days)
+            
+            # Filter recent alerts
+            recent_alerts = [
+                alert for alert in self._get_risk_alerts(recent_events)
+            ]
+            
+            return recent_alerts
+            
+        except Exception as e:
+            self.logger.error(f"Error getting risk alerts: {e}")
+            return []
+    
+    def get_portfolio_health_score(self) -> float:
+        """Calculate overall portfolio health score."""
+        
+        try:
+            if not self.current_exposures:
+                return 0.0
+            
+            # Calculate portfolio health score
+            health_score = 1.0
+            
+            # Risk penalties
+            total_exposure = sum(
+                exposure['exposure'] for exposure in self.current_exposures.values()
+            max_exposure = max(
+                exposure['exposure'] for exposure in self.current_exposures.values()
+            )
+            
+            # Concentration penalty
+            concentration_ratio = concentration_metrics.get('concentration_ratio', 1.0)
+            correlation_penalty = max(0, 1.0) - concentration_ratio
+            
+            # Risk level penalties
+            risk_level = self.current_risk_level
+            
+            # Calculate overall health score
+            health_score = 1.0 - (total_exposure / max_exposure) - concentration_penalty
+            
+            # Health score ranges
+            if health_score >= 0.8:
+                return 'excellent'
+            elif health_score >= 0.6:
+                return 'good'
+            elif health_score >= 0.4:
+                return 'fair'
+            elif health_score >= 0.2:
+                return 'poor'
+            else:
+                return 'poor'
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating portfolio health score: {e}")
+            return 0.0
+    
+    def get_position_health_score(self, symbol: str) -> float:
+        """Calculate health score for a specific position."""
+        
+        try:
+            if symbol not self.position_metrics:
+                return 0.0
+            
+            position_metrics = self.position_metrics.get(symbol, {})
+            
+            # Calculate position health score
+            health_score = 1.0
+            
+            # Risk level penalties
+            risk_level = self._determine_position_risk_level(position_metrics)
+            
+            # Performance penalties
+            performance_penalty = max(0, 0.0)  # No performance penalty
+            # Confidence penalty
+            confidence_penalty = 0.0  # No confidence penalty
+            
+            # Overall score
+            health_score = health_score - risk_level_penalty - confidence_penalty
+            
+            return health_score
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating position health score: {e}")
+            return 0.0
+    
+    def get_portfolio_health_score(self) -> float:
+        """Calculate overall portfolio health score."""
+        
+        try:
+            if not self.current_exposures:
+                return 0.0
+            
+            # Calculate portfolio health score
+            portfolio_health_score = self.get_portfolio_health_score()
+            
+            return portfolio_health_score
+            
+        except Exception as e:
+            self.logger.error(f"Error calculating portfolio health score: {e}")
+            return 0.0
+
+# Factory function for easy instantiation
+def get_concentration_analyzer(config: Optional[Dict[str, Any]] = None) -> ConcentrationAnalyzer:
+    """Factory function to get ConcentrationAnalyzer instance."""
+    return ConcentrationAnalyzer(config)
+
+# Factory function for quick exposure monitoring
+async def monitor_exposure_quick(portfolio_data: Dict[str, Any],
+                                   market_data: pd.DataFrame,
+                                   config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Quick exposure monitoring.
+    
+    Args:
+        portfolio_data: Current portfolio positions
+        market_data: Current market data
+        config: Configuration dictionary
+        
+    Returns:
+        Exposure monitoring result dictionary
+    """
+    manager = get_max_exposure_monitor(config)
+    return await manager.monitor_and_execute(portfolio_data, market_data)

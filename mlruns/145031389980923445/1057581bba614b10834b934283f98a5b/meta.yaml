@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/trading_project/mlruns/145031389980923445/1057581bba614b10834b934283f98a5b/artifacts
+end_time: 1777666935221
+entry_point_name: ''
+experiment_id: '145031389980923445'
+lifecycle_stage: active
+run_id: 1057581bba614b10834b934283f98a5b
+run_name: RF_Tuning_50_15_10
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777666934517
+status: 3
+tags: []
+user_id: Alexa

@@ -61,13 +61,6 @@ class MarketContextEnricher(BaseEnricher):
     
     def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
-        Implementation of enrichment logic (required by BaseEnricher).
-        Delegates to enrich() method.
-        """
-        return self.enrich(df, **kwargs)
-    
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
-        """
         Adds market context features to DataFrame.
         
         Args:

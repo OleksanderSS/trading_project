@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/trading_project/mlruns/145031389980923445/2153927905a24736851dcb86d1016345/artifacts
+end_time: 1777666650882
+entry_point_name: ''
+experiment_id: '145031389980923445'
+lifecycle_stage: active
+run_id: 2153927905a24736851dcb86d1016345
+run_name: RandomForest_Trading_Example
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777666650518
+status: 4
+tags: []
+user_id: Alexa

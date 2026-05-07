@@ -1,10 +1,12 @@
-import pandas as pd
+import logging
+from typing import Any, Optional, Union, Dict
+
 import numpy as np
-from typing import Dict, List, Any, Optional
+import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
-from src.features.enrichers.base import BaseEnricher
 from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
 
 logger = ProjectLogger.get_logger("SentimentFeaturesEnricher")
 
@@ -33,6 +35,7 @@ class SentimentFeaturesEnricher(BaseEnricher):
         """
         Initializes the enricher by loading settings from the unified configuration.
         """
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         config_manager = get_current_config()
         self.sentiment_config = config_manager.get('enrichment.sentiment', {})
         
@@ -45,7 +48,7 @@ class SentimentFeaturesEnricher(BaseEnricher):
         
         logger.info(f"SentimentFeaturesEnricher initialized with windows: {self.windows}")
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Adds sentiment-based features to the input DataFrame.
         Uses news data from kwargs if available.
@@ -93,13 +96,14 @@ class SentimentFeaturesEnricher(BaseEnricher):
                 return col
         return None
 
-    def _merge_news_sentiment(self, df: pd.DataFrame, **kwargs) -> Optional[str]:
+    def _merge_news_sentiment(self, df: pd.DataFrame, **kwargs) -> Union[str, None]:
         """Attempts to merge sentiment from news data."""
         news_df = kwargs.get('news')
         if not self._validate_news_data(news_df):
             return None
             
-        logger.info(f"Attempting to merge sentiment from news data ({len(news_df)} rows)")
+        news_count = len(news_df) if news_df is not None else 0
+        logger.info(f"Attempting to merge sentiment from news data ({news_count} rows)")
         
         time_col = self._find_time_column(news_df)
         news_sentiment_col = self._find_news_sentiment_column(news_df)
@@ -113,13 +117,13 @@ class SentimentFeaturesEnricher(BaseEnricher):
         
         return 'nlp_sentiment_score'
 
-    def _validate_news_data(self, news_df: Any) -> bool:
+    def _validate_news_data(self, news_df: pd.DataFrame | None) -> bool:
         """Validates news DataFrame."""
         return (news_df is not None and 
                 isinstance(news_df, pd.DataFrame) and 
                 not news_df.empty)
 
-    def _find_time_column(self, news_df: pd.DataFrame) -> Optional[str]:
+    def _find_time_column(self, news_df: pd.DataFrame) -> str | None:
         """Finds time column in news DataFrame."""
         possible_time_cols = ['published_at', 'publishedAt', 'published_date', 'date', 'timestamp', 'datetime']
         for col in possible_time_cols:
@@ -127,7 +131,7 @@ class SentimentFeaturesEnricher(BaseEnricher):
                 return col
         return None
 
-    def _find_news_sentiment_column(self, news_df: pd.DataFrame) -> Optional[str]:
+    def _find_news_sentiment_column(self, news_df: pd.DataFrame) -> str | None:
         """Finds sentiment column in news DataFrame."""
         for col in ['sentiment_score', 'sentiment', 'finbert_score']:
             if col in news_df.columns:
@@ -142,7 +146,7 @@ class SentimentFeaturesEnricher(BaseEnricher):
             news_df[time_col] = news_df[time_col].dt.tz_localize(None)
         news_df[time_col] = news_df[time_col].astype(DATETIME64_NS)
         
-        logger.info(f"✅ Found time column '{time_col}' with {len(news_df[news_df[time_col].notna()])} valid timestamps")
+        logger.info(f"Found time column '{time_col}' with {len(news_df[news_df[time_col].notna()])} valid timestamps")
         
         # Aggregate sentiment by date and ticker (if available)
         if 'ticker' in news_df.columns:

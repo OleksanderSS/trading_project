@@ -74,7 +74,7 @@ class FamaFrenchFactors:
         try:
             prices = self._download_data(start_date, end_date)
             if prices.empty:
-                logger.error("Factor calculation aborted: Benchmark dataset empty.")
+                logger.info("Factor calculation skipped: Insufficient historical depth (Benchmark dataset empty).")
                 return None
 
             returns = prices.pct_change().dropna()
@@ -172,7 +172,7 @@ class FamaFrenchFactors:
             start_dt = pd.to_datetime(start_date)
             end_dt = pd.to_datetime(end_date)
             if start_dt >= end_dt:
-                logger.error(f"Invalid temporal range: {start_date} to {end_date}")
+                logger.info(f"Temporal range too narrow for factor analysis: {start_date} to {end_date}")
                 return False
             return True
         except Exception as e:

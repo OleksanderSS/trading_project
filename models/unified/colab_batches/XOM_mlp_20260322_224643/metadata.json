@@ -1,0 +1,11 @@
+{
+  "batch_id": "XOM_mlp_20260322_224643",
+  "ticker": "XOM",
+  "model_name": "mlp",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_atr14_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T22:46:44.025250",
+  "status": "PENDING_COLAB"
+}

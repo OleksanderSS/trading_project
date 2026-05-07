@@ -18,6 +18,7 @@ class HypeEnricher(BaseEnricher):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize with optional config from FeatureOrchestrator."""
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         self.config = config or {}
 
     @property
@@ -30,7 +31,7 @@ class HypeEnricher(BaseEnricher):
         """Execution order - run after NLP (30) and sentiment (40)"""
         return 50
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Calculates hype scores using news data from kwargs.
         
@@ -55,7 +56,8 @@ class HypeEnricher(BaseEnricher):
             return df
 
         hype_window = kwargs.get('hype_window', '1h')
-        logger.info(f"Calculating hype scores using window: {hype_window} from {len(news_df)} news items")
+        news_count = len(news_df) if news_df is not None and isinstance(news_df, pd.DataFrame) else 0
+        logger.info(f"Calculating hype scores using window: {hype_window} from {news_count} news items")
 
         try:
             return self._process_hype_enrichment(df, news_df, time_col)

@@ -392,6 +392,69 @@ analysis:
       mode: 'feature_engineering'
 
 # ---------------------------------
+# Context Rule Generation Section
+# ---------------------------------
+context_rule_generation:
+  # Target asset for rule generation analysis
+  target_asset: 'SPY'
+  
+  # Indicators to analyze for rule generation
+  indicators_to_analyze:
+    - name: 'VIX'
+      thresholds:
+        - condition: '>'
+          value: 30
+          effect_windows: [1, 5, 20]
+        - condition: '<'
+          value: 15
+          effect_windows: [1, 5, 20]
+    
+    - name: 'yield_curve_slope'
+      thresholds:
+        - condition: '<'
+          value: 0  # Inverted yield curve
+          effect_windows: [1, 5, 20, 60]
+        - condition: '>'
+          value: 2.0  # Steep yield curve
+          effect_windows: [1, 5, 20]
+    
+    - name: 'fed_funds_rate'
+      thresholds:
+        - condition: '>'
+          value: 5.0  # High interest rates
+          effect_windows: [1, 5, 20, 60]
+        - condition: '<'
+          value: 1.0  # Low interest rates
+          effect_windows: [1, 5, 20]
+    
+    - name: 'unemployment_rate'
+      thresholds:
+        - condition: '>'
+          value: 6.0  # High unemployment
+          effect_windows: [1, 5, 20, 60]
+        - condition: '<'
+          value: 4.0  # Low unemployment
+          effect_windows: [1, 5, 20]
+    
+    - name: 'cpi_inflation'
+      thresholds:
+        - condition: '>'
+          value: 4.0  # High inflation
+          effect_windows: [1, 5, 20, 60]
+        - condition: '<'
+          value: 2.0  # Low inflation
+          effect_windows: [1, 5, 20]
+  
+  # Output path for generated rules (relative to project root)
+  output_path: 'src/config/generated_context_rules.yaml'
+  
+  # Minimum number of events required to generate a rule
+  min_event_count: 10
+  
+  # Minimum win rate to consider a rule significant
+  min_win_rate: 0.55
+
+# ---------------------------------
 # Strategy Section
 # ---------------------------------
 strategy:

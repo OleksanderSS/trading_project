@@ -4,8 +4,8 @@
 paths:
   root: data
   raw_data: data/raw
-  raw_db: data/raw_data.duckdb
-  duckdb_path: data/raw_data.duckdb
+  raw_db: data/trading_data.duckdb
+  duckdb_path: data/trading_data.duckdb
   processed_data: data/processed
   features: data/processed/features
   scalers: data/scalers

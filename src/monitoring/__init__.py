@@ -48,6 +48,20 @@ from .config import (
 from .health_hub import HealthHub
 from .infrastructure.resource_monitor import ResourceMonitor
 
+# ✅ NEW: Data Freshness Monitor
+from .data_freshness_monitor import (
+    DataFreshnessMonitor,
+    get_data_freshness_monitor,
+    check_freshness_quick
+)
+
+# ✅ NEW: Feature Drift Monitor
+from .feature_drift_monitor import (
+    FeatureDriftMonitor,
+    check_feature_drift,
+    get_feature_drift_monitor
+)
+
 __all__ = [
 # 
     'MonitoringSystem',
@@ -68,7 +82,17 @@ __all__ = [
 
 # 
     "HealthHub",
-    "ResourceMonitor"
+    "ResourceMonitor",
+    
+# ✅ NEW: Data freshness monitoring
+    "DataFreshnessMonitor",
+    "get_data_freshness_monitor",
+    "check_freshness_quick",
+    
+# ✅ NEW: Feature drift monitoring
+    "FeatureDriftMonitor",
+    "check_feature_drift",
+    "get_feature_drift_monitor"
 ]
 
 __version__ = '1.0.0'

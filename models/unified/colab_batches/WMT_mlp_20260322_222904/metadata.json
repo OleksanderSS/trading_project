@@ -1,0 +1,11 @@
+{
+  "batch_id": "WMT_mlp_20260322_222904",
+  "ticker": "WMT",
+  "model_name": "mlp",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_bb_width_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T22:29:04.843343",
+  "status": "PENDING_COLAB"
+}

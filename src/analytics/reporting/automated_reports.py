@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 import time
 
-from src.core.reporting.results_manager import ResultsManager
+from src.analytics.data_managers.model_results_manager import ModelResultsManager as ResultsManager
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class AutomatedReporting:
     def generate_daily_report(self):
         """Щоденний звіт"""
         try:
-            report = {}
+            report: Dict[str, Any] = {}
             report["report_type"] = "DAILY_SYSTEM_REPORT"
             report["daily_summary"] = self.get_daily_summary()
             
@@ -53,7 +53,7 @@ class HistoricalAnalytics:
         try:
             self.load_historical_reports()
             
-            trends = {
+            trends: Dict[str, Any] = {
                 "performance_trends": {},
                 "usage_trends": {},
                 "error_trends": {},

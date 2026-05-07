@@ -17,6 +17,7 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import get_current_config
 from src.training.unified_training_manager import UnifiedTrainingManager, TrainingStrategy
+from src.training.base_trainer import TrainerConfig
 
 # Try to load adaptive target system components
 try:
@@ -44,39 +45,26 @@ class TrainingMode(Enum):
     BALANCED = "balanced"         # Optimal trade-off between target diversity and signal reliability.
     AGGRESSIVE = "aggressive"     # High-frequency training on a maximal set of experimental targets.
 
-@dataclass
-class AdaptiveTrainingConfig:
-    """Configuration schema for adaptive training orchestration."""
-    # Orchestration Settings
-    mode: TrainingMode = TrainingMode.BALANCED
-    strategy: TrainingStrategy = TrainingStrategy.HYBRID
-    
-    # Target Sanity Thresholds
-    min_target_quality: float = 0.7            # Floor for acceptable target reliability scores.
-    max_targets_per_ticker: int = 10           # Ceiling for concurrent target training per asset.
-    target_diversity_threshold: float = 0.3    # Minimum variance required between targets in a suite.
-    
-    # Temporal Ingestion Limits
-    intraday_data_limit_days: int = 60          # Lookback window ceiling for intraday datasets.
-    daily_data_limit_years: int = 2             # Lookback window ceiling for daily datasets.
-    
-    # Resource Constraints
-    max_memory_gb: float = 12.0                # Global memory safety ceiling.
-    max_time_hours: float = 24.0               # Maximum cumulative wall-clock time for a training cycle.
-    
-    # Integrity Safeguards
-    enable_quality_filtering: bool = True      # Automatic removal of low-signal targets.
-    enable_target_validation: bool = True      # Verification of target calculation causal integrity.
-
 class AdaptiveTrainingManager:
     """
     Intelligent manager for orchestrating large-scale asset training.
     Optimizes the selection of training architectures and target combinations based on market data availability.
     """
     
-    def __init__(self, config: Optional[AdaptiveTrainingConfig] = None):
+    def __init__(self, config: Optional[TrainerConfig] = None):
         self.config_manager = get_current_config()
-        self.config = config or AdaptiveTrainingConfig()
+        self.config = config or TrainerConfig(
+            mode="balanced",
+            strategy="hybrid",
+            max_targets_per_ticker=10,
+            target_diversity_threshold=0.3,
+            intraday_data_limit_days=60,
+            daily_data_limit_years=2,
+            max_memory_gb=12.0,
+            max_time_hours=24.0,
+            enable_quality_filtering=True,
+            enable_target_validation=True
+        )
         self.logger = ProjectLogger.get_logger("AdaptiveTrainingManager")
         
         # Component Initialization
@@ -104,7 +92,7 @@ class AdaptiveTrainingManager:
         Returns:
             Granular analysis report including compatibility matrices and recommendations.
         """
-        analysis = {
+        analysis: Dict[str, Any] = {
             "ticker_analysis": {},
             "target_analysis": {},
             "compatibility_matrix": {},
@@ -159,7 +147,7 @@ class AdaptiveTrainingManager:
             "overall_score": self._calculate_overall_ticker_score(timeframe_analysis),
             "best_timeframe": max(
                 timeframe_analysis.keys(), 
-                key=lambda x: timeframe_analysis[x]["target_quality_score"] if "target_quality_score" in timeframe_analysis[x] else 0
+                key=lambda x: float(timeframe_analysis[x].get("target_quality_score", 0))
             )
         }
     
@@ -201,15 +189,15 @@ class AdaptiveTrainingManager:
     
     def _analyze_target_compatibility(self, tickers: List[str]) -> Dict[str, Any]:
         """Identifies target overlap and uniqueness across the asset set."""
-        compatibility = {
+        compatibility: Dict[str, Any] = {
             "common_targets": set(),
             "unique_targets": {},
             "target_distribution": {},
             "quality_distribution": {}
         }
         
-        ticker_targets = {}
-        all_targets = set()
+        ticker_targets: Dict[str, Set[str]] = {}
+        all_targets: Set[str] = set()
         
         # Extract target sets for each asset
         for ticker in tickers:
@@ -359,7 +347,7 @@ class AdaptiveTrainingManager:
         return {
             "group": group,
             "primary_targets": list(set(ticker_targets)),
-            "quality_floor": self.config.min_target_quality
+            "quality_floor": 0.7  # Default quality floor (min_target_quality removed from TrainerConfig)
         }
     
     def _estimate_training_resources(self, plan: Dict[str, Any]) -> Dict[str, Any]:
@@ -445,7 +433,7 @@ def main():
     except Exception:
         tickers = ['NVDA', 'AMD', 'MSFT', 'TSLA'] # Fallback diagnostic set
         
-    config = AdaptiveTrainingConfig(mode=TrainingMode(args.mode))
+    config = TrainerConfig(mode=TrainingMode(args.mode).value)  # Convert enum to string
     manager = AdaptiveTrainingManager(config)
     
     manager.logger.info(f"Commencing Adaptive Analysis for {len(tickers)} assets: {tickers}")

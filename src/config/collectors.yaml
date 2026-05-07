@@ -12,7 +12,7 @@ collectors:
       60m:
         period: 60d
       1d:
-        period: 2y
+        period: 60d
   fred:
     enabled: true
     type: fred
@@ -24,7 +24,7 @@ collectors:
     - series_id
     - date
     params:
-      period: 2y
+      period: 60d
       series_ids:
       - FEDFUNDS
       - DGS10

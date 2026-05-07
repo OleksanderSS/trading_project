@@ -4,15 +4,14 @@ Centralized validation module for the trading system, utilizing Pydantic for rec
 and optimized vector operations in Pandas for large DataFrame validation.
 """
 
-import logging
 import re
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, ValidationError, validator, root_validator
+from pydantic import BaseModel, Field, ValidationError, root_validator, validator
 
 from src.core.logging.logger import ProjectLogger
 
@@ -81,33 +80,33 @@ class MarketDataSchema(BaseModel):
     def validate_ohlc_logic(cls, values):
         high, low = values.get('high'), values.get('low')
         open_val, close = values.get('open'), values.get('close')
-        
+
         if high is not None and low is not None and high < low:
             raise ValueError(f"High ({high}) cannot be lower than Low ({low})")
-        
+
         if high is not None:
             if open_val is not None and high < open_val:
                 raise ValueError(f"High ({high}) cannot be lower than Open ({open_val})")
             if close is not None and high < close:
                 raise ValueError(f"High ({high}) cannot be lower than Close ({close})")
-                
+
         if low is not None:
             if open_val is not None and low > open_val:
                 raise ValueError(f"Low ({low}) cannot be higher than Open ({open_val})")
             if close is not None and low > close:
                 raise ValueError(f"Low ({low}) cannot be higher than Close ({close})")
-        
+
         return values
 
 class TradingSignal(BaseModel):
     """Validator for trading signals"""
     ticker: str
     action: TradingAction
-    price: Optional[float] = Field(None, gt=0)
+    price: float | None = Field(None, gt=0)
     confidence: float = Field(..., ge=0, le=1)
     timestamp: datetime = Field(default_factory=datetime.now)
-    strength: Optional[SignalStrength] = None
-    strategy: Optional[str] = None
+    strength: SignalStrength | None = None
+    strategy: str | None = None
 
     @validator('ticker')
     def validate_ticker(cls, v):
@@ -120,8 +119,8 @@ class TradeOrder(BaseModel):
     action: TradingAction
     order_type: OrderType = OrderType.MARKET
     quantity: int = Field(..., gt=0)
-    price: Optional[float] = None
-    stop_price: Optional[float] = None
+    price: float | None = None
+    stop_price: float | None = None
     timestamp: datetime = Field(default_factory=datetime.now)
 
     @validator('ticker')
@@ -139,12 +138,13 @@ class TradeOrder(BaseModel):
 
 class BacktestRequest(BaseModel):
     """Validator for backtesting requests"""
-    tickers: List[str] = Field(..., min_items=1, max_items=100)
-    timeframes: List[Timeframe] = Field(..., min_items=1)
+
+    tickers: list[str] = Field(..., min_items=1, max_items=100)
+    timeframes: list[Timeframe] = Field(..., min_items=1)
     start_date: date
     end_date: date
     initial_capital: float = Field(..., gt=0, le=10**9)
-    strategies: List[str] = Field(..., min_items=1)
+    strategies: list[str] = Field(..., min_items=1)
 
     @validator('tickers')
     def validate_tickers(cls, v):
@@ -177,7 +177,7 @@ class DataValidator:
             return df
 
         initial_len = len(df)
-        
+
         # 1. Required columns check
         required = ["open", "high", "low", "close", "volume"]
         missing = [c for c in required if c not in df.columns]
@@ -194,7 +194,7 @@ class DataValidator:
             (df['low'] > df['open']) |
             (df['low'] > df['close'])
         )
-        
+
         error_count = invalid_mask.sum()
         if error_count > 0:
             logger.error(f"{context}: Found {error_count} rows with invalid OHLCV logic.")
@@ -203,37 +203,40 @@ class DataValidator:
             logger.info(f"{context}: Removed {error_count} invalid rows. Remaining: {len(df)}/{initial_len}")
         else:
             logger.info(f"Successfully validated all {len(df)} rows of {context} using vector checks.")
-            
+
         return df
 
     @staticmethod
-    def detect_leakage(df: pd.DataFrame, target_cols: List[str], threshold: float = 0.99) -> List[str]:
+    def detect_leakage(
+        df: pd.DataFrame, target_cols: list[str], threshold: float = 0.99
+    ) -> list[str]:
         """
         Detects features that have suspiciously high correlation with the target.
         Prevents Data Leakage (future-to-past leakage).
         """
         leaking_features = []
-        
+
         # Exclude metadata and the targets themselves from feature checking
         exclude = set(target_cols) | {'datetime', 'ticker', 'timestamp'}
         features = [c for c in df.columns if c not in exclude and pd.api.types.is_numeric_dtype(df[c])]
-        
+
         for target in target_cols:
             if target not in df.columns:
                 continue
-                
-            correlations = df[features].corrwith(df[target]).abs()
-            leaks = correlations[correlations >= threshold]
-            
+
+            leaks = df[features].corrwith(df[target]).abs()
+            leaks = leaks[leaks > threshold]
             if not leaks.empty:
                 for feat, corr in leaks.items():
-                    logger.warning(f"POTENTIAL DATA LEAKAGE: Feature '{feat}' has correlation {corr:.4f} with target '{target}'")
+                    logger.warning(
+                        f"POTENTIAL DATA LEAKAGE: Feature '{feat}' has correlation {corr:.4f} with target '{target}'"
+                    )
                     leaking_features.append(feat)
-                    
+
         return list(set(leaking_features))
 
     @staticmethod
-    def validate_prediction_input(df: pd.DataFrame, model_features: List[str]) -> bool:
+    def validate_prediction_input(df: pd.DataFrame, model_features: list[str]) -> bool:
         """
         Validates input data before prediction: existence of all features and absence of NaNs.
         """
@@ -241,41 +244,43 @@ class DataValidator:
         if missing_features:
             logger.error(f"Prediction Input Error: Missing features in DataFrame: {missing_features}")
             return False
-            
+
         nan_counts = df[model_features].isna().sum()
         cols_with_nan = nan_counts[nan_counts > 0]
-        
+
         if not cols_with_nan.empty:
-            logger.warning(f"Prediction Input Warning: NaN values found in features: {cols_with_nan.to_dict()}")
+            logger.warning(
+                f"Prediction Input Warning: NaN values found in features: {cols_with_nan.to_dict()}"
+            )
             # If the last row (the one we predict for) has NaNs - it's critical
             if df[model_features].iloc[-1].isna().any():
                 logger.error("Prediction Input Error: Critical NaN in the latest data row.")
                 return False
-                
+
         return True
 
     # --- Methods for object validation via Pydantic ---
 
     @staticmethod
-    def validate_request(model: BaseModel, data: Dict[str, Any]) -> BaseModel:
+    def validate_request(model: BaseModel, data: dict[str, Any]) -> BaseModel:
         """Universal validation method for any Pydantic model."""
         try:
             return model(**data)
         except ValidationError as e:
             # Reformat errors for better readability
             error_messages = [f"{err['loc'][0]}: {err['msg']}" for err in e.errors()]
-            raise DataValidationError(f"Validation error: {'; '.join(error_messages)}")
+            raise DataValidationError(f"Validation error: {'; '.join(error_messages)}") from e
 
     # --- Static methods for DataFrame validation ---
 
     @staticmethod
     def validate_dataframe(
         df: pd.DataFrame,
-        required_columns: Optional[List[str]] = None,
+        required_columns: list[str] | None = None,
         min_rows: int = 1,
         check_nulls: bool = True,
         check_duplicates: bool = True,
-        context: str = "DataFrame"
+        context: str = "DataFrame",
     ) -> pd.DataFrame:
         """Performs basic DataFrame integrity checks."""
         if not isinstance(df, pd.DataFrame):
@@ -352,12 +357,19 @@ class DataValidator:
     @staticmethod
     def check_data_quality(
         df: pd.DataFrame,
-        price_columns: List[str] = ["open", "high", "low", "close"],
-        z_score_threshold: float = 3.0
-    ) -> Dict[str, Any]:
+        price_columns: list[str] | None = None,
+        z_score_threshold: float = 3.0,
+    ) -> dict[str, Any]:
         """Analyzes a DataFrame for outliers and calculates a quality score."""
-        report = {"outliers": {}, "statistics": {}, "quality_score": 100.0}
-        df_numeric = df[price_columns].apply(pd.to_numeric, errors='coerce').dropna()
+        if price_columns is None:
+            price_columns = ["open", "high", "low", "close"]
+
+        report: dict[str, Any] = {
+            "outliers": {},
+            "statistics": {},
+            "quality_score": 100.0,
+        }
+        df_numeric = df[price_columns].apply(pd.to_numeric, errors="coerce").dropna()
 
         total_values = len(df_numeric)
         if total_values == 0:
@@ -366,13 +378,15 @@ class DataValidator:
         total_outliers = 0
         for col in price_columns:
             series = df_numeric[col]
-            mean, std = series.mean(), series.std()
-            report["statistics"][col] = {"mean": mean, "std": std}
+            mean, std = float(series.mean()), float(series.std())
+
+            stats: dict[str, float] = {"mean": mean, "std": std}
+            report["statistics"][col] = stats
 
             if std > 0:
                 z_scores = np.abs((series - mean) / std)
                 outliers = z_scores > z_score_threshold
-                outlier_count = outliers.sum()
+                outlier_count = int(outliers.sum())
                 if outlier_count > 0:
                     report["outliers"][col] = outlier_count
                     total_outliers += outlier_count

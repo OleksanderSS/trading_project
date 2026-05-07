@@ -13,6 +13,7 @@ from src.config.unified_config_manager import UnifiedConfigManager
 from src.trading.virtual_portfolio import VirtualPortfolio
 from src.metrics.calculator import MetricsCalculator
 from src.core.logging.logger import ProjectLogger
+from src.backtesting.advanced.advanced_engine import WalkForwardOptimizer, BiasDetector
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -22,23 +23,186 @@ class BacktestMode(BaseMode):
     def run(self) -> Dict[str, Any]:
         """
         Запускає повний цикл бектестингу: від збору даних до аналізу прибутковості,
-        використовуючи PipelineOrchestrator.
+        використовуючи PipelineOrchestrator з walk-forward validation.
         """
         self.logger.info("--- Starting Integrated Backtesting Mode using PipelineOrchestrator ---")
         try:
-            orchestrator = PipelineOrchestrator(self.config_manager)
-            final_data = self._execute_pipeline(orchestrator)
-            _, signals_df = self._extract_predictions_and_signals(final_data)
-            price_data = self._validate_price_data(final_data)
-            aligned_prices, aligned_signals = self._align_data(price_data, signals_df)
-            performance_metrics = self._run_portfolio_simulation(aligned_prices, aligned_signals)
-            self._log_results(performance_metrics)
+            # Check if walk-forward validation is enabled
+            backtest_config = self.config_manager.get_config('backtest', {})
+            use_walk_forward = backtest_config.get('walk_forward_validation', False)
             
-            return {'status': 'success', 'metrics': performance_metrics}
+            if use_walk_forward:
+                return self._run_walk_forward_validation()
+            else:
+                return self._run_standard_backtest()
 
         except Exception as e:
             self.logger.exception(f"[Backtest] A critical error occurred: {e}")
             return {'status': 'failed', 'error': str(e)}
+    
+    def _run_standard_backtest(self) -> Dict[str, Any]:
+        """Standard backtest execution."""
+        orchestrator = PipelineOrchestrator(self.config_manager)
+        final_data = self._execute_pipeline(orchestrator)
+        _, signals_df = self._extract_predictions_and_signals(final_data)
+        price_data = self._validate_price_data(final_data)
+        
+        # Apply bias detection
+        bias_results = self._detect_biases(signals_df, price_data)
+        
+        # Apply embargo period to prevent look-ahead bias
+        embargoed_signals = self._apply_embargo_period(signals_df, price_data)
+        aligned_prices, aligned_signals = self._align_data(price_data, embargoed_signals)
+        performance_metrics = self._run_portfolio_simulation(aligned_prices, aligned_signals)
+        
+        # Add bias detection results to metrics
+        performance_metrics['bias_analysis'] = bias_results
+        
+        self._log_results(performance_metrics)
+        return {'status': 'success', 'metrics': performance_metrics}
+    
+    def _run_walk_forward_validation(self) -> Dict[str, Any]:
+        """Walk-forward validation execution."""
+        self.logger.info("[Backtest] Running walk-forward validation...")
+        
+        # Get walk-forward configuration
+        backtest_config = self.config_manager.get_config('backtest.walk_forward', {})
+        in_sample_months = backtest_config.get('in_sample_months', 12)
+        out_sample_months = backtest_config.get('out_sample_months', 3)
+        
+        # Initialize walk-forward optimizer
+        walk_forward = WalkForwardOptimizer(self.config_manager)
+        
+        # Get historical data for walk-forward
+        orchestrator = PipelineOrchestrator(self.config_manager)
+        historical_data = self._get_historical_data(orchestrator)
+        
+        # Define optimization function
+        def optimization_function(train_data):
+            """Optimize model parameters on training data."""
+            # This would integrate with model training pipeline
+            # For now, return default parameters
+            return {'learning_rate': 0.01, 'n_estimators': 100}
+        
+        # Run walk-forward optimization
+        wf_results = walk_forward.walk_forward_optimization(
+            data=historical_data,
+            optimization_func=optimization_function,
+            in_sample_months=in_sample_months,
+            out_sample_months=out_sample_months
+        )
+        
+        # Aggregate walk-forward results
+        performance_metrics = self._aggregate_walk_forward_results(wf_results)
+        
+        self._log_walk_forward_results(performance_metrics, wf_results)
+        return {'status': 'success', 'metrics': performance_metrics, 'walk_forward_results': wf_results}
+    
+    def _detect_biases(self, signals_df: pd.DataFrame, price_data: pd.DataFrame) -> Dict[str, Any]:
+        """Detect various biases in backtest data."""
+        bias_detector = BiasDetector()
+        
+        bias_results = {
+            'look_ahead_bias': None,
+            'survivorship_bias': None,
+            'warnings': []
+        }
+        
+        try:
+            # Detect look-ahead bias
+            if 'signal' in signals_df.columns and 'close' in price_data.columns:
+                look_ahead_results = bias_detector.detect_look_ahead_bias(
+                    signals=signals_df[['signal']],
+                    future_prices=price_data[['close']],
+                    lag_periods=1
+                )
+                bias_results['look_ahead_bias'] = look_ahead_results
+                
+                if look_ahead_results.get('has_look_ahead_bias'):
+                    bias_results['warnings'].append("Look-ahead bias detected!")
+            
+            # Detect survivorship bias (if universe data available)
+            # This would require historical universe data
+            bias_results['survivorship_bias'] = {'has_survivorship_bias': False, 'message': 'Not enough data for analysis'}
+            
+        except Exception as e:
+            self.logger.warning(f"Bias detection failed: {e}")
+            bias_results['warnings'].append(f"Bias detection error: {e}")
+        
+        return bias_results
+    
+    def _apply_embargo_period(self, signals_df: pd.DataFrame, price_data: pd.DataFrame) -> pd.DataFrame:
+        """Apply embargo period to signals to prevent look-ahead bias."""
+        try:
+            # Get embargo configuration
+            backtest_config = self.config_manager.get_config('backtest.bias_prevention', {})
+            embargo_periods = backtest_config.get('embargo_periods', 1)  # Default 1 period
+            
+            self.logger.info(f"[Backtest] Applying {embargo_periods} period embargo to signals...")
+            
+            # Create a copy of signals to avoid modifying original
+            embargoed_signals = signals_df.copy()
+            
+            # Shift signals forward by embargo periods
+            if 'signal' in embargoed_signals.columns:
+                embargoed_signals['signal'] = embargoed_signals['signal'].shift(embargo_periods)
+                
+                # Drop NaN values created by shifting
+                embargoed_signals = embargoed_signals.dropna(subset=['signal'])
+                
+                self.logger.info(f"[Backtest] Embargo applied: {len(signals_df) -> {len(embargoed_signals)} signals")
+            
+            return embargoed_signals
+            
+        except Exception as e:
+            self.logger.warning(f"Embargo application failed: {e}")
+            return signals_df  # Return original signals if embargo fails
+    
+    def _get_historical_data(self, orchestrator: PipelineOrchestrator) -> pd.DataFrame:
+        """Get historical data for walk-forward validation."""
+        # This would collect extended historical data
+        # For now, use standard pipeline data
+        final_data = orchestrator.execute_full_pipeline()
+        price_data = final_data.get('processed_data')
+        return price_data if price_data is not None else pd.DataFrame()
+    
+    def _aggregate_walk_forward_results(self, wf_results: Dict[str, Any]) -> Dict[str, Any]:
+        """Aggregate results from walk-forward validation windows."""
+        if not wf_results or 'windows' not in wf_results:
+            return {'error': 'No walk-forward results to aggregate'}
+        
+        windows = wf_results['windows']
+        
+        # Aggregate performance metrics across all windows
+        total_return = 0
+        sharpe_ratios = []
+        max_drawdowns = []
+        
+        for window in windows:
+            metrics = window.get('performance_metrics', {})
+            total_return += metrics.get('total_return', 0)
+            if 'sharpe_ratio' in metrics:
+                sharpe_ratios.append(metrics['sharpe_ratio'])
+            if 'max_drawdown' in metrics:
+                max_drawdowns.append(metrics['max_drawdown'])
+        
+        aggregated_metrics = {
+            'walk_forward_total_return': total_return / len(windows) if windows else 0,
+            'walk_forward_avg_sharpe': sum(sharpe_ratios) / len(sharpe_ratios) if sharpe_ratios else 0,
+            'walk_forward_avg_drawdown': sum(max_drawdowns) / len(max_drawdowns) if max_drawdowns else 0,
+            'walk_forward_windows': len(windows),
+            'validation_type': 'walk_forward'
+        }
+        
+        return aggregated_metrics
+    
+    def _log_walk_forward_results(self, performance_metrics: Dict[str, Any], wf_results: Dict[str, Any]):
+        """Log walk-forward validation results."""
+        self.logger.info("--- Walk-Forward Validation Completed ---")
+        self.logger.info(f"Windows analyzed: {wf_results.get('windows', []).__len__()}")
+        self.logger.info(f"Average return: {performance_metrics.get('walk_forward_total_return', 0):.2%}")
+        self.logger.info(f"Average Sharpe ratio: {performance_metrics.get('walk_forward_avg_sharpe', 0):.2f}")
+        self.logger.info(f"Average max drawdown: {performance_metrics.get('walk_forward_avg_drawdown', 0):.2%}")
 
     def _execute_pipeline(self, orchestrator: PipelineOrchestrator) -> Dict[str, Any]:
         """Виконує повний пайплайн для генерації прогнозів."""

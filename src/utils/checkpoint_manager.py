@@ -3,9 +3,12 @@
 """
 import os
 import json
+import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
 from src.config.training_config import CheckpointParams
+
+_logger = logging.getLogger(__name__)
 
 
 class CheckpointManager:
@@ -37,20 +40,22 @@ class CheckpointManager:
 
         try:
             import torch
-            checkpoint = torch.load(checkpoint_path)
+            # SEC-3: weights_only=True prevents arbitrary code execution from
+            # malicious checkpoint files (PyTorch security advisory, v2.0+)
+            checkpoint = torch.load(checkpoint_path, weights_only=True)
             
             if model is not None:
-                model.load_state_dict(checkpoint.get('model_state', {}))
+                model.load_state_dict(checkpoint.get('model_state', {}))  # type: ignore[attr-defined]
             
             if optimizer is not None and 'optimizer_state' in checkpoint:
-                optimizer.load_state_dict(checkpoint['optimizer_state'])
+                optimizer.load_state_dict(checkpoint['optimizer_state'])  # type: ignore[attr-defined]
             
             return {
                 'epoch': checkpoint.get('epoch', 0),
                 'best_loss': checkpoint.get('best_loss', float('inf'))
             }
         except Exception as e:
-            print(f"Помилка при завантаженні контрольної точки: {e}")
+            _logger.error(f"Помилка при завантаженні контрольної точки: {e}")
             return {'epoch': 0, 'best_loss': float('inf')}
 
     @staticmethod

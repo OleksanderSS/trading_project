@@ -21,6 +21,7 @@ class NewsImpactEnricher(BaseEnricher):
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize with optional config from FeatureOrchestrator."""
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         self.config = config or {}
         self.analyzer = NewsImpactAnalyzer(self.config)
         logger.info("NewsImpactEnricher initialized")
@@ -34,7 +35,7 @@ class NewsImpactEnricher(BaseEnricher):
         """Run after NLP (30) and sentiment (40), before significance (70)"""
         return 45
 
-    def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
         Adds news impact features to the DataFrame.
         
@@ -183,7 +184,7 @@ class NewsImpactEnricher(BaseEnricher):
         impact_scores = results.get('news_impact_scores')
         significance_levels = results.get('news_significance_levels')
         
-        logger.debug(f"📊 Impact scores type: {type(impact_scores)}, shape: {impact_scores.shape if hasattr(impact_scores, 'shape') else 'N/A'}")
+        logger.debug(f"📊 Impact scores type: {type(impact_scores)}, shape: {impact_scores.shape if impact_scores is not None and hasattr(impact_scores, 'shape') else 'N/A'}")
         
         if impact_scores is None or impact_scores.empty:
             logger.warning("⚠️ No impact scores generated.")

@@ -113,9 +113,11 @@ def get_news_sentiment(news_df: pd.DataFrame) -> Dict[str, float]:
         logger.error(f"Error calculating sentiment: {e}")
         return {'average_sentiment': 0.0, 'positive_count': 0, 'negative_count': 0, 'neutral_count': 0}
 
-def filter_news_by_date(news_df: pd.DataFrame, 
-                       start_date: datetime = None,
-                       end_date: datetime = None) -> pd.DataFrame:
+def filter_news_by_date(
+    news_df: pd.DataFrame,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None
+) -> pd.DataFrame:
     """Filter news by date range"""
     if 'published_at' not in news_df.columns:
         logger.warning("No 'published_at' column found")

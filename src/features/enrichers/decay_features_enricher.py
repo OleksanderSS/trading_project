@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import logging
+from typing import Optional, Dict, Any, List
 from .base import BaseEnricher
 
 logger = logging.getLogger(__name__)
@@ -12,8 +13,9 @@ class DecayFeaturesEnricher(BaseEnricher):
     is highest at the moment of occurrence and fades over time.
     """
     
-    def __init__(self, config: dict = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize with optional config dict from FeatureOrchestrator"""
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
         self.config = config or {}
         self.half_life_periods = self.config.get('half_life_periods', 20)
         self.default_event_columns = self.config.get('event_columns', ['is_significant'])
@@ -28,7 +30,7 @@ class DecayFeaturesEnricher(BaseEnricher):
         """Execution order - run after significance features (70)"""
         return 75
 
-    def enrich(self, df: pd.DataFrame, event_columns: list = None, half_life_periods: int = None, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, event_columns: Optional[List[str]] = None, half_life_periods: Optional[int] = None, **kwargs) -> pd.DataFrame:
         """
         Adds exponential decay features for specified event columns.
 

@@ -7,7 +7,7 @@ Elite Risk Sizing Engine
 
 import numpy as np
 import pandas as pd
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Any
 
 from src.core.logging.logger import ProjectLogger
 
@@ -173,7 +173,7 @@ class EliteRiskSizer:
             
             self.logger.info(f"[CORRELATION] {ticker} vs portfolio: avg_corr={avg_correlation:.2f}, factor={factor:.2f}")
             
-            return factor
+            return float(factor)
         
         except Exception as e:
             self.logger.warning(f"Correlation calculation failed: {e}")
@@ -198,7 +198,7 @@ class EliteRiskSizer:
             # Annualize
             annual_vol = daily_vol * np.sqrt(252)
             
-            return annual_vol
+            return float(annual_vol)
         
         except Exception as e:
             self.logger.warning(f"Volatility estimation failed: {e}")
@@ -242,3 +242,53 @@ class EliteRiskSizer:
                 self.logger.info(f"[REBALANCE] {ticker}: {action} {abs(diff_shares)} shares (current: ${current_value:.2f}, target: ${target_value:.2f})")
         
         return rebalance_trades
+        
+    def compute_optimal_position_size(self,
+                                     ticker: str,
+                                     confidence: float,
+                                     prediction: float,
+                                     total_capital: float,
+                                     ticker_volatility: float,
+                                     portfolio_volatility: float,
+                                     portfolio_positions: Dict[str, Any],
+                                     correlation_matrix: Optional[Dict[str, Any]] = None) -> Tuple[float, Dict[str, Any]]:
+        """
+        Elite sizing interface expected by PortfolioManager.
+        
+        Args:
+            prediction: Expected return (%)
+            total_capital: Current portfolio value
+        
+        Returns:
+            (position_fraction, metadata)
+        """
+        # Mock win_rate and win_loss_ratio for now or derive from history
+        # In a real scenario, these would come from model evaluation history
+        win_rate = 0.55 if confidence > 0.6 else 0.51
+        win_loss_ratio = 1.8 if abs(prediction) > 0.02 else 1.5
+        
+        # Calculate base shares using internal logic
+        shares = self.calculate_optimal_position_size(
+            ticker=ticker,
+            entry_price=100.0, # Placeholder for fractional calc
+            win_rate=win_rate,
+            avg_win_loss_ratio=win_loss_ratio,
+            current_positions=portfolio_positions,
+            total_equity=total_capital,
+            position_value_limit=0.15,
+            portfolio_volatility=portfolio_volatility,
+            cash_available=total_capital
+        )
+        
+        # Calculate percentage
+        price_placeholder = 100.0
+        position_fraction = (shares * price_placeholder) / total_capital if total_capital > 0 else 0
+        
+        metadata = {
+            'stages': {
+                'kelly_size': position_fraction,
+                'vol_adj': 1.0
+            }
+        }
+        
+        return position_fraction, metadata

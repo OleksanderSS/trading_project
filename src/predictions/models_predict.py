@@ -5,11 +5,10 @@ import numpy as np
 import pandas as pd
 import joblib
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional, cast
 from src.core.logging.logger import ProjectLogger
-from src.ensembling.ensemble import ensemble_forecast
+from src.ensembling.stacked_ensemble import ensemble_forecast
 from .deep_predict import predict_lstm, predict_cnn, predict_transformer, predict_autoencoder
-from .dean_integration import get_dean_integrator
 from .sentiment_integration import get_sentiment_integrator
 
 logger = ProjectLogger.get_logger(__name__)
@@ -65,7 +64,7 @@ def get_predictions(
     models_dict: Dict[str, Any],
     df_features: pd.DataFrame,
     target_scaler=None,
-    ensemble_weights: Dict[str, float] = None
+    ensemble_weights: Optional[Dict[str, float]] = None
 ) -> Dict[str, Any]:
     """Get predictions from all models with safe inverse transform and ensembling."""
     X = df_features.values
@@ -88,7 +87,6 @@ def get_predictions(
         ensemble_result = ensemble_forecast(
             model_predictions=preds,
             weights=ensemble_weights,
-            normalize_weights=True,
             rolling_window=3
         )
         preds["ensemble"] = ensemble_result.final_signal
@@ -132,94 +130,6 @@ def predict_from_parquet(parquet_path: str, models_path: str = "data/trained_mod
     return ensemble_result
 
 # --------------------
-# Dean Models Prediction
-# --------------------
-def predict_dean_models(data: pd.DataFrame, ticker: str, timeframe: str) -> Dict[str, Any]:
-    """Prediction using Dean RL models."""
-    try:
-        dean_integrator = get_dean_integrator()
-        dean_decision = dean_integrator.get_trading_decision(data, ticker, timeframe)
-        
-        logger.info(f"[DEAN] Prediction for {ticker}: {dean_decision['type']} (confidence: {dean_decision['confidence']:.2f})")
-        
-        return {
-            'dean_prediction': dean_decision,
-            'model_type': 'dean_ensemble',
-            'confidence': dean_decision.get('confidence', 0.0),
-            'recommendation': dean_decision.get('type', 'hold'),
-            'reasoning': dean_decision.get('reasoning', ''),
-            'risk_level': dean_decision.get('risk_level', 'medium')
-        }
-        
-    except Exception as e:
-        logger.error(f"[DEAN] Prediction error: {e}")
-        return {
-            'dean_prediction': None,
-            'model_type': 'dean_error',
-            'confidence': 0.0,
-            'recommendation': 'hold',
-            'reasoning': f'Dean models error: {str(e)}',
-            'risk_level': 'low'
-        }
-
-# --------------------
-# Enhanced Prediction with All Models
-# --------------------
-def predict_all_models_enhanced(
-    models_dict: Dict[str, Any],
-    df_features: pd.DataFrame,
-    target_scaler=None,
-    ensemble_weights: Dict[str, float] = None,
-    use_dean=True,
-    ticker: str = "UNKNOWN",
-    timeframe: str = "1h"
-) -> Dict[str, Any]:
-    """Enhanced prediction with all models including Dean."""
-    
-    # Traditional predictions
-    predictions = get_predictions(models_dict, df_features, target_scaler, ensemble_weights)
-    
-    # Dean prediction
-    if use_dean:
-        try:
-            dean_prediction = predict_dean_models(df_features, ticker, timeframe)
-            predictions['dean'] = dean_prediction
-            
-            # Add Dean to ensemble with weight 0.2 if confidence is high
-            if 'ensemble' in predictions and dean_prediction['confidence'] > 0.3:
-                ensemble_preds = predictions['ensemble']
-                dean_weight = dean_prediction['confidence'] * 0.2
-                
-                # Convert Dean decision to numeric prediction
-                dean_numeric = convert_dean_decision_to_numeric(dean_prediction['recommendation'])
-                
-                if len(ensemble_preds) > 0:
-                    enhanced_ensemble = ensemble_preds * (1 - dean_weight) + dean_numeric * dean_weight
-                    predictions['ensemble_enhanced'] = enhanced_ensemble
-                    predictions['ensemble_weights'] = {
-                        'traditional': 1 - dean_weight,
-                        'dean': dean_weight
-                    }
-                    
-        except Exception as e:
-            logger.warning(f"[WARN] Dean prediction failed: {e}")
-    
-    return predictions
-
-def convert_dean_decision_to_numeric(decision: str) -> float:
-    """Converts Dean decision string to numeric prediction value."""
-    decision_map = {
-        'buy': 0.02,      # +2% expected change
-        'sell': -0.02,    # -2% expected change
-        'hold': 0.0,      # 0% expected change
-        'wait': 0.0,      # 0% expected change
-        'reduce_position': -0.01,  # -1% expected change
-        'increase_position': 0.01   # +1% expected change
-    }
-    
-    return decision_map.get(decision.lower(), 0.0)
-
-# --------------------
 # Sentiment Models Prediction
 # --------------------
 def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame) -> Dict[str, Any]:
@@ -228,9 +138,17 @@ def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame) 
         sentiment_integrator = get_sentiment_integrator()
         sentiment_signal = sentiment_integrator.get_sentiment_signal(news_data, price_data)
         
-        logger.info(f"[SENTIMENT] Signal: {sentiment_signal['signal_type']} (confidence: {sentiment_signal['confidence']:.2f})")
+        signal_result = {
+            'signal_type': sentiment_signal.get('signal_type', 'hold'),
+            'signal_strength': float(sentiment_signal.get('signal_strength', 0.0)),
+            'confidence': float(sentiment_signal.get('confidence', 0.0)),
+            'reasoning': sentiment_signal.get('reasoning', 'No reasoning provided'),
+            'model_type': 'sentiment'
+        }
         
-        return sentiment_signal
+        logger.info(f"[SENTIMENT] Signal: {signal_result['signal_type']} (confidence: {signal_result['confidence']:.2f})")
+        
+        return signal_result
         
     except Exception as e:
         logger.error(f"[SENTIMENT] Prediction error: {e}")
@@ -241,57 +159,6 @@ def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame) 
             'reasoning': f'Sentiment analysis error: {str(e)}',
             'model_type': 'sentiment_error'
         }
-
-# --------------------
-# Final Enhanced Prediction with All Models
-# --------------------
-def predict_all_models_final(
-    models_dict: Dict[str, Any],
-    df_features: pd.DataFrame,
-    target_scaler=None,
-    ensemble_weights: Dict[str, float] = None,
-    use_dean=True,
-    use_sentiment=True,
-    ticker: str = "UNKNOWN",
-    timeframe: str = "1h",
-    news_data: pd.DataFrame = None,
-    price_data: pd.DataFrame = None
-) -> Dict[str, Any]:
-    """Final prediction with all models integrated."""
-    
-    # Traditional + Dean predictions
-    predictions = predict_all_models_enhanced(
-        models_dict, df_features, target_scaler, ensemble_weights,
-        use_dean, ticker, timeframe
-    )
-    
-    # Sentiment prediction
-    if use_sentiment and news_data is not None and price_data is not None:
-        try:
-            sentiment_prediction = predict_sentiment_models(news_data, price_data)
-            predictions['sentiment'] = sentiment_prediction
-            
-            # Integrate sentiment into final ensemble
-            if 'ensemble_enhanced' in predictions and sentiment_prediction['confidence'] > 0.3:
-                ensemble_preds = predictions['ensemble_enhanced']
-                sentiment_weight = sentiment_prediction['confidence'] * 0.15  # 15% weight for sentiment
-                
-                # Convert sentiment signal to numeric prediction
-                sentiment_numeric = convert_sentiment_signal_to_numeric(sentiment_prediction['signal_type'])
-                
-                if len(ensemble_preds) > 0:
-                    final_ensemble = ensemble_preds * (1 - sentiment_weight) + sentiment_numeric * sentiment_weight
-                    predictions['final_ensemble'] = final_ensemble
-                    predictions['final_weights'] = {
-                        'traditional': predictions.get('ensemble_weights', {}).get('traditional', 0.8),
-                        'dean': predictions.get('ensemble_weights', {}).get('dean', 0.0),
-                        'sentiment': sentiment_weight
-                    }
-                    
-        except Exception as e:
-            logger.warning(f"[WARN] Sentiment prediction failed: {e}")
-    
-    return predictions
 
 def convert_sentiment_signal_to_numeric(signal: str) -> float:
     """Converts sentiment signal string to numeric prediction value."""

@@ -181,7 +181,13 @@ class ModelResultsManager:
         cache_key = f"analysis_cache_{data_hash}"
         if cache_key in self._cache:
             logger.debug(f"Retrieving cached analysis results for hash: {data_hash}")
-            return self._cache[cache_key]
+            cached_result = self._cache[cache_key]
+            # Ensure the cached result is properly typed
+            if isinstance(cached_result, dict):
+                return cached_result
+            else:
+                logger.warning(f"Cache contains invalid type for key {cache_key}: {type(cached_result)}")
+                return None
         return None
 
     def cache_analysis(self, data_hash: str, results: Dict[str, Any]) -> None:
@@ -195,3 +201,20 @@ class ModelResultsManager:
         cache_key = f"analysis_cache_{data_hash}"
         self._cache[cache_key] = results
         logger.debug(f"Analytical payload cached for hash: {data_hash}")
+
+    def save_json_result(self, data: Dict[str, Any], filename: str) -> None:
+        """
+        Saves a JSON report to the base path.
+        
+        Args:
+            data: The JSON serializable dictionary to save.
+            filename: The name of the file.
+        """
+        import json
+        target_path = self.base_path / filename
+        try:
+            with open(target_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4)
+            logger.info(f"Saved JSON report to {target_path}")
+        except Exception as e:
+            logger.error(f"Failed to save JSON report to {target_path}: {e}")

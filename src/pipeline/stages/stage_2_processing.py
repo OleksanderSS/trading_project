@@ -31,8 +31,10 @@ class ProcessingStage(BaseStage):
     def __init__(self, config_manager: UnifiedConfigManager, error_handler: ErrorHandler, **kwargs):
         super().__init__(config_manager, error_handler, **kwargs)
         self.logger = ProjectLogger.get_logger("ProcessingStage")
+        self.analysis_history: List[Dict[str, Any]] = []
         self.validator = UnifiedValidator()
         self.calendar = TradingCalendar()
+        self.retraining_history: List[Dict[str, Any]] = []
         self.resource_monitor = get_resource_monitor()
         
         # Try to initialize GCS manager, but don't fail if credentials are missing
@@ -40,25 +42,25 @@ class ProcessingStage(BaseStage):
             self.gcs_manager = GCSManager()
         except Exception as e:
             self.logger.warning(f"GCS Manager initialization failed: {e}. Continuing without cloud storage.")
-            self.gcs_manager = None
+            self.gcs_manager = None  # type: ignore
         
-        self.file_manager = FileManager(base_dir='.')
+        self.file_manager: FileManager = FileManager(base_dir='.')
 
         # Safely get nested configuration
         processing_config = self.config_manager.get_config('processing') or {}
         filtering_config = processing_config.get('filtering')
         
         paths_config = self.config_manager.get_config('paths') or {}
-        scaler_path = paths_config.get('scalers')
+        self.scaler_dir: str | None = paths_config.get('scalers')
 
-        if not scaler_path:
+        if not self.scaler_dir:
             err = ValueError("Scaler path configuration is missing.")
             self.handle_stage_error(err, context="ScalerPath-Config", severity="critical", should_raise=True)
 
-        self.data_filter = IntelligentDataFilter(config=filtering_config)
-        self.normalization_manager = NormalizationManager(scaler_dir=scaler_path)
+        self.data_filter: IntelligentDataFilter = IntelligentDataFilter(config=filtering_config)
+        self.normalization_manager = NormalizationManager(scaler_dir=self.scaler_dir)
 
-    def _extract_raw_data(self, kwargs) -> dict:
+    def _extract_raw_data(self, kwargs) -> Dict[str, Any]:
         """Extract and validate raw data from kwargs."""
         raw_data = kwargs
         if 'raw_data' in raw_data and isinstance(raw_data['raw_data'], dict):
@@ -67,7 +69,7 @@ class ProcessingStage(BaseStage):
         if not raw_data:
             self.logger.error("No data found for processing. Skipping Stage 2.")
             return {}
-        return raw_data
+        return raw_data  # type: ignore
 
     async def run(self, **kwargs) -> Dict[str, Any]:
         """
@@ -77,7 +79,7 @@ class ProcessingStage(BaseStage):
         
         raw_data = kwargs.get('raw_data', {})
         
-        # ✅ Unwrap nested raw_data if present
+        # Unwrap nested raw_data if present
         if 'raw_data' in raw_data and isinstance(raw_data['raw_data'], dict):
             self.logger.info("Unwrapping nested raw_data from Stage 1")
             raw_data = raw_data['raw_data']
@@ -93,44 +95,47 @@ class ProcessingStage(BaseStage):
                 self.logger.info(f"  {key}: {type(value)}")
         self.logger.info(f"Raw data type: {type(raw_data)}")
         
-        cleaned_data_map = {}
+        self.cleaned_data_map: Dict[str, Dict[str, Any]] = {}
 
         # 1. Process Market Data (Prices) - Local
-        self._process_market_data(raw_data, cleaned_data_map)
+        self._process_market_data(raw_data, self.cleaned_data_map)
 
         # 2. Process News Data
-        self._process_news_data(raw_data, cleaned_data_map)
+        self._process_news_data(raw_data, self.cleaned_data_map)
         
         # 3. Process Macro Data - Local
-        self._process_macro_data(raw_data, cleaned_data_map)
+        self._process_macro_data(raw_data, self.cleaned_data_map)
         
         # 4. Process Sentiment Data
-        self._process_sentiment_data(raw_data, cleaned_data_map)
+        self._process_sentiment_data(raw_data, self.cleaned_data_map)
         
         # 5. Process Market Sentiment (Fear/Greed, VIX)
-        self._process_market_sentiment_data(raw_data, cleaned_data_map)
+        self._process_market_sentiment_data(raw_data, self.cleaned_data_map)
         
         # 6. Process Institutional Data (SEC, Insider)
-        self._process_institutional_data(raw_data, cleaned_data_map)
+        self._process_institutional_data(raw_data, self.cleaned_data_map)
         
         # 7. Process Trends Data
-        self._process_trends_data(raw_data, cleaned_data_map)
+        self._process_trends_data(raw_data, self.cleaned_data_map)
         
         # 8. Process Economic Data
-        self._process_economic_data(raw_data, cleaned_data_map)
+        self._process_economic_data(raw_data, self.cleaned_data_map)
         
         # 9. Process Social Sentiment
-        self._process_social_sentiment_data(raw_data, cleaned_data_map)
+        self._process_social_sentiment_data(raw_data, self.cleaned_data_map)
         
         # 10. Process ML Features
-        self._process_ml_features_data(raw_data, cleaned_data_map)
+        self._process_ml_features_data(raw_data, self.cleaned_data_map)
         
         # 11. Process Additional Data
-        self._process_additional_data(raw_data, cleaned_data_map)
+        self._process_additional_data(raw_data, self.cleaned_data_map)
 
         # 4. Intelligent Filtering
-        filtered_results = self._apply_intelligent_filtering(cleaned_data_map)
+        filtered_results = self._apply_intelligent_filtering(self.cleaned_data_map)
         
+        # Analysis history
+        self.analysis_history: List[Dict[str, Any]] = []
+
         # 5. Normalization
         self._apply_normalization(filtered_results)
 
@@ -191,9 +196,9 @@ class ProcessingStage(BaseStage):
         self.logger.info(f"  Processing interval {interval}: {len(group)} rows, type: {type(group)}")
         if hasattr(group, 'empty') and not group.empty:
             price_data_dict[interval] = group
-            self.logger.info(f"  ✅ Added {len(group)} rows for interval {interval}")
+            self.logger.info(f"  Added {len(group)} rows for interval {interval}")
         else:
-            self.logger.warning(f"  ⚠️ Skipping empty group for interval {interval}")
+            self.logger.warning(f"  Skipping empty group for interval {interval}")
 
     def _handle_missing_interval_column(self, df_m: pd.DataFrame, price_data_dict: dict):
         """Handle missing interval column in market data."""
@@ -373,7 +378,7 @@ class ProcessingStage(BaseStage):
             cleaned_data_map['news'] = df_n
             return
         
-        # ✅ FIX: Filter news by date limit (60 days for intraday)
+        # FIX: Filter news by date limit (60 days for intraday)
         from datetime import datetime, timedelta
         
         # Find date column
@@ -402,14 +407,20 @@ class ProcessingStage(BaseStage):
             else:
                 cutoff_date = datetime.now() - timedelta(days=60)
             
-            # Filter news
+            # Filter news - handle timezone comparison
             before_filter = len(df_n)
+            
+            # Convert cutoff_date to same timezone as date_col if needed
+            if df_n[date_col].dt.tz is not None:
+                # Make cutoff_date timezone-aware with same timezone
+                cutoff_date = cutoff_date.replace(tzinfo=df_n[date_col].dt.tz)
+            
             df_n = df_n[df_n[date_col] >= cutoff_date]
             after_filter = len(df_n)
             
             self.logger.info(f"Filtered news: {before_filter} → {after_filter} (60-day limit from {cutoff_date})")
         
-        # ✅ FIX: Filter news by tickers from prices
+        # FIX: Filter news by tickers from prices
         if 'prices' in cleaned_data_map:
             # Get unique tickers from prices
             price_tickers = set()
@@ -423,6 +434,16 @@ class ProcessingStage(BaseStage):
                 df_n = df_n[df_n['ticker'].isin(price_tickers)]
                 after_ticker_filter = len(df_n)
                 self.logger.info(f"Filtered news by ticker: {before_ticker_filter} → {after_ticker_filter}")
+            
+            # ✅ NEW: Quick pre-filter - remove news outside price data range
+            # This is LIGHT filtering - heavy filtering happens in Stage 3 (NewsContextDatasetBuilder)
+            from src.data.quality.news_price_availability_filter import quick_filter_news_by_data_availability
+            df_n = quick_filter_news_by_data_availability(
+                df_n,
+                cleaned_data_map['prices'],
+                news_date_col=date_col
+            )
+            self.logger.info(f"After quick pre-filter: {len(df_n)} news articles remain")
         
         # For full pipeline, process filtered texts
         self.logger.info(f"Processing {len(df_n)} news articles for full pipeline (60-day limit)")
@@ -559,7 +580,7 @@ class ProcessingStage(BaseStage):
         """Check if normalization should be applied."""
         return (features_to_normalize and 
                 'prices' in filtered_results.get('filtered_data', {}) and 
-                filtered_results['filtered_data']['prices'])
+                filtered_results['filtered_data']['prices'])  # type: ignore
     
     def _apply_normalization_fitting(self, filtered_results: dict, features_to_normalize: list):
         """Apply normalization fitting to the data."""

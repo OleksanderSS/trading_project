@@ -19,14 +19,29 @@
 - Sentiment integration
 """
 
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, cast
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, List, Tuple
-from enum import Enum
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
-from scipy import stats
+
+from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
+
+
+@dataclass
+class RegimeMetrics:
+    """Метрики для визначення режиму ринку"""
+    returns: np.ndarray
+    prices: np.ndarray | None
+    volume: np.ndarray | None
+    adx: float
+    volatility: float
+    mean_return: float
+
 
 class MarketRegime(Enum):
     """Режими ринку з додатковими станами"""
@@ -40,12 +55,11 @@ class MarketRegime(Enum):
     BREAKOUT = "BREAKOUT"
     NORMAL = "NORMAL"
 
-from src.config.unified_config_manager import get_current_config
 
 class MarketRegimeDetector:
     """Виявляє режими ринку з використанням ML та статистичних методів"""
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.logger = ProjectLogger.get_logger("MarketRegimeDetector")
         self.config_manager = get_current_config()
         self.config = config or self.config_manager.get('logic.regime_detection', {})
@@ -77,23 +91,17 @@ class MarketRegimeDetector:
 
         # Scaler для ML
         self.scaler = StandardScaler()
-        self.cluster_model = None
+        self.cluster_model: KMeans | None = None
 
     def detect_regime(self,
-                     returns: np.ndarray,
-                     prices: Optional[np.ndarray] = None,
-                     volume: Optional[np.ndarray] = None,
-                     multi_timeframe_data: Optional[Dict[str, np.ndarray]] = None,
-                     sentiment_data: Optional[np.ndarray] = None) -> Dict[str, Any]:
+                      returns: np.ndarray,
+                      data_bundle: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Виявляє режим ринку з використанням всіх доступних даних
 
         Args:
             returns: Масив повернень
-            prices: Масив цін (опціонально)
-            volume: Масив обсягів (опціонально)
-            multi_timeframe_data: Дані по різних таймфреймах
-            sentiment_data: Дані sentiment (опціонально)
+            data_bundle: Словник з опціональними даними (prices, volume, multi_timeframe_data, sentiment_data)
 
         Returns:
             Dict з режимом та детальними метриками
@@ -102,48 +110,54 @@ class MarketRegimeDetector:
             if len(returns) < 30:
                 return self._create_insufficient_data_result()
 
+            bundle = data_bundle or {}
+            prices = bundle.get('prices')
+            volume = bundle.get('volume')
+            sentiment = bundle.get('sentiment_data')
+
             # Розрахуємо базові метрики
             volatility, mean_return, adx = self._calculate_basic_metrics(returns)
 
-            # 1. Crisis detection (highest priority)
+            # 1. Crisis detection
             crisis_result = self._check_crisis_regime(mean_return)
             if crisis_result:
                 return crisis_result
 
-            # 2. ML-based clustering (якщо достатньо даних)
-            ml_result = self._try_ml_detection(returns, prices, volume, sentiment_data)
+            # 2. ML-based clustering
+            ml_result = self._try_ml_detection(returns, prices, volume, sentiment)
             if ml_result:
                 return ml_result
 
             # 3. Rule-based detection
-            rule_regime = self._detect_regime_rules(returns, prices, volume, adx, volatility, mean_return)
+            metrics = RegimeMetrics(
+                returns=returns, prices=prices, volume=volume,
+                adx=adx, volatility=volatility, mean_return=mean_return
+            )
+            rule_regime = self._detect_regime_rules(metrics)
 
             # 4. Multi-timeframe consensus
-            consensus_regime = self._try_multi_timeframe_consensus(rule_regime, multi_timeframe_data)
-            if consensus_regime:
-                return consensus_regime
-
-            return rule_regime
+            consensus_regime = self._try_multi_timeframe_consensus(rule_regime, bundle.get('multi_timeframe_data'))
+            return consensus_regime or rule_regime
 
         except Exception as e:
             return self._create_error_result(e)
 
-    def _create_insufficient_data_result(self) -> Dict[str, Any]:
+    def _create_insufficient_data_result(self) -> dict[str, Any]:
         """Створює результат при недостатньо даних"""
         return {
-            'regime': MarketRegime.NORMAL.value, 
-            'confidence': 0.5, 
+            'regime': MarketRegime.NORMAL.value,
+            'confidence': 0.5,
             'reason': 'insufficient_data'
         }
 
-    def _calculate_basic_metrics(self, returns: np.ndarray) -> Tuple[float, float, float]:
+    def _calculate_basic_metrics(self, returns: np.ndarray) -> tuple[float, float, float]:
         """Розраховує базові метрики"""
         volatility = np.std(returns)
         mean_return = np.mean(returns)
         adx = self._calculate_adx(returns)
         return volatility, mean_return, adx
 
-    def _check_crisis_regime(self, mean_return: float) -> Optional[Dict[str, Any]]:
+    def _check_crisis_regime(self, mean_return: float) -> dict[str, Any] | None:
         """Перевіряє crisis regime"""
         if mean_return < self.crisis_threshold:
             return {
@@ -154,8 +168,8 @@ class MarketRegimeDetector:
             }
         return None
 
-    def _try_ml_detection(self, returns: np.ndarray, prices: Optional[np.ndarray],
-                        volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> Optional[Dict[str, Any]]:
+    def _try_ml_detection(self, returns: np.ndarray, prices: np.ndarray | None,
+                        volume: np.ndarray | None, sentiment: np.ndarray | None) -> dict[str, Any] | None:
         """Намагається виявити regime за допомогою ML"""
         if self.use_ml_clustering and len(returns) >= self.min_samples_for_clustering:
             ml_regime = self._detect_regime_ml(returns, prices, volume, sentiment)
@@ -163,8 +177,8 @@ class MarketRegimeDetector:
                 return ml_regime
         return None
 
-    def _try_multi_timeframe_consensus(self, rule_regime: Dict[str, Any], 
-                                     multi_timeframe_data: Optional[Dict[str, np.ndarray]]) -> Optional[Dict[str, Any]]:
+    def _try_multi_timeframe_consensus(self, rule_regime: dict[str, Any],
+                                     multi_timeframe_data: dict[str, np.ndarray] | None) -> dict[str, Any] | None:
         """Намагається отримати consensus з різних таймфреймів"""
         if multi_timeframe_data:
             consensus_regime = self._multi_timeframe_consensus(rule_regime, multi_timeframe_data)
@@ -172,7 +186,7 @@ class MarketRegimeDetector:
                 return consensus_regime
         return None
 
-    def _create_error_result(self, error: Exception) -> Dict[str, Any]:
+    def _create_error_result(self, error: Exception) -> dict[str, Any]:
         """Створює результат при помилці"""
         return {
             'regime': MarketRegime.NORMAL.value,
@@ -180,16 +194,19 @@ class MarketRegimeDetector:
             'error': str(error)
         }
 
-    def _detect_regime_ml(self, returns: np.ndarray, prices: Optional[np.ndarray],
-                         volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> Dict[str, Any]:
+    def _detect_regime_ml(self, returns: np.ndarray, prices: np.ndarray | None,
+                         volume: np.ndarray | None, sentiment: np.ndarray | None) -> dict[str, Any]:
         """ML-based regime detection using clustering"""
         try:
             features = self._extract_ml_features(returns, prices, volume, sentiment)
             features_scaled = self._normalize_features(features)
-            
+
             self._ensure_cluster_model_fitted()
-            
-            cluster = self.cluster_model.predict(features_scaled)[0]
+            if self.cluster_model is None:
+                raise RuntimeError("Cluster model initialization failed")
+
+            model = cast(KMeans, self.cluster_model)  # Type narrowing with cast
+            cluster = model.predict(features_scaled)[0]
             regime = self._cluster_to_regime(cluster)
             confidence = self._calculate_ml_confidence(features_scaled)
 
@@ -205,49 +222,49 @@ class MarketRegimeDetector:
             self.logger.warning(f"ML regime detection failed: {e}")
             return {'regime': MarketRegime.NORMAL.value, 'confidence': 0.5, 'method': 'ml_fallback'}
 
-    def _extract_ml_features(self, returns: np.ndarray, prices: Optional[np.ndarray],
-                            volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> List[float]:
+    def _extract_ml_features(self, returns: np.ndarray, prices: np.ndarray | None,
+                            volume: np.ndarray | None, sentiment: np.ndarray | None) -> list[float]:
         """Витягує features для ML кластеризації"""
         features = []
-        
+
         # Return-based features
         features.extend([
             np.mean(returns), np.std(returns), np.skew(returns),
             np.kurtosis(returns), np.min(returns), np.max(returns)
         ])
-        
+
         # Price-based features
         if prices is not None and len(prices) > 20:
             features.extend(self._extract_price_features(prices))
-            
+
         # Volume-based features
         if volume is not None and len(volume) > 20:
             features.append(self._extract_volume_feature(volume))
-            
+
         # Sentiment features
         if sentiment is not None and len(sentiment) > 0:
             features.append(np.mean(sentiment))
-            
+
         return features
 
-    def _extract_price_features(self, prices: np.ndarray) -> List[float]:
+    def _extract_price_features(self, prices: np.ndarray) -> list[float]:
         """Витягує price-based features"""
         features = []
-        
+
         # Trend strength
         trend = np.polyfit(np.arange(len(prices)), prices, 1)[0]
         features.append(trend)
-        
+
         # RSI
         rsi = self._calculate_rsi(prices)
         features.append(rsi)
-        
+
         # Bollinger Bands position
         sma = np.mean(prices[-20:])
         std = np.std(prices[-20:])
         bb_position = (prices[-1] - sma) / (2 * std) if std > 0 else 0
         features.append(bb_position)
-        
+
         return features
 
     def _extract_volume_feature(self, volume: np.ndarray) -> float:
@@ -255,7 +272,7 @@ class MarketRegimeDetector:
         volume_sma = np.mean(volume[-20:])
         return volume[-1] / volume_sma if volume_sma > 0 else 1
 
-    def _normalize_features(self, features: List[float]) -> np.ndarray:
+    def _normalize_features(self, features: list[float]) -> np.ndarray:
         """Нормалізує features"""
         features_array = np.array(features).reshape(1, -1)
         return self.scaler.fit_transform(features_array)
@@ -267,8 +284,9 @@ class MarketRegimeDetector:
 
     def _calculate_ml_confidence(self, features_scaled: np.ndarray) -> float:
         """Розраховує confidence для ML методу"""
+        assert self.cluster_model is not None, "Cluster model must be initialized"
         distances = self.cluster_model.transform(features_scaled)[0]
-        min_distance = np.min(distances)
+        min_distance = float(np.min(distances))
         return max(0.5, 1.0 - min_distance)  # Higher confidence for closer points
 
     def _initialize_cluster_centers(self):
@@ -310,28 +328,26 @@ class MarketRegimeDetector:
         }
         return cluster_regime_map.get(cluster, MarketRegime.NORMAL)
 
-    def _detect_regime_rules(self, returns: np.ndarray, prices: Optional[np.ndarray],
-                           volume: Optional[np.ndarray], adx: float, volatility: float,
-                           mean_return: float) -> Dict[str, Any]:
+    def _detect_regime_rules(self, metrics: RegimeMetrics) -> dict[str, Any]:
         """Rule-based regime detection"""
-        
+
         # Check special regimes first
-        mean_reversion_result = self._check_mean_reversion_regime(returns)
+        mean_reversion_result = self._check_mean_reversion_regime(metrics.returns)
         if mean_reversion_result:
             return mean_reversion_result
-            
-        momentum_result = self._check_momentum_regime(returns)
+
+        momentum_result = self._check_momentum_regime(metrics.returns)
         if momentum_result:
             return momentum_result
-            
-        breakout_result = self._check_breakout_regime(prices, volume)
+
+        breakout_result = self._check_breakout_regime(metrics.prices, metrics.volume)
         if breakout_result:
             return breakout_result
-            
-        # Standard regime detection
-        return self._detect_standard_regimes(adx, volatility, mean_return)
 
-    def _check_mean_reversion_regime(self, returns: np.ndarray) -> Optional[Dict[str, Any]]:
+        # Standard regime detection
+        return self._detect_standard_regimes(metrics.adx, metrics.volatility, metrics.mean_return)
+
+    def _check_mean_reversion_regime(self, returns: np.ndarray) -> dict[str, Any] | None:
         """Перевіряє mean reversion regime"""
         if self._is_mean_reversion(returns):
             return {
@@ -342,7 +358,7 @@ class MarketRegimeDetector:
             }
         return None
 
-    def _check_momentum_regime(self, returns: np.ndarray) -> Optional[Dict[str, Any]]:
+    def _check_momentum_regime(self, returns: np.ndarray) -> dict[str, Any] | None:
         """Перевіряє momentum regime"""
         if self._is_momentum(returns):
             direction = 'up' if np.mean(returns[-self.momentum_window:]) > 0 else 'down'
@@ -354,20 +370,24 @@ class MarketRegimeDetector:
             }
         return None
 
-    def _check_breakout_regime(self, prices: Optional[np.ndarray], 
-                              volume: Optional[np.ndarray]) -> Optional[Dict[str, Any]]:
+    def _has_breakout_data(self, prices: np.ndarray | None, volume: np.ndarray | None) -> bool:
+        """Перевіряє чи є необхідні дані для breakout аналізу"""
+        return prices is not None and volume is not None
+
+    def _check_breakout_regime(self, prices: np.ndarray | None,
+                              volume: np.ndarray | None) -> dict[str, Any] | None:
         """Перевіряє breakout regime"""
-        if prices is not None and volume is not None and self._is_breakout(prices, volume):
+        if self._has_breakout_data(prices, volume) and self._is_breakout(prices, volume):  # type: ignore[arg-type]
             return {
                 'regime': MarketRegime.BREAKOUT.value,
                 'confidence': 0.85,
                 'reason': 'price_volume_breakout',
-                'metrics': {'breakout_size': abs(prices[-1] - prices[-2]) / prices[-2]}
+                'metrics': {'breakout_size': abs(prices[-1] - prices[-2]) / prices[-2]}  # type: ignore[index]
             }
         return None
 
-    def _detect_standard_regimes(self, adx: float, volatility: float, 
-                                mean_return: float) -> Dict[str, Any]:
+    def _detect_standard_regimes(self, adx: float, volatility: float,
+                                mean_return: float) -> dict[str, Any]:
         """Виявляє стандартні режими ринку"""
         if adx > self.adx_threshold:
             regime, confidence = self._detect_trending_regime(adx, mean_return)
@@ -393,7 +413,7 @@ class MarketRegimeDetector:
             }
         }
 
-    def _detect_trending_regime(self, adx: float, mean_return: float) -> Tuple[MarketRegime, float]:
+    def _detect_trending_regime(self, adx: float, mean_return: float) -> tuple[MarketRegime, float]:
         """Виявляє trending regime"""
         if mean_return > 0:
             regime = MarketRegime.TRENDING_UP
@@ -415,13 +435,13 @@ class MarketRegimeDetector:
             p_value = adf_result[1]
 
             # If p-value < 0.05, series is stationary (mean reversion)
-            return p_value < 0.05
+            return bool(p_value < 0.05)
         except Exception as e:
             self.logger.debug(f"ADF test failed, using fallback mean-reversion check: {e}")
             # Fallback: check if returns oscillate around zero
             recent_returns = returns[-50:]
             z_score = abs(np.mean(recent_returns)) / (np.std(recent_returns) / np.sqrt(len(recent_returns)))
-            return z_score < self.mean_reversion_threshold
+            return bool(z_score < self.mean_reversion_threshold)
 
     def _is_momentum(self, returns: np.ndarray) -> bool:
         """Перевіряє чи є momentum"""
@@ -431,8 +451,8 @@ class MarketRegimeDetector:
         recent_avg = np.mean(returns[-self.momentum_window:])
         previous_avg = np.mean(returns[-2*self.momentum_window:-self.momentum_window])
 
-        momentum = abs(recent_avg - previous_avg)
-        return momentum > self.momentum_threshold
+        momentum = abs(float(recent_avg) - float(previous_avg))
+        return bool(momentum > self.momentum_threshold)
 
     def _is_breakout(self, prices: np.ndarray, volume: np.ndarray) -> bool:
         """Перевіряє чи є breakout"""
@@ -444,19 +464,19 @@ class MarketRegimeDetector:
         recent_low = np.min(prices[-20:])
         current_price = prices[-1]
 
-        price_range = recent_high - recent_low
+        price_range = float(recent_high - recent_low)
         if price_range == 0:
             return False
 
-        breakout_up = (current_price - recent_low) / price_range > self.breakout_threshold
-        breakout_down = (recent_high - current_price) / price_range > self.breakout_threshold
+        breakout_up = bool((current_price - recent_low) / price_range > self.breakout_threshold)
+        breakout_down = bool((recent_high - current_price) / price_range > self.breakout_threshold)
 
         # Volume confirmation
-        avg_volume = np.mean(volume[-20:])
-        current_volume = volume[-1]
-        volume_spike = current_volume > avg_volume * self.breakout_volume_multiplier
+        avg_volume = float(np.mean(volume[-20:]))
+        current_volume = float(volume[-1])
+        volume_spike = bool(current_volume > avg_volume * self.breakout_volume_multiplier)
 
-        return (breakout_up or breakout_down) and volume_spike
+        return bool((breakout_up or breakout_down) and volume_spike)
 
     def _calculate_adx(self, returns: np.ndarray, period: int = 14) -> float:
         """Розраховує ADX індикатор"""
@@ -521,25 +541,30 @@ class MarketRegimeDetector:
     def _calculate_z_score(self, returns: np.ndarray) -> float:
         """Розрахунок Z-score для mean reversion"""
         if len(returns) < 20:
-            return 0
+            return 0.0
 
         recent_returns = returns[-20:]
         z_score = (recent_returns[-1] - np.mean(recent_returns)) / np.std(recent_returns)
-        return z_score
+        return float(z_score)
 
-    def _multi_timeframe_consensus(self, base_regime: Dict[str, Any],
-                                 multi_timeframe_data: Dict[str, np.ndarray]) -> Dict[str, Any]:
+    def _multi_timeframe_consensus(self, base_regime: dict[str, Any],
+                                 multi_timeframe_data: dict[str, np.ndarray]) -> dict[str, Any]:
         """Multi-timeframe regime consensus"""
         try:
             regimes = [base_regime['regime']]
             confidences = [base_regime['confidence']]
 
-            for tf, tf_returns in multi_timeframe_data.items():
+            for _tf, tf_returns in multi_timeframe_data.items():
                 if len(tf_returns) >= 30:
-                    tf_regime = self._detect_regime_rules(tf_returns, None, None,
-                                                        self._calculate_adx(tf_returns),
-                                                        np.std(tf_returns),
-                                                        np.mean(tf_returns))
+                    tf_metrics = RegimeMetrics(
+                        returns=tf_returns,
+                        prices=None,
+                        volume=None,
+                        adx=self._calculate_adx(tf_returns),
+                        volatility=float(np.std(tf_returns)),
+                        mean_return=float(np.mean(tf_returns))
+                    )
+                    tf_regime = self._detect_regime_rules(tf_metrics)
                     regimes.append(tf_regime['regime'])
                     confidences.append(tf_regime['confidence'] * 0.8)  # Lower weight for higher TFs
 
@@ -566,3 +591,72 @@ class MarketRegimeDetector:
         except Exception as e:
             self.logger.warning(f"Multi-timeframe consensus failed: {e}")
             return base_regime
+
+    @staticmethod
+    def calculate_entropy(price_series: 'pd.Series', window: int = 50, num_bins: int = 10) -> 'pd.Series':
+        """
+        Calculates rolling Shannon entropy to measure market uncertainty/disorder.
+        
+        Integrated from MarketRegimeCalculator for unified regime analysis.
+
+        Args:
+            price_series: Historical price sequence.
+            window: Rolling window for distribution estimation.
+            num_bins: Histogram bins for return discretization.
+
+        Returns:
+            Series of entropy coefficients (measured in bits).
+        """
+        import pandas as pd
+        from scipy.stats import entropy as scipy_entropy
+        
+        if not isinstance(price_series, pd.Series) or price_series.empty:
+            return pd.Series(dtype=float)
+            
+        returns = price_series.pct_change().dropna()
+        
+        def _compute_entropy(window_slice):
+            if len(window_slice) < window * 0.8:
+                return np.nan
+            hist, _ = np.histogram(window_slice, bins=num_bins, density=True)
+            # Normalize to probability distribution
+            prob_dist = hist * np.diff(np.histogram_bin_edges(window_slice, bins=num_bins))
+            return scipy_entropy(prob_dist, base=2)
+
+        result = returns.rolling(window=window).apply(_compute_entropy, raw=True)
+        return result
+
+    @staticmethod
+    def calculate_reversal_probability(price_series: 'pd.Series', down_day_threshold: float = -0.01, window: int = 5) -> 'pd.Series':
+        """
+        Estimates local reversal probability following sequences of expansionary/contractionary days.
+        
+        Integrated from MarketRegimeCalculator for unified regime analysis.
+
+        Args:
+            price_series: Historical price sequence.
+            down_day_threshold: Return threshold defining a 'down' state.
+            window: Lookback for streak identification.
+
+        Returns:
+            Series of probabilities [0, 1].
+        """
+        import pandas as pd
+        
+        if not isinstance(price_series, pd.Series) or price_series.empty:
+            return pd.Series(dtype=float)
+
+        returns = price_series.pct_change()
+        is_down = (returns < down_day_threshold).astype(int)
+
+        # Identify consecutive streak length
+        consecutive_down = is_down.rolling(window=window).sum()
+
+        # Heuristic probabilistic model
+        base_probability = 0.1
+        probability_estimate = base_probability + (consecutive_down / window) * 0.5
+        
+        # Isolate probabilities for relevant streaks only
+        reversal_series = probability_estimate.where(consecutive_down > 1, 0.0)
+        
+        return reversal_series.clip(0, 1)

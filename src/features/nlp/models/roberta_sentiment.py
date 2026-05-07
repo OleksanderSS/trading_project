@@ -107,7 +107,7 @@ class RobertaSentimentAnalyzer:
             score_map = {id2label[i]: scores[i].item() for i in range(scores.shape[0])}
 
             # Determine the label with the highest score
-            max_score_label = max(score_map, key=score_map.get)
+            max_score_label = max(score_map, key=lambda k: score_map[k])
             max_score_value = score_map[max_score_label]
 
             # Apply confidence threshold: if confidence is too low, default to neutral
