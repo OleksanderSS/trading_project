@@ -5,7 +5,7 @@ bandit>=1.7.0
 mlflow>=2.0.0
 pytest>=7.0.0
 pytest-cov>=4.0.0
-snyk>=1.1200.0
+# snyk is a CLI tool, install via npm: npm install -g snyk
 deepchecks>=0.17.0
 great-expectations>=0.17.0
 
