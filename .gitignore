@@ -10,7 +10,7 @@ secrets/
 
 # Large data and model files (keep locally, don't push to Git)
 data/
-models/
+/models/
 logs/
 cache/
 backups/
