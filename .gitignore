@@ -10,7 +10,7 @@ secrets/
 
 # Large data and model files (keep locally, don't push to Git)
 data/
-models/  # Ignored large model files
+models/
 logs/
 cache/
 backups/
@@ -28,6 +28,19 @@ outputs/
 *.pt
 *.parquet
 *.duckdb
+
+# ML experiment tracking
+mlruns/
+
+# Analysis results (large JSON files)
+analysis_results/
+
+# Debug logs
+pipeline_debug.log
+*.log
+
+# Brain scratch files
+brain/
 
 # Local runtime/config caches
 src/config/runtime_params.json
