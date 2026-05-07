@@ -326,7 +326,7 @@ class NewsDecayModeler:
                     predicted_impact = decay_function_with_params(params, X.flatten())
                     mse = mean_squared_error(y, predicted_impact)
                     return mse
-                except:
+                except Exception:
                     return float('inf')
             
             # Run optimization

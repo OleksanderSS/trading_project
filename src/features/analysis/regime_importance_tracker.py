@@ -235,7 +235,7 @@ class RegimeImportanceTracker:
                     returns = market_data[price_cols[0]].pct_change().dropna()
                     return float(returns.std() * np.sqrt(252))
                 return 0.02  # Default volatility
-        except:
+        except Exception:
             return 0.02
     
     def _calculate_trend(self, market_data: pd.DataFrame) -> float:
@@ -251,7 +251,7 @@ class RegimeImportanceTracker:
                     normalized_trend = slope / recent_prices.mean()
                     return float(normalized_trend)
             return 0.0
-        except:
+        except Exception:
             return 0.0
     
     def _calculate_market_conditions(self, market_data: pd.DataFrame) -> Dict[str, float]:

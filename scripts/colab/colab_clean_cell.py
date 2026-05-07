@@ -651,7 +651,7 @@ class ColabTrainingController:
                     X=x_df, y=y_ser, context_id=f"{ticker}_{target_col}_{model_type}",
                     is_classification=False, max_features=max_features
                 )
-            except:
+            except Exception:
                 selected_features = list(x_df.columns)
 
             model_result = {
@@ -804,7 +804,7 @@ class ColabTrainingController:
                     with open(fs_path, 'w', encoding='utf-8') as f:
                         json.dump(fs_data, f, indent=2)
                     exported_count += 1
-                except:
+                except Exception:
                     pass
         
         if exported_count > 0:

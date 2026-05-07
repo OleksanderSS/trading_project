@@ -223,7 +223,7 @@ class RegimeWinnerAnalyzer:
                     returns = market_data[price_cols[0]].pct_change().dropna()
                     return returns.std() * np.sqrt(252)
                 return 0.02  # Default volatility
-        except:
+        except Exception:
             return 0.02
     
     def _calculate_trend(self, market_data: pd.DataFrame) -> float:
@@ -239,7 +239,7 @@ class RegimeWinnerAnalyzer:
                     normalized_trend = slope / recent_prices.mean()
                     return normalized_trend
             return 0.0
-        except:
+        except Exception:
             return 0.0
     
     async def _analyze_winners_by_regime(self, 
@@ -376,7 +376,7 @@ class RegimeWinnerAnalyzer:
                 runner_up_score = ranked_models[1][1]['score']
                 return winner_score - runner_up_score
             return 0.0
-        except:
+        except Exception:
             return 0.0
     
     async def _calculate_consistency_metrics(self, 
@@ -546,7 +546,7 @@ class RegimeWinnerAnalyzer:
             else:
                 return 'high' if position_weight < 0.5 else 'critical'
                 
-        except:
+        except Exception:
             return 'medium'
     
     def _generate_regime_insights(self, 
