@@ -2,6 +2,9 @@
 
 import time
 from functools import wraps
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
 
 
 def retry_on_timeout(max_retries=3, wait_seconds=5):
@@ -14,13 +17,13 @@ def retry_on_timeout(max_retries=3, wait_seconds=5):
                     return func(*args, **kwargs)
                 except (TimeoutError, ConnectionError, RuntimeError) as e:
                     if attempt < max_retries - 1:
-                        print(
+                        logger.warning(
                             f"⚠️ Attempt {attempt + 1} failed: "
-                            f"{str(e)[:100]}")
-                        print(f"   Retrying in {wait_seconds} seconds...")
+                            f"{str(e)[:100]}\n"
+                            f"   Retrying in {wait_seconds} seconds...")
                         time.sleep(wait_seconds)
                     else:
-                        print(f"❌ Failed after {max_retries} attempts")
+                        logger.error(f"❌ Failed after {max_retries} attempts")
                         raise
         return wrapper
     return decorator

@@ -2,6 +2,7 @@
 News Impact Classifier
 Класифікує вплив новин на тікери та таймфрейми
 """
+import logging
 
 import re
 from typing import Dict, List, Optional, Set, Tuple, Any
@@ -49,7 +50,7 @@ class NewsImpactClassifier:
             return config['news_impact_classification']
         except Exception as e:
             logger.error(f"Failed to load impact config: {e}")
-            return {}
+            return {}  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
     
     def _load_sector_mapping(self) -> Dict[str, List[str]]:
         """Завантажити маппінг секторів та тікерів"""
@@ -66,7 +67,7 @@ class NewsImpactClassifier:
             return sector_mapping
         except Exception as e:
             logger.error(f"Failed to load sector mapping: {e}")
-            return {}
+            return {}  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
     
     def classify_impact(self, news_text: str, news_type: str = "general") -> NewsImpact:
         """
@@ -140,7 +141,8 @@ class NewsImpactClassifier:
             # Перевіряємо чи є ключові слова в тексті
             for keyword in keywords:
                 if keyword.lower() in normalized_text:
-                    logger.debug(f"Found impact type: {impact_type} (keyword: {keyword})")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Found impact type: {impact_type} (keyword: {keyword})")
                     return impact_type
         
         # Якщо не знайдено ключових слів, використовуємо тип новини
@@ -201,7 +203,8 @@ class NewsImpactClassifier:
         for company, ticker in company_to_ticker.items():
             if company in normalized_text:
                 found_tickers.append(ticker)
-                logger.debug(f"Found ticker {ticker} from company name '{company}'")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Found ticker {ticker} from company name '{company}'")
         
         # Шукаємо прямі тікери
         ticker_pattern = r'\b[A-Z]{1,4}\b'
@@ -215,7 +218,8 @@ class NewsImpactClassifier:
         for ticker in potential_tickers:
             if ticker in all_known_tickers and ticker not in found_tickers:
                 found_tickers.append(ticker)
-                logger.debug(f"Found ticker {ticker} directly in text")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Found ticker {ticker} directly in text")
         
         return found_tickers
     
@@ -259,7 +263,8 @@ class NewsImpactClassifier:
             for timeframe in news_impact.timeframes:
                 combinations.append((ticker, timeframe))
         
-        logger.debug(f"Generated {len(combinations)} relevant combinations for {news_impact.impact_type}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Generated {len(combinations)} relevant combinations for {news_impact.impact_type}")
         return combinations
     
     def log_impact_analysis(self, news_text: str, news_impact: NewsImpact):

@@ -5,12 +5,12 @@ Detects feature distribution changes over time.
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 from pathlib import Path
-import json
 from datetime import datetime
 
 from src.core.logging.logger import ProjectLogger
+from src.core.exceptions import DataProcessingError
 
 logger = ProjectLogger.get_logger("FeatureDriftMonitor")
 
@@ -18,7 +18,7 @@ logger = ProjectLogger.get_logger("FeatureDriftMonitor")
 try:
     from evidently.report import Report
     from evidently.metric_preset import DataDriftPreset
-    from evidently.metrics import DatasetDriftMetric, ColumnDriftMetric
+    from evidently.metrics import DatasetDriftMetric
     EVIDENTLY_AVAILABLE = True
 except ImportError:
     EVIDENTLY_AVAILABLE = False
@@ -83,19 +83,10 @@ class FeatureDriftMonitor:
             Dict with drift results
         """
         if not EVIDENTLY_AVAILABLE:
-            return {
-                'status': 'ERROR',
-                'message': 'Evidently AI not installed',
-                'drift_detected': False
-            }
+            raise DataProcessingError("Evidently AI not installed")
         
         if self.reference_data is None:
-            logger.error("❌ No reference data set. Call set_reference_data() first.")
-            return {
-                'status': 'ERROR',
-                'message': 'No reference data',
-                'drift_detected': False
-            }
+            raise DataProcessingError("No reference data set")
         
         self.metrics['checks_performed'] = (self.metrics.get('checks_performed', 0) or 0) + 1  # type: ignore
         self.metrics['last_check_time'] = datetime.now()  # type: ignore
@@ -112,12 +103,7 @@ class FeatureDriftMonitor:
         common_columns = list(set(feature_columns) & set(self.reference_data.columns) & set(current_data.columns))
         
         if not common_columns:
-            logger.error("❌ No common columns between reference and current data")
-            return {
-                'status': 'ERROR',
-                'message': 'No common columns',
-                'drift_detected': False
-            }
+            raise DataProcessingError("No common columns between reference and current data")
         
         logger.info(f"🔍 Checking drift for {len(common_columns)} features...")
         
@@ -188,11 +174,7 @@ class FeatureDriftMonitor:
             
         except Exception as e:
             logger.error(f"❌ Error checking drift: {e}", exc_info=True)
-            return {
-                'status': 'ERROR',
-                'message': str(e),
-                'drift_detected': False
-            }
+            raise DataProcessingError(f"Error checking drift: {e}") from e
     
     def get_drift_summary(self) -> Dict[str, Any]:
         """Get summary of drift monitoring."""

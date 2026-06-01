@@ -4,6 +4,7 @@
 import re
 import logging
 from typing import List, Dict, Optional, Set
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,7 @@ class KeywordExtractor:
 
         logger.info(f"Extractor updated with {len(self.tickers)} tickers and {len(self.keywords)} keywords.")
 
+    @lru_cache(maxsize=1024)
     def extract(self, text: str) -> List[str]:
         """
         Extracts all configured keywords and tickers from the given text.

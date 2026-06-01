@@ -118,8 +118,9 @@ DEFAULT_N_JOBS_SEQUENTIAL = 1
 # Model Configuration Constants
 # ============================================================================
 
-# Default enabled model types
-DEFAULT_ENABLED_MODEL_TYPES = ['lgbm', 'rf', 'xgb', 'linear']
+# Default enabled model types - use ModelFactory for canonical source
+from src.factories.model_factory import ModelFactory
+DEFAULT_ENABLED_MODEL_TYPES = ModelFactory.get_available_models()
 """Default list of model types to train"""
 
 # Hyperparameter ranges

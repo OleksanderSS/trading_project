@@ -3,8 +3,9 @@ Batch management utilities for hybrid pipeline.
 """
 
 from pathlib import Path
-
+import re
 from src.core.logging.logger import ProjectLogger
+from src.utils.path_utils import sanitize_path_input
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -41,23 +42,15 @@ class BatchManager:
 
     @staticmethod
     def _generate_full_batch_name(args) -> str:
-        """Generate batch name for full mode.
-
-        Full mode (без test параметрів) завжди використовує 'main_database'.
-        Це дозволяє:
-        - Полегшеному режиму (test mode) створювати окремі підпапки
-        - Повноцінному режиму (full mode) накопичувати дані в одну папку
-        """
+        """Generate batch name for full mode."""
         return "main_database"
 
     @staticmethod
     def _handle_continue_mode(parts, args) -> str:
         """Handle batch name generation for continue mode."""
-        # Search for existing batch
         base_pattern = "test_" + "_".join(parts) if parts else "manual_run"
 
         if args.mode == 'continue':
-            # Find existing batch directory
             output_dir = Path("outputs")
             if output_dir.exists():
                 existing_batches = [
@@ -65,7 +58,7 @@ class BatchManager:
                     if d.is_dir() and d.name.startswith(base_pattern)
                 ]
                 if existing_batches:
-                    return max(existing_batches)  # Return latest
+                    return max(existing_batches)
 
         return base_pattern
 
@@ -73,25 +66,13 @@ class BatchManager:
     def sanitize_path_input(path_input: str) -> str:
         """
         Sanitize path input to prevent path traversal attacks.
-
-        Args:
-            path_input: Input string that will be used in file paths
-
-        Returns:
-            Sanitized string safe for path construction
+        Uses centralized path utility.
         """
-        import re
-
-        if not path_input:
-            return ""
-
-        # Remove path traversal characters
-        sanitized = re.sub(r'[./\\]', '_', path_input)
-
+        # Centralized sanitization
+        sanitized = sanitize_path_input(path_input)
+        
         # Remove null bytes and other dangerous characters
         sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
 
         # Limit length to prevent path overflow
-        sanitized = sanitized[:100]
-
-        return sanitized
+        return sanitized[:100]

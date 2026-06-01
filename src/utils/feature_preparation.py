@@ -1,3 +1,4 @@
+import logging
 # src/utils/feature_preparation.py
 """
 Utility functions for feature preparation and model-feature alignment.
@@ -6,7 +7,7 @@ Ensures consistency between raw datasets and architecture-specific input require
 
 import pandas as pd
 import numpy as np
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 from src.core.logging.logger import ProjectLogger
 
 # Initialize standardized project logger
@@ -68,10 +69,11 @@ def _prune_metadata_columns(df: pd.DataFrame, verbose: bool) -> pd.DataFrame:
         
         cols_to_drop = [c for c in metadata_cols if c in df.columns]
         if cols_to_drop:
-            df_clean = df_clean.drop(columns=cols_to_drop)
+            df = df.drop(columns=cols_to_drop)
             if verbose:
-                logger.debug(f"Metadata pruning: Dropped {len(cols_to_drop)} columns ({cols_to_drop})")
-        return df_clean
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Metadata pruning: Dropped {len(cols_to_drop)} columns ({cols_to_drop})")
+        return df
 
 def _extract_numeric_features(df: pd.DataFrame, verbose: bool) -> Tuple[pd.DataFrame, List[str]]:
         """Select exclusively numeric features for the core model payload."""
@@ -80,7 +82,8 @@ def _extract_numeric_features(df: pd.DataFrame, verbose: bool) -> Tuple[pd.DataF
         
         if verbose:
             logger.info(f"Feature Vectorization: Identified {len(numeric_cols)} numeric signals.")
-            logger.debug(f"Pre-cleansing shape: {df_numeric.shape}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Pre-cleansing shape: {df_numeric.shape}")
         
         return df_numeric, numeric_cols
 
@@ -95,7 +98,8 @@ def _clean_numeric_data(df: pd.DataFrame, fill_na: bool, verbose: bool) -> pd.Da
         df = df.replace([np.inf, -np.inf], 0.0)
         
         if verbose:
-            logger.debug(f"Post-cleansing shape: {df.shape}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Post-cleansing shape: {df.shape}")
             total_missing = df.isna().sum().sum()
             total_inf = np.isinf(df.values).sum()
             
@@ -109,9 +113,11 @@ def _audit_primary_signals(numeric_cols: List[str]) -> None:
         primary_signals = ['news_sentiment', 'AMD_15m_close', 'AMD_1h_close']
         for signal in primary_signals:
             if signal in numeric_cols:
-                logger.debug(f"Signal Audit: {signal} validated and included.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Signal Audit: {signal} validated and included.")
             else:
-                logger.debug(f"Signal Audit: {signal} is absent from the current batch mapping.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Signal Audit: {signal} is absent from the current batch mapping.")
 
 
 def align_features_with_model(

@@ -50,7 +50,8 @@ class MacroContextAnalyzer(IAnalyzer):
                 score = MacroScoreCalculator.calculate_indicator_score(indicator_series, indicator_cfg)
                 total_score += score
             else:
-                logger.debug(f"Indicator '{indicator_name}' not found in data. Skipping.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Indicator '{indicator_name}' not found in data. Skipping.")
         
         result_df = pd.DataFrame(index=data.index)
         result_df['macro_score'] = total_score

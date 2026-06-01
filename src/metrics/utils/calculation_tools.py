@@ -57,7 +57,7 @@ def calculate_rolling_volatility(returns: pd.Series, window: int = 20) -> pd.Ser
     Returns:
         pd.Series: Серія значень волатильності.
     """
-    return returns.rolling(window=window).std() * np.sqrt(252)
+    return returns.rolling(window=window, min_periods=1).std() * np.sqrt(252)
 
 def calculate_drawdown_series(equity_curve: pd.Series) -> pd.Series:
     """

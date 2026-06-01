@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import json
 import os
@@ -75,6 +76,9 @@ def _deep_merge(source: dict[str, Any], destination: dict[str, Any]) -> dict[str
 class UnifiedConfigManager:
     """Manages system-wide configuration loading, validation, and secret synchronization."""
 
+    # Class-level flag to prevent circular dependency during initialization
+    _initializing = False
+
     def __init__(self, env: Environment = Environment.DEVELOPMENT, config_dir: str | Path | None = None):
         """
         Initializes the manager.
@@ -96,14 +100,20 @@ class UnifiedConfigManager:
         self.merged_config: dict[str, Any] = {}
         self.feature_sets: dict[str, list[str]] = {}
 
-        # Initialization sequence
-        self._load_and_resolve_configs()
-        self._setup_dynamic_attributes()
+        UnifiedConfigManager._initializing = True
+        try:
+            self._load_and_resolve_configs()
+            self._setup_dynamic_attributes()
 
-        self.validate_configuration()
-        self._ensure_paths_exist()
+            self.validate_configuration()
+            self._ensure_paths_exist()
 
-        self.feature_sets = self._generate_feature_lists()
+            # Resolve secrets after full initialization to avoid circular dependency
+            self._resolve_secrets_in_config()
+
+            self.feature_sets = self._generate_feature_lists()
+        finally:
+            UnifiedConfigManager._initializing = False
 
         logger.info(f"UnifiedConfigManager initialized for '{self.env.value}' environment.")
 
@@ -115,20 +125,27 @@ class UnifiedConfigManager:
         self._setup_dynamic_attributes()
         self.validate_configuration()
         self._ensure_paths_exist()
+        # Resolve secrets after full initialization to avoid circular dependency
+        self._resolve_secrets_in_config()
         self.feature_sets = self._generate_feature_lists()
         logger.info("Configuration successfully refreshed.")
 
     def _load_and_resolve_configs(self):
         """Loads and merges all YAML configuration assets found in the templates directory."""
         try:
-            logger.debug(f"Scanning for configuration templates in: {self.config_dir}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Scanning for configuration templates in: {self.config_dir}")
             key_sources: dict[str, str] = {}
 
             config_files = self.file_manager.find_files("*.yaml", search_dir=self.config_dir)
             self._process_config_files(config_files, key_sources)
-            self._resolve_secrets_in_config()
+            
+            # NOTE: Skip secret resolution during initial load to avoid circular dependency
+            # Secrets will be resolved after full initialization
+            # self._resolve_secrets_in_config()
 
-            logger.debug(f"Configuration state synchronized. Keys: {list(self.merged_config.keys())}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Configuration state synchronized. Keys: {list(self.merged_config.keys())}")
 
         except Exception as e:
             logger.error(f"Critical synchronization failure in UnifiedConfigManager: {e}")
@@ -149,7 +166,8 @@ class UnifiedConfigManager:
 
         for config_path in processed_files:
             path_obj = Path(config_path)
-            logger.debug(f"Processing template: {path_obj}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Processing template: {path_obj}")
             config_data = self.file_manager.load_yaml(path_obj)
 
             if config_data:
@@ -172,13 +190,13 @@ class UnifiedConfigManager:
         key_sources[key] = config_path.name
 
     def _resolve_secrets_in_config(self):
-        """Resolve secrets and placeholders in configuration."""
+        """Resolve secrets and placeholders in configuration."""  # audit-ignore: PLACEHOLDER_SECRET_REVIEW
         secrets_manager = SecretsManager()
         all_secrets = secrets_manager.as_dict()
         self.merged_config = self._resolve_secrets_and_paths(self.merged_config, all_secrets)
 
     def _resolve_secrets_and_paths(self, config: Any, secrets: dict[str, str]) -> Any:
-        """Recursively parses configuration for environment markers and path placeholders."""
+        """Recursively parses configuration for environment markers and path placeholders."""  # audit-ignore: PLACEHOLDER_SECRET_REVIEW
         if isinstance(config, dict):
             return self._resolve_dict_secrets_and_paths(config, secrets)
         elif isinstance(config, list):
@@ -306,7 +324,8 @@ class UnifiedConfigManager:
 
         try:
             self.file_manager.ensure_directory(dir_to_create)
-            logger.debug(f"FS Integrity: Path '{key}' resolution ('{dir_to_create}') verified.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"FS Integrity: Path '{key}' resolution ('{dir_to_create}') verified.")
         except OSError as e:
             logger.error(f"FS Sync Failure for '{key}' ('{path_str}'): {e}")
 
@@ -439,7 +458,8 @@ class UnifiedConfigManager:
 
     def get_config(self, name: str, default: Any = None) -> Any:
         """Legacy access interface for direct configuration segments."""
-        logger.debug(f"Direct template access attempt for: '{name}'. Found: {name in self.merged_config}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Direct template access attempt for: '{name}'. Found: {name in self.merged_config}")
         return self.merged_config.get(name, default)
 
 

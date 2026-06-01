@@ -138,9 +138,9 @@ class SimulationEngine:
         }
     
     def _ensure_determinism(self):
-        """Ensure deterministic random number generation."""
+        """Ensure deterministic random number generation using thread-safe RNG."""
         seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
-        np.random.seed(seed)
+        self.rng = np.random.default_rng(seed)
     
     def _generate_daily_returns(self, context: SimulationContext, horizon: int, market_params: dict) -> np.ndarray:
         """Generate daily returns based on configuration."""
@@ -158,17 +158,14 @@ class SimulationEngine:
     
     def _generate_bootstrap_returns(self, context: SimulationContext, horizon: int) -> np.ndarray:
         """Generate returns using historical bootstrap."""
-        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
         hist_rets = context.historical_returns.values
-        rng = np.random.default_rng(seed)
-        return rng.choice(hist_rets, size=horizon, replace=True)
+        return self.rng.choice(hist_rets, size=horizon, replace=True)
     
     def _generate_t_distribution_returns(self, horizon: int, market_params: dict) -> np.ndarray:
         """Generate returns using t-distribution."""
-        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
         df = self.optimization_config.get('t_distribution_df', 3.0)
         scale = self._calculate_t_distribution_scale(market_params['volatility'], df)
-        return stats.t.rvs(df, loc=market_params['trend'] / horizon, scale=scale, size=horizon, random_state=seed)
+        return stats.t.rvs(df, loc=market_params['trend'] / horizon, scale=scale, size=horizon, random_state=self.rng)
     
     def _calculate_t_distribution_scale(self, volatility: float, df: float) -> float:
         """Calculate scale parameter for t-distribution."""
@@ -181,20 +178,18 @@ class SimulationEngine:
     def _calculate_price_path(self, current_price: float, daily_returns: np.ndarray) -> list:
         """Calculate price path from daily returns."""
         prices = [current_price]
-        for r in daily_returns[:-1]:
+        for r in daily_returns:
             prices.append(prices[-1] * (1 + r))
         return prices
     
     def _create_ohlcv_dataframe(self, prices: list, daily_returns: np.ndarray, dates: pd.DatetimeIndex) -> pd.DataFrame:
         """Create OHLCV DataFrame from prices and returns."""
-        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
-        rng = np.random.default_rng(seed)
         return pd.DataFrame({
             'open': prices,
             'high': [p * (1 + abs(r) * 0.5) for p, r in zip(prices, daily_returns)],
             'low': [p * (1 - abs(r) * 0.5) for p, r in zip(prices, daily_returns)],
             'close': prices,
-            'volume': [rng.integers(1000, 10000) for _ in range(len(prices))]
+            'volume': [self.rng.integers(1000, 10000) for _ in range(len(prices))]
         }, index=dates)
 
 _simulation_engine = None

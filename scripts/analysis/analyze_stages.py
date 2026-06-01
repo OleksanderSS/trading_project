@@ -54,10 +54,12 @@ def _log_database_state(db_manager):
             try:
                 count = db_manager.get_row_count(table)
                 logger.info(f"   - {table}: {count} rows")
-            except Exception as e:
-                logger.warning(f"   - {table}: Error getting count - {e}")
-    except Exception as e:
-        logger.error(f"❌ Database error: {e}")
+            except (ValueError, TypeError, Exception) as e:
+                logger.error(f"   - {table}: Error getting count - {e}", exc_info=True)
+                raise RuntimeError(f"Failed to get row count for table {table}: {e}") from e
+    except (ValueError, TypeError, Exception) as e:
+        logger.error(f"❌ Database error: {e}", exc_info=True)
+        raise RuntimeError(f"Database analysis failed: {e}") from e
 
 
 async def analyze_stages():

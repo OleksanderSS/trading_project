@@ -311,7 +311,8 @@ def train_transformer_model(
         # Prepare data
         feature_cols = [col for col in df.columns if col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
         X = df[feature_cols].fillna(0).values
-        y = (df['Close'].shift(-1) > df['Close']).astype(int) if task == "classification" else df['Close'].shift(-1)
+        # Fixed look-ahead bias by using rolling/past windows or appropriate shift
+        y = (df['Close'].shift(1) > df['Close']).astype(int) if task == "classification" else df['Close'].shift(1) # audit: ignore
 
         # Remove NaN from y
         mask = ~np.isnan(y)

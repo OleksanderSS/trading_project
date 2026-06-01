@@ -1,6 +1,6 @@
 
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List
 from sklearn.ensemble import RandomForestRegressor
 from src.core.logging.logger import ProjectLogger
 
@@ -34,7 +34,7 @@ class VolatilityDriverSelector:
             return []
 
         # 1. Target: Realized Volatility (Proxy for regime shifts)
-        y_vol = df[target_col].pct_change().abs().fillna(0)
+        y_vol = df[target_col].pct_change(fill_method=None).abs().fillna(0)
 
         # 2. Prepare Auxiliary Pool
         valid_aux = [c for c in auxiliary_pool if c in df.columns]

@@ -33,73 +33,73 @@ class MacroReleaseTimingGuard:
     # US Eastern Timezone (where most US data is released)
     US_EASTERN = pytz.timezone('US/Eastern')
     
-    # Official release schedules for major economic indicators
-    RELEASE_SCHEDULES = {
-        'GDP': {
-            'release_time': time(8, 30),  # 8:30 AM ET
-            'delay_hours': 1.0,           # 1 hour delay
-            'release_day': 'quarter_end',       # End of quarter
-            'description': 'Gross Domestic Product'
-        },
-        'CPI': {
-            'release_time': time(8, 30),  # 8:30 AM ET
-            'delay_hours': 0.5,           # 30 minutes delay
-            'release_day': 'monthly',          # Monthly
-            'description': 'Consumer Price Index'
-        },
-        'PPI': {
-            'release_time': time(8, 30),  # 8:30 AM ET
-            'delay_hours': 0.5,           # 30 minutes delay
-            'release_day': 'monthly',          # Monthly
-            'description': 'Producer Price Index'
-        },
-        'UNEMPLOYMENT': {
-            'release_time': time(8, 30),  # 8:30 AM ET
-            'delay_hours': 0.25,          # 15 minutes delay
-            'release_day': 'monthly',          # Monthly (first Friday)
-            'description': 'Unemployment Rate'
-        },
-        'FED_RATE': {
-            'release_time': time(14, 0),  # 2:00 PM ET
-            'delay_hours': 0.25,          # 15 minutes delay
-            'release_day': 'fomc',             # FOMC meetings (8 times/year)
-            'description': 'Federal Funds Rate'
-        },
-        'RETAIL_SALES': {
-            'release_time': time(8, 30),  # 8:30 AM ET
-            'delay_hours': 0.5,           # 30 minutes delay
-            'release_day': 'monthly',          # Monthly
-            'description': 'Retail Sales'
-        },
-        'DURABLE_GOODS': {
-            'release_time': time(8, 30),  # 8:30 AM ET
-            'delay_hours': 0.5,           # 30 minutes delay
-            'release_day': 'monthly',          # Monthly
-            'description': 'Durable Goods Orders'
-        },
-        'CONSUMER_CONFIDENCE': {
-            'release_time': time(10, 0),  # 10:00 AM ET
-            'delay_hours': 0.5,           # 30 minutes delay
-            'release_day': 'monthly',          # Monthly
-            'description': 'Consumer Confidence Index'
-        },
-        'ISM_MANUFACTURING': {
-            'release_time': time(10, 0),  # 10:00 AM ET
-            'delay_hours': 0.5,           # 30 minutes delay
-            'release_day': 'monthly',          # Monthly
-            'description': 'ISM Manufacturing PMI'
-        },
-        'NONFARM_PAYROLLS': {
-            'release_time': time(8, 30),  # 8:30 AM ET
-            'delay_hours': 0.25,          # 15 minutes delay
-            'release_day': 'monthly',          # Monthly (first Friday)
-            'description': 'Non-Farm Payrolls'
-        }
-    }
-    
     def __init__(self):
         """Initialize the MacroReleaseTimingGuard."""
         self.logger = logger
+        
+        # Official release schedules for major economic indicators
+        self.RELEASE_SCHEDULES = {
+            'GDP': {
+                'release_time': time(8, 30),  # 8:30 AM ET
+                'delay_hours': 1.0,           # 1 hour delay
+                'release_day': 'quarter_end',       # End of quarter
+                'description': 'Gross Domestic Product'
+            },
+            'CPI': {
+                'release_time': time(8, 30),  # 8:30 AM ET
+                'delay_hours': 0.5,           # 30 minutes delay
+                'release_day': 'monthly',          # Monthly
+                'description': 'Consumer Price Index'
+            },
+            'PPI': {
+                'release_time': time(8, 30),  # 8:30 AM ET
+                'delay_hours': 0.5,           # 30 minutes delay
+                'release_day': 'monthly',          # Monthly
+                'description': 'Producer Price Index'
+            },
+            'UNEMPLOYMENT': {
+                'release_time': time(8, 30),  # 8:30 AM ET
+                'delay_hours': 0.25,          # 15 minutes delay
+                'release_day': 'monthly',          # Monthly (first Friday)
+                'description': 'Unemployment Rate'
+            },
+            'FED_RATE': {
+                'release_time': time(14, 0),  # 2:00 PM ET
+                'delay_hours': 0.25,          # 15 minutes delay
+                'release_day': 'fomc',             # FOMC meetings (8 times/year)
+                'description': 'Federal Funds Rate'
+            },
+            'RETAIL_SALES': {
+                'release_time': time(8, 30),  # 8:30 AM ET
+                'delay_hours': 0.5,           # 30 minutes delay
+                'release_day': 'monthly',          # Monthly
+                'description': 'Retail Sales'
+            },
+            'DURABLE_GOODS': {
+                'release_time': time(8, 30),  # 8:30 AM ET
+                'delay_hours': 0.5,           # 30 minutes delay
+                'release_day': 'monthly',          # Monthly
+                'description': 'Durable Goods Orders'
+            },
+            'CONSUMER_CONFIDENCE': {
+                'release_time': time(10, 0),  # 10:00 AM ET
+                'delay_hours': 0.5,           # 30 minutes delay
+                'release_day': 'monthly',          # Monthly
+                'description': 'Consumer Confidence Index'
+            },
+            'ISM_MANUFACTURING': {
+                'release_time': time(10, 0),  # 10:00 AM ET
+                'delay_hours': 0.5,           # 30 minutes delay
+                'release_day': 'monthly',          # Monthly
+                'description': 'ISM Manufacturing PMI'
+            },
+            'NONFARM_PAYROLLS': {
+                'release_time': time(8, 30),  # 8:30 AM ET
+                'delay_hours': 0.25,          # 15 minutes delay
+                'release_day': 'monthly',          # Monthly (first Friday)
+                'description': 'Non-Farm Payrolls'
+            }
+        }
     
     def validate_macro_data_timing(self, 
                                 macro_df: pd.DataFrame,

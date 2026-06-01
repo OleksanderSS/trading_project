@@ -59,7 +59,8 @@ class BaseEnricher(ABC):
             EnricherError: For unexpected errors that should propagate.
         """
         try:
-            self.logger.debug(f"🔄 Starting enrichment with {self.__class__.__name__}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"🔄 Starting enrichment with {self.__class__.__name__}")
 
             # Call subclass implementation
             result = self._enrich_impl(df, **kwargs)
@@ -71,7 +72,8 @@ class BaseEnricher(ABC):
             if len(result) == 0:
                 raise ValueError("Enricher cannot return empty DataFrame")
 
-            self.logger.debug(f"✅ {self.__class__.__name__} completed: {result.shape[1] - df.shape[1]} features added")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"✅ {self.__class__.__name__} completed: {result.shape[1] - df.shape[1]} features added")
             return result
 
         except KeyError as e:

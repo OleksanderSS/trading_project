@@ -3,10 +3,15 @@
 Швидка перевірка готовності до переносу в Colab.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 import pandas as pd
 import json
-from pathlib import Path
-import sys
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
 
 def check_ready_for_colab():
     """Перевірити готовність до переносу в Colab."""
@@ -86,6 +91,7 @@ def check_ready_for_colab():
         print(f"   context_fingerprint: {'✅ Присутній' if has_context else '❌ Відсутній'}")
         
     except Exception as e:
+        logger.error(f"ПОМИЛКА при завантаженні даних: {e}", exc_info=True)
         print(f"\n❌ ПОМИЛКА при завантаженні даних: {e}")
         return False
     

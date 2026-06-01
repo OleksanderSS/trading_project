@@ -20,6 +20,7 @@ from .feature_selection_manager import FeatureSelectionManager
 from .data_utils import DataUtils
 from .metadata_manager import MetadataManager
 from .pipeline_config import PipelineParams, FinalStagesParams, ColabBatchParams
+from .contracts import HybridFinalStagesRequest, HybridPipelineRequest
 from .orchestrator_interface import OrchestratorInterface
 from .metadata_manager import MetadataParams, SaveMetadataParams
 
@@ -39,6 +40,8 @@ __all__ = [
     'PipelineParams',
     'FinalStagesParams',
     'ColabBatchParams',
+    'HybridFinalStagesRequest',
+    'HybridPipelineRequest',
     'OrchestratorInterface',
     'MetadataParams',
     'SaveMetadataParams'

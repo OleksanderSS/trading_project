@@ -10,36 +10,11 @@
 """
 
 import pandas as pd
-import numpy as np
 from pathlib import Path
 import logging
-import re
 import json
 from datetime import datetime
-
-def sanitize_path_input(path_input: str) -> str:
-    """
-    Sanitize path input to prevent path traversal attacks.
-    
-    Args:
-        path_input: Input string that will be used in file paths
-        
-    Returns:
-        Sanitized string safe for path construction
-    """
-    if not path_input:
-        return ""
-    
-    # Remove path traversal characters
-    sanitized = re.sub(r'[./\\]', '_', path_input)
-    
-    # Remove null bytes and other dangerous characters
-    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
-    
-    # Limit length to prevent path overflow
-    sanitized = sanitized[:100]
-    
-    return sanitized
+from src.utils.path_utils import sanitize_path_input
 
 # Constants to avoid duplication
 FEATURES_FILE = "features.parquet"

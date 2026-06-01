@@ -1,3 +1,4 @@
+import logging
 # src/training/light_model_trainer.py
 
 import pandas as pd
@@ -57,8 +58,17 @@ class LightModelTrainer:
             params = config.get('params')
             
             # Prepare data
-            X = features_df.drop(columns=[target_col])
+            # Drop all target columns and metadata to prevent leakage
+            metadata_cols = ['ticker', 'timestamp', 'date', 'open', 'high', 'low', 'close', 'volume']
+            drop_cols = [c for c in features_df.columns if c.startswith('target_') or c in metadata_cols]
+            
+            # Ensure target_col is removed from drop_cols so we can extract it for y
+            # but it MUST be in drop_cols when creating X
+            X = features_df.drop(columns=[c for c in drop_cols if c in features_df.columns])
             y = features_df[target_col]
+            
+            # Check if target_col was actually in features_df and not dropped
+            # (target_col is usually one of the columns starting with 'target_')
             
             # Get model from factory (consistent with batch/progressive trainers)
             is_classification = task_type == 'classification'
@@ -176,7 +186,8 @@ class LightModelTrainer:
         """
         if model_key in self.models_in_memory:
             del self.models_in_memory[model_key]
-            logger.debug(f"Removed model {model_key} from memory")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Removed model {model_key} from memory")
             return True
         logger.warning(f"Model '{model_key}' not found in memory")
         return False

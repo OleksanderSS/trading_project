@@ -54,7 +54,7 @@ class ResultsManager:
             return str(filepath)
             
         except Exception as e:
-            logger.error(f"Failed to save results: {e}")
+            logger.error(f"Failed to save results: {e}", exc_info=True)
             raise
     
     def load_results(self, filename: str) -> Optional[Dict[str, Any]]:
@@ -86,7 +86,7 @@ class ResultsManager:
             return cast(Dict[str, Any], results)
             
         except Exception as e:
-            logger.error(f"Failed to load results: {e}")
+            logger.error(f"Failed to load results: {e}", exc_info=True)
             return None
     
     def get_latest_results(self) -> Optional[Dict[str, Any]]:
@@ -106,7 +106,7 @@ class ResultsManager:
             return self.load_results(latest_file.name)
             
         except Exception as e:
-            logger.error(f"Failed to get latest results: {e}")
+            logger.error(f"Failed to get latest results: {e}", exc_info=True)
             return None
     
     def list_results(self) -> List[str]:
@@ -119,8 +119,8 @@ class ResultsManager:
         try:
             return [f.name for f in self.results_dir.glob("results_*.json")]
         except Exception as e:
-            logger.error(f"Failed to list results: {e}")
-            return []
+            logger.error(f"Failed to list results: {e}", exc_info=True)
+            return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
     
     def delete_results(self, filename: str) -> bool:
         """
@@ -145,7 +145,7 @@ class ResultsManager:
                 return False
                 
         except Exception as e:
-            logger.error(f"Failed to delete results: {e}")
+            logger.error(f"Failed to delete results: {e}", exc_info=True)
             return False
     
     def get_results_summary(self) -> Dict[str, Any]:
@@ -184,7 +184,7 @@ class ResultsManager:
             return summary
             
         except Exception as e:
-            logger.error(f"Failed to get results summary: {e}")
+            logger.error(f"Failed to get results summary: {e}", exc_info=True)
             return {'error': str(e)}
     
     def export_results_to_csv(self, filename: str, output_path: Optional[str] = None) -> Optional[str]:
@@ -215,7 +215,7 @@ class ResultsManager:
             return cast(str, str(output_path))
             
         except Exception as e:
-            logger.error(f"Failed to export results to CSV: {e}")
+            logger.error(f"Failed to export results to CSV: {e}", exc_info=True)
             return None
     
     def _flatten_dict(self, d: Dict[str, Any], parent_key: str = '', sep: str = '_') -> Dict[str, Any]:

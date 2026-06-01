@@ -1,3 +1,4 @@
+import logging
 # src/core/processing/parallel_processor.py
 
 import time
@@ -25,7 +26,8 @@ class ParallelProcessor:
         
         # Initial memory check
         mem = psutil.virtual_memory()
-        self.logger.debug(f"ParallelProcessor initialized. System RAM: {mem.total / (1024**3):.2f} GB ({mem.percent}% used)")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"ParallelProcessor initialized. System RAM: {mem.total / (1024**3):.2f} GB ({mem.percent}% used)")
 
     def _get_executor(self):
         """Returns the appropriate executor based on the configuration."""

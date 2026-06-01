@@ -3,13 +3,14 @@ Model Prototype Pattern Implementation
 
 Provides fast cloning and metadata management for models.
 """
+import logging
 
 import importlib
 from datetime import datetime
-from typing import Dict, Any, List, Type, Optional
+from typing import Any
 
-from src.models.interfaces import BaseModel
 from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -40,10 +41,10 @@ class ModelPrototype:
     def __init__(
         self,
         model_id: str,
-        model_class: Type[BaseModel],
+        model_class: type[BaseModel],
         version: str = "1.0.0",
-        dependencies: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
+        dependencies: list[str] | None = None,
+        metadata: dict[str, Any] | None = None,
     ):
         """
         Initialize model prototype.
@@ -64,7 +65,7 @@ class ModelPrototype:
         self._validated = False
         self._clone_count = 0
 
-    def clone(self, **kwargs) -> Optional[BaseModel]:
+    def clone(self, **kwargs) -> BaseModel | None:
         """
         Clone prototype with optional parameter overrides.
 
@@ -89,9 +90,10 @@ class ModelPrototype:
         try:
             model = self.model_class(**params)
             self._clone_count += 1
-            logger.debug(
-                f"Cloned {self.model_id} (#{self._clone_count}) with params: {kwargs}"
-            )
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    f"Cloned {self.model_id} (#{self._clone_count}) with params: {kwargs}"
+                )
             return model
         except Exception as e:
             logger.error(f"Failed to clone {self.model_id}: {e}")
@@ -112,7 +114,7 @@ class ModelPrototype:
                 return False
         return True
 
-    def get_info(self) -> Dict[str, Any]:
+    def get_info(self) -> dict[str, Any]:
         """Get prototype information"""
         return {
             "model_id": self.model_id,

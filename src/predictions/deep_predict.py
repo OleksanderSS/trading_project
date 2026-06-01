@@ -1,7 +1,6 @@
 # src/predictions/deep_predict.py
 
 import numpy as np
-import torch
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
@@ -11,6 +10,8 @@ logger = ProjectLogger.get_logger(__name__)
 # --------------------
 def predict_lstm(model, X, time_steps=10, batch_size=64):
     """LSTM inference with batching, CPU/GPU, and dtype support."""
+    # Lazy import: avoids importing torch for pipelines that never use deep models.
+    import torch
     if X.shape[0] < time_steps:
         logger.warning(f"LSTM skipped: insufficient data ({X.shape[0]} < {time_steps})")
         return np.array([])

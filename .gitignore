@@ -9,8 +9,8 @@ credentials/
 secrets/
 
 # Large data and model files (keep locally, don't push to Git)
-data/
-models/  # Ignored large model files
+/data/
+/models/  # Ignored large model files
 logs/
 cache/
 backups/

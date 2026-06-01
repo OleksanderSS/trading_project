@@ -57,7 +57,7 @@ class ColabEnvironment:
             try:
                 import signal
 
-                def timeout_handler(signum, frame):  # type: ignore[no-untyped-def]
+                def timeout_handler(_signum, _frame):  # type: ignore[no-untyped-def]
                     raise TimeoutError("Таймаут при подключении к Google Colab")
 
                 if hasattr(signal, 'SIGALRM'):

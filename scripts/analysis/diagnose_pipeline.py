@@ -7,6 +7,14 @@ import sys
 from pathlib import Path
 import json
 
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger("diagnose_pipeline")
+
 def check_test_mode_configs():
     """Check for test mode configurations."""
     print("\n" + "=" * 80)
@@ -107,7 +115,7 @@ def check_data_files():
                 print(f"⚠️ WARNING: Only {len(tickers)} tickers (expected 10)")
                 issues.append(f"Only {len(tickers)} tickers in features")
         except Exception as e:
-            print(f"❌ ERROR reading features.parquet: {e}")
+            logger.error("❌ ERROR reading features.parquet", exc_info=True)
             issues.append(f"features.parquet error: {e}")
     else:
         print("⚠️ WARNING: features.parquet not found")
@@ -128,7 +136,7 @@ def check_data_files():
                 print(f"❌ ERROR: Only 1 ticker found (expected 10)")
                 issues.append(f"Only 1 ticker in targets: {tickers[0]}")
         except Exception as e:
-            print(f"❌ ERROR reading targets.parquet: {e}")
+            logger.error("❌ ERROR reading targets.parquet", exc_info=True)
             issues.append(f"targets.parquet error: {e}")
     else:
         print("⚠️ WARNING: targets.parquet not found")

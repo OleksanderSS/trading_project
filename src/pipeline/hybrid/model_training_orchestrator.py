@@ -2,6 +2,7 @@
 Model Training Orchestrator: Orchestrates light model training for different contexts (tickers, targets, models).
 Extracted from HybridOrchestrator to improve code organization and testability.
 """
+import logging
 
 import numpy as np
 import pandas as pd
@@ -29,107 +30,133 @@ class ModelTrainingOrchestrator:
         models_trained = 0
         
         for context_id, context_data in selected_feature_contexts.items():
-            model_name = context_data.get('model_name')
-            if not isinstance(model_name, str) or not model_name:
-                self.logger.warning(f"⚠️ Skipping context {context_id}: missing model_name")
-                continue
-            
-            # Prepare training data
-            c_features_df, c_targets_df, available_features, resolved_ticker, timeframe = self._prepare_training_data(
-                context_data, features_df, targets_df, ticker_col
+            metadata_updates, count = self._process_training_context(
+                context_data, features_df, targets_df, ticker_col, batch_dir, light_trainer
             )
-            
-            if c_features_df is None or c_targets_df is None or not available_features or not resolved_ticker or not timeframe:
-                continue
-            
-            # Аналіз використання context features
-            context_features = [f for f in available_features if f.startswith('state_')]
-            
-            # Train for each target
-            for target_col in context_data['targets']:
-                if target_col not in c_targets_df.columns:
-                    continue
-                
-                metadata = self._train_single_model(
-                    light_trainer, c_features_df, c_targets_df, available_features,
-                    target_col, model_name, resolved_ticker, timeframe, batch_dir
-                )
-                
-                if metadata:
-                    # Додаємо інформацію про context features
-                    metadata['uses_context_states'] = len(context_features) > 0
-                    metadata['context_features_count'] = len(context_features)
-                    metadata['context_features'] = context_features[:10]  # Топ-10 для логу
-                    
-                    models_metadata[f"{resolved_ticker}_{target_col}_{model_name}"] = metadata
-                    models_trained += 1
+            models_metadata.update(metadata_updates)
+            models_trained += count
         
         self.logger.info(f"✅ Trained {models_trained} models across {len(selected_feature_contexts)} contexts")
         return models_metadata, models_trained
-    
-    def _prepare_training_data(self, context_data: Dict[str, Any], features_df: pd.DataFrame,
-                              targets_df: pd.DataFrame, ticker_col: Optional[str]) -> Tuple[Optional[pd.DataFrame], Optional[pd.DataFrame], Optional[List[str]], Optional[str], Optional[str]]:
-        """Prepare training data for a specific context."""
-        context_ticker = context_data['ticker']
+
+    def _process_training_context(self, context_data: Dict[str, Any], features_df: pd.DataFrame,
+                                 targets_df: pd.DataFrame, ticker_col: Optional[str],
+                                 batch_dir: Path, light_trainer: Any) -> Tuple[Dict[str, Any], int]:
+        """Processes a single training context (ticker/model combination)."""
+        model_name = context_data.get('model_name')
+        if not model_name:
+            self.logger.warning(f"⚠️ Skipping context: missing model_name")
+            return {}, 0
+            
+        c_features_df, c_targets_df, available_features, resolved_ticker, timeframe = self._prepare_training_data(
+            context_data, features_df, targets_df, ticker_col
+        )
         
-        c_features_df, c_targets_df = features_df.copy(), targets_df.copy()
-        if context_ticker and ticker_col:
-            mask = features_df[ticker_col].str.upper() == context_ticker.upper()
-            c_features_df, c_targets_df = features_df[mask].copy(), targets_df[mask].copy()
+        if c_features_df is None or c_targets_df is None or not available_features:
+            return {}, 0
+            
+        context_info = self._analyze_context_features(available_features)
+        context_metadata = {}
+        count = 0
         
-        if c_features_df.empty:
-            self.logger.warning(f"⚠️ No data for ticker {context_ticker}")
-            return None, None, None, None, None
-        
-        available_features = [f for f in context_data['selected_features'] if f in c_features_df.columns]
-        if not available_features:
-            self.logger.warning(f"⚠️ No selected features found in data for {context_ticker}")
-            return None, None, None, None, None
-        
-        resolved_ticker = self._resolve_ticker(context_ticker, c_features_df, ticker_col)
-        if not resolved_ticker:
-            self.logger.warning(f"⚠️ Could not resolve ticker from {context_ticker}")
-            return None, None, None, None, None
-        
-        timeframe = str(c_features_df['timeframe'].iloc[-1]) if 'timeframe' in c_features_df.columns else '1d'
-        
-        return c_features_df, c_targets_df, available_features, resolved_ticker, timeframe
-    
+        for target_col in context_data['targets']:
+            if target_col not in c_targets_df.columns:
+                continue
+                
+            metadata = self._train_single_model(
+                light_trainer, c_features_df, c_targets_df, available_features,
+                target_col, model_name, resolved_ticker, timeframe, batch_dir
+            )
+            
+            if metadata:
+                metadata.update(context_info)
+                context_metadata[f"{resolved_ticker}_{target_col}_{model_name}"] = metadata
+                count += 1
+                
+        return context_metadata, count
+
+    def _analyze_context_features(self, features: List[str]) -> Dict[str, Any]:
+        """Analyzes which features are state-based context features."""
+        context_features = [f for f in features if f.startswith('state_')]
+        return {
+            'uses_context_states': len(context_features) > 0,
+            'context_features_count': len(context_features),
+            'context_features': context_features[:10]
+        }
+
     def _train_single_model(self, light_trainer: Any, c_features_df: pd.DataFrame, c_targets_df: pd.DataFrame,
                            available_features: List[str], target_col: str, model_name: str,
                            resolved_ticker: str, timeframe: str, batch_dir: Path) -> Optional[Dict[str, Any]]:
-        """Train a single model and return metadata."""
+        """
+        Train a single model and return metadata.
+        High-level orchestrator for single model training process.
+        """
         try:
-            c_features_df, c_targets_df = self._sort_training_frames(c_features_df, c_targets_df)
-            X, y = c_features_df[available_features].copy(), c_targets_df[target_col].copy()
-            valid_mask = y.notna() & X.notna().all(axis=1)
-            X, y = X[valid_mask], y[valid_mask]
-            
-            if len(y) < 5:
-                self.logger.warning(f"⚠️ Insufficient data for {model_name}: {len(y)} samples")
+            # 1. Prepare data split
+            split_data = self._prepare_chronological_split(c_features_df, c_targets_df, available_features, target_col)
+            if split_data is None:
                 return None
             
-            split_idx = self._calculate_split_index(len(X))
-            X_train, X_test, y_train, y_test = X.iloc[:split_idx], X.iloc[split_idx:], y.iloc[:split_idx], y.iloc[split_idx:]
+            X_train, X_test, y_train, y_test = split_data
             
-            train_df = X_train.copy()
-            train_df[target_col] = y_train.values
+            # 2. Train
             task_type = self._resolve_target_task_type(target_col)
+            result = self._execute_training(
+                light_trainer, X_train, y_train, model_name, resolved_ticker, timeframe, target_col, task_type
+            )
             
-            result = self._train_with_config(light_trainer, train_df, model_name, resolved_ticker, timeframe, target_col, task_type)
             if not result or result.get('status') != 'success':
-                self.logger.warning(f"⚠️ Training failed for {model_name}")
                 return None
             
-            preds = light_trainer.predict(result['model_key'], X_test)
-            metrics = self._calculate_metrics(y_test, preds, task_type)
+            # 3. Evaluate
+            metrics = self._evaluate_model(light_trainer, result['model_key'], X_test, y_test, task_type)
             
+            # 4. Save
             model_path = self._save_trained_model(light_trainer, result, batch_dir, model_name, resolved_ticker, target_col)
             
+            # 5. Metadata
             return self._create_model_metadata(resolved_ticker, target_col, model_name, metrics, model_path, available_features)
+            
         except Exception as e:
             self.logger.error(f"❌ Error training {model_name} for {target_col}: {e}", exc_info=True)
             return None
+
+    def _prepare_chronological_split(self, features_df: pd.DataFrame, targets_df: pd.DataFrame, 
+                                 feature_cols: List[str], target_col: str) -> Optional[Tuple]:
+        """Prepares train/test split with validation mask and chronological sorting."""
+        f_sorted, t_sorted = self._sort_training_frames(features_df, targets_df)
+        
+        X, y = f_sorted[feature_cols].copy(), t_sorted[target_col].copy()
+        valid_mask = y.notna() & X.notna().all(axis=1)
+        X, y = X[valid_mask], y[valid_mask]
+        
+        if len(y) < 5:
+            self.logger.warning(f"⚠️ Insufficient data: {len(y)} samples")
+            return None
+            
+        split_idx = self._calculate_split_index(len(X))
+        return X.iloc[:split_idx], X.iloc[split_idx:], y.iloc[:split_idx], y.iloc[split_idx:]
+
+    def _execute_training(self, light_trainer: Any, X_train: pd.DataFrame, y_train: pd.Series, 
+                         model_name: str, ticker: str, timeframe: str, target: str, task_type: str) -> Optional[Dict[str, Any]]:
+        """Executes the training call on the light trainer."""
+        train_df = X_train.copy()
+        train_df[target] = y_train.values
+        
+        config = {
+            'model_type': model_name,
+            'ticker': ticker,
+            'timeframe': timeframe,
+            'target_col': target,
+            'task_type': task_type
+        }
+        return cast(Optional[Dict[str, Any]], light_trainer.train_light_model(train_df, config))
+
+    def _evaluate_model(self, light_trainer: Any, model_key: str, X_test: pd.DataFrame, 
+                       y_test: pd.Series, task_type: str) -> Dict[str, float]:
+        """Performs prediction and calculates metrics."""
+        preds = light_trainer.predict(model_key, X_test)
+        return self._calculate_metrics(y_test, preds, task_type)
     
     def _calculate_split_index(self, total_len: int) -> int:
         """Calculate 80/20 train/test split index."""
@@ -178,7 +205,8 @@ class ModelTrainingOrchestrator:
         models_dir.mkdir(parents=True, exist_ok=True)
         model_path = models_dir / f"{model_name}_{resolved_ticker}_{target_col}.joblib"
         light_trainer.save_model_to_disk(result['model_key'], str(model_path))
-        self.logger.debug(f"💾 Model saved: {model_path}")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"💾 Model saved: {model_path}")
         return model_path
     
     def _create_model_metadata(self, resolved_ticker: str, target_col: str, model_name: str,
@@ -232,3 +260,20 @@ class ModelTrainingOrchestrator:
         if 'return' in fallback_name or 'price' in fallback_name or '_f' in fallback_name:
             return 'regression'
         return 'classification'
+
+    def _prepare_training_data(self, context_data: Dict[str, Any], features_df: pd.DataFrame,
+                               targets_df: pd.DataFrame, ticker_col: Optional[str]) -> Tuple:
+        """Placeholder for data preparation logic."""
+        ticker = context_data.get('ticker')
+        timeframe = context_data.get('timeframe')
+        available_features = context_data.get('features', [])
+        
+        if ticker_col and ticker:
+            ticker_mask = features_df[ticker_col] == ticker
+            c_features_df = features_df[ticker_mask]
+            c_targets_df = targets_df[ticker_mask]
+        else:
+            c_features_df = features_df
+            c_targets_df = targets_df
+            
+        return c_features_df, c_targets_df, available_features, ticker, timeframe

@@ -6,7 +6,7 @@ Intelligent Mode - Інтелектуальний режим з усіма ро�
 import logging
 from typing import Any, cast
 
-from main.unified_system import UnifiedTradingSystem
+from src.main.system_orchestrator import SystemOrchestrator
 
 
 class IntelligentMode:
@@ -16,8 +16,8 @@ class IntelligentMode:
         self.args = args
         self.logger = logging.getLogger(__name__)
 
-        # Ініціалізуємо Unified System
-        self.unified_system = UnifiedTradingSystem(enable_all_features=True)
+        # Ініціалізуємо System Orchestrator
+        self.orchestrator = SystemOrchestrator()
 
     def run(self) -> dict[str, Any]:
         """Запуск інтелектуального режиму"""
@@ -26,8 +26,21 @@ class IntelligentMode:
         # Отримуємо тікери з аргументів
         tickers = self._get_tickers()
 
-        # Запускаємо інтелектуальний pipeline
-        results = self.unified_system.run_intelligent_pipeline(tickers=tickers)
+        # Запускаємо інтелектуальний pipeline через SystemOrchestrator
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        
+        if loop.is_running():
+            # If we're already in an event loop (e.g. pytest or another async run)
+            import nest_asyncio
+            nest_asyncio.apply()
+            results = loop.run_until_complete(self.orchestrator.run_mode(mode='intelligent', tickers=tickers))
+        else:
+            results = asyncio.run(self.orchestrator.run_mode(mode='intelligent', tickers=tickers))
 
         # Додаємо інформацію про режим
         results['mode'] = 'intelligent'
@@ -41,3 +54,4 @@ class IntelligentMode:
             return [t.strip().upper() for t in self.args.tickers.split(',')]
         else:
             return ["SPY", "QQQ", "TSLA", "NVDA"]
+

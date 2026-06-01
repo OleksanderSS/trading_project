@@ -63,14 +63,14 @@ class MonsterTestMode(BaseMode):
                 ticker='SPY',
                 timestamp=datetime.now(),
                 granularity=SimulationGranularity.MARKET_LEVEL,
-                historical_returns=backtest_data['close'].pct_change().dropna()
+                historical_returns=backtest_data['close'].pct_change(fill_method=None).dropna()
             )
             
             # Проста стратегія для тестування
             def simple_strategy(market_data: pd.DataFrame) -> pd.Series:
                 # Генеруємо прості сигнали на основі рухомих середніх
-                ma_short = market_data['close'].rolling(window=5).mean()
-                ma_long = market_data['close'].rolling(window=20).mean()
+                ma_short = market_data['close'].rolling(window=5, min_periods=1).mean()
+                ma_long = market_data['close'].rolling(window=20, min_periods=1).mean()
                 return pd.Series(np.where(ma_short > ma_long, 1, -1), index=market_data.index)
             
             # Запускаємо симуляцію

@@ -1,0 +1,19 @@
+# Explicit audit suppressions.
+# Keep this file small. Prefer fixing findings over suppressing them.
+# Every suppression must have a reason and should have an expiry date.
+#
+# Supported match styles:
+# 1) exact fingerprint:
+#    - fingerprint: "abc123..."
+#      reason: "False positive: demo fixture, not production path"
+#      owner: "team-or-person"
+#      expires: "2026-12-31"
+#
+# 2) scoped rule suppression:
+#    - rule_id: "FEATURE_WITHOUT_LOCAL_LINEAGE_HINT"
+#      file: "features/legacy_enricher.py"
+#      reason: "Legacy module scheduled for removal after migration"
+#      owner: "team-or-person"
+#      expires: "2026-09-30"
+
+suppressions: []

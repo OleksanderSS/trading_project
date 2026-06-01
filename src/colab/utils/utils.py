@@ -4,6 +4,10 @@ import hashlib
 from pathlib import Path
 from functools import wraps
 import time
+from src.core.logging.logger import ProjectLogger
+from src.colab.utils.retry import retry_on_timeout
+
+logger = ProjectLogger.get_logger(__name__)
 
 # Try to import torch
 try:
@@ -37,7 +41,7 @@ def get_optimal_batch_size(memory_percent, base_batch_size=32):
 def save_checkpoint(checkpoint_dir, ticker, target_col, m_type, model, optimizer, epoch, loss):
     """Зберегти checkpoint для відновлення тренування"""
     if not TORCH_AVAILABLE:
-        print("   ⚠️ torch не доступний, checkpoint не збережено")
+        logger.warning("   ⚠️ torch не доступний, checkpoint не збережено")
         return None
         
     checkpoint_path = Path(checkpoint_dir) / \
@@ -48,14 +52,14 @@ def save_checkpoint(checkpoint_dir, ticker, target_col, m_type, model, optimizer
         'epoch': epoch,
         'loss': loss
     }, checkpoint_path)
-    print(f"   ✅ Checkpoint saved: {checkpoint_path.name}")
+    logger.info(f"   ✅ Checkpoint saved: {checkpoint_path.name}")
     return checkpoint_path
 
 
 def load_checkpoint(checkpoint_path, model, optimizer):
     """Завантажити checkpoint для відновлення тренування"""
     if not TORCH_AVAILABLE:
-        print("   ⚠️ torch не доступний, checkpoint не завантажено")
+        logger.warning("   ⚠️ torch не доступний, checkpoint не завантажено")
         return 0, float('inf')
         
     # SEC-3: weights_only=True prevents arbitrary code execution from checkpoint files
@@ -64,7 +68,7 @@ def load_checkpoint(checkpoint_path, model, optimizer):
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
     loss = checkpoint.get('loss', float('inf'))
-    print(f"   ✅ Checkpoint loaded from epoch {epoch} (loss: {loss:.6f})")
+    logger.info(f"   ✅ Checkpoint loaded from epoch {epoch} (loss: {loss:.6f})")
     return epoch, loss
 
 
@@ -79,28 +83,6 @@ def find_latest_checkpoint(checkpoint_dir, ticker, target_col, m_type):
             x.stem.split('_ep')[-1]), reverse=True)
         return checkpoints[0]
     return None
-
-
-def retry_on_timeout(max_retries=3, wait_seconds=5):
-    """Декоратор для повтору при timeout"""
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            for attempt in range(max_retries):
-                try:
-                    return func(*args, **kwargs)
-                except (TimeoutError, ConnectionError, RuntimeError) as e:
-                    if attempt < max_retries - 1:
-                        print(
-                            f"⚠️ Attempt {attempt + 1} failed: "
-                            f"{str(e)[:100]}")
-                        print(f"   Retrying in {wait_seconds} seconds...")
-                        time.sleep(wait_seconds)
-                    else:
-                        print(f"❌ Failed after {max_retries} attempts")
-                        raise
-        return wrapper
-    return decorator
 
 
 def compute_data_signature(df_feat, df_targ):

@@ -1,7 +1,7 @@
 
 import logging
 import pandas as pd
-from typing import Dict, Any, Optional
+from typing import Any
 
 from src.features.enrichers.base import BaseEnricher
 
@@ -81,7 +81,8 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         """
         Filters the DataFrame, keeping only significant events and tickers with enough data.
         """
-        logger.debug(f"Original size for filtering: {len(df)}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Original size for filtering: {len(df)}")
         
         filtered_df = df[df[self.significance_col] == True].copy()
         
@@ -143,7 +144,7 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             logger.info(f"Created '{col_name}' based on returns (threshold: {threshold:.4f})")
         elif 'close' in df_out.columns:
             # Calculate returns from close price
-            df_out['_temp_returns'] = df_out['close'].pct_change()
+            df_out['_temp_returns'] = df_out['close'].pct_change(fill_method=None).fillna(0)
             threshold = df_out['_temp_returns'].abs().quantile(0.80)
             df_out[col_name] = df_out['_temp_returns'].abs() >= threshold
             df_out = df_out.drop(columns=['_temp_returns'])

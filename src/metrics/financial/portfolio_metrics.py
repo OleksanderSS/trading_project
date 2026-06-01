@@ -40,7 +40,7 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
 
         self.logger.info("Початок розрахунку фінансових метрик портфеля...")
         
-        returns = equity_curve.pct_change().dropna()
+        returns = equity_curve.pct_change(fill_method=None).dropna()
         
         pnl_metrics = self.calculate_pnl(equity_curve)
         risk_metrics = self.calculate_risk_metrics(returns, **kwargs)
@@ -52,6 +52,9 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
         return all_metrics
 
     def calculate_pnl(self, equity_curve: pd.Series) -> Dict[str, Any]:
+        if equity_curve.empty:
+            return {'initial_equity': 0.0, 'final_equity': 0.0, 'total_return_pct': 0.0}
+        
         initial_equity = equity_curve.iloc[0]
         final_equity = equity_curve.iloc[-1]
         

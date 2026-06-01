@@ -6,7 +6,15 @@ import json
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
-from src.config.training_config import CheckpointParams
+from dataclasses import dataclass
+
+@dataclass
+class CheckpointParams:
+    """Parameters for checkpoint saving"""
+    model_path: str
+    scaler_path: str
+    epoch: int
+    optimizer_state: Any = None
 
 _logger = logging.getLogger(__name__)
 

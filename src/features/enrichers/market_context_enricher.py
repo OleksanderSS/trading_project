@@ -4,6 +4,7 @@ Market Context Enricher - adds macroeconomic and market indicators to the datase
 Integrates MarketContextAnalyzer as an enricher to add context features
 directly to the features DataFrame.
 """
+import logging
 
 import pandas as pd
 import numpy as np
@@ -132,4 +133,5 @@ class MarketContextEnricher(BaseEnricher):
     def _log_latest_values(self, context_vector: Dict[str, Any]) -> None:
         """Логує останні значення для верифікації."""
         last_values = dict(context_vector.items())
-        logger.debug(f"Latest market context: {last_values}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Latest market context: {last_values}")

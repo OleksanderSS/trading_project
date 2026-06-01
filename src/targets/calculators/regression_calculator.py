@@ -1,3 +1,4 @@
+import logging
 # src/targets/calculators/regression_calculator.py
 """
 Regression Calculator Module.
@@ -6,7 +7,6 @@ Supports transaction cost adjustments to ensure model training accounts for mark
 """
 
 import pandas as pd
-import numpy as np
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("RegressionCalculator")
@@ -33,6 +33,9 @@ class RegressionCalculator:
         if base_col not in df.columns:
             logger.error(f"Integrity Error: Mapping column '{base_col}' is absent from the input DataFrame.")
             raise ValueError(f"Mapping column '{base_col}' not found.")
+        
+        if shift >= 0:
+            raise ValueError(f"shift must be negative for future targets, got {shift}")
             
         # Standard lookahead return: (Price[T+n] - Price[T]) / Price[T]
         future_price = df[base_col].shift(shift)
@@ -56,6 +59,7 @@ class RegressionCalculator:
             target_series = target_series - total_cost
             
             logger.info(f"Target Sanitization: Adjusted for round-trip friction ({total_cost:.4%})")
-            logger.debug(f"Breakdown: Comm={commission_pct:.4%}, Spread={spread_pct:.4%}, Slip={slippage_pct:.4%}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Breakdown: Comm={commission_pct:.4%}, Spread={spread_pct:.4%}, Slip={slippage_pct:.4%}")
         
         return target_series

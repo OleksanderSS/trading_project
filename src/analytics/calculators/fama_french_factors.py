@@ -1,3 +1,4 @@
+import logging
 # src/analytics/calculators/fama_french_factors.py
 """
 Fama-French Factor Provider
@@ -9,7 +10,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from typing import List, Optional
-from typing import Dict, Optional, Any
+from typing import Dict, Any
 from src.core.logging.logger import ProjectLogger
 
 try:
@@ -77,7 +78,7 @@ class FamaFrenchFactors:
                 logger.info("Factor calculation skipped: Insufficient historical depth (Benchmark dataset empty).")
                 return None
 
-            returns = prices.pct_change().dropna()
+            returns = prices.pct_change(fill_method=None).dropna()
             
             if not self._validate_ticker_coverage(returns):
                 return None
@@ -90,7 +91,7 @@ class FamaFrenchFactors:
 
         except Exception as e:
             logger.error(f"Systematic factor computation failed: {e}", exc_info=True)
-            return None
+            raise RuntimeError(f"Systematic factor computation failed: {e}") from e
 
     def _check_factor_cache(self, cache_key: str) -> Optional[pd.DataFrame]:
         """Check if factors are cached and valid."""
@@ -185,7 +186,8 @@ class FamaFrenchFactors:
             return None
         
         if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
-            logger.debug(f"Utilizing cached benchmark data for {start_date} period.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Utilizing cached benchmark data for {start_date} period.")
             return self.cache[cache_key]
         
         return None

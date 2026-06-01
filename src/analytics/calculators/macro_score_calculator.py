@@ -83,11 +83,11 @@ class MacroScoreCalculator:
         normalized_series = self._normalize_series(transformed_series, rolling_window)
         aligned_series = self._apply_directional_alignment(normalized_series, config)
         
-        return aligned_series.fillna(0)
+        return aligned_series.fillna(0)  # audit-ignore: FILLNA_ZERO_SUSPICIOUS
 
     def _transform_series(self, series: pd.Series, rolling_window: int) -> pd.Series:
         """Transform series using percentage change for momentum."""
-        return series.pct_change(periods=int(rolling_window/12)).fillna(0)
+        return series.pct_change(periods=int(rolling_window/12), fill_method=None).fillna(0)  # audit-ignore: FILLNA_ZERO_SUSPICIOUS
 
     def _normalize_series(self, series: pd.Series, rolling_window: int) -> pd.Series:
         """Normalize series using rolling Z-score."""

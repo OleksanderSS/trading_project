@@ -3,13 +3,14 @@ Prototype Registry for managing model prototypes
 
 Provides centralized storage and retrieval of prototypes with persistence.
 """
+import logging
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any
 
-from src.models.prototypes.prototype import ModelPrototype
 from src.core.logging.logger import ProjectLogger
+from src.models.prototypes.prototype import ModelPrototype
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -42,7 +43,7 @@ class PrototypeRegistry:
             registry_path: Path to registry JSON file
         """
         self.registry_path = Path(registry_path)
-        self.prototypes: Dict[str, ModelPrototype] = {}
+        self.prototypes: dict[str, ModelPrototype] = {}
         self._load_registry()
 
     def register(self, prototype: ModelPrototype) -> bool:
@@ -65,7 +66,7 @@ class PrototypeRegistry:
         logger.info(f"✅ Registered prototype: {prototype.model_id}")
         return True
 
-    def get(self, model_id: str) -> Optional[ModelPrototype]:
+    def get(self, model_id: str) -> ModelPrototype | None:
         """
         Get prototype by ID.
 
@@ -94,7 +95,7 @@ class PrototypeRegistry:
             return None
         return prototype.clone(**kwargs)
 
-    def list_all(self) -> List[str]:
+    def list_all(self) -> list[str]:
         """
         List all registered prototype IDs.
 
@@ -103,7 +104,7 @@ class PrototypeRegistry:
         """
         return list(self.prototypes.keys())
 
-    def get_by_type(self, model_type: str) -> List[ModelPrototype]:
+    def get_by_type(self, model_type: str) -> list[ModelPrototype]:
         """
         Get all prototypes of specific type.
 
@@ -119,7 +120,7 @@ class PrototypeRegistry:
             if model_type.lower() in p.model_id.lower()
         ]
 
-    def get_by_version(self, model_id: str, version: str) -> Optional[ModelPrototype]:
+    def get_by_version(self, model_id: str, version: str) -> ModelPrototype | None:
         """
         Get specific version of prototype.
 
@@ -162,7 +163,8 @@ class PrototypeRegistry:
         try:
             with open(self.registry_path, "w") as f:
                 json.dump(data, f, indent=2)
-            logger.debug(f"💾 Registry saved: {len(data)} prototypes")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"💾 Registry saved: {len(data)} prototypes")
         except Exception as e:
             logger.error(f"Failed to save registry: {e}")
 
@@ -175,11 +177,29 @@ class PrototypeRegistry:
         try:
             with open(self.registry_path) as f:
                 data = json.load(f)
+            
+            # Reconstruct prototypes
+            from src.models.prototypes.prototype import ModelPrototype
+            
+            # Note: We need a way to resolve model_class from name. 
+            # For now, if it's MockModel, we assume the test environment context.
+            # In production, we'd use a registry or importlib.
+            
+            for model_id, info in data.items():
+                proto = ModelPrototype(
+                    model_id=model_id,
+                    model_class=Any, # Simplified for registry
+                    version=info["version"],
+                    dependencies=info["dependencies"],
+                    metadata=info["metadata"]
+                )
+                self.prototypes[model_id] = proto
+            
             logger.info(f"📖 Loaded {len(data)} prototypes from registry")
         except Exception as e:
             logger.error(f"Failed to load registry: {e}")
 
-    def export_summary(self) -> Dict[str, Any]:
+    def export_summary(self) -> dict[str, Any]:
         """
         Export registry summary.
 
@@ -192,7 +212,7 @@ class PrototypeRegistry:
             "registry_path": str(self.registry_path),
         }
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """
         Get registry statistics.
 
@@ -216,7 +236,7 @@ class PrototypeRegistry:
 
 
 # Global singleton
-_registry: Optional[PrototypeRegistry] = None
+_registry: PrototypeRegistry | None = None
 
 
 def get_prototype_registry() -> PrototypeRegistry:

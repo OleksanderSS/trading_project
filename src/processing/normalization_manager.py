@@ -1,3 +1,4 @@
+import logging
 # src/processing/normalization_manager.py
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -93,7 +94,8 @@ class NormalizationManager:
             scaler.fit(feature_data)
             self.scalers[feature] = scaler
             self._save_scaler(feature)
-            logger.debug(f"Fitted and saved '{scaler_type}' scaler for feature '{feature}'.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Fitted and saved '{scaler_type}' scaler for feature '{feature}'.")
         except Exception as e:
             logger.error(f"Error fitting scaler for feature '{feature}': {e}")
 
@@ -112,8 +114,11 @@ class NormalizationManager:
             if feature in data_transformed.columns:
                 feature_data = data_transformed[[feature]].dropna()
                 if not feature_data.empty:
-                    data_transformed.loc[feature_data.index, feature] = scaler.transform(feature_data)
-                    logger.debug(f"Transformed feature '{feature}'.")
+                    data_transformed.loc[feature_data.index, feature] = (
+                        scaler.transform(feature_data).ravel()
+                    )
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Transformed feature '{feature}'.")
         return data_transformed
 
     def inverse_transform_feature(self, data: pd.DataFrame, feature: str) -> pd.DataFrame:
@@ -133,7 +138,8 @@ class NormalizationManager:
             feature_data = data_inv[[feature]].dropna()
             if not feature_data.empty:
                 data_inv.loc[feature_data.index, feature] = scaler.inverse_transform(feature_data)
-                logger.debug(f"Inverse transformed feature '{feature}'.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Inverse transformed feature '{feature}'.")
         else:
             logger.warning(f"No scaler found for feature '{feature}'. Inverse transform skipped.")
         

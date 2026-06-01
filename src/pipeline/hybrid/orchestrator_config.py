@@ -4,6 +4,7 @@ Handles all configuration building and initialization logic.
 """
 
 import os
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
@@ -13,14 +14,14 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
-# Google Drive API (optional)
-try:
-    from google.oauth2.credentials import Credentials
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-    GDRIVE_AVAILABLE = True
-except ImportError:
-    GDRIVE_AVAILABLE = False
+GDRIVE_AVAILABLE = all(
+    find_spec(module_name) is not None
+    for module_name in (
+        "google.oauth2.credentials",
+        "googleapiclient.discovery",
+        "googleapiclient.http",
+    )
+)
 
 
 @dataclass

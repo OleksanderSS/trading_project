@@ -8,6 +8,7 @@ All trainer implementations share common workflow:
 2. Train each group (parallel vs sequential)
 3. Generate results summary
 """
+import logging
 
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -163,7 +164,8 @@ class BaseTrainer(ABC):
 
             # Step 1: Prepare ticker groups (batch vs progressive logic)
             ticker_groups = self._prepare_ticker_groups(plan)
-            self.logger.debug(f"Created {len(ticker_groups)} ticker groups")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Created {len(ticker_groups)} ticker groups")
 
             # Step 2: Train each group
             results = {}
@@ -191,14 +193,10 @@ class BaseTrainer(ABC):
                 "training_summary": summary
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, Exception) as e:
             self.logger.error(f"❌ Training failed: {e}", exc_info=True)
-            return {
-                "status": "failed",
-                "reason": str(e),
-                "tickers_results": {},
-                "training_summary": {}
-            }
+            self.error_handler.handle_error(e, context={'plan': plan})
+            raise TrainingException(f"Training failed: {e}") from e
 
     def execute_batch_training(self, plan: dict[str, Any], data_context: dict[str, Any]) -> dict[str, Any]:
         """Alias for execute_training for batch strategy."""
@@ -267,9 +265,9 @@ class BaseTrainer(ABC):
             # 4. Finalize results
             return self._finalize_ticker_results(results, winner_name, best_score)
 
-        except Exception as e:
-            self.logger.error(f"Error during training for {ticker}: {e}")
-            return {"status": "failed", "ticker": ticker, "reason": str(e)}
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f"Error during training for {ticker}: {e}", exc_info=True)
+            raise TrainingException(f"Training failed for {ticker}: {e}") from e
 
     def _prepare_model_training_list(self, ticker: str, data: dict[str, Any]) -> list[str]:
         """Determines the set of model types to train for this ticker."""
@@ -278,7 +276,8 @@ class BaseTrainer(ABC):
         model_types = ticker_plan.get('models')
 
         if not model_types:
-            model_types = self.config_manager.get_config('models.enabled_types', ['lgbm', 'rf', 'xgb', 'linear'])
+            from src.factories.model_factory import ModelFactory
+            model_types = self.config_manager.get_config('models.enabled_types', ModelFactory.get_available_models())
         return list(model_types) if model_types else []
 
     def _execute_model_training_cycle(self, ticker: str, model_types: list[str],
@@ -329,7 +328,9 @@ class BaseTrainer(ABC):
         self._save_champion(model, ticker, data.get('target_name', 'unknown'))
         self.diary.log_event(
             ticker=ticker, model_name=m_type, target=data.get('target_name', 'unknown'),
-            metrics=score_val, context_fingerprint=data.get('context_fingerprint', 'default')
+            metrics=score_val,
+            context_fingerprint=data.get('context_fingerprint', 'default'),
+            context_pattern_seq=data.get('context_pattern_seq')
         )
 
         return score_val
@@ -347,9 +348,11 @@ class BaseTrainer(ABC):
         path = self.output_dir / filename
         try:
             joblib.dump(model, path)
-            self.logger.debug(f"Champion saved: {path}")
-        except Exception as e:
-            self.logger.error(f"Error saving champion {filename}: {e}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Champion saved: {path}")
+        except (IOError, TypeError, Exception) as e:
+            self.logger.error(f"Error saving champion {filename}: {e}", exc_info=True)
+            raise TrainingException(f"Failed to save champion {filename}: {e}") from e
 
     def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """

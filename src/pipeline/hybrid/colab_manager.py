@@ -4,9 +4,10 @@ Handles all Colab-related operations including batch preparation and result load
 """
 
 import json
+import logging
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -51,131 +52,157 @@ class ColabManager:
                             features_df: pd.DataFrame, 
                             targets_df: pd.DataFrame, 
                             config: BatchPreparationConfig) -> Dict[str, Any]:
-        """Prepare data package for Colab training."""
-        
+        """
+        Prepare data package for Colab training.
+        High-level orchestrator for batch preparation process.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        eff_batch_name = (config.batch_name or self.batch_name).replace('target_target_', 'target_')
         
-        # Resolve batch name for metadata (but don't use for path!)
-        base_name = config.batch_name or self.batch_name
-        eff_batch_name = base_name.replace('target_target_', 'target_')
-        
-        # ✅ FIX: output_dir already includes batch_name!
-        # Don't add batch_name again
+        # 1. Setup batch directory
         batch_dir = self.output_dir
         batch_dir.mkdir(parents=True, exist_ok=True)
         
-        # Save data files with accumulation logic
+        # 2. Save and accumulate data
+        features_path, targets_path = self._save_and_accumulate_data(
+            features_df, targets_df, batch_dir, config
+        )
+        
+        # 3. Handle configuration (Test vs Full mode)
+        config_path = self._handle_batch_configuration(batch_dir, config, timestamp, eff_batch_name)
+        
+        # 4. Create metadata
+        final_features = pd.read_parquet(features_path)
+        final_targets = pd.read_parquet(targets_path)
+        metadata = self._create_batch_metadata(
+            eff_batch_name, timestamp, config, final_features, final_targets, 
+            features_path, targets_path, config_path
+        )
+        
+        # 5. Save metadata
+        metadata_path = batch_dir / BATCH_METADATA_FILE
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=2)
+            
+        # 6. Check feature selection
+        fs_check = self._check_feature_selection(
+            batch_dir, features_df, config.check_feature_selection, config.force_feature_selection
+        )
+        
+        return self._assemble_preparation_result(
+            batch_dir, eff_batch_name, metadata_path, metadata, fs_check, config, config_path
+        )
+
+    def _save_and_accumulate_data(self, 
+                                features_df: pd.DataFrame, 
+                                targets_df: pd.DataFrame, 
+                                batch_dir: Path, 
+                                config: BatchPreparationConfig) -> Tuple[Path, Path]:
+        """Handles saving and optional accumulation of features and targets."""
         features_path = batch_dir / FEATURES_FILE
         targets_path = batch_dir / TARGETS_FILE
         
-        # Accumulate data if files exist and accumulate=True
         if config.accumulate and features_path.exists() and targets_path.exists():
-            # Load existing data
-            existing_features = pd.read_parquet(features_path)
-            existing_targets = pd.read_parquet(targets_path)
+            # Load existing
+            existing_f = pd.read_parquet(features_path)
+            existing_t = pd.read_parquet(targets_path)
             
-            # Combine with new data
-            combined_features = pd.concat([existing_features, features_df], ignore_index=True)
-            combined_targets = pd.concat([existing_targets, targets_df], ignore_index=True)
+            # Combine
+            combined_f = pd.concat([existing_f, features_df], ignore_index=True)
+            combined_t = pd.concat([existing_t, targets_df], ignore_index=True)
             
-            # Remove duplicates based on index columns
-            if 'datetime' in combined_features.columns:
-                combined_features = combined_features.drop_duplicates(subset=['datetime', 'ticker'], keep='last')
-            if 'datetime' in combined_targets.columns:
-                combined_targets = combined_targets.drop_duplicates(subset=['datetime', 'ticker'], keep='last')
+            # Deduplicate
+            combined_f = self._deduplicate_df(combined_f)
+            combined_t = self._deduplicate_df(combined_t)
             
-            self.logger.info(f"Accumulated data: {len(existing_features)}→{len(combined_features)} features, {len(existing_targets)}→{len(combined_targets)} targets")
-            
-            # ✅ FIX: Ensure datetime is preserved as a column before saving
-            if 'datetime' not in combined_features.columns and isinstance(combined_features.index, pd.DatetimeIndex):
-                combined_features = combined_features.reset_index()
-                if 'index' in combined_features.columns:
-                    combined_features = combined_features.rename(columns={'index': 'datetime'})
-            
-            if 'datetime' not in combined_targets.columns and isinstance(combined_targets.index, pd.DatetimeIndex):
-                combined_targets = combined_targets.reset_index()
-                if 'index' in combined_targets.columns:
-                    combined_targets = combined_targets.rename(columns={'index': 'datetime'})
-            
-            # Save combined data
-            combined_features.to_parquet(features_path, index=False)
-            combined_targets.to_parquet(targets_path, index=False)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Accumulated data: {len(existing_f)}→{len(combined_f)} features")
+                
+            # Save
+            self._save_df_to_parquet(combined_f, features_path)
+            self._save_df_to_parquet(combined_t, targets_path)
         else:
-            # ✅ FIX: Ensure datetime is preserved as a column before saving
-            if 'datetime' not in features_df.columns and isinstance(features_df.index, pd.DatetimeIndex):
-                features_df = features_df.reset_index()
-                if 'index' in features_df.columns:
-                    features_df = features_df.rename(columns={'index': 'datetime'})
+            # New batch
+            self._save_df_to_parquet(features_df, features_path)
+            self._save_df_to_parquet(targets_df, targets_path)
+            logger.info(f"Created new batch: {len(features_df)} rows")
             
-            if 'datetime' not in targets_df.columns and isinstance(targets_df.index, pd.DatetimeIndex):
-                targets_df = targets_df.reset_index()
-                if 'index' in targets_df.columns:
-                    targets_df = targets_df.rename(columns={'index': 'datetime'})
+        return features_path, targets_path
+
+    def _deduplicate_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Removes duplicates based on datetime and ticker if columns exist."""
+        subset = []
+        if 'datetime' in df.columns:
+            subset.append('datetime')
+        if 'ticker' in df.columns:
+            subset.append('ticker')
             
-            # Save new data
-            features_df.to_parquet(features_path, index=False)
-            targets_df.to_parquet(targets_path, index=False)
-            self.logger.info(f"Created new batch: {len(features_df)} features, {len(targets_df)} targets")
-        
-        # Get final data sizes after accumulation
-        final_features = pd.read_parquet(features_path) if features_path.exists() else features_df
-        final_targets = pd.read_parquet(targets_path) if targets_path.exists() else targets_df
-        
-        # Create config.json ONLY for test mode
-        config_path = None
+        if subset:
+            return df.drop_duplicates(subset=subset, keep='last')
+        return df
+
+    def _save_df_to_parquet(self, df: pd.DataFrame, path: Path):
+        """Saves DataFrame to Parquet, ensuring datetime column is preserved."""
+        df_to_save = df.copy()
+        if 'datetime' not in df_to_save.columns and isinstance(df_to_save.index, pd.DatetimeIndex):
+            df_to_save = df_to_save.reset_index()
+            if 'index' in df_to_save.columns:
+                df_to_save = df_to_save.rename(columns={'index': 'datetime'})
+                
+        df_to_save.to_parquet(path, index=False)
+
+    def _handle_batch_configuration(self, batch_dir: Path, config: BatchPreparationConfig, 
+                                   timestamp: str, batch_name: str) -> Optional[Path]:
+        """Handles config.json creation or removal depending on mode."""
         if self._is_test_mode(config):
-            config_path = self._create_test_config(batch_dir, config, timestamp, eff_batch_name)
-        else:
-            self.logger.info("📊 Full mode: NOT creating config.json (Colab will use all data)")
-            # ✅ CRITICAL: Remove old config.json from previous test runs
-            old_config = batch_dir / "config.json"
-            if old_config.exists():
-                self.logger.warning(f"🗑️ Removing old config.json from previous test run: {old_config}")
-                old_config.unlink()
-                self.logger.info("✅ Old config.json removed - full mode will process ALL tickers")
+            return self._create_test_config(batch_dir, config, timestamp, batch_name)
         
-        # Create batch metadata
-        batch_metadata = {
-            'batch_name': eff_batch_name,
+        # Full mode: cleanup old config
+        old_config = batch_dir / "config.json"
+        if old_config.exists():
+            logger.warning(f"🗑️ Removing old config.json from previous test run")
+            old_config.unlink()
+            
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("📊 Full mode: config.json NOT created (all data will be processed)")
+        return None
+
+    def _create_batch_metadata(self, name: str, timestamp: str, config: BatchPreparationConfig,
+                              f_df: pd.DataFrame, t_df: pd.DataFrame, 
+                              f_path: Path, t_path: Path, c_path: Optional[Path]) -> Dict[str, Any]:
+        """Creates the batch metadata dictionary."""
+        return {
+            'batch_name': name,
             'timestamp': timestamp,
             'tickers': config.tickers,
             'timeframes': config.timeframes,
-            'features_shape': final_features.shape,
-            'targets_shape': final_targets.shape,
-            'accumulated': config.accumulate and features_path.exists(),
+            'features_shape': f_df.shape,
+            'targets_shape': t_df.shape,
+            'accumulated': config.accumulate,
             'test_mode': self._is_test_mode(config),
             'files': {
-                'features': str(features_path),
-                'targets': str(targets_path),
-                'config': str(config_path) if config_path else None
+                'features': str(f_path),
+                'targets': str(t_path),
+                'config': str(c_path) if c_path else None
             }
         }
-        
-        # Save metadata
-        metadata_path = batch_dir / BATCH_METADATA_FILE
-        with open(metadata_path, 'w') as f:
-            json.dump(batch_metadata, f, indent=2)
-        
-        # Check feature selection using config parameters
-        fs_check = self._check_feature_selection(
-            batch_dir, 
-            features_df, 
-            config.check_feature_selection, 
-            config.force_feature_selection
-        )
-        
+
+    def _assemble_preparation_result(self, batch_dir: Path, name: str, meta_path: Path, 
+                                    metadata: Dict[str, Any], fs_check: Dict[str, Any],
+                                    config: BatchPreparationConfig, config_path: Optional[Path]) -> Dict[str, Any]:
+        """Assembles the final dictionary returned by prepare_colab_batch."""
         result = {
             'batch_dir': str(batch_dir), 
-            'batch_name': eff_batch_name, 
-            'metadata_path': str(metadata_path), 
-            'files': batch_metadata['files'], 
+            'batch_name': name, 
+            'metadata_path': str(meta_path), 
+            'files': metadata['files'], 
             'feature_selection_check': fs_check,
             'test_mode': self._is_test_mode(config)
         }
         
         if config_path:
             result['config_path'] = str(config_path)
-        
+            
         return result
     
     def load_colab_results(self, batch_name: str) -> Dict[str, Any]:
@@ -210,29 +237,21 @@ class ColabManager:
                                 results[key].update(data)
             else:
                 file_path = batch_dir / pattern
-                
-            if file_path and file_path.exists() and "*" not in pattern:
-                with open(file_path, 'r') as f:
-                    data = json.load(f)
-                    if key == 'models_metadata' and 'models_metadata' in data:
-                        # Extract nested models_metadata if present
-                        results[key] = data['models_metadata']
-                    else:
-                        results[key] = data
+                if file_path.exists():
+                    with open(file_path, 'r') as f:
+                        data = json.load(f)
+                        if key == 'models_metadata' and 'models_metadata' in data:
+                            results[key] = data['models_metadata']
+                        else:
+                            results[key] = data
         
         return results
     
     def _find_batch_directory(self, batch_name: str) -> Path:
         """Find the batch directory by name."""
-        direct_path = self.output_dir / batch_name
-        if direct_path.exists():
-            return direct_path
-        
-        for batch_dir in self.output_dir.glob(f"*{batch_name}*"):
-            if batch_dir.is_dir():
-                return batch_dir
-        
-        return direct_path
+        if self.output_dir.exists():
+            return self.output_dir
+        return self.output_dir / batch_name
     
     def _check_feature_selection(self, batch_dir: Path, features_df: pd.DataFrame, 
                                  check_selection: bool, force_selection: bool) -> Dict[str, Any]:

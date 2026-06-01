@@ -1,3 +1,4 @@
+import logging
 # utils/dynamic_module_loader.py
 
 import importlib
@@ -35,10 +36,10 @@ class DynamicModuleLoader:
         try:
             module_path, class_name = class_path.rsplit('.', 1)
             module = importlib.import_module(module_path)
-            logger.debug(f"Module '{module_path}' successfully loaded.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Module '{module_path}' successfully loaded.")
             return getattr(module, class_name)
         except (ImportError, AttributeError, ValueError) as e:
-            logger.error(f"Error dynamically loading class '{class_path}': {e}", exc_info=True)
             raise
 
     @staticmethod

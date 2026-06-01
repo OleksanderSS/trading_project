@@ -4,6 +4,9 @@
 import pandas as pd
 import os
 from pathlib import Path
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
 
 def analyze_sentiment_cache():
     """Analyze sentiment cache structure."""
@@ -71,8 +74,9 @@ def analyze_feature_caches():
             
             all_data[file_path.name] = df
             
-        except Exception as e:
-            print(f"❌ Error reading {file_path}: {e}")
+        except Exception:
+            logger.error(f"Error reading {file_path}", exc_info=True)
+            raise
     
     return all_data
 
@@ -125,8 +129,9 @@ def analyze_model_batches():
             if len(df.columns) > 10:
                 print(f"... and {len(df.columns) - 10} more columns")
             
-        except Exception as e:
-            print(f"❌ Error reading {file_path}: {e}")
+        except Exception:
+            logger.error(f"Error reading {file_path}", exc_info=True)
+            raise
 
 def main():
     """Main analysis function."""

@@ -1,9 +1,7 @@
 import pandas as pd
-import logging
 from typing import Dict, Any, Optional
 
 from src.features.enrichers.base import BaseEnricher
-from src.features.nlp.processors.news_harmonizer import harmonize_batch
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("NewsQualityEnricher")
@@ -167,7 +165,11 @@ class NewsQualityEnricher(BaseEnricher):
         # Calculate news freshness
         df_merged['news_freshness_hours'] = self._calculate_news_freshness(df_merged.index, news_timestamps)
 
-        logger.info(f"✅ Added news quality features. Avg quality: {df_merged['news_quality_score'].mean():.2f}, Avg freshness: {df_merged['news_freshness_hours'].mean():.1f}h")
+        # Calculate metrics using values for robustness
+        avg_quality = df_merged['news_quality_score'].values.mean()
+        avg_freshness = df_merged['news_freshness_hours'].values.mean()
+
+        logger.info(f"✅ Added news quality features. Avg quality: {avg_quality:.2f}, Avg freshness: {avg_freshness:.1f}h")
         return df_merged
 
     def _normalize_datetime_column(self, df: pd.DataFrame, col_name: str = 'datetime') -> pd.DataFrame:

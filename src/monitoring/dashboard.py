@@ -5,11 +5,10 @@ model, and data metrics.
 """
 
 import os
-import json
 import threading
 import time
-from datetime import datetime, timedelta
-from typing import Dict, Any, List, Optional
+from datetime import datetime
+from typing import Dict, Any, Optional
 
 from src.core.logging.logger import ProjectLogger
 from .monitoring_system import MonitoringSystem
@@ -21,7 +20,6 @@ GAUGE_NUMBER_MODE = "gauge+number"
 
 try:
     import plotly.graph_objects as go
-    import plotly.express as px
     from plotly.subplots import make_subplots
     import dash
     from dash import html, dcc

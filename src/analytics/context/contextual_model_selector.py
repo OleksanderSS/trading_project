@@ -52,6 +52,29 @@ class ContextualModelSelector(IAnalyzer):
         except Exception as e:
             logger.error(f"Error during kNN model selection: {e}", exc_info=True)
             return self._heuristic_fallback(f"Exception: {str(e)}")
+
+    def select_models(self, ticker: str, context_fingerprint: str, data: Dict[str, Any] | None = None) -> List[str] | None:
+        """
+        Compatibility wrapper for callers that expect a simple "recommended models" API.
+
+        This selector fundamentally needs:
+          - current_context: pd.Series
+          - similarity_finder: KnnSimilarityFinder (pre-fitted with historical contexts/outcomes)
+
+        If those are not provided, we return None and let the caller fall back.
+        """
+        if not data:
+            return None
+        current_context = data.get("current_context")
+        finder = data.get("similarity_finder")
+        if not isinstance(current_context, pd.Series) or not isinstance(finder, KnnSimilarityFinder):
+            return None
+
+        res = self.analyze({"current_context": current_context, "similarity_finder": finder})
+        selected = res.get("selected_model")
+        if not selected:
+            return None
+        return [str(selected)]
     
     def _validate_analyze_inputs(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate inputs for analyze method."""
@@ -141,7 +164,7 @@ class ContextualModelSelector(IAnalyzer):
     def _calculate_model_confidence(self, finder: KnnSimilarityFinder, neighbor_indices: np.ndarray, best_model_name: str) -> float:
         """Calculate confidence based on win rate in neighboring instances."""
         win_count = self._count_model_wins(finder, neighbor_indices, best_model_name)
-        return win_count / len(neighbor_indices)
+        return win_count / len(neighbor_indices) if len(neighbor_indices) > 0 else 0.0
 
     def _count_model_wins(self, finder: KnnSimilarityFinder, neighbor_indices: np.ndarray, best_model_name: str) -> int:
         """Count wins for the best model across neighbors."""
@@ -189,14 +212,14 @@ class ContextualModelSelector(IAnalyzer):
 
     def _heuristic_fallback(self, reason: str) -> Dict[str, Any]:
         """Provides a simple fallback model selection if the primary logic fails."""
-        logger.warning(f"Falling back to heuristic model selection. Reason: {reason}")
+        logger.error(f"CRITICAL: Falling back to heuristic model selection due to: {reason}")
         
         # Simple heuristic: prefer 'LSTM' if available, otherwise take the first model
         best_model = 'LSTM' if 'LSTM' in self.available_models else self.available_models[0]
 
         return {
             "selected_model": best_model,
-            "confidence": 0.3,  # Low confidence for heuristic choice
+            "confidence": 0.0,  # Explicitly 0.0 to signal invalid/heuristic selection
             "status": "Fallback",
             "reason": reason
         }

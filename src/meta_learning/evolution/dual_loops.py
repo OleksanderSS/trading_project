@@ -197,7 +197,9 @@ class LearningLoopsEngine(BaseMetaComponent):
         with self.conn:
             self.conn.execute("UPDATE rules SET status = ? WHERE rule_id LIKE ?", (new_status, f"%{agent_id.upper()}%"))
 
-    def get_rules_for_agent(self, status_list: List[str] = ["active", "validated"]) -> List[TradingRule]:
+    def get_rules_for_agent(self, status_list: Optional[List[str]]=None) -> List[TradingRule]:
+        if status_list is None:
+            status_list = ["active", "validated"]
         placeholders = ', '.join(['?'] * len(status_list))
         query = f"SELECT * FROM rules WHERE status IN ({placeholders})"
         

@@ -8,6 +8,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.data.management.data_manager import DataManager
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
 
 # Initialize
 config_manager = UnifiedConfigManager()
@@ -41,7 +44,7 @@ for table in news_tables:
         else:
             print(f"\n[WARN] {table}: EMPTY")
     except Exception as e:
-        print(f"\n[ERROR] {table}: {e}")
+        logger.error(f"Error checking {table}: {e}", exc_info=True)
 
 print("\n" + "=" * 80)
 print(f"TOTAL NEWS RECORDS: {total_records}")

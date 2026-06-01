@@ -1,137 +1,89 @@
 import pandas as pd
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from ..interfaces import IAnalyzer
-from ..utils.knn_model_wrapper import KnnModelWrapper  # Corrected import path
+from ..utils.knn_model_wrapper import KnnModelWrapper
 from src.core.logging.logger import ProjectLogger
+from src.core.exceptions import DataProcessingError
 
 logger = ProjectLogger.get_logger(__name__)
 
 
 class KnnSimilarityFinder(IAnalyzer):
     """
-    A stateless analyzer that uses a KNN model to find similar items.
-    It creates, fits, and uses a KNN model within a single 'analyze' call.
+    🎯 CONTEXTUAL KNN:
+    Знаходить схожі історичні моменти, пріоритезуючи той самий ринковий режим.
     """
 
     def __init__(self, config: Dict[str, Any] = None):
-        """
-        Initializes the finder with configuration.
-
-        Args:
-            config (Dict[str, Any]): Configuration dictionary,
-                                   expecting 'n_neighbors'.
-        """
         self.config = config or {}
         self.n_neighbors = self.config.get('n_neighbors', 5)
-        if self.n_neighbors <= 0:
-            raise ValueError(
-                "n_neighbors must be a positive integer."
-            )
-        logger.info(
-            f"KnnSimilarityFinder initialized "
-            f"with n_neighbors={self.n_neighbors}."
-        )
+        self.min_regime_samples = self.config.get('min_regime_samples', 20)
+        logger.info(f"KnnSimilarityFinder initialized with Contextual Filtering support.")
 
-    def analyze(
-        self, data: Dict[str, pd.DataFrame], **kwargs
-    ) -> Dict[str, Any]:
+    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs) -> Dict[str, Any]:
         """
-        Finds similar items in a stateless manner.
-
-        This method expects a dictionary with 'historical_features'
-        and 'target_features'. It will instantiate a KNN model,
-        fit it on historical data, and find neighbors for target data
-        all in one go.
-
-        Args:
-            data (Dict[str, pd.DataFrame]): A dictionary containing:
-                - 'historical_features': DataFrame to build KNN model
-                  from.
-                - 'target_features': DataFrame to find similarities
-                  for.
-
-        Returns:
-            Dict[str, Any]: A dictionary containing the similarity results,
-                            structured by the index of the target features.
+        Знаходить сусідів, враховуючи 'context_pattern_id'.
         """
         historical_df = data.get('historical_features')
         target_df = data.get('target_features')
 
-        if (not isinstance(historical_df, pd.DataFrame) or
-                not isinstance(target_df, pd.DataFrame)):
-            logger.error(
-                "Input data must be a dict with "
-                "'historical_features' and 'target_features' DataFrames."
-            )
-            return {"error": "Invalid input format."}
+        if historical_df is None or target_df is None:
+            raise DataProcessingError("Missing input dataframes.")
 
         try:
-            # 1. Instantiate the stateful wrapper
-            n_neighbors_override = kwargs.get('n_neighbors', self.n_neighbors)
-            knn_model = KnnModelWrapper(n_neighbors=n_neighbors_override)
+            # ✅ ELITE: Контекстна фільтрація
+            # Якщо у нас є pattern_id, спочатку шукаємо в ньому
+            pattern_id = kwargs.get('context_pattern_id')
+            
+            working_historical = historical_df
+            if pattern_id and 'context_pattern_id' in historical_df.columns:
+                regime_df = historical_df[historical_df['context_pattern_id'] == pattern_id]
+                if len(regime_df) >= self.min_regime_samples:
+                    logger.info(f"🔍 KNN: Using regime-specific subset for pattern {pattern_id} ({len(regime_df)} samples)")
+                    working_historical = regime_df
+                else:
+                    logger.info(f"ℹ️ KNN: Pattern {pattern_id} has too few samples ({len(regime_df)}). Falling back to global search.")
 
-            # 2. Fit on historical data
-            knn_model.fit(historical_df)
+            # Очищуємо не-числові колонки для KNN
+            X_hist = working_historical.select_dtypes(include=['number'])
+            X_target = target_df.select_dtypes(include=['number'])
+            
+            # Вирівнюємо колонки
+            common_cols = X_hist.columns.intersection(X_target.columns)
+            if len(common_cols) == 0:
+                raise DataProcessingError("No common numeric columns for KNN analysis.")
+            
+            X_hist = X_hist[common_cols].fillna(0)  # audit-ignore: FILLNA_ZERO_SUSPICIOUS
+            X_target = X_target[common_cols].fillna(0)  # audit-ignore: FILLNA_ZERO_SUSPICIOUS
 
-            # 3. Find neighbors for the target data
-            distances, indices = knn_model.find_neighbors(target_df)
-
-            if len(indices) == 0:
+            n_neighbors = min(len(X_hist), kwargs.get('n_neighbors', self.n_neighbors))
+            if n_neighbors <= 0: 
                 return {"similarities": {}}
+            
+            knn_model = KnnModelWrapper(n_neighbors=n_neighbors)
+            knn_model.fit(X_hist)
+            distances, indices = knn_model.find_neighbors(X_target)
 
-            # 4. Process and format results
-            results = self._format_results(
-                distances, indices, target_df.index,
-                knn_model.fitted_data_index
-            )
+            results = self._format_results(distances, indices, X_target.index, X_hist.index)
+            return {"similarities": results, "regime_used": pattern_id if working_historical is not historical_df else "global"}
 
-            return {"similarities": results}
-
-        except (ValueError, RuntimeError) as e:
-            logger.error(f"KNN analysis failed: {e}", exc_info=True)
-            return {"error": str(e)}
         except Exception as e:
-            logger.error(
-                f"An unexpected error occurred during KNN analysis: {e}",
-                exc_info=True
-            )
-            return {"error": "An unexpected error occurred."}
+            logger.error(f"KNN analysis failed: {e}", exc_info=True)
+            raise DataProcessingError(f"KNN analysis failed: {e}") from e
 
-    def _format_results(
-        self,
-        distances: List,
-        indices: List,
-        target_index: pd.Index,
-        historical_index: pd.Index
-    ) -> Dict[Any, List[Dict[str, Any]]]:
-        """
-        Formats the raw output from the KNN model
-        into a structured dictionary.
-        """
+    def _format_results(self, distances: List, indices: List, target_index: pd.Index, historical_index: pd.Index) -> Dict:
         results = {}
         for i, target_id in enumerate(target_index):
             similar_items = []
-            if i >= len(indices):
-                continue
-
+            if i >= len(indices): continue
             for j, neighbor_idx in enumerate(indices[i]):
                 neighbor_id = historical_index[neighbor_idx]
-
-                # Calculate a normalized similarity score (0 to 1)
-                # Add a small epsilon to avoid division by zero
                 similarity_score = 1 / (1 + distances[i][j])
-
                 similar_items.append({
                     "id": neighbor_id,
                     "distance": round(float(distances[i][j]), 5),
                     "similarity_score": round(similarity_score, 4)
                 })
-
-            # Sort by similarity score in descending order
-            results[target_id] = sorted(
-                similar_items, key=lambda x: x['similarity_score'],
-                reverse=True
-            )
-
+            results[target_id] = sorted(similar_items, key=lambda x: x['similarity_score'], reverse=True)
         return results

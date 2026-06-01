@@ -53,7 +53,9 @@ class CachedDataIntegrator:
                 if 'ticker' in df.columns:
                     tickers.update(df['ticker'].unique())
             except Exception as e:
-                logger.warning(f"Error reading {cache_file}: {e}")
+                logger.error(f"Error reading {cache_file}: {e}", exc_info=True)
+                # Re-raise or handle as per established pattern - for now re-raise to be explicit
+                raise
         
         # From model batches
         for batch_dir in self.model_batches_dir.iterdir():

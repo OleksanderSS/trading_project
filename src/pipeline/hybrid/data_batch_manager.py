@@ -2,6 +2,7 @@
 Data Batch Manager: Handles batch metadata creation, data merging, backups, and batch-level operations.
 Extracted from HybridOrchestrator to improve code organization and testability.
 """
+import logging
 
 import json
 import shutil
@@ -121,7 +122,8 @@ class DataBatchManager:
         """Saves DataFrame to parquet."""
         path.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(path, compression='snappy', index=False)
-        self.logger.debug(f"📝 Saved {len(df)} rows to {path.name}")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"📝 Saved {len(df)} rows to {path.name}")
 
     def _dedup_columns(self, existing_df: pd.DataFrame, new_df: pd.DataFrame) -> Optional[list]:
         """Choose stable identity columns without collapsing separate timeframes."""

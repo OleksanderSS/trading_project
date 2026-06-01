@@ -51,7 +51,7 @@ class DashboardDataBridge:
     def _initialize_data_sources(self):
         """Initialize data sources if available"""
         if not DATAMANAGER_AVAILABLE:
-            self.logger.warning("DataManager not available - using mock data")
+            self.logger.warning("DataManager not available - using sample dashboard data")
             return
 
         try:
@@ -116,6 +116,26 @@ class DashboardDataBridge:
         else:
             return {'error': f'Unknown data type: {data_type}'}
 
+    def _query_df(self, query: str, params=None) -> pd.DataFrame:
+        """Run a DataManager query using the active database API."""
+        if not self.data_manager:
+            return pd.DataFrame()
+        if hasattr(self.data_manager, 'fetch_df'):
+            return self.data_manager.fetch_df(query, params)
+        if hasattr(self.data_manager, 'query_data'):
+            return self.data_manager.query_data(query)
+        return pd.DataFrame()
+
+    def _mark_sample_data(self, data: dict[str, Any]) -> dict[str, Any]:
+        data['data_source'] = 'sample'
+        data['is_sample_data'] = True
+        return data
+
+    def _mark_real_data(self, data: dict[str, Any]) -> dict[str, Any]:
+        data['data_source'] = 'database'
+        data['is_sample_data'] = False
+        return data
+
     def _is_cache_valid(self, cache_key: str) -> bool:
         """Check if cache entry is still valid"""
         if cache_key not in self._cache_timestamps:
@@ -137,16 +157,15 @@ class DashboardDataBridge:
                 WHERE last_updated >= datetime('now', '-7 days')
                 ORDER BY avg_sharpe_ratio DESC
                 """
-                data = self.data_manager.query_data(query)
+                data = self._query_df(query)
                 if not data.empty:
-                    return {
+                    return self._mark_real_data({
                         'models': data.to_dict('records'),
                         'total_models': len(data),
                         'last_updated': datetime.now().isoformat()
-                    }
+                    })
 
-            # Mock data for demonstration
-            return {
+            return self._mark_sample_data({
                 'models': [
                     {'model_name': 'LSTM_Ensemble', 'model_type': 'Neural', 'avg_win_rate': 0.65,
                      'avg_sharpe_ratio': 1.8, 'avg_precision': 0.72, 'total_trades': 1240},
@@ -157,7 +176,7 @@ class DashboardDataBridge:
                 ],
                 'total_models': 3,
                 'last_updated': datetime.now().isoformat()
-            }
+            })
 
         except Exception as e:
             self.logger.error(f"❌ Failed to get model performance data: {e}")
@@ -173,16 +192,15 @@ class DashboardDataBridge:
                 WHERE timestamp >= datetime('now', '-1 day')
                 ORDER BY timestamp DESC
                 """
-                data = self.data_manager.query_data(query)
+                data = self._query_df(query)
                 if not data.empty:
-                    return {
+                    return self._mark_real_data({
                         'signals': data.to_dict('records'),
                         'total_signals': len(data),
                         'last_updated': datetime.now().isoformat()
-                    }
+                    })
 
-            # Mock data
-            return {
+            return self._mark_sample_data({
                 'signals': [
                     {'ticker': 'AAPL', 'signal_type': 'BUY', 'confidence': 0.85,
                      'timestamp': datetime.now().isoformat(), 'pnl': 0.023},
@@ -193,7 +211,7 @@ class DashboardDataBridge:
                 ],
                 'total_signals': 3,
                 'last_updated': datetime.now().isoformat()
-            }
+            })
 
         except Exception as e:
             self.logger.error(f"❌ Failed to get trading activity data: {e}")
@@ -209,27 +227,26 @@ class DashboardDataBridge:
                 WHERE date >= datetime('now', '-30 days')
                 ORDER BY date DESC
                 """
-                data = self.data_manager.query_data(query)
+                data = self._query_df(query)
                 if not data.empty:
                     latest = data.iloc[0]
-                    return {
+                    return self._mark_real_data({
                         'total_value': float(latest['total_value']),
                         'returns': float(latest['returns']),
                         'volatility': float(latest['volatility']),
                         'sharpe_ratio': float(latest['sharpe_ratio']),
                         'max_drawdown': float(latest['max_drawdown']),
                         'last_updated': datetime.now().isoformat()
-                    }
+                    })
 
-            # Mock data
-            return {
+            return self._mark_sample_data({
                 'total_value': 125000.0,
                 'returns': 0.125,
                 'volatility': 0.089,
                 'sharpe_ratio': 1.4,
                 'max_drawdown': -0.034,
                 'last_updated': datetime.now().isoformat()
-            }
+            })
 
         except Exception as e:
             self.logger.error(f"❌ Failed to get portfolio metrics data: {e}")
@@ -241,31 +258,24 @@ class DashboardDataBridge:
             ticker = kwargs.get('ticker', 'SPY')
 
             if self.data_manager:
-                table_name = 'market_data'
-                filter_params = {'ticker': ticker}
-                self.data_manager.load_data(table_name, **filter_params)
-
-            # Query market data
-            query = f"""
-            SELECT date, open, high, low, close, volume
-            FROM market_data
-            WHERE ticker = '{ticker}' AND date >= datetime('now', '-30 days')
-            ORDER BY date ASC
-            """
-
-            if self.data_manager:
-                data = self.data_manager.query_data(query)
+                query = """
+                SELECT date, open, high, low, close, volume
+                FROM market_data
+                WHERE ticker = ? AND date >= datetime('now', '-30 days')
+                ORDER BY date ASC
+                """
+                data = self._query_df(query, [ticker])
                 if not data.empty:
-                    return {
+                    return self._mark_real_data({
                         'ticker': ticker,
                         'data': data.to_dict('records'),
                         'last_updated': datetime.now().isoformat()
-                    }
+                    })
 
             # Mock data
             dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
             base_price = 4500.0
-            return {
+            return self._mark_sample_data({
                 'ticker': ticker,
                 'data': [
                     {
@@ -279,7 +289,7 @@ class DashboardDataBridge:
                     for i in range(30)
                 ],
                 'last_updated': datetime.now().isoformat()
-            }
+            })
 
         except Exception as e:
             self.logger.error(f"❌ Failed to get market data: {e}")
@@ -327,8 +337,7 @@ class DashboardDataBridge:
     def _get_ensemble_weights_data(self, **kwargs) -> dict[str, Any]:
         """Get current ensemble model weights"""
         try:
-            # Mock ensemble weights data
-            return {
+            return self._mark_sample_data({
                 'models': [
                     {'name': 'LSTM_Ensemble', 'weight': 0.35, 'performance': 0.72},
                     {'name': 'RandomForest_Boost', 'weight': 0.25, 'performance': 0.68},
@@ -337,7 +346,7 @@ class DashboardDataBridge:
                 ],
                 'last_rebalanced': datetime.now().isoformat(),
                 'total_weight': 1.0
-            }
+            })
 
         except Exception as e:
             self.logger.error(f"❌ Failed to get ensemble weights: {e}")
@@ -353,16 +362,15 @@ class DashboardDataBridge:
                 WHERE date >= datetime('now', '-7 days')
                 ORDER BY win_rate DESC
                 """
-                data = self.data_manager.query_data(query)
+                data = self._query_df(query)
                 if not data.empty:
-                    return {
+                    return self._mark_real_data({
                         'results': data.to_dict('records'),
                         'total_models': len(data),
                         'last_updated': datetime.now().isoformat()
-                    }
+                    })
 
-            # Mock arena results
-            return {
+            return self._mark_sample_data({
                 'results': [
                     {'model_name': 'LSTM_Ensemble', 'battles_won': 28, 'battles_lost': 12,
                      'win_rate': 0.70, 'avg_score': 0.85},
@@ -373,7 +381,7 @@ class DashboardDataBridge:
                 ],
                 'total_models': 3,
                 'last_updated': datetime.now().isoformat()
-            }
+            })
 
         except Exception as e:
             self.logger.error(f"❌ Failed to get arena results: {e}")

@@ -36,7 +36,7 @@ class VolatilityCalculator:
         if not isinstance(returns, pd.Series) or returns.empty:
             return pd.Series([], dtype=float)
 
-        rolling_std = returns.rolling(window=window).std()
+        rolling_std = returns.rolling(window=window, min_periods=1).std()
         annualized_vol = rolling_std * np.sqrt(periods_per_year)
         return annualized_vol
 
@@ -63,7 +63,7 @@ class VolatilityCalculator:
             return pd.Series([], dtype=float)
 
         squared_returns = returns**2
-        sum_of_squares = squared_returns.rolling(window=window).sum()
+        sum_of_squares = squared_returns.rolling(window=window, min_periods=1).sum()
 
         # Scale the sum of squares to match the total period variance
         annualization_factor = periods_per_year / window

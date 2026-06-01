@@ -48,11 +48,11 @@ class HttpClientFactory(IHttpClientFactory):
         
         # Configure RateLimiter from http_client.yaml or use defaults
         rate_limiter_config = self.client_config.get('rate_limiter', {})
-        rate_limit = rate_limiter_config.get('rate_limit', 10)
+        rate_limit = rate_limiter_config.get('rate_limit', 100)  # Increased to 100 for better throughput
         per_seconds = rate_limiter_config.get('per_seconds', 1.0)
         self.rate_limiter = RateLimiter(rate_limit=rate_limit, per_seconds=per_seconds)
 
-    def get_http_client(
+    async def get_http_client(
         self,
         retries: Optional[int] = None,
         status_forcelist: Optional[List[int]] = None,
@@ -78,13 +78,15 @@ class HttpClientFactory(IHttpClientFactory):
             follow_redirects=True,
             headers={'User-Agent': user_agent}
         )
-        
-        # Wrap the original send method to include rate limiting
         original_send = client.send
         
-        async def rate_limited_send(*args, **kwargs):
+        # Wrap the original send method to include rate limiting
+        async def rate_limited_send(*args: Any, **kwargs: Any) -> httpx.Response:
+            """
+            Wraps the client.send method to ensure it's rate-limited.
+            """
             await self.rate_limiter.acquire_async()
-            return await original_send(*args, **kwargs)
+            return await original_send(*args, **kwargs) # Use original_send directly
         
         client.send = rate_limited_send
 

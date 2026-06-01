@@ -55,11 +55,16 @@ class NewsImpactEnricher(BaseEnricher):
             return df
 
         # Debug logging
-        logger.debug(f"📊 NewsImpactEnricher.enrich() called. DataFrame shape: {df.shape}")
-        logger.debug(f"📊 Columns in df: {df.columns.tolist()[:20]}")
-        logger.debug(f"📊 Has news_title: {'news_title' in df.columns}")
-        logger.debug(f"📊 Has news_sentiment: {'news_sentiment' in df.columns}")
-        logger.debug(f"📊 kwargs keys: {kwargs.keys()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 NewsImpactEnricher.enrich() called. DataFrame shape: {df.shape}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 Columns in df: {df.columns.tolist()[:20]}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 Has news_title: {'news_title' in df.columns}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 Has news_sentiment: {'news_sentiment' in df.columns}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 kwargs keys: {kwargs.keys()}")
 
         # Check if this is event-centric format (news columns in df itself)
         is_event_centric = 'news_title' in df.columns or 'news_sentiment' in df.columns
@@ -120,7 +125,8 @@ class NewsImpactEnricher(BaseEnricher):
         """Find the text column in DataFrame."""
         for col in ['news_title', 'news_text', 'title', 'text', 'description']:
             if col in df.columns:
-                logger.debug(f"📝 Text column found: {col}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"📝 Text column found: {col}")
                 return col
         
         logger.warning("⚠️ No text column found in DataFrame. Skipping news impact enrichment.")
@@ -130,7 +136,8 @@ class NewsImpactEnricher(BaseEnricher):
         """Find the time column in DataFrame."""
         for col in ['datetime', 'published_at', 'publishedAt', 'published_date', 'timestamp', 'date']:
             if col in df.columns:
-                logger.debug(f"⏰ Time column found: {col}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"⏰ Time column found: {col}")
                 return col
         
         logger.warning("⚠️ No time column found in DataFrame. Skipping news impact enrichment.")
@@ -160,7 +167,8 @@ class NewsImpactEnricher(BaseEnricher):
         news_prepared = news_prepared.set_index(time_col)
         news_prepared = news_prepared.sort_index()
         
-        logger.debug(f"📊 News prepared shape: {news_prepared.shape}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 News prepared shape: {news_prepared.shape}")
         
         if news_prepared.empty:
             logger.warning("⚠️ No valid news data after preparation.")
@@ -175,7 +183,8 @@ class NewsImpactEnricher(BaseEnricher):
         # Run analyzer
         results = self.analyzer.analyze(news_prepared)
         
-        logger.debug(f"📈 Analyzer results keys: {results.keys() if results else 'None'}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📈 Analyzer results keys: {results.keys() if results else 'None'}")
         
         if not results:
             logger.warning("⚠️ NewsImpactAnalyzer returned no results.")
@@ -184,7 +193,8 @@ class NewsImpactEnricher(BaseEnricher):
         impact_scores = results.get('news_impact_scores')
         significance_levels = results.get('news_significance_levels')
         
-        logger.debug(f"📊 Impact scores type: {type(impact_scores)}, shape: {impact_scores.shape if impact_scores is not None and hasattr(impact_scores, 'shape') else 'N/A'}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"📊 Impact scores type: {type(impact_scores)}, shape: {impact_scores.shape if impact_scores is not None and hasattr(impact_scores, 'shape') else 'N/A'}")
         
         if impact_scores is None or impact_scores.empty:
             logger.warning("⚠️ No impact scores generated.")

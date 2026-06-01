@@ -100,10 +100,11 @@ class ModelPool:
                 self.access_time[model_id] = time.time()
                 
                 if self.stats['hits'] % 100 == 0:
-                    self.logger.debug(
-                        f"🔥 Model pool hit rate: {self.stats['hits']//(self.stats['hits']+self.stats['misses']+1)*100:.1f}% "
-                        f"(hits={self.stats['hits']}, size={len(self.models)}/{self.max_models})"
-                    )
+                    if self.logger.isEnabledFor(logging.DEBUG):
+                        self.logger.debug(
+                            f"🔥 Model pool hit rate: {self.stats['hits']//(self.stats['hits']+self.stats['misses']+1)*100:.1f}% "
+                            f"(hits={self.stats['hits']}, size={len(self.models)}/{self.max_models})"
+                        )
                 
                 return self.models[model_id]
             
@@ -116,7 +117,8 @@ class ModelPool:
                 del self.models[lru_id]
                 del self.access_time[lru_id]
                 self.stats['evictions'] += 1
-                self.logger.debug(f"Evicted LRU model: {lru_id} (pool size: {len(self.models)}/{self.max_models})")
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f"Evicted LRU model: {lru_id} (pool size: {len(self.models)}/{self.max_models})")
             
             # Load model
             try:
@@ -128,7 +130,8 @@ class ModelPool:
                 
                 self.models[model_id] = model
                 self.access_time[model_id] = time.time()
-                self.logger.debug(f"✅ Loaded model {model_id} into pool (size: {len(self.models)}/{self.max_models})")
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f"✅ Loaded model {model_id} into pool (size: {len(self.models)}/{self.max_models})")
                 return model
             
             except Exception as e:
@@ -155,7 +158,8 @@ class ModelPool:
             
             self.models[model_id] = model
             self.access_time[model_id] = time.time()
-            self.logger.debug(f"✅ Added model {model_id} to pool (size: {len(self.models)}/{self.max_models})")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"✅ Added model {model_id} to pool (size: {len(self.models)}/{self.max_models})")
     
     def remove_model(self, model_id: str) -> bool:
         """
@@ -171,7 +175,8 @@ class ModelPool:
             if model_id in self.models:
                 del self.models[model_id]
                 del self.access_time[model_id]
-                self.logger.debug(f"Removed model {model_id} from pool")
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f"Removed model {model_id} from pool")
                 return True
             return False
     

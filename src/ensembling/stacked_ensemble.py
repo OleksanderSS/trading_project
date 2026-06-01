@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import logging
 from typing import Optional, Dict, List, Tuple, Union, Any, NamedTuple
 from logging import getLogger
 from sklearn.linear_model import Ridge
@@ -132,9 +133,11 @@ class StackedEnsemble:
             adjusted_weights[i] *= contextual_weight
             
             if contextual_weight < 0.5:
-                logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Contextual weight {contextual_weight:.2f}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Contextual weight {contextual_weight:.2f}")
             elif contextual_weight > 1.5:
-                logger.debug(f"[StackedEnsemble] Boosting {model_name}: Contextual weight {contextual_weight:.2f}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"[StackedEnsemble] Boosting {model_name}: Contextual weight {contextual_weight:.2f}")
             
             active_weights_map[model_name] = float(adjusted_weights[i])
 
@@ -297,10 +300,21 @@ class StackedEnsemble:
 
     @classmethod
     def load(cls, path: str):
-        """Load the ensemble state safely."""
+        """Load the ensemble state safely with security validation."""
         import joblib
         
+        # Security validation: Ensure path is within expected data or models directories
+        abs_p = Path(path).resolve()
+        allowed_bases = [
+            Path('data').resolve(),
+            Path('models').resolve()
+        ]
+        if not any(abs_p.is_relative_to(base) for base in allowed_bases):
+            logger.warning(f"🚫 Blocking unsafe ensemble load attempt from: {path}")
+            raise ValueError(f"Unsafe path for loading: {path}")
+
         with open(path, 'rb') as f:
+            # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             state = joblib.load(f)
         
         instance = cls(
@@ -436,7 +450,8 @@ def _apply_divergence_penalty(signal: np.ndarray, divergence: np.ndarray, diverg
     if divergence_shrinkage:
         penalty = 1.0 / (1.0 + divergence)
         signal = signal * penalty
-        logger.debug("[Ensemble] Applied divergence penalty (shrinkage).")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("[Ensemble] Applied divergence penalty (shrinkage).")
     return signal
 
 def _apply_smoothing(signal: np.ndarray, rolling_window: Optional[int], fill_na: float) -> np.ndarray:

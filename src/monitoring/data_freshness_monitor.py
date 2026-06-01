@@ -34,52 +34,6 @@ class DataFreshnessMonitor:
     - Automatic recovery notifications
     """
     
-    # Freshness thresholds for different data types
-    FRESHNESS_THRESHOLDS = {
-        'prices_15m': {
-            'max_age_hours': 0.5,      # 30 minutes
-            'warning_age_hours': 0.25,    # 15 minutes
-            'critical_age_hours': 1.0,     # 1 hour
-            'description': '15-minute price data'
-        },
-        'prices_60m': {
-            'max_age_hours': 2.0,       # 2 hours
-            'warning_age_hours': 1.0,     # 1 hour
-            'critical_age_hours': 4.0,     # 4 hours
-            'description': '1-hour price data'
-        },
-        'prices_1d': {
-            'max_age_hours': 24.0,      # 24 hours
-            'warning_age_hours': 12.0,    # 12 hours
-            'critical_age_hours': 48.0,    # 48 hours
-            'description': 'daily price data'
-        },
-        'news': {
-            'max_age_hours': 2.0,       # 2 hours
-            'warning_age_hours': 1.0,     # 1 hour
-            'critical_age_hours': 6.0,     # 6 hours
-            'description': 'news data'
-        },
-        'macro': {
-            'max_age_hours': 48.0,      # 48 hours
-            'warning_age_hours': 24.0,    # 24 hours
-            'critical_age_hours': 72.0,    # 72 hours
-            'description': 'macroeconomic data'
-        },
-        'features': {
-            'max_age_hours': 4.0,       # 4 hours
-            'warning_age_hours': 2.0,     # 2 hours
-            'critical_age_hours': 8.0,     # 8 hours
-            'description': 'engineered features'
-        },
-        'models': {
-            'max_age_hours': 24.0,      # 24 hours
-            'warning_age_hours': 12.0,    # 12 hours
-            'critical_age_hours': 48.0,    # 48 hours
-            'description': 'trained models'
-        }
-    }
-    
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initialize the DataFreshnessMonitor.
@@ -89,6 +43,53 @@ class DataFreshnessMonitor:
         """
         self.logger = logger
         self.config = config or {}
+        
+        # Freshness thresholds for different data types
+        self.FRESHNESS_THRESHOLDS = {
+            'prices_15m': {
+                'max_age_hours': 0.5,      # 30 minutes
+                'warning_age_hours': 0.25,    # 15 minutes
+                'critical_age_hours': 1.0,     # 1 hour
+                'description': '15-minute price data'
+            },
+            'prices_60m': {
+                'max_age_hours': 2.0,       # 2 hours
+                'warning_age_hours': 1.0,     # 1 hour
+                'critical_age_hours': 4.0,     # 4 hours
+                'description': '1-hour price data'
+            },
+            'prices_1d': {
+                'max_age_hours': 24.0,      # 24 hours
+                'warning_age_hours': 12.0,    # 12 hours
+                'critical_age_hours': 48.0,    # 48 hours
+                'description': 'daily price data'
+            },
+            'news': {
+                'max_age_hours': 2.0,       # 2 hours
+                'warning_age_hours': 1.0,     # 1 hour
+                'critical_age_hours': 6.0,     # 6 hours
+                'description': 'news data'
+            },
+            'macro': {
+                'max_age_hours': 48.0,      # 48 hours
+                'warning_age_hours': 24.0,    # 24 hours
+                'critical_age_hours': 72.0,    # 72 hours
+                'description': 'macroeconomic data'
+            },
+            'features': {
+                'max_age_hours': 4.0,       # 4 hours
+                'warning_age_hours': 2.0,     # 2 hours
+                'critical_age_hours': 8.0,     # 8 hours
+                'description': 'engineered features'
+            },
+            'models': {
+                'max_age_hours': 24.0,      # 24 hours
+                'warning_age_hours': 12.0,    # 12 hours
+                'critical_age_hours': 48.0,    # 48 hours
+                'description': 'trained models'
+            }
+        }
+        
         self.alert_history = []
         self.freshness_history = []
         

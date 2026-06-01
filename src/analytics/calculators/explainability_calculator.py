@@ -62,7 +62,7 @@ class ExplainabilityCalculator:
 
         except Exception as e:
             logger.error(f"Failed to analyze feature importance: {e}", exc_info=True)
-            return {}
+            raise RuntimeError(f"Failed to analyze feature importance: {e}") from e
 
     @staticmethod
     def explain_single_prediction(model: Any, data_row: pd.DataFrame) -> Dict[str, float]:
@@ -87,4 +87,4 @@ class ExplainabilityCalculator:
             return ExplainabilityCalculator.analyze_feature_importance(model, data_row, feature_names)
         except Exception as e:
             logger.error(f"Failed to explain prediction: {e}", exc_info=True)
-            return {}
+            raise RuntimeError(f"Failed to explain prediction: {e}") from e

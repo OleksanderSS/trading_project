@@ -1,3 +1,4 @@
+import logging
 # src/models/neural/base_neural.py
 
 import os
@@ -47,7 +48,8 @@ class BaseNeuralModel(BaseModel):
             self.scaler_std = np.std(x_clean, axis=0)
             # Запобігаємо діленню на нуль
             self.scaler_std[self.scaler_std == 0] = 1.0
-            self.logger.debug(f"Normalization params fitted for {self.model_type}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Normalization params fitted for {self.model_type}")
 
         if self.scaler_mean is not None and self.scaler_std is not None:
             return (x_clean - self.scaler_mean) / self.scaler_std

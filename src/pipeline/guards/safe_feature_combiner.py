@@ -170,7 +170,8 @@ class SafeFeatureCombiner:
         metadata['prefix'] = prefix
         metadata['renamed_columns'] = len(rename_dict)
         
-        self.logger.debug(f"📝 Prepared {timeframe} DataFrame: {df_prepared.shape} with prefix '{prefix}'")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"📝 Prepared {timeframe} DataFrame: {df_prepared.shape} with prefix '{prefix}'")
         
         return df_prepared, metadata
     
@@ -222,7 +223,8 @@ class SafeFeatureCombiner:
             dup_cols = [col for col in combined.columns if col.endswith('_dup')]
             if dup_cols:
                 combined.drop(columns=dup_cols, inplace=True)
-                self.logger.debug(f"🗑️ Removed {len(dup_cols)} duplicate columns from {timeframe} merge")
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f"🗑️ Removed {len(dup_cols)} duplicate columns from {timeframe} merge")
         
         # Sort by datetime (and ticker if exists)
         sort_cols = ['datetime']

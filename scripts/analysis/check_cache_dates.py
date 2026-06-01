@@ -72,7 +72,8 @@ def check_feature_caches():
             }
             
         except Exception as e:
-            logger.error(f"Error reading {file_path}: {e}")
+            logger.error(f"Error reading {file_path}: {e}", exc_info=True)
+            raise
     
     return results
 
@@ -120,7 +121,8 @@ def check_model_batches():
                     break  # Just check first file per batch
             
         except Exception as e:
-            logger.error(f"Error reading {batch_dir_path}: {e}")
+            logger.error(f"Error reading {batch_dir_path}: {e}", exc_info=True)
+            raise
     
     return results
 
@@ -163,7 +165,8 @@ def analyze_temporal_alignment():
                             logger.info(f"  No overlap with {file_name}")
                             
                 except Exception as e:
-                    logger.warning(f"Could not parse date range for {file_name}: {e}")
+                    logger.error(f"Could not parse date range for {file_name}: {e}", exc_info=True)
+                    raise
     
     logger.info("\n=== RECOMMENDATIONS ===")
     logger.info("1. Check if sentiment data covers the same period as price data")

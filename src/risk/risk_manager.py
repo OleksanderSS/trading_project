@@ -2,6 +2,7 @@
 Risk Manager
 Comprehensive risk management with kill-switch, exposure limits, and volatility scaling.
 """
+import logging
 
 import pandas as pd
 import numpy as np
@@ -267,10 +268,11 @@ class RiskManager:
         max_size = self.portfolio_value * self.max_position_exposure
         adjusted_size = min(adjusted_size, max_size)
         
-        logger.debug(
-            f"Position sizing: base=${base_size:,.0f}, vol={volatility:.3f}, "
-            f"conf={confidence:.2f} → ${adjusted_size:,.0f}"
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"Position sizing: base=${base_size:,.0f}, vol={volatility:.3f}, "
+                f"conf={confidence:.2f} → ${adjusted_size:,.0f}"
+            )
         
         return adjusted_size
     

@@ -73,7 +73,7 @@ class PortfolioOptimizer:
             if 'returns' in df.columns:
                 returns_data[ticker] = df['returns']
             elif 'close' in df.columns:
-                returns_data[ticker] = df['close'].pct_change().dropna()
+                returns_data[ticker] = df['close'].pct_change(fill_method=None).dropna()
 
         if not returns_data:
             self.logger.warning("No returns data found for correlation calculation")
@@ -184,6 +184,46 @@ class PortfolioOptimizer:
             )
         }
 
+    def _prepare_global_training_frame(self, market_features: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+        if 'returns' in market_features.columns:
+            y = pd.to_numeric(market_features['returns'], errors='coerce')
+            X = market_features.drop(['ticker', 'returns'], axis=1, errors='ignore')
+        elif 'close' in market_features.columns:
+            if 'ticker' in market_features.columns:
+                y = market_features.groupby('ticker')['close'].pct_change(fill_method=None)
+            else:
+                y = market_features['close'].pct_change(fill_method=None)
+            X = market_features.drop(['ticker'], axis=1, errors='ignore')
+        else:
+            raise ValueError("Global portfolio model needs either 'returns' or 'close'")
+
+        X = X.select_dtypes(include=[np.number]).replace([np.inf, -np.inf], np.nan)
+        if X.empty:
+            raise ValueError("Global portfolio model has no numeric features")
+
+        valid_mask = y.notna() & X.notna().all(axis=1)
+        return X.loc[valid_mask].reset_index(drop=True), y.loc[valid_mask].reset_index(drop=True)
+
+    def _chronological_split(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        test_size: float = 0.2,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+        split_idx = min(max(1, int(len(X) * (1 - test_size))), len(X) - 1)
+        return X.iloc[:split_idx], X.iloc[split_idx:], y.iloc[:split_idx], y.iloc[split_idx:]
+
+    def _select_model_features(
+        self,
+        features: pd.DataFrame,
+        feature_columns: list[str] | None,
+    ) -> pd.DataFrame:
+        X = features.drop(['ticker', 'returns'], axis=1, errors='ignore')
+        X = X.select_dtypes(include=[np.number]).replace([np.inf, -np.inf], np.nan)
+        if feature_columns:
+            X = X.reindex(columns=feature_columns, fill_value=0.0)
+        return X.fillna(0.0)
+
     def _train_global_model(self, market_features: pd.DataFrame) -> dict[str, Any]:
         """Тренує глобальну модель на спільних ринкових фічах"""
         self.logger.info("🌍 Training global market model...")
@@ -192,13 +232,14 @@ class PortfolioOptimizer:
         # Для прикладу використовуємо просту модель
 
         from sklearn.ensemble import RandomForestRegressor
-        from sklearn.model_selection import train_test_split
 
         # Підготовка даних
-        X = market_features.drop(['ticker'], axis=1)
-        y = market_features.groupby('ticker')['returns'].first().fillna(0)
+        X, y = self._prepare_global_training_frame(market_features)
+        if len(y) < 5:
+            raise ValueError("Not enough aligned samples for global portfolio model")
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # Використовуємо shuffle=False для збереження часової послідовності
+        X_train, X_test, y_train, y_test = self._chronological_split(X, y)
 
         # Тренування моделі
         model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -212,6 +253,7 @@ class PortfolioOptimizer:
         return {
             'model': model,
             'score': score,
+            'feature_columns': list(X.columns),
             'feature_importance': dict(zip(X.columns, model.feature_importances_, strict=False))
         }
 
@@ -229,13 +271,13 @@ class PortfolioOptimizer:
         # Для прикладу використовуємо просту модель
 
         from sklearn.linear_model import LinearRegression
-        from sklearn.model_selection import train_test_split
 
         # Підготовка даних
         X = ticker_features
         y = ticker_targets.iloc[:, 0] if len(ticker_targets.columns) > 0 else ticker_targets
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        # Використовуємо shuffle=False для збереження часової послідовності
+        X_train, X_test, y_train, y_test = self._chronological_split(X, y)
 
         # Тренування моделі
         model = LinearRegression()
@@ -263,7 +305,11 @@ class PortfolioOptimizer:
 
         for ticker, features in features_dict.items():
             # Глобальний прогноз
-            global_pred = global_model['model'].predict(features)
+            global_features = self._select_model_features(
+                features,
+                global_model.get('feature_columns'),
+            )
+            global_pred = global_model['model'].predict(global_features)
 
             # Локальний прогноз
             local_pred = local_models[ticker]['model'].predict(features)

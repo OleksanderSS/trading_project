@@ -1,20 +1,10 @@
 # src/training/batch_trainer.py
 
-import pandas as pd
-import numpy as np
-import os
-import time
-import joblib
-from datetime import datetime
-from typing import List, Dict, Any, Optional
+import logging
+from typing import Dict, Any, Optional, List
 from joblib import Parallel, delayed
-from pathlib import Path
 
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import UnifiedConfigManager
-from src.factories.model_factory import ModelFactory
-from src.meta_learning.memory.diary_engine import DiaryEngine
-from src.metrics.model.ml_evaluator import MLEvaluator
 from src.training.constants import (
     BATCH_TRAINER_DEFAULT_BATCH_SIZE,
     BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB

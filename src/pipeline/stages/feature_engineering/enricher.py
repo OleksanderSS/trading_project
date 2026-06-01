@@ -1,0 +1,25 @@
+import pandas as pd
+from typing import Dict, Any, Optional, List
+from src.features.feature_orchestrator import FeatureOrchestrator
+from src.features.feature_cache import get_feature_cache
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger('FeatureEnricher')
+
+class FeatureEnricher:
+    """Handles feature generation and enrichment."""
+    
+    def __init__(self, config_manager: Any):
+        self.logger = logger
+        self.orchestrator = FeatureOrchestrator.create_from_config(config_manager)
+        cache_dir = config_manager.get('performance.feature_cache_dir', 'data/cache/features')
+        self.feature_cache = get_feature_cache(cache_dir=cache_dir)
+
+    def enrich_features(self, df: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+        """Enrich data with technical and statistical features."""
+        self.logger.info(f"Enriching features for timeframe: {timeframe}")
+        return self.orchestrator.run(df, add_timeframe_suffix=True, timeframe=timeframe)
+        
+    def add_macro_features(self, df: pd.DataFrame, macro_data: pd.DataFrame) -> pd.DataFrame:
+        """Add macro-economic indicators."""
+        return df # Integration logic here

@@ -14,10 +14,24 @@ class TestDataManagerSecurity:
     
     @pytest.fixture
     def data_manager(self):
-        """Create DataManager instance for testing"""
+        """Create DataManager instance for testing with isolated in-memory connection"""
+        # Clear shared connection pool so each test gets a fresh in-memory DB
+        DataManager.close_all_connections()
+        
         config_manager = Mock(spec=UnifiedConfigManager)
-        config_manager.get.return_value = ':memory:'
-        return DataManager(config_manager)
+        def mock_get(key, default=None):
+            if key == 'paths.raw_db':
+                return ':memory:'
+            if key == 'db.critical_tables':
+                return ['enriched_features', 'targets', 'model_results', 'predictions']
+            return default
+        config_manager.get.side_effect = mock_get
+        
+        dm = DataManager(config_manager)
+        yield dm
+        
+        # Cleanup after each test
+        DataManager.close_all_connections()
     
     def test_upsert_creates_table(self, data_manager):
         """Test that upsert creates table if not exists"""
@@ -79,6 +93,17 @@ class TestDataManagerSecurity:
         
         # Should have no NaN after cleaning
         assert not cleaned['value'].isna().any()
+
+    def test_clean_numeric_data_does_not_backfill_leading_nan(self, data_manager):
+        """Leading missing values should not be filled from future rows."""
+        df = pd.DataFrame({
+            'value': [np.nan, np.nan, 3.0, np.nan, 5.0]
+        })
+
+        cleaned = data_manager._clean_numeric_data(df, 'test_table')
+
+        assert cleaned['value'].iloc[:2].isna().all()
+        assert cleaned['value'].iloc[3] == 3.0
     
     def test_should_checkpoint_critical_tables(self, data_manager):
         """Test that critical tables trigger checkpoints"""
@@ -115,33 +140,33 @@ class TestPathTraversalFix:
     
     def test_sanitize_path_input_imported(self):
         """Test that sanitize_path_input can be imported"""
-        from src.training.progressive_trainer import sanitize_path_input
+        from src.core.utils.path_utils import sanitize_path_input
         assert callable(sanitize_path_input)
     
     def test_sanitize_path_blocks_traversal(self):
         """Test that path traversal is blocked"""
-        from src.training.progressive_trainer import sanitize_path_input
+        from src.core.utils.path_utils import sanitize_path_input
         
         with pytest.raises(ValueError, match="Path traversal"):
             sanitize_path_input("../etc/passwd")
     
     def test_sanitize_path_blocks_absolute(self):
         """Test that absolute paths are blocked"""
-        from src.training.progressive_trainer import sanitize_path_input
+        from src.core.utils.path_utils import sanitize_path_input
         
         with pytest.raises(ValueError, match="Absolute paths"):
             sanitize_path_input("/etc/passwd")
     
     def test_sanitize_path_blocks_null_byte(self):
         """Test that null bytes are blocked"""
-        from src.training.progressive_trainer import sanitize_path_input
+        from src.core.utils.path_utils import sanitize_path_input
         
         with pytest.raises(ValueError, match="Null byte"):
             sanitize_path_input("file\x00.txt")
     
     def test_sanitize_path_allows_valid(self):
         """Test that valid paths are allowed"""
-        from src.training.progressive_trainer import sanitize_path_input
+        from src.core.utils.path_utils import sanitize_path_input
         
         result = sanitize_path_input("checkpoint_batch_5.json")
         assert "checkpoint_batch_5.json" in result

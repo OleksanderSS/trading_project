@@ -1,9 +1,14 @@
 """Sklearn fallback models when torch is not available"""
 
 
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
+
+
 def create_sklearn_fallback_model(model_type, input_size):
     """Create sklearn fallback model when torch is not available"""
-    print(f"   ⚠️ torch не доступний, використовуємо sklearn fallback для {model_type}")
+    logger.info(f"   ⚠️ torch не доступний, використовуємо sklearn fallback для {model_type}")
     
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.linear_model import LinearRegression

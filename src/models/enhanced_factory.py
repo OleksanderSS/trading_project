@@ -3,6 +3,7 @@ Enhanced Model Factory with Prototype Support
 
 Extends ModelFactory with prototype pattern for fast model cloning and metadata management.
 """
+import logging
 
 import importlib
 from typing import Dict, Any, Type, Optional
@@ -92,7 +93,8 @@ class EnhancedModelFactory(ModelFactory):
             prototype = cls._PROTOTYPES[model_name]
             model = prototype.clone(**kwargs)
             if model:
-                logger.debug(f"✅ Got model from prototype: {model_name}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"✅ Got model from prototype: {model_name}")
                 return model
 
         # Try registry
@@ -101,11 +103,13 @@ class EnhancedModelFactory(ModelFactory):
             if registry_prototype:
                 model = registry_prototype.clone(**kwargs)
                 if model:
-                    logger.debug(f"✅ Got model from registry: {model_name}")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"✅ Got model from registry: {model_name}")
                     return model
 
         # Fall back to legacy factory
-        logger.debug(f"Falling back to legacy factory for: {model_name}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Falling back to legacy factory for: {model_name}")
         return super().get_model(model_name, **kwargs)
 
     @classmethod

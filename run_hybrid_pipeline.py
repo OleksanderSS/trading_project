@@ -210,10 +210,15 @@ async def main():
         logger.info(f"✅ Quality Report: {quality_report['total_baselines']} baselines tracked")
 
     # Log completion
-    if results:
+    failed = (
+        not results or
+        (isinstance(results, dict) and results.get('status') in {'error', 'failed'})
+    )
+    if not failed:
         logger.info(f"✅ Pipeline completed successfully for batch: {args.batch_name}")
     else:
         logger.error(f"❌ Pipeline failed for batch: {args.batch_name}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

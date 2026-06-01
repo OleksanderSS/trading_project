@@ -1,3 +1,4 @@
+import logging
 # src/utils/rate_limiter.py
 
 import asyncio
@@ -65,12 +66,15 @@ class RateLimiter:
             if self.allowance < 1.0:
                 # Calculate precise wait time until the next token appears
                 sleep_duration = (1.0 - self.allowance) * (self.per_seconds / self.rate_limit)
-                logger.debug(f"Rate limit reached. Waiting: {sleep_duration:.4f} sec.")
+                # Only log if wait time is significant (>50ms) to reduce log noise
+                if sleep_duration > 0.05:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Rate limit reached. Waiting: {sleep_duration:.4f} sec.")
                 time.sleep(sleep_duration)
                 self._update_allowance() # Re-update after waiting
             
             self.allowance -= 1.0
-        logger.debug("Token acquired (synchronously).")
+        # Reduce log noise - only log on significant waits
 
     def try_acquire(self) -> bool:
         """Attempts to acquire a token without blocking (synchronously)."""
@@ -78,10 +82,8 @@ class RateLimiter:
             self._update_allowance()
             if self.allowance >= 1.0:
                 self.allowance -= 1.0
-                logger.debug("Token acquired (try_acquire).")
                 return True
         
-        logger.debug("No tokens available (try_acquire).")
         return False
 
     async def acquire_async(self) -> None:
@@ -90,9 +92,12 @@ class RateLimiter:
             self._update_allowance()
             if self.allowance < 1.0:
                 sleep_duration = (1.0 - self.allowance) * (self.per_seconds / self.rate_limit)
-                logger.debug(f"Rate limit reached. Async waiting: {sleep_duration:.4f} sec.")
+                # Only log if wait time is significant (>50ms) to reduce log noise
+                if sleep_duration > 0.05:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Rate limit reached. Async waiting: {sleep_duration:.4f} sec.")
                 await asyncio.sleep(sleep_duration)
                 self._update_allowance() # Re-update after waiting
             
             self.allowance -= 1.0
-        logger.debug("Token acquired (asynchronously).")
+        # Reduce log noise - only log on significant waits

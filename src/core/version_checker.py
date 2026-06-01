@@ -1,3 +1,4 @@
+import logging
 # src/core/version_checker.py
 """
 Version Checker - Ensures runtime compatibility between Python environment and required dependencies.
@@ -69,9 +70,11 @@ class VersionChecker:
                         logger.error(msg)
                         issues.append(msg)
                     else:
-                        logger.debug(f"Package compliant: {package_name} {installed_version} OK")
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug(f"Package compliant: {package_name} {installed_version} OK")
                 else:
-                    logger.debug(f"Package check skipped (no specification): {package_name} {installed_version}")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Package check skipped (no specification): {package_name} {installed_version}")
             
             except importlib.metadata.PackageNotFoundError:
                 msg = f"Dependency Missing: {package_name} is not installed in the current environment."

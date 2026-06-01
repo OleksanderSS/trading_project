@@ -102,7 +102,7 @@ class FinalStagesOrchestrator:
 
     async def run_final_stages(self, request) -> Dict[str, Any]:
         """Main entry point for final stages execution."""
-        from src.pipeline.hybrid_orchestrator import HybridFinalStagesRequest
+        from src.pipeline.hybrid.contracts import HybridFinalStagesRequest
         
         if not isinstance(request, HybridFinalStagesRequest):
             self.logger.error("Invalid request type for run_final_stages")

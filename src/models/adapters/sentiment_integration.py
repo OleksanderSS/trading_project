@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Any, Optional
 from src.core.logging.logger import ProjectLogger
+from src.core.exceptions import DataProcessingError
 from src.sentiment.sentiment_models import analyze_sentiment, aggregate_sentiment, get_finbert_pipeline
 
 logger = ProjectLogger.get_logger(__name__)
@@ -24,13 +25,13 @@ class SentimentModelIntegrator:
             logger.info("[SENTIMENT] Sentiment pipeline successfully initialized")
             return True
         except Exception as e:
-            logger.error(f"[SENTIMENT] Initialization error: {e}")
-            return False
+            logger.error(f"[SENTIMENT] Initialization error: {e}", exc_info=True)
+            raise DataProcessingError(f"[SENTIMENT] Initialization error: {e}") from e
     
     def analyze_news_sentiment(self, news_texts: List[str], batch_size: int = 16) -> pd.DataFrame:
         """News sentiment analysis"""
-        if not self.is_initialized and not self.initialize():
-            return self._create_fallback_sentiment(news_texts)
+        if not self.is_initialized:
+            self.initialize()
         
         try:
             # Sentiment analysis
@@ -44,20 +45,8 @@ class SentimentModelIntegrator:
             return sentiment_df
             
         except Exception as e:
-            logger.error(f"[SENTIMENT] Sentiment analysis error: {e}")
-            return self._create_fallback_sentiment(news_texts)
-    
-    def _create_fallback_sentiment(self, news_texts: List[str]) -> pd.DataFrame:
-        """Creation of backup sentiment"""
-        fallback_data = []
-        for text in news_texts:
-            fallback_data.append({
-                'text': text,
-                'label': 'neutral',
-                'score': 0.5
-            })
-        
-        return pd.DataFrame(fallback_data)
+            logger.error(f"[SENTIMENT] Sentiment analysis error: {e}", exc_info=True)
+            raise DataProcessingError(f"[SENTIMENT] Sentiment analysis error: {e}") from e
     
     def extract_sentiment_features(self, news_data: pd.DataFrame, price_data: pd.DataFrame) -> Dict[str, float]:
         """Extraction of sentiment features for models"""
@@ -89,8 +78,8 @@ class SentimentModelIntegrator:
             return features
             
         except Exception as e:
-            logger.error(f"[SENTIMENT] Feature extraction error: {e}")
-            return self._create_default_sentiment_features()
+            logger.error(f"[SENTIMENT] Feature extraction error: {e}", exc_info=True)
+            raise DataProcessingError(f"[SENTIMENT] Feature extraction error: {e}") from e
     
     def _calculate_sentiment_features(self, sentiment_df: pd.DataFrame, price_data: pd.DataFrame) -> Dict[str, float]:
         """Calculation of sentiment features"""
@@ -138,7 +127,7 @@ class SentimentModelIntegrator:
     
     def _add_price_correlation_metrics(self, features: Dict[str, float], sentiment_df: pd.DataFrame, price_data: pd.DataFrame) -> None:
         """Add price correlation and momentum metrics"""
-        recent_price_change = price_data['close'].pct_change().tail(5).mean()
+        recent_price_change = price_data['close'].pct_change(fill_method=None).tail(5).mean()
         features['sentiment_price_correlation'] = features['sentiment_score'] * np.sign(recent_price_change)
         
         if len(sentiment_df) >= 10:
@@ -207,8 +196,8 @@ class SentimentModelIntegrator:
             return enhanced_df
             
         except Exception as e:
-            logger.error(f"[SENTIMENT] Помилка збагачення фіч: {e}")
-            return features_df
+            logger.error(f"[SENTIMENT] Помилка збагачення фіч: {e}", exc_info=True)
+            raise DataProcessingError(f"[SENTIMENT] Помилка збагачення фіч: {e}") from e
     
     def get_sentiment_signal(self, news_data: pd.DataFrame, price_data: pd.DataFrame) -> Dict[str, Any]:
         """Отримання торгового сигналу на основі сентименту"""
@@ -260,14 +249,8 @@ class SentimentModelIntegrator:
             }
             
         except Exception as e:
-            logger.error(f"[SENTIMENT] Помилка генерації сигналу: {e}")
-            return {
-                'signal_type': 'hold',
-                'signal_strength': 0.0,
-                'confidence': 0.0,
-                'reasoning': f'Sentiment analysis error: {str(e)}',
-                'model_type': 'sentiment_error'
-            }
+            logger.error(f"[SENTIMENT] Помилка генерації сигналу: {e}", exc_info=True)
+            raise DataProcessingError(f"[SENTIMENT] Помилка генерації сигналу: {e}") from e
 
 # Глобальний інтегратор
 _sentiment_integrator = None

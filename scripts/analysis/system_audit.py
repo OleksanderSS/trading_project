@@ -169,8 +169,9 @@ class SystemAuditor:
                 else:
                     results['latest_results'].append(file_info)
                     
-            except Exception as e:
-                logger.warning(f"Could not read {result_file}: {e}")
+            except (IOError, json.JSONDecodeError, Exception) as e:
+                logger.error(f"Critical failure reading result file {result_file}: {e}", exc_info=True)
+                raise RuntimeError(f"Failed to read result file {result_file}: {e}") from e
         
         return results
     

@@ -11,6 +11,7 @@ import sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from typing import Optional
 
 # Ensure the project root is in the Python path
 project_root = Path(__file__).resolve().parent.parent.parent.parent

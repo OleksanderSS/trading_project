@@ -4,6 +4,7 @@ Live-Adaptive Ensemble Engine
 - Model performance tracking (Sharpe, hit rate, precision)
 - Quarterly optimization with historical backtesting
 """
+import logging
 
 import numpy as np
 import pandas as pd
@@ -113,93 +114,77 @@ class LiveAdaptiveEnsemble:
         if len(self.model_metrics_history) > 500:
             self.model_metrics_history = self.model_metrics_history[-500:]
         
-        self.logger.debug(f"📊 Recorded {model_type} performance: Sharpe={sharpe_ratio:.2f}, Hit Rate={hit_rate:.1%}")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"📊 Recorded {model_type} performance: Sharpe={sharpe_ratio:.2f}, Hit Rate={hit_rate:.1%}")
     
-    def compute_ensemble_weights(self, regime: str) -> Dict[str, float]:
-        """
-        Compute ensemble weights based on live performance
-        
-        Algorithm:
-        1. Extract latest metrics for each model (for the last week)
-        2. Compute composite score for each model
-        3. Normalize to weights
-        4. Smoothing relative to baseline (to avoid overfitting on noise)
-        """
-        
-        # 1. Determine if reweighting is needed
-        should_reweight = (
+    def _should_reweight(self) -> bool:
+        """Check if reweighting is needed based on time interval."""
+        return (
             self.last_reweight_time is None or
             (datetime.now() - self.last_reweight_time).days >= self.reweight_interval_days
         )
-        
-        if not should_reweight and self.current_weights:
-            return self.current_weights
-        
-        # 2. Collect recent metrics by model type
-        lookback_days = 7
+
+    def _collect_recent_metrics(self, lookback_days: int = 7) -> list:
+        """Collect recent metrics within lookback period."""
         cutoff_time = datetime.now() - timedelta(days=lookback_days)
-        recent_metrics = [m for m in self.model_metrics_history if m.timestamp >= cutoff_time]
-        
-        if not recent_metrics:
-            self.logger.warning(f"No recent metrics. Using baseline weights for {regime}")
-            self.current_weights = self.baseline_weights.get(regime, {})
-            return self.current_weights
-        
-        # Group by model type
+        return [m for m in self.model_metrics_history if m.timestamp >= cutoff_time]
+
+    def _group_metrics_by_type(self, metrics: list) -> dict:
+        """Group metrics by model type."""
         metrics_by_type = {}
-        for metric in recent_metrics:
+        for metric in metrics:
             if metric.model_type not in metrics_by_type:
                 metrics_by_type[metric.model_type] = []
             metrics_by_type[metric.model_type].append(metric)
+        return metrics_by_type
+
+    def _compute_model_score(self, model_type: str, metrics: list) -> dict:
+        """Compute composite score for a model type."""
+        avg_sharpe = np.mean([m.sharpe_ratio for m in metrics])
+        avg_hit_rate = np.mean([m.hit_rate for m in metrics])
+        avg_precision = np.mean([m.precision for m in metrics])
+        avg_recall = np.mean([m.recall for m in metrics])
+        total_predictions = sum([m.predictions_count for m in metrics])
         
-        # 3. Compute composite score for each model type
-        model_scores = {}
+        # Composite score: weighted average of metrics
+        # Sharpe (40%) + Hit Rate (25%) + Precision (20%) + Recall (15%)
+        score = (
+            0.40 * self._normalize_sharpe(avg_sharpe) +
+            0.25 * avg_hit_rate +
+            0.20 * avg_precision +
+            0.15 * avg_recall
+        )
         
-        for model_type, metrics in metrics_by_type.items():
-            # Average metrics over time
-            avg_sharpe = np.mean([m.sharpe_ratio for m in metrics])
-            avg_hit_rate = np.mean([m.hit_rate for m in metrics])
-            avg_precision = np.mean([m.precision for m in metrics])
-            avg_recall = np.mean([m.recall for m in metrics])
-            total_predictions = sum([m.predictions_count for m in metrics])
-            
-            # Composite score: weighted average of metrics
-            # Sharpe (40%) + Hit Rate (25%) + Precision (20%) + Recall (15%)
-            score = (
-                0.40 * self._normalize_sharpe(avg_sharpe) +
-                0.25 * avg_hit_rate +
-                0.20 * avg_precision +
-                0.15 * avg_recall
-            )
-            
-            model_scores[model_type] = {
-                'score': score,
-                'sharpe': avg_sharpe,
-                'hit_rate': avg_hit_rate,
-                'precision': avg_precision,
-                'recall': avg_recall,
-                'n_metrics': len(metrics),
-                'n_predictions': total_predictions
-            }
-            
-            self.logger.info(f"📊 {model_type}: score={score:.3f}, Sharpe={avg_sharpe:.2f}, Hit Rate={avg_hit_rate:.1%}")
+        self.logger.info(f"📊 {model_type}: score={score:.3f}, Sharpe={avg_sharpe:.2f}, Hit Rate={avg_hit_rate:.1%}")
         
-        # 4. Convert scores to weights (softmax)
+        return {
+            'score': score,
+            'sharpe': avg_sharpe,
+            'hit_rate': avg_hit_rate,
+            'precision': avg_precision,
+            'recall': avg_recall,
+            'n_metrics': len(metrics),
+            'n_predictions': total_predictions
+        }
+
+    def _scores_to_weights(self, model_scores: dict) -> dict:
+        """Convert model scores to weights using softmax."""
         scores = np.array([s['score'] for s in model_scores.values()])
-        
-        # Avoid extreme values
-        scores = np.clip(scores, -5, 5)
+        scores = np.clip(scores, -5, 5)  # Avoid extreme values
         
         # Softmax: e^score / sum(e^score)
         exp_scores = np.exp(scores - np.max(scores))  # Numerical stability
-        raw_weights = exp_scores / np.exp(scores).sum()
+        raw_weights = exp_scores / exp_scores.sum()
         
         # Create weights dict
         computed_weights = {}
         for (model_type, score_data), weight in zip(model_scores.items(), raw_weights):
             computed_weights[model_type] = float(weight)
         
-        # 5. Smooth against baseline (70% live, 30% baseline)
+        return computed_weights
+
+    def _smooth_weights_against_baseline(self, computed_weights: dict, regime: str) -> dict:
+        """Smooth computed weights against baseline (70% live, 30% baseline)."""
         baseline = self.baseline_weights.get(regime, {})
         smoothed_weights = {}
         
@@ -214,13 +199,10 @@ class LiveAdaptiveEnsemble:
         
         # Renormalize
         total = sum(smoothed_weights.values())
-        smoothed_weights = {k: v / total for k, v in smoothed_weights.items()}
-        
-        # 6. Record and return
-        self.current_weights = smoothed_weights
-        self.last_reweight_time = datetime.now()
-        
-        # Store in history
+        return {k: v / total for k, v in smoothed_weights.items()}
+
+    def _store_weights_history(self, regime: str, smoothed_weights: dict, model_scores: dict, recent_metrics: list) -> None:
+        """Store weights in ensemble history."""
         ew = EnsembleWeights(
             timestamp=datetime.now(),
             regime=regime,
@@ -229,6 +211,49 @@ class LiveAdaptiveEnsemble:
             reasoning=f"7-day performance: {len(recent_metrics)} metrics, {len(model_scores)} models"
         )
         self.ensemble_weights_history.append(ew)
+
+    def compute_ensemble_weights(self, regime: str) -> Dict[str, float]:
+        """
+        Compute ensemble weights based on live performance
+        
+        Algorithm:
+        1. Extract latest metrics for each model (for the last week)
+        2. Compute composite score for each model
+        3. Normalize to weights
+        4. Smoothing relative to baseline (to avoid overfitting on noise)
+        """
+        # 1. Determine if reweighting is needed
+        if not self._should_reweight() and self.current_weights:
+            return self.current_weights
+        
+        # 2. Collect recent metrics by model type
+        recent_metrics = self._collect_recent_metrics(lookback_days=7)
+        
+        if not recent_metrics:
+            self.logger.warning(f"No recent metrics. Using baseline weights for {regime}")
+            self.current_weights = self.baseline_weights.get(regime, {})
+            return self.current_weights
+        
+        # 3. Group by model type
+        metrics_by_type = self._group_metrics_by_type(recent_metrics)
+        
+        # 4. Compute composite score for each model type
+        model_scores = {}
+        for model_type, metrics in metrics_by_type.items():
+            model_scores[model_type] = self._compute_model_score(model_type, metrics)
+        
+        # 5. Convert scores to weights (softmax)
+        computed_weights = self._scores_to_weights(model_scores)
+        
+        # 6. Smooth against baseline (70% live, 30% baseline)
+        smoothed_weights = self._smooth_weights_against_baseline(computed_weights, regime)
+        
+        # 7. Record and return
+        self.current_weights = smoothed_weights
+        self.last_reweight_time = datetime.now()
+        
+        # Store in history
+        self._store_weights_history(regime, smoothed_weights, model_scores, recent_metrics)
         
         self.logger.info(f"🔄 Ensemble weights recomputed for {regime}:")
         for model_type, weight in sorted(smoothed_weights.items(), key=lambda x: x[1], reverse=True):

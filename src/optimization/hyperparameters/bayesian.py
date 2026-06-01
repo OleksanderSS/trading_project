@@ -2,7 +2,7 @@
 
 import numpy as np
 from typing import Any, Callable, Optional
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, TimeSeriesSplit
 from src.core.logging.logger import ProjectLogger
 from src.optimization.base import BaseOptimizer
 
@@ -87,7 +87,7 @@ class BayesianOptimizer(BaseOptimizer):
         model = self.model_func(**params)
         
         # Оцінюємо через cross-validation
-        scores = cross_val_score(model, X, y, cv=self.cv, scoring=self.scoring)
+        scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.cv), scoring=self.scoring)
         return float(scores.mean())
 
     def optimize(self, data: Any, target: Any = None, **kwargs) -> dict[str, Any]:

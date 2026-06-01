@@ -29,15 +29,6 @@ class RedundancyDetector:
     Reduces dimensionality while preserving maximum information.
     """
     
-    # Redundancy detection thresholds
-    REDUNDANCY_THRESHOLDS = {
-        'correlation_threshold': 0.95,      # Features with correlation >0.95 are redundant
-        'vif_threshold': 10.0,              # VIF >10 indicates multicollinearity
-        'min_group_size': 2,                 # Minimum features in a redundant group
-        'max_features_per_group': 1,          # Keep only 1 feature per redundant group
-        'variance_threshold': 0.01           # Features with variance <0.01 are useless
-    }
-    
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initialize RedundancyDetector.
@@ -47,6 +38,15 @@ class RedundancyDetector:
         """
         self.logger = logger
         self.config = config or {}
+
+        # Redundancy detection thresholds
+        self.REDUNDANCY_THRESHOLDS = {
+            'correlation_threshold': 0.95,      # Features with correlation >0.95 are redundant
+            'vif_threshold': 10.0,              # VIF >10 indicates multicollinearity
+            'min_group_size': 2,                 # Minimum features in a redundant group
+            'max_features_per_group': 1,          # Keep only 1 feature per redundant group
+            'variance_threshold': 0.01           # Features with variance <0.01 are useless
+        }
         
         # Override thresholds with config
         self.thresholds = self.REDUNDANCY_THRESHOLDS.copy()
@@ -59,6 +59,34 @@ class RedundancyDetector:
         
         self.logger.info("✅ RedundancyDetector initialized")
     
+    def _filter_numeric_features(self, features_df: pd.DataFrame) -> tuple:
+        """Filter numeric and non-numeric features."""
+        numeric_features = features_df.select_dtypes(include=[np.number])
+        non_numeric_features = features_df.select_dtypes(exclude=[np.number])
+        return numeric_features, non_numeric_features
+
+    def _combine_redundant_features(self, low_variance: list, correlation_redundant: list, high_vif: list) -> list:
+        """Combine all redundant feature lists."""
+        return list(set(low_variance + correlation_redundant + high_vif))
+
+    def _create_final_feature_set(self, selected_features: pd.DataFrame, non_numeric_features: pd.DataFrame) -> pd.DataFrame:
+        """Combine selected features with non-numeric features."""
+        final_features = selected_features.copy()
+        if not non_numeric_features.empty:
+            final_features = pd.concat([final_features, non_numeric_features], axis=1)
+        return final_features
+
+    def _update_results(self, results: dict, redundant_features: list, final_features: pd.DataFrame, original_count: int) -> dict:
+        """Update results with final statistics."""
+        results.update({
+            'redundant_features': redundant_features,
+            'selected_features': list(final_features.columns),
+            'selected_count': len(final_features.columns),
+            'reduction_ratio': (len(redundant_features) / original_count) * 100,
+            'cleaned_features': final_features
+        })
+        return results
+
     def eliminate_redundant_features(self, 
                                    features_df: pd.DataFrame,
                                    target_series: Optional[pd.Series] = None) -> Dict[str, Any]:
@@ -89,8 +117,7 @@ class RedundancyDetector:
         
         try:
             # 1. Filter out non-numeric features
-            numeric_features = features_df.select_dtypes(include=[np.number])
-            non_numeric_features = features_df.select_dtypes(exclude=[np.number])
+            numeric_features, non_numeric_features = self._filter_numeric_features(features_df)
             
             if numeric_features.empty:
                 self.logger.warning("No numeric features found for redundancy analysis")
@@ -120,29 +147,19 @@ class RedundancyDetector:
                 numeric_features, correlation_results, vif_results
             )
             
-            # 6. Combine results
-            redundant_features = (
-                results['low_variance_features'] +
-                correlation_results['redundant_features'] +
+            # 6. Combine redundant features
+            redundant_features = self._combine_redundant_features(
+                results['low_variance_features'],
+                correlation_results['redundant_features'],
                 vif_results.get('high_vif_features', [])
             )
             
             # 7. Create final feature set
             selected_features = selection_results['selected_features']
+            final_features = self._create_final_feature_set(selected_features, non_numeric_features)
             
-            # 8. Combine with non-numeric features
-            final_features = selected_features.copy()
-            if not non_numeric_features.empty:
-                final_features = pd.concat([final_features, non_numeric_features], axis=1)
-            
-            # Update results
-            results.update({
-                'redundant_features': list(set(redundant_features)),
-                'selected_features': list(final_features.columns),
-                'selected_count': len(final_features.columns),
-                'reduction_ratio': (len(redundant_features) / len(features_df.columns)) * 100,
-                'cleaned_features': final_features
-            })
+            # 8. Update results
+            self._update_results(results, redundant_features, final_features, len(features_df.columns))
             
             self._log_redundancy_summary(results)
             

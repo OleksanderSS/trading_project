@@ -5,11 +5,8 @@ Real-Time Learning Loop
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any
 from datetime import datetime, timedelta
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
@@ -279,8 +276,12 @@ class RealTimeLearning:
         returns = pnl_series.dropna()
         if len(returns) < 2:
             return 0.0
-        
-        return float(returns.mean() / returns.std() * np.sqrt(252))  # Annualized
+
+        std = returns.std()
+        if std == 0 or pd.isna(std):
+            return 0.0
+
+        return float(returns.mean() / std * np.sqrt(252))  # Annualized
     
     def _calculate_performance_trend(self, df: pd.DataFrame) -> str:
         """Розраховує тренд продуктивності"""

@@ -82,8 +82,7 @@ class RiskRewardCalculator:
             return np.nan
         
         excess_returns = returns - (config.risk_free_rate / config.periods_per_year)
-        sharpe_ratio = excess_returns.mean() / excess_returns.std()
-        annualized_sharpe = sharpe_ratio * np.sqrt(config.periods_per_year)
+        annualized_sharpe = (excess_returns.mean() / excess_returns.std()) * np.sqrt(config.periods_per_year)
         return float(annualized_sharpe)
 
     @staticmethod
@@ -150,6 +149,7 @@ class RiskRewardCalculator:
             return {'var': np.nan, 'cvar': np.nan}
             
         quantile = 1 - config.confidence_level
+        # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
         var = returns.quantile(quantile)
         cvar = returns[returns <= var].mean()
         return {'var': float(var), 'cvar': float(cvar)}

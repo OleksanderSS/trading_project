@@ -26,6 +26,7 @@ Usage:
     # Warm-up
     pool.warm_up(["model1", "model2"], loader_fns)
 """
+import logging
 
 import json
 import numpy as np
@@ -116,7 +117,8 @@ class PersistentModelPool(ModelPool):
         # Persist to disk
         self._save_cache_index()
         
-        logger.debug(f"Added {model_id} with quality {quality_score:.2f}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Added {model_id} with quality {quality_score:.2f}")
     
     def get_model_with_quality_check(
         self,
@@ -199,7 +201,8 @@ class PersistentModelPool(ModelPool):
             old_score = self.quality_scores[model_id]
             self.quality_scores[model_id] = new_score
             self._save_cache_index()
-            logger.debug(f"Updated {model_id} quality: {old_score:.2f} → {new_score:.2f}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Updated {model_id} quality: {old_score:.2f} → {new_score:.2f}")
         else:
             logger.warning(f"Model {model_id} not found in quality scores")
     
@@ -284,7 +287,8 @@ class PersistentModelPool(ModelPool):
                 model_path = export_path / f"{model_id}.joblib"
                 try:
                     joblib.dump(model, model_path)
-                    logger.debug(f"Exported {model_id} to {model_path}")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Exported {model_id} to {model_path}")
                 except Exception as e:
                     logger.error(f"Failed to export {model_id}: {e}")
         

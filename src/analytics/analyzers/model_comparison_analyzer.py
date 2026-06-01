@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from typing import Any, cast, Dict, List, Optional, Tuple
 from src.core.logging.logger import ProjectLogger
+from src.core.exceptions import DataProcessingError
 
 from ..interfaces import IAnalyzer
 
@@ -18,9 +19,6 @@ class ModelComparisonAnalyzer(IAnalyzer):
     optimal architectures and assess performance stability across different cycles.
     """
 
-    # Default identifiers for heavy/deep learning models
-    HEAVY_MODELS = ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder"]
-
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """
         Initializes the ModelComparisonAnalyzer.
@@ -28,6 +26,8 @@ class ModelComparisonAnalyzer(IAnalyzer):
         Args:
             config: Optional configuration override for heavy model categorization.
         """
+        # Default identifiers for heavy/deep learning models
+        self.HEAVY_MODELS = ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder"]  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
         self.config = config or {}
         self.configured_heavy_models = self.config.get('heavy_models', self.HEAVY_MODELS)
         logger.info("ModelComparisonAnalyzer initialized for comparative benchmarking.")
@@ -42,8 +42,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
         """
         results_df = data.get('results')
         if not isinstance(results_df, pd.DataFrame) or results_df.empty:
-            logger.error("Analysis failed: input 'results' DataFrame is empty or invalid.")
-            return {"error": "Invalid input format. Expected non-empty 'results' DataFrame."}
+            raise DataProcessingError("Input 'results' DataFrame is empty or invalid.")
         
         # Categorize models as 'heavy' or 'light' if metadata is missing
         if 'model_type' not in results_df.columns:
@@ -70,8 +69,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
     def _compare_architectures(self, results_df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Evaluates reliability and stability across competing model architectures."""
         if 'accuracy' not in results_df.columns:
-            logger.warning("Comparison aborted: 'accuracy' column missing from results.")
-            return []
+            raise DataProcessingError("'accuracy' column missing from results.")
 
         arch_stats = []
         for arch, group in results_df.groupby('model'):
@@ -109,6 +107,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
                 }
         except Exception as e:
             logger.error(f"Failed to calculate best models by type: {e}")
+            raise DataProcessingError(f"Failed to calculate best models by type: {e}") from e
             
         return leaders
 
@@ -135,32 +134,18 @@ class ModelComparisonAnalyzer(IAnalyzer):
     def compare_models(self, training_results: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
         """
         Contrasts live training results to select the final 'Champion' for production.
-        
-        Selection Logic:
-        1. Cluster models by structural complexity (Heavy vs. Light).
-        2. Evaluate intra-cluster leaders.
-        3. Conduct cross-cluster 'head-to-head' to determine ultimate winner.
-        
-        Args:
-            training_results: Output dictionary from UnifiedTrainingManager.
-            **kwargs: Additional context parameters like market_context.
-            
-        Returns:
-            Selection summary with champion_model, methodology, and cluster leaders.
         """
         logger.info("Conducting model cross-comparison to determine production champion...")
         
         tickers_results = training_results.get('tickers_results', {})
         
         if not tickers_results:
-            logger.warning("Champion selection aborted: No valid training results provided.")
-            return self._create_empty_result('Input results empty')
+            raise DataProcessingError("Champion selection aborted: No valid training results provided.")
         
         model_cohort = self._build_model_cohort(tickers_results)
         
         if not model_cohort:
-            logger.warning("No successful model instances found in the provided cohort.")
-            return self._create_empty_result('No successful model instances found')
+            raise DataProcessingError("No successful model instances found in the provided cohort.")
         
         best_heavy, best_light = self._identify_cluster_leaders(model_cohort)
         champion, reason = self._arbitrate_champion(best_heavy, best_light)
@@ -173,15 +158,6 @@ class ModelComparisonAnalyzer(IAnalyzer):
             'best_heavy': best_heavy,
             'best_light': best_light,
             'cohort_data': model_cohort
-        }
-
-    def _create_empty_result(self, reason: str) -> Dict[str, Any]:
-        """Create empty result with specified reason."""
-        return {
-            'champion_model': 'none',
-            'selection_reason': reason,
-            'best_heavy': None,
-            'best_light': None
         }
 
     def _build_model_cohort(self, tickers_results: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -247,7 +223,6 @@ class ModelComparisonAnalyzer(IAnalyzer):
             champion = best_light['model_name']
             reason = "Defaulted to light cluster leader (no heavy alternatives)"
         else:
-            champion = 'none'
-            reason = "Arbitration failed: zero model population"
+            raise DataProcessingError("Arbitration failed: zero model population")
         
         return champion, reason

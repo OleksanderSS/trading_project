@@ -86,7 +86,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
         
         # Calculate returns if missing
         if self.returns_column not in df_enriched.columns:
-            df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change()
+            df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change(fill_method=None).fillna(0)
             logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
         
         # Add various price-based features
@@ -127,9 +127,9 @@ class DerivedFeaturesEnricher(BaseEnricher):
             if stat_name == 'rolling_volatility':
                 df[f'ROLLING_VOL_{window}'] = VolatilityCalculator.calculate_rolling_volatility(df[col], window, self.periods_per_year)
             elif stat_name == 'rolling_skew':
-                df[f'ROLLING_SKEW_{window}'] = df[col].rolling(window=window).skew()
+                df[f'ROLLING_SKEW_{window}'] = df[col].rolling(window=window, min_periods=1).skew()
             elif stat_name == 'rolling_kurtosis':
-                df[f'ROLLING_KURT_{window}'] = df[col].rolling(window=window).kurt()
+                df[f'ROLLING_KURT_{window}'] = df[col].rolling(window=window, min_periods=1).kurt()
     
     def _add_forward_targets(self, df: pd.DataFrame, returns_col: str, config: Dict[str, Any]):
         """Adds forward-looking returns and direction as target labels."""
@@ -142,6 +142,6 @@ class DerivedFeaturesEnricher(BaseEnricher):
             forward_price = price.shift(-p)
             forward_returns = (forward_price - price) / price
             if config.get('include_returns', True):
-                df[f'TARGET_RETURN_{p}P'] = forward_returns
+                df[f'target_forward_return_{p}P'] = forward_returns
             if config.get('include_direction', True):
-                df[f'TARGET_DIRECTION_{p}P'] = (forward_returns > 0).astype(int)
+                df[f'target_forward_direction_{p}P'] = (forward_returns > 0).astype(int)

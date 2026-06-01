@@ -133,12 +133,12 @@ class FeatureDriftDetector:
                 self.metrics['drifts_detected'] = self.metrics.get('drifts_detected', 0) + 1
             
             if isinstance(self.metrics.get('drift_history'), list):
-            self.metrics['drift_history'].append({
-                'timestamp': pd.Timestamp.now().isoformat(),
-                'drift_detected': drift_results['drift_detected'],
-                'drift_share': drift_results['drift_share'],
-                'drifted_features': len(drift_results['drifted_features'])
-            })
+                self.metrics['drift_history'].append({
+                    'timestamp': pd.Timestamp.now().isoformat(),
+                    'drift_detected': drift_results['drift_detected'],
+                    'drift_share': drift_results['drift_share'],
+                    'drifted_features': len(drift_results['drifted_features'])
+                })
             
             # Log results
             if drift_results['drift_detected']:
@@ -207,7 +207,7 @@ class FeatureDriftDetector:
                 'total_features': 0
             }
     
-    def _save_report(self, report: Report, drift_results: Dict) -> Path:
+    def _save_report(self, report: Any, drift_results: Dict) -> Path:
         """Save drift report to file."""
         timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         drift_status = "DRIFT" if drift_results['drift_detected'] else "OK"

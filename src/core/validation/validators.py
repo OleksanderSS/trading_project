@@ -11,7 +11,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, ValidationError, root_validator, validator
+from pydantic import BaseModel, Field, ValidationError, model_validator, field_validator
 
 from src.core.logging.logger import ProjectLogger
 
@@ -58,7 +58,8 @@ class TickerValidator(BaseModel):
     """Validator for ticker symbols"""
     symbol: str = Field(..., min_length=1, max_length=10)
 
-    @validator('symbol')
+    @field_validator('symbol')
+    @classmethod
     def validate_ticker_format(cls, v):
         if not v or not re.match(r'^[A-Za-z0-9.-]+$', v):
             raise ValueError("Ticker must contain only letters, numbers, '.' or '-'")
@@ -76,7 +77,8 @@ class MarketDataSchema(BaseModel):
     close: float = Field(..., gt=0)
     volume: float = Field(..., ge=0)
 
-    @root_validator
+    @model_validator(mode='before')
+    @classmethod
     def validate_ohlc_logic(cls, values):
         high, low = values.get('high'), values.get('low')
         open_val, close = values.get('open'), values.get('close')
@@ -108,7 +110,8 @@ class TradingSignal(BaseModel):
     strength: SignalStrength | None = None
     strategy: str | None = None
 
-    @validator('ticker')
+    @field_validator('ticker')
+    @classmethod
     def validate_ticker(cls, v):
         return TickerValidator(symbol=v).symbol
 
@@ -123,13 +126,15 @@ class TradeOrder(BaseModel):
     stop_price: float | None = None
     timestamp: datetime = Field(default_factory=datetime.now)
 
-    @validator('ticker')
+    @field_validator('ticker')
+    @classmethod
     def validate_ticker(cls, v):
         return TickerValidator(symbol=v).symbol
 
-    @validator('price')
-    def validate_price(cls, v, values):
-        if values.get('order_type') in [OrderType.LIMIT, OrderType.STOP_LIMIT] and v is None:
+    @field_validator('price', mode='before')
+    @classmethod
+    def validate_price(cls, v, info):
+        if info.data.get('order_type') in [OrderType.LIMIT, OrderType.STOP_LIMIT] and v is None:
             raise ValueError("Price is required for LIMIT and STOP_LIMIT orders")
         if v is not None and v <= 0:
             raise ValueError("Price must be positive")
@@ -139,23 +144,25 @@ class TradeOrder(BaseModel):
 class BacktestRequest(BaseModel):
     """Validator for backtesting requests"""
 
-    tickers: list[str] = Field(..., min_items=1, max_items=100)
-    timeframes: list[Timeframe] = Field(..., min_items=1)
+    tickers: list[str] = Field(..., min_length=1, max_length=100)
+    timeframes: list[Timeframe] = Field(..., min_length=1)
     start_date: date
     end_date: date
     initial_capital: float = Field(..., gt=0, le=10**9)
-    strategies: list[str] = Field(..., min_items=1)
+    strategies: list[str] = Field(..., min_length=1)
 
-    @validator('tickers')
+    @field_validator('tickers')
+    @classmethod
     def validate_tickers(cls, v):
         validated = [TickerValidator(symbol=t).symbol for t in v]
         if len(set(validated)) != len(validated):
             raise ValueError("Duplicate tickers found")
         return validated
 
-    @validator('end_date')
-    def validate_date_range(cls, v, values):
-        if 'start_date' in values and v <= values['start_date']:
+    @field_validator('end_date', mode='before')
+    @classmethod
+    def validate_date_range(cls, v, info):
+        if 'start_date' in info.data and v <= info.data['start_date']:
             raise ValueError("End date must be after start date")
         return v
 

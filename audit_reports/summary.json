@@ -1,0 +1,43 @@
+{
+  "total_findings": 1159,
+  "by_severity": {
+    "P1": 301,
+    "P2": 441,
+    "P3": 417
+  },
+  "by_category": {
+    "error_policy": 378,
+    "financial_math": 72,
+    "heavy_imports": 51,
+    "missing_policy": 72,
+    "model_routing": 16,
+    "security": 112,
+    "temporal": 9,
+    "config_factory": 31,
+    "determinism": 339,
+    "architecture": 10,
+    "data_lineage": 69
+  },
+  "by_rule": {
+    "BROAD_EXCEPTION_SILENT_RETURN": 103,
+    "SHARPE_SORTINO_STD_ZERO_REVIEW": 27,
+    "VAR_SIGN_OR_EMPTY_DATA_REVIEW": 13,
+    "HEAVY_TOP_LEVEL_IMPORT": 51,
+    "FILLNA_ZERO_SUSPICIOUS": 72,
+    "AUTOENCODER_ROUTING_REVIEW": 16,
+    "UNSAFE_MODEL_OR_PICKLE_LOAD": 31,
+    "PLACEHOLDER_SECRET_REVIEW": 23,
+    "NEGATIVE_SHIFT_LOOKAHEAD": 9,
+    "HARDCODED_MODEL_LIST": 10,
+    "HARDCODED_MODEL_MAP_OR_ALIASES": 20,
+    "DUPLICATED_MODEL_REGISTRY_ENTRIES": 1,
+    "NON_INJECTED_CLOCK": 339,
+    "LOGGER_ERROR_THEN_RAISE": 275,
+    "DRAWDOWN_SIGN_CONVENTION_REVIEW": 32,
+    "FILE_READ_NEEDS_PATH_VALIDATION": 32,
+    "ENV_LOADING_REVIEW": 26,
+    "GOD_CLASS_REVIEW": 9,
+    "LONG_MODULE_REVIEW": 1,
+    "FEATURE_WITHOUT_LOCAL_LINEAGE_HINT": 69
+  }
+}

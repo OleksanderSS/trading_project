@@ -20,7 +20,6 @@ Usage:
     # Automatic cleanup and logging
     profiler.cleanup()
 """
-
 import gc
 import logging
 import threading
@@ -29,7 +28,6 @@ from collections.abc import Callable
 from contextlib import contextmanager
 from functools import wraps
 from typing import Any
-
 import psutil
 
 
@@ -47,7 +45,8 @@ class MemoryProfiler:
         _lock: Thread safety
     """
 
-    def __init__(self, warn_threshold_gb: float = 10.0, critical_threshold_gb: float = 12.0):
+    def __init__(self, warn_threshold_gb: float=10.0, critical_threshold_gb:
+        float=12.0):
         """
         Initialize memory profiler.
 
@@ -59,20 +58,13 @@ class MemoryProfiler:
         self.critical_threshold_gb = critical_threshold_gb
         self.process = psutil.Process()
         self._lock = threading.RLock()
-
-        # Statistics
-        self.stats = {
-            'peak_memory_gb': 0.0,
-            'operations_tracked': 0,
-            'warnings_issued': 0,
-            'cleanups_performed': 0,
-            'memory_freed_mb': 0.0,
-        }
-
+        self.stats = {'peak_memory_gb': 0.0, 'operations_tracked': 0,
+            'warnings_issued': 0, 'cleanups_performed': 0,
+            'memory_freed_mb': 0.0}
         self.logger = logging.getLogger(__name__)
 
     @contextmanager
-    def track(self, operation_name: str, log_start: bool = True):
+    def track(self, operation_name: str, log_start: bool=True):
         """
         Context manager to track memory usage for an operation.
 
@@ -91,51 +83,38 @@ class MemoryProfiler:
         with self._lock:
             start_memory = self._get_memory_gb()
             start_time = time.time()
-
             if log_start:
-                self.logger.debug(f"🧠 {operation_name} start - Memory: {start_memory:.2f}GB")
-
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(
+                        f'🧠 {operation_name} start - Memory: {start_memory:.2f}GB')
             try:
                 yield
             finally:
                 end_memory = self._get_memory_gb()
                 end_time = time.time()
-
                 delta_memory = end_memory - start_memory
                 duration = end_time - start_time
-
-                # Update peak memory
                 if end_memory > self.stats['peak_memory_gb']:
                     self.stats['peak_memory_gb'] = end_memory
-
                 self.stats['operations_tracked'] += 1
-
-                # Log memory usage
-                if abs(delta_memory) > 0.1:  # Only log significant changes
+                if abs(delta_memory) > 0.1:
                     self.logger.info(
-                        f"🧠 {operation_name} completed - Memory: {end_memory:.2f}GB "
-                        f"({'+' if delta_memory >= 0 else ''}{delta_memory:.2f}GB), "
-                        f"Duration: {duration:.1f}s"
-                    )
-
-                # Check thresholds
+                        f"🧠 {operation_name} completed - Memory: {end_memory:.2f}GB ({'+' if delta_memory >= 0 else ''}{delta_memory:.2f}GB), Duration: {duration:.1f}s"
+                        )
                 if end_memory > self.critical_threshold_gb:
                     self.logger.warning(
-                        f"🚨 CRITICAL: Memory usage {end_memory:.2f}GB exceeds critical threshold "
-                        f"{self.critical_threshold_gb}GB - triggering cleanup"
-                    )
+                        f'🚨 CRITICAL: Memory usage {end_memory:.2f}GB exceeds critical threshold {self.critical_threshold_gb}GB - triggering cleanup'
+                        )
                     freed = self._perform_cleanup()
                     self.stats['cleanups_performed'] += 1
                     self.stats['memory_freed_mb'] += freed
-
                 elif end_memory > self.warn_threshold_gb:
                     self.logger.warning(
-                        f"⚠️ HIGH: Memory usage {end_memory:.2f}GB exceeds warning threshold "
-                        f"{self.warn_threshold_gb}GB"
-                    )
+                        f'⚠️ HIGH: Memory usage {end_memory:.2f}GB exceeds warning threshold {self.warn_threshold_gb}GB'
+                        )
                     self.stats['warnings_issued'] += 1
 
-    def track_function(self, func: Callable) -> Callable:
+    def track_function(self, func: Callable) ->Callable:
         """
         Decorator to track memory usage of a function.
 
@@ -150,14 +129,15 @@ class MemoryProfiler:
             def expensive_operation():
                 return compute_features()
         """
+
         @wraps(func)
         def wrapper(*args, **kwargs):
-            operation_name = f"{func.__name__}"
+            operation_name = f'{func.__name__}'
             with self.track(operation_name):
                 return func(*args, **kwargs)
         return wrapper
 
-    def cleanup(self, force: bool = False) -> float:
+    def cleanup(self, force: bool=False) ->float:
         """
         Perform memory cleanup.
 
@@ -169,21 +149,17 @@ class MemoryProfiler:
         """
         with self._lock:
             current_memory = self._get_memory_gb()
-
             if force or current_memory > self.warn_threshold_gb:
                 freed_mb = self._perform_cleanup()
-
-                if freed_mb > 10:  # Only log significant cleanup
-                    self.logger.info(f"🧹 Memory cleanup freed {freed_mb:.1f}MB")
-
+                if freed_mb > 10:
+                    self.logger.info(f'🧹 Memory cleanup freed {freed_mb:.1f}MB'
+                        )
                 self.stats['cleanups_performed'] += 1
                 self.stats['memory_freed_mb'] += freed_mb
-
                 return freed_mb
-
             return 0.0
 
-    def get_stats(self) -> dict[str, Any]:
+    def get_stats(self) ->dict[str, Any]:
         """
         Get memory profiling statistics.
 
@@ -192,39 +168,32 @@ class MemoryProfiler:
         """
         with self._lock:
             current_memory = self._get_memory_gb()
+            return {'current_memory_gb': current_memory, 'peak_memory_gb':
+                self.stats['peak_memory_gb'], 'operations_tracked': self.
+                stats['operations_tracked'], 'warnings_issued': self.stats[
+                'warnings_issued'], 'cleanups_performed': self.stats[
+                'cleanups_performed'], 'memory_freed_mb': self.stats[
+                'memory_freed_mb'], 'warn_threshold_gb': self.
+                warn_threshold_gb, 'critical_threshold_gb': self.
+                critical_threshold_gb}
 
-            return {
-                'current_memory_gb': current_memory,
-                'peak_memory_gb': self.stats['peak_memory_gb'],
-                'operations_tracked': self.stats['operations_tracked'],
-                'warnings_issued': self.stats['warnings_issued'],
-                'cleanups_performed': self.stats['cleanups_performed'],
-                'memory_freed_mb': self.stats['memory_freed_mb'],
-                'warn_threshold_gb': self.warn_threshold_gb,
-                'critical_threshold_gb': self.critical_threshold_gb,
-            }
-
-    def reset_stats(self) -> None:
+    def reset_stats(self) ->None:
         """Reset profiling statistics."""
         with self._lock:
-            self.stats = {
-                'peak_memory_gb': 0.0,
-                'operations_tracked': 0,
-                'warnings_issued': 0,
-                'cleanups_performed': 0,
-                'memory_freed_mb': 0.0,
-            }
+            self.stats = {'peak_memory_gb': 0.0, 'operations_tracked': 0,
+                'warnings_issued': 0, 'cleanups_performed': 0,
+                'memory_freed_mb': 0.0}
 
-    def _get_memory_gb(self) -> float:
+    def _get_memory_gb(self) ->float:
         """Get current memory usage in GB."""
         try:
             memory_bytes = float(self.process.memory_info().rss)
-            return float(memory_bytes / (1024 ** 3))
-        except Exception:
-            # Fallback if psutil fails
+            return float(memory_bytes / 1024 ** 3)
+        except Exception as e:
+            self.logger.error(f'Error getting memory usage: {e}', exc_info=True)
             return 0.0
 
-    def _perform_cleanup(self) -> float:
+    def _perform_cleanup(self) ->float:
         """
         Perform garbage collection and return memory freed.
 
@@ -235,25 +204,21 @@ class MemoryProfiler:
             before = self.process.memory_info().rss
             gc.collect()
             after = self.process.memory_info().rss
-
             freed_bytes = float(before - after)
-            freed_mb = float(freed_bytes / (1024 ** 2))
-
-            return float(max(0.0, freed_mb))  # Ensure non-negative
-
+            freed_mb = float(freed_bytes / 1024 ** 2)
+            return float(max(0.0, freed_mb))
         except Exception as e:
-            self.logger.debug(f"Memory cleanup measurement failed: {e}")
-            return 0.0
-            gc.collect()  # Still perform cleanup
+            self.logger.error(f'Memory cleanup failed: {e}', exc_info=True)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'Memory cleanup measurement failed: {e}')
             return 0.0
 
 
-# Global singleton profiler
 _profiler: MemoryProfiler | None = None
 _profiler_lock = threading.Lock()
 
 
-def get_memory_profiler(warn_threshold_gb: float = 10.0) -> MemoryProfiler:
+def get_memory_profiler(warn_threshold_gb: float=10.0) ->MemoryProfiler:
     """
     Get or create global memory profiler (singleton).
 
@@ -264,23 +229,20 @@ def get_memory_profiler(warn_threshold_gb: float = 10.0) -> MemoryProfiler:
         Global MemoryProfiler instance
     """
     global _profiler
-
     if _profiler is None:
         with _profiler_lock:
             if _profiler is None:
                 _profiler = MemoryProfiler(warn_threshold_gb=warn_threshold_gb)
-
     return _profiler
 
 
-def cleanup_memory() -> float:
+def cleanup_memory() ->float:
     """Perform global memory cleanup."""
     profiler = get_memory_profiler()
     return profiler.cleanup(force=True)
 
 
-def get_memory_stats() -> dict[str, Any]:
+def get_memory_stats() ->dict[str, Any]:
     """Get statistics from global profiler."""
     profiler = get_memory_profiler()
     return profiler.get_stats()
-

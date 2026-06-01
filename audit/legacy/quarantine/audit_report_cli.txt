@@ -1,0 +1,2402 @@
+
+══════════════════════════════════════════════════════════════════════
+  🟠 HIGH
+══════════════════════════════════════════════════════════════════════
+
+🟠 [ARC] factories\model_factory.py:1
+   Tight coupling: 17 внутрішніх імпортів (поріг 15) — ознака God Module
+   ✏ Згрупуй залежності через facade або dependency injection
+
+🟠 [ARC] pipeline\hybrid\orchestrator_context.py:1
+   Tight coupling: 25 внутрішніх імпортів (поріг 15) — ознака God Module
+   ✏ Згрупуй залежності через facade або dependency injection
+
+🟠 [ARC] pipeline\stages\stage_1_collection.py:1
+   Tight coupling: 17 внутрішніх імпортів (поріг 15) — ознака God Module
+   ✏ Згрупуй залежності через facade або dependency injection
+
+🟠 [ARC] pipeline\stages\stage_3_feature_engineering.py:1
+   Tight coupling: 30 внутрішніх імпортів (поріг 15) — ознака God Module
+   ✏ Згрупуй залежності через facade або dependency injection
+
+🟠 [ARC] pipeline\stages\stage_5_prediction.py:1
+   Tight coupling: 20 внутрішніх імпортів (поріг 15) — ознака God Module
+   ✏ Згрупуй залежності через facade або dependency injection
+
+🟠 [ARC] pipeline\stages\stage_6_trading_execution.py:1
+   Tight coupling: 26 внутрішніх імпортів (поріг 15) — ознака God Module
+   ✏ Згрупуй залежності через facade або dependency injection
+
+🟠 [ARC] pipeline\stages\stage_7_evaluation.py:1
+   Tight coupling: 23 внутрішніх імпортів (поріг 15) — ознака God Module
+   ✏ Згрупуй залежності через facade або dependency injection
+
+🟠 [BUG] algorithms\adaptive_position_sizer.py:216
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\adaptive_position_sizer.py:328
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\regime_detector.py:143
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\regime_detector.py:228
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\regime_detector.py:484
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\regime_detector.py:554
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\regime_detector.py:636
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\risk_parity_allocator.py:435
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\risk_parity_allocator.py:457
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\risk_parity_allocator.py:485
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] algorithms\risk_parity_allocator.py:524
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\causal_event_finder.py:282
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\causal_event_finder.py:290
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\hedge_fund_analyzer.py:124
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\hedge_fund_analyzer.py:155
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\news_impact_analyzer.py:114
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:199
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:230
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:268
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:293
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:313
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:343
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:368
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\performance_attribution_analyzer.py:401
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\risk_decomposition_analyzer.py:159
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\risk_decomposition_analyzer.py:202
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\risk_decomposition_analyzer.py:250
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\risk_decomposition_analyzer.py:287
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\risk_decomposition_analyzer.py:323
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\risk_decomposition_analyzer.py:352
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\analyzers\shap_analyzer.py:36
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\arena_battle.py:121
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\arena_battle.py:198
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\arena_battle.py:423
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\arena_battle.py:461
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\arena_battle.py:471
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\battle_groups.py:257
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\ensemble_performance_bridge.py:119
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\arena\performance_tracker.py:359
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\calculators\advanced_econometrics_calculator.py:113
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\calculators\advanced_econometrics_calculator.py:133
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\calculators\advanced_econometrics_calculator.py:186
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\calculators\advanced_econometrics_calculator.py:207
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\calculators\advanced_econometrics_calculator.py:224
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\context\market_context_analyzer.py:60
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\context\market_phase_analyzer.py:143
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\context\prediction_adjuster.py:85
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\data_managers\model_results_manager.py:167
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] analytics\unified_analytics_engine.py:114
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] backtesting\advanced\advanced_engine.py:365
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] backtesting\advanced\advanced_engine.py:425
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] backtesting\advanced\advanced_engine.py:730
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] backtesting\advanced\advanced_engine.py:760
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] backtesting\advanced\advanced_engine.py:932
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\adaptive_confidence_calibrator.py:113
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\adaptive_confidence_calibrator.py:169
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\adaptive_confidence_calibrator.py:272
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\adaptive_confidence_calibrator.py:287
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\adaptive_confidence_calibrator.py:325
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\adaptive_confidence_calibrator.py:370
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\adaptive_confidence_calibrator.py:407
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\calibration_engine.py:346
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] calibration\calibration_engine.py:381
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] cli\pipeline_data_loader.py:85
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as ex:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] colab\config\config_loader.py:125
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\base_integration.py:35
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\cache\cache_manager.py:87
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\cache\cache_manager.py:163
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\cache\cache_manager.py:304
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\cloud\gcs_manager.py:37
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\error_handling\error_handler.py:246
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\file_management\file_manager.py:79
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\file_management\file_manager.py:118
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\file_management\file_manager.py:191
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\file_management\file_manager.py:247
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\logging\logger.py:73
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\monitoring\memory_profiler.py:223
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\monitoring\memory_profiler.py:244
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] core\system\batch_processor.py:279
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\aaii_sentiment_collector.py:152
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\bigquery_collector.py:45
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\custom_csv_collector.py:42
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\economic_calendar_collector.py:112
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\fear_greed_collector.py:117
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\free_google_trends_collector.py:71
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\huggingface_collector.py:114
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\local_file_collector.py:59
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\collectors\rss_collector.py:222
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as exc:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\data_loader.py:68
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\connectors\bigquery_connector.py:111
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_management.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] data\management\data_manager.py:89
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:95
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:103
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:123
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:130
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:165
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:196
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:231
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:240
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:271
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:279
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:287
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_manager.py:334
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as idx_e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\data_versioning.py:303
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\handlers\connection_handler.py:26
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\management\handlers\connection_handler.py:41
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] data\validation\event_dataset_validator.py:76
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] factories\model_factory.py:186
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as inspect_error:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\analysis\news_decay_modeler.py:325
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\analysis\regime_importance_tracker.py:235
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\analysis\regime_importance_tracker.py:252
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\enrichers\advanced_analytics_enricher.py:44
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\enrichers\advanced_analytics_enricher.py:66
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\enrichers\keyword_entity_enricher.py:40
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\enrichers\macro_features_enricher.py:94
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\enrichers\macro_features_enricher.py:451
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\enrichers\macro_features_enricher.py:472
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\enrichers\nlp_features_enricher.py:129
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as cache_err:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_cache.py:122
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_cache.py:128
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as unlink_err:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_cache.py:250
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_cache.py:297
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_cache.py:322
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_orchestrator.py:103
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_orchestrator.py:129
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_orchestrator.py:253
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\feature_selection_cache.py:43
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\news_clusterer.py:57
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\news_dataset_builder.py:72
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\news_dataset_builder.py:194
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\news_dataset_builder.py:263
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\nlp\models\roberta_sentiment.py:87
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\nlp\processors\news_harmonizer.py:15
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\selection\enhanced_smart_selector.py:495
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\selection\enhanced_smart_selector.py:707
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\selection\smart_selector.py:109
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\utils\modular_adaptive_technical_indicators.py:280
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\utils\modular_adaptive_technical_indicators.py:297
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\validation\feature_leakage_guard.py:221
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] features\validation\feature_leakage_guard.py:236
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] integrations\data\bigquery_client.py:158
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\modes\backtest.py:129
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\modes\backtest.py:158
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\modes\web_ui.py:50
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\modes\web_ui.py:141
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\modes\web_ui.py:236
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\modes\web_ui.py:261
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\system_orchestrator.py:59
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] main\system_orchestrator.py:223
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] meta_learning\awareness\context_engine.py:561
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] meta_learning\awareness\context_engine.py:713
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] meta_learning\awareness\context_engine.py:727
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] meta_learning\awareness\context_engine.py:770
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] meta_learning\awareness\context_engine.py:1059
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] metrics\financial\financial_metrics_library.py:125
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] metrics\model\ml_evaluator.py:105
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\analysis\baseline_dominance_detector.py:228
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\analysis\baseline_dominance_detector.py:271
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\analysis\baseline_dominance_detector.py:288
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\analysis\regime_winner_analyzer.py:226
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\analysis\regime_winner_analyzer.py:243
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\analysis\regime_winner_analyzer.py:381
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\analysis\regime_winner_analyzer.py:552
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\loader.py:81
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\loader.py:97
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\loader.py:185
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\model_selector\adaptive_selector.py:257
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\model_selector\adaptive_selector.py:394
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\model_selector\fingerprint_selector.py:130
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\model_selector\smart_selector.py:37
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\model_selector\smart_selector.py:171
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] models\monitoring\prediction_drift_monitor.py:548
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\config.py:36
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\data_freshness_monitor.py:87
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\feature_drift_monitor.py:173
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\health_hub.py:186
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\health_hub.py:210
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\infrastructure\resource_monitor.py:143
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\ml_analytics.py:234
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] monitoring\monitoring_system.py:520
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] optimization\hyperparameter_searcher.py:130
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] optimization\hyperparameter_searcher.py:200
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] optimization\hyperparameter_searcher.py:277
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] optimization\portfolio\optimizer.py:73
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] patterns\pattern_analyzer.py:323
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\cache_manager.py:67
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\cache_manager.py:83
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\cache_manager.py:98
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\data_cache_manager.py:49
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\data_cache_manager.py:79
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\data_manager.py:113
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\feature_loader.py:34
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\feature_loader.py:47
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\feature_selection_validator.py:86
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\feature_selection_validator.py:102
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\feature_selection_validator.py:147
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\final_stages_executor.py:223
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\light_models_trainer.py:132
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\light_models_trainer.py:173
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\pipeline_metadata_manager.py:81
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\results_processor.py:76
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\selected_features_processor.py:108
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\storage_helpers.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\hybrid\storage_manager.py:77
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\storage_manager.py:96
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid\test_mode_manager.py:44
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid_orchestrator.py:221
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\hybrid_orchestrator.py:234
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\pipeline_orchestrator.py:239
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\pipeline_orchestrator.py:267
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\evaluation\analytics.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\evaluation\backtest_adapter.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\evaluation\data_recovery.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\evaluation\io.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\evaluation\reporting.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\modeling\io.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\modeling\orchestration.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\modeling\training.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\prediction\anomaly_engine.py:46
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\anomaly_engine.py:78
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\anomaly_engine.py:106
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\anomaly_engine.py:122
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\anomaly_engine.py:140
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\anomaly_engine.py:178
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\anomaly_engine.py:186
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\data_preparer.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\prediction\model_resolver.py:185
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\model_resolver.py:300
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\model_resolver.py:325
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\model_resolver.py:356
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\model_resolver.py:375
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\model_selector.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\prediction\prediction_generator.py:151
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\prediction\result_builder.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\stage_0_setup.py:78
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_1_collection.py:111
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as df_error:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_2_processing.py:43
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_2_processing.py:313
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_2_processing.py:502
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_2_processing.py:530
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_2_processing.py:593
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_3_feature_engineering.py:144
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_3_feature_engineering.py:580
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_3_feature_engineering.py:755
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_4_modeling.py:221
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_4_modeling.py:389
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_4_modeling.py:621
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_4_modeling.py:710
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_4_modeling.py:719
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_4_modeling.py:746
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_5_prediction.py:456
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_5_prediction.py:585
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_5_prediction.py:776
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_5_prediction.py:835
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:127
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:147
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:155
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:171
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:428
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:453
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:565
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_6_trading_execution.py:768
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:75
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:84
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:93
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:106
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:429
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:592
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:606
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:641
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\stage_7_evaluation.py:652
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] pipeline\stages\trading\data_io.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] pipeline\stages\trading\recommendation_engine.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] predictions\caching.py:99
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] predictions\models_predict.py:27
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] processing\cleaners.py:162
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] processing\cleaners.py:172
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] risk\elite_risk_metrics.py:208
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] risk\kill_switch_manager.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] risk\max_exposure_monitor.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] trading\consensus_engine.py:174
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\consensus_engine.py:257
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\consensus_engine.py:334
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\consensus_engine.py:355
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\elite_risk_sizer.py:178
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\elite_risk_sizer.py:203
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\portfolio_manager.py:222
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\portfolio_manager.py:249
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\signal_processor.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] trading\trading_orchestrator.py:173
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\virtual_portfolio.py:78
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\virtual_portfolio.py:113
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\virtual_portfolio.py:192
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] trading\virtual_portfolio.py:280
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] training\adaptive_training_manager.py:433
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] utils\missing_data_anomaly_detector.py:1
+   SyntaxError — файл не парситься
+   ✏ Виправ синтаксичну помилку
+
+🟠 [BUG] utils\trading_calendar.py:133
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] utils\type_conversion.py:344
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] validation\pipeline_schemas.py:402
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] validation\pipeline_schemas.py:429
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as read_err:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] validation\time_series_validator.py:241
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] validation\time_series_validator.py:353
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [BUG] validation\time_series_validator.py:375
+   Broad except без логування і без re-raise — помилка зникне безслідно
+   ▶ except Exception as e:
+   ✏ Додай logger.error(exc) або re-raise
+
+🟠 [CMX] algorithms\regime_detector.py:60
+   God Class: MarketRegimeDetector = 645 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] algorithms\risk_parity_allocator.py:33
+   God Class: RiskParityAllocator = 534 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] analytics\analyzers\performance_attribution_analyzer.py:29
+   God Class: PerformanceAttributionAnalyzer = 412 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] analytics\arena\arena_battle.py:65
+   God Class: TradingModelArena = 408 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] analytics\arena\performance_tracker.py:52
+   God Class: ModelPerformanceTracker = 471 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] analytics\context\counterfactual_generator.py:18
+   God Class: CounterfactualGenerator = 492 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] calibration\calibration_engine.py:33
+   God Class: CalibrationEngine = 428 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] cli\pipeline_data_loader.py:44
+   Висока cyclomatic complexity: load_from_db_fallback() = 17 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] core\validation\validators.py:80
+   Висока cyclomatic complexity: validate_ohlc_logic() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\cftc_collector.py:146
+   Висока cyclomatic complexity: _parse_cftc_csv() = 15 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\fred_collector.py:41
+   Висока cyclomatic complexity: run() = 15 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\google_news_collector.py:78
+   Висока cyclomatic complexity: _run_internal() = 22 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\insider_collector.py:150
+   Висока cyclomatic complexity: run() = 16 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\newsapi_collector.py:55
+   Висока cyclomatic complexity: run() = 22 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\put_call_ratio_collector.py:76
+   Висока cyclomatic complexity: _fetch_put_call_data() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\rss_collector.py:90
+   Висока cyclomatic complexity: _run_internal() = 20 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\sec_filings_collector.py:70
+   Висока cyclomatic complexity: run() = 19 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\collectors\yf_collector.py:30
+   Висока cyclomatic complexity: run() = 20 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\management\data_manager.py:169
+   Висока cyclomatic complexity: upsert() = 21 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\management\handlers\connection_handler.py:32
+   Висока cyclomatic complexity: get_connection() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] data\quality\news_price_availability_filter.py:15
+   Висока cyclomatic complexity: quick_filter_news_by_data_availability() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] ensembling\stacked_ensemble.py:178
+   Висока cyclomatic complexity: _predict_weighted_average() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\analysis\news_decay_modeler.py:21
+   God Class: NewsDecayModeler = 686 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] features\analysis\news_decay_modeler.py:402
+   Висока cyclomatic complexity: _select_best_overall_model() = 15 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\analysis\news_decay_modeler.py:622
+   Висока cyclomatic complexity: get_model_performance_summary() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\analysis\regime_importance_tracker.py:19
+   God Class: RegimeImportanceTracker = 763 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] features\analysis\regime_importance_tracker.py:287
+   Висока cyclomatic complexity: _analyze_importance_stability() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\analysis\regime_importance_tracker.py:414
+   Висока cyclomatic complexity: _calculate_importance_changes() = 19 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\enrichers\macro_features_enricher.py:17
+   God Class: MacroFeaturesEnricher = 460 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] features\enrichers\news_impact_enricher.py:11
+   God Class: NewsImpactEnricher = 462 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] features\enrichers\news_quality_enricher.py:127
+   Висока cyclomatic complexity: _classify_news_type() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\enrichers\news_quality_enricher.py:240
+   Висока cyclomatic complexity: _calculate_news_freshness() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\enrichers\sentiment_features_enricher.py:159
+   Висока cyclomatic complexity: _aggregate_news_sentiment() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\feature_selection_cache.py:169
+   Висока cyclomatic complexity: invalidate() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\news_dataset_builder.py:204
+   Висока cyclomatic complexity: build_dataset() = 17 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\nlp\extractors\keyword_extractor.py:45
+   Висока cyclomatic complexity: update_keywords() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\nlp\models\roberta_sentiment.py:66
+   Висока cyclomatic complexity: analyze() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\nlp\scoring\news_scorer.py:82
+   Висока cyclomatic complexity: _calculate_significance_score() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\selection\enhanced_smart_selector.py:27
+   God Class: EnhancedSmartFeatureSelector = 718 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] features\selection\enhanced_smart_selector.py:124
+   Висока cyclomatic complexity: select_with_full_analysis() = 17 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\selection\smart_selector.py:159
+   Висока cyclomatic complexity: select() = 18 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\validation\feature_leakage_guard.py:166
+   Висока cyclomatic complexity: _check_correlation() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] features\validation\redundancy_detector.py:19
+   God Class: RedundancyDetector = 484 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] meta_learning\awareness\context_engine.py:82
+   God Class: ContextAwarenessEngine = 1006 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] meta_learning\memory\diary_engine.py:76
+   God Class: DiaryEngine = 448 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\analysis\overfitting_detector.py:22
+   God Class: OverfittingDetector = 903 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\analysis\overfitting_detector.py:515
+   Висока cyclomatic complexity: _generate_prevention_recommendations() = 22 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\analysis\regime_winner_analyzer.py:20
+   God Class: RegimeWinnerAnalyzer = 884 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\dean\dean_bootstrap_system.py:141
+   Висока cyclomatic complexity: calculate_reward() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\ensemble\confidence_calibrator.py:22
+   God Class: ConfidenceCalibrator = 728 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\ensemble\dynamic_weights.py:135
+   Висока cyclomatic complexity: _context_aware_weights() = 16 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\ensemble\model_correlation_analyzer.py:19
+   God Class: ModelCorrelationAnalyzer = 760 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\ensemble\model_correlation_analyzer.py:461
+   Висока cyclomatic complexity: _find_best_subset() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\ensemble\weight_stability_monitor.py:16
+   God Class: WeightStabilityMonitor = 912 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\ensemble\weight_stability_monitor.py:473
+   Висока cyclomatic complexity: _generate_stability_recommendations() = 16 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\ensemble\weight_stability_monitor.py:798
+   Висока cyclomatic complexity: plot_stability_metrics() = 25 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\integrated_model_manager.py:23
+   God Class: IntegratedModelManager = 679 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\integrated_model_manager.py:317
+   Висока cyclomatic complexity: _calculate_overall_health_score() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\loader.py:25
+   God Class: ModelLoaderStrategy = 496 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\loader.py:282
+   Висока cyclomatic complexity: _wrap_keras_model() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\loader.py:288
+   Висока cyclomatic complexity: predict() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\model_selector\adaptive_selector.py:51
+   God Class: AdaptiveModelSelector = 425 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\monitoring\prediction_drift_monitor.py:20
+   God Class: PredictionDriftMonitor = 842 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] models\monitoring\prediction_drift_monitor.py:519
+   Висока cyclomatic complexity: _analyze_performance_trend() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\monitoring\prediction_drift_monitor.py:646
+   Висока cyclomatic complexity: _generate_retraining_recommendations() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] models\monitoring\prediction_drift_monitor.py:779
+   Висока cyclomatic complexity: get_drift_summary() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] optimization\portfolio\optimizer.py:31
+   God Class: PortfolioOptimizer = 427 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] patterns\pattern_analyzer.py:348
+   Висока cyclomatic complexity: _analyze_news_batch() = 15 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\guards\macro_release_timing_guard.py:18
+   God Class: MacroReleaseTimingGuard = 453 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\guards\temporal_leakage_guard.py:18
+   God Class: TemporalLeakageGuard = 491 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\guards\timeframe_alignment_guard.py:68
+   Висока cyclomatic complexity: validate_timeframe_compatibility() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\hybrid\colab_manager.py:50
+   Висока cyclomatic complexity: prepare_colab_batch() = 24 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\hybrid\colab_manager.py:181
+   Висока cyclomatic complexity: load_colab_results() = 16 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\hybrid\final_stages_executor.py:150
+   Висока cyclomatic complexity: _merge_model_results() = 15 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\hybrid\model_training_orchestrator.py:23
+   Висока cyclomatic complexity: train_models_for_contexts() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\hybrid\results_processor.py:39
+   Висока cyclomatic complexity: _find_batch_directory() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\hybrid_orchestrator.py:117
+   God Class: HybridOrchestrator = 720 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\hybrid_orchestrator.py:610
+   Висока cyclomatic complexity: _extract_features_and_targets() = 24 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\stages\prediction\model_resolver.py:51
+   Висока cyclomatic complexity: resolve_batch_directory() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\stages\prediction\model_resolver.py:91
+   Висока cyclomatic complexity: update_local_model_paths() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\stages\stage_2_processing.py:25
+   God Class: ProcessingStage = 819 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\stages\stage_2_processing.py:363
+   Висока cyclomatic complexity: _process_news_locally() = 22 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\stages\stage_3_feature_engineering.py:54
+   God Class: FeatureEngineeringStage = 752 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\stages\stage_3_feature_engineering.py:355
+   Висока cyclomatic complexity: _run_feature_leakage_gate() = 15 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\stages\stage_3_feature_engineering.py:393
+   Висока cyclomatic complexity: run() = 49 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\stages\stage_4_modeling.py:129
+   God Class: ModelingStage = 618 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\stages\stage_5_prediction.py:62
+   God Class: PredictionStage = 774 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\stages\stage_5_prediction.py:779
+   Висока cyclomatic complexity: _save_stage_5_results() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] pipeline\stages\stage_6_trading_execution.py:54
+   God Class: TradingExecutionStage = 846 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\stages\stage_7_evaluation.py:35
+   God Class: EvaluationStage = 691 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] pipeline\stages\stage_7_evaluation.py:282
+   Висока cyclomatic complexity: _run_backtest() = 23 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] processing\price_preprocessor.py:62
+   Висока cyclomatic complexity: _normalize_structure() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] risk\elite_risk_metrics.py:21
+   God Class: EliteRiskMetrics = 615 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] targets\calculators\post_news_target_calculator.py:24
+   Висока cyclomatic complexity: calculate() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] targets\calculators\pre_news_target_calculator.py:24
+   Висока cyclomatic complexity: calculate() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] trading\live_adaptive_ensemble.py:118
+   Висока cyclomatic complexity: compute_ensemble_weights() = 19 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] training\adaptive_training_manager.py:154
+   Висока cyclomatic complexity: _calculate_target_quality_score() = 14 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] training\progressive_trainer.py:100
+   God Class: ProgressiveTrainer = 500 рядків (поріг 400)
+   ✏ Розбий на менші класи / делегуй відповідальності
+
+🟠 [CMX] utils\feature_preparation.py:88
+   Висока cyclomatic complexity: _clean_numeric_data() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] validation\data_leakage_detector.py:137
+   Висока cyclomatic complexity: run_comprehensive_audit() = 13 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] validation\pipeline_schemas.py:127
+   Висока cyclomatic complexity: validate() = 16 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [CMX] validation\pipeline_schemas.py:370
+   Висока cyclomatic complexity: validate_batch_dir() = 15 (поріг 12)
+   ✏ Розбий на менші функції / use early returns
+
+🟠 [ML] models\ensemble\dynamic_weights.py:88
+   Hardcoded список моделей — порушення canonical source (ModelFactory)
+   ▶ models=["catboost", "lstm", "xgboost"],
+   ✏ Використай ModelFactory.get_available_models() або get_light_models()
+
+🟠 [ML] training\unified_training_manager.py:115
+   Hardcoded список моделей — порушення canonical source (ModelFactory)
+   ▶ light_models = ["random_forest", "lightgbm", "catboost", "xgboost"]
+   ✏ Використай ModelFactory.get_available_models() або get_light_models()
+
+🟠 [SEC] analytics\analyzers\performance_attribution_analyzer.py:269
+   Потенційний SQL injection через f-string
+   ▶ logger.warning(f"Selection attribution exception: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\arena\arena_battle.py:346
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"[ARENA] Created {battles_created} battles from group '{group_name}'")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\arena\arena_battle.py:350
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"[ARENA] Failed to create battles from group '{group_name}': {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\arena\arena_battle.py:387
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"[ARENA] Failed to get predictions from {model_name}: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\arena\performance_tracker.py:227
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"[TRACKER] Failed to update battle stats: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\arena\performance_tracker.py:244
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"[TRACKER] Leaderboard updated with {len(leaderboard_entries)} models")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\arena\performance_tracker.py:247
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"[TRACKER] Failed to update leaderboard: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\arena\performance_tracker.py:518
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"[TRACKER] Performance data loaded from {filepath}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\calculators\advanced_econometrics_calculator.py:134
+   Потенційний SQL injection через f-string
+   ▶ logger.warning(f"Lag selection failed: {e}, using default lag 2")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\calculators\fama_french_factors.py:195
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Ingesting historical benchmarks from yfinance ({len(tickers)} assets)...")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\context\contextual_model_selector.py:29
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"ContextualModelSelector initialized for models: {self.available_models}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\context\contextual_model_selector.py:53
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"Error during kNN model selection: {e}", exc_info=True)
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\context\contextual_model_selector.py:187
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Model selection complete. Best model: {best_model_name} with confidence {confidence:.2f}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\context\contextual_model_selector.py:192
+   Потенційний SQL injection через f-string
+   ▶ logger.warning(f"Falling back to heuristic model selection. Reason: {reason}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\context\ensemble_selector.py:94
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Selected '{best}' ensemble (score={best_score:.2f})")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\data_managers\model_results_manager.py:126
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Loaded {len(df)} performance records from {file_path.name}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\reporting\results_manager.py:85
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Results loaded from {filepath}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\reporting\results_manager.py:141
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Results file deleted: {filepath}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\reporting\results_manager.py:148
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"Failed to delete results: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] analytics\unified_analytics_engine.py:75
+   Потенційний SQL injection через f-string
+   ▶ logger.warning(f"Class '{class_name}' from '{module_path}' is not a valid IAnalyzer instance.")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] calibration\adaptive_confidence_calibrator.py:170
+   Потенційний SQL injection через f-string
+   ▶ self.logger.warning(f"Update failed: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] calibration\adaptive_confidence_calibrator.py:368
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"✅ Calibrator loaded from {filepath}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] calibration\calibration_engine.py:102
+   Потенційний SQL injection через f-string
+   ▶ query += f" WHERE ticker = '{test_ticker}'"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] calibration\calibration_engine.py:110
+   Потенційний SQL injection через f-string
+   ▶ query += f" WHERE ticker = '{test_ticker}'"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] cli\pipeline_data_loader.py:20
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"Error loading {label} from {path}: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] cli\pipeline_data_loader.py:86
+   Потенційний SQL injection через f-string
+   ▶ logger.warning(f"⚠️ Failed to load news/macro fallback from database: {ex}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] cli\pipeline_data_loader.py:97
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"✅ Reconstructed {label} data from database fallback: {df.shape}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] cli\pipeline_executor.py:215
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Loaded {len(tickers)} unique tickers from all sectors: {tickers}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] colab\utils\utils.py:67
+   Потенційний SQL injection через f-string
+   ▶ print(f"   ✅ Checkpoint loaded from epoch {epoch} (loss: {loss:.6f})")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\cache\cache_manager.py:58
+   Потенційний SQL injection через f-string
+   ▶ count_query = f"SELECT COUNT(*) as count FROM {table_name}"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\cache\cache_manager.py:68
+   Потенційний SQL injection через f-string
+   ▶ date_query = f"SELECT MAX(\"{date_col}\") as max_date FROM {table_name}"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\cache\cache_manager.py:88
+   Потенційний SQL injection через f-string
+   ▶ self.logger.warning(f"Could not generate DB salt from table states, falling back to static salt: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\cache\cache_manager.py:288
+   Потенційний SQL injection через f-string
+   ▶ old_hashes_query = f"SELECT key_hash FROM cache_metadata ORDER BY timestamp ASC LIMIT {limit}"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\cache\cache_manager.py:305
+   Потенційний SQL injection через f-string
+   ▶ self.logger.warning(f"Failed to delete {f}: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\cloud\gcs_manager.py:63
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Uploading from memory to GCS path '{destination_blob_name}'...")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\cloud\gcs_manager.py:69
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"Failed to upload from memory to '{destination_blob_name}': {e}", exc_info=True)
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:96
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Loaded YAML from {path}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:99
+   Потенційний SQL injection через f-string
+   ▶ self.logger.error(f"Failed to load YAML from {path}: {e}", exc_info=True)
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:135
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Loaded JSON from {path}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:138
+   Потенційний SQL injection через f-string
+   ▶ self.logger.error(f"Failed to load JSON from {path}: {e}", exc_info=True)
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:223
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Loaded {len(df)} rows from {path}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:226
+   Потенційний SQL injection через f-string
+   ▶ self.logger.error(f"Failed to load DataFrame from {path}: {e}", exc_info=True)
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:248
+   Потенційний SQL injection через f-string
+   ▶ self.logger.warning(f"Failed to delete {f}: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\file_management\file_manager.py:251
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Cleanup in {path}: Deleted {deleted_count} files older than {max_age_days} days.")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\logging\log_standards.py:179
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"📦 Model loaded: {model_id} (from {source}){context_str}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] core\system\version_manager.py:61
+   Потенційний SQL injection через f-string
+   ▶ f"from {self.history_path}"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\alternative_me_collector.py:107
+   Потенційний SQL injection через f-string
+   ▶ self.logger.warning(f"Unexpected data format from Alternative.me V1: {type(data)}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\bigquery_collector.py:42
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Successfully pulled {len(df)} indexed data execution block elements limits mapped structure
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\cftc_collector.py:107
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Fetching FREE CFTC data for {instrument} from {url}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\fred_collector.py:23
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"FredCollector configured to fetch data from {self.start_date} onwards.")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\insider_collector.py:80
+   Потенційний SQL injection через f-string
+   ▶ self.logger.debug(f"Parsing DOM layout from URL: {url}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\insider_collector.py:90
+   Потенційний SQL injection через f-string
+   ▶ self.logger.error(f"Error handling DOM layout state from {url}: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\local_file_collector.py:32
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Fetching raw data from local {self.file_type} file: {self.file_path}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\local_file_collector.py:51
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Successfully loaded {len(df)} rows from {self.file_path}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\put_call_ratio_collector.py:82
+   Потенційний SQL injection через f-string
+   ▶ self.logger.info(f"Fetching FREE Put/Call Ratio from {url}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\collectors\sec_filings_collector.py:107
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"[SEC] Fetching filings for {len(valid_ciks)} tickers from {start_date.date()}.")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\management\data_manager.py:119
+   Потенційний SQL injection через f-string
+   ▶ query = f'SELECT * FROM {safe_table_name}'
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\management\data_manager.py:121
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Successfully fetched {len(df)} records from '{table_name}'.")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\management\data_manager.py:213
+   Потенційний SQL injection через f-string
+   ▶ existing = self.fetch_df(f'SELECT {cols_str} FROM {self._quote_identifier(table_name)}')
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\management\data_manager.py:224
+   Потенційний SQL injection через f-string
+   ▶ self.con.execute(f'INSERT INTO {self._quote_identifier(table_name)} ({insert_cols}) SELECT {insert_cols} FROM 
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] data\management\data_manager.py:255
+   Потенційний SQL injection через f-string
+   ▶ f'SELECT {self._quote_identifier(hash_col)} FROM {self._quote_identifier(table_name)}'
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\analysis\regime_importance_tracker.py:393
+   Потенційний SQL injection через f-string
+   ▶ switch_detection['switch_reason'] = f"Regime changed from {previous_regime} to {current_regime}"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\context_aware_feature_selector.py:63
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"✅ Initialized {self.method} feature selector (top_k={self.top_k})")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\context_aware_feature_selector.py:113
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"✅ Selected {len(selected_features)} features:")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\context_aware_feature_selector.py:179
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"Feature selection failed: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\context_aware_feature_selector.py:213
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"Random Forest selection failed: {e}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\context_map_enricher.py:51
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"✅ Loaded {len(self.noise_filter_thresholds)} noise thresholds from {config_path}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\context_map_enricher.py:56
+   Потенційний SQL injection через f-string
+   ▶ logger.error(f"❌ Failed to load noise config from {config_path}: {e}. Using defaults.")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\context_map_enricher.py:95
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Generating context map from {len(context_columns)} indicators")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\decay_features_enricher.py:55
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Using default event_columns from config: {event_columns}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\decay_features_enricher.py:59
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Using default half_life_periods from config: {half_life_periods}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\derived_features_enricher.py:91
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\hype_enricher.py:61
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Calculating hype scores using window: {hype_window} from {news_count} news items")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\keyword_entity_enricher.py:140
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Extracting keywords and entities from {len(news_copy)} news items...")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\macro_features_enricher.py:194
+   Потенційний SQL injection через f-string
+   ▶ f"({unique_dates} unique dates) from {start_date} to {end_date}"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\macro_features_enricher.py:404
+   Потенційний SQL injection через f-string
+   ▶ logger.debug(f"Loading FRED data from {start_date_str} to {end_date_str}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\macro_features_enricher.py:444
+   Потенційний SQL injection через f-string
+   ▶ f"Error loading data from FRED: {e}"
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\nlp_features_enricher.py:211
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Created 'datetime' column from '{date_col}' (tz-naive, ns precision)")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\nlp_features_enricher.py:236
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Removed timezone from {col_name} for merge compatibility")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\sentiment_features_enricher.py:106
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Attempting to merge sentiment from news data ({news_count} rows)")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\enrichers\significance_features_enricher.py:98
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"Filtered from {len(df)} to {len(filtered_df)} rows based on significance.")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\feature_selection_cache.py:33
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"FeatureSelectionCache initialized: {self.cache_file}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\feature_selection_cache.py:41
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"✅ Loaded feature selection cache: {len(cache)} entries")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\feature_selection_cache.py:53
+   Потенційний SQL injection через f-string
+   ▶ logger.debug(f"💾 Saved feature selection cache: {len(self.cache)} entries")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+🟠 [SEC] features\feature_selection_cache.py:104
+   Потенційний SQL injection через f-string
+   ▶ logger.info(f"🚀 Feature selection cache HIT: {cache_key}")
+   ✏ Використай параметризовані запити: con.execute(sql, params)
+
+... і ще 1736 issues (скористайся --json для повного)
+
+══════════════════════════════════════════════════════════════════════
+  📊 ПІДСУМОК АУДИТУ
+══════════════════════════════════════════════════════════════════════
+  Файлів проаналізовано : 470
+  Рядків коду           : 95,381
+  Всього issues         : 2236
+
+  🟠 HIGH        : 683
+  🟡 MEDIUM      : 769
+  🔵 LOW         : 784
+
+  За категоріями:
+    [DUP] 617
+    [IMP] 470
+    [BUG] 359
+    [SEC] 268
+    [CMX] 253
+    [TYP] 142
+    [LOG] 100
+    [CFG] 18
+    [ARC] 7
+    [ML] 2
+══════════════════════════════════════════════════════════════════════

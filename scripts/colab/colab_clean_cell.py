@@ -9,6 +9,10 @@ import warnings
 from datetime import datetime
 from pathlib import Path
 
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
+
 import numpy as np
 import pandas as pd
 
@@ -42,27 +46,20 @@ def _fix_base_neural_model():
 
     original_train = BaseNeuralModel.train
     def fixed_train(self, x, y, epochs=50, batch_size=32, validation_split=0.2, **kwargs):
-        try:
-            # Перетворення в numpy з правильними типами даних
-            x_np = x.values if isinstance(x, pd.DataFrame) else np.asarray(x)
-            y_np = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
+        # Перетворення в numpy з правильними типами даних
+        x_np = x.values if isinstance(x, pd.DataFrame) else np.asarray(x)
+        y_np = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
 
-            # Перетворення в числові типи для Keras
-            x_np = x_np.astype(np.float32)
-            y_np = y_np.astype(np.float32)
+        # Перетворення в числові типи для Keras
+        x_np = x_np.astype(np.float32)
+        y_np = y_np.astype(np.float32)
 
-            # Заміна NaN/inf для стабільності
-            x_np = np.nan_to_num(x_np, nan=0.0, posinf=0.0, neginf=0.0)
-            y_np = np.nan_to_num(y_np, nan=0.0, posinf=0.0, neginf=0.0)
+        # Заміна NaN/inf для стабільності
+        x_np = np.nan_to_num(x_np, nan=0.0, posinf=0.0, neginf=0.0)
+        y_np = np.nan_to_num(y_np, nan=0.0, posinf=0.0, neginf=0.0)
 
-            # Виклик оригінального методу з виправленими даними
-            return original_train(self, x_np, y_np, epochs, batch_size, validation_split, **kwargs)
-        except Exception as err:
-            if hasattr(self, 'logger'):
-                self.logger.error(f"Failed to train {self.model_type}: {str(err)}")
-            else:
-                print(f"Failed to train model: {str(err)}")
-            raise
+        # Виклик оригінального методу з виправленими даними
+        return original_train(self, x_np, y_np, epochs, batch_size, validation_split, **kwargs)
 
     setattr(BaseNeuralModel, 'train', fixed_train)  # type: ignore
     print("✅ BaseNeuralModel виправлено")
@@ -73,20 +70,16 @@ def _fix_cnn_model():
 
     original_cnn_train = CNNModel.train
     def fixed_cnn_train(self, X, y, **kwargs):
-        try:
-            # Перетворення в numpy з правильними типами
-            x_array = X.values if isinstance(X, pd.DataFrame) else np.asarray(X)
-            y_array = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
+        # Перетворення в numpy з правильними типами
+        x_array = X.values if isinstance(X, pd.DataFrame) else np.asarray(X)
+        y_array = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
 
-            # Перетворення в числові типи для Keras
-            x_array = x_array.astype(np.float32)
-            y_array = y_array.astype(np.float32)
+        # Перетворення в числові типи для Keras
+        x_array = x_array.astype(np.float32)
+        y_array = y_array.astype(np.float32)
 
-            # Виклик оригінального методу з виправленими даними
-            return original_cnn_train(self, x_array, y_array, **kwargs)
-        except Exception as err:
-            self.logger.error(f"[ERROR] Помилка під час навчання CNN: {err}")
-            raise
+        # Виклик оригінального методу з виправленими даними
+        return original_cnn_train(self, x_array, y_array, **kwargs)
 
     setattr(CNNModel, 'train', fixed_cnn_train)  # type: ignore
     print("✅ CNNModel виправлено")
@@ -135,30 +128,21 @@ def _fix_transformer_model():
 
     original_transformer_fit = TransformerModel.fit
     def fixed_transformer_fit(self, X, y, seq_len=10, epochs=20, batch_size=32):
-        try:
-            # Convert to numpy
-            if hasattr(X, 'values'):
-                X = X.values
-            if hasattr(y, 'values'):
-                y = y.values
+        # Convert to numpy
+        if hasattr(X, 'values'):
+            X = X.values
+        if hasattr(y, 'values'):
+            y = y.values
 
-            X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
-            y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
+        X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
+        y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
 
-            # Перетворення в числові типи для Keras
-            X = X.astype(np.float32)
-            y = y.astype(np.float32)
+        # Перетворення в числові типи для Keras
+        X = X.astype(np.float32)
+        y = y.astype(np.float32)
 
-            # Виклик оригінального методу з виправленими даними
-            return original_transformer_fit(self, X, y, seq_len, epochs, batch_size)
-        except Exception:
-            # Fallback to simple model
-            try:
-                self._fit_fallback(X, y)
-                self.is_trained = True
-            except Exception as fallback_error:
-                self.logger.error(f"Failed to train Transformer model: {str(fallback_error)}")
-                raise fallback_error
+        # Виклик оригінального методу з виправленими даними
+        return original_transformer_fit(self, X, y, seq_len, epochs, batch_size)
 
     setattr(TransformerModel, 'fit', fixed_transformer_fit)  # type: ignore
     print("✅ TransformerModel виправлено")
@@ -449,6 +433,7 @@ class ColabTrainingController:
     """Основний контролер для тренування в Colab"""
 
     def __init__(self):
+        self.logger = ProjectLogger.get_logger("ColabTrainingController")
         self.path_manager = PathManager()
         self.config_loader = ConfigLoader(self.path_manager.PROJECT_PATH or Path("."))
         self.memory_monitor = MemoryMonitor()
@@ -494,14 +479,14 @@ class ColabTrainingController:
             if hasattr(SmartFeatureSelector, '_model_cache'):
                 setattr(SmartFeatureSelector, '_model_cache', {})
         except Exception:
-            pass
+            logger.warning("Failed to clear cache or session", exc_info=True)
 
         # Очистити Keras сесію
         try:
             import tensorflow as tf
             tf.keras.backend.clear_session()
         except Exception:
-            pass
+            logger.warning("Failed to clear cache or session", exc_info=True)
         
         # GC
         import gc
@@ -651,7 +636,8 @@ class ColabTrainingController:
                     X=x_df, y=y_ser, context_id=f"{ticker}_{target_col}_{model_type}",
                     is_classification=False, max_features=max_features
                 )
-            except:
+            except Exception as e:
+                self.logger.error("Failed to select features, using all columns", exc_info=True)
                 selected_features = list(x_df.columns)
 
             model_result = {
@@ -804,7 +790,8 @@ class ColabTrainingController:
                     with open(fs_path, 'w', encoding='utf-8') as f:
                         json.dump(fs_data, f, indent=2)
                     exported_count += 1
-                except:
+                except Exception as e:
+                    self.logger.error(f"Failed to export selected features for {ticker}_{target}_{model}", exc_info=True)
                     pass
         
         if exported_count > 0:
@@ -1222,7 +1209,7 @@ if __name__ == "__main__":
             setattr(SmartFeatureSelector, '_model_cache', {})
         print("🧹 Кеш SmartFeatureSelector очищено")
     except Exception:
-        pass
+        logger.warning("Failed to clear cache or session", exc_info=True)
 
     # ОЧИСТИТИ ФАЙЛОВИЙ КЕШ В COLAB
     try:

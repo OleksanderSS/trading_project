@@ -2,6 +2,7 @@
 System Version Management - Management of system operations,
 configurations and models
 """
+import logging
 
 import json
 from dataclasses import dataclass, asdict
@@ -114,7 +115,8 @@ class ConfigVersionManager:
         """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M")
         version = f"{model_type.lower()}_{ticker.upper()}_{timestamp}"
-        logger.debug(f"Generated model version: {version}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Generated model version: {version}")
         return version
 
     def tag_pipeline_run(self) -> str:

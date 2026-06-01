@@ -11,39 +11,14 @@ Key Components:
 These components enable sophisticated model analysis and adaptation to changing market conditions.
 """
 
-from .baseline_dominance_detector import (
-    BaselineDominanceDetector,
-    get_baseline_dominance_detector,
-    analyze_baseline_dominance_quick
-)
-
-from .regime_winner_analyzer import (
-    RegimeWinnerAnalyzer,
-    get_regime_winner_analyzer,
-    analyze_regime_consistency_quick
-)
-
-from .overfitting_detector import (
-    OverfittingDetector,
-    get_overfitting_detector,
-    detect_overfitting_quick
-)
+from .baseline_dominance_detector import BaselineDominanceDetector
+from .regime_winner_analyzer import RegimeWinnerAnalyzer
+from .overfitting_detector import OverfittingDetector
 
 __all__ = [
-    # Core analysis classes
     'BaselineDominanceDetector',
     'RegimeWinnerAnalyzer',
-    'OverfittingDetector',
-    
-    # Factory functions
-    'get_baseline_dominance_detector',
-    'get_regime_winner_analyzer',
-    'get_overfitting_detector',
-    
-    # Quick analysis functions
-    'analyze_baseline_dominance_quick',
-    'analyze_regime_consistency_quick',
-    'detect_overfitting_quick'
+    'OverfittingDetector'
 ]
 
 # Module version

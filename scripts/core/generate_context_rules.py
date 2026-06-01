@@ -9,6 +9,7 @@ import logging
 import os
 import sys
 import argparse
+from pathlib import Path
 
 # Add project root to the Python path
 # This allows for direct execution of the script, making imports work correctly

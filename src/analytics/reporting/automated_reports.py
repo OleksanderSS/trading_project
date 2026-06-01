@@ -33,7 +33,10 @@ class AutomatedReporting:
             logger.info(f"[AutomatedReporting] Generated daily report: {filename}")
             
         except Exception as e:
-            logger.error(f"[AutomatedReporting] Failed to generate daily report: {e}")
+            logger.error(
+                f"[AutomatedReporting] Failed to generate daily report: {e}",
+                exc_info=True,
+            )
     
     def get_daily_summary(self) -> Dict:
         """Отримати щоденну статистику"""
@@ -65,7 +68,7 @@ class HistoricalAnalytics:
             return trends
             
         except Exception as e:
-            logger.error(f"[HistoricalAnalytics] Failed to analyze trends: {e}")
+            logger.error(f"[HistoricalAnalytics] Failed to analyze trends: {e}", exc_info=True)
             return {}
     
     def generate_trend_report(self, days: int = 30) -> Dict:
@@ -92,8 +95,11 @@ class HistoricalAnalytics:
         try:
             # This part needs to be adapted to the new ResultsManager structure
             pass
-            
+             
         except Exception as e:
-            logger.error(f"[HistoricalAnalytics] Failed to load historical reports: {e}")
-            return []
+            logger.error(
+                f"[HistoricalAnalytics] Failed to load historical reports: {e}",
+                exc_info=True,
+            )
+            return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
         return []

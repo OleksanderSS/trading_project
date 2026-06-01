@@ -34,11 +34,18 @@ class ArgumentValidator:
         ArgumentValidator._validate_test_target(args, config_data, errors)
         ArgumentValidator._validate_test_model(args, config_data, errors)
         ArgumentValidator._validate_mode(args, errors)
+        ArgumentValidator._validate_continue_batch_name(args, errors)
         ArgumentValidator._validate_numeric_params(args, errors)
         ArgumentValidator._validate_stages(args, errors, warnings)
 
         # Report results
         ArgumentValidator._report_validation_results(errors, warnings)
+
+        if errors and not getattr(args, 'force', False):
+            raise ValueError('Argument validation failed')
+
+        if errors and getattr(args, 'force', False):
+            logger.warning('⚠️ Force flag enabled: proceeding despite validation errors')
 
     @staticmethod
     def _get_config_data(config_manager) -> dict[str, Any]:
@@ -119,9 +126,17 @@ class ArgumentValidator:
             )
 
     @staticmethod
+    def _validate_continue_batch_name(args: Any, errors: list[str]) -> None:
+        """Validates that continue mode includes a batch name."""
+        if getattr(args, 'mode', None) == 'continue' and not getattr(args, 'batch_name', None):
+            errors.append(
+                "❌ Continue mode requires --batch-name to identify the existing Colab batch."
+            )
+
+    @staticmethod
     def _validate_numeric_params(args: Any, errors: list[str]) -> None:
         """Validates numeric parameters."""
-        if args.max_iterations < 1:
+        if args.max_iterations is not None and args.max_iterations < 1:
             errors.append(
                 f"❌ max_iterations must be >= 1, got: {args.max_iterations}"
             )

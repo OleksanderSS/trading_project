@@ -115,7 +115,7 @@ collectors:
     cache_ttl: 3600
     cache_duration_minutes: 60
     requires_api_key: true
-    api_key_env: NEWS_API_KEY
+    api_key_name: NEWS_API_KEY
     base_url: https://newsapi.org/v2/everything
     language: en
     page_size: 20
@@ -200,11 +200,10 @@ collectors:
     table_name: huggingface_data
     cache_ttl: 604800
     cache_duration_minutes: 10080
-    dataset_name: wikitext
-    subset_name: wikitext-103-v1
+    dataset_name: m-ric/financial-news-2024
     split: train
     hash_keys:
-    - text
+    - content
   bigquery:
     enabled: false
     type: bigquery
@@ -325,4 +324,4 @@ collectors:
     - stocks
     - investing
     timeout: 30
-    use_synthetic_data: true
+    use_synthetic_data: false

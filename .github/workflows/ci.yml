@@ -1,0 +1,40 @@
+ковою логікою чи як
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          
+      - name: Run Ruff
+        run: ruff check src/calibration/ src/backtesting/advanced/
+        
+      - name: Run Black check
+        run: black --check src/calibration/ src/backtesting/advanced/
+        
+      - name: Run Bandit
+        run: bandit -r src/calibration/ src/backtesting/advanced/
+        
+      - name: Run mypy
+        run: mypy src/calibration/ src/backtesting/advanced/ --ignore-missing-imports
+        
+      - name: Run pytest with coverage
+        run: pytest tests/unit/test_calibration_engine.py tests/unit/test_advanced_engine.py --cov=src/calibration --cov=src/backtesting/advanced --cov-report=xml --cov-report=html

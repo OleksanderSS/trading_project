@@ -37,14 +37,15 @@ class DataGenerator:
         self.logger.info("Generating synthetic trading data...")
         
         features_df = self.generate_synthetic_features()
-        targets_df = self.generate_synthetic_targets()
+        targets_df = self.generate_synthetic_targets(features_df)
+        features_df = features_df.loc[targets_df.index]
         
         return {
             'status': 'success',
             'features_df': features_df,
             'targets_df': targets_df,
             'message': 'Generated synthetic data successfully',
-            'data_points': len(features_df),
+            'data_points': len(targets_df),
             'features_count': len(features_df.columns),
             'targets_count': len(targets_df.columns)
         }
@@ -57,7 +58,7 @@ class DataGenerator:
             DataFrame with technical indicators and market features
         """
         # Generate base price data
-        dates = pd.date_range(start='2020-01-01', end='2023-12-31', freq='1H')
+        dates = pd.date_range(start='2020-01-01', end='2023-12-31', freq='1h')
         n_points = len(dates)
         
         # Generate price series with different regimes
@@ -72,8 +73,8 @@ class DataGenerator:
         features['volume'] = self.rng.lognormal(10, 1, n_points)
         
         # Add technical indicators
-        features['sma_20'] = features['close'].rolling(window=20).mean()
-        features['sma_50'] = features['close'].rolling(window=50).mean()
+        features['sma_20'] = features['close'].rolling(window=20, min_periods=1).mean()
+        features['sma_50'] = features['close'].rolling(window=50, min_periods=1).mean()
         features['ema_12'] = features['close'].ewm(span=12).mean()
         features['ema_26'] = features['close'].ewm(span=26).mean()
         
@@ -84,25 +85,25 @@ class DataGenerator:
         
         # RSI
         delta = features['close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+        gain = (delta.where(delta > 0, 0)).rolling(window=14, min_periods=1).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=14, min_periods=1).mean()
         rs = gain / loss
         features['rsi'] = 100 - (100 / (1 + rs))
         
         # Bollinger Bands
-        sma_20 = features['close'].rolling(window=20).mean()
-        std_20 = features['close'].rolling(window=20).std()
+        sma_20 = features['close'].rolling(window=20, min_periods=1).mean()
+        std_20 = features['close'].rolling(window=20, min_periods=1).std()
         features['bb_upper'] = sma_20 + (std_20 * 2)
         features['bb_lower'] = sma_20 - (std_20 * 2)
         features['bb_width'] = (features['bb_upper'] - features['bb_lower']) / sma_20
         
         # Volatility
-        features['volatility'] = features['close'].pct_change().rolling(window=20).std()
+        features['volatility'] = features['close'].pct_change(fill_method=None).rolling(window=20, min_periods=1).std()
         
         # Price change features
-        features['returns_1h'] = features['close'].pct_change()
-        features['returns_4h'] = features['close'].pct_change(4)
-        features['returns_24h'] = features['close'].pct_change(24)
+        features['returns_1h'] = features['close'].pct_change(fill_method=None)
+        features['returns_4h'] = features['close'].pct_change(4, fill_method=None)
+        features['returns_24h'] = features['close'].pct_change(24, fill_method=None)
         
         # Time-based features
         features['hour'] = features.index.hour
@@ -117,48 +118,58 @@ class DataGenerator:
         
         return features
     
-    def generate_synthetic_targets(self) -> pd.DataFrame:
+    def generate_synthetic_targets(self, features_df: pd.DataFrame) -> pd.DataFrame:
         """
         Generate synthetic targets DataFrame
+        
+        Args:
+            features_df: Features DataFrame to align targets with
         
         Returns:
             DataFrame with target variables for prediction
         """
-        # Generate features first to align indices
-        features_df = self.generate_synthetic_features()
-        
         targets = pd.DataFrame(index=features_df.index)
         
-        # Future returns (prediction targets)
-        targets['return_1h'] = features_df['close'].pct_change(1).shift(-1)
-        targets['return_4h'] = features_df['close'].pct_change(4).shift(-4)
-        targets['return_24h'] = features_df['close'].pct_change(24).shift(-24)
-        
+        close_prices = features_df['close']
+        targets['return_1h'] = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: target label
+        targets['return_4h'] = (close_prices.shift(-4) / close_prices) - 1  # audit-ignore: target label
+        targets['return_24h'] = (close_prices.shift(-24) / close_prices) - 1  # audit-ignore: target label
+
+        future_1h_returns = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: target label
+        targets['volatility_1h'] = future_1h_returns.abs()
+        targets['volatility_4h'] = (
+            future_1h_returns.iloc[::-1].rolling(window=4, min_periods=2).std().iloc[::-1]
+        )
+
+        future_target_cols = [
+            'return_1h',
+            'return_4h',
+            'return_24h',
+            'volatility_1h',
+            'volatility_4h',
+        ]
+        targets = targets.dropna(subset=future_target_cols)
+        features_for_targets = features_df.loc[targets.index]
+
         # Direction targets (classification)
         targets['direction_1h'] = (targets['return_1h'] > 0).astype(int)
         targets['direction_4h'] = (targets['return_4h'] > 0).astype(int)
         targets['direction_24h'] = (targets['return_24h'] > 0).astype(int)
         
-        # Volatility targets
-        targets['volatility_1h'] = features_df['close'].pct_change().rolling(window=1).std().shift(-1)
-        targets['volatility_4h'] = features_df['close'].pct_change().rolling(window=4).std().shift(-4)
-        
         # Trend strength
         targets['trend_strength'] = (
-            (features_df['sma_20'] > features_df['sma_50']).astype(int) +
-            (features_df['macd'] > features_df['macd_signal']).astype(int) +
-            (features_df['rsi'] > 50).astype(int)
+            (features_for_targets['sma_20'] > features_for_targets['sma_50']).astype(int) +
+            (features_for_targets['macd'] > features_for_targets['macd_signal']).astype(int) +
+            (features_for_targets['rsi'] > 50).astype(int)
         ) / 3
         
         # Regime classification
-        volatility = features_df['volatility']
+        volatility = features_for_targets['volatility']
         targets['regime'] = pd.cut(
             volatility,
             bins=[0, 0.01, 0.02, float('inf')],
             labels=['low_volatility', 'medium_volatility', 'high_volatility']
         ).astype('category')
-        
-        # Drop NaN values from future targets
         targets = targets.dropna()
         
         self.logger.info(f"Generated {len(targets)} target samples with {len(targets.columns)} targets")

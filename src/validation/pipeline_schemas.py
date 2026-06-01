@@ -17,7 +17,7 @@ Usage:
 """
 
 from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, validator
 import pandas as pd
 import numpy as np
 
@@ -31,8 +31,7 @@ class RawDataSchema(BaseModel):
     news: Optional[pd.DataFrame] = Field(default=None, description="News events with sentiment")
     macro_data: Optional[pd.DataFrame] = Field(default=None, description="Macroeconomic indicators")
 
-    class Config:
-        arbitrary_types_allowed = True  # Allow pandas DataFrames
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def validate(self) -> None:
         """Custom validation logic beyond Pydantic."""
@@ -64,8 +63,7 @@ class ProcessedDataSchema(BaseModel):
     normalization_params: Dict[str, Any] = Field(default_factory=dict, description="Scaling parameters for reverse transformation")
     quality_metrics: Dict[str, float] = Field(default_factory=dict, description="Data quality scores")
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def validate(self) -> None:
         """Custom validation."""
@@ -117,9 +115,11 @@ class EnrichedDataSchema(BaseModel):
     enriched_prices: Dict[str, pd.DataFrame] = Field(description="Price data with technical indicators")
     selected_features: List[str] = Field(description="Feature selection results")
     feature_importance: Dict[str, float] = Field(description="Feature importance scores")
+    all_targets: Optional[Dict[str, Any]] = Field(default=None, description="Generated targets by timeframe")
+    combined_features: Optional[pd.DataFrame] = Field(default=None, description="Combined features DataFrame")
+    models_metadata: Optional[Dict[str, Any]] = Field(default=None, description="Metadata for training models")
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def validate(self) -> None:
         """Custom validation."""
@@ -240,3 +240,44 @@ def create_validation_middleware(schema_map: Dict[str, type]):
         return wrapper
 
     return validate_stage
+
+
+def validate_batch_dir(batch_dir: str) -> Dict[str, Any]:
+    """
+    Validate the Colab batch directory contract for continue mode.
+    
+    Args:
+        batch_dir: Path to the batch directory.
+        
+    Returns:
+        Dict containing 'valid' (bool), 'errors' (list), and 'manifest' (dict).
+    """
+    import os
+    import json
+    
+    errors = []
+    manifest = {}
+    
+    if not os.path.exists(batch_dir):
+        return {'valid': False, 'errors': [f"Batch directory does not exist: {batch_dir}"], 'manifest': {}}
+        
+    metadata_path = os.path.join(batch_dir, 'batch_metadata.json')
+    if not os.path.exists(metadata_path):
+        errors.append("batch_metadata.json is missing")
+    else:
+        try:
+            with open(metadata_path, 'r', encoding='utf-8') as f:
+                manifest = json.load(f)
+        except Exception as e:
+            errors.append(f"Failed to read batch_metadata.json: {e}")
+            
+    required_files = ['features.parquet', 'targets.parquet']
+    for req_file in required_files:
+        if not os.path.exists(os.path.join(batch_dir, req_file)):
+            errors.append(f"Required file {req_file} is missing")
+            
+    return {
+        'valid': len(errors) == 0,
+        'errors': errors,
+        'manifest': manifest
+    }

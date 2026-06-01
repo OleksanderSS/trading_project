@@ -125,8 +125,9 @@ class ModelAnalyzer:
     
     def _calculate_architecture_comparison(self, light_metrics: List[float], heavy_metrics: List[float]) -> Dict[str, float]:
         """Calculate architecture performance comparison"""
-        avg_light = sum(light_metrics) / len(light_metrics) if light_metrics else 0
-        avg_heavy = sum(heavy_metrics) / len(heavy_metrics) if heavy_metrics else 0
+        from src.utils.math_safe import safe_div
+        avg_light = safe_div(sum(light_metrics), len(light_metrics))
+        avg_heavy = safe_div(sum(heavy_metrics), len(heavy_metrics))
         
         heavy_improvement_pct = 0.0
         if avg_light > 0:

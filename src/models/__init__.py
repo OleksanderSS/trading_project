@@ -7,9 +7,9 @@ from .model_selector import SmartModelSelector
 from .quality.controller import ModelQualityController
 
 # Advanced model analysis
-from .analysis.baseline_dominance_detector import BaselineDominanceDetector, get_baseline_dominance_detector
-from .analysis.regime_winner_analyzer import RegimeWinnerAnalyzer, get_regime_winner_analyzer
-from .analysis.overfitting_detector import OverfittingDetector, get_overfitting_detector
+from .analysis.baseline_dominance_detector import BaselineDominanceDetector
+from .analysis.regime_winner_analyzer import RegimeWinnerAnalyzer
+from .analysis.overfitting_detector import OverfittingDetector, get_overfitting_detector, detect_overfitting_quick
 
 # Model monitoring
 from .monitoring.prediction_drift_monitor import PredictionDriftMonitor, get_prediction_drift_monitor

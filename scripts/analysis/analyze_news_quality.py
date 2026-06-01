@@ -8,6 +8,9 @@ import sys
 from pathlib import Path
 import pandas as pd
 import json
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
@@ -134,8 +137,6 @@ def analyze_news_quality():
 if __name__ == "__main__":
     try:
         analyze_news_quality()
-    except Exception as e:
-        print(f"\nError: {e}")
-        import traceback
-        traceback.print_exc()
+    except Exception:
+        logger.error("Error in analyze_news_quality", exc_info=True)
         sys.exit(1)

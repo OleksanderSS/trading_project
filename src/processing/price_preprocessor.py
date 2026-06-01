@@ -1,3 +1,4 @@
+import logging
 # src/processing/price_preprocessor.py
 
 import pandas as pd
@@ -27,15 +28,20 @@ class PricePreprocessor:
         df = df.copy()
         
         # DEBUG: Log what columns we actually have
-        logger.debug(f"PricePreprocessor input shape: {df.shape}, columns: {df.columns.tolist()}")
-        logger.debug(f"Looking for metrics: {metrics}")
-        logger.debug(f"Target columns: {target_columns}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"PricePreprocessor input shape: {df.shape}, columns: {df.columns.tolist()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Looking for metrics: {metrics}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Target columns: {target_columns}")
 
         if self._is_already_normalized(df, target_columns):
-            logger.debug("DataFrame is already normalized")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("DataFrame is already normalized")
             processed_df = self._preserve_metadata_columns(df, target_columns, preserve_columns)
         else:
-            logger.debug("DataFrame needs normalization")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("DataFrame needs normalization")
             processed_df = self._normalize_structure(df, metrics, target_columns)
 
         processed_df = self._finalize_dataframe(processed_df, metrics, target_columns, preserve_columns)
@@ -48,7 +54,8 @@ class PricePreprocessor:
 
     def _preserve_metadata_columns(self, df: pd.DataFrame, target_columns: List[str], preserve_columns: List[str]) -> pd.DataFrame:
         """Preserve interval and other metadata columns."""
-        logger.debug("DataFrame is already in normalized format. Validating metrics...")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("DataFrame is already in normalized format. Validating metrics...")
         columns_to_keep = target_columns.copy()
         current_cols = set(df.columns)
         

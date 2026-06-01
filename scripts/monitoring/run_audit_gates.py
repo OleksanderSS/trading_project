@@ -16,8 +16,12 @@ import sys
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from src.core.logging.logger import ProjectLogger
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+logger = ProjectLogger.get_logger(__name__)
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PYTHON_TARGETS = [
     PROJECT_ROOT / "src",
     PROJECT_ROOT / "scripts",
@@ -87,6 +91,7 @@ def syntax_gate() -> bool:
             compile(source, str(path), "exec")
         except Exception as exc:
             rel = path.relative_to(PROJECT_ROOT)
+            logger.error(f"Error compiling {rel}: {exc}", exc_info=True)
             print(f"{rel}: {type(exc).__name__}: {exc}")
             ok = False
 

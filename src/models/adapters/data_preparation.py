@@ -1,3 +1,5 @@
+from src.core.exceptions import DataProcessingError
+import logging
 # src/models/adapters/data_preparation.py - Уніфікована підготовка даних для ML моделей
 
 import numpy as np
@@ -18,12 +20,12 @@ def prepare_data_for_models(
     seq_len: int = 10,
     val_size: float = 0.1,
     test_size: float = 0.2,
+    gap_size: int = 5,  # ✅ ELITE FIX: Gap to prevent leakage between sets
     scale_target: bool = False
 ) -> Optional[Dict[str, Any]]:
     """
-    Уніфікований ML адаптер для підготовки даних.
-    Зосереджений виключно на кодуванні, масштабуванні та створенні послідовностей.
-    Дані мають бути попередньо очищені (DataCleaner) та містити таргети (TargetGenerator).
+    Уніфікований ML адаптер з Purged Validation.
+    Додає буферні зони між вибірками для чесного тестування на часових рядах.
     """
     try:
         if not target_cols:
@@ -36,44 +38,50 @@ def prepare_data_for_models(
             logger.warning(f"Немає даних для {ticker} {timeframe}")
             return None
         
-        # 2. Перевірка наявності таргетів та очищеності
+        # 2. Перевірка наявності таргетів
         for col in target_cols:
             if col not in filtered_df.columns:
-                logger.error(f"Колонка таргета '{col}' не знайдена. Використовуйте TargetGenerator.")
+                logger.error(f"Колонка таргета '{col}' не знайдена.")
                 return None
-        
-        if filtered_df.isna().sum().sum() > 0:
-            logger.warning("DataFrame містить NaN. Рекомендується обробка через DataCleaner перед підготовкою.")
 
-        # 3. Обробка категоріальних фіч
+        # 3. Обробка категоріальних фіч (включаючи нові патерни)
         df_processed, categorical_info = handle_categorical_features(filtered_df, target_cols)
         
-        # 4. Feature selection (numeric only)
+        # 4. Feature selection
+        # Переконуємось, що context_pattern_id включено, якщо він є
         feature_cols = [c for c in df_processed.select_dtypes(include=[np.number]).columns 
                         if c not in target_cols and c not in ['datetime', 'date']]
         
         if len(feature_cols) < 1:
-            logger.error("Відсутні числови ознаки для моделювання.")
+            logger.error("Відсутні ознаки для моделювання.")
             return None
             
         X = df_processed[feature_cols].replace([np.inf, -np.inf], np.nan)
         y = df_processed[target_cols]
         
-        log_data_distribution(X)
-        
-        # 5. Split into вибірки
+        # 5. PURGED SPLIT (чесне ділення з розривами)
         total_len = len(X)
-        test_idx = int(total_len * (1 - test_size))
-        val_idx = int(test_idx * (1 - val_size / (1 - test_size)))
+        test_start = int(total_len * (1 - test_size))
+        val_start = int(test_start * (1 - val_size / (1 - test_size)))
         
-        x_train, x_val, x_test = X.iloc[:val_idx], X.iloc[val_idx:test_idx], X.iloc[test_idx:]
-        y_train, y_val, y_test = y.iloc[:val_idx], y.iloc[val_idx:test_idx], y.iloc[test_idx:]
+        # Визначаємо індекси з урахуванням розривів (gap)
+        train_end = val_start - gap_size
+        val_end = test_start - gap_size
         
-        # 6. ML Трансформації (Імпутація та Скейлінг)
+        if train_end <= 0 or val_end <= val_start:
+             logger.warning("Занадто малий датасет для Purged Validation. Використовуємо стандартне ділення.")
+             x_train, x_val, x_test = X.iloc[:val_start], X.iloc[val_start:test_start], X.iloc[test_start:]
+             y_train, y_val, y_test = y.iloc[:val_start], y.iloc[val_start:test_start], y.iloc[test_start:]
+        else:
+             x_train, y_train = X.iloc[:train_end], y.iloc[:train_end]
+             x_val, y_val = X.iloc[val_start:val_end], y.iloc[val_start:val_end]
+             x_test, y_test = X.iloc[test_start:], y.iloc[test_start:]
+             logger.info(f"✅ Purged Split: Train={len(x_train)}, Val={len(x_val)}, Test={len(x_test)} (Gap={gap_size})")
+        
+        # 6. ML Трансформації
         imputer = SimpleImputer(strategy='median')
         scaler = StandardScaler()
         
-        # ELITE FIX: Preserving column names by converting back to DataFrame after scaling
         x_train_imputed = imputer.fit_transform(x_train)
         x_val_imputed = imputer.transform(x_val)
         x_test_imputed = imputer.transform(x_test)
@@ -82,7 +90,6 @@ def prepare_data_for_models(
         x_val_scaled_arr = scaler.transform(x_val_imputed)
         x_test_scaled_arr = scaler.transform(x_test_imputed)
         
-        # Create DataFrames for Light Models (preserves feature names)
         x_train_scaled_df = pd.DataFrame(x_train_scaled_arr, columns=feature_cols, index=x_train.index)
         x_val_scaled_df = pd.DataFrame(x_val_scaled_arr, columns=feature_cols, index=x_val.index)
         x_test_scaled_df = pd.DataFrame(x_test_scaled_arr, columns=feature_cols, index=x_test.index)
@@ -103,7 +110,6 @@ def prepare_data_for_models(
             'feature_names': feature_cols, 'categorical_info': categorical_info
         }
 
-        # Heavy models expect 3D sequences from numpy arrays
         heavy_data = prepare_sequence_data_optimized(
             x_train_scaled_arr, x_val_scaled_arr, x_test_scaled_arr,
             y_train_processed, y_val_processed, y_test_processed,
@@ -113,11 +119,11 @@ def prepare_data_for_models(
         return {
             'ticker': ticker, 'timeframe': timeframe, 'target_cols': target_cols,
             'light_models': light_data, 'heavy_models': heavy_data,
-            'metadata': {'feature_count': len(feature_cols), 'samples': total_len}
+            'metadata': {'feature_count': len(feature_cols), 'samples': total_len, 'purged_validation': True}
         }
     except Exception as e:
         logger.error(f"Критична помилка підготовки даних: {e}", exc_info=True)
-        return None
+        raise DataProcessingError(f"Критична помилка підготовки даних: {e}") from e
 
 def handle_categorical_features(df: pd.DataFrame, exclude_cols: List[str]) -> Tuple[pd.DataFrame, Dict]:
     """Кодує категоріальні колонки."""
@@ -149,7 +155,8 @@ def log_data_distribution(df: pd.DataFrame):
         vals = df[col].dropna()
         if len(vals) > 0:
             stats.append(f"{col}(S:{skew(vals):.2f},K:{kurtosis(vals):.2f})")
-    logger.debug(f"Feature distribution: {', '.join(stats)}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"Feature distribution: {', '.join(stats)}")
 
 def prepare_sequence_data_optimized(x_tr, x_va, x_te, y_tr, y_va, y_te, seq_len) -> Dict[str, Any]:
     """Створення 3D вікон для Neural Networks за допомогою numpy strides."""

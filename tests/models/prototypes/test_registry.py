@@ -41,6 +41,14 @@ class MockModel(BaseModel):
         length = len(X) if hasattr(X, '__len__') else 1
         return np.array([0.5] * length)
 
+    def load_model(self, path: str):
+        """Mock load_model implementation"""
+        pass
+
+    def save_model(self, path: str):
+        """Mock save_model implementation"""
+        pass
+
 
 class TestPrototypeRegistry:
     """Test suite for PrototypeRegistry"""

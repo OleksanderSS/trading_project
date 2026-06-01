@@ -6,6 +6,9 @@
 import pandas as pd
 import json
 from pathlib import Path
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger("compare_databases")
 
 print("=" * 100)
 print("📊 ПОРІВНЯННЯ БАЗ ДАНИХ")
@@ -46,7 +49,8 @@ if main_db_path.exists():
         print(f"   NaN: {nan_pct:.2f}%")
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        logger.error(f"Error: {e}", exc_info=True)
+        raise
 else:
     print("❌ Directory not found")
 
@@ -85,7 +89,8 @@ if full_db_path.exists():
         print(f"   NaN: {nan_pct:.2f}%")
         
     except Exception as e:
-        print(f"❌ Error: {e}")
+        logger.error(f"Error: {e}", exc_info=True)
+        raise
 else:
     print("❌ Directory not found")
 

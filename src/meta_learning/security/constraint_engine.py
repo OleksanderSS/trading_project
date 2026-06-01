@@ -5,17 +5,14 @@ Provides comprehensive constraint validation and enforcement for all agent actio
 Critical for preventing unsafe agent behavior in production environments.
 """
 
-import logging
-from typing import Dict, List, Any, Optional, Callable, Union
+from typing import Dict, List, Any, Optional, Callable
 from enum import Enum
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from threading import RLock
-import numpy as np
-import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import get_current_config
+from src.core.error_handling.error_handler import IErrorHandler, ErrorHandler
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -73,15 +70,17 @@ class SecurityConstraintEngine:
     - Adaptive constraint tuning
     """
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None, error_handler: Optional[IErrorHandler] = None):
         """
         Initialize the Security Constraint Engine.
         
         Args:
             config: Configuration dictionary for constraints
+            error_handler: Error handler instance
         """
         self.config = config or {}
         self.logger = logger
+        self.error_handler = error_handler or ErrorHandler()
         
         # Constraint storage
         self._constraints: Dict[str, Constraint] = {}
@@ -109,6 +108,81 @@ class SecurityConstraintEngine:
         
         self.logger.info("✅ SecurityConstraintEngine initialized")
     
+    def _check_constraint(self, constraint_name: str, constraint, agent_id: str, action_context: Dict[str, Any]) -> tuple:
+        """Check a single constraint and return (violations, warnings)."""
+        violations = []
+        warnings = []
+        
+        try:
+            is_valid = constraint.validator(action_context)
+            
+            if not is_valid:
+                violation = self._create_violation(constraint, agent_id, action_context)
+                
+                if constraint.severity == ConstraintSeverity.WARNING:
+                    warnings.append(violation)
+                else:
+                    violations.append(violation)
+                    self._record_violation(violation)
+        
+        except Exception as e:
+            self.logger.error(f"Error validating constraint {constraint_name}: {e}")
+            self.error_handler.handle_error(
+                e,
+                context={
+                    "agent_id": agent_id,
+                    "constraint_name": constraint_name,
+                    "action_context": action_context,
+                },
+            )
+            error_violation = ConstraintViolation(
+                timestamp=datetime.now(),
+                constraint_name=constraint_name,
+                severity=ConstraintSeverity.ERROR,
+                agent_id=agent_id,
+                action_context=action_context,
+                violation_details=f"Constraint validation error: {str(e)}",
+                recommended_action="Review constraint implementation"
+            )
+            violations.append(error_violation)
+        
+        return violations, warnings
+
+    def _determine_action_allowed(self, violations: list, warnings: list) -> tuple:
+        """Determine if action is allowed based on violations and warnings."""
+        critical_violations = [v for v in violations if v.severity == ConstraintSeverity.CRITICAL]
+        error_violations = [v for v in violations if v.severity == ConstraintSeverity.ERROR]
+        
+        if critical_violations:
+            allowed = False
+            reason = f"Critical constraint violations: {[v.constraint_name for v in critical_violations]}"
+        elif error_violations and self.strict_mode:
+            allowed = False
+            reason = f"Error constraint violations in strict mode: {[v.constraint_name for v in error_violations]}"
+        elif error_violations and not self.strict_mode:
+            allowed = True
+            reason = f"Error violations present but strict mode disabled: {[v.constraint_name for v in error_violations]}"
+        else:
+            allowed = True
+            reason = "All constraints satisfied" if not warnings else "Constraints satisfied with warnings"
+        
+        return allowed, reason, critical_violations
+
+    def _build_validation_result(self, allowed: bool, reason: str, violations: list, warnings: list) -> Dict[str, Any]:
+        """Build the validation result dictionary."""
+        return {
+            'allowed': allowed,
+            'reason': reason,
+            'violations': [self._violation_to_dict(v) for v in violations],
+            'warnings': [self._violation_to_dict(w) for w in warnings],
+            'constraint_engine': {
+                'enabled': self.enabled,
+                'strict_mode': self.strict_mode,
+                'total_constraints': len(self._constraints),
+                'enabled_constraints': len([c for c in self._constraints.values() if c.enabled])
+            }
+        }
+
     def validate_action(self, agent_id: str, action_context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Validate an agent action against all security constraints.
@@ -138,71 +212,21 @@ class SecurityConstraintEngine:
                     if not constraint.enabled:
                         continue
                     
-                    try:
-                        # Validate constraint
-                        is_valid = constraint.validator(action_context)
-                        
-                        if not is_valid:
-                            violation = self._create_violation(
-                                constraint, agent_id, action_context
-                            )
-                            
-                            if constraint.severity == ConstraintSeverity.WARNING:
-                                warnings.append(violation)
-                            else:
-                                violations.append(violation)
-                                self._record_violation(violation)
-                    
-                    except Exception as e:
-                        self.logger.error(f"Error validating constraint {constraint_name}: {e}")
-                        # Create a violation for the validation error itself
-                        error_violation = ConstraintViolation(
-                            timestamp=datetime.now(),
-                            constraint_name=constraint_name,
-                            severity=ConstraintSeverity.ERROR,
-                            agent_id=agent_id,
-                            action_context=action_context,
-                            violation_details=f"Constraint validation error: {str(e)}",
-                            recommended_action="Review constraint implementation"
-                        )
-                        violations.append(error_violation)
+                    constraint_violations, constraint_warnings = self._check_constraint(
+                        constraint_name, constraint, agent_id, action_context
+                    )
+                    violations.extend(constraint_violations)
+                    warnings.extend(constraint_warnings)
                 
                 # Determine if action is allowed
-                critical_violations = [v for v in violations if v.severity == ConstraintSeverity.CRITICAL]
-                error_violations = [v for v in violations if v.severity == ConstraintSeverity.ERROR]
+                allowed, reason, critical_violations = self._determine_action_allowed(violations, warnings)
                 
-                if critical_violations:
-                    allowed = False
-                    reason = f"Critical constraint violations: {[v.constraint_name for v in critical_violations]}"
-                    
-                    # Trigger emergency stop if enabled
-                    if self.emergency_stop_enabled:
-                        self._trigger_emergency_stop(agent_id, critical_violations)
+                # Trigger emergency stop if enabled and critical violations exist
+                if critical_violations and self.emergency_stop_enabled:
+                    self._trigger_emergency_stop(agent_id, critical_violations)
                 
-                elif error_violations and self.strict_mode:
-                    allowed = False
-                    reason = f"Error constraint violations in strict mode: {[v.constraint_name for v in error_violations]}"
-                
-                elif error_violations and not self.strict_mode:
-                    allowed = True
-                    reason = f"Error violations present but strict mode disabled: {[v.constraint_name for v in error_violations]}"
-                
-                else:
-                    allowed = True
-                    reason = "All constraints satisfied" if not warnings else "Constraints satisfied with warnings"
-                
-                result = {
-                    'allowed': allowed,
-                    'reason': reason,
-                    'violations': [self._violation_to_dict(v) for v in violations],
-                    'warnings': [self._violation_to_dict(w) for w in warnings],
-                    'constraint_engine': {
-                        'enabled': self.enabled,
-                        'strict_mode': self.strict_mode,
-                        'total_constraints': len(self._constraints),
-                        'enabled_constraints': len([c for c in self._constraints.values() if c.enabled])
-                    }
-                }
+                # Build result
+                result = self._build_validation_result(allowed, reason, violations, warnings)
                 
                 self.logger.info(f"Constraint validation for {agent_id}: {'ALLOWED' if allowed else 'DENIED'} - {reason}")
                 
@@ -297,10 +321,8 @@ class SecurityConstraintEngine:
             
             return recent_violations
     
-    def _initialize_default_constraints(self):
-        """Initialize default security constraints."""
-        
-        # Position size constraint
+    def _add_position_size_constraint(self) -> None:
+        """Add position size constraint."""
         self.add_constraint(Constraint(
             name="max_position_size",
             constraint_type=ConstraintType.POSITION_SIZE,
@@ -312,8 +334,9 @@ class SecurityConstraintEngine:
                 'max_absolute_position': 1000000  # $1M max
             }
         ))
-        
-        # Risk exposure constraint
+
+    def _add_risk_exposure_constraint(self) -> None:
+        """Add risk exposure constraint."""
         self.add_constraint(Constraint(
             name="max_risk_exposure",
             constraint_type=ConstraintType.RISK_EXPOSURE,
@@ -325,8 +348,9 @@ class SecurityConstraintEngine:
                 'max_single_trade_risk': 0.02  # 2% per trade
             }
         ))
-        
-        # Trading frequency constraint
+
+    def _add_trading_frequency_constraint(self) -> None:
+        """Add trading frequency constraint."""
         self.add_constraint(Constraint(
             name="trading_frequency_limit",
             constraint_type=ConstraintType.TRADING_FREQUENCY,
@@ -339,8 +363,9 @@ class SecurityConstraintEngine:
                 'min_time_between_trades': 60  # seconds
             }
         ))
-        
-        # Consecutive losses constraint
+
+    def _add_consecutive_losses_constraint(self) -> None:
+        """Add consecutive losses constraint."""
         self.add_constraint(Constraint(
             name="consecutive_losses_limit",
             constraint_type=ConstraintType.CONSECUTIVE_LOSSES,
@@ -352,8 +377,9 @@ class SecurityConstraintEngine:
                 'loss_threshold_pct': 0.01  # 1%
             }
         ))
-        
-        # Volatility constraint
+
+    def _add_volatility_constraint(self) -> None:
+        """Add volatility constraint."""
         self.add_constraint(Constraint(
             name="volatility_limit",
             constraint_type=ConstraintType.VOLATILITY_LIMITS,
@@ -365,8 +391,9 @@ class SecurityConstraintEngine:
                 'volatility_lookback_days': 20
             }
         ))
-        
-        # Liquidity constraint
+
+    def _add_liquidity_constraint(self) -> None:
+        """Add liquidity constraint."""
         self.add_constraint(Constraint(
             name="liquidity_requirement",
             constraint_type=ConstraintType.LIQUIDITY_REQUIREMENTS,
@@ -378,8 +405,9 @@ class SecurityConstraintEngine:
                 'min_avg_spread_bps': 50  # Maximum 50 bps spread
             }
         ))
-        
-        # Correlation constraint
+
+    def _add_correlation_constraint(self) -> None:
+        """Add correlation constraint."""
         self.add_constraint(Constraint(
             name="correlation_limit",
             constraint_type=ConstraintType.CORRELATION_LIMITS,
@@ -391,6 +419,16 @@ class SecurityConstraintEngine:
                 'correlation_lookback_days': 30
             }
         ))
+
+    def _initialize_default_constraints(self):
+        """Initialize default security constraints."""
+        self._add_position_size_constraint()
+        self._add_risk_exposure_constraint()
+        self._add_trading_frequency_constraint()
+        self._add_consecutive_losses_constraint()
+        self._add_volatility_constraint()
+        self._add_liquidity_constraint()
+        self._add_correlation_constraint()
     
     def _validate_position_size(self, context: Dict[str, Any]) -> bool:
         """Validate position size constraints."""
@@ -412,9 +450,10 @@ class SecurityConstraintEngine:
             
             return True
             
-        except Exception as e:
-            self.logger.error(f"Position size validation error: {e}")
-            return False
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f"Position size validation error: {e}", exc_info=True)
+            self.error_handler.handle_error(e, context={'context': context})
+            raise RuntimeError(f"Position size validation failed: {e}") from e
     
     def _validate_risk_exposure(self, context: Dict[str, Any]) -> bool:
         """Validate risk exposure constraints."""
@@ -437,9 +476,10 @@ class SecurityConstraintEngine:
             
             return True
             
-        except Exception as e:
-            self.logger.error(f"Risk exposure validation error: {e}")
-            return False
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f"Risk exposure validation error: {e}", exc_info=True)
+            self.error_handler.handle_error(e, context={'context': context})
+            raise RuntimeError(f"Risk exposure validation failed: {e}") from e
     
     def _validate_trading_frequency(self, context: Dict[str, Any]) -> bool:
         """Validate trading frequency constraints."""
@@ -470,9 +510,10 @@ class SecurityConstraintEngine:
             
             return True
             
-        except Exception as e:
-            self.logger.error(f"Trading frequency validation error: {e}")
-            return False
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f"Trading frequency validation error: {e}", exc_info=True)
+            self.error_handler.handle_error(e, context={'context': context})
+            raise RuntimeError(f"Trading frequency validation failed: {e}") from e
     
     def _validate_consecutive_losses(self, context: Dict[str, Any]) -> bool:
         """Validate consecutive losses constraint."""
@@ -490,28 +531,28 @@ class SecurityConstraintEngine:
             
             return bool(consecutive_losses < max_consecutive)
             
-        except Exception as e:
-            self.logger.error(f"Consecutive losses validation error: {e}")
-            return False
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f"Consecutive losses validation error: {e}", exc_info=True)
+            self.error_handler.handle_error(e, context={'context': context})
+            raise RuntimeError(f"Consecutive losses validation failed: {e}") from e
     
     def _validate_volatility_limits(self, context: Dict[str, Any]) -> bool:
         """Validate volatility constraints."""
         try:
-            symbol = context.get('symbol', '')
             current_volatility = context.get('current_volatility', 0)
             
             max_volatility = self._constraints['volatility_limit'].parameters.get('max_volatility_threshold', 0.05)
             
             return bool(current_volatility <= max_volatility)
             
-        except Exception as e:
+        except (ValueError, TypeError, Exception) as e:
             self.logger.error(f"Volatility validation error: {e}")
-            return False
+            self.error_handler.handle_error(e, context={'context': context})
+            raise RuntimeError(f"Volatility validation failed: {e}") from e
     
     def _validate_liquidity_requirements(self, context: Dict[str, Any]) -> bool:
         """Validate liquidity requirements."""
         try:
-            symbol = context.get('symbol', '')
             daily_volume = context.get('daily_volume_usd', 0)
             avg_spread = context.get('avg_spread_bps', 0)
             
@@ -520,14 +561,14 @@ class SecurityConstraintEngine:
             
             return bool(daily_volume >= min_volume and avg_spread <= max_spread)
             
-        except Exception as e:
+        except (ValueError, TypeError, Exception) as e:
             self.logger.error(f"Liquidity validation error: {e}")
-            return False
+            self.error_handler.handle_error(e, context={'context': context})
+            raise RuntimeError(f"Liquidity validation failed: {e}") from e
     
     def _validate_correlation_limits(self, context: Dict[str, Any]) -> bool:
         """Validate correlation constraints."""
         try:
-            symbol = context.get('symbol', '')
             current_positions = context.get('current_positions', {})
             symbol_correlations = context.get('symbol_correlations', {})
             
@@ -540,9 +581,10 @@ class SecurityConstraintEngine:
             
             return True
             
-        except Exception as e:
+        except (ValueError, TypeError, Exception) as e:
             self.logger.error(f"Correlation validation error: {e}")
-            return False
+            self.error_handler.handle_error(e, context={'context': context})
+            raise RuntimeError(f"Correlation validation failed: {e}") from e
     
     def _create_violation(self, constraint: Constraint, agent_id: str, 
                           action_context: Dict[str, Any]) -> ConstraintViolation:

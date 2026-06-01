@@ -52,7 +52,11 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
     # 3. Target Generation Stage
     targets_list = config_manager.get_config('targets', [])
     target_orchestrator = TargetOrchestrator(targets_list=targets_list)
-    final_df = target_orchestrator.generate_targets(features_df)
+    targets_df = target_orchestrator.generate_targets(features_df)
+    target_cols = [col for col in targets_df.columns if col.startswith('target_')]
+    final_df = features_df.copy()
+    for col in target_cols:
+        final_df[col] = targets_df[col].reindex(final_df.index)
     logger.info(f"Target generation complete. Final DataFrame shape: {final_df.shape}")
 
     # 4. Save the final dataset

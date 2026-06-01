@@ -13,6 +13,8 @@ from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.error_handling.error_handler import ErrorHandler
 from src.core.logging.logger import ProjectLogger
 
+logger = ProjectLogger.get_logger(__name__)
+
 
 def _initialize_components():
     """Initialize pipeline components."""

@@ -1,19 +1,20 @@
+import logging
 # src/feature_engineering/nlp/sentiment_core.py
 
 import hashlib
 import pandas as pd
 from transformers import AutoModelForSequenceClassification
 from src.features.nlp.scoring.news_score import compute_news_score
-from src.utils.logging.logger import ProjectLogger
+from src.core.logging.logger import ProjectLogger
 from src.config.sentiment_config import SENTIMENT_DEFAULTS
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
 def make_sentiment_key(text: str) -> str:
-    import hashlib
     # Use SHA-256 instead of MD5 for better security
     key = "sent_" + hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
-    logger.debug(f"[sentiment_score] Generated key for text: {key}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"[sentiment_score] Generated key for text: {key}")
     return key
 
 def get_model():
@@ -34,13 +35,15 @@ def compute_score(label: str, score: float) -> dict:
     }
     if label not in result:
         logger.warning(f"[sentiment_score] [WARN] Invalid label: {label}")
-    logger.debug(f"[sentiment_score] Computed score: {result}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"[sentiment_score] Computed score: {result}")
     return result
 
 def compute_news_score_safe(label: str, score: float, keywords: list) -> float:
     sentiment_dict = compute_score(label, score)
     if not keywords:
-        logger.debug("[sentiment_score] [DEBUG] Keywords are empty, score is computed without them")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("[sentiment_score] [DEBUG] Keywords are empty, score is computed without them")
         # Return a simple float representation: positive if positive, negative if negative
         if label.lower() == "positive":
             return float(score)
@@ -49,5 +52,6 @@ def compute_news_score_safe(label: str, score: float, keywords: list) -> float:
         return 0.0
     
     result = compute_news_score(sentiment_dict, keywords)
-    logger.debug(f"[sentiment_score] Final news_score: {result}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"[sentiment_score] Final news_score: {result}")
     return float(result)
