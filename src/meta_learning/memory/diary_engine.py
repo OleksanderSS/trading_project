@@ -27,6 +27,8 @@ from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
 from src.config.unified_config_manager import get_current_config
 from src.meta_learning.base import BaseMetaComponent
+from src.meta_learning.memory.contextual_weight_calculator import ContextualWeightCalculator
+from src.meta_learning.memory.knn_context_finder import KnnContextFinder
 
 class DecisionType(Enum):
     BUY = "buy"
@@ -88,6 +90,10 @@ class DiaryEngine(BaseMetaComponent):
         # ✅ Phase 4 Quality: Add memory-limited in-memory buffer
         self.maxsize = maxsize
         self.entries: deque[DecisionRecord] = deque(maxlen=maxsize)  # Auto-evict oldest entries
+        
+        # Initialize contextual weight calculator and KNN finder
+        self.weight_calculator = ContextualWeightCalculator(self.data_manager, self.logger)
+        self.knn_finder = KnnContextFinder(self.data_manager, self.weight_calculator, self.logger)
         
         self._initialize_database()
 
@@ -523,119 +529,13 @@ class DiaryEngine(BaseMetaComponent):
         Returns:
             Dict з вагами моделей (model_name -> weight)
         """
-        # Запит для отримання історичної ефективності моделей в цьому контексті
-        # Use parameterized query to prevent SQL injection
-        query = """
-        SELECT 
-            agent_id,
-            COUNT(*) as total_decisions,
-            AVG(
-                CASE
-                    WHEN decision_type = 'training' THEN COALESCE(model_prediction, 0.0)
-                    WHEN outcome = ? THEN 1.0
-                    ELSE 0.0
-                END
-            ) as performance_score,
-            COALESCE(AVG(profit_loss), 0.0) as avg_pnl
-        FROM experience_diary
-        WHERE context_fingerprint = ?
-        GROUP BY agent_id
-        HAVING total_decisions >= 2
-        ORDER BY performance_score DESC, avg_pnl DESC
-        """
-        
-        try:
-            # Виконуємо запит через DuckDB
-            result_df = self.data_manager.con.execute(query, [DecisionOutcome.PROFITABLE.value, context_fingerprint]).fetchdf()
-            
-            if result_df.empty:
-                # Якщо немає історії для цього контексту, повертаємо рівні ваги
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f"No historical data for context {context_fingerprint}, using equal weights")
-                return {}
-            
-            # Розраховуємо ваги на основі win_rate та avg_pnl
-            weights = {}
-            total_score = 0.0
-            
-            for _, row in result_df.iterrows():
-                agent_id = row['agent_id']
-                performance_score = row['performance_score']
-                avg_pnl = row['avg_pnl']
-                
-                # Комбінована метрика: win_rate * (1 + normalized_pnl)
-                # Нормалізуємо avg_pnl до діапазону [0, 1]
-                normalized_pnl = max(0, min(1, (avg_pnl + 1) / 2))  # Припускаємо pnl в діапазоні [-1, 1]
-                score = performance_score * (1 + normalized_pnl)
-                
-                weights[agent_id] = score
-                total_score += score
-            
-            # Нормалізуємо ваги до суми 1.0
-            if total_score > 0:
-                weights = {k: v / total_score for k, v in weights.items()}
-            
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"Contextual weights for {context_fingerprint}: {weights}")
-            return weights
-            
-        except Exception as e:
-            self.logger.error(f"Error getting contextual model weights: {e}",
-                exc_info=True)
-            raise RuntimeError(
-                f"Failed to get contextual model weights for {context_fingerprint}"
-            ) from e
+        return self.weight_calculator.get_contextual_model_weights(context_fingerprint)
 
     def get_contextual_model_weights_by_pattern_seq(
         self, context_pattern_seq: str
     ) -> Dict[str, float]:
         """Return model weights for an exact rolling context-pattern sequence."""
-        if not context_pattern_seq:
-            return {}
-        query = """
-        SELECT 
-            agent_id,
-            COUNT(*) as total_decisions,
-            AVG(
-                CASE
-                    WHEN decision_type = 'training' THEN COALESCE(model_prediction, 0.0)
-                    WHEN outcome = ? THEN 1.0
-                    ELSE 0.0
-                END
-            ) as performance_score,
-            COALESCE(AVG(profit_loss), 0.0) as avg_pnl
-        FROM experience_diary
-        WHERE context_pattern_seq = ?
-        GROUP BY agent_id
-        HAVING total_decisions >= 2
-        ORDER BY performance_score DESC, avg_pnl DESC
-        """
-        try:
-            result_df = self.data_manager.con.execute(
-                query, [DecisionOutcome.PROFITABLE.value, context_pattern_seq]
-            ).fetchdf()
-            return self._weights_from_context_rows(result_df)
-        except Exception as e:
-            self.logger.error(
-                f"Error getting pattern-sequence model weights: {e}",
-                exc_info=True,
-            )
-            raise RuntimeError(
-                f"Failed to get contextual model weights for pattern sequence {context_pattern_seq}"
-            ) from e
-
-    def _weights_from_context_rows(self, result_df: pd.DataFrame) -> Dict[str, float]:
-        if result_df.empty:
-            return {}
-        weights = {}
-        total_score = 0.0
-        for _, row in result_df.iterrows():
-            avg_pnl = row['avg_pnl']
-            normalized_pnl = max(0, min(1, (avg_pnl + 1) / 2))
-            score = row['performance_score'] * (1 + normalized_pnl)
-            weights[row['agent_id']] = score
-            total_score += score
-        return {k: v / total_score for k, v in weights.items()} if total_score > 0 else weights
+        return self.weight_calculator.get_contextual_model_weights_by_pattern_seq(context_pattern_seq)
 
     def get_knn_contextual_model_weights(
         self,
@@ -652,203 +552,11 @@ class DiaryEngine(BaseMetaComponent):
         If we don't have enough history for the exact fingerprint, we search for similar
         fingerprints (based on tri-state vector tokens) and average their contextual weights.
         """
-        # 1) Fast path: exact fingerprint has some history
-        exact = self.get_contextual_model_weights(context_fingerprint)
-        if exact:
-            return exact
-        if context_pattern_seq:
-            exact_seq = self.get_contextual_model_weights_by_pattern_seq(
-                context_pattern_seq)
-            if exact_seq:
-                return exact_seq
+        return self.knn_finder.get_knn_contextual_model_weights(
+            context_fingerprint,
+            context_pattern_seq=context_pattern_seq,
+            n_neighbors=n_neighbors,
+            window=window,
+            min_neighbors=min_neighbors,
+        )
 
-        try:
-            if context_pattern_seq:
-                pattern_weights = self._get_knn_weights_for_pattern_sequence(
-                    context_pattern_seq,
-                    n_neighbors=n_neighbors,
-                    window=window,
-                    min_neighbors=min_neighbors,
-                )
-                if pattern_weights:
-                    return pattern_weights
-            # Load recent rows that have a fingerprint and a resolved outcome.
-            query = """
-            SELECT context_fingerprint
-            FROM experience_diary
-            WHERE context_fingerprint IS NOT NULL
-              AND context_fingerprint != ''
-              AND outcome NOT IN (?, ?)
-            ORDER BY decision_timestamp DESC
-            LIMIT ?
-            """
-            df = self.data_manager.con.execute(
-                query,
-                [DecisionOutcome.PENDING.value, DecisionOutcome.NOT_APPLICABLE.value, int(window)],
-            ).fetchdf()
-            if df.empty:
-                return {}
-
-            hist_fps = df["context_fingerprint"].astype(str).dropna().unique().tolist()
-            if len(hist_fps) < min_neighbors:
-                return {}
-
-            # Build numeric fingerprint vectors for KNN.
-            def fp_to_vec(fp: str) -> list[float]:
-                parts = [p for p in str(fp).split("|") if p != ""]
-                vec: list[float] = []
-                for p in parts:
-                    try:
-                        vec.append(float(p))
-                    except (TypeError, ValueError):
-                        # Non-numeric token; ignore (keeps vectors comparable).
-                        continue
-                return vec
-
-            target_vec = fp_to_vec(context_fingerprint)
-            if not target_vec:
-                return {}
-
-            hist_vecs = [(fp, fp_to_vec(fp)) for fp in hist_fps]
-            # Keep only same-length vectors for stability.
-            hist_vecs = [(fp, v) for fp, v in hist_vecs if len(v) == len(target_vec)]
-            if len(hist_vecs) < min_neighbors:
-                return {}
-
-            import pandas as pd
-            from src.analytics.analyzers.knn_similarity_finder import KnnSimilarityFinder
-
-            cols = [f"fp_{i}" for i in range(len(target_vec))]
-            hist_df = pd.DataFrame([v for _, v in hist_vecs], columns=cols)
-            hist_df.index = [fp for fp, _ in hist_vecs]
-            target_df = pd.DataFrame([target_vec], columns=cols, index=["target"])
-
-            finder = KnnSimilarityFinder(config={"n_neighbors": int(n_neighbors)})
-            res = finder.analyze({"historical_features": hist_df, "target_features": target_df})
-            sims = res.get("similarities", {}).get("target", [])
-            neighbor_fps = [s.get("id") for s in sims if s.get("id")]
-            if len(neighbor_fps) < min_neighbors:
-                return {}
-
-            # Aggregate neighbor weights.
-            agg: Dict[str, float] = {}
-            for fp in neighbor_fps:
-                w = self.get_contextual_model_weights(str(fp))
-                for k, v in w.items():
-                    agg[k] = agg.get(k, 0.0) + float(v)
-            if not agg:
-                return {}
-            total = sum(agg.values())
-            if total > 0:
-                agg = {k: v / total for k, v in agg.items()}
-            return agg
-        except Exception as e:
-            self.logger.error(
-                f"Error getting KNN contextual model weights: {e}", exc_info=True
-            )
-            raise RuntimeError(
-                f"Failed to get KNN contextual model weights for {context_fingerprint}"
-            ) from e
-
-    def _get_knn_weights_for_pattern_sequence(
-        self,
-        context_pattern_seq: str,
-        *,
-        n_neighbors: int,
-        window: int,
-        min_neighbors: int,
-    ) -> Dict[str, float]:
-        query = """
-        SELECT context_pattern_seq
-        FROM experience_diary
-        WHERE context_pattern_seq IS NOT NULL
-          AND context_pattern_seq != ''
-          AND outcome NOT IN (?, ?)
-        ORDER BY decision_timestamp DESC
-        LIMIT ?
-        """
-        df = self.data_manager.con.execute(
-            query,
-            [DecisionOutcome.PENDING.value, DecisionOutcome.NOT_APPLICABLE.value, int(window)],
-        ).fetchdf()
-        if df.empty:
-            return {}
-        hist_patterns = df["context_pattern_seq"].astype(str).dropna().unique().tolist()
-        if len(hist_patterns) < min_neighbors:
-            return {}
-
-        target_vec = self._pattern_sequence_to_vec(context_pattern_seq)
-        if not target_vec:
-            return {}
-        hist_vecs = [
-            (pattern, self._pattern_sequence_to_vec(pattern))
-            for pattern in hist_patterns
-        ]
-        hist_vecs = [
-            (pattern, vec) for pattern, vec in hist_vecs
-            if len(vec) == len(target_vec)
-        ]
-        if len(hist_vecs) < min_neighbors:
-            return {}
-
-        import pandas as pd
-        from src.analytics.analyzers.knn_similarity_finder import KnnSimilarityFinder
-
-        cols = [f"pattern_{i}" for i in range(len(target_vec))]
-        hist_df = pd.DataFrame([v for _, v in hist_vecs], columns=cols)
-        hist_df.index = [pattern for pattern, _ in hist_vecs]
-        target_df = pd.DataFrame([target_vec], columns=cols, index=["target"])
-
-        finder = KnnSimilarityFinder(config={"n_neighbors": int(n_neighbors)})
-        res = finder.analyze({"historical_features": hist_df, "target_features": target_df})
-        sims = res.get("similarities", {}).get("target", [])
-        neighbor_patterns = [s.get("id") for s in sims if s.get("id")]
-        if len(neighbor_patterns) < min_neighbors:
-            return {}
-
-        agg: Dict[str, float] = {}
-        for pattern in neighbor_patterns:
-            weights = self.get_contextual_model_weights_by_pattern_seq(str(pattern))
-            for model_name, value in weights.items():
-                agg[model_name] = agg.get(model_name, 0.0) + float(value)
-        if not agg:
-            return {}
-        total = sum(agg.values())
-        return {k: v / total for k, v in agg.items()} if total > 0 else agg
-
-    @staticmethod
-    def _fingerprint_to_vec(fingerprint: str) -> List[float]:
-        vec: List[float] = []
-        for token in str(fingerprint).split("|"):
-            if token == "":
-                continue
-            try:
-                vec.append(float(token))
-            except (TypeError, ValueError):
-                continue
-        return vec
-
-    @classmethod
-    def _pattern_sequence_to_vec(cls, context_pattern_seq: str) -> List[float]:
-        parts = [part for part in str(context_pattern_seq).split(">>") if part]
-        width = 0
-        parsed_parts: List[List[float]] = []
-        for part in parts:
-            if part == "START":
-                parsed_parts.append([])
-                continue
-            vec = cls._fingerprint_to_vec(part)
-            parsed_parts.append(vec)
-            if vec and width == 0:
-                width = len(vec)
-        if width == 0:
-            return []
-        flattened: List[float] = []
-        for vec in parsed_parts:
-            if not vec:
-                flattened.extend([0.0] * width)
-            elif len(vec) < width:
-                flattened.extend(vec + [0.0] * (width - len(vec)))
-            else:
-                flattened.extend(vec[:width])
-        return flattened
