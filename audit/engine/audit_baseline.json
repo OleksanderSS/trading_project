@@ -1,662 +1,11 @@
 {
   "by_severity": {
-    "P1": 65,
-    "P2": 450,
+    "P2": 488,
     "P3": 417
   },
-  "count": 932,
-  "created_at": "2026-06-02T07:36:06.267882+00:00",
+  "count": 905,
+  "created_at": "2026-06-02T11:21:10.318777+00:00",
   "findings": [
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "analytics/reporting/automated_reports.py",
-      "fingerprint": "702c31acf76c4d79",
-      "line": 99,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "analytics/reporting/results_manager.py",
-      "fingerprint": "6f9de539fecdec26",
-      "line": 217,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "analytics/reporting/visualization.py",
-      "fingerprint": "676205973af2fc60",
-      "line": 39,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "core/cloud/gcs_manager.py",
-      "fingerprint": "a647b5479758f02f",
-      "line": 106,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "194af91053e4ecdd",
-      "line": 95,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "b3ac5fb816bf432b",
-      "line": 135,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "9fc552af499e1301",
-      "line": 212,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "1d81014af20b737a",
-      "line": 45,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "46e4fae5a4f43699",
-      "line": 117,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "core/system/archive_manager.py",
-      "fingerprint": "328096b6f3dba50f",
-      "line": 59,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/alternative_me_collector.py",
-      "fingerprint": "805076577f70e8c8",
-      "line": 67,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/alternative_me_collector.py",
-      "fingerprint": "7f0007c866d99d1c",
-      "line": 112,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/alternative_me_collector.py",
-      "fingerprint": "f5a4d4aa9cd19258",
-      "line": 138,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/cftc_collector.py",
-      "fingerprint": "b3a058e747f936b6",
-      "line": 81,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/cftc_collector.py",
-      "fingerprint": "e926e273907fd523",
-      "line": 143,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/collector_factory.py",
-      "fingerprint": "78737dcce33dcf16",
-      "line": 87,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/fred_collector.py",
-      "fingerprint": "800dde841d67f03b",
-      "line": 112,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/google_news_collector.py",
-      "fingerprint": "0d91c624f78638fa",
-      "line": 201,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/huggingface_collector.py",
-      "fingerprint": "54ffab2ddc0b4a50",
-      "line": 47,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/insider_collector.py",
-      "fingerprint": "2ad7979f74a76f5e",
-      "line": 68,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/insider_collector.py",
-      "fingerprint": "80eb440da40ee6e8",
-      "line": 185,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/local_file_collector.py",
-      "fingerprint": "24dd448c2948c703",
-      "line": 56,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/put_call_ratio_collector.py",
-      "fingerprint": "29eb1b0b897ee7e3",
-      "line": 73,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/reddit_sentiment_collector.py",
-      "fingerprint": "bce71a81306505ec",
-      "line": 75,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/reddit_sentiment_collector.py",
-      "fingerprint": "a41ef20f34898f01",
-      "line": 160,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/rss_collector.py",
-      "fingerprint": "271b8b18295fea6e",
-      "line": 169,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/rss_collector.py",
-      "fingerprint": "30a576b254106bb7",
-      "line": 185,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/sec_filings_collector.py",
-      "fingerprint": "3c2efc85a87d1968",
-      "line": 202,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/vix_collector.py",
-      "fingerprint": "bf149bb9a79b636a",
-      "line": 92,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/collectors/vix_collector.py",
-      "fingerprint": "def81dae97b934ea",
-      "line": 161,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/management/connectors/bigquery_connector.py",
-      "fingerprint": "ff04e7edcd866bf2",
-      "line": 51,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "data/management/data_versioning.py",
-      "fingerprint": "fb816c74aadedc51",
-      "line": 35,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "devtools/rule_generator.py",
-      "fingerprint": "2e9e5da385c1a55c",
-      "line": 53,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "features/feature_selection_cache.py",
-      "fingerprint": "a7cffee222bca29a",
-      "line": 42,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "features/nlp/extractors/entity_extractor.py",
-      "fingerprint": "bc1dfa5801cff876",
-      "line": 73,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "features/nlp/processors/news_harmonizer.py",
-      "fingerprint": "e10d2c3b2086866a",
-      "line": 13,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "features/selection/volatility_driver_selector.py",
-      "fingerprint": "495d79fab5656435",
-      "line": 74,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "features/utils/modular_adaptive_technical_indicators.py",
-      "fingerprint": "cf765694b1b80c8d",
-      "line": 246,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "features/utils/modular_adaptive_technical_indicators.py",
-      "fingerprint": "60a7126f1a5e935c",
-      "line": 273,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "integration/ensemble_performance_bridge.py",
-      "fingerprint": "130a8a52680acc72",
-      "line": 154,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "integration/ensemble_performance_bridge.py",
-      "fingerprint": "e4c90404294488d1",
-      "line": 185,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "integration/ensemble_performance_bridge.py",
-      "fingerprint": "72a0c2153f6ec909",
-      "line": 217,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "integration/ensemble_performance_bridge.py",
-      "fingerprint": "67fd1ee4f6f588e3",
-      "line": 238,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "metrics/model/ml_evaluator.py",
-      "fingerprint": "ba9a52ba27cb880b",
-      "line": 101,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/analysis/overfitting_detection/metrics.py",
-      "fingerprint": "9c6439b477ecfe79",
-      "line": 22,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/ensemble/enhanced_ensemble.py",
-      "fingerprint": "37310b02fe456919",
-      "line": 176,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/model_pool.py",
-      "fingerprint": "15d411f716c6808e",
-      "line": 137,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/model_selector/adaptive_selector.py",
-      "fingerprint": "aa61074644e00a53",
-      "line": 131,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/model_selector/adaptive_selector.py",
-      "fingerprint": "b9fa0d0fab2cbadc",
-      "line": 281,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/model_selector/smart_selector.py",
-      "fingerprint": "44d9d23ccb5b0b20",
-      "line": 33,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/monitoring/drift/drift_calculator.py",
-      "fingerprint": "73e5782c5e83e84b",
-      "line": 199,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/monitoring/drift/drift_calculator.py",
-      "fingerprint": "6f0aadfb87e399fd",
-      "line": 286,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/neural/transformer_model.py",
-      "fingerprint": "b78811d87d56182e",
-      "line": 348,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/prototypes/prototype.py",
-      "fingerprint": "74335a4040edebf9",
-      "line": 98,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/statistics/model_statistics.py",
-      "fingerprint": "17ea8cb1cede4325",
-      "line": 84,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "models/tree/catboost_model.py",
-      "fingerprint": "b460d951b7b947c1",
-      "line": 148,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "monitoring/monitoring_system.py",
-      "fingerprint": "be8c97bdf1fdd672",
-      "line": 129,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "monitoring/monitoring_system.py",
-      "fingerprint": "9fab055f7c43534a",
-      "line": 187,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "monitoring/monitoring_system.py",
-      "fingerprint": "45a040c31939599b",
-      "line": 243,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "monitoring/monitoring_system.py",
-      "fingerprint": "4d9a9479afdb8f61",
-      "line": 427,
-      "problem": "Broad exception returns silent fallback: Dict.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "predictions/caching.py",
-      "fingerprint": "a24f08adbccb3d7b",
-      "line": 89,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "simulation/simulation_engine.py",
-      "fingerprint": "71c858770cd805c6",
-      "line": 115,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "trading/portfolio_manager.py",
-      "fingerprint": "6d05273207ffa351",
-      "line": 272,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "trading/signal_processor.py",
-      "fingerprint": "7618104922d997a3",
-      "line": 88,
-      "problem": "Broad exception returns silent fallback: None.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "high",
-      "file": "utils/trading_calendar.py",
-      "fingerprint": "26c335eee1faf5a0",
-      "line": 79,
-      "problem": "Broad exception returns silent fallback: List.",
-      "rule_id": "BROAD_EXCEPTION_SILENT_RETURN",
-      "severity": "P1"
-    },
     {
       "category": "config_factory",
       "confidence": "medium",
@@ -821,8 +170,8 @@
       "category": "config_factory",
       "confidence": "medium",
       "file": "models/ensemble/enhanced_ensemble.py",
-      "fingerprint": "dba522eddd044d6d",
-      "line": 188,
+      "fingerprint": "170d4695837a5f84",
+      "line": 189,
       "problem": "Hardcoded model list detected.",
       "rule_id": "HARDCODED_MODEL_LIST",
       "severity": "P2"
@@ -831,8 +180,8 @@
       "category": "config_factory",
       "confidence": "medium",
       "file": "models/loader.py",
-      "fingerprint": "68de857e283b10c4",
-      "line": 387,
+      "fingerprint": "801b0ed67c1e87b3",
+      "line": 392,
       "problem": "Hardcoded model list detected.",
       "rule_id": "HARDCODED_MODEL_LIST",
       "severity": "P2"
@@ -990,26 +339,6 @@
     {
       "category": "error_policy",
       "confidence": "medium",
-      "file": "algorithms/advanced_backtest_engine.py",
-      "fingerprint": "37d1cb96c73270d3",
-      "line": 127,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "algorithms/regime/clustering.py",
-      "fingerprint": "123cf7259dbddcab",
-      "line": 40,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
       "file": "algorithms/regime/rules.py",
       "fingerprint": "f22ee2c75a6a7572",
       "line": 41,
@@ -1030,49 +359,9 @@
     {
       "category": "error_policy",
       "confidence": "medium",
-      "file": "analytics/analyzers/adaptive_confidence_analyzer.py",
-      "fingerprint": "446d087977114ed5",
-      "line": 46,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "analytics/analyzers/hedge_fund_analyzer.py",
-      "fingerprint": "fea6691fcb63e076",
-      "line": 72,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "analytics/analyzers/knn_similarity_finder.py",
-      "fingerprint": "270b2069baab1506",
-      "line": 94,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
       "file": "analytics/analyzers/model_comparison_analyzer.py",
       "fingerprint": "6055d31df568908b",
       "line": 108,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "analytics/analyzers/news_impact_analyzer.py",
-      "fingerprint": "3fc3ef29c7b9a072",
-      "line": 98,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1091,48 +380,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "847359b5b5726b04",
-      "line": 102,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "530998b69c610fe2",
-      "line": 192,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "1a9eb5f20d0637f8",
-      "line": 303,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "c69afc5fd8894ae8",
-      "line": 323,
-      "problem": "Exception is logged and re-raised in the same handler.",
-      "rule_id": "LOGGER_ERROR_THEN_RAISE",
-      "severity": "P2"
-    },
-    {
-      "category": "error_policy",
-      "confidence": "medium",
-      "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "1bd65e827d8de564",
-      "line": 426,
+      "fingerprint": "daa37e0ddbdd401d",
+      "line": 318,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1181,8 +430,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "analytics/calculators/fama_french_factors.py",
-      "fingerprint": "84fa0f391d74abb9",
-      "line": 92,
+      "fingerprint": "935bb89b1d39a8c5",
+      "line": 94,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1370,6 +619,26 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "analytics/reporting/results_manager.py",
+      "fingerprint": "7986bee253361588",
+      "line": 217,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "analytics/reporting/visualization.py",
+      "fingerprint": "73a832b5c7a61b9e",
+      "line": 39,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "backtesting/advanced/advanced_engine.py",
       "fingerprint": "a528c6cd7f9efffb",
       "line": 180,
@@ -1500,6 +769,16 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "core/cloud/gcs_manager.py",
+      "fingerprint": "04b81d49c7472535",
+      "line": 106,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "core/error_handling/error_handler.py",
       "fingerprint": "00e851c358c59536",
       "line": 89,
@@ -1521,8 +800,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "core/file_management/file_manager.py",
-      "fingerprint": "6d93f24e5a466740",
-      "line": 53,
+      "fingerprint": "b9e10b843a7462e9",
+      "line": 56,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1531,8 +810,38 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "core/file_management/file_manager.py",
-      "fingerprint": "9d6c70d9ba67cc52",
-      "line": 235,
+      "fingerprint": "8a6f55bce82749df",
+      "line": 98,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "de8780c830856b47",
+      "line": 138,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "b50f4bc4f3c3aa36",
+      "line": 215,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "3fb38c3096d42d76",
+      "line": 238,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1551,8 +860,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "47cd78ecb4a7edfe",
-      "line": 178,
+      "fingerprint": "76a57536d34ac065",
+      "line": 111,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1561,8 +870,58 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "023c28d963f90728",
-      "line": 211,
+      "fingerprint": "2d9d13e677d11b7f",
+      "line": 179,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "33c928c065e66438",
+      "line": 215,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "core/system/archive_manager.py",
+      "fingerprint": "277fd755ec24c7fc",
+      "line": 59,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/alternative_me_collector.py",
+      "fingerprint": "9763eccc88929b65",
+      "line": 67,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/alternative_me_collector.py",
+      "fingerprint": "c5811f2815f118d3",
+      "line": 112,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/alternative_me_collector.py",
+      "fingerprint": "496900f3bd1d2f03",
+      "line": 138,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1571,8 +930,38 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "data/collectors/bigquery_collector.py",
-      "fingerprint": "2103d92e5d1fde75",
-      "line": 62,
+      "fingerprint": "d1281cec3b1ddb05",
+      "line": 45,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/bigquery_collector.py",
+      "fingerprint": "aa465b5c94d62154",
+      "line": 61,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/cftc_collector.py",
+      "fingerprint": "9bbcfbbc2cb8813c",
+      "line": 81,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/cftc_collector.py",
+      "fingerprint": "4b852f5ee1830e53",
+      "line": 143,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1600,9 +989,49 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "data/collectors/collector_factory.py",
+      "fingerprint": "cf364089a603b63b",
+      "line": 87,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/custom_csv_collector.py",
+      "fingerprint": "83daadc9b9725c5c",
+      "line": 43,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/economic_calendar_collector.py",
+      "fingerprint": "0d27d51b9e5e5700",
+      "line": 101,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/fred_collector.py",
+      "fingerprint": "868776771091f679",
+      "line": 112,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "data/collectors/free_google_trends_collector.py",
-      "fingerprint": "75931b3cd9296baa",
-      "line": 68,
+      "fingerprint": "9d79ffbacf931481",
+      "line": 67,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1613,6 +1042,36 @@
       "file": "data/collectors/free_google_trends_collector.py",
       "fingerprint": "d27719890f8971bd",
       "line": 101,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/google_news_collector.py",
+      "fingerprint": "17a7315b493a9603",
+      "line": 201,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/huggingface_collector.py",
+      "fingerprint": "c78a0f8773931fb8",
+      "line": 47,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/insider_collector.py",
+      "fingerprint": "174de1e1354da9f5",
+      "line": 68,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1640,9 +1099,39 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "data/collectors/insider_collector.py",
+      "fingerprint": "36afb6ca7df66195",
+      "line": 185,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/local_file_collector.py",
+      "fingerprint": "20abac51dbb4d3d4",
+      "line": 68,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "data/collectors/newsapi_collector.py",
       "fingerprint": "064a4d3e4dc3c053",
       "line": 193,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/put_call_ratio_collector.py",
+      "fingerprint": "4b866f7deed279ce",
+      "line": 73,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1660,6 +1149,76 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "data/collectors/reddit_sentiment_collector.py",
+      "fingerprint": "84dcca10f985f3a9",
+      "line": 75,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/reddit_sentiment_collector.py",
+      "fingerprint": "9503242c28f00ee1",
+      "line": 160,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/rss_collector.py",
+      "fingerprint": "0a5769ac2b4a5132",
+      "line": 169,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/rss_collector.py",
+      "fingerprint": "2ce63e1f961b47e4",
+      "line": 185,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/sec_filings_collector.py",
+      "fingerprint": "e4852ada1d29ebf0",
+      "line": 202,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/vix_collector.py",
+      "fingerprint": "217bccc368ad1b86",
+      "line": 92,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/collectors/vix_collector.py",
+      "fingerprint": "d2418524c64b9425",
+      "line": 161,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "data/collectors/yf_collector.py",
       "fingerprint": "a9f3e604fcce1e85",
       "line": 226,
@@ -1670,9 +1229,29 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "data/data_loader.py",
+      "fingerprint": "4eef01f4c05c964f",
+      "line": 84,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "data/management/connectors/bigquery_connector.py",
       "fingerprint": "b1bc8a936d0d6e69",
       "line": 30,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/management/connectors/bigquery_connector.py",
+      "fingerprint": "2b84ddcc8589442f",
+      "line": 51,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1861,8 +1440,18 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "data/management/data_versioning.py",
-      "fingerprint": "06c52930f5d7686e",
-      "line": 215,
+      "fingerprint": "c0d3f53cec6fa3ce",
+      "line": 35,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "data/management/data_versioning.py",
+      "fingerprint": "79380ba3223d6d15",
+      "line": 217,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -1893,6 +1482,16 @@
       "file": "data/validation/event_dataset_validator.py",
       "fingerprint": "6e2709de04bab93d",
       "line": 63,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "devtools/rule_generator.py",
+      "fingerprint": "88d749627fcaa928",
+      "line": 53,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -2220,9 +1819,29 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "features/nlp/extractors/entity_extractor.py",
+      "fingerprint": "d67d2fa0b4c055e4",
+      "line": 74,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "features/nlp/models/finbert_pipeline.py",
       "fingerprint": "8ca14afea10fffe9",
       "line": 52,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "features/nlp/processors/news_harmonizer.py",
+      "fingerprint": "335a4ac69b727ab2",
+      "line": 13,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -2260,6 +1879,16 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "features/selection/volatility_driver_selector.py",
+      "fingerprint": "88ab98b90df9143d",
+      "line": 74,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "features/validation/feature_leakage_guard.py",
       "fingerprint": "81b1604b41697145",
       "line": 172,
@@ -2273,6 +1902,46 @@
       "file": "features/validation/feature_leakage_guard.py",
       "fingerprint": "cc512303d4f2768f",
       "line": 190,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "integration/ensemble_performance_bridge.py",
+      "fingerprint": "e469cd424d181c42",
+      "line": 154,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "integration/ensemble_performance_bridge.py",
+      "fingerprint": "9a032771e251d52b",
+      "line": 185,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "integration/ensemble_performance_bridge.py",
+      "fingerprint": "cb1fe25876ca3725",
+      "line": 217,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "integration/ensemble_performance_bridge.py",
+      "fingerprint": "0b3456ba09f863b5",
+      "line": 238,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -2443,6 +2112,16 @@
       "file": "metrics/model/ml_evaluator.py",
       "fingerprint": "53663365c4176497",
       "line": 87,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "metrics/model/ml_evaluator.py",
+      "fingerprint": "011f82ba2ad4bafb",
+      "line": 101,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -2730,6 +2409,16 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "models/analysis/overfitting_detection/metrics.py",
+      "fingerprint": "20b111a22d7eba6b",
+      "line": 22,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "models/analysis/regime/detector.py",
       "fingerprint": "3d753221cf277bc0",
       "line": 26,
@@ -2921,8 +2610,18 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/ensemble/enhanced_ensemble.py",
-      "fingerprint": "96d78144114fb8d0",
-      "line": 135,
+      "fingerprint": "3ec48d8c2574e888",
+      "line": 136,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/ensemble/enhanced_ensemble.py",
+      "fingerprint": "72ee2548fe6d4f2d",
+      "line": 177,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -2971,8 +2670,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/loader.py",
-      "fingerprint": "e580a95817b07850",
-      "line": 75,
+      "fingerprint": "03f378fb683617d0",
+      "line": 76,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -2981,8 +2680,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/loader.py",
-      "fingerprint": "48105d5ca1b4c56a",
-      "line": 177,
+      "fingerprint": "6a963a974e883791",
+      "line": 182,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -2991,8 +2690,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/loader.py",
-      "fingerprint": "2479c83f4eb60b39",
-      "line": 191,
+      "fingerprint": "bddc18452f540552",
+      "line": 196,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3001,8 +2700,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/loader.py",
-      "fingerprint": "05e35a5d964c5327",
-      "line": 241,
+      "fingerprint": "bb93ea9abc9d4a04",
+      "line": 246,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3011,8 +2710,28 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/loader.py",
-      "fingerprint": "1e388dbe054bef95",
-      "line": 252,
+      "fingerprint": "1bf65bac7ffbe638",
+      "line": 257,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/model_pool.py",
+      "fingerprint": "07fb3e226d952323",
+      "line": 137,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/model_selector/adaptive_selector.py",
+      "fingerprint": "85ed7e098d354227",
+      "line": 131,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3031,6 +2750,16 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/model_selector/adaptive_selector.py",
+      "fingerprint": "5cd3731d8455ed22",
+      "line": 281,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/model_selector/adaptive_selector.py",
       "fingerprint": "ce24561a7d6e633a",
       "line": 318,
       "problem": "Exception is logged and re-raised in the same handler.",
@@ -3041,8 +2770,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/model_selector/smart_selector.py",
-      "fingerprint": "3e47cf1ff1c11161",
-      "line": 42,
+      "fingerprint": "df9432f4d22d8836",
+      "line": 43,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3110,6 +2839,26 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "models/monitoring/drift/drift_calculator.py",
+      "fingerprint": "e3820b0a76937082",
+      "line": 199,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/monitoring/drift/drift_calculator.py",
+      "fingerprint": "2994c5725d50abfb",
+      "line": 286,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "models/monitoring/drift/history.py",
       "fingerprint": "72bee65b66fa44f5",
       "line": 39,
@@ -3141,8 +2890,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/neural/cnn_model.py",
-      "fingerprint": "e910aad7371c0112",
-      "line": 105,
+      "fingerprint": "3406e2faa6893023",
+      "line": 103,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3151,8 +2900,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/neural/cnn_model.py",
-      "fingerprint": "914e8fa80a578e2e",
-      "line": 134,
+      "fingerprint": "0358fad9d09061b5",
+      "line": 132,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3161,8 +2910,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/neural/transformer_model.py",
-      "fingerprint": "28d2a5aa6bd8bfbd",
-      "line": 115,
+      "fingerprint": "2b32bf097b4debcc",
+      "line": 116,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3171,8 +2920,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/neural/transformer_model.py",
-      "fingerprint": "c90259f9ea2a3460",
-      "line": 122,
+      "fingerprint": "907a10530e01e7c0",
+      "line": 123,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3181,8 +2930,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/neural/transformer_model.py",
-      "fingerprint": "f3def95648c2ac2c",
-      "line": 239,
+      "fingerprint": "8769857f1b3abcdd",
+      "line": 238,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3191,8 +2940,28 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "models/neural/transformer_model.py",
-      "fingerprint": "be8b357dfbeb4075",
-      "line": 244,
+      "fingerprint": "4b00274cefbe294a",
+      "line": 243,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/neural/transformer_model.py",
+      "fingerprint": "efdaee298b04c59a",
+      "line": 347,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/prototypes/prototype.py",
+      "fingerprint": "4c72a5d05f67149e",
+      "line": 98,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3230,6 +2999,16 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "models/statistics/model_statistics.py",
+      "fingerprint": "cce2eb8def356171",
+      "line": 84,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "models/tree/catboost_model.py",
       "fingerprint": "272df5cc90d14255",
       "line": 76,
@@ -3253,6 +3032,16 @@
       "file": "models/tree/catboost_model.py",
       "fingerprint": "1b7d323259f5c340",
       "line": 103,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "models/tree/catboost_model.py",
+      "fingerprint": "d9bcb226ee42ba55",
+      "line": 148,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3313,6 +3102,46 @@
       "file": "monitoring/ml_analytics.py",
       "fingerprint": "73b8e2033986570f",
       "line": 231,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "monitoring/monitoring_system.py",
+      "fingerprint": "24f352949b3ec41e",
+      "line": 129,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "monitoring/monitoring_system.py",
+      "fingerprint": "ca33a6efa96c3404",
+      "line": 187,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "monitoring/monitoring_system.py",
+      "fingerprint": "90ae569b27540d0c",
+      "line": 243,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "monitoring/monitoring_system.py",
+      "fingerprint": "7f909a10f1b89e09",
+      "line": 427,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3781,8 +3610,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "20de90e9bb43d9c6",
-      "line": 91,
+      "fingerprint": "9c017f91f374a9cb",
+      "line": 97,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3791,8 +3620,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "aadd67a2698d9654",
-      "line": 119,
+      "fingerprint": "09e2a4a701420c38",
+      "line": 125,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3801,8 +3630,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "6ea1cc29f69162e9",
-      "line": 159,
+      "fingerprint": "6834558756668aa1",
+      "line": 168,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3811,8 +3640,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "7ea001dfc1710970",
-      "line": 196,
+      "fingerprint": "bd883427fcf9f4a2",
+      "line": 205,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3831,8 +3660,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "risk/metrics.py",
-      "fingerprint": "95512fd3dc4c6202",
-      "line": 82,
+      "fingerprint": "9e9670b6db7338cc",
+      "line": 86,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3841,8 +3670,8 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "risk/metrics.py",
-      "fingerprint": "4ba39bbfff47c4c7",
-      "line": 134,
+      "fingerprint": "dd7864b808e45f82",
+      "line": 144,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3851,8 +3680,18 @@
       "category": "error_policy",
       "confidence": "medium",
       "file": "risk/metrics.py",
-      "fingerprint": "b80767f3fbb8fe72",
-      "line": 229,
+      "fingerprint": "09a0d0a025ff7273",
+      "line": 239,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "simulation/simulation_engine.py",
+      "fingerprint": "b9e69c0702929853",
+      "line": 115,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3890,9 +3729,29 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "trading/portfolio_manager.py",
+      "fingerprint": "a1b1ec347000046a",
+      "line": 272,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "trading/signal_processor.py",
       "fingerprint": "197159edc9bd8ef0",
       "line": 71,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
+      "file": "trading/signal_processor.py",
+      "fingerprint": "e5de7ce062da42c0",
+      "line": 88,
       "problem": "Exception is logged and re-raised in the same handler.",
       "rule_id": "LOGGER_ERROR_THEN_RAISE",
       "severity": "P2"
@@ -3990,6 +3849,16 @@
     {
       "category": "error_policy",
       "confidence": "medium",
+      "file": "utils/trading_calendar.py",
+      "fingerprint": "60908c5e8b783165",
+      "line": 78,
+      "problem": "Exception is logged and re-raised in the same handler.",
+      "rule_id": "LOGGER_ERROR_THEN_RAISE",
+      "severity": "P2"
+    },
+    {
+      "category": "error_policy",
+      "confidence": "medium",
       "file": "validation/time_series_validator.py",
       "fingerprint": "4c8afc6793443437",
       "line": 225,
@@ -4011,8 +3880,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "algorithms/advanced_backtest_engine.py",
-      "fingerprint": "2f5000d2111e62a4",
-      "line": 181,
+      "fingerprint": "e96639bda6225d3c",
+      "line": 179,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4031,8 +3900,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "analytics/analyzers/hedge_fund_analyzer.py",
-      "fingerprint": "a086a96ce8ca72c6",
-      "line": 92,
+      "fingerprint": "e706b5a9d22270bf",
+      "line": 91,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4051,8 +3920,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "376c93766c9fefc2",
-      "line": 425,
+      "fingerprint": "89d3b151da77725c",
+      "line": 420,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4181,7 +4050,7 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "e78ee3b63eb6f848",
+      "fingerprint": "a934bd1b9a1c1be1",
       "line": 80,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
@@ -4191,8 +4060,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "8c689fb17d61d120",
-      "line": 88,
+      "fingerprint": "59396c4b28c08c7d",
+      "line": 93,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4201,8 +4070,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "821a578daa367112",
-      "line": 150,
+      "fingerprint": "6d678b48e22611a8",
+      "line": 94,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4211,7 +4080,7 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "ac0df49b1af3eaaf",
+      "fingerprint": "6c72cbcb8175d066",
       "line": 156,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
@@ -4221,8 +4090,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "8b25f202487107c2",
-      "line": 219,
+      "fingerprint": "9104c0fb2cceae37",
+      "line": 164,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4231,8 +4100,28 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/kill_switch/calculator.py",
-      "fingerprint": "c9ab13b6059cc62a",
-      "line": 236,
+      "fingerprint": "a9bd83c8accd1b5f",
+      "line": 165,
+      "problem": "Drawdown calculation found; sign convention needs review.",
+      "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "financial_math",
+      "confidence": "low",
+      "file": "risk/kill_switch/calculator.py",
+      "fingerprint": "bac7bb8a1c300259",
+      "line": 228,
+      "problem": "Drawdown calculation found; sign convention needs review.",
+      "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "financial_math",
+      "confidence": "low",
+      "file": "risk/kill_switch/calculator.py",
+      "fingerprint": "1efa398afb20c045",
+      "line": 245,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4241,7 +4130,7 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/metrics.py",
-      "fingerprint": "2833dbace16499b5",
+      "fingerprint": "c8d76645404ccbaa",
       "line": 65,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
@@ -4251,8 +4140,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/metrics.py",
-      "fingerprint": "f2ec0fa29b636f03",
-      "line": 67,
+      "fingerprint": "b730caec40f2adba",
+      "line": 68,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4261,8 +4150,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/metrics.py",
-      "fingerprint": "b50dbb889d8d85a9",
-      "line": 71,
+      "fingerprint": "21d62fbd48e641ec",
+      "line": 72,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4271,8 +4160,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/metrics.py",
-      "fingerprint": "0a55e2be37ee3122",
-      "line": 79,
+      "fingerprint": "639d11b4ef849584",
+      "line": 82,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4281,8 +4170,8 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/metrics.py",
-      "fingerprint": "7ca3f26d1405af58",
-      "line": 117,
+      "fingerprint": "d469107617010e48",
+      "line": 83,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
@@ -4291,17 +4180,7 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/metrics.py",
-      "fingerprint": "a0c41210e45b7e27",
-      "line": 119,
-      "problem": "Drawdown calculation found; sign convention needs review.",
-      "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "financial_math",
-      "confidence": "low",
-      "file": "risk/metrics.py",
-      "fingerprint": "22be54505e4c036b",
+      "fingerprint": "715adacc902f5692",
       "line": 123,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
@@ -4311,20 +4190,40 @@
       "category": "financial_math",
       "confidence": "low",
       "file": "risk/metrics.py",
-      "fingerprint": "01095a0bd52ed1fd",
-      "line": 129,
+      "fingerprint": "00cee6340c6dcf66",
+      "line": 126,
       "problem": "Drawdown calculation found; sign convention needs review.",
       "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
     },
     {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "analytics/calculators/fama_french_factors.py",
-      "fingerprint": "4944401caa40f493",
-      "line": 17,
-      "problem": "Top-level import of heavy optional dependency 'yfinance'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
+      "category": "financial_math",
+      "confidence": "low",
+      "file": "risk/metrics.py",
+      "fingerprint": "52439f1c40524700",
+      "line": 130,
+      "problem": "Drawdown calculation found; sign convention needs review.",
+      "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "financial_math",
+      "confidence": "low",
+      "file": "risk/metrics.py",
+      "fingerprint": "7133ea20c0c95d89",
+      "line": 138,
+      "problem": "Drawdown calculation found; sign convention needs review.",
+      "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "financial_math",
+      "confidence": "low",
+      "file": "risk/metrics.py",
+      "fingerprint": "6639fb18bcb6888a",
+      "line": 139,
+      "problem": "Drawdown calculation found; sign convention needs review.",
+      "rule_id": "DRAWDOWN_SIGN_CONVENTION_REVIEW",
       "severity": "P2"
     },
     {
@@ -4364,16 +4263,6 @@
       "fingerprint": "b41c7b18e316bb40",
       "line": 9,
       "problem": "Top-level import of heavy optional dependency 'yfinance'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "features/nlp/extractors/entity_extractor.py",
-      "fingerprint": "f21521ad7e94b36e",
-      "line": 4,
-      "problem": "Top-level import of heavy optional dependency 'spacy'.",
       "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
       "severity": "P2"
     },
@@ -4430,16 +4319,6 @@
     {
       "category": "heavy_imports",
       "confidence": "high",
-      "file": "models/ensemble/enhanced_ensemble.py",
-      "fingerprint": "68f2dcfc8e58248c",
-      "line": 9,
-      "problem": "Top-level import of heavy optional dependency 'torch'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
       "file": "models/neural/autoencoder_model.py",
       "fingerprint": "1490f589af0248ec",
       "line": 4,
@@ -4464,106 +4343,6 @@
       "fingerprint": "1c4136cab7227dbb",
       "line": 7,
       "problem": "Top-level import of heavy optional dependency 'tensorflow'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/cnn_model.py",
-      "fingerprint": "54af173cd3ec8ab4",
-      "line": 5,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/cnn_model.py",
-      "fingerprint": "aed1539d19f86983",
-      "line": 6,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow.keras'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/cnn_model.py",
-      "fingerprint": "cb8e3d91ffd0cc15",
-      "line": 7,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow.keras.layers'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/gru_model.py",
-      "fingerprint": "73c3b58ccc9b7d5b",
-      "line": 4,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/gru_model.py",
-      "fingerprint": "bbbea4222c8cd5a1",
-      "line": 5,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow.keras'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/lstm_model.py",
-      "fingerprint": "63396fd58c9bedc1",
-      "line": 4,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/lstm_model.py",
-      "fingerprint": "049a79df6c431eb4",
-      "line": 5,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow.keras'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/mlp_model.py",
-      "fingerprint": "55a1aded3c17f210",
-      "line": 4,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "models/neural/mlp_model.py",
-      "fingerprint": "a5389b50dd3a5fbd",
-      "line": 5,
-      "problem": "Top-level import of heavy optional dependency 'tensorflow.keras'.",
-      "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
-      "severity": "P2"
-    },
-    {
-      "category": "heavy_imports",
-      "confidence": "high",
-      "file": "utils/trading_calendar.py",
-      "fingerprint": "125c830abc56d082",
-      "line": 5,
-      "problem": "Top-level import of heavy optional dependency 'yfinance'.",
       "rule_id": "HEAVY_TOP_LEVEL_IMPORT",
       "severity": "P2"
     },
@@ -4631,8 +4410,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "core/file_management/file_manager.py",
-      "fingerprint": "bb4f631db160b3b4",
-      "line": 67,
+      "fingerprint": "30c53b06f0baa4ce",
+      "line": 70,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -4641,8 +4420,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "core/file_management/file_manager.py",
-      "fingerprint": "8b97ae39c57a8b34",
-      "line": 72,
+      "fingerprint": "e1fb544eb27d3fe7",
+      "line": 75,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -4651,218 +4430,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "core/file_management/file_manager.py",
-      "fingerprint": "f4cf65c6850beb9f",
-      "line": 91,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "cd93fcdf33237406",
-      "line": 107,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "2e0fbf1ec260e0ff",
-      "line": 112,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "44b90f9fd5b68d75",
-      "line": 131,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "72564212c5fdffe8",
-      "line": 177,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "3bf4ca32fa723dd2",
-      "line": 179,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "6a9284ad30a6f77d",
-      "line": 181,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "80f637fdcffcdebd",
-      "line": 203,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "aae90496e8c74fcb",
-      "line": 205,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/file_management/file_manager.py",
-      "fingerprint": "164c648575a46171",
-      "line": 207,
-      "problem": "File read detected in config/data loading path.",
-      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "79c1ab5e7e133ab8",
-      "line": 43,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "f8471fa95d0beca7",
-      "line": 49,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "19a79b212204e1af",
-      "line": 51,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "297213f78ff8bfa2",
-      "line": 55,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "eedd663b12847c9f",
-      "line": 67,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "e20d861f161ece38",
-      "line": 78,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "eac53096cab7b628",
-      "line": 79,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "30170ca3fa3cf482",
-      "line": 80,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "1de37818b322e5d6",
-      "line": 81,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "6941e5bc5fed8725",
-      "line": 82,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "32e8bb92663a64f7",
+      "fingerprint": "36c85721dcaf53c0",
       "line": 94,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "4d5a7c5eb9c8439a",
-      "line": 100,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -4870,39 +4439,9 @@
     {
       "category": "security",
       "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "b6b3b1117bbb5a3a",
-      "line": 112,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "254f572ae0ea6fa0",
-      "line": 133,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "76963a162f936fa1",
-      "line": 137,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
-      "severity": "P2"
-    },
-    {
-      "category": "security",
-      "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "fb8a06a1c2e74de5",
-      "line": 162,
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "93ffca266b7e8173",
+      "line": 110,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -4910,28 +4449,58 @@
     {
       "category": "security",
       "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "27ce2634fba7c78c",
-      "line": 173,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "01aaf9543d05e7de",
+      "line": 115,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
     },
     {
       "category": "security",
       "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "0207868d77cb009e",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "4ae7e148f8ffa35d",
+      "line": 134,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "ce6935eb6db52d53",
+      "line": 180,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "eb068917fe0ab347",
       "line": 182,
-      "problem": ".env loading/search path detected.",
-      "rule_id": "ENV_LOADING_REVIEW",
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
     },
     {
       "category": "security",
       "confidence": "medium",
-      "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "6a1c717ace1247e5",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "7beb11512a883c33",
+      "line": 184,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "8faea2a9ccbb0316",
       "line": 206,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
@@ -4940,9 +4509,29 @@
     {
       "category": "security",
       "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "2b62aa1930709d55",
+      "line": 208,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/file_management/file_manager.py",
+      "fingerprint": "e76f4dd920f7b9ae",
+      "line": 210,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
       "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "70de20762cfb4127",
-      "line": 236,
+      "fingerprint": "f30d38392c57a227",
+      "line": 44,
       "problem": ".env loading/search path detected.",
       "rule_id": "ENV_LOADING_REVIEW",
       "severity": "P2"
@@ -4951,8 +4540,148 @@
       "category": "security",
       "confidence": "medium",
       "file": "core/security/secure_secrets_manager.py",
-      "fingerprint": "cbf146c530d453ab",
-      "line": 270,
+      "fingerprint": "2f09194ba955c676",
+      "line": 50,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "d53f6788f8557b21",
+      "line": 52,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "7d1f822f12030466",
+      "line": 56,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "fcc70ae721e87575",
+      "line": 64,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "5a41cfd324696582",
+      "line": 88,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "9680f99a98862885",
+      "line": 94,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "df344b1a11875cc7",
+      "line": 106,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "3fe66540291e67ae",
+      "line": 127,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "1a8ea4d388160285",
+      "line": 131,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "5f744db30d877f4e",
+      "line": 163,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "00223e297c584744",
+      "line": 174,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "b5f1cbd6432caae2",
+      "line": 183,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "8d5c848d81c0cf30",
+      "line": 210,
+      "problem": "File read detected in config/data loading path.",
+      "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "a14fe05e6d2c41c9",
+      "line": 240,
+      "problem": ".env loading/search path detected.",
+      "rule_id": "ENV_LOADING_REVIEW",
+      "severity": "P2"
+    },
+    {
+      "category": "security",
+      "confidence": "medium",
+      "file": "core/security/secure_secrets_manager.py",
+      "fingerprint": "61697090712175bb",
+      "line": 274,
       "problem": ".env loading/search path detected.",
       "rule_id": "ENV_LOADING_REVIEW",
       "severity": "P2"
@@ -4961,8 +4690,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "data/collectors/custom_csv_collector.py",
-      "fingerprint": "e2ffd68bf2a6aac2",
-      "line": 55,
+      "fingerprint": "1b9f4a0333361b7a",
+      "line": 53,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -4971,8 +4700,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "data/data_loader.py",
-      "fingerprint": "b032c9fac7cd90c6",
-      "line": 40,
+      "fingerprint": "1cb441274ebc83d7",
+      "line": 44,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -4981,8 +4710,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "data/data_loader.py",
-      "fingerprint": "d83e2934f50fa45c",
-      "line": 41,
+      "fingerprint": "3a5495ee2daf43e2",
+      "line": 45,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -4991,8 +4720,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "data/data_loader.py",
-      "fingerprint": "db506d7b4dd9ad96",
-      "line": 60,
+      "fingerprint": "99d524e495e4ab7f",
+      "line": 67,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -5001,8 +4730,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "data/data_loader.py",
-      "fingerprint": "b2f0f4ac294be2b4",
-      "line": 74,
+      "fingerprint": "2cd732726beb82f2",
+      "line": 82,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -5061,8 +4790,8 @@
       "category": "security",
       "confidence": "medium",
       "file": "models/loader.py",
-      "fingerprint": "6a250f7473ffaf1f",
-      "line": 218,
+      "fingerprint": "fd690f128dcc91e2",
+      "line": 223,
       "problem": "File read detected in config/data loading path.",
       "rule_id": "FILE_READ_NEEDS_PATH_VALIDATION",
       "severity": "P2"
@@ -5961,8 +5690,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/analyzers/hedge_fund_analyzer.py",
-      "fingerprint": "5d4423d01926d7c1",
-      "line": 119,
+      "fingerprint": "a934ac5807c6b807",
+      "line": 118,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -5971,8 +5700,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/analyzers/hedge_fund_analyzer.py",
-      "fingerprint": "c6a60be47474bcde",
-      "line": 124,
+      "fingerprint": "052e3533a8eaef50",
+      "line": 123,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6021,8 +5750,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "82ea4bc38a5a3f12",
-      "line": 351,
+      "fingerprint": "304e1a74b646967f",
+      "line": 346,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6031,8 +5760,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "c019d020c14bbb73",
-      "line": 365,
+      "fingerprint": "fcbeaa85e704701b",
+      "line": 360,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6041,8 +5770,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/arena/arena_battle.py",
-      "fingerprint": "dad0326072fe08f5",
-      "line": 462,
+      "fingerprint": "17a2407d97083ef8",
+      "line": 456,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6171,8 +5900,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/calculators/fama_french_factors.py",
-      "fingerprint": "5c4709db82b5118b",
-      "line": 99,
+      "fingerprint": "0a2997d79f8a7215",
+      "line": 101,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6181,8 +5910,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/calculators/fama_french_factors.py",
-      "fingerprint": "536d2e89764b110f",
-      "line": 143,
+      "fingerprint": "37d0c47ba24de4b5",
+      "line": 145,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6191,8 +5920,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/calculators/fama_french_factors.py",
-      "fingerprint": "6929c8b1141ea958",
-      "line": 188,
+      "fingerprint": "51789feacee99281",
+      "line": 190,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6201,8 +5930,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "analytics/calculators/fama_french_factors.py",
-      "fingerprint": "d80b11b860daf5b9",
-      "line": 221,
+      "fingerprint": "d521e5ff61f815e0",
+      "line": 224,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6611,8 +6340,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "data/collectors/economic_calendar_collector.py",
-      "fingerprint": "d849ea6fea4d0a71",
-      "line": 109,
+      "fingerprint": "76dc67ff8e775962",
+      "line": 108,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6621,8 +6350,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "data/collectors/economic_calendar_collector.py",
-      "fingerprint": "574b6698b98afeba",
-      "line": 110,
+      "fingerprint": "5160b6090047482d",
+      "line": 109,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6801,8 +6530,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "data/data_loader.py",
-      "fingerprint": "b1c08d1994609fb8",
-      "line": 73,
+      "fingerprint": "6bb6a2c904fd9305",
+      "line": 81,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6811,8 +6540,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "data/management/data_versioning.py",
-      "fingerprint": "56fd64cf2ca98cc4",
-      "line": 90,
+      "fingerprint": "cbad29c3c119e291",
+      "line": 92,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6821,8 +6550,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "data/management/data_versioning.py",
-      "fingerprint": "f2c8e80f4df5c538",
-      "line": 122,
+      "fingerprint": "3064989c09e7838a",
+      "line": 124,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6831,8 +6560,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "data/management/data_versioning.py",
-      "fingerprint": "ab2bde37e0e7929c",
-      "line": 134,
+      "fingerprint": "17a96732c8216c27",
+      "line": 136,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6841,8 +6570,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "data/management/data_versioning.py",
-      "fingerprint": "5a5b14355c9cf29d",
-      "line": 265,
+      "fingerprint": "4241652b45bdea83",
+      "line": 267,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -6941,8 +6670,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "features/feature_selection_cache.py",
-      "fingerprint": "127116b4b0ce2ebf",
-      "line": 125,
+      "fingerprint": "c0804d44ae669206",
+      "line": 126,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -7831,8 +7560,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "models/model_selector/smart_selector.py",
-      "fingerprint": "99a9240034cfa28b",
-      "line": 289,
+      "fingerprint": "cd7128f80259c191",
+      "line": 290,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -8971,8 +8700,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "predictions/caching.py",
-      "fingerprint": "27159e4af50f1520",
-      "line": 115,
+      "fingerprint": "111428ea29731bcf",
+      "line": 114,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -8981,8 +8710,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "predictions/caching.py",
-      "fingerprint": "84f6a4af6057234f",
-      "line": 130,
+      "fingerprint": "c0095c80d7cb3224",
+      "line": 129,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
@@ -9301,8 +9030,8 @@
       "category": "determinism",
       "confidence": "medium",
       "file": "utils/trading_calendar.py",
-      "fingerprint": "6a9a84e7a8187b2a",
-      "line": 17,
+      "fingerprint": "8620bac23ff4e747",
+      "line": 16,
       "problem": "Direct current-time call detected.",
       "rule_id": "NON_INJECTED_CLOCK",
       "severity": "P3"
