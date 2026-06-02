@@ -21,7 +21,7 @@ class OverfittingMetrics:
             }
         except Exception as e:
             logger.error(f"Error calculating metrics: {e}", exc_info=True)
-            return {}
+            raise RuntimeError("Failed to calculate overfitting metrics") from e
 
     def analyze_data_characteristics(self, 
                                  X_train: pd.DataFrame, 

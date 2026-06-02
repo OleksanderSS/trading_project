@@ -76,16 +76,22 @@ class KillSwitchCalculator:
             cumulative_returns = np.cumprod(1 + np.array(portfolio_returns))
             running_max = np.maximum.accumulate(cumulative_returns)
             drawdowns = (running_max - cumulative_returns) / running_max
-            max_drawdown = np.max(drawdowns) if len(drawdowns) > 0 else 0
-            current_drawdown = drawdowns.iloc[-1] if hasattr(drawdowns, 'iloc') else (drawdowns[-1] if len(drawdowns) > 0 else 0)
+            max_drawdown_pct = float(np.max(drawdowns)) if len(drawdowns) > 0 else 0.0
+            current_drawdown_pct = float(
+                drawdowns.iloc[-1] if hasattr(drawdowns, 'iloc')
+                else (drawdowns[-1] if len(drawdowns) > 0 else 0.0)
+            )
             
             return {
                 'portfolio_value': portfolio_value,
                 'daily_returns': portfolio_returns,
                 'daily_var': daily_var,
                 'portfolio_volatility': portfolio_volatility,
-                'max_drawdown': max_drawdown,
-                'current_drawdown': current_drawdown,
+                'max_drawdown': max_drawdown_pct,
+                'max_drawdown_pct': max_drawdown_pct,
+                'max_drawdown_signed': -max_drawdown_pct,
+                'current_drawdown': current_drawdown_pct,
+                'current_drawdown_pct': current_drawdown_pct,
                 'var_ratio': daily_var / portfolio_volatility if portfolio_volatility > 0 else 0
             }
         except Exception as e:
@@ -146,14 +152,17 @@ class KillSwitchCalculator:
                 cumulative_returns = (1 + symbol_returns).cumprod()
                 running_max = np.maximum.accumulate(cumulative_returns)
                 drawdowns = (running_max - cumulative_returns) / running_max
-                max_drawdown = np.max(drawdowns) if len(drawdowns) > 0 else 0
-                current_drawdown = drawdowns.iloc[-1] if len(drawdowns) > 0 else 0
+                max_drawdown_pct = float(np.max(drawdowns)) if len(drawdowns) > 0 else 0.0
+                current_drawdown_pct = float(drawdowns.iloc[-1]) if len(drawdowns) > 0 else 0.0
                 
                 position_metrics[symbol] = {
                     'returns': symbol_returns.tolist(),
                     'volatility': volatility,
-                    'max_drawdown': max_drawdown,
-                    'current_drawdown': current_drawdown
+                    'max_drawdown': max_drawdown_pct,
+                    'max_drawdown_pct': max_drawdown_pct,
+                    'max_drawdown_signed': -max_drawdown_pct,
+                    'current_drawdown': current_drawdown_pct,
+                    'current_drawdown_pct': current_drawdown_pct
                 }
             return position_metrics
         except Exception as e:
@@ -216,7 +225,7 @@ class KillSwitchCalculator:
                 return level
             
             # Check max drawdown
-            if portfolio_metrics.get('current_drawdown', 0) > thresholds.get('max_drawdown_threshold', 1.0):
+            if portfolio_metrics.get('current_drawdown_pct', portfolio_metrics.get('current_drawdown', 0)) > thresholds.get('max_drawdown_threshold', 1.0):
                 return level
                 
         return 'normal'
@@ -233,7 +242,7 @@ class KillSwitchCalculator:
             triggers['active_triggers'].append('portfolio_var_exceeded')
             
         # Drawdown trigger
-        if portfolio_metrics.get('current_drawdown', 0) > 0.10: # 10% drawdown
+        if portfolio_metrics.get('current_drawdown_pct', portfolio_metrics.get('current_drawdown', 0)) > 0.10: # 10% drawdown
             triggers['any_triggered'] = True
             triggers['active_triggers'].append('max_drawdown_exceeded')
             

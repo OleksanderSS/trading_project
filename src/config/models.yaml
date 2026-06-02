@@ -27,6 +27,10 @@ models:
     light_models: ["lightgbm", "random_forest", "linear", "mlp", "ensemble", "catboost", "xgboost", "knn", "svm"]
     heavy_models: ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder", "mlp", "neural_network", "base_neural"]
 
+  trained_models_registry:
+    BTC_LSTM_v2: "data/trained_models/BTC_LSTM_v2.joblib"
+    consensus_meta_model: "data/trained_models/consensus_meta_model.pkl"
+
   categories:
     light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]
     heavy: ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]

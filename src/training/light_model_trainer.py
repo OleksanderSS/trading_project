@@ -10,6 +10,7 @@ from pathlib import Path
 from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
 from src.factories.model_factory import ModelFactory
 from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = ProjectLogger.get_logger("LightModelTrainer")
 
@@ -167,7 +168,12 @@ class LightModelTrainer:
             True if successful, False otherwise
         """
         try:
-            self.models_in_memory[model_key] = joblib.load(path)
+            trusted_path = resolve_trusted_artifact_path(
+                path,
+                allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+                must_exist=True,
+            )
+            self.models_in_memory[model_key] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             logger.info(f"✅ Loaded model from {path} (key: {model_key})")
             return True
         except Exception as e:

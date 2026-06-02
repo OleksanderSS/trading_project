@@ -201,4 +201,4 @@ class SECFilingsCollector(BaseCollector):
 
         except Exception as e:
             logger.error(f"Error processing {ticker} (CIK: {cik}): {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch SEC filings for {ticker} ({cik})") from e

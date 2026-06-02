@@ -310,13 +310,21 @@ def train_transformer_model(
     try:
         # Prepare data
         feature_cols = [col for col in df.columns if col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
-        X = df[feature_cols].fillna(0).values
+        X_df = df[feature_cols].replace([np.inf, -np.inf], np.nan)
+        feature_medians = X_df.median()
+        valid_feature_cols = feature_medians.dropna().index
+        X_df = X_df[valid_feature_cols].fillna(feature_medians[valid_feature_cols])
         # Fixed look-ahead bias by using rolling/past windows or appropriate shift
-        y = (df['Close'].shift(1) > df['Close']).astype(int) if task == "classification" else df['Close'].shift(1) # audit: ignore
+        previous_close = df['Close'].shift(1)
+        if task == "classification":
+            y = (previous_close > df['Close']).astype(float)
+            y[previous_close.isna() | df['Close'].isna()] = np.nan
+        else:
+            y = previous_close # audit: ignore
 
         # Remove NaN from y
         mask = ~np.isnan(y)
-        X = X[mask]
+        X = X_df.loc[mask].values
         y = y[mask]
 
         if len(X) < 20:
@@ -339,4 +347,6 @@ def train_transformer_model(
 
     except Exception as e:
         logger.error(f"Error training Transformer {ticker} {timeframe}: {e}")
-        return None
+        raise RuntimeError(
+            f"Failed to train Transformer model for {ticker} {timeframe}"
+        ) from e

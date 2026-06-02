@@ -200,7 +200,7 @@ class GoogleNewsCollector(BaseCollector):
             return []
         except Exception as e:
             self.logger.error(f"Resolution failed mapping boundary limits: '{term}': {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch Google News articles for {term}") from e
 
     def _process_entry(self, entry: Dict) -> Optional[Dict]:
         url = entry.get("url")

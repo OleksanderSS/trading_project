@@ -4,6 +4,8 @@ import duckdb
 import pandas as pd
 
 from src.features.enrichers.context_map_enricher import ContextMapEnricher
+from src.analytics.analyzers.knn_similarity_finder import KnnSimilarityFinder
+from src.analytics.context.contextual_model_selector import ContextualModelSelector
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.pipeline.stages.prediction.data_preparation_service import (
     DataPreparationService,
@@ -80,6 +82,45 @@ def test_data_preparation_preserves_pattern_sequence_for_stage5_selection():
     assert prepared["context_fingerprint"].iloc[-1] == "1|1"
 
 
+def test_data_preparation_drops_incomplete_selected_feature_rows_instead_of_zero_fill():
+    service = DataPreparationService()
+    features = pd.DataFrame(
+        {
+            "ticker": ["AAPL", "AAPL"],
+            "feature_a": [None, 2.0],
+            "feature_b": [1.0, 3.0],
+            "context_pattern_id": ["old", "new"],
+            "context_pattern_seq": ["0|1>>START", "1|1>>0|1"],
+            "context_fingerprint": ["0|1", "1|1"],
+        }
+    )
+    meta = {"ticker": "AAPL", "selected_features": ["feature_a", "feature_b"]}
+
+    prepared = service.prepare_context_data("ctx", meta, features)
+
+    assert prepared is not None
+    prepared_df, selected_features = prepared
+    assert selected_features == ["feature_a", "feature_b"]
+    assert prepared_df["feature_a"].tolist() == [2.0]
+    assert prepared_df["context_pattern_seq"].tolist() == ["1|1>>0|1"]
+
+
+def test_data_preparation_skips_context_when_selected_features_are_all_incomplete():
+    service = DataPreparationService()
+    features = pd.DataFrame(
+        {
+            "ticker": ["AAPL"],
+            "feature_a": [None],
+            "context_pattern_id": ["old"],
+            "context_pattern_seq": ["0|1>>START"],
+            "context_fingerprint": ["0|1"],
+        }
+    )
+    meta = {"ticker": "AAPL", "selected_features": ["feature_a"]}
+
+    assert service.prepare_context_data("ctx", meta, features) is None
+
+
 def test_diary_knn_sequence_weights_can_select_model_by_pattern_similarity():
     manager = _DiaryDataManager()
     manager.con.execute(
@@ -134,3 +175,54 @@ def test_model_selection_uses_diary_pattern_alias_weights():
     )
 
     assert selected == "model_AAPL_target_return_1d_catboost"
+
+
+def test_knn_similarity_finder_imputes_partial_gaps_with_historical_medians():
+    finder = KnnSimilarityFinder({"n_neighbors": 1})
+    historical = pd.DataFrame(
+        {
+            "feature_a": [10.0, 20.0],
+            "feature_b": [100.0, 200.0],
+        }
+    )
+    target = pd.DataFrame(
+        {
+            "feature_a": [None],
+            "feature_b": [100.0],
+        },
+        index=["now"],
+    )
+
+    _, prepared_target = finder._prepare_feature_matrices(historical, target)
+
+    assert prepared_target.loc["now", "feature_a"] == 15.0
+    assert prepared_target.loc["now", "feature_b"] == 100.0
+
+
+def test_contextual_model_selector_can_use_fitted_knn_similarity_finder():
+    finder = KnnSimilarityFinder({"n_neighbors": 2})
+    historical_features = pd.DataFrame(
+        {
+            "feature_a": [1.0, 1.2, 10.0],
+            "feature_b": [2.0, None, 10.0],
+        }
+    )
+    historical_outcomes = pd.DataFrame(
+        {
+            "target_catboost": [0.9, 0.8, 0.1],
+            "target_lightgbm": [0.1, 0.2, 0.9],
+        }
+    )
+    finder.fit(historical_features, historical_outcomes)
+    selector = ContextualModelSelector(["catboost", "lightgbm"])
+
+    result = selector.analyze(
+        {
+            "current_context": pd.Series({"feature_a": 1.1, "feature_b": 2.1}),
+            "similarity_finder": finder,
+        }
+    )
+
+    assert result["status"] == "Success"
+    assert result["selected_model"] == "catboost"
+    assert result["num_neighbors_analyzed"] == 2

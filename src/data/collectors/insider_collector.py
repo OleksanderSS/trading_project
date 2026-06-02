@@ -67,7 +67,7 @@ class InsiderCollector(BaseCollector):
                 await asyncio.sleep(1)
         except Exception as e:
             self.logger.error(f"Network interface initialization failed: {e}")
-            return []
+            raise RuntimeError("Failed to initialize insider collector network interface") from e
 
         self.logger.info(f"Total isolated records aggregated: {len(all_trades)}.")
         return all_trades
@@ -184,7 +184,7 @@ class InsiderCollector(BaseCollector):
             raw_data = await self.fetch_raw_data(**kwargs)
         except Exception as e:
             self.logger.error(f"[Insider] Contextual data parse process aborted: {e}")
-            return None
+            raise RuntimeError("Insider collection failed") from e
 
         if not raw_data:
             self.logger.info("[Insider] No historical records extracted.")

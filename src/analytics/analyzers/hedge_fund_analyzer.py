@@ -70,7 +70,6 @@ class HedgeFundAnalyzer(IAnalyzer):
                 'style_drift': drift_analysis, 'analysis_timestamp':
                 datetime.now().isoformat()}
         except Exception as e:
-            logger.error(f'Execution failure in HedgeFundAnalyzer: {e}', exc_info=True)
             raise DataProcessingError(f'Execution failure in HedgeFundAnalyzer: {e}') from e
 
     def calculate_performance_metrics(self, returns: pd.Series, benchmark:

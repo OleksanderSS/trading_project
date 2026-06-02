@@ -100,8 +100,7 @@ class EconomicCalendarCollector(BaseCollector):
             return records
         except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.handle_error(e, {'url': api_url})
-            return []
+            raise RuntimeError(f"Failed to fetch economic calendar from {api_url}") from e
 
     def _get_date_range(self):
         days_back = self.configs.get('days_back', 7)

@@ -83,7 +83,7 @@ class ModelStatistics:
             
         except Exception as e:
             self.logger.error(f"Error getting common issues: {e}")
-            return []
+            raise RuntimeError("Failed to get common model issues") from e
     
     def calculate_retraining_frequency(self, 
                                       retraining_history: List[Dict[str, Any]],

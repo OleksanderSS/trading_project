@@ -66,7 +66,7 @@ class AlternativeMeCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error in AlternativeMeCollector: {e}", exc_info=True)
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Alternative.me collection failed") from e
 
     async def _fetch_fear_greed_data(self) -> List[Dict[str, Any]]:
         """Fetches data from Alternative.me API."""
@@ -111,7 +111,7 @@ class AlternativeMeCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error fetching Alternative.me data: {e}", exc_info=True)
-            return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Failed to fetch Alternative.me data") from e
 
     def _process_data_point(self, data_point: Dict[str, Any]) -> Dict[str, Any]:
         """Process a single data point from Alternative.me"""
@@ -137,7 +137,7 @@ class AlternativeMeCollector(BaseCollector):
             }
         except Exception as e:
             self.logger.error(f"Error processing Alternative.me data point: {e}")
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Failed to process Alternative.me data point") from e
 
     def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """Standardizes column names and data types."""

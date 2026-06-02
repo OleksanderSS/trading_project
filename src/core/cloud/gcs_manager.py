@@ -106,7 +106,7 @@ class GCSManager:
         except Exception as e:
             logger.error(f"Failed to list files with prefix '{prefix}': {e}",
                 exc_info=True)
-            return []
+            raise RuntimeError(f"Failed to list GCS files with prefix '{prefix}'") from e
 
     def file_exists(self, blob_name: str) ->bool:
         """Checks if a file exists in the GCS bucket."""

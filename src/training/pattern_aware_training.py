@@ -135,8 +135,14 @@ class PatternAwareModelTrainer:
         if conditions.get('data_quality', 0.0) < 0.5:
             X = X.dropna(axis=1, thresh=max(1, int(len(X) * 0.5)))
 
-        X = X.select_dtypes(include=[np.number]).replace([np.inf, -np.inf], np.nan).fillna(0.0)
-        y = y.replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        X = X.select_dtypes(include=[np.number]).replace([np.inf, -np.inf], np.nan)
+        y = y.replace([np.inf, -np.inf], np.nan)
+        valid_target = y.notna()
+        X = X.loc[valid_target].reset_index(drop=True)
+        y = y.loc[valid_target].reset_index(drop=True)
+        feature_medians = X.median()
+        valid_feature_cols = feature_medians.dropna().index
+        X = X[valid_feature_cols].fillna(feature_medians[valid_feature_cols])
         return {'X': X, 'y': y}
 
     def _create_feature_matrix(self, features: Any) -> pd.DataFrame:

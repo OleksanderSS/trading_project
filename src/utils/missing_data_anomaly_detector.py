@@ -141,7 +141,8 @@ class MissingDataAnomalyDetector:
         anomalies = []
 
         # Find transitions from NaN to filled values, shifted by 1 to represent past transitions
-        fill_transitions = fill_mask & fill_mask.shift(1).fillna(False)
+        shifted_fill_mask = fill_mask.shift(1)
+        fill_transitions = fill_mask & shifted_fill_mask.where(shifted_fill_mask.notna(), False)
 
         if not fill_transitions.any():
             return anomalies

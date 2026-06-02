@@ -31,9 +31,10 @@ class SmartModelSelector:
         except FileNotFoundError:
             return {}
         except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Помилка завантаження історії: {e}')
-            return {}
+            raise RuntimeError(
+                f"Failed to load model performance history from {self.results_file}"
+            ) from e
 
     def _load_competence_map(self, file_path: str) ->Dict:
         try:

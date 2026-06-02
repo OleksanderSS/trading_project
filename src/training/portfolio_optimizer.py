@@ -217,12 +217,15 @@ class PortfolioOptimizer:
         self,
         features: pd.DataFrame,
         feature_columns: list[str] | None,
+        feature_medians: pd.Series | dict[str, float] | None = None,
     ) -> pd.DataFrame:
         X = features.drop(['ticker', 'returns'], axis=1, errors='ignore')
         X = X.select_dtypes(include=[np.number]).replace([np.inf, -np.inf], np.nan)
         if feature_columns:
-            X = X.reindex(columns=feature_columns, fill_value=0.0)
-        return X.fillna(0.0)
+            X = X.reindex(columns=feature_columns)
+        medians = pd.Series(feature_medians).reindex(X.columns) if feature_medians is not None else X.median()
+        valid_feature_cols = medians.dropna().index
+        return X[valid_feature_cols].fillna(medians[valid_feature_cols])
 
     def _train_global_model(self, market_features: pd.DataFrame) -> dict[str, Any]:
         """Тренує глобальну модель на спільних ринкових фічах"""
@@ -254,6 +257,7 @@ class PortfolioOptimizer:
             'model': model,
             'score': score,
             'feature_columns': list(X.columns),
+            'feature_medians': X.median().to_dict(),
             'feature_importance': dict(zip(X.columns, model.feature_importances_, strict=False))
         }
 
@@ -308,6 +312,7 @@ class PortfolioOptimizer:
             global_features = self._select_model_features(
                 features,
                 global_model.get('feature_columns'),
+                global_model.get('feature_medians'),
             )
             global_pred = global_model['model'].predict(global_features)
 

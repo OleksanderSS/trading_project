@@ -292,10 +292,9 @@ class SentimentFeaturesEnricher(BaseEnricher):
 
         # Fill sentiment strictly within each ticker, then use neutral for tickers with no signal.
         sentiment_values = pd.to_numeric(df_enriched[sentiment_col], errors='coerce')
-        df_enriched[sentiment_col] = (
-            sentiment_values.groupby(df_enriched['ticker']).ffill()
-            .fillna(0.0)
-        )
+        carried_sentiment = sentiment_values.groupby(df_enriched['ticker']).ffill()
+        df_enriched['sentiment_available'] = carried_sentiment.notna().astype(int)
+        df_enriched[sentiment_col] = carried_sentiment.where(carried_sentiment.notna(), 0.0)
 
         return df_enriched
 
@@ -326,9 +325,10 @@ class SentimentFeaturesEnricher(BaseEnricher):
                                                            .rolling(window=window, min_periods=1)
                                                            .mean())
             if 'rolling_std' in self.enabled_features:
-                ticker_group[f'sentiment_std_{window}'] = (ticker_group[sentiment_col]
-                                                           .rolling(window=window, min_periods=1)
-                                                           .std().fillna(0))
+                sentiment_std = (ticker_group[sentiment_col]
+                                 .rolling(window=window, min_periods=1)
+                                 .std())
+                ticker_group[f'sentiment_std_{window}'] = sentiment_std.where(sentiment_std.notna(), 0)
 
         ticker_group['sentiment_ema'] = (ticker_group[sentiment_col]
                                         .ewm(span=self.windows[0], adjust=False)
@@ -340,9 +340,8 @@ class SentimentFeaturesEnricher(BaseEnricher):
             return
 
         # Change over the last 3 intervals
-        ticker_group['sentiment_velocity'] = (ticker_group[sentiment_col]
-                                              .diff(periods=3)
-                                              .fillna(0))
+        sentiment_velocity = ticker_group[sentiment_col].diff(periods=3)
+        ticker_group['sentiment_velocity'] = sentiment_velocity.where(sentiment_velocity.notna(), 0)
 
     def _add_news_intensity(self, ticker_group: pd.DataFrame, sentiment_col: str) -> None:
         """Adds news intensity feature."""

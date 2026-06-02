@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 
+import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
@@ -50,8 +51,11 @@ def run_deep_analysis(
     )
 
     predictions = pd.Series(dtype=float)
+    prediction_signal_available = pd.Series(dtype=int)
     if "signal" in signals_df.columns:
-        predictions = signals_df["signal"].map({"BUY": 1, "SELL": -1, "HOLD": 0}).fillna(0)
+        mapped_signals = signals_df["signal"].map({"BUY": 1, "SELL": -1, "HOLD": 0})
+        prediction_signal_available = mapped_signals.notna().astype(int)
+        predictions = mapped_signals.where(mapped_signals.notna(), 0)
 
     data_map = {
         "price_data": price_data,
@@ -59,7 +63,13 @@ def run_deep_analysis(
         "signals": signals_df["signal"] if "signal" in signals_df.columns else None,
         "returns": returns,
         "portfolio_returns": pd.DataFrame({"Strategy": returns}) if not returns.empty else pd.DataFrame(),
-        "benchmark_returns": pd.DataFrame({"Benchmark": price_data["close"].pct_change(fill_method=None).fillna(0).fillna(0)})
+        "benchmark_returns": pd.DataFrame(
+            {
+                "Benchmark": price_data["close"]
+                .pct_change(fill_method=None)
+                .replace([np.inf, -np.inf], np.nan)
+            }
+        )
         if "close" in price_data.columns
         else pd.DataFrame(),
         "portfolio_data": portfolio_history,
@@ -69,6 +79,7 @@ def run_deep_analysis(
         "economic_data": brain.get("macro_data") if brain else None,
         "historical_economic_data": brain.get("macro_data") if brain else None,
         "predictions": predictions,
+        "prediction_signal_available": prediction_signal_available,
         "performance_metrics": {},
         "features_data": enriched_data if enriched_data is not None else pd.DataFrame(),
         "target_series": signals_df["signal"] if "signal" in signals_df.columns else pd.Series(dtype=float),

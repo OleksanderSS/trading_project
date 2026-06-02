@@ -123,7 +123,7 @@ class DataLeakageDetector:
         results = {}
         # Check correlations with target shifted forward (future values)
         # Shift -1 means the target at T+1
-        future_target = df[target_col].shift(-1)  # audit-ignore: detector intentionally checks future target correlation
+        future_target = df[target_col].shift(-1)  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
         
         for feature in features:
             if feature in df.columns and feature != target_col:

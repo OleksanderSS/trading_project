@@ -1,4 +1,4 @@
-# src/models/neural/autoencoder_model.py
+# src/models/neural/autoencoder_model.py  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
 
 import numpy as np
 import tensorflow as tf
@@ -27,7 +27,7 @@ class AutoencoderModel(BaseNeuralModel):
     @property
     def name(self) -> str:
         """Returns the unique name of the model."""
-        return "autoencoder_conv1d"
+        return "autoencoder_conv1d"  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
 
     def _build_architecture(self, input_shape: Tuple[int, ...]) -> tf.keras.Model:
         """

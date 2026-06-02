@@ -137,8 +137,11 @@ class DataPreparationService:
             except (ValueError, TypeError):
                 ticker_df_clean = ticker_df_clean.drop(columns=[col], errors='ignore')
         
-        # Fill NaN and inf
-        ticker_df_clean = ticker_df_clean.fillna(0).replace([np.inf, -np.inf], 0)
+        # Keep missing numeric values visible. Context-specific filtering below
+        # decides whether a row is safe to send to a model.
+        numeric_cols = [c for c in ticker_df_clean.columns if c not in preserved_cols]
+        if numeric_cols:
+            ticker_df_clean[numeric_cols] = ticker_df_clean[numeric_cols].replace([np.inf, -np.inf], np.nan)
         
         # Restore preserved columns
         for c in preserved_data.columns:
@@ -203,12 +206,48 @@ class DataPreparationService:
             ticker_df_clean_features = ticker_df_clean[selected_features].copy()
         else:
             ticker_df_clean_features = ticker_df_clean.copy()
+
+        model_feature_cols = [c for c in ticker_df_clean_features.columns if c not in context_cols]
+        ticker_df_clean_features = self._drop_incomplete_model_rows(
+            ticker_df_clean_features,
+            model_feature_cols,
+            context_id,
+        )
+        if ticker_df_clean_features is None:
+            return None
         
         # Restore context columns
         for c in context_data.columns:
-            ticker_df_clean_features[c] = context_data[c]
+            ticker_df_clean_features[c] = context_data.reindex(ticker_df_clean_features.index)[c]
         
         return ticker_df_clean_features, selected_features
+
+    def _drop_incomplete_model_rows(
+        self,
+        ticker_df: pd.DataFrame,
+        model_feature_cols: list[str],
+        context_id: str
+    ) -> Optional[pd.DataFrame]:
+        """Drop rows with unavailable model inputs instead of fabricating zeros."""
+        if not model_feature_cols:
+            return ticker_df
+
+        complete_rows = ticker_df[model_feature_cols].notna().all(axis=1)
+        if complete_rows.all():
+            return ticker_df
+
+        dropped = int((~complete_rows).sum())
+        self.logger.warning(
+            f'Context {context_id} has {dropped} incomplete feature row(s); '
+            'dropping them instead of filling missing model inputs with zeros.'
+        )
+        filtered = ticker_df.loc[complete_rows].copy()
+        if filtered.empty:
+            self.logger.error(
+                f'Context {context_id} has no complete rows after missing-feature filtering; skipping prediction.'
+            )
+            return None
+        return filtered
 
     def create_context_fingerprint(
         self,

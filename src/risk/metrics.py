@@ -40,7 +40,7 @@ def calculate_portfolio_returns(portfolio_data: dict[str, Any], market_data: pd.
 
     except Exception as e:
         logger.error(f"Error calculating portfolio returns: {e}", exc_info=True)
-        return []
+        raise RuntimeError("Failed to calculate portfolio returns") from e
 
 
 def calculate_portfolio_metrics(portfolio_data: dict[str, Any], market_data: pd.DataFrame) -> dict[str, Any]:
@@ -62,7 +62,8 @@ def calculate_portfolio_metrics(portfolio_data: dict[str, Any], market_data: pd.
         cumulative_returns = np.cumprod(1 + np.array(portfolio_returns))
         running_max = np.maximum.accumulate(cumulative_returns)
         drawdowns = (cumulative_returns - running_max) / running_max
-        max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0
+        max_drawdown_signed = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
+        max_drawdown_pct = abs(max_drawdown_signed)
 
         current_drawdown = 0.0
         if len(portfolio_returns) > 0:
@@ -75,13 +76,16 @@ def calculate_portfolio_metrics(portfolio_data: dict[str, Any], market_data: pd.
             "daily_returns": portfolio_returns,
             "daily_var": daily_var,
             "portfolio_volatility": portfolio_volatility,
-            "max_drawdown": max_drawdown,
+            "max_drawdown": max_drawdown_signed,
+            "max_drawdown_signed": max_drawdown_signed,
+            "max_drawdown_pct": max_drawdown_pct,
             "current_drawdown": current_drawdown,
+            "current_drawdown_pct": current_drawdown,
         }
 
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
-        return {}
+        raise RuntimeError("Failed to calculate portfolio metrics") from e
 
 
 def calculate_position_metrics(portfolio_data: dict[str, Any], market_data: pd.DataFrame) -> dict[str, dict[str, Any]]:
@@ -103,6 +107,8 @@ def calculate_position_metrics(portfolio_data: dict[str, Any], market_data: pd.D
                     "returns": [],
                     "volatility": 0.0,
                     "max_drawdown": 0.0,
+                    "max_drawdown_signed": 0.0,
+                    "max_drawdown_pct": 0.0,
                     "correlation_risk": 0.0,
                 }
                 continue
@@ -114,7 +120,8 @@ def calculate_position_metrics(portfolio_data: dict[str, Any], market_data: pd.D
             cumulative_returns = (1 + symbol_returns).cumprod()
             running_max = np.maximum.accumulate(cumulative_returns)
             drawdowns = (cumulative_returns - running_max) / running_max
-            max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0
+            max_drawdown_signed = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
+            max_drawdown_pct = abs(max_drawdown_signed)
 
             current_drawdown = 0.0
             if len(symbol_returns) > 0:
@@ -125,15 +132,18 @@ def calculate_position_metrics(portfolio_data: dict[str, Any], market_data: pd.D
             position_metrics[symbol] = {
                 "returns": symbol_returns.tolist(),
                 "volatility": volatility,
-                "max_drawdown": max_drawdown,
+                "max_drawdown": max_drawdown_signed,
+                "max_drawdown_signed": max_drawdown_signed,
+                "max_drawdown_pct": max_drawdown_pct,
                 "current_drawdown": current_drawdown,
+                "current_drawdown_pct": current_drawdown,
             }
 
         return position_metrics
 
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
-        return {}
+        raise RuntimeError("Failed to calculate position metrics") from e
 
 
 def analyze_market_conditions(market_data: pd.DataFrame) -> dict[str, Any]:
@@ -228,4 +238,4 @@ def analyze_market_conditions(market_data: pd.DataFrame) -> dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Error analyzing market conditions: {e}", exc_info=True)
-        return {}
+        raise RuntimeError("Failed to analyze market conditions") from e

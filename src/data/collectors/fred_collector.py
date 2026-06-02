@@ -111,4 +111,4 @@ class FredCollector(BaseCollector):
             return observations
         except Exception as e:
             self.logger.error(f"Failed to fetch FRED series {series_id}: {e}")
-            return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError(f"Failed to fetch FRED series {series_id}") from e

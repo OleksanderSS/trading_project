@@ -52,24 +52,36 @@ class FinancialMetricsLibrary:
         returns: pd.Series, risk_free_rate: float = 0.0, trading_days_per_year: int = 252
     ) -> float:
         """Calculates annualized Sharpe Ratio."""
-        if returns.empty or returns.std() == 0:
-            return 0.0
-        excess_returns = returns - risk_free_rate / trading_days_per_year
-        return float(excess_returns.mean() / excess_returns.std() * np.sqrt(trading_days_per_year))
+        clean_returns = pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
+        if len(clean_returns) < 2:
+            return np.nan
+        periods = max(int(trading_days_per_year), 1)
+        excess_returns = clean_returns - risk_free_rate / periods
+        excess_std = excess_returns.std()
+        if not np.isfinite(excess_std) or excess_std <= 1e-12:
+            return np.nan
+        sharpe = excess_returns.mean() / excess_std * np.sqrt(periods)
+        return float(sharpe) if np.isfinite(sharpe) else np.nan
 
     @staticmethod
     def calculate_sortino_ratio(
         returns: pd.Series, risk_free_rate: float = 0.0, trading_days_per_year: int = 252
     ) -> float:
         """Calculates annualized Sortino Ratio (downside risk only)."""
-        if returns.empty:
-            return 0.0
-        downside_returns = returns[returns < 0]
-        downside_std = downside_returns.std() * np.sqrt(trading_days_per_year)
-        if downside_std == 0:
-            return 0.0
-        annual_return = (1 + returns.mean()) ** trading_days_per_year - 1
-        return float((annual_return - risk_free_rate) / downside_std)
+        clean_returns = pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
+        if len(clean_returns) < 2:
+            return np.nan
+        periods = max(int(trading_days_per_year), 1)
+        target_return = risk_free_rate / periods
+        downside_returns = clean_returns[clean_returns < target_return]
+        if len(downside_returns) < 2:
+            return np.nan
+        downside_std = downside_returns.std() * np.sqrt(periods)
+        if not np.isfinite(downside_std) or downside_std <= 1e-12:
+            return np.nan
+        annual_return = (1 + clean_returns.mean()) ** periods - 1
+        sortino = (annual_return - risk_free_rate) / downside_std
+        return float(sortino) if np.isfinite(sortino) else np.nan
 
     @staticmethod
     def calculate_drawdowns(equity_curve: pd.Series) -> pd.Series:
@@ -176,14 +188,25 @@ class FinancialMetricsLibrary:
         return float(annual_excess_return / beta)
 
     @staticmethod
-    def calculate_var_cvar(returns: pd.Series, confidence_level: float = 0.95) -> dict[str, float]:
-        """Calculates Value at Risk (VaR) and Conditional Value at Risk (CVaR)."""
-        if returns.empty:
-            return {"var": 0.0, "cvar": 0.0}
+    def calculate_var_cvar(returns: pd.Series, confidence_level: float = 0.95) -> dict[str, Any]:
+        """Calculates loss-positive VaR/CVaR plus raw return thresholds."""
+        clean_returns = pd.Series(returns, dtype=float).dropna()
+        if clean_returns.empty:
+            return {"var": np.nan, "cvar": np.nan, "status": "insufficient_data"}
         quantile = 1 - confidence_level
-        var = returns.quantile(quantile)
-        cvar = returns[returns <= var].mean()
-        return {"var": float(var), "cvar": float(cvar)}
+        var_return_threshold = clean_returns.quantile(quantile)  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
+        tail_returns = clean_returns[clean_returns <= var_return_threshold]
+        cvar_return_threshold = tail_returns.mean()
+        var_loss_positive = max(0.0, float(-var_return_threshold))
+        cvar_loss_positive = max(0.0, float(-cvar_return_threshold))
+        return {
+            "var": var_loss_positive,
+            "cvar": cvar_loss_positive,
+            "var_return_threshold": float(var_return_threshold),
+            "cvar_return_threshold": float(cvar_return_threshold),
+            "confidence_level": float(confidence_level),
+            "status": "ok",
+        }
 
     @staticmethod
     def calculate_information_ratio(
@@ -191,10 +214,13 @@ class FinancialMetricsLibrary:
     ) -> float:
         """Calculates the annualized Information Ratio."""
         if asset_returns.empty or benchmark_returns.empty:
-            return 0.0
-        active_returns = asset_returns - benchmark_returns
+            return np.nan
+        active_returns = pd.Series(asset_returns - benchmark_returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
+        if len(active_returns) < 2:
+            return np.nan
         tracking_error = active_returns.std()
-        if tracking_error == 0:
-            return 0.0
+        if not np.isfinite(tracking_error) or tracking_error <= 1e-12:
+            return np.nan
         ir = active_returns.mean() / tracking_error
-        return float(ir * np.sqrt(trading_days_per_year))
+        annualized_ir = ir * np.sqrt(max(int(trading_days_per_year), 1))
+        return float(annualized_ir) if np.isfinite(annualized_ir) else np.nan

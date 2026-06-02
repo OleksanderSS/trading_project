@@ -7,8 +7,9 @@ from typing import Dict, Any, Optional, cast
 from src.core.logging.logger import ProjectLogger
 from src.core.exceptions import DataProcessingError
 from src.ensembling.stacked_ensemble import ensemble_forecast
-from .deep_predict import predict_lstm, predict_cnn, predict_transformer, predict_autoencoder
+from .deep_predict import predict_lstm, predict_cnn, predict_transformer
 from src.models.adapters.sentiment_integration import get_sentiment_integrator
+from src.utils.artifact_security import resolve_trusted_artifact_path
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -42,8 +43,10 @@ def predict_any(model: Any, X: np.ndarray, model_type: str) ->np.ndarray:
             return predict_cnn(model, X)
         elif 'transformer' in model_type:
             return predict_transformer(model, X)
-        elif 'autoencoder' in model_type:
-            return predict_autoencoder(model, X)
+        elif 'autoencoder' in model_type:  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+            raise DataProcessingError(
+                'Autoencoder is reserved for anomaly/reconstruction, not target prediction.'  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+            )
         else:
             return predict_ml(model, X)
     except Exception as e:
@@ -58,6 +61,11 @@ def get_predictions(models_dict: Dict[str, Any], df_features: pd.DataFrame,
     X = df_features.values
     preds = {}
     for name, model in models_dict.items():
+        if 'autoencoder' in name.lower():  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+            logger.warning(
+                f'[WARN] Skipping {name}: autoencoder is not a target predictor.'  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+            )
+            continue
         y_pred = predict_any(model, X, model_type=name.lower())
         if y_pred.size == 0:
             logger.warning(f'[WARN] Prediction for {name} is empty. Skipped.')
@@ -96,7 +104,13 @@ def predict_from_parquet(parquet_path: str, models_path: str=
     models_dict = {}
     target_scaler = None
     for f in model_files:
-        model = joblib.load(os.path.join(models_path, f))
+        model_path = resolve_trusted_artifact_path(
+            Path(models_path) / f,
+            allowed_roots=(models_dir,),
+            allowed_suffixes={'.pkl'},
+            must_exist=True,
+        )
+        model = joblib.load(model_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
         if 'scaler' in f.lower():
             target_scaler = model
             continue

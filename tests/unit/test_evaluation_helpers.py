@@ -76,3 +76,34 @@ def test_run_backtest_converts_simple_signals_and_returns_dict():
     assert isinstance(result, dict)
     assert 'performance' in result
     assert 'portfolio_history' in result
+
+
+class CapturingAnalyticsEngine:
+    def __init__(self):
+        self.data_map = None
+
+    def run_full_analysis(self, data_map):
+        self.data_map = data_map
+        return {'ok': True}
+
+
+def test_deep_analysis_benchmark_returns_do_not_zero_fill_missing_prices():
+    engine = CapturingAnalyticsEngine()
+    signals_df = pd.DataFrame(
+        {
+            'price': [100.0, None, 110.0, 121.0],
+            'signal': ['BUY', 'HOLD', 'SELL', 'UNKNOWN'],
+        }
+    )
+    portfolio_history = pd.DataFrame({'returns': [0.0, 0.01, -0.01, 0.02]})
+
+    result = eval_analytics.run_deep_analysis(engine, signals_df, portfolio_history)
+
+    assert result == {'ok': True}
+    benchmark = engine.data_map['benchmark_returns']['Benchmark']
+    pd.testing.assert_series_equal(
+        benchmark,
+        pd.Series([None, None, None, 0.1], name='Benchmark', dtype='float64'),
+    )
+    assert engine.data_map['predictions'].tolist() == [1.0, 0.0, -1.0, 0.0]
+    assert engine.data_map['prediction_signal_available'].tolist() == [1, 1, 1, 0]

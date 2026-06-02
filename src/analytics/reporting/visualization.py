@@ -39,7 +39,7 @@ class Visualizer:
         except Exception as e:
             logger.error(f"Failed to save plot {filename}: {e}", exc_info=True)
             plt.close(fig)
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError(f"Failed to save plot {filename}") from e
 
     def plot_price_history(self, df: pd.DataFrame, price_col: str, title: str, filename: str) -> Optional[Path]:
         """

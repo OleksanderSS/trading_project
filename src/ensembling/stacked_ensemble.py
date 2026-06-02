@@ -8,6 +8,7 @@ import pickle
 from pathlib import Path
 
 from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = getLogger(__name__)
 
@@ -302,20 +303,25 @@ class StackedEnsemble:
     def load(cls, path: str):
         """Load the ensemble state safely with security validation."""
         import joblib
-        
+        from src.config.unified_config_manager import get_current_config
+
         # Security validation: Ensure path is within expected data or models directories
-        abs_p = Path(path).resolve()
-        allowed_bases = [
-            Path('data').resolve(),
-            Path('models').resolve()
-        ]
-        if not any(abs_p.is_relative_to(base) for base in allowed_bases):
+        trusted_path = resolve_trusted_artifact_path(
+            path,
+            allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+            must_exist=True,
+        )
+        
+        # Validate against configured model storage paths
+        config = get_current_config()
+        base_model_path = config.get('models.dual_model_manager.base_path', 'data/models')
+        
+        if not trusted_path.resolve().is_relative_to(Path(base_model_path).resolve()):
             logger.warning(f"🚫 Blocking unsafe ensemble load attempt from: {path}")
             raise ValueError(f"Unsafe path for loading: {path}")
 
-        with open(path, 'rb') as f:
-            # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
-            state = joblib.load(f)
+        with open(trusted_path, 'rb') as f:
+            state = joblib.load(f)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
         
         instance = cls(
             meta_model=state['meta_model'],

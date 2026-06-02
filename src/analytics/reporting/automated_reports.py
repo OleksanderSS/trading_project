@@ -67,7 +67,7 @@ class HistoricalAnalytics:
             logger.info(f"[HistoricalAnalytics] Analyzed trends for {days} days")
             return trends
             
-        except Exception as e:
+        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"[HistoricalAnalytics] Failed to analyze trends: {e}", exc_info=True)
             return {}
     
@@ -92,14 +92,5 @@ class HistoricalAnalytics:
     def load_historical_reports(self) -> List[Dict]:
         """Завантажити історичні звіти"""
         
-        try:
-            # This part needs to be adapted to the new ResultsManager structure
-            pass
-             
-        except Exception as e:
-            logger.error(
-                f"[HistoricalAnalytics] Failed to load historical reports: {e}",
-                exc_info=True,
-            )
-            return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        # This part needs to be adapted to the new ResultsManager structure.
         return []

@@ -20,7 +20,7 @@ class CustomCSVCollector(BaseCollector):
         """
         Asynchronously fetches and extracts structural logic constraints execution parameters mapping via threads mappings checks bounds.
         """
-        file_path = self.config.get('file_path')
+        file_path = self.configs.get('file_path')
         if not file_path:
             self.logger.error(
                 f"Logic structural boundary misses 'file_path' execution context limits scope payload definitions index bounds scopes."
@@ -39,18 +39,16 @@ class CustomCSVCollector(BaseCollector):
             err = FileNotFoundError(
                 f'Failed to identify extraction execution URL structural blocks constraints target index boundaries: {file_path}'
                 )
-            self.handle_error(err, {'file_path': file_path})
-            return []
+            raise err
         except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.handle_error(e, {'file_path': file_path})
-            return []
+            raise RuntimeError(f"Failed to read custom CSV file {file_path}") from e
 
     def _read_csv_sync(self, file_path: str) ->List[Dict[str, Any]]:
         """
         Synchronous loop iteration parsing thread delegate execution bounds mapping block targets representation boundaries scope mapped structures definition constraint protocol
         """
-        encoding = self.config.get('encoding', 'utf-8')
+        encoding = self.configs.get('encoding', 'utf-8')
         records = []
         with open(file_path, mode='r', encoding=encoding) as infile:
             reader = csv.DictReader(infile)

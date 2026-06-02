@@ -51,7 +51,7 @@ class BigQueryConnector:
         except Exception as e:
             logger.error(f'Помилка під час делегування запиту: {e}',
                 exc_info=True)
-            return None
+            raise RuntimeError("BigQuery query execution failed") from e
 
     def validate_query(self, query: str) ->Dict[str, Any]:
         """

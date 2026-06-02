@@ -26,7 +26,7 @@ def prepare_features_for_training(
     Args:
         features_df: Input DataFrame containing features and metadata.
         remove_metadata: If True, drops predefined non-feature columns.
-        fill_na: If True, replaces missing values with zeros.
+        fill_na: If True, imputes missing values with per-feature medians.
         verbose: If True, logs detailed diagnostic information.
         
     Returns:
@@ -89,13 +89,13 @@ def _extract_numeric_features(df: pd.DataFrame, verbose: bool) -> Tuple[pd.DataF
 
 def _clean_numeric_data(df: pd.DataFrame, fill_na: bool, verbose: bool) -> pd.DataFrame:
         """Handle missing values and infinity in numeric data."""
+        df = df.replace([np.inf, -np.inf], np.nan)
+
         # Handle missing values
         if fill_na:
-            # Zero-fill is the standard protocol for the current ensembling architecture
-            df = df.fillna(0.0)
-        
-        # Clamp infinity values to maintain numeric stability during gradient updates
-        df = df.replace([np.inf, -np.inf], 0.0)
+            feature_medians = df.median()
+            valid_cols = feature_medians.dropna().index
+            df = df[valid_cols].fillna(feature_medians[valid_cols])
         
         if verbose:
             if logger.isEnabledFor(logging.DEBUG):

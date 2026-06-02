@@ -17,7 +17,7 @@ def test_confidence_calibrator_isotonic():
     assert len(calibrated) == 4
 
 
-def test_confidence_calibrator_save_and_load(tmp_path):
+def test_confidence_calibrator_save_and_load(tmp_path, monkeypatch):
     predictions = np.array([0.1, 0.4, 0.6, 0.9])
     targets = np.array([0, 0, 1, 1])
     calibrator = ConfidenceCalibrator(method="isotonic")
@@ -25,6 +25,7 @@ def test_confidence_calibrator_save_and_load(tmp_path):
     expected = calibrator.transform(predictions)
 
     path = tmp_path / "calibrator.joblib"
+    monkeypatch.setenv("TRADING_TRUSTED_ARTIFACT_ROOTS", str(tmp_path))
     assert calibrator.save_calibrator(str(path)) is True
 
     loaded = ConfidenceCalibrator(method="platt")

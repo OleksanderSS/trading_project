@@ -153,7 +153,7 @@ class EnsemblePerformanceBridge:
             
         except Exception as e:
             self.logger.error(f"❌ Failed to extract ensemble metrics: {e}")
-            return []
+            raise RuntimeError("Failed to extract ensemble metrics") from e
     
     def _convert_to_tracker_format(self, ensemble_metrics: List[Dict]) -> List[Dict]:
         """Convert ensemble metrics to ModelPerformanceTracker format"""
@@ -184,7 +184,7 @@ class EnsemblePerformanceBridge:
             
         except Exception as e:
             self.logger.error(f"❌ Failed to convert to tracker format: {e}")
-            return []
+            raise RuntimeError("Failed to convert ensemble metrics to tracker format") from e
     
     def _merge_performance_data(self, ensemble_data: List[Dict], tracker_data: List[Dict]) -> Dict[str, Any]:
         """Merge ensemble and tracker data, removing duplicates"""
@@ -216,7 +216,7 @@ class EnsemblePerformanceBridge:
             
         except Exception as e:
             self.logger.error(f"❌ Failed to merge performance data: {e}")
-            return {}
+            raise RuntimeError("Failed to merge ensemble performance data") from e
     
     def get_ensemble_weights_for_prediction(self) -> Dict[str, float]:
         """
@@ -237,7 +237,7 @@ class EnsemblePerformanceBridge:
             
         except Exception as e:
             self.logger.error(f"❌ Failed to get ensemble weights: {e}")
-            return {}
+            raise RuntimeError("Failed to get ensemble weights") from e
     
     def update_ensemble_from_tracker(self, model_names: List[str]) -> bool:
         """

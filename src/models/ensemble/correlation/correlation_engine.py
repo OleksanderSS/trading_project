@@ -174,7 +174,7 @@ class CorrelationEngine:
             self.logger.error(
                 f"Error calculating correlation matrix: {e}", exc_info=True
             )
-            return {}
+            raise RuntimeError("Failed to calculate correlation matrix") from e
     
     def calculate_correlation(self, pred1: np.ndarray, pred2: np.ndarray) -> float:
         """Calculate correlation between two prediction arrays."""
@@ -221,7 +221,7 @@ class CorrelationEngine:
             self.logger.error(
                 f"Error calculating diversity metrics: {e}", exc_info=True
             )
-            return {}
+            raise RuntimeError("Failed to calculate diversity metrics") from e
     
     def calculate_prediction_entropy(self, pred_df: pd.DataFrame) -> float:
         """Calculate entropy of prediction distribution."""
@@ -332,7 +332,7 @@ class CorrelationEngine:
             return redundant_pairs
         except Exception as e:
             self.logger.error(f"Error finding redundant pairs: {e}")
-            return []
+            raise RuntimeError("Failed to find redundant model pairs") from e
     
     def select_optimal_subsets(self, predictions: Dict[str, np.ndarray],
                               correlation_matrix: Dict[str, Dict[str, float]],
@@ -352,7 +352,7 @@ class CorrelationEngine:
             return optimal_subsets
         except Exception as e:
             self.logger.error(f"Error selecting optimal subsets: {e}")
-            return {}
+            raise RuntimeError("Failed to select optimal model subsets") from e
     
     def find_best_subset(self, model_names: List[str], predictions: Dict[str, np.ndarray],
                         correlation_matrix: Dict[str, Dict[str, float]], subset_size: int) -> Optional[Dict[str, Any]]:
@@ -380,13 +380,17 @@ class CorrelationEngine:
                         subset_predictions, subset_correlation
                     )
                     
-                    if diversity_score > best_candidate_score:
+                    if np.isfinite(diversity_score) and diversity_score > best_candidate_score:
                         best_candidate_score = diversity_score
                         best_candidate = candidate
                 
-                if best_candidate:
-                    selected_models.append(best_candidate)
-                    remaining_models.remove(best_candidate)
+                if best_candidate is None:
+                    self.logger.warning(
+                        "No finite diversity candidate found; stopping subset selection early."
+                    )
+                    break
+                selected_models.append(best_candidate)
+                remaining_models.remove(best_candidate)
             
             if selected_models:
                 subset_predictions = {name: predictions[name] for name in selected_models}
@@ -409,7 +413,7 @@ class CorrelationEngine:
             return best_subset
         except Exception as e:
             self.logger.error(f"Error finding best subset: {e}")
-            return None
+            raise RuntimeError("Failed to find best model subset") from e
     
     def calculate_subset_diversity_score(self, predictions: Dict[str, np.ndarray],
                                         correlation_matrix: Dict[str, Dict[str, float]]) -> float:
@@ -514,7 +518,7 @@ class CorrelationEngine:
             return [pair[0] for pair in sorted_pairs[:5]]
         except Exception as e:
             self.logger.error(f"Error getting most common redundant pairs: {e}")
-            return []
+            raise RuntimeError("Failed to get most common redundant pairs") from e
     
     def analyze_correlation_trends(self, analyses: List[Dict[str, Any]]) -> Dict[str, str]:
         """Analyze trends in correlation patterns."""

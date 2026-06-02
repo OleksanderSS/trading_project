@@ -24,6 +24,7 @@ class MarketContextAnalyzer(IAnalyzer):
         if not context_features:
             raise ValueError('The context_features list cannot be empty.')
         self.context_features = context_features
+        self.logger = logger
         logger.info(
             f'MarketContextAnalyzer initialized with {len(context_features)} features.'
             )
@@ -60,8 +61,28 @@ class MarketContextAnalyzer(IAnalyzer):
                     raise
             elif feature in kwargs:
                 context_vector[feature] = kwargs[feature]
-        final_vector = context_vector.fillna(0)
-        return {'market_context_vector': final_vector}
+        final_vector, missing_features = self._apply_context_defaults(context_vector)
+        return {
+            'market_context_vector': final_vector,
+            'missing_context_features': missing_features,
+        }
+
+    def _apply_context_defaults(self, context_vector: pd.Series) ->tuple[pd.Series, list[str]]:
+        final_vector = context_vector.copy()
+        missing_features = [str(feature) for feature in final_vector.index[final_vector.isna()]]
+        defaults = {
+            'rsi_current': 50.0,
+            'volume_ratio': 1.0,
+            'volatility_ratio': 1.0,
+            'trend_alignment': 0.0,
+            'price_to_ma20': 0.0,
+            'yield_curve_slope': 0.0,
+            'credit_spread': 0.0,
+            'macro_bias': 0.0,
+        }
+        for feature in missing_features:
+            final_vector.loc[feature] = defaults.get(feature, 0.0)
+        return final_vector, missing_features
 
     def _find_price_columns(self, df: pd.DataFrame):
         """
@@ -98,17 +119,23 @@ class MarketContextAnalyzer(IAnalyzer):
 
     def _calculate_volatility_5d(self, df: pd.DataFrame, **kwargs) ->float:
         if self.close_col and self.close_col in df.columns:
-            return df[self.close_col].pct_change(fill_method=None).fillna(0).tail(5).std()
-        return 0.0
+            returns = df[self.close_col].pct_change(fill_method=None).replace(
+                [np.inf, -np.inf], np.nan).dropna()
+            return returns.tail(5).std() if len(returns) >= 2 else np.nan
+        return np.nan
 
     def _calculate_volatility_20d(self, df: pd.DataFrame, **kwargs) ->float:
         if self.close_col and self.close_col in df.columns:
-            return df[self.close_col].pct_change(fill_method=None).fillna(0).tail(20).std()
-        return 0.0
+            returns = df[self.close_col].pct_change(fill_method=None).replace(
+                [np.inf, -np.inf], np.nan).dropna()
+            return returns.tail(20).std() if len(returns) >= 2 else np.nan
+        return np.nan
 
     def _calculate_volatility_ratio(self, df: pd.DataFrame, **kwargs) ->float:
         vol_5d = self._calculate_volatility_5d(df)
         vol_20d = self._calculate_volatility_20d(df)
+        if not np.isfinite(vol_5d) or not np.isfinite(vol_20d) or vol_20d <= 1e-12:
+            return np.nan
         return vol_5d / (vol_20d + 1e-09)
 
     def _calculate_trend_5d(self, df: pd.DataFrame, **kwargs) ->float:

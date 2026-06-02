@@ -117,7 +117,8 @@ class ContextMapEnricher(BaseEnricher):
         champ_close = champ_data['close']
         champ_sma = champ_close.rolling(20, min_periods=1).mean()
         state = np.where(champ_close > champ_sma, 1, -1)
-        return pd.Series(state, index=champ_data.index).reindex(df.index).ffill().fillna(0)
+        aligned_state = pd.Series(state, index=champ_data.index).reindex(df.index).ffill()
+        return aligned_state.where(aligned_state.notna(), 0).astype(int)
 
     def _get_context_columns(self, df: pd.DataFrame) -> List[str]:
         """Отримує числові колонки, ігноруючи таргети та вже створені стани."""
@@ -137,7 +138,8 @@ class ContextMapEnricher(BaseEnricher):
                     continue
                 # Для категоріальних (як market_phase) беремо як є, для числових - адаптивний поріг
                 if feat == 'market_phase':
-                    df[state_name] = df[feat].fillna(0).astype(int)
+                    phase_state = pd.to_numeric(df[feat], errors='coerce')
+                    df[state_name] = phase_state.where(phase_state.notna(), 0).astype(int)
                 else:
                     self._process_numeric_column(df, feat, state_name, [])
                 added_cols.append(state_name)
@@ -159,10 +161,17 @@ class ContextMapEnricher(BaseEnricher):
 
     def _process_numeric_column(self, res_df: pd.DataFrame, col: str, state_col_name: str, state_cols: List[str]):
         """Адаптивний фільтр шуму."""
-        returns = res_df[col].pct_change(fill_method=None).replace([np.inf, -np.inf], 0).fillna(0)
-        rolling_std = returns.rolling(window=20, min_periods=1).std().fillna(0)
+        returns = res_df[col].pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
+        rolling_std = returns.rolling(window=20, min_periods=2).std()
         threshold = (rolling_std * self.noise_sensitivity).clip(lower=1e-6)
-        res_df[state_col_name] = np.where(returns > threshold, 1, np.where(returns < -threshold, -1, 0))
+        state = pd.Series(0, index=res_df.index, dtype=int)
+        valid = returns.notna() & threshold.notna()
+        state.loc[valid] = np.where(
+            returns.loc[valid] > threshold.loc[valid],
+            1,
+            np.where(returns.loc[valid] < -threshold.loc[valid], -1, 0),
+        )
+        res_df[state_col_name] = state
         if state_col_name not in state_cols: state_cols.append(state_col_name)
 
     def _generate_context_features(self, res_df: pd.DataFrame, state_cols: List[str], temporal_cols: List[str]):

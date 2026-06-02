@@ -121,14 +121,18 @@ class CatBoostModel(BaseModel):
     def load_model(self, path: str) -> bool:
         """Loads the model from a file."""
         try:
+            trusted_path = self._resolve_model_artifact_path(
+                path,
+                allowed_suffixes=None,
+            )
             if self.task_type == "classification":
                 self.model = CatBoostClassifier()
             else:
                 self.model = CatBoostRegressor()
                 
-            self.model.load_model(path)
+            self.model.load_model(str(trusted_path))
             self.is_trained = True
-            self.logger.info(f"CatBoost model loaded from {path}")
+            self.logger.info(f"CatBoost model loaded from {trusted_path}")
             return True
         except Exception as e:
             self.logger.error(f"Failed to load CatBoost model: {e}")
@@ -143,4 +147,4 @@ class CatBoostModel(BaseModel):
             return self.model.get_feature_importance()
         except Exception as e:
             self.logger.error(f"Failed to get feature importance: {e}")
-            return None
+            raise RuntimeError("Failed to get CatBoost feature importance") from e

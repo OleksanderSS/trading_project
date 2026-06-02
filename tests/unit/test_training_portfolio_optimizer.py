@@ -53,3 +53,17 @@ def test_training_portfolio_optimizer_split_is_chronological():
     assert X_test["feature"].tolist() == [8, 9]
     assert y_train.tolist() == list(range(8))
     assert y_test.tolist() == [8, 9]
+
+
+def test_training_portfolio_optimizer_prediction_alignment_uses_training_medians():
+    optimizer = _optimizer()
+    features = pd.DataFrame({"ticker": ["AAPL"], "feature_a": [None]})
+
+    aligned = optimizer._select_model_features(
+        features,
+        ["feature_a", "feature_b"],
+        {"feature_a": 2.0, "feature_b": 5.0},
+    )
+
+    assert aligned.columns.tolist() == ["feature_a", "feature_b"]
+    assert aligned.iloc[0].tolist() == [2.0, 5.0]

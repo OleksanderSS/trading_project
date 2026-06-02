@@ -214,8 +214,8 @@ class SmartMissingDataHandler:
         if not series.empty and not pd.isna(series.iloc[-1]):
             self.volume_cache[col_name] = series.iloc[-1]
 
-        # Zero fill is appropriate for volume (no trading = zero volume)
-        filled = series.fillna(0.0)
+        # Zero is an explicit domain fallback for volume: no reported trading.
+        filled = series.where(series.notna(), 0.0)
 
         # Apply seasonal smoothing if we have cache
         if col_name in self.volume_cache:

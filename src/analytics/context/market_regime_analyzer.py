@@ -52,7 +52,9 @@ class MarketRegimeAnalyzer(IAnalyzer):
             return self._empty_result()
 
         try:
-            returns = df["close"].pct_change(fill_method=None).fillna(0).fillna(0).values
+            returns_series = df["close"].pct_change(fill_method=None).replace(
+                [float("inf"), float("-inf")], pd.NA).dropna()
+            returns = returns_series.values
             if len(returns) < 30:
                 logger.warning(f"MarketRegimeAnalyzer: insufficient data ({len(returns)} rows, need ≥30).")
                 return self._empty_result()

@@ -158,7 +158,8 @@ class HypeEnricher(BaseEnricher):
             return df_enriched
         
         df_enriched = df_enriched.merge(news_count, on=merge_keys, how='left')
-        df_enriched['hype_score'] = df_enriched['news_count'].fillna(0)
+        df_enriched['hype_available'] = df_enriched['news_count'].notna().astype(int)
+        df_enriched['hype_score'] = df_enriched['news_count'].where(df_enriched['news_count'].notna(), 0)
         df_enriched = df_enriched.drop(columns=['news_count'])
         logger.info(f"Added {hype_type} hype_score based on news count")
         

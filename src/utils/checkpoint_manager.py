@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 @dataclass
 class CheckpointParams:
@@ -48,9 +49,15 @@ class CheckpointManager:
 
         try:
             import torch
+            trusted_checkpoint_path = resolve_trusted_artifact_path(
+                checkpoint_path,
+                allowed_suffixes={'.pt', '.pth'},
+                must_exist=True,
+            )
             # SEC-3: weights_only=True prevents arbitrary code execution from
             # malicious checkpoint files (PyTorch security advisory, v2.0+)
-            checkpoint = torch.load(checkpoint_path, weights_only=True)
+            checkpoint = torch.load(  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
+                trusted_checkpoint_path, weights_only=True)
             
             if model is not None:
                 model.load_state_dict(checkpoint.get('model_state', {}))  # type: ignore[attr-defined]

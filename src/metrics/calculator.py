@@ -13,6 +13,14 @@ class MetricsCalculator:
     Об'єднує функціонал MLEvaluator та PortfolioMetricsCalculator.
     """
 
+    @staticmethod
+    def _get_config_value(config: Any, key: str, default: Any) -> Any:
+        for accessor_name in ("get_setting", "get"):
+            accessor = getattr(config, accessor_name, None)
+            if callable(accessor):
+                return accessor(key, default)
+        return default
+
     def __init__(self, config_manager: Optional[Any] = None):
         """
         Ініціалізація калькулятора метрик.
@@ -28,7 +36,8 @@ class MetricsCalculator:
         self.portfolio_metrics = PortfolioMetricsCalculator(config_manager=config_manager)  # Передаємо оригінальний config_manager
         
         # Отримання порогів для оцінки з конфігурації
-        self.grade_thresholds = self.config.get_setting('metrics.grade_thresholds', {})
+        self.grade_thresholds = self._get_config_value(self.config,
+            'metrics.grade_thresholds', {})
         self.accuracy_threshold = self.grade_thresholds.get('high_performance_accuracy', 0.6)
         self.sharpe_threshold = self.grade_thresholds.get('stable_profit_sharpe', 1.0)
 

@@ -45,7 +45,17 @@ class PredictionContextManager:
                 ticker_df_clean = ticker_df_clean.drop(columns=[col],
                     errors='ignore')
                     
-        ticker_df_clean = ticker_df_clean.fillna(0).replace([np.inf, -np.inf], 0)
+        numeric_cols = [c for c in ticker_df_clean.columns if c not in preserved_cols]
+        if numeric_cols:
+            ticker_df_clean[numeric_cols] = ticker_df_clean[numeric_cols].replace([np.inf, -np.inf], np.nan)
+            complete_rows = ticker_df_clean[numeric_cols].notna().all(axis=1)
+            if not complete_rows.all():
+                self.logger.warning(
+                    f'âš ï¸ Dropping {int((~complete_rows).sum())} incomplete row(s) for {ticker} instead of filling zeros'
+                )
+                ticker_df_clean = ticker_df_clean.loc[complete_rows].copy()
+                if ticker_df_clean.empty:
+                    return None
         
         # Повертаємо збережені дані
         for c in preserved_data.columns:

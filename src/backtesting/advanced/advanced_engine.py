@@ -203,8 +203,12 @@ class WalkForwardOptimizer:
             if len(returns) == 0:
                 return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
             total_return = (1 + returns).prod() - 1
-            std_val = returns.std()
-            sharpe = returns.mean() / std_val * np.sqrt(252) if std_val > 0 else 0.0
+            std_val = float(returns.std())
+            sharpe = (
+                float(returns.mean() / std_val * np.sqrt(252))
+                if np.isfinite(std_val) and std_val > 1e-12
+                else 0.0
+            )
             cumulative = (1 + returns).cumprod()
             running_max = cumulative.expanding().max()
             drawdown = (cumulative - running_max) / running_max
@@ -279,9 +283,12 @@ class AdvancedBacktestEngine:
                 signals=signals,
                 apply_costs=slippage_adj,
             )
-            report['performance_metrics'] = {'total_return': float((returns
-                .iloc[-1] - initial_capital) / initial_capital),
-                'annual_return': float(returns.pct_change(fill_method=None).mean() * 252),
+            valid_equity = returns.dropna()
+            final_equity = valid_equity.iloc[-1] if not valid_equity.empty else initial_capital
+            daily_returns = returns.pct_change(fill_method=None).dropna()
+            report['performance_metrics'] = {'total_return': float((
+                final_equity - initial_capital) / initial_capital),
+                'annual_return': float(daily_returns.mean() * 252) if not daily_returns.empty else 0.0,
                 'sharpe_ratio': float(self._calculate_sharpe(returns)),
                 'max_drawdown': float(self._calculate_max_drawdown(returns)
                 ), 'win_rate': float(self._calculate_win_rate(returns))}
@@ -326,17 +333,29 @@ class AdvancedBacktestEngine:
         """Симуляція повернень портфеля"""
         if prices.empty:
             return pd.Series(dtype=float)
-        asset_returns = prices.pct_change(fill_method=None).fillna(0.0)
+        asset_returns = prices.pct_change(fill_method=None).replace([np.inf,
+            -np.inf], np.nan)
         if signals is None or signals.empty:
-            portfolio_returns = asset_returns.mean(axis=1)
+            portfolio_returns = asset_returns.mean(axis=1, skipna=True)
         else:
             positions = self._prepare_signal_positions(signals, prices)
-            lagged_weights = positions.shift(1).fillna(0.0)
-            portfolio_returns = (lagged_weights * asset_returns).sum(axis=1)
+            lagged_weights = positions.shift(1)
+            lagged_weights = lagged_weights.mask(lagged_weights.isna(), 0.0)
+            weighted_returns = lagged_weights * asset_returns
+            portfolio_returns = weighted_returns.sum(axis=1, min_count=1)
+            no_position = lagged_weights.abs().sum(axis=1) == 0
+            portfolio_returns = portfolio_returns.mask(no_position, 0.0)
+            missing_position_returns = asset_returns.isna() & lagged_weights.ne(0.0)
+            portfolio_returns = portfolio_returns.mask(
+                missing_position_returns.any(axis=1))
             if apply_costs:
-                turnover = lagged_weights.diff().abs().sum(axis=1).fillna(0.0)
+                turnover = lagged_weights.diff().abs().sum(axis=1,
+                    min_count=1)
+                turnover = turnover.mask(turnover.isna(), 0.0)
                 portfolio_returns = (portfolio_returns -
                     turnover * self._estimate_turnover_cost_pct())
+        if not portfolio_returns.empty and pd.isna(portfolio_returns.iloc[0]):
+            portfolio_returns.iloc[0] = 0.0
         equity = initial_cap * (1 + portfolio_returns).cumprod()
         return equity
 
@@ -350,10 +369,12 @@ class AdvancedBacktestEngine:
             'BUY': 1.0, 'LONG': 1.0, 'SELL': -1.0, 'SHORT': -1.0,
             'HOLD': 0.0, 'FLAT': 0.0, 'CLOSE': 0.0
         })
-        aligned = aligned.apply(pd.to_numeric, errors='coerce').ffill().fillna(0.0)
+        aligned = aligned.apply(pd.to_numeric, errors='coerce').ffill()
+        aligned = aligned.mask(aligned.isna(), 0.0)
         aligned = aligned.clip(lower=-1.0, upper=1.0)
         exposure = aligned.abs().sum(axis=1).replace(0, np.nan)
-        return aligned.div(exposure, axis=0).fillna(0.0)
+        weights = aligned.div(exposure, axis=0)
+        return weights.mask(weights.isna(), 0.0)
 
     def _estimate_turnover_cost_pct(self) ->float:
         """Estimate proportional cost applied to portfolio turnover."""
@@ -365,16 +386,23 @@ class AdvancedBacktestEngine:
         ) ->float:
         """Розрахунок Sharpe Ratio"""
         returns = equity.pct_change(fill_method=None).dropna()
+        if len(returns) < 2:
+            return 0.0
         excess_returns = returns - risk_free_rate / 252
-        return excess_returns.mean() / excess_returns.std() * np.sqrt(252
-            ) if excess_returns.std() > 0 else 0
+        std_val = excess_returns.std()
+        if not np.isfinite(std_val) or std_val <= 1e-12:
+            return 0.0
+        return float(excess_returns.mean() / std_val * np.sqrt(252))
 
     def _calculate_max_drawdown(self, equity: pd.Series) ->float:
         """Розрахунок maximum drawdown"""
-        cumulative_returns = (1 + equity.pct_change(fill_method=None)).cumprod()
-        running_max = cumulative_returns.expanding().max()
-        drawdown = (cumulative_returns - running_max) / running_max
-        return float(drawdown.min())
+        valid_equity = equity.dropna()
+        if valid_equity.empty:
+            return 0.0
+        running_max = valid_equity.cummax()
+        drawdown = (valid_equity - running_max) / running_max
+        min_drawdown = drawdown.min()
+        return float(min_drawdown) if np.isfinite(min_drawdown) else 0.0
 
     def _calculate_win_rate(self, returns: pd.Series) ->float:
         """Розрахунок win rate"""

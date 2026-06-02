@@ -44,6 +44,26 @@ def test_context_model_selection_excludes_autoencoder_and_resolves_model_key():
     assert selector.available_models == ["lightgbm", "catboost"]
 
 
+def test_context_model_selection_returns_empty_when_only_autoencoder_available():
+    selector = StubSmartSelector("autoencoder")
+    stage = _stage_with_selector(selector)
+    features = pd.DataFrame({"close": [100.0, 101.0, 102.0]})
+    models = {
+        "model_AAPL_target_return_1d_autoencoder": object(),
+    }
+
+    selected = stage._select_best_model_for_context(
+        features,
+        {"target_type": "regression"},
+        models,
+        "AAPL",
+        "bull",
+    )
+
+    assert selected == ""
+    assert selector.available_models is None
+
+
 def test_prediction_stage_no_longer_exposes_dead_knn_selection_path():
     assert not hasattr(PredictionStage, "_perform_knn_similarity_analysis")
     assert not hasattr(PredictionStage, "_analyze_knn_similarities")

@@ -6,6 +6,7 @@ from functools import wraps
 import time
 from src.core.logging.logger import ProjectLogger
 from src.colab.utils.retry import retry_on_timeout
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -62,8 +63,14 @@ def load_checkpoint(checkpoint_path, model, optimizer):
         logger.warning("   ⚠️ torch не доступний, checkpoint не завантажено")
         return 0, float('inf')
         
+    trusted_checkpoint_path = resolve_trusted_artifact_path(
+        checkpoint_path,
+        allowed_suffixes={'.pt', '.pth'},
+        must_exist=True,
+    )
     # SEC-3: weights_only=True prevents arbitrary code execution from checkpoint files
-    checkpoint = torch.load(checkpoint_path, weights_only=True)
+    checkpoint = torch.load(  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
+        trusted_checkpoint_path, weights_only=True)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']

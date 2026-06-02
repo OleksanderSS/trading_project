@@ -52,6 +52,15 @@ class PortfolioOptimizer(BaseOptimizer):
     def optimizer_type(self) ->str:
         return 'portfolio'
 
+    @staticmethod
+    def _safe_sharpe(expected_return: float, volatility: float,
+        risk_free_rate: float=0.0) ->float:
+        volatility = float(volatility)
+        if not np.isfinite(volatility) or volatility <= 1e-12:
+            return np.nan
+        sharpe = (float(expected_return) - risk_free_rate) / volatility
+        return float(sharpe) if np.isfinite(sharpe) else np.nan
+
     def optimize(self, returns: pd.DataFrame, method: str='max_sharpe', **
         kwargs) ->Dict[str, Any]:
         """
@@ -192,7 +201,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 ret = portfolio_return(weights.values)
                 vol = np.sqrt(np.dot(weights.T, np.dot(cov_matrix.values,
                     weights)))
-                sharpe = (ret - risk_free_rate) / vol if vol != 0 else 0
+                sharpe = self._safe_sharpe(ret, vol, risk_free_rate)
                 return {'weights': weights, 'expected_return': ret,
                     'volatility': vol, 'sharpe_ratio': sharpe, 'method':
                     'markowitz', 'success': True}
@@ -217,7 +226,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 port_return = np.dot(weights.T, mu)
                 port_volatility = np.sqrt(np.dot(weights.T, np.dot(
                     cov_matrix.values, weights)))
-                if port_volatility == 0:
+                if not np.isfinite(port_volatility) or port_volatility <= 1e-12:
                     return 10000000000.0
                 sharpe = (port_return - risk_free_rate) / port_volatility
                 turnover_penalty = self.transaction_cost_lambda * np.sum(np
@@ -235,9 +244,11 @@ class PortfolioOptimizer(BaseOptimizer):
                 port_ret = np.dot(weights.T, mu)
                 port_vol = np.sqrt(np.dot(weights.T, np.dot(cov_matrix.
                     values, weights)))
+                sharpe_ratio = self._safe_sharpe(port_ret, port_vol,
+                    risk_free_rate)
                 return {'weights': weights, 'expected_return': port_ret,
-                    'volatility': port_vol, 'sharpe_ratio': (port_ret -
-                    risk_free_rate) / port_vol, 'method': 'max_sharpe',
+                    'volatility': port_vol, 'sharpe_ratio': sharpe_ratio,
+                    'method': 'max_sharpe',
                     'success': True}
             raise RuntimeError(f"Optimization failed: {result.message}")
         except (ValueError, TypeError, Exception) as e:
@@ -351,9 +362,11 @@ class PortfolioOptimizer(BaseOptimizer):
                 portfolio_return = np.dot(weights.T, mu)
                 portfolio_volatility = np.sqrt(np.dot(weights.T, np.dot(
                     cov_matrix.values, weights)))
+                sharpe_ratio = self._safe_sharpe(portfolio_return,
+                    portfolio_volatility)
                 return {'weights': weights, 'expected_return':
                     portfolio_return, 'volatility': portfolio_volatility,
-                    'sharpe_ratio': portfolio_return / portfolio_volatility,
+                    'sharpe_ratio': sharpe_ratio,
                     'method': 'risk_parity', 'success': True}
             return {'success': False, 'error': result.message}
         except Exception as e:
@@ -374,9 +387,11 @@ class PortfolioOptimizer(BaseOptimizer):
             portfolio_return = np.dot(weights_s.T, mu)
             portfolio_volatility = np.sqrt(np.dot(weights_s.T, np.dot(
                 cov_matrix.values, weights_s)))
+            sharpe_ratio = self._safe_sharpe(portfolio_return,
+                portfolio_volatility)
             return {'weights': weights_s, 'expected_return':
                 portfolio_return, 'volatility': portfolio_volatility,
-                'sharpe_ratio': portfolio_return / portfolio_volatility,
+                'sharpe_ratio': sharpe_ratio,
                 'method': 'hrp', 'success': True}
         except Exception as e:
             self.logger.error(f'Error in HRP optimization: {e}', exc_info=True)
@@ -392,10 +407,12 @@ class PortfolioOptimizer(BaseOptimizer):
             portfolio_return = np.dot(weights.T, mu)
             portfolio_volatility = np.sqrt(np.dot(weights.T, np.dot(
                 cov_matrix.values, weights)))
+            sharpe_ratio = self._safe_sharpe(portfolio_return,
+                portfolio_volatility)
             return {'weights': pd.Series(weights, index=returns.columns),
                 'expected_return': portfolio_return, 'volatility':
-                portfolio_volatility, 'sharpe_ratio': portfolio_return /
-                portfolio_volatility, 'method': 'equal_weight', 'success': True
+                portfolio_volatility, 'sharpe_ratio': sharpe_ratio,
+                'method': 'equal_weight', 'success': True
                 }
         except Exception as e:
             self.logger.error(f'Error in equal weight portfolio: {e}',
@@ -407,17 +424,25 @@ class PortfolioOptimizer(BaseOptimizer):
         """Портфоліо з оберненою волатильністю"""
         try:
             volatilities = returns.std() * np.sqrt(self.periods_per_year)
-            inv_vols = 1 / volatilities
-            weights = inv_vols / inv_vols.sum()
+            volatilities = volatilities.replace([np.inf, -np.inf], np.nan)
+            inv_vols = 1 / volatilities.replace(0.0, np.nan)
+            inv_vol_sum = inv_vols.sum(skipna=True)
+            if not np.isfinite(inv_vol_sum) or inv_vol_sum <= 0:
+                return {'success': False, 'error':
+                    'No finite positive volatility for inverse-volatility portfolio'}
+            weights = inv_vols / inv_vol_sum
+            weights = weights.mask(weights.isna(), 0.0)
             mu = returns.mean() * self.periods_per_year
             cov_matrix = self.calculate_covariance_matrix(returns)
             portfolio_return = np.dot(weights.T, mu)
             portfolio_volatility = np.sqrt(np.dot(weights.T, np.dot(
                 cov_matrix.values, weights)))
+            sharpe_ratio = self._safe_sharpe(portfolio_return,
+                portfolio_volatility)
             return {'weights': pd.Series(weights, index=returns.columns),
                 'expected_return': portfolio_return, 'volatility':
-                portfolio_volatility, 'sharpe_ratio': portfolio_return /
-                portfolio_volatility, 'method': 'inverse_volatility',
+                portfolio_volatility, 'sharpe_ratio': sharpe_ratio,
+                'method': 'inverse_volatility',
                 'success': True}
         except Exception as e:
             self.logger.error(
@@ -439,7 +464,8 @@ class PortfolioOptimizer(BaseOptimizer):
         except Exception as e:
             self.logger.error(f'Error comparing optimization methods: {e}',
                 exc_info=True)
-            return {}
+            return {'success': False, 'error': str(e), 'results': {},
+                'comparison': None}
 
     def _ensure_positive_definite(self, cov_matrix: pd.DataFrame
         ) ->pd.DataFrame:

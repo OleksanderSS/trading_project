@@ -111,24 +111,34 @@ class RiskDecompositionAnalyzer(IAnalyzer):
         
         weighted_returns = returns.values @ np.array([weights.get(t, 
             0.0) for t in returns.columns])
+        weighted_returns = pd.Series(weighted_returns, dtype=float).replace(
+            [np.inf, -np.inf], np.nan).dropna().to_numpy()
+        if weighted_returns.size == 0:
+            raise DataProcessingError(
+                'Portfolio returns contain no finite observations for risk metrics.'
+            )
         
-        if np.std(weighted_returns) == 0:
+        weighted_std = float(np.std(weighted_returns))
+        if not np.isfinite(weighted_std) or weighted_std <= 1e-12:
             raise DataProcessingError("Portfolio has zero variance, cannot calculate risk metrics.")
 
-        realized_vol = np.std(weighted_returns) * np.sqrt(252)
-        var_05_threshold = np.percentile(weighted_returns, 5)
+        realized_vol = weighted_std * np.sqrt(252)
+        var_05_threshold = np.percentile(weighted_returns, 5)  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
         cvar_05_threshold = weighted_returns[weighted_returns <=
             var_05_threshold].mean()
+        var_loss_positive = max(0.0, float(-var_05_threshold))
+        cvar_loss_positive = max(0.0, float(-cvar_05_threshold))
         wealth_index = np.cumprod(1 + weighted_returns)
         peak_nav = np.maximum.accumulate(wealth_index)
         max_dd = ((wealth_index - peak_nav) / peak_nav).min()
         annual_rf = 0.02
         excess_mean = np.mean(weighted_returns) - annual_rf / 252
-        realized_sharpe = excess_mean / np.std(weighted_returns) * np.sqrt(
-            252)
+        realized_sharpe = excess_mean / weighted_std * np.sqrt(252)
         return {'annualized_volatility': float(realized_vol),
-            'value_at_risk_95': float(var_05_threshold),
-            'conditional_var_95': float(cvar_05_threshold),
+            'value_at_risk_95': var_loss_positive,
+            'conditional_var_95': cvar_loss_positive,
+            'var_return_threshold_95': float(var_05_threshold),
+            'conditional_var_return_threshold_95': float(cvar_05_threshold),
             'max_drawdown': float(max_dd), 'realized_sharpe_ratio':
             float(realized_sharpe)}
 

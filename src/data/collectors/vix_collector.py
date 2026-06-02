@@ -91,7 +91,7 @@ class VIXCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error in VIXCollector: {e}")
-            return None
+            raise RuntimeError("VIX collection failed") from e
 
     async def _fetch_vix_data(self) -> List[Dict[str, Any]]:
         """Fetches VIX data from Yahoo Finance - FREE!"""
@@ -160,7 +160,7 @@ class VIXCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error fetching VIX data: {e}")
-            return []
+            raise RuntimeError("Failed to fetch VIX data") from e
 
     def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """Standardizes column names and data types."""

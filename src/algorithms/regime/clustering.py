@@ -38,7 +38,6 @@ class RegimeClusteringEngine:
                 'cluster': int(cluster)
             }
         except Exception as e:
-            self.logger.error(f"ML regime detection failed: {e}", exc_info=True)
             raise DataProcessingError("ML regime detection failed") from e
 
     def _extract_ml_features(self, returns: np.ndarray, prices: Optional[np.ndarray], volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> List[float]:

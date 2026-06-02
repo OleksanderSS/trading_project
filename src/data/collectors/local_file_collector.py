@@ -1,8 +1,11 @@
 import pandas as pd
 import logging
 import asyncio
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from src.data.collectors.base_collector import BaseCollector
+from src.core.security.path_validator import validate_safe_path, PathValidationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,13 +20,22 @@ class LocalFileCollector(BaseCollector):
         db_manager, cache_manager=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
-        self.file_path = self.configs.get('file_path')
+        raw_path = self.configs.get('file_path')
         self.file_type = self.configs.get('file_type', 'csv').lower()
         self.date_col = self.configs.get('date_col')
-        if not self.file_path:
+        
+        if not raw_path:
             self.logger.error(
                 f"Collector '{self.collector_type}' initialized without 'file_path' in config."
                 )
+            self.file_path = None
+        else:
+            try:
+                # Validate the path immediately upon initialization
+                self.file_path = validate_safe_path(raw_path, base_dir=Path.cwd())
+            except PathValidationError as e:
+                self.logger.error(f"Security violation: Invalid file path '{raw_path}': {e}")
+                self.file_path = None
 
     async def fetch_raw_data(self, **kwargs) ->List[Dict[str, Any]]:
         """
@@ -55,9 +67,7 @@ class LocalFileCollector(BaseCollector):
             return []
         except Exception as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.handle_error(e, {'file_path': self.file_path, 'file_type':
-                self.file_type})
-            return []
+            raise RuntimeError(f"Failed to read local file {self.file_path}") from e
 
     async def post_process_new_records(self, records: pd.DataFrame
         ) ->pd.DataFrame:

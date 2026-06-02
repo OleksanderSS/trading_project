@@ -68,7 +68,10 @@ class FinalStagesExecutor:
         all_results = timeframes.get('all', {}).get('results', {})
         from src.factories.model_factory import ModelFactory
         all_models = ModelFactory.get_available_models()
-        heavy_models = [m for m in all_models if m.lower() in ['cnn', 'lstm', 'gru', 'transformer', 'tabnet', 'autoencoder']]
+        primary_heavy_model_types = {'cnn', 'lstm', 'gru', 'transformer',
+            'tabnet'}
+        heavy_models = [m for m in all_models if m.lower() in
+            primary_heavy_model_types]
         for target_data in all_results.values():
             models = target_data.get('models', {})
             for heavy_model in heavy_models:
@@ -81,8 +84,7 @@ class FinalStagesExecutor:
         self.logger.info(
             '🔥 Training heavy models: CNN, LSTM, GRU, Transformer, TabNet')
         heavy_results: Dict[str, Any] = {'ticker_results': {}}
-        heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet',
-            'autoencoder']
+        heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet']
         for ticker in tickers[:3]:
             heavy_results['ticker_results'][ticker] = {'timeframes': {'all':
                 {'results': {}}}}

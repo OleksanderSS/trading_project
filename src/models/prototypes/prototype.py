@@ -97,7 +97,7 @@ class ModelPrototype:
             return model
         except Exception as e:
             logger.error(f"Failed to clone {self.model_id}: {e}")
-            return None
+            raise RuntimeError(f"Failed to clone model prototype {self.model_id}") from e
 
     def validate_dependencies(self) -> bool:
         """

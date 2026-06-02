@@ -18,6 +18,7 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
 from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
 rng = np.random.default_rng(42)
 logger = ProjectLogger.get_logger(__name__)
 
@@ -285,9 +286,13 @@ class AdaptiveConfidenceCalibrator:
     def load(self, filepath):
         """Завантажити моделі калібрування"""
         try:
-            path_obj = Path(filepath).resolve()
+            path_obj = resolve_trusted_artifact_path(
+                filepath,
+                allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+                must_exist=True,
+            )
             import joblib
-            data = joblib.load(path_obj)
+            data = joblib.load(path_obj)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             self.isotonic_model = data['isotonic_model']
             self.platt_model = data['platt_model']
             self.is_isotonic_calibrated = data['is_isotonic_calibrated']

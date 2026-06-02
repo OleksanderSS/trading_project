@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from src.core.logging.logger import ProjectLogger
 from src.core.exceptions import DataProcessingError
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 
 class PredictionDataPreparer:
@@ -131,6 +132,10 @@ class PredictionDataPreparer:
             ticker_df_clean.columns]
         if existing_cols:
             ticker_df_clean = ticker_df_clean[existing_cols]
+            ticker_df_clean = self._drop_incomplete_model_rows(
+                ticker_df_clean, existing_cols, context_id)
+            if ticker_df_clean is None:
+                return None
             self.logger.info(
                 f' Using {len(existing_cols)} features for {model_type}')
         else:
@@ -141,6 +146,25 @@ class PredictionDataPreparer:
         if ticker_df_clean.empty:
             return None
         return ticker_df_clean, filtered_features_list
+
+    def _drop_incomplete_model_rows(self, ticker_df: pd.DataFrame,
+        model_feature_cols: list[str], context_id: str) ->pd.DataFrame | None:
+        if not model_feature_cols:
+            return ticker_df
+        complete_rows = ticker_df[model_feature_cols].notna().all(axis=1)
+        if complete_rows.all():
+            return ticker_df
+        dropped = int((~complete_rows).sum())
+        self.logger.warning(
+            f'Context {context_id} has {dropped} incomplete feature row(s); dropping instead of filling zeros.'
+            )
+        filtered = ticker_df.loc[complete_rows].copy()
+        if filtered.empty:
+            self.logger.error(
+                f'Context {context_id} has no complete feature rows; skipping prediction.'
+                )
+            return None
+        return filtered
 
     def adaptive_re_enrichment(self, df: pd.DataFrame, missing_features:
         list[str]) ->pd.DataFrame:
@@ -221,8 +245,11 @@ class PredictionDataPreparer:
                         f'Failed to convert column {col} to numeric: {e}')
                 ticker_df_clean = ticker_df_clean.drop(columns=[col],
                     errors='ignore')
-        ticker_df_clean = ticker_df_clean.fillna(0).replace([np.inf, -np.
-            inf], 0)
+        numeric_cols = [c for c in ticker_df_clean.columns if c not in
+            preserved_cols]
+        if numeric_cols:
+            ticker_df_clean[numeric_cols] = ticker_df_clean[numeric_cols
+                ].replace([np.inf, -np.inf], np.nan)
         for c in preserved_data.columns:
             ticker_df_clean[c] = preserved_data[c]
         numeric_check_cols = [c for c in ticker_df_clean.columns if c not in
@@ -280,11 +307,16 @@ class PredictionDataPreparer:
 
     def _try_load_scaler(self, scaler_path: Path) ->(Any | None):
         try:
-            target_scaler = joblib.load(scaler_path)
+            trusted_scaler_path = resolve_trusted_artifact_path(
+                scaler_path,
+                allowed_suffixes={'.pkl', '.joblib'},
+                must_exist=True,
+            )
+            target_scaler = joblib.load(trusted_scaler_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             if hasattr(target_scaler, 'scale_'):
                 if target_scaler.scale_.shape[0] == 1:
-                    self.logger.info(f'Loaded target scaler from {scaler_path}'
-                        )
+                    self.logger.info(
+                        f'Loaded target scaler from {trusted_scaler_path}')
                     return target_scaler
                 self.logger.error(
                     f'INVALID scaler at {scaler_path}: {target_scaler.scale_.shape[0]} features instead of 1'
@@ -316,7 +348,7 @@ class PredictionDataPreparer:
             return fallback_scaler
         except Exception as e:
             self.logger.error(f'❌ Failed to create fallback scaler: {e}', exc_info=True)
-            return None
+            raise DataProcessingError("Failed to create fallback target scaler") from e
 
     def _normalize_metadata_columns(self, features_df: pd.DataFrame
         ) ->pd.DataFrame:

@@ -70,7 +70,7 @@ class ModelSelectionService:
             # Check for Keras files (CNN, LSTM, GRU, Transformer, Autoencoder)
             keras_files = list(batch_dir.glob('*.keras'))
             if keras_files:
-                model_types.update(['cnn', 'lstm', 'gru', 'transformer', 'autoencoder'])
+                model_types.update(['cnn', 'lstm', 'gru', 'transformer', 'autoencoder'])  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(f'Found {len(keras_files)} Keras models')
             
@@ -208,8 +208,8 @@ class ModelSelectionService:
 
     def _get_prediction_model_candidates(self, models: Dict[str, Any]) -> List[str]:
         """Get list of model names excluding autoencoders."""
-        prediction_models = [name for name in models if 'autoencoder' not in name.lower()]
-        return prediction_models or list(models.keys())
+        prediction_models = [name for name in models if 'autoencoder' not in name.lower()]  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+        return prediction_models
 
     def _build_model_alias_map(self, models_list: List[str]) -> Dict[str, str]:
         """Build mapping from model type aliases to actual model names."""

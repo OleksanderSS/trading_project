@@ -44,7 +44,6 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
                 if self._evaluate_rule_conditions(rule.get('if', {}), data):
                     confidence_threshold = self._apply_rule_action(rule.get('then', {}), confidence_threshold)
             except Exception as e:
-                logger.error(f"Error processing rule '{rule.get('name', 'Unnamed')}': {e}", exc_info=True)
                 raise DataProcessingError(f"Error processing rule '{rule.get('name', 'Unnamed')}': {e}") from e
         
         # Cap the confidence threshold to a reasonable maximum

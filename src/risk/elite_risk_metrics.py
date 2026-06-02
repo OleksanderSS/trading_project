@@ -28,6 +28,8 @@ class EliteRiskMetrics:
     - Liquidity risk assessment
     - Risk limits enforcement
     """
+    DEFAULT_VAR_LOSS = 0.05
+    DEFAULT_CVAR_LOSS = 0.08
 
     def __init__(self, config_manager=None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
@@ -69,6 +71,24 @@ class EliteRiskMetrics:
             'correlation_increase': 0.8, 'description':
             'Extreme asset correlation breakdown'}}
 
+    def _clean_recent_returns(self, ticker: str, min_samples: int=30,
+        lookback_days: Optional[int]=None) ->Optional[pd.Series]:
+        if ticker not in self.returns_history:
+            return None
+        returns = pd.Series(self.returns_history[ticker], dtype=float).replace(
+            [np.inf, -np.inf], np.nan).dropna()
+        if lookback_days is not None and len(returns) > lookback_days:
+            returns = returns.iloc[-lookback_days:]
+        if len(returns) < min_samples:
+            return None
+        return returns
+
+    def _fallback_var_result(self, method: str, confidence_level: float,
+        time_horizon: int=1) ->Dict[str, Union[float, str]]:
+        return {'var': self.DEFAULT_VAR_LOSS, 'cvar': self.DEFAULT_CVAR_LOSS,
+            'confidence': confidence_level, 'time_horizon': time_horizon,
+            'method': method, 'status': 'insufficient_data'}
+
     def compute_historical_simulation_var(self, ticker: str,
         confidence_level: float=0.95, lookback_days: int=252) ->float:
         """
@@ -84,17 +104,14 @@ class EliteRiskMetrics:
         Returns:
             VaR (as percentage, e.g., 0.03 = 3% loss)
         """
-        if ticker not in self.returns_history:
-            return 0.05
-        returns = self.returns_history[ticker]
-        if len(returns) < 30:
-            return 0.05
-        recent_returns = returns[-lookback_days:] if len(returns
-            ) > lookback_days else returns
-        var_percentile = (1 - confidence_level) * 100
-        var_value: float = float(-np.percentile(recent_returns, var_percentile)
-            )  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
-        return float(max(0.001, var_value))
+        recent_returns = self._clean_recent_returns(ticker, min_samples=30,
+            lookback_days=lookback_days)
+        if recent_returns is None:
+            return self.DEFAULT_VAR_LOSS
+        tail_percentile = (1 - confidence_level) * 100
+        var_loss_positive = max(0.0, float(-np.percentile(  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
+            recent_returns, tail_percentile)))
+        return float(max(0.001, var_loss_positive))
 
     def compute_cornish_fisher_var(self, ticker: str, confidence_level:
         float=0.95, lookback_days: int=252) ->Tuple[float, float]:
@@ -106,13 +123,10 @@ class EliteRiskMetrics:
         Returns:
             (VaR, CVaR)  - Value at Risk & Conditional VaR (Expected Shortfall)
         """
-        if ticker not in self.returns_history:
-            return 0.05, 0.08
-        returns = self.returns_history[ticker]
-        if len(returns) < 30:
-            return 0.05, 0.08
-        recent_returns = returns[-lookback_days:] if len(returns
-            ) > lookback_days else returns
+        recent_returns = self._clean_recent_returns(ticker, min_samples=30,
+            lookback_days=lookback_days)
+        if recent_returns is None:
+            return self.DEFAULT_VAR_LOSS, self.DEFAULT_CVAR_LOSS
         mean = recent_returns.mean()
         std = recent_returns.std()
         skewness = stats.skew(recent_returns)
@@ -135,11 +149,10 @@ class EliteRiskMetrics:
         Returns:
             Predicted VaR for tomorrow # audit-ignore: no leakage, risk estimation
         """
-        if ticker not in self.returns_history:
-            return 0.05
-        returns = self.returns_history[ticker]
-        if len(returns) < 50:
-            return 0.05
+        returns = self._clean_recent_returns(ticker, min_samples=50,
+            lookback_days=252)
+        if returns is None:
+            return self.DEFAULT_VAR_LOSS
         try:
             from arch import arch_model
         except ImportError:
@@ -148,7 +161,7 @@ class EliteRiskMetrics:
             return self.compute_historical_simulation_var(ticker,
                 confidence_level)
         try:
-            model = arch_model(returns[-252:] * 100, vol='Garch', p=1, q=1)
+            model = arch_model(returns * 100, vol='Garch', p=1, q=1)
             res = model.fit(disp='off')
             forecast = res.forecast(horizon=1)
             tomorrow_vol = float(forecast.variance.values[-1, 0] ** 0.5) / 100 # audit-ignore: no leakage, risk estimation
@@ -245,11 +258,10 @@ class EliteRiskMetrics:
         Returns:
             Dict with VaR, CVaR, and parameters (values can be float or str)
         """
-        if ticker not in self.returns_history:
-            return {'var': 0.05, 'cvar': 0.08, 'method': 'parametric_fallback'}
-        returns = self.returns_history[ticker]
-        if len(returns) < 30:
-            return {'var': 0.05, 'cvar': 0.08, 'method': 'parametric_fallback'}
+        returns = self._clean_recent_returns(ticker, min_samples=30)
+        if returns is None:
+            return self._fallback_var_result('parametric_fallback',
+                confidence_level, time_horizon)
         mu = returns.mean()
         sigma = returns.std()
         if distribution == 'normal':
@@ -266,10 +278,13 @@ class EliteRiskMetrics:
             cvar = var
         else:
             raise ValueError(f'Unsupported distribution: {distribution}')
-        return {'var': float(-var), 'cvar': float(-cvar), 'confidence':
-            confidence_level, 'time_horizon': time_horizon, 'method':
-            f'parametric_{distribution}', 'mu': float(mu), 'sigma': float(
-            sigma)}
+        var_loss_positive = max(0.0, float(-var))
+        cvar_loss_positive = max(0.0, float(-cvar))
+        return {'var': var_loss_positive, 'cvar': cvar_loss_positive,
+            'var_return_threshold': float(var), 'cvar_return_threshold':
+            float(cvar), 'confidence': confidence_level, 'time_horizon':
+            time_horizon, 'method': f'parametric_{distribution}', 'mu':
+            float(mu), 'sigma': float(sigma), 'status': 'ok'}
 
     def compute_monte_carlo_var(self, ticker: str, confidence_level: float=
         0.95, time_horizon: int=1, n_simulations: int=10000) ->Dict[str, float
@@ -286,13 +301,10 @@ class EliteRiskMetrics:
         Returns:
             Dict with VaR, CVaR, and simulation stats
         """
-        if ticker not in self.returns_history:
-            return {'var': 0.05, 'cvar': 0.08, 'method': 'monte_carlo_fallback'
-                }
-        returns = self.returns_history[ticker]
-        if len(returns) < 30:
-            return {'var': 0.05, 'cvar': 0.08, 'method': 'monte_carlo_fallback'
-                }
+        returns = self._clean_recent_returns(ticker, min_samples=30)
+        if returns is None:
+            return self._fallback_var_result('monte_carlo_fallback',
+                confidence_level, time_horizon)
         rng = np.random.default_rng(42)
         simulated_returns = []
         for _ in range(n_simulations):
@@ -301,14 +313,17 @@ class EliteRiskMetrics:
             portfolio_return = np.prod(1 + sample) - 1
             simulated_returns.append(portfolio_return)
         simulated_returns = np.array(simulated_returns)
-        var = -np.percentile(simulated_returns, (1 - confidence_level) * 100)
-        tail_returns = simulated_returns[simulated_returns <= -var]
-        cvar = -tail_returns.mean() if len(tail_returns) > 0 else var
-        return {'var': float(var), 'cvar': float(cvar), 'confidence':
-            confidence_level, 'time_horizon': time_horizon, 'method':
-            'monte_carlo', 'n_simulations': n_simulations, 'mean_simulated':
-            float(np.mean(simulated_returns)), 'std_simulated': float(np.
-            std(simulated_returns))}
+        var_loss_positive = max(0.0, float(-np.percentile(  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
+            simulated_returns, (1 - confidence_level) * 100)))
+        tail_returns = simulated_returns[simulated_returns <=
+            -var_loss_positive]
+        cvar_loss_positive = (max(0.0, float(-tail_returns.mean())) if len(
+            tail_returns) > 0 else var_loss_positive)
+        return {'var': var_loss_positive, 'cvar': cvar_loss_positive,
+            'confidence': confidence_level, 'time_horizon': time_horizon,
+            'method': 'monte_carlo', 'status': 'ok', 'n_simulations':
+            n_simulations, 'mean_simulated': float(np.mean(simulated_returns
+            )), 'std_simulated': float(np.std(simulated_returns))}
 
     def run_stress_test(self, portfolio: Dict[str, float], scenario: str=
         'market_crash') ->Dict[str, Any]:

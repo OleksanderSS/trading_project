@@ -86,7 +86,7 @@ class CollectorFactory:
                 db_manager, cache_manager=self.cache_manager)
         except Exception as e:
             self.logger.error(f"Failed to instantiate '{name}' ({collector_type}): {e}", exc_info=True)
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError(f"Failed to instantiate collector '{name}' ({collector_type})") from e
 
     def get_all_collectors(self) ->List[BaseCollector]:
         """Створює всі увімкнені колектори."""

@@ -44,11 +44,20 @@ class VolumeEnricher(BaseEnricher):
                 )
 
                 # Volume Rate of Change
-                df_enriched["volume_roc"] = df_enriched["volume"].pct_change(periods=5, fill_method=None).fillna(0.0)
+                df_enriched["volume_roc"] = (
+                    df_enriched["volume"]
+                    .pct_change(periods=5, fill_method=None)
+                    .replace([np.inf, -np.inf], np.nan)
+                )
 
                 # Price-Volume indicators
+                close_returns = (
+                    df_enriched["close"]
+                    .pct_change(fill_method=None)
+                    .replace([np.inf, -np.inf], np.nan)
+                )
                 df_enriched["price_volume_trend"] = (
-                    df_enriched["volume"] * df_enriched["close"].pct_change(fill_method=None).fillna(0)
+                    df_enriched["volume"] * close_returns
                 )
 
                 # On-Balance Volume
@@ -61,7 +70,7 @@ class VolumeEnricher(BaseEnricher):
                 # Volume Relative Strength
                 df_enriched["volume_rs"] = (
                     df_enriched["volume"] / df_enriched["volume_sma_10"].replace(0, np.nan)
-                ).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+                ).replace([np.inf, -np.inf], np.nan)
 
                 logger.info(f"✅ Added {6} volume indicators")
 

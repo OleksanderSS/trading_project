@@ -60,4 +60,4 @@ def archive_directory(source_dir: str, output_dir: str = "archives", archive_pre
         logger.error(f"[ERROR] Error archiving: {e}")
         if os.path.exists(archive_path):
             os.remove(archive_path)
-        return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        raise RuntimeError(f"Failed to archive directory {source_dir}") from e

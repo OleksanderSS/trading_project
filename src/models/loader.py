@@ -16,6 +16,8 @@ from pathlib import Path
 import joblib
 from src.core.error_handling.error_handler import ModelLoadingError
 from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
+from src.config.unified_config_manager import get_current_config
 
 
 class ModelLoaderStrategy:
@@ -102,10 +104,8 @@ class ModelLoaderStrategy:
         """
         if not model_path:
             return None
-        path = Path(model_path)
-        if not path.exists():
-            raise ModelLoadingError(f'Model file not found: {model_path}')
         try:
+            path = resolve_trusted_artifact_path(model_path, must_exist=True)
             if path.suffix.lower() == '.joblib':
                 return self._load_joblib(path)
             if path.suffix.lower() == '.pkl':
@@ -116,6 +116,9 @@ class ModelLoaderStrategy:
                 return self._load_keras_model(path, meta)
         except ModelLoadingError:
             raise
+        except (FileNotFoundError, ValueError) as e:
+            raise ModelLoadingError(
+                f'Unsafe or missing model artifact path {model_path}: {e}') from e
         except Exception as e:
             raise ModelLoadingError(
                 f'Failed to load model from path {model_path}: {e}') from e
@@ -132,10 +135,14 @@ class ModelLoaderStrategy:
         """
         if not model_path or '/content/drive/' in model_path:
             return None
-        path = Path(model_path)
-        if not path.exists():
+        try:
+            path = resolve_trusted_artifact_path(model_path, must_exist=True)
+        except FileNotFoundError:
             raise FileNotFoundError(
                 f'Model not found at local path: {model_path}')
+        except ValueError as e:
+            raise ModelLoadingError(f'Unsafe local model path {model_path}: {e}'
+                ) from e
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'Loading local model from {model_path}')
         return self.load_path(model_path, meta)
@@ -158,14 +165,20 @@ class ModelLoaderStrategy:
         """
         Fallback: Load consensus meta-model.
         """
-        consensus_path = Path('data/trained_models/consensus_meta_model.pkl')
+        config = get_current_config()
+        registry = config.get('models.trained_models_registry', {})
+        consensus_path_str = registry.get('consensus_meta_model', 'data/trained_models/consensus_meta_model.pkl')
+        consensus_path = Path(consensus_path_str)
+        
         if not consensus_path.exists():
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Consensus model not found at {consensus_path}')
             return None
         try:
-            self.logger.info('Using consensus meta-model as fallback')
-            return joblib.load(str(consensus_path))
+            self.logger.info(f'Using consensus meta-model from registry: {consensus_path}')
+            trusted_path = resolve_trusted_artifact_path(consensus_path,
+                allowed_suffixes={'.pkl'}, must_exist=True)
+            return joblib.load(str(trusted_path))  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
         except (ValueError, TypeError, Exception) as e:
             self.logger.error(f'Помилка завантаження consensus моделі: {e}', exc_info=True)
             raise RuntimeError(f"Failed to load consensus model: {e}") from e
@@ -188,7 +201,9 @@ class ModelLoaderStrategy:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'Loading joblib model from {path}')
         try:
-            return joblib.load(str(path))
+            trusted_path = resolve_trusted_artifact_path(path,
+                allowed_suffixes={'.joblib'}, must_exist=True)
+            return joblib.load(str(trusted_path))  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
         except Exception as e:
             raise ModelLoadingError(
                 f'Failed to load joblib model at {path}: {e}') from e
@@ -197,12 +212,16 @@ class ModelLoaderStrategy:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'Loading pickle model from {path}')
         try:
-            return joblib.load(str(path))
+            trusted_path = resolve_trusted_artifact_path(path,
+                allowed_suffixes={'.pkl', '.pickle'}, must_exist=True)
+            return joblib.load(str(trusted_path))  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
         except Exception as e1:
             try:
                 import pickle
-                with open(path, 'rb') as f:
-                    return pickle.load(f)
+                trusted_path = resolve_trusted_artifact_path(path,
+                    allowed_suffixes={'.pkl', '.pickle'}, must_exist=True)
+                with open(trusted_path, 'rb') as f:
+                    return pickle.load(f)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             except Exception as e2:
                 raise ModelLoadingError(
                     f'Failed to load pickle model at {path} via both joblib ({e1}) and standard pickle ({e2})'
@@ -213,7 +232,13 @@ class ModelLoaderStrategy:
             self.logger.debug(f'Loading Keras model from {path}')
         try:
             from tensorflow.keras.models import load_model
-            model = load_model(str(path), compile=False, safe_mode=False)
+            trusted_path = resolve_trusted_artifact_path(path,
+                allowed_suffixes={'.keras', '.h5'}, must_exist=True)
+            try:
+                model = load_model(str(trusted_path), compile=False,
+                    safe_mode=True)
+            except TypeError:
+                model = load_model(str(trusted_path), compile=False)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'✅ Keras model loaded directly: {path.name}')
             return self._wrap_keras_model(model, meta.get('model_type',
@@ -233,24 +258,32 @@ class ModelLoaderStrategy:
                 self.logger.error(
                     f'❌ Even fallback model creation failed for {path.name}: {fallback_error}'
                     )
-                return None
+                raise ModelLoadingError(
+                    f'Keras model and fallback creation failed for {path.name}'
+                ) from fallback_error
 
     def _try_standard_load(self, path: Path, custom_objects: dict):
         """Standard Keras model loading"""
         from tensorflow.keras.models import load_model
-        return load_model(str(path), compile=False, custom_objects=
+        trusted_path = resolve_trusted_artifact_path(path,
+            allowed_suffixes={'.keras', '.h5'}, must_exist=True)
+        return load_model(str(trusted_path), compile=False, custom_objects=
             custom_objects)
 
     def _try_safe_mode_load(self, path: Path, custom_objects: dict):
         """Load with safe_mode=False for more permissive loading"""
         import tensorflow as tf
-        return tf.keras.models.load_model(str(path), compile=False,
-            custom_objects=custom_objects, safe_mode=False)
+        trusted_path = resolve_trusted_artifact_path(path,
+            allowed_suffixes={'.keras', '.h5'}, must_exist=True)
+        return tf.keras.models.load_model(str(trusted_path), compile=False,
+            custom_objects=custom_objects, safe_mode=True)
 
     def _try_minimal_load(self, path: Path):
         """Minimal loading without custom objects"""
         from tensorflow.keras.models import load_model
-        return load_model(str(path), compile=False)
+        trusted_path = resolve_trusted_artifact_path(path,
+            allowed_suffixes={'.keras', '.h5'}, must_exist=True)
+        return load_model(str(trusted_path), compile=False)
 
     def _create_fallback_model(self, model_type: str):
         """Create a simple fallback model when loading fails"""
@@ -302,8 +335,18 @@ class ModelLoaderStrategy:
             self.logger.debug(f'Loading PyTorch model from {path}')
         try:
             import torch
-            loaded_obj = torch.load(path, map_location='cpu', weights_only=
-                False)
+            trusted_path = resolve_trusted_artifact_path(path,
+                allowed_suffixes={'.pt', '.pth'}, must_exist=True)
+            try:
+                loaded_obj = torch.load(  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
+                    trusted_path, map_location='cpu', weights_only=True)
+            except TypeError:
+                loaded_obj = torch.load(trusted_path, map_location='cpu')  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
+            except Exception:
+                if not meta.get('allow_full_torch_object_load', False):
+                    raise
+                loaded_obj = torch.load(  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
+                    trusted_path, map_location='cpu', weights_only=False)
             if isinstance(loaded_obj, dict):
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(
@@ -435,7 +478,7 @@ class ModelLoaderStrategy:
                 def forward(self, x):
                     encoded = self.encoder(x)
                     return self.decoder(encoded)
-            return AutoencoderModel(input_size)
+            return AutoencoderModel(input_size)  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
         else:
             return nn.Sequential(nn.Linear(input_size, 128), nn.ReLU(), nn.
                 Linear(128, 64), nn.ReLU(), nn.Linear(64, 32), nn.ReLU(),

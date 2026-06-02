@@ -8,6 +8,8 @@ from typing import Any
 import pandas as pd
 import yaml
 from src.core.logging.logger import ProjectLogger
+from src.core.security.path_validator import validate_safe_path, PathValidationError
+
 logger = ProjectLogger.get_logger('FileManager')
 
 
@@ -15,16 +17,17 @@ class FileManager:
     """Provides a centralized and robust interface for file operations with atomic writes and background tasks."""
 
     def __init__(self, base_dir: (str | Path | None)=None, max_workers: int=4):
-        self.base_dir = Path(base_dir) if base_dir else Path.cwd()
+        self.base_dir = Path(base_dir).resolve() if base_dir else Path.cwd().resolve()
         self.logger = logger
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
     def _resolve_path(self, file_path: (str | Path)) ->Path:
-        """Resolves a given path to be absolute, relative to the base directory."""
-        path = Path(file_path)
-        if not path.is_absolute():
-            return self.base_dir / path
-        return path
+        """Resolves a given path to be absolute and validated against the base directory."""
+        try:
+            return validate_safe_path(file_path, base_dir=self.base_dir)
+        except PathValidationError as e:
+            self.logger.error(f"Security violation attempting to access path '{file_path}': {e}")
+            raise
 
     def ensure_directory(self, dir_path: (str | Path)) ->Path:
         """Ensures that a directory exists, creating it if necessary."""
@@ -95,7 +98,7 @@ class FileManager:
         except Exception as e:
             self.logger.error(f'Failed to load YAML from {path}: {e}',
                 exc_info=True)
-            return None
+            raise RuntimeError(f"Failed to load YAML from {path}") from e
 
     def save_json(self, data: dict[str, Any], file_path: (str | Path),
         async_save: bool=False) ->None:
@@ -135,7 +138,7 @@ class FileManager:
         except Exception as e:
             self.logger.error(f'Failed to load JSON from {path}: {e}',
                 exc_info=True)
-            return None
+            raise RuntimeError(f"Failed to load JSON from {path}") from e
 
     def _remove_timezone(self, df: pd.DataFrame) ->pd.DataFrame:
         """Removes timezone information from all datetime columns in a DataFrame."""
@@ -212,7 +215,7 @@ class FileManager:
         except Exception as e:
             self.logger.error(f'Failed to load DataFrame from {path}: {e}',
                 exc_info=True)
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError(f"Failed to load DataFrame from {path}") from e
 
     def cleanup_old_files(self, directory: (str | Path), max_age_days: int=
         7, pattern: str='*') ->None:

@@ -149,10 +149,26 @@ class BaseNeuralModel(BaseModel):
     def load_model(self, path: str) -> bool:
         """Завантажує модель та параметри нормалізації."""
         try:
-            self.model = tf.keras.models.load_model(f"{path}.h5")
+            model_path = self._resolve_model_artifact_path(
+                f"{path}.h5",
+                allowed_suffixes={'.h5'},
+            )
+            try:
+                self.model = tf.keras.models.load_model(
+                    str(model_path),
+                    safe_mode=True,
+                )
+            except TypeError:
+                self.model = tf.keras.models.load_model(str(model_path))
             
-            meta_path = f"{path}_meta.npy"
-            if os.path.exists(meta_path):
+            try:
+                meta_path = self._resolve_model_artifact_path(
+                    f"{path}_meta.npy",
+                    allowed_suffixes={'.npy'},
+                )
+            except FileNotFoundError:
+                meta_path = None
+            if meta_path is not None:
                 meta = np.load(meta_path, allow_pickle=True).item()
                 self.scaler_mean = meta['mean']
                 self.scaler_std = meta['std']

@@ -6,6 +6,7 @@ from pathlib import Path
 import json
 from datetime import datetime
 from src.core.logging.logger import ProjectLogger
+from src.core.security.path_validator import validate_safe_path, PathValidationError
 
 logger = ProjectLogger.get_logger('DataLoader')
 
@@ -14,9 +15,9 @@ class DataLoaderConfig:
     """Конфігурація для завантажувача даних"""
 
     def __init__(self, batch_dir: str, config_loader: object):
-        self.batch_dir = batch_dir
+        self.batch_dir = Path(batch_dir).resolve()
         self.config_loader = config_loader
-        self.cache_dir = Path(batch_dir) / 'cache'
+        self.cache_dir = self.batch_dir / 'cache'
         self.cache_dir.mkdir(exist_ok=True)
 
 
@@ -32,15 +33,21 @@ class ColabDataLoader:
     def load_data(self) ->Tuple[object, object]:
         """Завантажити дані"""
         import pandas as pd
-        batch_dir = Path(self.config.batch_dir)
-        features_file = batch_dir / 'enriched_features.parquet'
-        targets_file = batch_dir / 'targets.parquet'
-        if not features_file.exists() or not targets_file.exists():
-            raise FileNotFoundError(f'Дані не знайдені в {batch_dir}')
-        self.features_df = pd.read_parquet(features_file)
-        self.targets_df = pd.read_parquet(targets_file)
-        self._normalize_timezones()
-        return self.features_df, self.targets_df
+        
+        try:
+            features_file = validate_safe_path(self.config.batch_dir / 'enriched_features.parquet', base_dir=self.config.batch_dir)
+            targets_file = validate_safe_path(self.config.batch_dir / 'targets.parquet', base_dir=self.config.batch_dir)
+            
+            if not features_file.exists() or not targets_file.exists():
+                raise FileNotFoundError(f'Дані не знайдені в {self.config.batch_dir}')
+                
+            self.features_df = pd.read_parquet(features_file)
+            self.targets_df = pd.read_parquet(targets_file)
+            self._normalize_timezones()
+            return self.features_df, self.targets_df
+        except PathValidationError as e:
+            logger.error(f"Security violation: {e}")
+            raise FileNotFoundError(f"Access denied to data files in {self.config.batch_dir}")
 
     def _normalize_timezones(self) ->None:
         """Нормалізувати часові зони"""
@@ -53,10 +60,10 @@ class ColabDataLoader:
 
     def check_cache(self) ->bool:
         """Перевірити кеш"""
-        cache_file = self.config.cache_dir / 'cache_signature.json'
-        if not cache_file.exists():
-            return False
         try:
+            cache_file = validate_safe_path(self.config.cache_dir / 'cache_signature.json', base_dir=self.config.cache_dir)
+            if not cache_file.exists():
+                return False
             with open(cache_file, 'r') as f:
                 cached = json.load(f)
             current_sig = self._compute_signature()
@@ -68,19 +75,13 @@ class ColabDataLoader:
 
     def save_cache_signature(self) ->None:
         """Зберегти сигнатуру кешу"""
-        cache_file = self.config.cache_dir / 'cache_signature.json'
-        signature_data = {'signature': self._compute_signature(),
-            'timestamp': datetime.now().isoformat()}
-        with open(cache_file, 'w') as f:
-            json.dump(signature_data, f, indent=2)
-
-    def _compute_signature(self) ->str:
-        """Розрахувати сигнатуру даних"""
-        import hashlib
-        if self.features_df is None or self.targets_df is None:
-            return ''
-        feat_hash = hashlib.sha256(str(self.features_df.shape).encode()
-            ).hexdigest()
-        targ_hash = hashlib.sha256(str(self.targets_df.shape).encode()
-            ).hexdigest()
-        return f'{feat_hash}_{targ_hash}'
+        try:
+            cache_file = validate_safe_path(self.config.cache_dir / 'cache_signature.json', base_dir=self.config.cache_dir)
+            signature_data = {'signature': self._compute_signature(),
+                'timestamp': datetime.now().isoformat()}
+            with open(cache_file, 'w') as f:
+                json.dump(signature_data, f, indent=2)
+        except Exception as e:
+            logger.error(f'Виникла помилка при збереженні кешу: {e}',
+                exc_info=True)
+            raise

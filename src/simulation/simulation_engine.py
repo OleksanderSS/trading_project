@@ -114,7 +114,9 @@ class SimulationEngine:
             return report
         except Exception as e:
             self.logger.error(f"Error in single path simulation: {e}", exc_info=True)
-            return None
+            raise RuntimeError(
+                f"Single path simulation failed for {context.ticker}"
+            ) from e
 
     def _generate_price_path(self, context: SimulationContext, horizon: int) -> pd.DataFrame:
         """Generates a DataFrame with OHLCV data for a single path."""

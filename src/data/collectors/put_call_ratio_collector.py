@@ -72,7 +72,7 @@ class PutCallRatioCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error in PutCallRatioCollector: {e}", exc_info=True)
-            return None
+            raise RuntimeError("Put/Call Ratio collection failed") from e
 
     async def _fetch_put_call_data(self) -> List[Dict[str, Any]]:
         """Fetches Put/Call Ratio data from CBOE - FREE!"""

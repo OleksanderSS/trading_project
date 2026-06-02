@@ -2,7 +2,6 @@ from datetime import date, datetime, timedelta
 from typing import List, Set, Optional, Union
 import holidays
 import pandas as pd
-import yfinance as yf
 from pandas.tseries.offsets import BDay
 from src.core.logging.logger import ProjectLogger
 logger = ProjectLogger.get_logger('TradingCalendar')
@@ -78,11 +77,7 @@ class TradingCalendar:
                 return []
         except Exception as e:
             logger.error(f'Error finding location for {dt}: {e}')
-            if dt < self.trading_days[0]:
-                logger.warning(
-                    f'Date {dt} is before the start of the calendar.')
-                return []
-            loc = len(self.trading_days) - 1
+            raise RuntimeError(f"Failed to find previous trading days for {dt}") from e
         if loc >= 0 and self.trading_days[loc] >= dt:
             end_index = loc
         else:
@@ -107,6 +102,8 @@ class TradingCalendar:
         all_earnings = set()
         for ticker_str in tickers:
             try:
+                import yfinance as yf
+
                 ticker = yf.Ticker(ticker_str)
                 earnings = ticker.get_earnings_dates(limit=20)
                 if earnings is not None and not earnings.empty:

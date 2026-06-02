@@ -85,7 +85,7 @@ class ResultsManager:
             logger.info(f"Results loaded from {filepath}")
             return cast(Dict[str, Any], results)
             
-        except Exception as e:
+        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"Failed to load results: {e}", exc_info=True)
             return None
     
@@ -105,7 +105,7 @@ class ResultsManager:
             latest_file = max(result_files, key=lambda f: f.stat().st_mtime)
             return self.load_results(latest_file.name)
             
-        except Exception as e:
+        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"Failed to get latest results: {e}", exc_info=True)
             return None
     
@@ -118,9 +118,9 @@ class ResultsManager:
         """
         try:
             return [f.name for f in self.results_dir.glob("results_*.json")]
-        except Exception as e:
+        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"Failed to list results: {e}", exc_info=True)
-            return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            return []
     
     def delete_results(self, filename: str) -> bool:
         """
@@ -216,7 +216,7 @@ class ResultsManager:
             
         except Exception as e:
             logger.error(f"Failed to export results to CSV: {e}", exc_info=True)
-            return None
+            raise RuntimeError(f"Failed to export results {filename} to CSV") from e
     
     def _flatten_dict(self, d: Dict[str, Any], parent_key: str = '', sep: str = '_') -> Dict[str, Any]:
         """

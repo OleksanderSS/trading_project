@@ -1,20 +1,18 @@
 # src/feature_engineering/nlp/finbert_pipeline.py
 
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-import torch
 from threading import Lock
-from typing import Optional
+from typing import Any, Optional
 from src.core.logging.logger import ProjectLogger
 
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
-_FINBERT_PIPELINE: Optional[pipeline] = None
+_FINBERT_PIPELINE: Optional[Any] = None
 _LOCK = Lock()
 _DEVICE = None
 
 
-def get_finbert_pipeline(device_preference: str = "auto") -> Optional[pipeline]:
+def get_finbert_pipeline(device_preference: str = "auto") -> Optional[Any]:
     """
     Synchronously returns FinBERT pipeline.
     - Lazy loading, blocks on lock.
@@ -30,6 +28,9 @@ def get_finbert_pipeline(device_preference: str = "auto") -> Optional[pipeline]:
             return _FINBERT_PIPELINE
 
         try:
+            import torch
+            from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+
             if device_preference == "auto":
                 _DEVICE = 0 if torch.cuda.is_available() else -1
             elif device_preference == "cpu":

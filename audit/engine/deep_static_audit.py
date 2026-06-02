@@ -293,7 +293,7 @@ class StaticAuditRunner:
         heavy = {"tensorflow", "torch", "transformers", "spacy", "pandas_ta", "talib", "yfinance"}
         root_mod = module_name.split(".")[0]
         rel = sf.rel.lower()
-        if root_mod in heavy and not is_test_file(sf.rel):
+        if root_mod in heavy and not is_test_file(sf.rel) and self._is_module_level_import(node):
             # Importing heavy libs inside neural model file is less severe than importing them in factory/config/cli paths.
             severity = "P1" if any(k in rel for k in ["factory", "config", "cli", "pipeline", "main", "__init__"]) else "P2"
             self.add(make_finding(
@@ -304,6 +304,17 @@ class StaticAuditRunner:
                 "Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.",
                 confidence="high",
             ))
+
+    @staticmethod
+    def _is_module_level_import(node: ast.AST) -> bool:
+        parent = getattr(node, "parent", None)
+        if isinstance(parent, ast.Module):
+            return True
+        while isinstance(parent, (ast.Try, ast.If, ast.With)):
+            parent = getattr(parent, "parent", None)
+            if isinstance(parent, ast.Module):
+                return True
+        return False
 
     def scan_call(self, sf: SourceFile, node: ast.Call, name: str, lower_name: str, cats: set[str]) -> None:
         # Temporal correctness
@@ -596,8 +607,20 @@ class StaticAuditRunner:
 
             # Sharpe/std zero nearby
             if "sharpe" in low or "sortino" in low:
-                window = "\n".join(sf.lines[max(0, i-4): min(len(sf.lines), i+8)]).lower()
-                if "std" in window and not re.search(r"std[a-z_]*(\(\))?\s*(==|<=|!=|>)\s*0|np\.isclose\s*\([^\)]*std|std[a-z_]*\s*<\s*1e-", window):
+                window = "\n".join(sf.lines[max(0, i-18): min(len(sf.lines), i+14)]).lower()
+                calculation_window = "\n".join(sf.lines[max(0, i-2): min(len(sf.lines), i+3)]).lower()
+                std_denominator = re.search(
+                    r"/\s*\(?\s*(?:[\w\.]+\.std\s*\(|np\.std\s*\(|\w*std\w*\b|volatility\b|tracking_error\b|port_vol(?:atility)?\b|portfolio_volatility\b)",
+                    calculation_window,
+                )
+                std_guard = re.search(
+                    r"(?:np\.isfinite\s*\([^\)]*(?:std|volatility|tracking_error|port_vol)|"
+                    r"not\s+np\.isfinite\s*\([^\)]*(?:std|volatility|tracking_error|port_vol)|"
+                    r"(?:\w*std\w*|volatility|tracking_error|port_vol(?:atility)?|portfolio_volatility)\s*(?:==|<=|<|!=|>)\s*(?:0(?:\.0)?|1e-\d+)|"
+                    r"np\.isclose\s*\([^\)]*(?:std|volatility|tracking_error|port_vol))",
+                    window,
+                )
+                if std_denominator and not std_guard:
                     self.add(make_finding(
                         sf, i, "P1", "financial_math", "SHARPE_SORTINO_STD_ZERO_REVIEW",
                         "Sharpe/Sortino calculation near std usage without obvious zero-std guard.",
@@ -676,12 +699,30 @@ class StaticAuditRunner:
                         confidence="medium",
                     ))
 
-        if re.search(r"your[_-]?api[_-]?key|your[_-]?token|changeme|placeholder|dummy[_-]?key", text, re.I):
+        placeholder_re = re.compile(r"your[_-]?api[_-]?key|your[_-]?token|changeme|placeholder|dummy[_-]?key", re.I)
+        sensitive_re = re.compile(r"api[_-]?key|token|secret|password|credential|bearer", re.I)
+        placeholder_handler_re = re.compile(
+            r"def\s+_?\w*placeholders?|_resolve_placeholders|_has_placeholders|"
+            r"placeholders?\s*=|for\s+placeholder\b|resolved_placeholder|"
+            r"contains .*placeholder|template placeholder|security protocol breach",
+            re.I,
+        )
+        if placeholder_re.search(text):
             for i, line in enumerate(sf.lines, start=1):
                 clean_line = line.strip()
                 if clean_line.startswith(("#", '"""', "'''", "*", "'''", '"""')):
                     continue
-                if re.search(r"your[_-]?api[_-]?key|your[_-]?token|changeme|placeholder|dummy[_-]?key", line, re.I):
+                if not placeholder_re.search(line):
+                    continue
+                if placeholder_handler_re.search(line):
+                    continue
+                strong_fake_secret = re.search(r"your[_-]?api[_-]?key|your[_-]?token|changeme|dummy[_-]?key", line, re.I)
+                placeholder_secret_value = (
+                    "placeholder" in line.lower()
+                    and sensitive_re.search(line)
+                    and re.search(r"[:=]", line)
+                )
+                if strong_fake_secret or placeholder_secret_value:
                     self.add(make_finding(
                         sf, i, "P1", "security", "PLACEHOLDER_SECRET_REVIEW",
                         "Placeholder-looking secret/default detected.",

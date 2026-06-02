@@ -56,7 +56,9 @@ async def create_ensemble_from_top_models_async(stage, training_results:
         logger.error(
             f'Failed to create ensemble for {ticker}_{target_name}: {e}',
             exc_info=True)
-        return None
+        raise RuntimeError(
+            f"Failed to create ensemble for {ticker}_{target_name}"
+        ) from e
 
 
 async def process_ticker(stage, ticker: str, df, champions: dict[str, Any]

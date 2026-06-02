@@ -137,7 +137,7 @@ class ModelPool:
             except Exception as e:
                 self.stats['load_errors'] += 1
                 self.logger.error(f"❌ Failed to load model {model_id}: {e}")
-                return None
+                raise RuntimeError(f"Failed to load model {model_id}") from e
     
     def add_model(self, model_id: str, model: Any) -> None:
         """

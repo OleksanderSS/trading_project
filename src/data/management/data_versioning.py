@@ -34,7 +34,9 @@ class DataVersioning:
                     return json.load(f)
             except Exception as e:
                 self.logger.error(f'Error loading metadata: {e}')
-                return {}
+                raise RuntimeError(
+                    f"Failed to load data version metadata from {self.metadata_file}"
+                ) from e
         return {}
 
     def _save_metadata(self):

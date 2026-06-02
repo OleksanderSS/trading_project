@@ -21,7 +21,7 @@ def test_fractal_similarity_ignores_initial_pct_change_nan():
     assert np.isfinite(result["historical_outcome"])
 
 
-def test_volume_enricher_short_series_has_stable_non_nan_indicators():
+def test_volume_enricher_short_series_marks_unavailable_history_as_missing():
     df = pd.DataFrame(
         {
             "close": [10.0, 11.0, 10.5],
@@ -32,10 +32,12 @@ def test_volume_enricher_short_series_has_stable_non_nan_indicators():
 
     enriched = VolumeEnricher()._enrich_impl(df)
 
-    volume_cols = ["volume_sma_5", "volume_sma_10", "volume_roc", "obv", "volume_rs"]
+    stable_cols = ["volume_sma_5", "volume_sma_10", "obv", "volume_rs"]
     assert enriched.index.equals(df.index)
-    assert enriched[volume_cols].notna().all().all()
-    assert np.isfinite(enriched[volume_cols].to_numpy()).all()
+    assert enriched["volume_roc"].isna().all()
+    assert pd.isna(enriched["price_volume_trend"].iloc[0])
+    assert enriched[stable_cols].notna().all().all()
+    assert np.isfinite(enriched[stable_cols].to_numpy()).all()
 
 
 def test_synthetic_targets_use_distinct_future_horizons():

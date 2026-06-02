@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Union, Any
 import joblib
 import os
 from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = ProjectLogger.get_logger("NormalizationManager")
 
@@ -169,7 +170,13 @@ class NormalizationManager:
             feature_name = filename.replace("_scaler.joblib", "")
             scaler_path = os.path.join(self.scaler_dir, filename)
             try:
-                scaler = joblib.load(scaler_path)
+                trusted_path = resolve_trusted_artifact_path(
+                    scaler_path,
+                    allowed_roots=(self.scaler_dir,),
+                    allowed_suffixes={'.joblib'},
+                    must_exist=True,
+                )
+                scaler = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
                 self.scalers[feature_name] = scaler
                 logger.info(f"Successfully loaded scaler for '{feature_name}'.")
             except FileNotFoundError:

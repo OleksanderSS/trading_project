@@ -238,10 +238,13 @@ class KeywordEntityEnricher(BaseEnricher):
     def _finalize_merge_result(self, df_merged: pd.DataFrame) ->pd.DataFrame:
         """Finalize merge result."""
         df_merged = df_merged.set_index('datetime')
-        df_merged['keyword_count'] = df_merged['keyword_count'].fillna(0
-            ).astype(int)
-        df_merged['entity_count'] = df_merged['entity_count'].fillna(0).astype(
-            int)
+        df_merged['keyword_entity_available'] = (
+            df_merged[['keyword_count', 'entity_count']].notna().any(axis=1).astype(int)
+        )
+        df_merged['keyword_count'] = df_merged['keyword_count'].where(
+            df_merged['keyword_count'].notna(), 0).astype(int)
+        df_merged['entity_count'] = df_merged['entity_count'].where(
+            df_merged['entity_count'].notna(), 0).astype(int)
         avg_keywords = df_merged['keyword_count'].values.mean()
         avg_entities = df_merged['entity_count'].values.mean()
         logger.info(

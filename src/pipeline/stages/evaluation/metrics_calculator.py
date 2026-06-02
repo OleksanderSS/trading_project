@@ -68,13 +68,13 @@ class MetricsCalculator:
             
         except Exception as e:
             self.logger.error(f"Error calculating financial metrics: {e}")
-            return {}
+            return {'status': 'error', 'error': str(e)}
     
     def _calculate_basic_metrics(self, portfolio_history: pd.DataFrame) -> Dict[str, Any]:
         """Calculate basic financial metrics manually."""
         try:
             values = portfolio_history['total_value']
-            returns = values.pct_change(fill_method=None).dropna()
+            returns = values.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan).dropna()
             
             if len(returns) == 0:
                 return {}
@@ -82,7 +82,11 @@ class MetricsCalculator:
             # Calculate metrics
             total_return = (values.iloc[-1] / values.iloc[0]) - 1
             volatility = returns.std()
-            sharpe_ratio = returns.mean() / (volatility + 1e-9) if volatility > 0 else 0
+            sharpe_ratio = (
+                returns.mean() / volatility
+                if np.isfinite(volatility) and volatility > 1e-12
+                else np.nan
+            )
             
             # Calculate drawdown
             cumulative = (1 + returns).cumprod()
@@ -106,7 +110,7 @@ class MetricsCalculator:
             
         except Exception as e:
             self.logger.error(f"Error calculating basic metrics: {e}")
-            return {}
+            return {'status': 'error', 'error': str(e)}
     
     def calculate_pattern_specific_metrics(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
@@ -140,7 +144,7 @@ class MetricsCalculator:
             
         except Exception as e:
             self.logger.error(f"Error calculating pattern-specific metrics: {e}")
-            return {}
+            return {'status': 'error', 'error': str(e)}
     
     def analyze_chaos_efficiency(self, df: pd.DataFrame) -> Dict[str, Any]:
         """
@@ -201,7 +205,7 @@ class MetricsCalculator:
             
         except Exception as e:
             self.logger.error(f"Error generating expertise map: {e}")
-            return {}
+            return {'status': 'error', 'error': str(e)}
 
 
 # Factory function

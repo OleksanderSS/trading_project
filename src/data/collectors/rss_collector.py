@@ -171,7 +171,7 @@ class RSSCollector(BaseCollector):
                 self.logger.warning(
                     f"[RSS] '{name}' HTTP error ({type(exc).__name__}): {exc}. Skipping."
                     )
-                return []
+                raise RuntimeError(f"RSS feed '{name}' HTTP error") from exc
             try:
                 loop = asyncio.get_running_loop()
                 feed_data = await asyncio.wait_for(loop.run_in_executor(
@@ -185,7 +185,7 @@ class RSSCollector(BaseCollector):
             except Exception as exc:
                 self.logger.error(f"[RSS] '{name}' parse error: {exc}",
                     exc_info=True)
-                return []
+                raise RuntimeError(f"RSS feed '{name}' parse error") from exc
             limit = self.configs.get('params', {}).get('limit_per_feed', 20)
             cutoff = datetime.now(timezone.utc) - timedelta(days=self.
                 period_days)

@@ -7,7 +7,9 @@ Extracted from stage_5_prediction.py to reduce coupling.
 import joblib
 from pathlib import Path
 from typing import Any, Dict, Optional
+from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 
 class ScalerService:
@@ -71,7 +73,12 @@ class ScalerService:
                 return None
             
             # Load and validate scaler
-            target_scaler = joblib.load(scaler_path)
+            trusted_scaler_path = resolve_trusted_artifact_path(
+                scaler_path,
+                allowed_suffixes={'.pkl', '.joblib'},
+                must_exist=True,
+            )
+            target_scaler = joblib.load(trusted_scaler_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             
             if hasattr(target_scaler, 'scale_'):
                 if target_scaler.scale_.shape[0] == 1:
@@ -88,4 +95,4 @@ class ScalerService:
         
         except Exception as e:
             self.logger.error(f"Error loading target scaler: {e}", exc_info=True)
-            return None
+            raise DataProcessingError("Failed to load target scaler") from e

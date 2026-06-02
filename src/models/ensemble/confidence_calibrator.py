@@ -13,6 +13,7 @@ import joblib
 from src.core.logging.logger import ProjectLogger
 from src.core.exceptions import DataProcessingError
 from src.models.ensemble.calibration.strategies import PlattScalingStrategy, IsotonicRegressionStrategy
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = ProjectLogger.get_logger("ConfidenceCalibrator")
 
@@ -114,9 +115,15 @@ class ConfidenceCalibrator:
     def load_calibrator(self, filepath: str) -> bool:
         """Load calibrator from file with security validation."""
         try:
+            trusted_path = resolve_trusted_artifact_path(
+                filepath,
+                allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+                must_exist=True,
+            )
             # Security validation: Ensure path is within expected data or models directories
             abs_p = Path(filepath).resolve()
             allowed_bases = [
+                trusted_path.parent,
                 Path('data').resolve(),
                 Path('models').resolve()
             ]
@@ -124,8 +131,7 @@ class ConfidenceCalibrator:
                 self.logger.warning(f"🚫 Blocking unsafe calibrator load attempt from: {filepath}")
                 return False
 
-            # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
-            payload = joblib.load(filepath)
+            payload = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             self.method = payload['method']
             self.task_type = payload['task_type']
             self.is_fitted = payload['is_fitted']

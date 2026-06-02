@@ -96,7 +96,6 @@ class NewsImpactAnalyzer(IAnalyzer):
                 return sentiment_results['weighted_score'].groupby(
                     sentiment_results.index).sum()
         except Exception as e:
-            logger.error(f'Error aggregating scores by timestamp: {e}', exc_info=True)
             raise DataProcessingError(f'Error aggregating scores by timestamp: {e}') from e
 
     def _apply_time_decay(self, aggregated_scores: pd.Series) ->pd.Series:

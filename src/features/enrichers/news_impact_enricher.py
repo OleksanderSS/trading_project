@@ -224,13 +224,15 @@ class NewsImpactEnricher(BaseEnricher):
         
         # Merge impact scores (forward fill for time-decaying effect)
         impact_scores_aligned = impact_scores.reindex(df_enriched.index, method='ffill')
-        df_enriched['news_impact_score'] = impact_scores_aligned.fillna(0.0)
+        df_enriched['news_impact_available'] = impact_scores_aligned.notna().astype(int)
+        df_enriched['news_impact_score'] = impact_scores_aligned.where(impact_scores_aligned.notna(), 0.0)
         
         if significance_levels is not None:
             significance_aligned = significance_levels.reindex(df_enriched.index, method='ffill')
             # Convert categorical to numeric for ML models
             significance_map = {'low': 0, 'medium': 1, 'high': 2}
-            df_enriched['news_significance_level'] = significance_aligned.map(significance_map).fillna(0).astype(int)
+            mapped_significance = significance_aligned.map(significance_map)
+            df_enriched['news_significance_level'] = mapped_significance.where(mapped_significance.notna(), 0).astype(int)
         else:
             df_enriched['news_significance_level'] = 0
         
@@ -245,6 +247,7 @@ class NewsImpactEnricher(BaseEnricher):
     def _add_zero_scores(self, df: pd.DataFrame) -> pd.DataFrame:
         """Add zero impact scores to DataFrame."""
         df_enriched = df.copy()
+        df_enriched['news_impact_available'] = 0
         df_enriched['news_impact_score'] = 0.0
         df_enriched['news_significance_level'] = 0
         return df_enriched
@@ -322,7 +325,7 @@ class NewsImpactEnricher(BaseEnricher):
             
         except Exception as e:
             logger.error(f"Error preparing traditional news data: {e}", exc_info=True)
-            return None
+            raise RuntimeError("Failed to prepare traditional news data") from e
 
     def _run_analyzer_and_merge_traditional(self, df: pd.DataFrame, news_prepared: pd.DataFrame) -> pd.DataFrame:
         """Run analyzer and merge results for traditional format."""
@@ -385,13 +388,15 @@ class NewsImpactEnricher(BaseEnricher):
         impact_scores_aligned = impact_scores.reindex(df_enriched.index, method='ffill')
         
         # Add features
-        df_enriched['news_impact_score'] = impact_scores_aligned.fillna(0.0)
+        df_enriched['news_impact_available'] = impact_scores_aligned.notna().astype(int)
+        df_enriched['news_impact_score'] = impact_scores_aligned.where(impact_scores_aligned.notna(), 0.0)
         
         if significance_levels is not None:
             significance_aligned = significance_levels.reindex(df_enriched.index, method='ffill')
             # Convert categorical to numeric for ML models
             significance_map = {'low': 0, 'medium': 1, 'high': 2}
-            df_enriched['news_significance_level'] = significance_aligned.map(significance_map).fillna(0).astype(int)
+            mapped_significance = significance_aligned.map(significance_map)
+            df_enriched['news_significance_level'] = mapped_significance.where(mapped_significance.notna(), 0).astype(int)
         
         logger.info(f"✅ Added news impact features (traditional). Impact score range: [{df_enriched['news_impact_score'].min():.3f}, {df_enriched['news_impact_score'].max():.3f}]")
         return df_enriched

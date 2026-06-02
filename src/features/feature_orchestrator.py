@@ -87,7 +87,7 @@ class FeatureOrchestrator:
         except Exception as e:
             logger.error(f'Failed to instantiate enricher {name}: {e}',
                 exc_info=True)
-            return None
+            raise RuntimeError(f"Failed to instantiate enabled enricher {name}") from e
 
     @staticmethod
     def _get_enricher_id(obj: type, name: str) ->str:

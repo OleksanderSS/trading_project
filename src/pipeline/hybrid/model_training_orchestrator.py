@@ -119,7 +119,9 @@ class ModelTrainingOrchestrator:
             
         except Exception as e:
             self.logger.error(f"❌ Error training {model_name} for {target_col}: {e}", exc_info=True)
-            return None
+            raise RuntimeError(
+                f"Training failed for model={model_name}, ticker={resolved_ticker}, target={target_col}"
+            ) from e
 
     def _prepare_chronological_split(self, features_df: pd.DataFrame, targets_df: pd.DataFrame, 
                                  feature_cols: List[str], target_col: str) -> Optional[Tuple]:

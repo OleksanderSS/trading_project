@@ -86,7 +86,11 @@ class DerivedFeaturesEnricher(BaseEnricher):
         
         # Calculate returns if missing
         if self.returns_column not in df_enriched.columns:
-            df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change(fill_method=None).fillna(0)
+            df_enriched[self.returns_column] = (
+                df_enriched[price_target_col]
+                .pct_change(fill_method=None)
+                .replace([float("inf"), float("-inf")], pd.NA)
+            )
             logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
         
         # Add various price-based features
@@ -144,4 +148,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
             if config.get('include_returns', True):
                 df[f'target_forward_return_{p}P'] = forward_returns
             if config.get('include_direction', True):
-                df[f'target_forward_direction_{p}P'] = (forward_returns > 0).astype(int)
+                direction = pd.Series(pd.NA, index=df.index, dtype="Int64")
+                valid_returns = forward_returns.notna()
+                direction.loc[valid_returns] = (forward_returns.loc[valid_returns] > 0).astype(int)
+                df[f'target_forward_direction_{p}P'] = direction

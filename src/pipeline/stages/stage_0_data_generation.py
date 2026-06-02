@@ -131,11 +131,11 @@ class DataGenerator:
         targets = pd.DataFrame(index=features_df.index)
         
         close_prices = features_df['close']
-        targets['return_1h'] = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: target label
-        targets['return_4h'] = (close_prices.shift(-4) / close_prices) - 1  # audit-ignore: target label
-        targets['return_24h'] = (close_prices.shift(-24) / close_prices) - 1  # audit-ignore: target label
+        targets['return_1h'] = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
+        targets['return_4h'] = (close_prices.shift(-4) / close_prices) - 1  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
+        targets['return_24h'] = (close_prices.shift(-24) / close_prices) - 1  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
 
-        future_1h_returns = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: target label
+        future_1h_returns = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
         targets['volatility_1h'] = future_1h_returns.abs()
         targets['volatility_4h'] = (
             future_1h_returns.iloc[::-1].rolling(window=4, min_periods=2).std().iloc[::-1]

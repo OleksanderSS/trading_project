@@ -80,7 +80,7 @@ class CFTCCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error in CFTCCollector: {e}")
-            return None
+            raise RuntimeError("CFTC collection failed") from e
 
     async def _fetch_cftc_data(self, instrument: str) -> List[Dict[str, Any]]:
         """Fetches CFTC data for a specific instrument - FREE PUBLIC DATA!"""
@@ -142,7 +142,7 @@ class CFTCCollector(BaseCollector):
 
         except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
             self.logger.error(f"Error fetching CFTC data for {instrument}: {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch CFTC data for {instrument}") from e
 
     def _parse_cftc_csv(self, content: str, instrument: str, report_type: str) -> List[Dict[str, Any]]:
         """Parse CFTC CSV content to extract positioning data."""

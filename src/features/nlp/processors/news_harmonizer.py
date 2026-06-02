@@ -14,7 +14,7 @@ def _get_news_fields():
         logger.error(f'Виникла помилка: {e}', exc_info=True)
         logger.warning(
             f'[news_harmonizer] Failed to load news fields config: {e}')
-        return {}  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        raise RuntimeError("Failed to load news fields configuration") from e
 
 
 def detect_news_format(entry: dict) ->dict:

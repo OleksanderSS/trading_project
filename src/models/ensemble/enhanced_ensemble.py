@@ -6,7 +6,6 @@ import json
 import logging
 import numpy as np
 import pandas as pd
-import torch
 import joblib
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -126,8 +125,11 @@ class EnhancedEnsembleModel:
                     logger.warning(f"🚫 Blocking unsafe model load attempt from: {path_candidate}")
                     continue
                 try:
+                    import torch
+
                     # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
-                    model_obj = torch.load(path_candidate, map_location='cpu')
+                    model_obj = torch.load(  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
+                        path_candidate, map_location='cpu', weights_only=True)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'✅ Loaded model from {path_candidate}')
                     return model_obj
@@ -162,7 +164,7 @@ class EnhancedEnsembleModel:
                 return None
 
             # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
-            model = joblib.load(model_file)
+            model = joblib.load(model_file)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             stem = model_file.stem
             model_info = self._parse_model_filename(stem)
             if not model_info or model_info['model_type'
@@ -175,7 +177,7 @@ class EnhancedEnsembleModel:
         except Exception as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'⚠️ Failed to load {model_file}: {e}')
-            return None
+            raise RuntimeError(f"Failed to load model file {model_file}") from e
 
     def load_local_light_models(self, target_cols: List[str]=None, tickers:
         List[str]=None, timeframes: List[str]=None) ->Dict[str, Any]:

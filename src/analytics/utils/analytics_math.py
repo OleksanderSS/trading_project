@@ -14,7 +14,7 @@ def calculate_market_regime_metrics(prices: pd.Series, window: int = 20) -> dict
     if prices.empty or len(prices) < window:
         return {"volatility": 0.0, "trend": 0.0}
     
-    returns = prices.pct_change(fill_method=None).fillna(0).dropna()
+    returns = prices.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan).dropna()
     if returns.empty:
         return {"volatility": 0.0, "trend": 0.0}
     
@@ -50,11 +50,23 @@ def calculate_diversification_ratio(returns: pd.DataFrame, weights: np.ndarray) 
     if returns.empty or len(weights) < 1:
         return 1.0
     
-    # Handle NaN values
-    returns_clean = returns.fillna(0)
+    returns_clean = returns.replace([np.inf, -np.inf], np.nan).dropna(how="any")
+    if returns_clean.empty or len(returns_clean) < 2:
+        return 1.0
+
     weights_clean = np.nan_to_num(weights, nan=0.0, posinf=0.0, neginf=0.0)
-    
+    if len(weights_clean) != returns_clean.shape[1]:
+        return 1.0
+
     # Simplified version for robust usage
-    portfolio_vol = np.sqrt(np.dot(weights_clean.T, np.dot(returns_clean.cov(), weights_clean)))
+    covariance = returns_clean.cov()
+    portfolio_variance = np.dot(weights_clean.T, np.dot(covariance, weights_clean))
+    if not np.isfinite(portfolio_variance) or portfolio_variance <= 0:
+        return 1.0
+
+    portfolio_vol = np.sqrt(portfolio_variance)
     weighted_vol = np.sum(weights_clean * returns_clean.std())
-    return float(weighted_vol / portfolio_vol) if portfolio_vol > 0 else 1.0
+    if not np.isfinite(weighted_vol) or not np.isfinite(portfolio_vol) or portfolio_vol <= 0:
+        return 1.0
+
+    return float(weighted_vol / portfolio_vol)

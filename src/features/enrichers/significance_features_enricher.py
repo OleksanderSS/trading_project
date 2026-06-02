@@ -144,7 +144,11 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             logger.info(f"Created '{col_name}' based on returns (threshold: {threshold:.4f})")
         elif 'close' in df_out.columns:
             # Calculate returns from close price
-            df_out['_temp_returns'] = df_out['close'].pct_change(fill_method=None).fillna(0)
+            df_out['_temp_returns'] = (
+                df_out['close']
+                .pct_change(fill_method=None)
+                .replace([float('inf'), float('-inf')], float('nan'))
+            )
             threshold = df_out['_temp_returns'].abs().quantile(0.80)
             df_out[col_name] = df_out['_temp_returns'].abs() >= threshold
             df_out = df_out.drop(columns=['_temp_returns'])

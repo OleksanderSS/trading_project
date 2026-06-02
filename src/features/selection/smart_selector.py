@@ -251,7 +251,7 @@ class SmartFeatureSelector:
                           index=features_df.columns).sort_values(ascending=False)
         except Exception as e:
             logger.error(f"LGBM filter failed: {e}")
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("LGBM feature importance filter failed") from e
 
     def _random_forest_filter(self, features_df, target_series, is_classification) -> Optional[pd.Series]:
         """Random Forest feature importance - feature importance from random forest."""
@@ -296,7 +296,7 @@ class SmartFeatureSelector:
             return pd.Series(model.feature_importances_, index=features_df.columns).sort_values(ascending=False)
         except Exception as e:
             logger.error(f"Random Forest filter failed: {e}")
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Random Forest feature importance filter failed") from e
     
     def _variance_filter(self, features_df, target_series, is_classification) -> Optional[pd.Series]:
         """Variance threshold - filters out low-variance features."""
@@ -307,4 +307,4 @@ class SmartFeatureSelector:
             return normalized_var.sort_values(ascending=False)
         except Exception as e:
             logger.error(f"Variance filter failed: {e}")
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Variance feature filter failed") from e

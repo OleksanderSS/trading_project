@@ -131,7 +131,11 @@ class WalkForwardOptimizer:
             return {"return": 0.0, "sharpe": 0.0, "max_drawdown": 0.0}
         total_return = float((1 + returns).prod() - 1)
         std_val = float(returns.std())
-        sharpe = float(returns.mean() / std_val * np.sqrt(252)) if std_val > 0 else 0.0
+        sharpe = (
+            float(returns.mean() / std_val * np.sqrt(252))
+            if np.isfinite(std_val) and std_val > 1e-12
+            else 0.0
+        )
         cumulative = (1 + returns).cumprod()
         running_max = cumulative.cummax()
         max_drawdown = float(((cumulative - running_max) / running_max).min())
@@ -171,10 +175,13 @@ class WalkForwardOptimizer:
         scores = [fold.get("oos_score", 0.0) for fold in folds]
         if len(scores) < 2:
             return 0.0
-        mean_score = float(np.mean(scores))
-        if mean_score == 0:
+        finite_scores = [float(score) for score in scores if np.isfinite(score)]
+        if len(finite_scores) < 2:
             return 0.0
-        return float(max(0.0, 1.0 - abs(np.std(scores) / mean_score)))
+        mean_score = float(np.mean(finite_scores))
+        if abs(mean_score) <= 1e-12:
+            return 0.0
+        return float(max(0.0, 1.0 - abs(np.std(finite_scores) / mean_score)))
 
 
 class WalkForwardOptimizerExtended(WalkForwardOptimizer):

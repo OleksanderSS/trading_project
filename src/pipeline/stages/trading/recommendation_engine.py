@@ -166,7 +166,13 @@ class TradingRecommendationEngine:
             if 'close' not in ticker_df.columns:
                 return global_regime
             
-            returns = ticker_df['close'].pct_change(fill_method=None).fillna(0).dropna().values
+            returns = (
+                ticker_df['close']
+                .pct_change(fill_method=None)
+                .replace([np.inf, -np.inf], np.nan)
+                .dropna()
+                .values
+            )
             if len(returns) > 30 and self.regime_detector is not None:
                 regime_result = self.regime_detector.detect_regime(returns, data_bundle={'prices': ticker_df['close'].values})
                 detected = regime_result.get('regime', 'NORMAL').lower()
@@ -198,7 +204,13 @@ class TradingRecommendationEngine:
         if ticker_df.empty or 'close' not in ticker_df.columns:
             return regime
         
-        returns = ticker_df['close'].pct_change(fill_method=None).fillna(0).dropna().values
+        returns = (
+            ticker_df['close']
+            .pct_change(fill_method=None)
+            .replace([np.inf, -np.inf], np.nan)
+            .dropna()
+            .values
+        )
         if len(returns) <= 30 or self.regime_detector is None:
             return regime
         

@@ -158,9 +158,14 @@ class NewsQualityEnricher(BaseEnricher):
 
         df_merged = df_merged.set_index('datetime')
         
-        # Fill missing values
-        df_merged['news_quality_score'] = df_merged['news_quality_score'].fillna(0.0)
-        df_merged['news_source_count'] = df_merged['news_source_count'].fillna(0).astype(int)
+        # Explicit availability flag: missing quality means no aligned news signal.
+        df_merged['news_quality_available'] = (
+            df_merged[['news_quality_score', 'news_source_count']].notna().any(axis=1).astype(int)
+        )
+        df_merged['news_quality_score'] = df_merged['news_quality_score'].where(
+            df_merged['news_quality_score'].notna(), 0.0)
+        df_merged['news_source_count'] = df_merged['news_source_count'].where(
+            df_merged['news_source_count'].notna(), 0).astype(int)
 
         # Calculate news freshness
         df_merged['news_freshness_hours'] = self._calculate_news_freshness(df_merged.index, news_timestamps)

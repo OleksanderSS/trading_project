@@ -12,6 +12,7 @@ from enum import Enum
 from pathlib import Path
 from sklearn.metrics import log_loss
 from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
 from .battle_groups import BattleGroupManager, get_battle_group_manager
 logger = ProjectLogger.get_logger(__name__)
 
@@ -99,7 +100,6 @@ class TradingModelArena:
                 )
             return True
         except (AttributeError, Exception) as e:
-            logger.error(f'[ARENA] Failed to register model {model_name}: {e}')
             raise RuntimeError(f"Failed to register model {model_name}: {e}") from e
 
     def calculate_loss_metrics(self, predictions: np.ndarray, actuals: np.
@@ -180,10 +180,15 @@ class TradingModelArena:
             if not champ_files:
                 return None
             latest_champ = max(champ_files, key=os.path.getctime)
-            model = joblib.load(latest_champ)
+            trusted_champ = resolve_trusted_artifact_path(
+                latest_champ,
+                allowed_roots=(self.champion_dir,),
+                allowed_suffixes={'.joblib'},
+                must_exist=True,
+            )
+            model = joblib.load(trusted_champ)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             return latest_champ.name, model
         except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             raise RuntimeError(f'[ARENA] Could not load champion for {ticker}_{target}: {e}') from e
 
     def conduct_battle(self, ticker: str, target: str, candidate_name: str,
@@ -282,8 +287,6 @@ class TradingModelArena:
         try:
             if (model1_name not in self.models or model2_name not in self.
                 models):
-                logger.error(
-                    f'[ARENA] Models not found: {model1_name}, {model2_name}')
                 raise ValueError(f"Models not found: {model1_name}, {model2_name}")
             battle = Battle(model1_name=model1_name, model2_name=
                 model2_name, battle_group=battle_group, start_time=datetime
@@ -294,7 +297,6 @@ class TradingModelArena:
                 )
             return True
         except (ValueError, Exception) as e:
-            logger.error(f'[ARENA] Failed to create battle: {e}', exc_info=True)
             raise RuntimeError(f"Failed to create battle: {e}") from e
 
     def create_battles_from_group(self, group_name: str) ->int:
@@ -386,10 +388,21 @@ class TradingModelArena:
         try:
             actuals = actual_targets.values if hasattr(actual_targets, 'values'
                 ) else actual_targets
-            mse = np.mean((predictions - actuals) ** 2)
-            accuracy = np.mean(np.sign(predictions) == np.sign(actuals))
-            sharpe_ratio = np.mean(predictions) / (np.std(predictions) + 1e-08
-                ) if np.std(predictions) > 0 else 0
+            predictions_arr = np.asarray(predictions, dtype=float)
+            actuals_arr = np.asarray(actuals, dtype=float)
+            valid_mask = np.isfinite(predictions_arr) & np.isfinite(actuals_arr)
+            if not np.any(valid_mask):
+                return BattleMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0)
+            predictions_clean = predictions_arr[valid_mask]
+            actuals_clean = actuals_arr[valid_mask]
+            mse = np.mean((predictions_clean - actuals_clean) ** 2)
+            accuracy = np.mean(np.sign(predictions_clean) == np.sign(actuals_clean))
+            prediction_std = float(np.std(predictions_clean))
+            sharpe_ratio = (
+                float(np.mean(predictions_clean) / prediction_std)
+                if np.isfinite(prediction_std) and prediction_std > 1e-12
+                else 0.0
+            )
             return BattleMetrics(accuracy=accuracy, precision=accuracy,
                 recall=accuracy, f1_score=accuracy, sharpe_ratio=
                 sharpe_ratio, max_drawdown=0.0, win_rate=accuracy,
@@ -406,7 +419,6 @@ class TradingModelArena:
             drawdown = (cumulative - running_max) / running_max
             return float(np.min(drawdown))
         except (ValueError, TypeError, Exception) as e:
-            self.logger.error(f'Помилка розрахунку просідання: {e}', exc_info=True)
             raise RuntimeError(f"Max drawdown calculation failed: {e}") from e
 
     def _determine_battle_winner(self, metrics1: BattleMetrics, metrics2:

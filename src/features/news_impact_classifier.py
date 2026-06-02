@@ -50,7 +50,7 @@ class NewsImpactClassifier:
             return config['news_impact_classification']
         except Exception as e:
             logger.error(f"Failed to load impact config: {e}")
-            return {}  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Failed to load news impact classification config") from e
     
     def _load_sector_mapping(self) -> Dict[str, List[str]]:
         """Завантажити маппінг секторів та тікерів"""
@@ -67,7 +67,7 @@ class NewsImpactClassifier:
             return sector_mapping
         except Exception as e:
             logger.error(f"Failed to load sector mapping: {e}")
-            return {}  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Failed to load news impact sector mapping") from e
     
     def classify_impact(self, news_text: str, news_type: str = "general") -> NewsImpact:
         """

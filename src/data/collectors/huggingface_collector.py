@@ -47,7 +47,7 @@ class HuggingfaceCollector(BaseCollector):
         except Exception as e:
             self.logger.error(
                 f'[HuggingFace] Network error during dataloader: {e}')
-            return None  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("HuggingFace dataset loading failed") from e
         if not raw_data:
             self.logger.info('[HuggingFace] Zero records found.')
             return None

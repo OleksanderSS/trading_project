@@ -284,9 +284,12 @@ class CalibrationEngine:
         """Calculate Sharpe ratio from predictions."""
         try:
             returns = np.sign(y_pred) * y_true
-            mean_return = np.mean(returns)
-            std_return = np.std(returns)
-            if std_return < 1e-08:
+            returns = returns[np.isfinite(returns)]
+            if returns.size < 2:
+                return 0.0
+            mean_return = float(np.mean(returns))
+            std_return = float(np.std(returns))
+            if not np.isfinite(std_return) or std_return <= 1e-08:
                 return 0.0
             sharpe = mean_return / std_return * np.sqrt(252)
             sharpe = np.clip(sharpe, -5.0, 5.0)

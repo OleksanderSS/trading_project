@@ -35,7 +35,11 @@ class VolatilityEnricher(BaseEnricher):
 
             if "close" in df_enriched.columns:
                 # Returns
-                df_enriched["returns"] = df_enriched["close"].pct_change(fill_method=None).fillna(0)
+                df_enriched["returns"] = (
+                    df_enriched["close"]
+                    .pct_change(fill_method=None)
+                    .replace([np.inf, -np.inf], np.nan)
+                )
 
                 # Historical Volatility
                 df_enriched["volatility_5"] = df_enriched["returns"].rolling(window=5, min_periods=1).std().shift(1) * np.sqrt(252)
@@ -60,11 +64,14 @@ class VolatilityEnricher(BaseEnricher):
                     df_enriched["gk_volatility"] = gk.rolling(window=20, min_periods=1).sum().shift(1)
 
                 # Volatility Regime
-                df_enriched["volatility_regime"] = pd.cut(
+                volatility_regime = pd.cut(
                     df_enriched["volatility_10"],
                     bins=[0, 0.15, 0.25, 0.35, float("inf")],
                     labels=["low", "normal", "high", "extreme"],
-                ).fillna("normal")
+                )
+                df_enriched["volatility_regime"] = (
+                    volatility_regime.cat.add_categories(["unknown"]).fillna("unknown")
+                )
 
                 logger.info(f"✅ Added {8} volatility indicators")
 

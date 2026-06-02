@@ -22,9 +22,9 @@ class TemporalTargetGuard:
             for shift in [1, 5, 20]:
                 name = f"target_return_{shift}d"
                 if 'ticker' in df_enriched.columns:
-                    future_price = df_enriched.groupby('ticker')['close'].shift(-shift)  # audit-ignore: target label
+                    future_price = df_enriched.groupby('ticker')['close'].shift(-shift)  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
                 else:
-                    future_price = df_enriched['close'].shift(-shift)  # audit-ignore: target label
+                    future_price = df_enriched['close'].shift(-shift)  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
                 results[name] = (future_price - df_enriched['close']) / df_enriched['close']
 
             # direction (binary) for 1d
@@ -35,11 +35,11 @@ class TemporalTargetGuard:
             ret1_series = pd.Series(ret1, index=df_enriched.index)
             if 'ticker' in df_enriched.columns:
                 grouped_ret1 = ret1_series.groupby(df_enriched['ticker'])
-                results['target_volatility_1d'] = grouped_ret1.transform(lambda s: s.rolling(window=5, min_periods=1).std().shift(-1))  # audit-ignore: target label
-                results['target_volatility_5d'] = grouped_ret1.transform(lambda s: s.rolling(window=20, min_periods=1).std().shift(-5))  # audit-ignore: target label
+                results['target_volatility_1d'] = grouped_ret1.transform(lambda s: s.rolling(window=5, min_periods=1).std().shift(-1))  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
+                results['target_volatility_5d'] = grouped_ret1.transform(lambda s: s.rolling(window=20, min_periods=1).std().shift(-5))  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
             else:
-                results['target_volatility_1d'] = ret1_series.rolling(window=5, min_periods=1).std().shift(-1)  # audit-ignore: target label
-                results['target_volatility_5d'] = ret1_series.rolling(window=20, min_periods=1).std().shift(-5)  # audit-ignore: target label
+                results['target_volatility_1d'] = ret1_series.rolling(window=5, min_periods=1).std().shift(-1)  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
+                results['target_volatility_5d'] = ret1_series.rolling(window=20, min_periods=1).std().shift(-5)  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
 
         final_df = pd.DataFrame(results, index=df_enriched.index)
         for col in ['datetime', 'ticker']:

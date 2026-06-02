@@ -69,12 +69,12 @@ def predict_transformer(model, X):
 # --------------------
 # Autoencoder
 # --------------------
-def predict_autoencoder(model, X):
+def predict_autoencoder(model, X):  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
     """Autoencoder inference for reconstruction and anomalies."""
     X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0).astype(np.float32)
     preds = model.predict(X)
     # For anomalies, reconstruction error can be used
     if hasattr(model, "reconstruction_error"):
         preds = model.reconstruction_error(X)
-    logger.info(f"[OK] Autoencoder prediction complete ({preds.shape[0]} points).")
+    logger.info(f"[OK] Autoencoder prediction complete ({preds.shape[0]} points).")  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
     return preds

@@ -28,6 +28,11 @@ class RiskRewardCalculator:
     """A collection of static methods for calculating standard risk-reward metrics and dynamic trade parameters."""
 
     @staticmethod
+    def _clean_return_series(returns: pd.Series) -> pd.Series:
+        """Return finite numeric observations only."""
+        return pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
+
+    @staticmethod
     def calculate_trade_parameters(trade_params: TradeParameters, config: Optional[TradeConfig] = None) -> Dict[str, float]:
         """
         Calculates dynamic Stop Loss and Take Profit levels based on market volatility (ATR).
@@ -77,35 +82,45 @@ class RiskRewardCalculator:
         """Calculates the annualized Sharpe Ratio."""
         if config is None:
             config = TradeConfig()
-            
-        if returns.std() == 0:
+
+        clean_returns = RiskRewardCalculator._clean_return_series(returns)
+        periods_per_year = max(int(config.periods_per_year), 1)
+        if len(clean_returns) < 2:
             return np.nan
-        
-        excess_returns = returns - (config.risk_free_rate / config.periods_per_year)
-        annualized_sharpe = (excess_returns.mean() / excess_returns.std()) * np.sqrt(config.periods_per_year)
-        return float(annualized_sharpe)
+
+        excess_returns = clean_returns - (config.risk_free_rate / periods_per_year)
+        excess_std = excess_returns.std()
+        if not np.isfinite(excess_std) or excess_std <= 1e-12:
+            return np.nan
+
+        annualized_sharpe = (excess_returns.mean() / excess_std) * np.sqrt(periods_per_year)
+        return float(annualized_sharpe) if np.isfinite(annualized_sharpe) else np.nan
 
     @staticmethod
     def calculate_sortino_ratio(returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
         """Calculates the annualized Sortino Ratio."""
         if config is None:
             config = TradeConfig()
-            
-        target_return = config.risk_free_rate / config.periods_per_year
-        downside_returns = returns[returns < target_return]
+
+        clean_returns = RiskRewardCalculator._clean_return_series(returns)
+        periods_per_year = max(int(config.periods_per_year), 1)
+        if len(clean_returns) < 2:
+            return np.nan
+
+        target_return = config.risk_free_rate / periods_per_year
+        downside_returns = clean_returns[clean_returns < target_return]
         
         if len(downside_returns) < 2:
             return np.nan
 
         downside_std = downside_returns.std()
-        if downside_std == 0:
-            excess_return = returns.mean() - target_return
-            return np.inf if excess_return > 0 else 0.0
+        if not np.isfinite(downside_std) or downside_std <= 1e-12:
+            return np.nan
 
-        expected_return = returns.mean()
+        expected_return = clean_returns.mean()
         sortino_ratio = (expected_return - target_return) / downside_std
-        annualized_sortino = sortino_ratio * np.sqrt(config.periods_per_year)
-        return float(annualized_sortino)
+        annualized_sortino = sortino_ratio * np.sqrt(periods_per_year)
+        return float(annualized_sortino) if np.isfinite(annualized_sortino) else np.nan
 
     @staticmethod
     def calculate_beta(asset_returns: pd.Series, market_returns: pd.Series) -> float:
@@ -141,18 +156,28 @@ class RiskRewardCalculator:
 
     @staticmethod
     def calculate_var_cvar(returns: pd.Series, config: Optional[TradeConfig] = None) -> dict:
-        """Calculates Value at Risk (VaR) and Conditional Value at Risk (CVaR)."""
+        """Calculates loss-positive VaR/CVaR plus raw return thresholds."""
         if config is None:
             config = TradeConfig()
-            
-        if returns.empty:
-            return {'var': np.nan, 'cvar': np.nan}
-            
+
+        clean_returns = pd.Series(returns, dtype=float).dropna()
+        if clean_returns.empty:
+            return {'var': np.nan, 'cvar': np.nan, 'status': 'insufficient_data'}
+
         quantile = 1 - config.confidence_level
-        # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
-        var = returns.quantile(quantile)
-        cvar = returns[returns <= var].mean()
-        return {'var': float(var), 'cvar': float(cvar)}
+        var_return_threshold = clean_returns.quantile(quantile)  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
+        tail_returns = clean_returns[clean_returns <= var_return_threshold]
+        cvar_return_threshold = tail_returns.mean()
+        var_loss_positive = max(0.0, float(-var_return_threshold))
+        cvar_loss_positive = max(0.0, float(-cvar_return_threshold))
+        return {
+            'var': var_loss_positive,
+            'cvar': cvar_loss_positive,
+            'var_return_threshold': float(var_return_threshold),
+            'cvar_return_threshold': float(cvar_return_threshold),
+            'confidence_level': float(config.confidence_level),
+            'status': 'ok',
+        }
 
     @staticmethod
     def calculate_information_ratio(asset_returns: pd.Series, benchmark_returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
@@ -160,12 +185,15 @@ class RiskRewardCalculator:
         if config is None:
             config = TradeConfig()
             
-        active_returns = asset_returns - benchmark_returns
+        active_returns = RiskRewardCalculator._clean_return_series(asset_returns - benchmark_returns)
+        if len(active_returns) < 2:
+            return np.nan
+
         tracking_error = active_returns.std()
 
-        if tracking_error == 0:
-            return np.inf if active_returns.mean() > 0 else 0.0
+        if not np.isfinite(tracking_error) or tracking_error <= 1e-12:
+            return np.nan
         
         information_ratio = active_returns.mean() / tracking_error
-        annualized_ir = information_ratio * np.sqrt(config.periods_per_year)
-        return float(annualized_ir)
+        annualized_ir = information_ratio * np.sqrt(max(int(config.periods_per_year), 1))
+        return float(annualized_ir) if np.isfinite(annualized_ir) else np.nan

@@ -40,9 +40,10 @@ class FeatureSelectionCache:
                     f'✅ Loaded feature selection cache: {len(cache)} entries')
                 return cache
             except Exception as e:
-                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Failed to load cache: {e}')
-                return {}
+                raise RuntimeError(
+                    f"Failed to load feature selection cache from {self.cache_file}"
+                ) from e
         return {}
 
     def _save_cache(self):

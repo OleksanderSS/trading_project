@@ -35,8 +35,10 @@ class AdvancedBacktestEngine:
         raw_equity = self._simulate_returns(price_data, initial_capital,
             signals)
         costs = self._analyze_transaction_costs(signals, price_data)
-        net_equity = raw_equity - costs.cumsum().reindex(raw_equity.index,
-            method='ffill').fillna(0)  # audit-ignore: FILLNA_ZERO_SUSPICIOUS
+        cumulative_costs = costs.cumsum().reindex(raw_equity.index,
+            method='ffill')
+        cumulative_costs = cumulative_costs.mask(cumulative_costs.isna(), 0.0)
+        net_equity = raw_equity - cumulative_costs
         return {'equity_curve': net_equity, 'sharpe_ratio': self.
             _calculate_sharpe(net_equity), 'max_drawdown': self.
             _calculate_max_drawdown(net_equity), 'win_rate': self.
@@ -57,8 +59,18 @@ class AdvancedBacktestEngine:
     def _simulate_returns(self, prices: pd.DataFrame, initial_cap: float,
         signals: pd.DataFrame) ->pd.Series:
         """Симуляція капіталу"""
-        returns = prices.pct_change(fill_method=None).fillna(0)
-        portfolio_returns = (signals.shift(1) * returns).sum(axis=1)
+        returns = prices.pct_change(fill_method=None).replace([np.inf, -np.inf],
+            np.nan)
+        lagged_signals = signals.shift(1).reindex(returns.index)
+        lagged_signals = lagged_signals.mask(lagged_signals.isna(), 0.0)
+        weighted_returns = lagged_signals * returns
+        portfolio_returns = weighted_returns.sum(axis=1, min_count=1)
+        no_position = lagged_signals.abs().sum(axis=1) == 0
+        portfolio_returns = portfolio_returns.mask(no_position, 0.0)
+        missing_position_returns = returns.isna() & lagged_signals.ne(0.0)
+        portfolio_returns = portfolio_returns.mask(missing_position_returns.any(axis=1))
+        if not portfolio_returns.empty and pd.isna(portfolio_returns.iloc[0]):
+            portfolio_returns.iloc[0] = 0.0
         equity = initial_cap * (1 + portfolio_returns).cumprod()
         return equity
 
@@ -69,7 +81,7 @@ class AdvancedBacktestEngine:
             return 0.0
         excess_returns = returns - risk_free_rate / 252
         std_val = excess_returns.std()
-        if std_val == 0:
+        if not np.isfinite(std_val) or std_val <= 1e-12:
             return 0.0
         return float(np.sqrt(252) * excess_returns.mean() / std_val)
 
@@ -113,8 +125,6 @@ class AdvancedBacktestEngine:
                 )
             return optimization_report
         except Exception as e:
-            self.logger.error(f'Помилка оптимізації параметрів: {e}',
-                exc_info=True)
             raise DataProcessingError('Parameter optimization failed') from e
 
     def _calculate_stability_score(self, fold_results: List[Dict]) ->float:
@@ -129,9 +139,13 @@ class AdvancedBacktestEngine:
                     sharpe_values.append(perf.get('sharpe', 0))
             if len(sharpe_values) < 2:
                 return 0.0
-            std_sharpe = np.std(sharpe_values)
-            mean_sharpe = np.mean(sharpe_values)
-            if mean_sharpe != 0:
+            finite_sharpes = [float(value) for value in sharpe_values if
+                np.isfinite(value)]
+            if len(finite_sharpes) < 2:
+                return 0.0
+            std_sharpe = np.std(finite_sharpes)
+            mean_sharpe = np.mean(finite_sharpes)
+            if abs(mean_sharpe) > 1e-12:
                 cv = abs(std_sharpe / mean_sharpe)
                 return float(max(0, 1 - cv))
             return 0.0
@@ -153,9 +167,12 @@ class AdvancedBacktestEngine:
             if len(returns) == 0:
                 return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
             total_return = (1 + returns).prod() - 1
-            std_val = returns.std()
-            sharpe = returns.mean() / std_val * np.sqrt(252
-                ) if std_val > 0 else 0.0
+            std_val = float(returns.std())
+            sharpe = (
+                float(returns.mean() / std_val * np.sqrt(252))
+                if np.isfinite(std_val) and std_val > 1e-12
+                else 0.0
+            )
             cumulative = (1 + returns).cumprod()
             running_max = cumulative.expanding().max()
             drawdown = (cumulative - running_max) / running_max

@@ -13,6 +13,20 @@ from src.utils.data_safety import safe_rolling
 logger = ProjectLogger.get_logger("ModularAdaptiveIndicators")
 
 
+def _clean_price_returns(prices: pd.Series) -> pd.Series:
+    """Calculate returns without fabricating zero moves for missing prices."""
+    return prices.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
+
+
+def _series_with_default(series: pd.Series, default: float) -> pd.Series:
+    """Use a scalar fallback only after preserving real missingness in inputs."""
+    valid = series.dropna()
+    fallback = valid.median() if not valid.empty else default
+    if pd.isna(fallback):
+        fallback = default
+    return series.where(series.notna(), float(fallback))
+
+
 class RSICalculator:
     """Спеціалізований калькулятор RSI"""
 
@@ -24,9 +38,9 @@ class RSICalculator:
         try:
             if len(prices.dropna()) == 0:
                 return pd.Series([50.0] * len(prices), index=prices.index)
-            returns = prices.pct_change(fill_method=None).fillna(0)
-            volatility = safe_rolling(returns, window=20, agg="std").fillna(0.01)
-            volatility_clean = volatility.fillna(volatility.mean())
+            returns = _clean_price_returns(prices)
+            volatility = safe_rolling(returns, window=20, agg="std")
+            volatility_clean = _series_with_default(volatility, 0.01)
             if len(volatility_clean.dropna()) == 0:
                 vol_multiplier = pd.Series([1.0] * len(volatility), index=volatility.index)
             else:
@@ -38,27 +52,31 @@ class RSICalculator:
             adaptive_period = int(base_period * float(vol_multiplier.mean()))
             adaptive_period = np.clip(adaptive_period, base_period // 2, base_period * 3)
             delta = prices.diff()
-            delta_clean = delta.fillna(0)
-            gain_simple = safe_rolling(delta_clean.where(delta_clean > 0, 0), window=adaptive_period, agg="mean")
-            loss_simple = safe_rolling(-delta_clean.where(delta_clean < 0, 0), window=adaptive_period, agg="mean")
+            gain_input = delta.where(delta > 0, 0.0).where(delta.notna())
+            loss_input = (-delta.where(delta < 0, 0.0)).where(delta.notna())
+            gain_simple = safe_rolling(gain_input, window=adaptive_period, agg="mean")
+            loss_simple = safe_rolling(loss_input, window=adaptive_period, agg="mean")
             gain_weighted = (
-                delta_clean.where(delta_clean > 0, 0)
+                gain_input
                 .rolling(window=adaptive_period, win_type="exponential")
                 .mean()
                 .shift(1)
             )
             loss_weighted = (
-                (-delta_clean.where(delta_clean < 0, 0))
+                loss_input
                 .rolling(window=adaptive_period, win_type="exponential")
                 .mean()
                 .shift(1)
             )
-            rs_simple = gain_simple / (gain_simple + loss_simple).fillna(0.5)
-            rs_weighted = gain_weighted / (gain_weighted + loss_weighted).fillna(0.5)
-            rs_ultimate = (rs_simple * 0.4 + rs_weighted * 0.6).fillna(0.5)
+            denom_simple = (gain_simple + loss_simple).replace(0, np.nan)
+            denom_weighted = (gain_weighted + loss_weighted).replace(0, np.nan)
+            rs_simple = gain_simple / denom_simple
+            rs_weighted = gain_weighted / denom_weighted
+            rs_ultimate_raw = rs_simple * 0.4 + rs_weighted * 0.6
+            rs_ultimate = rs_ultimate_raw.where(rs_ultimate_raw.notna(), 0.5)
             rsi = 100 - 100 / (1 + rs_ultimate)
             rsi = rsi.clip(0, 100)
-            return rsi.fillna(50.0)
+            return rsi.where(rsi.notna(), 50.0)
         except Exception as e:
             self.logger.error(f"Error in RSI calculation: {e}")
             return pd.Series([50.0] * len(prices), index=prices.index)
@@ -78,10 +96,10 @@ class MACDCalculator:
             if len(prices.dropna()) == 0:
                 empty_series = pd.Series([0.0] * len(prices), index=prices.index)
                 return empty_series, empty_series, empty_series
-            returns = prices.pct_change(fill_method=None).fillna(0)
-            trend_abs = abs(returns.rolling(window=50, min_periods=1).mean()).shift(1).fillna(0.01)
-            trend_vol = returns.rolling(window=50, min_periods=1).std().shift(1).fillna(0.01)
-            trend_momentum = returns.rolling(window=25, min_periods=1).mean().shift(1).fillna(0.01)
+            returns = _clean_price_returns(prices)
+            trend_abs = _series_with_default(abs(returns.rolling(window=50, min_periods=1).mean()).shift(1), 0.01)
+            trend_vol = _series_with_default(returns.rolling(window=50, min_periods=2).std().shift(1), 0.01)
+            trend_momentum = _series_with_default(returns.rolling(window=25, min_periods=1).mean().shift(1), 0.01)
             trend_composite = trend_abs + trend_vol * 0.3 + trend_momentum * 0.2
             fast_factor = 1.0 + np.clip(trend_composite / 0.02, 0.5, 3.0)
             slow_factor = 1.0 + np.clip(trend_composite / 0.01, 0.5, 2.5)
@@ -108,7 +126,7 @@ class MACDCalculator:
                 signal_composite = signal_composite.astype(float)
             if isinstance(histogram_composite, pd.Series):
                 histogram_composite = histogram_composite.astype(float)
-            return macd_composite.fillna(0), signal_composite.fillna(0), histogram_composite.fillna(0)
+            return macd_composite, signal_composite, histogram_composite
         except Exception as e:
             self.logger.error(f"Error in MACD calculation: {e}")
             empty_series = pd.Series([0.0] * len(prices), index=prices.index)
@@ -184,6 +202,7 @@ class ModularAdaptiveTechnicalIndicators:
     """
 
     def __init__(self, config=None):
+        self.logger = logger
         self.volatility_window = 20
         self.regime_window = 50
         self.cache = {}
@@ -225,16 +244,21 @@ class ModularAdaptiveTechnicalIndicators:
             results["adaptive_bollinger_bands"] = self.adaptive_bollinger_bands(close)
             return results
         except Exception as e:
-            self.logger.error(f"Виникла помилка: {e}", exc_info=True)
             print(f"Error calculating modular adaptive indicators: {e}")
-            return {}
+            raise RuntimeError("Failed to calculate modular adaptive indicators") from e
 
     def get_adaptive_parameters(self, prices: pd.Series) -> dict[str, Any]:
         """Отримання адаптивних параметрів для моніторингу"""
         try:
-            returns = prices.pct_change(fill_method=None).fillna(0)
-            volatility = safe_rolling(returns, window=self.volatility_window, agg="std").fillna(0.01)
-            trend_returns = safe_rolling(returns, window=self.regime_window, agg="mean").fillna(0.01)
+            returns = _clean_price_returns(prices)
+            volatility = _series_with_default(
+                safe_rolling(returns, window=self.volatility_window, agg="std"),
+                0.01,
+            )
+            trend_returns = _series_with_default(
+                safe_rolling(returns, window=self.regime_window, agg="mean"),
+                0.01,
+            )
             return {
                 "current_volatility": float(volatility.iloc[-1]) if not pd.isna(volatility.iloc[-1]) else 0.01,
                 "current_trend": float(abs(trend_returns).iloc[-1])
@@ -246,6 +270,5 @@ class ModularAdaptiveTechnicalIndicators:
                 else "ranging",
             }
         except Exception as e:
-            self.logger.error(f"Виникла помилка: {e}", exc_info=True)
             print(f"Error getting adaptive parameters: {e}")
-            return {}
+            raise RuntimeError("Failed to get adaptive indicator parameters") from e

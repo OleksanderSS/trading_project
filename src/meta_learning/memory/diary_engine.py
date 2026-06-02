@@ -419,15 +419,30 @@ class DiaryEngine(BaseMetaComponent):
 
     def _calculate_performance_metrics(self, returns: np.ndarray) -> Dict[str, Any]:
         """Розраховує метрики продуктивності для масиву повернень."""
-        total_pnl = np.sum(returns)
-        win_rate = (returns > 0).mean()
-        sharpe = (np.mean(returns) / np.std(returns) * np.sqrt(252)) if np.std(returns) != 0 else 0
+        clean_returns = np.asarray(returns, dtype=float)
+        clean_returns = clean_returns[np.isfinite(clean_returns)]
+        if clean_returns.size == 0:
+            return {
+                "total_pnl": 0.0,
+                "win_rate": 0.0,
+                "sharpe_ratio": 0.0,
+                "total_trades": 0
+            }
+
+        total_pnl = np.sum(clean_returns)
+        win_rate = (clean_returns > 0).mean()
+        return_std = float(np.std(clean_returns))
+        sharpe = (
+            np.mean(clean_returns) / return_std * np.sqrt(252)
+            if np.isfinite(return_std) and return_std > 1e-12
+            else 0.0
+        )
         
         return {
             "total_pnl": float(total_pnl),
             "win_rate": float(win_rate),
             "sharpe_ratio": float(sharpe),
-            "total_trades": int(len(returns))
+            "total_trades": int(len(clean_returns))
         }
 
     def _generate_promotion_recommendations(self, agent_ids: List[str], 
@@ -567,7 +582,9 @@ class DiaryEngine(BaseMetaComponent):
         except Exception as e:
             self.logger.error(f"Error getting contextual model weights: {e}",
                 exc_info=True)
-            return {}
+            raise RuntimeError(
+                f"Failed to get contextual model weights for {context_fingerprint}"
+            ) from e
 
     def get_contextual_model_weights_by_pattern_seq(
         self, context_pattern_seq: str
@@ -603,7 +620,9 @@ class DiaryEngine(BaseMetaComponent):
                 f"Error getting pattern-sequence model weights: {e}",
                 exc_info=True,
             )
-            return {}
+            raise RuntimeError(
+                f"Failed to get contextual model weights for pattern sequence {context_pattern_seq}"
+            ) from e
 
     def _weights_from_context_rows(self, result_df: pd.DataFrame) -> Dict[str, float]:
         if result_df.empty:
@@ -727,7 +746,9 @@ class DiaryEngine(BaseMetaComponent):
             self.logger.error(
                 f"Error getting KNN contextual model weights: {e}", exc_info=True
             )
-            return {}
+            raise RuntimeError(
+                f"Failed to get KNN contextual model weights for {context_fingerprint}"
+            ) from e
 
     def _get_knn_weights_for_pattern_sequence(
         self,

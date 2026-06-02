@@ -13,12 +13,17 @@ from typing import List, Optional
 from typing import Dict, Any
 from src.core.logging.logger import ProjectLogger
 
-try:
-    import yfinance as yf
-except ImportError:
-    yf = None
-
 logger = ProjectLogger.get_logger(__name__)
+
+
+def _load_yfinance():
+    try:
+        import yfinance as yf
+    except ImportError as exc:
+        raise ImportError(
+            "yfinance dependency missing. Required for systematic factor retrieval."
+        ) from exc
+    return yf
 
 class FamaFrenchFactors:
     """
@@ -34,9 +39,6 @@ class FamaFrenchFactors:
             benchmark_tickers: Custom ticker mapping for proxy ETFs.
             use_cache: Enables temporal caching of downloaded market data.
         """
-        if yf is None:
-            raise ImportError("yfinance dependency missing. Required for systematic factor retrieval.")
-
         # Default ETF proxies for Fama-French factors
         self.benchmark_tickers = benchmark_tickers or {
             'market': '^GSPC',      # S&P 500 Index (Market Baseline)
@@ -195,6 +197,7 @@ class FamaFrenchFactors:
     def _download_from_yfinance(self, tickers: List[str], start_date: str, end_date: str) -> pd.DataFrame:
         """Download data from yfinance"""
         logger.info(f"Ingesting historical benchmarks from yfinance ({len(tickers)} assets)...")
+        yf = _load_yfinance()
         data = yf.download(tickers, start=start_date, end=end_date, progress=False, auto_adjust=True, group_by='ticker')
         
         if len(tickers) == 1:
@@ -231,15 +234,21 @@ class FamaFrenchFactors:
         """Calculates statistical properties of the systematic factor streams."""
         performance_stats = {}
         for factor_name in factors.columns:
-            f_series = factors[factor_name]
+            f_series = pd.to_numeric(factors[factor_name], errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
             if f_series.empty:
                 continue
+            factor_std = f_series.std()
+            annualized_sharpe = (
+                float((f_series.mean() / factor_std) * np.sqrt(252))
+                if np.isfinite(factor_std) and factor_std > 1e-12
+                else np.nan
+            )
             
             performance_stats[factor_name] = {
                 'mean_return': float(f_series.mean()),
-                'volatility': float(f_series.std()),
-                'annualized_sharpe': float((f_series.mean() / f_series.std()) * np.sqrt(252)) if f_series.std() != 0 else 0.0,
+                'volatility': float(factor_std),
+                'annualized_sharpe': annualized_sharpe,
                 'annualized_return': float(f_series.mean() * 252),
-                'annualized_vol': float(f_series.std() * np.sqrt(252))
+                'annualized_vol': float(factor_std * np.sqrt(252))
             }
         return performance_stats

@@ -187,10 +187,14 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         try:
             self._load_calculators()
             # Calculate returns once - canonical source
-            returns = df_enriched['close'].pct_change(fill_method=None).fillna(0)
+            returns = (
+                df_enriched['close']
+                .pct_change(fill_method=None)
+                .replace([float('inf'), float('-inf')], float('nan'))
+            )
             
             # --- NEW: Short-term Volatility (5d) ---
-            df_enriched['VOLATILITY_5'] = returns.rolling(5, min_periods=1).std().fillna(0)
+            df_enriched['VOLATILITY_5'] = returns.rolling(5, min_periods=2).std()
             
             # --- NEW: Momentum Z-Score (20d) ---
             # Normalizes returns to see how "extreme" the current move is
@@ -200,7 +204,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             
             # --- NEW: RSI Velocity ---
             if 'RSI_14' in df_enriched.columns:
-                df_enriched['RSI_VELOCITY'] = df_enriched['RSI_14'].diff(3).fillna(0)
+                df_enriched['RSI_VELOCITY'] = df_enriched['RSI_14'].diff(3)
 
             self._add_volatility_features(df_enriched, returns)
             self._add_market_regime_features(df_enriched, returns)
@@ -216,7 +220,11 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         """Add volatility features."""
         if 'close' in df_enriched.columns:
             if returns is None:
-                returns = df_enriched['close'].pct_change(fill_method=None).fillna(0)
+                returns = (
+                    df_enriched['close']
+                    .pct_change(fill_method=None)
+                    .replace([float('inf'), float('-inf')], float('nan'))
+                )
             df_enriched['VOLATILITY_20'
                 ] = self.VolatilityCalculator.calculate_rolling_volatility(
                 returns, 20)
@@ -229,9 +237,14 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         """Add market regime features (dual encoding: text + numeric)."""
         if 'close' in df_enriched.columns:
             if returns is None:
-                returns = df_enriched['close'].pct_change(fill_method=None).dropna()
+                returns = df_enriched['close'].pct_change(fill_method=None)
+            valid_returns = returns.replace([float('inf'), float('-inf')], float('nan')).dropna()
+            if valid_returns.empty:
+                df_enriched['MARKET_REGIME'] = 'UNKNOWN'
+                df_enriched['MARKET_REGIME_ENCODED'] = float('nan')
+                return
             regime_result = self.MarketRegimeCalculator.detect_regime(
-                returns.values if hasattr(returns, 'values') else returns
+                valid_returns.values if hasattr(valid_returns, 'values') else valid_returns
             )
             df_enriched['MARKET_REGIME'] = regime_result.get('regime',
                 'UNKNOWN')
@@ -245,7 +258,11 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         if 'close' in df_enriched.columns and 'high' in df_enriched.columns:
             try:
                 if returns is None:
-                    returns = df_enriched['close'].pct_change(fill_method=None).fillna(0)
+                    returns = (
+                        df_enriched['close']
+                        .pct_change(fill_method=None)
+                        .replace([float('inf'), float('-inf')], float('nan'))
+                    )
                 df_enriched['MAX_DRAWDOWN'] = (self.DrawdownCalculator.
                     calculate_max_drawdown_from_returns(returns))
                 df_enriched['CURRENT_DRAWDOWN'

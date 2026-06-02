@@ -54,7 +54,7 @@ class PostInferenceFilter:
 
     def _get_macro_multiplier(self, macro_strength: pd.Series) -> pd.Series:
         multiplier = 0.5 + macro_strength
-        return multiplier.fillna(0.5).clip(0.5, 1.5)
+        return multiplier.where(multiplier.notna(), 0.5).clip(0.5, 1.5)
 
     def _get_rsi_multiplier(self, rsi_series: pd.Series) -> pd.Series:
         conditions = [

@@ -35,9 +35,16 @@ def test_simple_metrics_flow():
     pmetrics = calculate_portfolio_metrics(portfolio, market_data)
     assert 'portfolio_value' in pmetrics
     assert pmetrics['portfolio_value'] == 300.0
+    assert pmetrics['max_drawdown'] <= 0.0
+    assert pmetrics['max_drawdown_signed'] <= 0.0
+    assert pmetrics['max_drawdown_pct'] >= 0.0
+    assert pmetrics['current_drawdown_pct'] >= 0.0
 
     pos_metrics = calculate_position_metrics(portfolio, market_data)
     assert set(pos_metrics.keys()) == set(symbols)
+    for metrics in pos_metrics.values():
+        assert metrics['max_drawdown_signed'] <= 0.0
+        assert metrics['max_drawdown_pct'] >= 0.0
 
     mc = analyze_market_conditions(market_data)
     assert 'volatility_regime' in mc

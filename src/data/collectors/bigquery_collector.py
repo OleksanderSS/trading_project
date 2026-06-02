@@ -33,19 +33,18 @@ class BigQueryCollector(BaseCollector):
             df = await asyncio.to_thread(self._execute_query, project_id, query
                 )
             if df is None or df.empty:
+                collector_name = getattr(self, 'collector_name', self.collector_type)
                 self.logger.warning(
-                    f"Collector '{self.collector_name}' acquired empty query structures limits mapping boundary from Google BigQuery boundary check parameters mapped list arrays indexes."
+                    f"Collector '{collector_name}' acquired empty query structures limits mapping boundary from Google BigQuery boundary check parameters mapped list arrays indexes."
                     )
                 return []
             self.logger.info(
-                f"Successfully pulled {len(df)} indexed data execution block elements limits mapped structure arrays checks from BigQuery structures limits bounded definition boundaries for '{self.collector_name}'."
+                f"Successfully pulled {len(df)} indexed data execution block elements limits mapped structure arrays checks from BigQuery structures limits bounded definition boundaries for '{getattr(self, 'collector_name', self.collector_type)}'."
                 )
             return df.to_dict('records')
         except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.handle_error(e, context={'query': query, 'project_id':
-                project_id})
-            return []
+            raise RuntimeError("BigQuery collector query failed") from e
 
     def _execute_query(self, project_id: str, query: str):
         """

@@ -74,7 +74,7 @@ class RedditSentimentCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error in RedditSentimentCollector: {e}")
-            return None
+            raise RuntimeError("Reddit sentiment collection failed") from e
 
     async def _fetch_reddit_sentiment_data(self) -> List[Dict[str, Any]]:
         """
@@ -159,7 +159,7 @@ class RedditSentimentCollector(BaseCollector):
 
         except Exception as e:
             self.logger.error(f"Error fetching Reddit Sentiment data: {e}")
-            return []
+            raise RuntimeError("Failed to generate synthetic Reddit sentiment data") from e
 
     def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         """Standardizes column names and data types."""

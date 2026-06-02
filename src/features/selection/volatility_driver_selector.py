@@ -1,5 +1,6 @@
 
 import pandas as pd
+import numpy as np
 from typing import List
 from sklearn.ensemble import RandomForestRegressor
 from src.core.logging.logger import ProjectLogger
@@ -34,11 +35,24 @@ class VolatilityDriverSelector:
             return []
 
         # 1. Target: Realized Volatility (Proxy for regime shifts)
-        y_vol = df[target_col].pct_change(fill_method=None).abs().fillna(0)
+        y_vol = (
+            df[target_col]
+            .pct_change(fill_method=None)
+            .replace([np.inf, -np.inf], np.nan)
+            .abs()
+            .rename("_target_volatility")
+        )
 
         # 2. Prepare Auxiliary Pool
         valid_aux = [c for c in auxiliary_pool if c in df.columns]
-        x_sub = df[valid_aux].ffill().fillna(0)
+        x_sub = df[valid_aux].ffill().replace([np.inf, -np.inf], np.nan)
+        training_data = pd.concat([y_vol, x_sub], axis=1).dropna(how="any")
+        if len(training_data) < 30:
+            logger.warning("Insufficient complete data for volatility driver discovery.")
+            return []
+
+        y_vol = training_data["_target_volatility"]
+        x_sub = training_data[valid_aux]
         
         # Remove low-variance/constant features
         selector_mask = x_sub.std() > 1e-6
@@ -59,5 +73,5 @@ class VolatilityDriverSelector:
 
         except Exception as e:
             logger.error(f"Volatility driver discovery failed: {e}", exc_info=True)
-            return []
+            raise RuntimeError("Volatility driver discovery failed") from e
 

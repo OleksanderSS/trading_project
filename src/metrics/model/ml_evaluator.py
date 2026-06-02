@@ -100,7 +100,7 @@ class MLEvaluator(BaseMetricCalculator):
                 'Log_Loss': float(log_loss(y_true, probs))}
         except Exception as e:
             self.logger.error(f'Помилка розрахунку імовірнісних метрик: {e}')
-            return {}
+            raise RuntimeError("Failed to calculate probabilistic metrics") from e
 
     def _infer_task_type(self, y_true: np.ndarray, y_pred: np.ndarray) ->str:
         """Визначає тип задачі на основі структури даних."""

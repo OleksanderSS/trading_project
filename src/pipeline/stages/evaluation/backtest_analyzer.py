@@ -236,7 +236,7 @@ class BacktestAnalyzer:
                 
         except Exception as e:
             self.logger.error(f'❌ Backtest execution failed: {e}')
-            return {}
+            return {'success': False, 'status': 'error', 'error': str(e)}
     
     def _create_portfolio_history(self, results: Dict[str, Any], 
                                   price_pivot: pd.DataFrame) -> pd.DataFrame:

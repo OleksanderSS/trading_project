@@ -1,7 +1,6 @@
 
 # src/feature_engineering/nlp/entity_extractor.py
 
-import spacy
 from typing import List, Dict, Any, Optional, Iterable
 import logging
 from functools import lru_cache
@@ -30,11 +29,13 @@ class EntityExtractor:
         
         self.nlp = self._load_model()
 
-    def _load_model(self) -> Optional[spacy.Language]:
+    def _load_model(self) -> Optional[Any]:
         """
         Loads the configured spaCy model, handling potential errors.
         """
         try:
+            import spacy
+
             # Efficiently load the model with disabled components
             nlp = spacy.load(self.model_name, disable=self.disable_components)
             logger.info(f"Successfully loaded spaCy model: '{self.model_name}'")
@@ -72,7 +73,7 @@ class EntityExtractor:
             return sorted(entities)
         except Exception as e:
             logger.error(f"An unexpected error occurred during entity extraction: {e}", exc_info=True)
-            return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise RuntimeError("Entity extraction failed") from e
 
     def extract_batch(self, texts: Iterable[str], entity_types: Optional[List[str]] = None) -> List[List[str]]:
         """

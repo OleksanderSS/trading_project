@@ -128,7 +128,7 @@ class SystemHealthMonitor(BaseMonitor):
             return metrics
         except Exception as e:
             self.logger.error(f'Error collecting system metrics: {e}')
-            return {}
+            raise RuntimeError("Failed to collect system metrics") from e
 
     def check_thresholds(self):
         """Verifies if system metrics exceed safety thresholds."""
@@ -186,7 +186,7 @@ class ModelPerformanceMonitor(BaseMonitor):
             return metrics
         except Exception as e:
             self.logger.error(f'Error collecting model metrics: {e}')
-            return {}
+            raise RuntimeError("Failed to collect model metrics") from e
 
     def update_model_metrics(self, model_name: str, metrics: dict[str, Any]):
         """Updates metrics for a specific model context."""
@@ -242,7 +242,7 @@ class DataQualityMonitor(BaseMonitor):
             return metrics
         except Exception as e:
             self.logger.error(f'Error collecting data quality metrics: {e}')
-            return {}
+            raise RuntimeError("Failed to collect data quality metrics") from e
 
     def update_data_quality(self, source_name: str, data_quality_report:
         dict[str, Any]):
@@ -427,7 +427,7 @@ class MonitoringDashboard:
         except Exception as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Error generating summary: {e}')
-            return {}
+            raise RuntimeError("Failed to generate monitoring summary") from e
 
 
 class MonitoringSystem:

@@ -33,3 +33,20 @@ def test_pattern_aware_training_uses_volatile_parameters():
 
     assert params["max_depth"] == 4
     assert params["min_samples_leaf"] == 3
+
+
+def test_pattern_aware_training_drops_missing_targets_and_median_imputes_features():
+    trainer = PatternAwareModelTrainer()
+    features = pd.DataFrame(
+        {
+            "feature_a": [1.0, None, 3.0],
+            "all_missing": [None, None, None],
+        }
+    )
+    targets = pd.Series([0.1, None, 0.3])
+
+    prepared = trainer._prepare_training_data(features, targets, conditions={})
+
+    assert prepared["y"].tolist() == [0.1, 0.3]
+    assert prepared["X"].columns.tolist() == ["feature_a"]
+    assert prepared["X"]["feature_a"].tolist() == [1.0, 3.0]

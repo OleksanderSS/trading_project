@@ -56,7 +56,7 @@ class DataGenerator:
             DataFrame with technical indicators and market features
         """
         # Generate base price data
-        dates = pd.date_range(start='2020-01-01', end='2023-12-31', freq='1H')
+        dates = pd.date_range(start='2020-01-01', end='2023-12-31', freq='1h')
         n_points = len(dates)
 
         # Generate price series with different regimes
@@ -96,13 +96,14 @@ class DataGenerator:
         features['bb_width'] = (features['bb_upper'] - features['bb_lower']) / sma_20
 
         # Volatility
-        features['volatility'] = features['close'].pct_change(fill_method=None).fillna(0).rolling(window=20, min_periods=2).std().shift(1)
+        close_returns = features['close'].pct_change(fill_method=None)
+        features['volatility'] = close_returns.rolling(window=20, min_periods=2).std().shift(1)
 
 
         # Price change features
-        features['returns_1h'] = features['close'].pct_change(fill_method=None).fillna(0)
-        features['returns_4h'] = features['close'].pct_change(4, fill_method=None).fillna(0)
-        features['returns_24h'] = features['close'].pct_change(24, fill_method=None).fillna(0)
+        features['returns_1h'] = close_returns
+        features['returns_4h'] = features['close'].pct_change(4, fill_method=None)
+        features['returns_24h'] = features['close'].pct_change(24, fill_method=None)
 
         # Time-based features
         features['hour'] = features.index.hour

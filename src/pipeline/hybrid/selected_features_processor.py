@@ -105,7 +105,9 @@ class SelectedFeaturesProcessor:
         except Exception as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Error loading {config.file_path.name}: {e}')
-            return None
+            raise RuntimeError(
+                f"Failed to process selected features file: {config.file_path}"
+            ) from e
 
     def _extract_context_info(self, context_data: Dict[str, Any]) ->tuple[
         str, str, str]:

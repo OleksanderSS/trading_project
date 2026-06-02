@@ -13,6 +13,7 @@ import base64
 
 # Utilize centralized project-wide logger
 from src.core.logging.logger import ProjectLogger
+from src.core.security.path_validator import validate_safe_path, PathValidationError
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -42,7 +43,7 @@ def _get_configured_env_search_paths() -> list[str | Path]:
         config = get_current_config()
         configured_paths = config.get('security.env_search_paths', [])
         return configured_paths if isinstance(configured_paths, list) else []
-    except Exception as e:
+    except (ImportError, AttributeError, RuntimeError, RecursionError) as e:
         logger.warning(f"Skipping config search paths loading: {e}", exc_info=True)
         return []  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
 
@@ -54,44 +55,37 @@ def load_dotenv(dotenv_path: str = '.env'):
     Search Protocol:
     1. Specified parameter path (default: .env)
     2. Configured search paths from config (if available)
-    3. Google Drive mount point (Colab support)
-    4. Parent directory lookup
-    5. User home directory
 
-    CodeScene: Complex Method (cc=9) is acceptable for security-critical code with multiple
-    validation checks and fallback paths. Bumpy Road (2 bumps) is natural for hierarchical
-    search protocol with multiple validation points.
+    Security Note: Only searches within project-local directories to prevent 
+    unauthorized environment variable injection.
     """
     config_paths = _get_configured_env_search_paths()
     
     # Hierarchical list of potential .env locations
-    search_paths: list[str | Path] = [
+    # Restricted to local project context
+    potential_paths: list[str | Path] = [
         dotenv_path,
     ]
     
     # Add configured paths if available
     if config_paths:
-        search_paths.extend(config_paths)
+        potential_paths.extend(config_paths)
     
-    # Default fallback paths
-    search_paths.extend([
-        '/content/drive/MyDrive/trading_project/.env',
-        '/content/drive/MyDrive/.env',
-        '/content/.env',
-        '../.env',
-        Path.home() / '.env',
-    ])
-
-    found_path: str | None = None
-    for path in search_paths:
-        if os.path.exists(str(path)):
-            found_path = str(path)
-            logger.info(f"Environment configuration identified: {found_path}")
-            break
+    found_path: Path | None = None
+    for path in potential_paths:
+        try:
+            # Validate against current working directory to keep it local
+            validated_path = validate_safe_path(path, base_dir=Path.cwd())
+            if validated_path.exists():
+                found_path = validated_path
+                logger.info(f"Environment configuration identified: {found_path}")
+                break
+        except PathValidationError:
+            continue
 
     if not found_path:
         logger.warning(
-            f"No .env configuration file found across search vectors: {search_paths}. Utilizing existing environment variables."
+            f"No .env configuration file found in project local paths: {potential_paths}. Utilizing existing environment variables."
         )
         return
 
@@ -116,7 +110,7 @@ def load_dotenv(dotenv_path: str = '.env'):
         return loaded_keys
     except Exception as e:
         logger.error(f"Critical failure reading environment file {found_path}: {e}", exc_info=True)
-        return []
+        raise SecurityError(f"Critical failure reading environment file {found_path}") from e
 
 
 class SecretsManager:
@@ -143,7 +137,14 @@ class SecretsManager:
     def _load_encrypted_secrets(self, path: str):
         """Loads and decrypts secrets from an encrypted payload using Fernet (requires CRYPTO_KEY)."""
         crypto_key = os.getenv("CRYPTO_KEY")
-        if not crypto_key or not os.path.exists(path):
+        # Validate path before checking existence
+        try:
+            safe_path = validate_safe_path(path, base_dir=Path.cwd())
+        except PathValidationError:
+            logger.warning(f"Invalid path for encrypted secrets: {path}")
+            return
+
+        if not crypto_key or not os.path.exists(safe_path):
             return
 
         try:
@@ -159,7 +160,7 @@ class SecretsManager:
             fernet = Fernet(fernet_key)
             
             # Read and decrypt the encrypted secrets file
-            with open(path, 'rb') as f:
+            with open(safe_path, 'rb') as f:
                 encrypted_data = f.read()
             
             decrypted_data = fernet.decrypt(encrypted_data)
@@ -173,11 +174,11 @@ class SecretsManager:
                 os.environ[key] = value
                 self._secrets_cache[key] = value
             
-            logger.info(f"Successfully loaded {len(secrets_dict)} encrypted secrets from {path}")
+            logger.info(f"Successfully loaded {len(secrets_dict)} encrypted secrets from {safe_path}")
             
         except (ValueError, TypeError, Exception) as e:
-            logger.error(f"Failed to load encrypted secrets from {path}: {e}", exc_info=True)
-            raise SecurityError(f"Failed to load/decrypt encrypted secrets from {path}: {e}") from e
+            logger.error(f"Failed to load encrypted secrets from {safe_path}: {e}", exc_info=True)
+            raise SecurityError(f"Failed to load/decrypt encrypted secrets from {safe_path}: {e}") from e
 
     def encrypt_secrets(self, secrets: dict[str, str], output_path: str = ".env.enc"):
         """Encrypts a dictionary of secrets and saves to file using Fernet."""
@@ -187,6 +188,9 @@ class SecretsManager:
             raise SecurityError("CRYPTO_KEY environment variable is required for encryption")
         
         try:
+            # Validate output path before writing
+            safe_output_path = validate_safe_path(output_path, base_dir=Path.cwd())
+
             # Derive a proper Fernet key from CRYPTO_KEY
             key_bytes = crypto_key.encode()
             if len(key_bytes) < 32:
@@ -203,10 +207,10 @@ class SecretsManager:
             encrypted_data = fernet.encrypt(secrets_json.encode('utf-8'))
             
             # Save encrypted data to file
-            with open(output_path, 'wb') as f:
+            with open(safe_output_path, 'wb') as f:
                 f.write(encrypted_data)
             
-            logger.info(f"Successfully encrypted {len(secrets)} secrets to {output_path}")
+            logger.info(f"Successfully encrypted {len(secrets)} secrets to {safe_output_path}")
             
         except (ValueError, TypeError, Exception) as e:
             logger.error(f"Failed to encrypt secrets: {e}", exc_info=True)

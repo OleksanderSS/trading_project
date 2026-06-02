@@ -130,7 +130,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
             return converted
         except Exception as e:
             logger.error(f'Failed to get Arena leaderboard: {e}')
-            return {}
+            raise RuntimeError("Failed to get Arena leaderboard") from e
 
     def select_best_model_adaptive(self, context_fingerprint: str, features:
         Any=None) ->str:
@@ -280,7 +280,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
                 return {}
         except Exception as e:
             logger.error(f'Failed to load leaderboard: {e}')
-            return {}
+            raise RuntimeError(f"Failed to load leaderboard from {self.leaderboard_path}") from e
 
     def _save_leaderboard(self) ->None:
         """Save leaderboard to disk."""

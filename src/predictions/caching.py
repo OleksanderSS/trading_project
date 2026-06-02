@@ -86,8 +86,7 @@ class PredictionCache:
             combined = (
                 f'{model_id}:{hashlib.sha256(feature_bytes).hexdigest()}')
             return combined
-        except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+        except (TypeError, ValueError, pickle.PickleError, AttributeError) as e:
             logger.warning(
                 f'Could not hash features ({type(features).__name__}), skipping cache: {e}'
                 )

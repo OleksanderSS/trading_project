@@ -2,3042 +2,25 @@
 
 ## Summary
 
-Total findings: **1159**
+Total findings: **928**
 
 ### By severity
 
-- P1: 301
-- P2: 441
+- P2: 511
 - P3: 417
 
 ### By category
 
-- error_policy: 378
+- error_policy: 363
 - determinism: 339
-- security: 112
-- financial_math: 72
-- missing_policy: 72
 - data_lineage: 69
-- heavy_imports: 51
+- security: 59
+- financial_math: 36
 - config_factory: 31
-- model_routing: 16
+- heavy_imports: 21
 - architecture: 10
-- temporal: 9
 
 ---
-
-
-## P1
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `analytics/reporting/automated_reports.py:70`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `analytics/reporting/automated_reports.py:99`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `analytics/reporting/results_manager.py:88`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `analytics/reporting/results_manager.py:108`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `analytics/reporting/results_manager.py:121`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `analytics/reporting/results_manager.py:217`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `analytics/reporting/visualization.py:39`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `core/cloud/gcs_manager.py:106`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `core/file_management/file_manager.py:95`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `core/file_management/file_manager.py:135`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `core/file_management/file_manager.py:212`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `core/security/secure_secrets_manager.py:45`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `core/security/secure_secrets_manager.py:117`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `core/system/archive_manager.py:59`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/alternative_me_collector.py:67`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/alternative_me_collector.py:112`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/alternative_me_collector.py:138`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/cftc_collector.py:81`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/cftc_collector.py:143`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/collector_factory.py:87`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/fred_collector.py:112`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/google_news_collector.py:201`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/huggingface_collector.py:42`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/huggingface_collector.py:107`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/insider_collector.py:68`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/insider_collector.py:185`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/local_file_collector.py:56`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/put_call_ratio_collector.py:73`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/reddit_sentiment_collector.py:75`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/reddit_sentiment_collector.py:160`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/rss_collector.py:169`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as exc:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/rss_collector.py:185`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as exc:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/sec_filings_collector.py:202`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/vix_collector.py:92`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/collectors/vix_collector.py:161`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/management/connectors/bigquery_connector.py:51`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `data/management/data_versioning.py:35`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `devtools/rule_generator.py:53`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/enrichers/news_impact_enricher.py:323`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/feature_orchestrator.py:87`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/feature_selection_cache.py:42`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/news_impact_classifier.py:51`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/news_impact_classifier.py:68`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/nlp/extractors/entity_extractor.py:73`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/nlp/processors/news_harmonizer.py:13`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/selection/smart_selector.py:252`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/selection/smart_selector.py:297`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/selection/smart_selector.py:308`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/selection/volatility_driver_selector.py:60`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/utils/modular_adaptive_technical_indicators.py:227`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `features/utils/modular_adaptive_technical_indicators.py:248`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `integration/ensemble_performance_bridge.py:154`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `integration/ensemble_performance_bridge.py:185`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `integration/ensemble_performance_bridge.py:217`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `integration/ensemble_performance_bridge.py:238`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `meta_learning/memory/diary_engine.py:567`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `meta_learning/memory/diary_engine.py:601`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `meta_learning/memory/diary_engine.py:726`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `metrics/model/ml_evaluator.py:101`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/analysis/overfitting_detection/metrics.py:22`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/ensemble/correlation/correlation_engine.py:172`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/ensemble/correlation/correlation_engine.py:220`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/ensemble/correlation/correlation_engine.py:333`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/ensemble/correlation/correlation_engine.py:353`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/ensemble/correlation/correlation_engine.py:410`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/ensemble/correlation/correlation_engine.py:515`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/ensemble/enhanced_ensemble.py:175`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/loader.py:221`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/loader.py:232`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as fallback_error:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/model_pool.py:137`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/model_selector/adaptive_selector.py:131`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/model_selector/adaptive_selector.py:281`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/model_selector/smart_selector.py:33`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/monitoring/drift/drift_calculator.py:199`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/monitoring/drift/drift_calculator.py:286`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/neural/transformer_model.py:340`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/prototypes/prototype.py:98`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/statistics/model_statistics.py:84`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `models/tree/catboost_model.py:144`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `monitoring/monitoring_system.py:129`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `monitoring/monitoring_system.py:187`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `monitoring/monitoring_system.py:243`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `monitoring/monitoring_system.py:427`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `optimization/portfolio/optimizer.py:439`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/hybrid/model_training_orchestrator.py:120`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/hybrid/selected_features_processor.py:105`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/evaluation/backtest_analyzer.py:237`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/evaluation/metrics_calculator.py:69`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/evaluation/metrics_calculator.py:107`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/evaluation/metrics_calculator.py:141`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/evaluation/metrics_calculator.py:202`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/modeling/orchestration.py:55`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/prediction/data_preparer.py:317`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `pipeline/stages/prediction/scaler_service.py:89`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `predictions/caching.py:89`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `risk/metrics.py:41`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `risk/metrics.py:82`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `risk/metrics.py:134`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `risk/metrics.py:229`
-**Problem:** Broad exception returns silent fallback: Dict.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `simulation/simulation_engine.py:115`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `trading/portfolio_manager.py:272`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `trading/signal_processor.py:88`
-**Problem:** Broad exception returns silent fallback: None.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### error_policy / BROAD_EXCEPTION_SILENT_RETURN — `utils/trading_calendar.py:79`
-**Problem:** Broad exception returns silent fallback: List.
-**Why:** Pipeline may continue with None/{}/[] as if the stage succeeded.
-**Fix:** Return a typed StageResult with status failed/degraded, or re-raise for fatal stages.
-**Test:** Test that fatal failures in target generation/split/training do not continue silently.
-**Confidence:** high  
-```python
-except Exception as e:
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:125`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-sharpe_values = []
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:129`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-sharpe_values.append(perf.get('sharpe', 0))
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:130`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-if len(sharpe_values) < 2:
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:132`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-std_sharpe = np.std(sharpe_values)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:133`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-mean_sharpe = np.mean(sharpe_values)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:134`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-if mean_sharpe != 0:
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:135`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-cv = abs(std_sharpe / mean_sharpe)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/advanced_backtest_engine.py:148`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `algorithms/walk_forward_optimizer.py:138`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-return {"return": total_return, "sharpe": sharpe, "max_drawdown": max_drawdown}
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/analyzers/hedge_fund_analyzer.py:84`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-metrics['sharpe_ratio'
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/analyzers/hedge_fund_analyzer.py:85`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-] = RiskRewardCalculator.calculate_sharpe_ratio(returns,
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `analytics/analyzers/risk_decomposition_analyzer.py:119`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-var_05_threshold = np.percentile(weighted_returns, 5)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/analyzers/risk_decomposition_analyzer.py:127`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-realized_sharpe = excess_mean / np.std(weighted_returns) * np.sqrt(
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/arena/arena_battle.py:391`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-sharpe_ratio = np.mean(predictions) / (np.std(predictions) + 1e-08
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/arena/arena_battle.py:394`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-recall=accuracy, f1_score=accuracy, sharpe_ratio=
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/arena/arena_battle.py:395`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-sharpe_ratio, max_drawdown=0.0, win_rate=accuracy,
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/calculators/risk_reward_calculator.py:85`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-annualized_sharpe = (excess_returns.mean() / excess_returns.std()) * np.sqrt(config.periods_per_year)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/calculators/risk_reward_calculator.py:86`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-return float(annualized_sharpe)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/calculators/risk_reward_calculator.py:106`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-sortino_ratio = (expected_return - target_return) / downside_std
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/calculators/risk_reward_calculator.py:107`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-annualized_sortino = sortino_ratio * np.sqrt(config.periods_per_year)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `analytics/calculators/risk_reward_calculator.py:108`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-return float(annualized_sortino)
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `analytics/calculators/risk_reward_calculator.py:153`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-var = returns.quantile(quantile)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `backtesting/advanced/advanced_engine.py:198`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `calibration/calibration_engine.py:280`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-return float(avg_sharpe)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `calibration/calibration_engine.py:293`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-return float(sharpe)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `meta_learning/memory/diary_engine.py:424`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-sharpe = (np.mean(returns) / np.std(returns) * np.sqrt(252)) if np.std(returns) != 0 else 0
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `meta_learning/real_time_learning.py:272`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-"""Розраховує Sharpe ratio"""
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `metrics/financial/financial_metrics_library.py:182`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-return {"var": 0.0, "cvar": 0.0}
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `metrics/financial/financial_metrics_library.py:184`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-var = returns.quantile(quantile)
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `monitoring/health_hub.py:286`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-for metric in ['win_rate', 'sharpe_ratio']:
-```
-
-### financial_math / SHARPE_SORTINO_STD_ZERO_REVIEW — `pipeline/stages/evaluation/metrics_calculator.py:85`
-**Problem:** Sharpe/Sortino calculation near std usage without obvious zero-std guard.
-**Why:** Constant returns can produce inf/nan Sharpe and break model ranking/risk reports.
-**Fix:** Guard zero/near-zero denominator explicitly and return status/NaN instead of silent 0 unless policy says otherwise.
-**Test:** Test constant returns and single-observation returns.
-**Confidence:** low  
-```python
-sharpe_ratio = returns.mean() / (volatility + 1e-9) if volatility > 0 else 0
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk/elite_risk_metrics.py:94`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-var_percentile = (1 - confidence_level) * 100
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk/elite_risk_metrics.py:95`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-var_value: float = float(-np.percentile(recent_returns, var_percentile)
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk/elite_risk_metrics.py:249`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-return {'var': 0.05, 'cvar': 0.08, 'method': 'parametric_fallback'}
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk/elite_risk_metrics.py:252`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-return {'var': 0.05, 'cvar': 0.08, 'method': 'parametric_fallback'}
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk/elite_risk_metrics.py:290`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-return {'var': 0.05, 'cvar': 0.08, 'method': 'monte_carlo_fallback'
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk/elite_risk_metrics.py:294`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-return {'var': 0.05, 'cvar': 0.08, 'method': 'monte_carlo_fallback'
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk/elite_risk_metrics.py:304`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-var = -np.percentile(simulated_returns, (1 - confidence_level) * 100)
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk_management/var_calculator.py:13`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-return {'var': 0.0}
-```
-
-### financial_math / VAR_SIGN_OR_EMPTY_DATA_REVIEW — `risk_management/var_calculator.py:17`
-**Problem:** VaR percentile/zero-return pattern found.
-**Why:** VaR sign and empty-data behavior are often inconsistent; returning 0 for no data means false no-risk.
-**Fix:** Use var_loss_positive naming, return insufficient_data for empty returns, and apply/document horizon scaling.
-**Test:** Test empty returns, positive-only returns, negative tail returns, and time_horizon > 1.
-**Confidence:** medium  
-```python
-var_val = -np.percentile(returns, percentile)
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/model_factory.py:8`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/model_factory.py:9`
-**Problem:** Top-level import of heavy optional dependency 'torch.nn'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch.nn as nn
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/model_factory.py:89`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/model_factory.py:90`
-**Problem:** Top-level import of heavy optional dependency 'torch.nn'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch.nn as nn
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/model_factory.py:115`
-**Problem:** Top-level import of heavy optional dependency 'torch.nn'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch.nn as nn
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/models/finbert_pipeline.py:3`
-**Problem:** Top-level import of heavy optional dependency 'transformers'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/models/finbert_pipeline.py:4`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `algorithms/advanced_backtest_engine.py:38`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-net_equity = raw_equity - costs.cumsum().reindex(raw_equity.index,
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `algorithms/advanced_backtest_engine.py:60`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = prices.pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/calculators/macro_score_calculator.py:129`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-scaled_values = minmax_scale(composite_score.fillna(0), feature_range=(0, 100))
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/context/market_context_analyzer.py:63`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-final_vector = context_vector.fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/context/market_context_analyzer.py:101`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-return df[self.close_col].pct_change(fill_method=None).fillna(0).tail(5).std()
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/context/market_context_analyzer.py:106`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-return df[self.close_col].pct_change(fill_method=None).fillna(0).tail(20).std()
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/context/market_regime_analyzer.py:55`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = df["close"].pct_change(fill_method=None).fillna(0).fillna(0).values
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/detectors/anomaly_detector.py:71`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-anomaly_labels = self.isolation_forest.predict(numeric_features.fillna(0))
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/utils/analytics_math.py:17`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = prices.pct_change(fill_method=None).fillna(0).dropna()
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `analytics/utils/analytics_math.py:54`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns_clean = returns.fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `backtesting/advanced/advanced_engine.py:329`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-asset_returns = prices.pct_change(fill_method=None).fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `backtesting/advanced/advanced_engine.py:334`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-lagged_weights = positions.shift(1).fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `backtesting/advanced/advanced_engine.py:337`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-turnover = lagged_weights.diff().abs().sum(axis=1).fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `backtesting/advanced/advanced_engine.py:353`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-aligned = aligned.apply(pd.to_numeric, errors='coerce').ffill().fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `backtesting/advanced/advanced_engine.py:356`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-return aligned.div(exposure, axis=0).fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `data/management/data_cleaner.py:13`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df[numeric_cols] = df[numeric_cols].fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `data/synthetic/data_generator.py:99`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-features['volatility'] = features['close'].pct_change(fill_method=None).fillna(0).rolling(window=20, min_periods=2).std().shift(1)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `data/synthetic/data_generator.py:103`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-features['returns_1h'] = features['close'].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `data/synthetic/data_generator.py:104`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-features['returns_4h'] = features['close'].pct_change(4, fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `data/synthetic/data_generator.py:105`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-features['returns_24h'] = features['close'].pct_change(24, fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/context_map_enricher.py:120`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-return pd.Series(state, index=champ_data.index).reindex(df.index).ffill().fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/context_map_enricher.py:140`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df[state_name] = df[feat].fillna(0).astype(int)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/context_map_enricher.py:162`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = res_df[col].pct_change(fill_method=None).replace([np.inf, -np.inf], 0).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/context_map_enricher.py:163`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-rolling_std = returns.rolling(window=20, min_periods=1).std().fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/derived_features_enricher.py:89`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/hype_enricher.py:161`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched['hype_score'] = df_enriched['news_count'].fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/keyword_entity_enricher.py:241`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_merged['keyword_count'] = df_merged['keyword_count'].fillna(0
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/keyword_entity_enricher.py:243`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_merged['entity_count'] = df_merged['entity_count'].fillna(0).astype(
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/news_impact_enricher.py:227`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched['news_impact_score'] = impact_scores_aligned.fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/news_impact_enricher.py:233`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched['news_significance_level'] = significance_aligned.map(significance_map).fillna(0).astype(int)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/news_impact_enricher.py:388`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched['news_impact_score'] = impact_scores_aligned.fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/news_impact_enricher.py:394`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched['news_significance_level'] = significance_aligned.map(significance_map).fillna(0).astype(int)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/news_quality_enricher.py:162`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_merged['news_quality_score'] = df_merged['news_quality_score'].fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/news_quality_enricher.py:163`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_merged['news_source_count'] = df_merged['news_source_count'].fillna(0).astype(int)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/sentiment_features_enricher.py:296`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-sentiment_values.groupby(df_enriched['ticker']).ffill()
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/sentiment_features_enricher.py:329`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-ticker_group[f'sentiment_std_{window}'] = (ticker_group[sentiment_col]
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/sentiment_features_enricher.py:343`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-ticker_group['sentiment_velocity'] = (ticker_group[sentiment_col]
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/significance_features_enricher.py:147`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_out['_temp_returns'] = df_out['close'].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/technical_analysis_enricher.py:190`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = df_enriched['close'].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/technical_analysis_enricher.py:193`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched['VOLATILITY_5'] = returns.rolling(5, min_periods=1).std().fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/technical_analysis_enricher.py:203`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched['RSI_VELOCITY'] = df_enriched['RSI_14'].diff(3).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/technical_analysis_enricher.py:219`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = df_enriched['close'].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/technical_analysis_enricher.py:248`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = df_enriched['close'].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/volatility_enricher.py:38`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched["returns"] = df_enriched["close"].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/volume_enricher.py:47`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched["volume_roc"] = df_enriched["volume"].pct_change(periods=5, fill_method=None).fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/volume_enricher.py:51`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched["volume"] * df_enriched["close"].pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/enrichers/volume_enricher.py:62`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df_enriched["volume_rs"] = (
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/selection/volatility_driver_selector.py:37`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-y_vol = df[target_col].pct_change(fill_method=None).abs().fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/selection/volatility_driver_selector.py:41`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-x_sub = df[valid_aux].ffill().fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/utils/modular_adaptive_technical_indicators.py:27`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = prices.pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/utils/modular_adaptive_technical_indicators.py:41`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-delta_clean = delta.fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/utils/modular_adaptive_technical_indicators.py:81`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = prices.pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/utils/modular_adaptive_technical_indicators.py:111`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-return macd_composite.fillna(0), signal_composite.fillna(0), histogram_composite.fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `features/utils/modular_adaptive_technical_indicators.py:235`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = prices.pct_change(fill_method=None).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `models/neural/transformer_model.py:313`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-X = df[feature_cols].fillna(0).values
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/hybrid/data_manager.py:82`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df[numeric_cols] = df[numeric_cols].fillna(0).replace([np.inf, -np.
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/hybrid/data_utils.py:37`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df[numeric_cols] = df[numeric_cols].fillna(0).replace([np.inf, -np.inf], 0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/stages/evaluation/analytics.py:54`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-predictions = signals_df["signal"].map({"BUY": 1, "SELL": -1, "HOLD": 0}).fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/stages/evaluation/analytics.py:62`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-"benchmark_returns": pd.DataFrame({"Benchmark": price_data["close"].pct_change(fill_method=None).fillna(0).fillna(0)})
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/stages/prediction/data_preparation_service.py:141`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-ticker_df_clean = ticker_df_clean.fillna(0).replace([np.inf, -np.inf], 0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/stages/prediction/data_preparer.py:224`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-ticker_df_clean = ticker_df_clean.fillna(0).replace([np.inf, -np.
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/stages/prediction/prediction_context_manager.py:48`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-ticker_df_clean = ticker_df_clean.fillna(0).replace([np.inf, -np.inf], 0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/stages/trading/recommendation_engine.py:169`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = ticker_df['close'].pct_change(fill_method=None).fillna(0).dropna().values
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `pipeline/stages/trading/recommendation_engine.py:201`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-returns = ticker_df['close'].pct_change(fill_method=None).fillna(0).dropna().values
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `processing/cleaners.py:55`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-col_mask = (z_scores.abs() > threshold).fillna(False)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `processing/cleaners.py:147`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df[col] = df[col].fillna(0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `training/pattern_aware_training.py:138`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-X = X.select_dtypes(include=[np.number]).replace([np.inf, -np.inf], np.nan).fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `training/pattern_aware_training.py:139`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-y = y.replace([np.inf, -np.inf], np.nan).fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `training/portfolio_optimizer.py:225`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-return X.fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `utils/feature_preparation.py:95`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-df = df.fillna(0.0)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `utils/missing_data_anomaly_detector.py:144`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-fill_transitions = fill_mask & fill_mask.shift(1).fillna(False)
-```
-
-### missing_policy / FILLNA_ZERO_SUSPICIOUS — `utils/smart_missing_data_handler.py:218`
-**Problem:** fillna(0) detected.
-**Why:** Zero-filling targets, returns, risk metrics, or financial features can fabricate labels/returns and suppress risk.
-**Fix:** Replace with explicit per-column policy: drop targets, leave unavailable features as NaN plus availability indicator, or domain-specific fill.
-**Test:** Add tests that target tails and missing price gaps are not converted to zeros.
-**Confidence:** high  
-```python
-filled = series.fillna(0.0)
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `colab/models/model_factory.py:93`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-from src.colab.models.architectures import LSTMModel, GRUModel, CNNModel, TransformerModel, AutoencoderModel
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `colab/models/model_factory.py:220`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-return AutoencoderModel(input_size)
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `colab/models/torch_models.py:9`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-from src.colab.models.architectures import LSTMModel, GRUModel, CNNModel, TransformerModel, AutoencoderModel
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `colab/models/torch_models.py:126`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-return AutoencoderModel(input_size)
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `factories/model_factory.py:18`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-from src.models.neural.autoencoder_model import AutoencoderModel
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `models/loader.py:438`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-return AutoencoderModel(input_size)
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `models/neural/autoencoder_model.py:1`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-# src/models/neural/autoencoder_model.py
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `models/neural/autoencoder_model.py:30`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-return "autoencoder_conv1d"
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `pipeline/hybrid/final_stages_executor.py:71`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-heavy_models = [m for m in all_models if m.lower() in ['cnn', 'lstm', 'gru', 'transformer', 'tabnet', 'autoencoder']]
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `pipeline/stages/prediction/model_selection_service.py:211`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-prediction_models = [name for name in models if 'autoencoder' not in name.lower()]
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `pipeline/stages/prediction/prediction_generator.py:62`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-f'⚠️ No models for prediction (only autoencoder), skipping {context_id}'
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `pipeline/stages/prediction/prediction_generator.py:79`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-'⚠️ Autoencoder not suitable for regression prediction')
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `predictions/deep_predict.py:72`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-def predict_autoencoder(model, X):
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `predictions/deep_predict.py:79`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-logger.info(f"[OK] Autoencoder prediction complete ({preds.shape[0]} points).")
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `predictions/models_predict.py:10`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-from .deep_predict import predict_lstm, predict_cnn, predict_transformer, predict_autoencoder
-```
-
-### model_routing / AUTOENCODER_ROUTING_REVIEW — `predictions/models_predict.py:46`
-**Problem:** Autoencoder appears in model routing/prediction context.
-**Why:** Autoencoders should be representation/anomaly models, not primary target predictors unless explicitly designed so.
-**Fix:** Use model capability metadata: role, can_predict_target, can_be_primary; never fallback to autoencoder as primary.
-**Test:** Test that a model set containing only autoencoder raises NoPrimaryPredictorAvailable.
-**Confidence:** medium  
-```python
-return predict_autoencoder(model, X)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `analytics/arena/arena_battle.py:183`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-model = joblib.load(latest_champ)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `calibration/adaptive_confidence_calibrator.py:290`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-data = joblib.load(path_obj)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `colab/utils/utils.py:66`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-checkpoint = torch.load(checkpoint_path, weights_only=True)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:221`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-elif self._has_placeholders(value):
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:222`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-return self._resolve_placeholders(value, secrets)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:230`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-def _has_placeholders(self, value: Any) -> bool:
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:244`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-def _resolve_placeholders(self, value: str, secrets: dict[str, str]) -> Any:
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:246`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-placeholders = re.findall(r'\$\{([^}]+)\}', value)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:249`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-for placeholder in placeholders:
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:250`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-resolved_placeholder = self.get(placeholder, "")
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:251`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-if resolved_placeholder:
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:252`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-resolved_value = resolved_value.replace(f'${{{placeholder}}}', str(resolved_placeholder))
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:421`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-value = self._resolve_placeholders_in_value(value)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:445`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-def _resolve_placeholders_in_value(self, value: Any) -> Any:
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:450`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-placeholders = re.findall(r'\$\{([^}]+)\}', value)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:451`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-for placeholder in placeholders:
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:452`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-resolved_placeholder = self.get(placeholder, "")
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:453`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-if not isinstance(resolved_placeholder, (str, int, float, bool)):
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:454`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-resolved_placeholder = str(resolved_placeholder)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `config/unified_config_manager.py:455`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-value = value.replace(f'${{{placeholder}}}', str(resolved_placeholder))
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `core/cache/cache_manager.py:146`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-value = pickle.load(f)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `core/security/secure_secrets_manager.py:252`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-f"SECURITY PROTOCOL BREACH: Key '{key_name}' contains a template placeholder."
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `core/security/secure_secrets_manager.py:254`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-raise SecurityError(f"Secret '{key_name}' contains a placeholder value.")
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `data/management/data_manager.py:219`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-placeholders = ', '.join(['?' for _ in tickers])
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `data/management/data_manager.py:223`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-WHERE ticker IN ({placeholders}) AND interval = ?
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `ensembling/stacked_ensemble.py:318`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-state = joblib.load(f)
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `meta_learning/evolution/dual_loops.py:203`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-placeholders = ', '.join(['?'] * len(status_list))
-```
-
-### security / PLACEHOLDER_SECRET_REVIEW — `meta_learning/evolution/dual_loops.py:204`
-**Problem:** Placeholder-looking secret/default detected.
-**Why:** Placeholders can be mistaken for valid credentials or leak into production config.
-**Fix:** Validate secrets at startup and reject known placeholder patterns.
-**Test:** Test that placeholder secrets fail validation.
-**Confidence:** medium  
-```python
-query = f"SELECT * FROM rules WHERE status IN ({placeholders})"
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/ensemble/confidence_calibrator.py:128`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-payload = joblib.load(filepath)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/ensemble/enhanced_ensemble.py:130`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-model_obj = torch.load(path_candidate, map_location='cpu')
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/ensemble/enhanced_ensemble.py:165`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-model = joblib.load(model_file)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/ensemble/ensemble_model.py:82`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_model = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/linear/knn_model.py:84`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_model = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/linear/linear_model.py:74`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_model = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/linear/svm_model.py:90`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_model = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/loader.py:168`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-return joblib.load(str(consensus_path))
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/loader.py:191`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-return joblib.load(str(path))
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/loader.py:200`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-return joblib.load(str(path))
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/loader.py:205`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-return pickle.load(f)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/loader.py:305`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_obj = torch.load(path, map_location='cpu', weights_only=
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/neural/tabnet_model.py:122`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-metadata = joblib.load(metadata_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/tree/lightgbm_model.py:95`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_model = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/tree/random_forest_model.py:90`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_model = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `models/tree/xgboost_model.py:99`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-loaded_model = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `monitoring/health_hub.py:94`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-self.models[model_name] = joblib.load(model_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `monitoring/health_hub.py:100`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-self.scalers['resource_scaler'] = joblib.load(scaler_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `monitoring/ml_analytics.py:47`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-self.models[model_name] = joblib.load(model_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `monitoring/ml_analytics.py:52`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-self.scalers['resource_scaler'] = joblib.load(scaler_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `pipeline/stages/prediction/data_preparer.py:283`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-target_scaler = joblib.load(scaler_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `pipeline/stages/prediction/scaler_service.py:74`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-target_scaler = joblib.load(scaler_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `predictions/models_predict.py:99`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-model = joblib.load(os.path.join(models_path, f))
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `processing/normalization_manager.py:172`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-scaler = joblib.load(scaler_path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `training/light_model_trainer.py:170`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-self.models_in_memory[model_key] = joblib.load(path)
-```
-
-### security / UNSAFE_MODEL_OR_PICKLE_LOAD — `utils/checkpoint_manager.py:53`
-**Problem:** Pickle/joblib/torch model load detected.
-**Why:** These formats can execute code or load unsafe artifacts if the path is not trusted and validated.
-**Fix:** Only load from validated artifact directories; store metadata/hash and reject untrusted paths.
-**Test:** Add tests that traversal/untrusted artifact paths are rejected before load.
-**Confidence:** medium  
-```python
-checkpoint = torch.load(checkpoint_path, weights_only=True)
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/guards/temporal_target_guard.py:38`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-results['target_volatility_1d'] = grouped_ret1.transform(lambda s: s.rolling(window=5, min_periods=1).std().shift(-1))  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/guards/temporal_target_guard.py:39`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-results['target_volatility_5d'] = grouped_ret1.transform(lambda s: s.rolling(window=20, min_periods=1).std().shift(-5))  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/guards/temporal_target_guard.py:41`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-results['target_volatility_1d'] = ret1_series.rolling(window=5, min_periods=1).std().shift(-1)  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/guards/temporal_target_guard.py:42`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-results['target_volatility_5d'] = ret1_series.rolling(window=20, min_periods=1).std().shift(-5)  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/stages/stage_0_data_generation.py:134`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-targets['return_1h'] = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/stages/stage_0_data_generation.py:135`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-targets['return_4h'] = (close_prices.shift(-4) / close_prices) - 1  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/stages/stage_0_data_generation.py:136`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-targets['return_24h'] = (close_prices.shift(-24) / close_prices) - 1  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `pipeline/stages/stage_0_data_generation.py:138`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-future_1h_returns = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: target label
-```
-
-### temporal / NEGATIVE_SHIFT_LOOKAHEAD — `validation/data_leakage_detector.py:126`
-**Problem:** Negative shift detected. It may be valid for target generation, but dangerous elsewhere.
-**Why:** shift(-h) reads future rows. Without ticker grouping and tail-row dropping, it creates lookahead/cross-ticker leakage.
-**Fix:** Use it only in target modules, group by ticker, and drop/mark the last horizon rows instead of filling them.
-**Test:** Create a multi-ticker fixture and assert last row of each ticker has NaN target and never uses the next ticker.
-**Confidence:** high  
-```python
-future_target = df[target_col].shift(-1)  # audit-ignore: detector intentionally checks future target correlation
-```
 
 
 ## P2
@@ -3132,7 +115,7 @@ _model_aliases: Dict[str, str] = {
 max_features_map = {'mlp': 256, 'lstm': 128, 'gru': 128, 'cnn': 64,
 ```
 
-### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/enrichers/news_impact_enricher.py:232`
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/enrichers/news_impact_enricher.py:233`
 **Problem:** Hardcoded model map/alias registry detected.
 **Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
 **Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
@@ -3142,7 +125,7 @@ max_features_map = {'mlp': 256, 'lstm': 128, 'gru': 128, 'cnn': 64,
 significance_map = {'low': 0, 'medium': 1, 'high': 2}
 ```
 
-### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/enrichers/news_impact_enricher.py:393`
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/enrichers/news_impact_enricher.py:397`
 **Problem:** Hardcoded model map/alias registry detected.
 **Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
 **Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
@@ -3202,7 +185,7 @@ TICKER_ALIASES = {
 self.BASELINE_MODELS = {
 ```
 
-### config_factory / HARDCODED_MODEL_LIST — `models/ensemble/enhanced_ensemble.py:187`
+### config_factory / HARDCODED_MODEL_LIST — `models/ensemble/enhanced_ensemble.py:189`
 **Problem:** Hardcoded model list detected.
 **Why:** Duplicated model lists across factory/arena/pipeline drift over time.
 **Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
@@ -3212,7 +195,7 @@ self.BASELINE_MODELS = {
 light_model_types = ['catboost', 'lightgbm', 'xgboost',
 ```
 
-### config_factory / HARDCODED_MODEL_LIST — `models/loader.py:349`
+### config_factory / HARDCODED_MODEL_LIST — `models/loader.py:387`
 **Problem:** Hardcoded model list detected.
 **Why:** Duplicated model lists across factory/arena/pipeline drift over time.
 **Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
@@ -3252,7 +235,7 @@ color_map = {
 model_names = ['price_predictor', 'trend_analyzer', 'risk_model', 'portfolio_optimizer']
 ```
 
-### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `monitoring/ml_analytics.py:38`
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `monitoring/ml_analytics.py:39`
 **Problem:** Hardcoded model map/alias registry detected.
 **Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
 **Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
@@ -3262,7 +245,7 @@ model_names = ['price_predictor', 'trend_analyzer', 'risk_model', 'portfolio_opt
 model_files = {'performance_predictor':
 ```
 
-### config_factory / HARDCODED_MODEL_LIST — `monitoring/ml_analytics.py:67`
+### config_factory / HARDCODED_MODEL_LIST — `monitoring/ml_analytics.py:78`
 **Problem:** Hardcoded model list detected.
 **Why:** Duplicated model lists across factory/arena/pipeline drift over time.
 **Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
@@ -3282,17 +265,17 @@ problem_models = ['performance', 'memory', 'disk', 'network']
 prefix_map = {
 ```
 
-### config_factory / HARDCODED_MODEL_LIST — `pipeline/hybrid/final_stages_executor.py:84`
+### config_factory / HARDCODED_MODEL_LIST — `pipeline/hybrid/final_stages_executor.py:87`
 **Problem:** Hardcoded model list detected.
 **Why:** Duplicated model lists across factory/arena/pipeline drift over time.
 **Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
 **Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
 **Confidence:** medium  
 ```python
-heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet',
+heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet']
 ```
 
-### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/data_preparation_service.py:233`
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/data_preparation_service.py:272`
 **Problem:** Hardcoded model map/alias registry detected.
 **Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
 **Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
@@ -3322,7 +305,7 @@ known_aliases = {
 regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
 ```
 
-### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/prediction_context_manager.py:63`
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/prediction_context_manager.py:73`
 **Problem:** Hardcoded model map/alias registry detected.
 **Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
 **Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
@@ -3332,7 +315,7 @@ regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
 regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
 ```
 
-### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `predictions/models_predict.py:133`
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `predictions/models_predict.py:147`
 **Problem:** Hardcoded model map/alias registry detected.
 **Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
 **Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
@@ -3372,7 +355,7 @@ timestamp=datetime.now(),
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `algorithms/advanced_backtest_engine.py:115`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `algorithms/advanced_backtest_engine.py:127`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3432,7 +415,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/knn_similarity_finder.py:71`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/knn_similarity_finder.py:94`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3472,7 +455,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:101`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:102`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3482,7 +465,7 @@ except Exception as e:
 except (AttributeError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:185`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:192`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3492,7 +475,7 @@ except (AttributeError, Exception) as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:296`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:303`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3502,7 +485,7 @@ except Exception as e:
 except (ValueError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:316`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:323`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3512,7 +495,7 @@ except (ValueError, Exception) as e:
 except (Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:408`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:426`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3562,7 +545,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/calculators/fama_french_factors.py:92`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/calculators/fama_french_factors.py:94`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3642,7 +625,7 @@ except Exception as exc:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/market_context_analyzer.py:55`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/market_context_analyzer.py:56`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3752,6 +735,26 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/reporting/results_manager.py:217`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/reporting/visualization.py:39`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `backtesting/advanced/advanced_engine.py:180`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -3762,7 +765,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:128`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:129`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3772,7 +775,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:216`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:217`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3782,7 +785,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:231`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:232`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3792,7 +795,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:262`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:263`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3802,7 +805,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:331`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:336`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3862,7 +865,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cache/cache_manager.py:152`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cache/cache_manager.py:159`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3872,7 +875,17 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cache/cache_manager.py:294`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cache/cache_manager.py:301`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cloud/gcs_manager.py:106`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3912,6 +925,36 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:95`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:135`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:212`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:235`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -3923,6 +966,16 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `core/logging/exception_decorator.py:17`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/security/secure_secrets_manager.py:117`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3952,7 +1005,7 @@ except (ValueError, TypeError, Exception) as e:
 except (ValueError, TypeError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/bigquery_collector.py:62`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/system/archive_manager.py:59`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3960,6 +1013,76 @@ except (ValueError, TypeError, Exception) as e:
 **Confidence:** medium  
 ```python
 except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/alternative_me_collector.py:67`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/alternative_me_collector.py:112`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/alternative_me_collector.py:138`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/bigquery_collector.py:45`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/bigquery_collector.py:61`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/cftc_collector.py:81`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/cftc_collector.py:143`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/cftc_collector.py:223`
@@ -3982,7 +1105,47 @@ except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/free_google_trends_collector.py:68`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/collector_factory.py:87`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/custom_csv_collector.py:43`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/economic_calendar_collector.py:101`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/fred_collector.py:112`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/free_google_trends_collector.py:67`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -3993,6 +1156,36 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/free_google_trends_collector.py:101`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/google_news_collector.py:201`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/huggingface_collector.py:47`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/insider_collector.py:68`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4022,7 +1215,37 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/insider_collector.py:185`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/local_file_collector.py:56`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/newsapi_collector.py:193`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/put_call_ratio_collector.py:73`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4042,6 +1265,76 @@ except Exception as e:
 except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/reddit_sentiment_collector.py:75`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/reddit_sentiment_collector.py:160`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/rss_collector.py:169`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as exc:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/rss_collector.py:185`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as exc:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/sec_filings_collector.py:202`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/vix_collector.py:92`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/vix_collector.py:161`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/yf_collector.py:226`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -4053,6 +1346,16 @@ except (ValueError, TypeError, Exception) as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/connectors/bigquery_connector.py:30`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/connectors/bigquery_connector.py:51`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4242,7 +1545,17 @@ except (duckdb.Error, Exception) as e:
 except (duckdb.Error, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_versioning.py:215`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_versioning.py:35`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_versioning.py:217`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4273,6 +1586,16 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `data/validation/event_dataset_validator.py:63`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `devtools/rule_generator.py:53`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4432,7 +1755,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:255`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/news_impact_enricher.py:326`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4442,7 +1765,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:271`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:272`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4462,7 +1785,17 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:304`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:305`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:321`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4503,6 +1836,16 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_cache.py:271`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_orchestrator.py:87`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4562,7 +1905,87 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `features/nlp/models/finbert_pipeline.py:51`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/news_impact_classifier.py:51`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/news_impact_classifier.py:68`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/nlp/extractors/entity_extractor.py:74`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/nlp/models/finbert_pipeline.py:52`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/nlp/processors/news_harmonizer.py:13`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/smart_selector.py:252`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/smart_selector.py:297`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/smart_selector.py:308`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/volatility_driver_selector.py:74`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4583,6 +2006,46 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `features/validation/feature_leakage_guard.py:190`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:154`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:185`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:217`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:238`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4643,6 +2106,36 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `main/system_orchestrator.py:224`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/memory/diary_engine.py:582`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/memory/diary_engine.py:618`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/memory/diary_engine.py:745`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -4723,6 +2216,16 @@ except (ValueError, TypeError, Exception) as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `metrics/model/ml_evaluator.py:87`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `metrics/model/ml_evaluator.py:101`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5012,6 +2515,16 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/overfitting_detection/metrics.py:22`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/detector.py:26`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -5102,7 +2615,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/confidence_calibrator.py:59`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/confidence_calibrator.py:60`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5112,7 +2625,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/confidence_calibrator.py:71`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/confidence_calibrator.py:72`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5132,6 +2645,16 @@ except Exception as e:
 except (ValueError, TypeError, KeyError, Exception) as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:172`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:200`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -5142,7 +2665,67 @@ except (ValueError, TypeError, KeyError, Exception) as e:
 except (ValueError, TypeError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/enhanced_ensemble.py:134`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:220`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:333`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:353`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:414`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:519`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/enhanced_ensemble.py:136`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/enhanced_ensemble.py:177`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5192,7 +2775,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:74`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:75`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5202,7 +2785,7 @@ except Exception as e:
 except (ValueError, TypeError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:169`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:177`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5212,7 +2795,7 @@ except (ValueError, TypeError, Exception) as e:
 except (ValueError, TypeError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:183`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:191`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5222,7 +2805,57 @@ except (ValueError, TypeError, Exception) as e:
 except (ValueError, TypeError, ImportError, Exception) as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:241`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:252`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as fallback_error:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_pool.py:137`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/adaptive_selector.py:131`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/adaptive_selector.py:209`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/adaptive_selector.py:281`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5242,7 +2875,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/smart_selector.py:42`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/smart_selector.py:43`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5310,6 +2943,26 @@ except (ValueError, TypeError, Exception) as e:
 **Confidence:** medium  
 ```python
 except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/drift_calculator.py:199`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/drift_calculator.py:286`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/history.py:39`
@@ -5402,6 +3055,26 @@ except Exception as e:
 except Exception as e2:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/transformer_model.py:348`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/prototypes/prototype.py:98`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `models/registry/model_registry.py:62`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -5432,6 +3105,16 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/statistics/model_statistics.py:84`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/catboost_model.py:76`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -5453,6 +3136,16 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/catboost_model.py:103`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/catboost_model.py:148`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5512,7 +3205,47 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/ml_analytics.py:220`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/ml_analytics.py:231`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:129`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:187`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:243`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:427`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5542,7 +3275,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:62`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:71`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5552,7 +3285,7 @@ except Exception as e:
 except (ValueError, TypeError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:200`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:209`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5562,7 +3295,7 @@ except (ValueError, TypeError, Exception) as e:
 except (ValueError, TypeError, Exception) as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:243`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:254`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5622,7 +3355,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/final_stages_executor.py:182`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/final_stages_executor.py:184`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5643,6 +3376,16 @@ except Exception as e:
 ```
 
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/light_models_trainer.py:144`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/model_training_orchestrator.py:120`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5682,6 +3425,16 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/selected_features_processor.py:105`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/test_mode_manager.py:43`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -5712,7 +3465,7 @@ except (ValueError, TypeError, Exception) as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/analytics.py:19`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/analytics.py:20`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5722,7 +3475,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/analytics.py:81`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/analytics.py:92`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5772,7 +3525,17 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/modeling/orchestration.py:73`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/modeling/orchestration.py:55`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/modeling/orchestration.py:75`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5792,7 +3555,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:78`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:79`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5802,7 +3565,17 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:274`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:301`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:349`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5852,6 +3625,16 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/scaler_service.py:96`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/stage_0_setup.py:76`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -5882,7 +3665,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `predictions/models_predict.py:49`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `predictions/models_predict.py:52`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5892,7 +3675,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `predictions/models_predict.py:126`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `predictions/models_predict.py:140`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5932,7 +3715,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:91`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:97`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5942,7 +3725,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:119`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:125`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5952,7 +3735,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:159`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:168`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -5962,7 +3745,57 @@ except Exception as e:
 except Exception as e:
 ```
 
-### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:196`
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:205`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:41`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:86`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:144`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:239`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `simulation/simulation_engine.py:115`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -6002,7 +3835,27 @@ except Exception as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/portfolio_manager.py:272`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/signal_processor.py:71`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/signal_processor.py:88`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
 **Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
@@ -6102,6 +3955,16 @@ except (IOError, TypeError, Exception) as e:
 except Exception as e:
 ```
 
+### error_policy / LOGGER_ERROR_THEN_RAISE — `utils/trading_calendar.py:78`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
 ### error_policy / LOGGER_ERROR_THEN_RAISE — `validation/time_series_validator.py:225`
 **Problem:** Exception is logged and re-raised in the same handler.
 **Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
@@ -6112,7 +3975,7 @@ except Exception as e:
 except Exception as e:
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/advanced_backtest_engine.py:79`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/advanced_backtest_engine.py:91`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6122,7 +3985,7 @@ except Exception as e:
 return float(drawdown.min())
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/advanced_backtest_engine.py:162`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/advanced_backtest_engine.py:181`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6132,7 +3995,7 @@ return float(drawdown.min())
 max_dd = drawdown.min()
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/walk_forward_optimizer.py:137`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/walk_forward_optimizer.py:141`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6162,7 +4025,7 @@ metrics['max_drawdown'] = float(drawdown_series.min()
 "max_drawdown": float(clean_drawdown.min()) if not clean_drawdown.empty else 0.0,
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `analytics/arena/arena_battle.py:407`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `analytics/arena/arena_battle.py:425`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6172,7 +4035,7 @@ metrics['max_drawdown'] = float(drawdown_series.min()
 return float(np.min(drawdown))
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `backtesting/advanced/advanced_engine.py:211`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `backtesting/advanced/advanced_engine.py:215`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6182,17 +4045,17 @@ return float(np.min(drawdown))
 max_dd = drawdown.min()
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `backtesting/advanced/advanced_engine.py:377`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `backtesting/advanced/advanced_engine.py:404`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-return float(drawdown.min())
+min_drawdown = drawdown.min()
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `features/enrichers/technical_analysis_enricher.py:251`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `features/enrichers/technical_analysis_enricher.py:268`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6212,7 +4075,7 @@ df_enriched['CURRENT_DRAWDOWN'
 return float(drawdown.min())
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `metrics/financial/financial_metrics_library.py:86`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `metrics/financial/financial_metrics_library.py:98`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6232,7 +4095,7 @@ return float(drawdowns.min()) if not drawdowns.empty else 0.0
 max_drawdown = drawdowns.min()
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `pipeline/stages/evaluation/metrics_calculator.py:91`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `pipeline/stages/evaluation/metrics_calculator.py:95`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6242,7 +4105,7 @@ max_drawdown = drawdowns.min()
 max_drawdown = drawdown.min()
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:429`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:444`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6252,7 +4115,7 @@ max_drawdown = drawdown.min()
 Dict[str, Any]], daily_pnl: float, current_drawdown: float) ->Dict[
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:438`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:453`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6262,7 +4125,7 @@ Dict[str, Any]], daily_pnl: float, current_drawdown: float) ->Dict[
 current_drawdown: Current drawdown
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:466`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:481`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6272,7 +4135,7 @@ current_drawdown: Current drawdown
 if current_drawdown > self.limits['max_drawdown']:
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:468`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:483`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6282,7 +4145,7 @@ if current_drawdown > self.limits['max_drawdown']:
 current_drawdown, 'limit': self.limits['max_drawdown'],
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:469`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:484`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6299,27 +4162,27 @@ current_drawdown, 'limit': self.limits['max_drawdown'],
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-current_drawdown = drawdowns.iloc[-1] if hasattr(drawdowns, 'iloc') else (drawdowns[-1] if len(drawdowns) > 0 else 0)
+current_drawdown_pct = float(
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:88`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:93`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-'current_drawdown': current_drawdown,
+'current_drawdown': current_drawdown_pct,
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:150`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:94`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-current_drawdown = drawdowns.iloc[-1] if len(drawdowns) > 0 else 0
+'current_drawdown_pct': current_drawdown_pct,
 ```
 
 ### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:156`
@@ -6329,27 +4192,47 @@ current_drawdown = drawdowns.iloc[-1] if len(drawdowns) > 0 else 0
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-'current_drawdown': current_drawdown
+current_drawdown_pct = float(drawdowns.iloc[-1]) if len(drawdowns) > 0 else 0.0
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:219`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:164`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-if portfolio_metrics.get('current_drawdown', 0) > thresholds.get('max_drawdown_threshold', 1.0):
+'current_drawdown': current_drawdown_pct,
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:236`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:165`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-if portfolio_metrics.get('current_drawdown', 0) > 0.10: # 10% drawdown
+'current_drawdown_pct': current_drawdown_pct
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:228`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+if portfolio_metrics.get('current_drawdown_pct', portfolio_metrics.get('current_drawdown', 0)) > thresholds.get('max_drawdown_threshold', 1.0):
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:245`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+if portfolio_metrics.get('current_drawdown_pct', portfolio_metrics.get('current_drawdown', 0)) > 0.10: # 10% drawdown
 ```
 
 ### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:65`
@@ -6359,10 +4242,10 @@ if portfolio_metrics.get('current_drawdown', 0) > 0.10: # 10% drawdown
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0
+max_drawdown_signed = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:67`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:68`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6372,7 +4255,7 @@ max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0
 current_drawdown = 0.0
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:71`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:72`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6382,7 +4265,7 @@ current_drawdown = 0.0
 current_drawdown = (peak - current) / peak if peak > 0 else 0.0
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:79`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:82`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6392,24 +4275,14 @@ current_drawdown = (peak - current) / peak if peak > 0 else 0.0
 "current_drawdown": current_drawdown,
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:117`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:83`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
-max_drawdown = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0
-```
-
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:119`
-**Problem:** Drawdown calculation found; sign convention needs review.
-**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
-**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
-**Test:** Test monotonic loss series and assert documented sign convention.
-**Confidence:** low  
-```python
-current_drawdown = 0.0
+"current_drawdown_pct": current_drawdown,
 ```
 
 ### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:123`
@@ -6419,10 +4292,30 @@ current_drawdown = 0.0
 **Test:** Test monotonic loss series and assert documented sign convention.
 **Confidence:** low  
 ```python
+max_drawdown_signed = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:126`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown = 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:130`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
 current_drawdown = (peak - current) / peak if peak > 0 else 0.0
 ```
 
-### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:129`
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:138`
 **Problem:** Drawdown calculation found; sign convention needs review.
 **Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
 **Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
@@ -6432,14 +4325,14 @@ current_drawdown = (peak - current) / peak if peak > 0 else 0.0
 "current_drawdown": current_drawdown,
 ```
 
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `analytics/calculators/fama_french_factors.py:17`
-**Problem:** Top-level import of heavy optional dependency 'yfinance'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:139`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
 ```python
-import yfinance as yf
+"current_drawdown_pct": current_drawdown,
 ```
 
 ### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/architectures.py:1`
@@ -6462,7 +4355,7 @@ import torch
 import torch.nn as nn
 ```
 
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/torch_models.py:6`
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/utils/utils.py:15`
 **Problem:** Top-level import of heavy optional dependency 'torch'.
 **Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
 **Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
@@ -6470,46 +4363,6 @@ import torch.nn as nn
 **Confidence:** high  
 ```python
 import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/torch_models.py:7`
-**Problem:** Top-level import of heavy optional dependency 'torch.nn'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch.nn as nn
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/utils/utils.py:14`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `data/collectors/vix_collector.py:22`
-**Problem:** Top-level import of heavy optional dependency 'yfinance'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import yfinance as yf
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `data/collectors/vix_collector.py:100`
-**Problem:** Top-level import of heavy optional dependency 'yfinance'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import yfinance as yf
 ```
 
 ### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `data/collectors/yf_collector.py:9`
@@ -6520,16 +4373,6 @@ import yfinance as yf
 **Confidence:** high  
 ```python
 import yfinance as yf
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/extractors/entity_extractor.py:4`
-**Problem:** Top-level import of heavy optional dependency 'spacy'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import spacy
 ```
 
 ### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/models/roberta_sentiment.py:2`
@@ -6580,106 +4423,6 @@ import torch
 **Confidence:** high  
 ```python
 from transformers import pipeline, Pipeline
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/ensemble/enhanced_ensemble.py:9`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:215`
-**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras.models'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-from tensorflow.keras.models import load_model
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:240`
-**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras.models'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-from tensorflow.keras.models import load_model
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:246`
-**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import tensorflow as tf
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:252`
-**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras.models'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-from tensorflow.keras.models import load_model
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:257`
-**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import tensorflow as tf
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:304`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:347`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:348`
-**Problem:** Top-level import of heavy optional dependency 'torch.nn'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch.nn as nn
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/loader.py:445`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
 ```
 
 ### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/autoencoder_model.py:4`
@@ -6802,76 +4545,6 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 ```
 
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/transformer_model.py:128`
-**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras.optimizers'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-from tensorflow.keras.optimizers import Adam
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/transformer_model.py:168`
-**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import tensorflow as tf
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `predictions/deep_predict.py:14`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `sentiment/sentiment_models.py:26`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `sentiment/sentiment_models.py:27`
-**Problem:** Top-level import of heavy optional dependency 'transformers'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `utils/checkpoint_manager.py:50`
-**Problem:** Top-level import of heavy optional dependency 'torch'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import torch
-```
-
-### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `utils/trading_calendar.py:5`
-**Problem:** Top-level import of heavy optional dependency 'yfinance'.
-**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
-**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
-**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
-**Confidence:** high  
-```python
-import yfinance as yf
-```
-
 ### security / FILE_READ_NEEDS_PATH_VALIDATION — `cli/pipeline_data_loader.py:19`
 **Problem:** File read detected in config/data loading path.
 **Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
@@ -6882,14 +4555,14 @@ import yfinance as yf
 df = pd.read_parquet(path)
 ```
 
-### security / ENV_LOADING_REVIEW — `colab/__init__.py:16`
+### security / ENV_LOADING_REVIEW — `colab/__init__.py:20`
 **Problem:** .env loading/search path detected.
 **Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
 **Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
 **Test:** Test that parent/home .env is not loaded in production/test mode.
 **Confidence:** medium  
 ```python
-from .environment import ColabEnvironment
+"ColabEnvironment": ("src.colab.environment", "ColabEnvironment"),
 ```
 
 ### security / FILE_READ_NEEDS_PATH_VALIDATION — `colab/config/config_loader.py:136`
@@ -7262,7 +4935,7 @@ Hierarchy: os.environ -> Local Cache.
 for key, value in os.environ.items():
 ```
 
-### security / FILE_READ_NEEDS_PATH_VALIDATION — `data/collectors/custom_csv_collector.py:55`
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data/collectors/custom_csv_collector.py:53`
 **Problem:** File read detected in config/data loading path.
 **Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
 **Fix:** Route all config paths through a single PathSecurityValidator before reading.
@@ -7362,14 +5035,14 @@ gcp_project_id = os.environ.get('GCP_PROJECT_ID')
 with open(audit_file, 'w') as f:
 ```
 
-### security / FILE_READ_NEEDS_PATH_VALIDATION — `models/loader.py:204`
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `models/loader.py:218`
 **Problem:** File read detected in config/data loading path.
 **Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
 **Fix:** Route all config paths through a single PathSecurityValidator before reading.
 **Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
 **Confidence:** medium  
 ```python
-with open(path, 'rb') as f:
+with open(trusted_path, 'rb') as f:
 ```
 
 ### security / ENV_LOADING_REVIEW — `models/neural/base_neural.py:34`
@@ -7452,6 +5125,16 @@ with open(candidate, encoding="utf-8") as f:
 os.environ.setdefault('HF_HUB_DOWNLOAD_TIMEOUT', '300')  # 5 minutes
 ```
 
+### security / ENV_LOADING_REVIEW — `utils/artifact_security.py:43`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+raw = os.environ.get("TRADING_TRUSTED_ARTIFACT_ROOTS", "")
+```
+
 
 ## P3
 
@@ -7466,7 +5149,7 @@ class RiskParityAllocator:
 ```
 
 ### architecture / GOD_CLASS_REVIEW — `analytics/context/market_context_analyzer.py:10`
-**Problem:** Class 'MarketContextAnalyzer' has 40 methods.
+**Problem:** Class 'MarketContextAnalyzer' has 41 methods.
 **Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
 **Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
 **Test:** Test public behavior of the class before extraction.
@@ -7496,7 +5179,7 @@ class DataManager(IDatabaseManager):
 ```
 
 ### architecture / LONG_MODULE_REVIEW — `meta_learning/memory/diary_engine.py:1`
-**Problem:** Long module detected: 703 non-comment LOC.
+**Problem:** Long module detected: 723 non-comment LOC.
 **Why:** Large modules tend to mix responsibilities, but mechanical splitting before tests is risky.
 **Fix:** Add characterization tests first, then split by data collection/validation/features/targets/split/training/evaluation/reporting.
 **Test:** Characterization test should compare key outputs before and after refactor.
@@ -7526,7 +5209,7 @@ class SecurityConstraintEngine:
 ```
 
 ### architecture / GOD_CLASS_REVIEW — `optimization/portfolio/optimizer.py:29`
-**Problem:** Class 'PortfolioOptimizer' has 27 methods.
+**Problem:** Class 'PortfolioOptimizer' has 28 methods.
 **Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
 **Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
 **Test:** Test public behavior of the class before extraction.
@@ -7725,7 +5408,7 @@ df_enriched = df.copy()
 df_enriched = df.copy()
 ```
 
-### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:247`
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:249`
 **Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
 **Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
 **Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
@@ -7735,7 +5418,7 @@ df_enriched = df.copy()
 df_enriched = df.copy()
 ```
 
-### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:301`
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:304`
 **Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
 **Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
 **Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
@@ -7745,7 +5428,7 @@ df_enriched = df.copy()
 logger.error(f"No time column found in news data. Available columns: {news_df.columns.tolist()[:10]}. Skipping news impact enrichment.")
 ```
 
-### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:358`
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:361`
 **Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
 **Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
 **Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
@@ -8305,7 +5988,7 @@ f'{datetime.now().year}-01-01')
 'analysis_timestamp': datetime.now().isoformat()}
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:94`
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:95`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8315,7 +5998,7 @@ f'{datetime.now().year}-01-01')
 model_type, 'registered_at': datetime.now(), 'activations':
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:344`
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:351`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8325,7 +6008,7 @@ model_type, 'registered_at': datetime.now(), 'activations':
 battle.end_time = datetime.now()
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:358`
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:365`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8335,7 +6018,7 @@ battle.end_time = datetime.now()
 'timestamp': datetime.now().isoformat()}
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:444`
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:462`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8465,7 +6148,7 @@ cutoff_date = datetime.now() - timedelta(days=days)
 'last_updated': datetime.now().isoformat()}
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:99`
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:101`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8475,7 +6158,7 @@ cutoff_date = datetime.now() - timedelta(days=days)
 if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:143`
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:145`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8485,7 +6168,7 @@ if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache
 self.last_cache_time = datetime.now()
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:188`
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:190`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8495,7 +6178,7 @@ self.last_cache_time = datetime.now()
 if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:221`
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:224`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8515,7 +6198,7 @@ self.last_cache_time = datetime.now()
 "selection_time": datetime.now(),
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/context/market_context_analyzer.py:163`
+### determinism / NON_INJECTED_CLOCK — `analytics/context/market_context_analyzer.py:190`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8525,7 +6208,7 @@ self.last_cache_time = datetime.now()
 ) else datetime.now().hour
 ```
 
-### determinism / NON_INJECTED_CLOCK — `analytics/context/market_context_analyzer.py:167`
+### determinism / NON_INJECTED_CLOCK — `analytics/context/market_context_analyzer.py:194`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8625,7 +6308,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 'analysis_timestamp': datetime.now().isoformat(),
 ```
 
-### determinism / NON_INJECTED_CLOCK — `backtesting/advanced/advanced_engine.py:264`
+### determinism / NON_INJECTED_CLOCK — `backtesting/advanced/advanced_engine.py:268`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8635,7 +6318,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 report: dict[str, Any] = {'timestamp': datetime.now().isoformat
 ```
 
-### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:116`
+### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:117`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8645,7 +6328,7 @@ report: dict[str, Any] = {'timestamp': datetime.now().isoformat
 self.calibration_history.append({'timestamp': datetime.now(),
 ```
 
-### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:140`
+### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:141`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8655,7 +6338,7 @@ self.calibration_history.append({'timestamp': datetime.now(),
 now = datetime.now()
 ```
 
-### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:189`
+### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:190`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8905,7 +6588,7 @@ df['collected_at'] = datetime.now()
 base_date = datetime.now() - timedelta(days=140)
 ```
 
-### determinism / NON_INJECTED_CLOCK — `data/collectors/economic_calendar_collector.py:109`
+### determinism / NON_INJECTED_CLOCK — `data/collectors/economic_calendar_collector.py:108`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -8915,7 +6598,7 @@ base_date = datetime.now() - timedelta(days=140)
 start = datetime.now() - timedelta(days=days_back)
 ```
 
-### determinism / NON_INJECTED_CLOCK — `data/collectors/economic_calendar_collector.py:110`
+### determinism / NON_INJECTED_CLOCK — `data/collectors/economic_calendar_collector.py:109`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -9105,7 +6788,7 @@ reference_now = kwargs.get('reference_now', datetime.now())
 'timestamp': datetime.now().isoformat()}
 ```
 
-### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:90`
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:92`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -9115,7 +6798,7 @@ reference_now = kwargs.get('reference_now', datetime.now())
 'description': description, 'created_at': datetime.now().
 ```
 
-### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:122`
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:124`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -9125,7 +6808,7 @@ reference_now = kwargs.get('reference_now', datetime.now())
 file_age = datetime.now() - current_mtime
 ```
 
-### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:134`
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:136`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -9135,7 +6818,7 @@ file_age = datetime.now() - current_mtime
 metadata_age = datetime.now() - stored_mtime
 ```
 
-### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:265`
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:267`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -9235,7 +6918,7 @@ start_time = pd.Timestamp.now()
 end_time = pd.Timestamp.now()
 ```
 
-### determinism / NON_INJECTED_CLOCK — `features/feature_selection_cache.py:125`
+### determinism / NON_INJECTED_CLOCK — `features/feature_selection_cache.py:126`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10025,7 +7708,7 @@ timestamp=datetime.now(),
 'timestamp': datetime.now(),
 ```
 
-### determinism / NON_INJECTED_CLOCK — `models/ensemble/correlation/correlation_engine.py:476`
+### determinism / NON_INJECTED_CLOCK — `models/ensemble/correlation/correlation_engine.py:480`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10125,7 +7808,7 @@ performance_tracker.items()}, 'exported_at': datetime.now()
 timestamp=datetime.now()
 ```
 
-### determinism / NON_INJECTED_CLOCK — `models/model_selector/smart_selector.py:289`
+### determinism / NON_INJECTED_CLOCK — `models/model_selector/smart_selector.py:290`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10415,7 +8098,7 @@ self.metrics['last_check_time'] = datetime.now()  # type: ignore
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 ```
 
-### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:164`
+### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:175`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10425,7 +8108,7 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 return {'timestamp': datetime.now().isoformat(), 'metrics':
 ```
 
-### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:244`
+### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:255`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10435,7 +8118,7 @@ return {'timestamp': datetime.now().isoformat(), 'metrics':
 drift_detected, 'timestamp': datetime.now().isoformat()}
 ```
 
-### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:274`
+### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:285`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10455,7 +8138,7 @@ cutoff = datetime.now() - timedelta(days=window_days)
 return {'timestamp': datetime.now().isoformat(), 'system': futures[
 ```
 
-### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:68`
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:79`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10465,7 +8148,7 @@ return {'timestamp': datetime.now().isoformat(), 'system': futures[
 results = {'timestamp': datetime.now().isoformat(),
 ```
 
-### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:106`
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:117`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10475,7 +8158,7 @@ results = {'timestamp': datetime.now().isoformat(),
 return {'timestamp': datetime.now().isoformat(), 'metrics':
 ```
 
-### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:136`
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:147`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10485,7 +8168,7 @@ return {'timestamp': datetime.now().isoformat(), 'metrics':
 cutoff = datetime.now() - timedelta(days=window_days)
 ```
 
-### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:167`
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:178`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10885,7 +8568,7 @@ days = (datetime.now() - datetime.fromisoformat(last_ts)).days
 datetime.now().isoformat()}
 ```
 
-### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_executor.py:192`
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_executor.py:194`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10895,7 +8578,7 @@ datetime.now().isoformat()}
 return {'timestamp': datetime.now().isoformat(), 'batch_name': self
 ```
 
-### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_executor.py:202`
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_executor.py:204`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10955,7 +8638,7 @@ timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 ```
 
-### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/model_training_orchestrator.py:221`
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/model_training_orchestrator.py:223`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -10995,7 +8678,7 @@ accumulated_results = {'timestamp': datetime.now().isoformat(),
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 ```
 
-### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/analytics.py:93`
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/analytics.py:104`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -11255,7 +8938,7 @@ timestamp = datetime.now(timezone.utc)
 stage_6_results = {'timestamp': datetime.now().isoformat(),
 ```
 
-### determinism / NON_INJECTED_CLOCK — `pipeline/stages/trading/recommendation_engine.py:496`
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/trading/recommendation_engine.py:508`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -11265,7 +8948,7 @@ stage_6_results = {'timestamp': datetime.now().isoformat(),
 'timestamp': datetime.now().isoformat()}
 ```
 
-### determinism / NON_INJECTED_CLOCK — `predictions/caching.py:115`
+### determinism / NON_INJECTED_CLOCK — `predictions/caching.py:114`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -11275,7 +8958,7 @@ stage_6_results = {'timestamp': datetime.now().isoformat(),
 if ttl_seconds and (datetime.now() - timestamp).total_seconds(
 ```
 
-### determinism / NON_INJECTED_CLOCK — `predictions/caching.py:130`
+### determinism / NON_INJECTED_CLOCK — `predictions/caching.py:129`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -11285,7 +8968,7 @@ if ttl_seconds and (datetime.now() - timestamp).total_seconds(
 self.cache[cache_key] = result, datetime.now()
 ```
 
-### determinism / NON_INJECTED_CLOCK — `risk/elite_risk_metrics.py:222`
+### determinism / NON_INJECTED_CLOCK — `risk/elite_risk_metrics.py:235`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -11295,7 +8978,7 @@ self.cache[cache_key] = result, datetime.now()
 position_risks, 'timestamp': datetime.now().isoformat(),
 ```
 
-### determinism / NON_INJECTED_CLOCK — `risk/elite_risk_metrics.py:476`
+### determinism / NON_INJECTED_CLOCK — `risk/elite_risk_metrics.py:491`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.
@@ -11595,7 +9278,7 @@ f"unified_plan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
 f"unified_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
 ```
 
-### determinism / NON_INJECTED_CLOCK — `utils/trading_calendar.py:17`
+### determinism / NON_INJECTED_CLOCK — `utils/trading_calendar.py:16`
 **Problem:** Direct current-time call detected.
 **Why:** Runtime and tests become nondeterministic; relative dates can drift.
 **Fix:** Inject a clock/reference_now parameter or central time provider.

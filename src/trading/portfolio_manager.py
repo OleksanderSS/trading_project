@@ -272,4 +272,4 @@ class PortfolioManager:
         except Exception as e:
             self.logger.error(
                 f'❌ Critical failure during portfolio rebalancing: {e}')
-            return []
+            raise RuntimeError("Critical failure during portfolio rebalancing") from e

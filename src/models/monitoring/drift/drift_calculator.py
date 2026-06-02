@@ -198,7 +198,7 @@ class DriftCalculator:
             
         except Exception as e:
             self.logger.error(f"Error calculating performance metrics: {e}")
-            return {}
+            raise RuntimeError("Failed to calculate performance metrics") from e
     
     def analyze_performance_trend(self, performance_history: list) -> Dict[str, Any]:
         """
@@ -285,7 +285,7 @@ class DriftCalculator:
             
         except Exception as e:
             self.logger.error(f"Error calculating confidence stats: {e}")
-            return {}
+            raise RuntimeError("Failed to calculate confidence statistics") from e
     
     def calculate_confidence_drift(self, 
                                   current_confidences: np.ndarray,

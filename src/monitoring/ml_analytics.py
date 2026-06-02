@@ -12,6 +12,7 @@ from src.core.logging.logger import ProjectLogger
 from src.analytics.data_managers.model_results_manager import ModelResultsManager as ResultsManager
 from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
 from src.data.management.data_manager import DataManager
+from src.utils.artifact_security import resolve_trusted_artifact_path
 logger = ProjectLogger.get_logger('MLAnalytics')
 
 
@@ -44,12 +45,22 @@ class MLAnalytics:
             for model_name, filename in model_files.items():
                 model_path = self.model_dir / filename
                 if model_path.exists():
-                    self.models[model_name] = joblib.load(model_path)
+                    trusted_path = resolve_trusted_artifact_path(
+                        model_path,
+                        allowed_suffixes={'.pkl', '.joblib'},
+                        must_exist=True,
+                    )
+                    self.models[model_name] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'Loaded ML monitoring model: {model_name}')
             scaler_path = self.model_dir / 'resource_scaler.pkl'
             if scaler_path.exists():
-                self.scalers['resource_scaler'] = joblib.load(scaler_path)
+                trusted_path = resolve_trusted_artifact_path(
+                    scaler_path,
+                    allowed_suffixes={'.pkl', '.joblib'},
+                    must_exist=True,
+                )
+                self.scalers['resource_scaler'] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
         except Exception as e:
             logger.error(f'Failed to load monitoring ML models: {e}')
 

@@ -52,7 +52,7 @@ class ContextRuleGenerator:
                 return
         except Exception as e:
             logger.error(f"Failed to load historical data: {e}", exc_info=True)
-            return
+            raise RuntimeError("Failed to load historical data for rule generation") from e
 
         # 2. Generate rules
         generated_rules = self._generate_rules(historical_data)

@@ -88,7 +88,7 @@ class SignalProcessor:
         except Exception as e:
             self.logger.error(f"Виникла помилка: {e}", exc_info=True)
             self.logger.warning(f"KNN analysis failed for {ticker}: {e}")
-            return None
+            raise RuntimeError(f"KNN analysis failed for {ticker}") from e
 
     def _extract_prediction_value(self, prediction: dict[str, Any]) -> float:
         pred_value = prediction.get("predictions")

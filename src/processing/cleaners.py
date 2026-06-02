@@ -52,7 +52,7 @@ class DataCleaner:
                     rolling_mean = log_returns.rolling(20, min_periods=1).mean()
                     rolling_std = log_returns.rolling(20, min_periods=1).std()
                 z_scores = (log_returns - rolling_mean) / rolling_std
-                col_mask = (z_scores.abs() > threshold).fillna(False)
+                col_mask = (z_scores.abs() > threshold).where(z_scores.notna(), False)
                 total_mask |= col_mask
             outlier_count = total_mask.sum()
             if outlier_count > 0:
@@ -144,7 +144,7 @@ def safe_fill(df: pd.DataFrame, zero_fill_cols: Optional[List[str]]=None,
     if zero_fill_cols:
         for col in zero_fill_cols:
             if col in df.columns:
-                df[col] = df[col].fillna(0)
+                df[col] = df[col].where(df[col].notna(), 0)
     num_cols = df.select_dtypes(include=['number']).columns
     if 'ticker' in df.columns:
         df[num_cols] = df.groupby('ticker')[num_cols].ffill()

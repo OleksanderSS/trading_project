@@ -16,6 +16,7 @@ from src.data.management.data_manager import DataManager
 from src.core.logging.notifier import UniversalNotifier as Notifier
 from src.core.cache.cache_manager import CacheManager
 from src.monitoring.infrastructure.resource_monitor import ResourceMonitor
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 
 class HealthHub:
@@ -91,13 +92,23 @@ class HealthHub:
         for model_name, filename in model_files.items():
             model_path = self.model_dir / filename
             if model_path.exists():
-                self.models[model_name] = joblib.load(model_path)
+                trusted_path = resolve_trusted_artifact_path(
+                    model_path,
+                    allowed_suffixes={'.pkl', '.joblib'},
+                    must_exist=True,
+                )
+                self.models[model_name] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
 
     def _load_scaler_models(self) ->None:
         """Load scaler models from disk."""
         scaler_path = self.model_dir / 'resource_scaler.pkl'
         if scaler_path.exists():
-            self.scalers['resource_scaler'] = joblib.load(scaler_path)
+            trusted_path = resolve_trusted_artifact_path(
+                scaler_path,
+                allowed_suffixes={'.pkl', '.joblib'},
+                must_exist=True,
+            )
+            self.scalers['resource_scaler'] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
 
     def check_system_health(self) ->Dict[str, Any]:
         """Retrieves hardware metrics and runs ML diagnostics/projections."""
@@ -284,8 +295,15 @@ class HealthHub:
         """Calculate drift detection metrics."""
         drift = False
         for metric in ['win_rate', 'sharpe_ratio']:
-            z_score = abs(recent_data[metric].mean() - historical_data[
-                metric].mean()) / (historical_data[metric].std() + 1e-06)
+            mean_delta = abs(recent_data[metric].mean() - historical_data[
+                metric].mean())
+            historical_std = historical_data[metric].std()
+            if not np.isfinite(historical_std) or historical_std <= 1e-12:
+                if mean_delta > 1e-6:
+                    drift = True
+                    break
+                continue
+            z_score = mean_delta / historical_std
             if z_score > 2.0:
                 drift = True
                 break

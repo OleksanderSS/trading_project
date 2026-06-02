@@ -17,14 +17,14 @@ class FreeGoogleTrendsCollector(BaseCollector):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.geo = self.config.get('geo', 'US')
-        self.timeframe = self.config.get('timeframe', 'today 5-y')
-        self.language = self.config.get('language', 'en-US')
-        self.timezone = self.config.get('timezone', 360)
-        self.batch_size = self.config.get('batch_size', 4)
-        self.request_delay = self.config.get('request_delay_seconds', 5)
-        self.cat = self.config.get('cat', 0)
-        self.gprop = self.config.get('gprop', '')
+        self.geo = self.configs.get('geo', 'US')
+        self.timeframe = self.configs.get('timeframe', 'today 5-y')
+        self.language = self.configs.get('language', 'en-US')
+        self.timezone = self.configs.get('timezone', 360)
+        self.batch_size = self.configs.get('batch_size', 4)
+        self.request_delay = self.configs.get('request_delay_seconds', 5)
+        self.cat = self.configs.get('cat', 0)
+        self.gprop = self.configs.get('gprop', '')
         self.pytrends: Optional[TrendReq] = None
 
     def _initialize_pytrends(self):
@@ -50,8 +50,7 @@ class FreeGoogleTrendsCollector(BaseCollector):
         try:
             self._initialize_pytrends()
         except ConnectionError as e:
-            self.handle_error(e, context={})
-            return []
+            raise RuntimeError("Failed to initialize Google Trends client") from e
         self.logger.info(
             f'Issuing Google Trends query for {len(search_terms)} queries (buffered to {self.batch_size} instances).'
             )
@@ -67,8 +66,9 @@ class FreeGoogleTrendsCollector(BaseCollector):
                     all_trends_data.extend(batch_data)
             except Exception as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-                self.handle_error(e, context={'keyword_batch': batch})
-                raise
+                raise RuntimeError(
+                    f"Failed to fetch Google Trends batch {batch}"
+                ) from e
         self.logger.info(
             f'Retrieved {len(all_trends_data)} temporal points across Google temporal scope queries.'
             )

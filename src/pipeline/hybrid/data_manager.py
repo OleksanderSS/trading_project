@@ -79,8 +79,7 @@ class HybridDataManager:
         df = df.copy()
         import numpy as np
         numeric_cols = df.select_dtypes(include=[np.number]).columns
-        df[numeric_cols] = df[numeric_cols].fillna(0).replace([np.inf, -np.
-            inf], 0)
+        df[numeric_cols] = df[numeric_cols].replace([np.inf, -np.inf], np.nan)
         return df
 
     def has_new_data(self, features_path: Path, new_features: pd.DataFrame
