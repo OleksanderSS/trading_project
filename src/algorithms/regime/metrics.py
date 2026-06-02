@@ -58,7 +58,8 @@ class RegimeMetricsCalculator:
         if avg_loss == 0:
             return 100.0
         rs = avg_gain / avg_loss
-        return float(100 - 100 / (1 + rs))
+        rsi = float(100 - 100 / (1 + rs))
+        return float(np.clip(rsi, 0, 100))
 
     @staticmethod
     def calculate_z_score(returns: np.ndarray) ->float:
