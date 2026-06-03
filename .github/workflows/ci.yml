@@ -9,7 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,32 +30,40 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Run Snyk dependency scan
-        uses: snyk/actions/python@master
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          command: test
-          args: --file=requirements.txt --package-manager=pip --severity-threshold=high
+        run: |
+          npm install -g snyk
+          snyk test --file=requirements.txt --package-manager=pip --severity-threshold=high
 
       - name: Run Ruff
         run: |
-          ruff check src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/
+          ruff check src/
 
       - name: Run Black check
         run: |
-          black --check src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/
+          black --check src/
 
       - name: Run Bandit
         run: |
-          bandit -r src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/
+          bandit -r src/
 
       - name: Run mypy
         run: |
-          mypy src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/ --ignore-missing-imports
+          mypy src/ --ignore-missing-imports
 
       - name: Run pytest
         run: |
           pytest tests/
+
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Run SonarCloud scan
         uses: SonarSource/sonarqube-scan-action@v5

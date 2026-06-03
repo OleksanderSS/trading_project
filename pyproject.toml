@@ -1,7 +1,11 @@
+[project]
+name = "trading-project"
+version = "0.1.0"
+requires-python = ">=3.12"
+
 [tool.ruff]
-# Налаштування Ruff - найшвидшого лінтера
 line-length = 120
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -19,16 +23,14 @@ ignore = ["E501"] # Ignore long lines (handled by formatter)
 known-first-party = ["src"]
 
 [tool.mypy]
-# Налаштування Mypy для суворої типізації
-python_version = "3.10"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = false # Почнемо з м'якого режиму
+disallow_untyped_defs = false
 check_untyped_defs = true
 ignore_missing_imports = true
 disable_error_code = ["import-untyped"]
 
 [tool.bandit]
-# Налаштування Bandit для аудиту безпеки
 exclude_dirs = ["tests", "venv", ".gemini"]
-tests = ["B201", "B301"] # Специфічні тести на безпеку
+tests = ["B201", "B301"]
