@@ -89,7 +89,8 @@ class Summarizer:
 
         # Fallback for short texts that don't need summarization
         if len(text.split()) < self.min_words_for_summary:
-            logger.debug("Text is too short for summarization, returning original text.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("Text is too short for summarization, returning original text.")
             return text
 
         # Lazy load the model; if it fails, summarization_pipeline remains None

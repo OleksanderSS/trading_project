@@ -20,7 +20,7 @@ visualization:
 
 historical_events:
   crisis_similarity_2008:
-    name: 'Фінансова криза 2008'
+    name: 'Financial crisis 2008'
     start_date: '2008-09-15'
     end_date: '2009-03-09'
     type: 'crisis'
@@ -35,7 +35,7 @@ historical_events:
     duration_days: 176
     recovery_time: '4+ years'
   covid_crash_2020:
-    name: 'COVID-19 крах 2020'
+    name: 'COVID-19 crash 2020'
     start_date: '2020-02-20'
     end_date: '2020-03-23'
     type: 'crisis'
@@ -50,7 +50,7 @@ historical_events:
     duration_days: 32
     recovery_time: '5 months'
   dot_com_bubble:
-    name: 'Dot-com бульбашка'
+    name: 'Dot-com bubble'
     start_date: '2000-03-10'
     end_date: '2002-10-09'
     type: 'bubble_burst'
@@ -65,7 +65,7 @@ historical_events:
     duration_days: 943
     recovery_time: '7+ years'
   black_monday:
-    name: 'Чорний понеділок 1987'
+    name: 'Black Monday 1987'
     start_date: '1987-10-19'
     end_date: '1987-10-20'
     type: 'crash'
@@ -79,7 +79,7 @@ historical_events:
     duration_days: 1
     recovery_time: '2 years'
   great_recession:
-    name: 'Велика рецесія'
+    name: 'Great Recession'
     start_date: '2007-12-01'
     end_date: '2009-06-01'
     type: 'recession'
@@ -94,7 +94,7 @@ historical_events:
     duration_days: 548
     recovery_time: '4+ years'
   inflation_spike_2022:
-    name: 'Інфляційний спайк 2022'
+    name: 'Inflation Spike 2022'
     start_date: '2021-12-01'
     end_date: '2022-11-01'
     type: 'inflation'
@@ -109,7 +109,7 @@ historical_events:
     duration_days: 335
     recovery_time: '2+ years'
   rate_hike_cycle_2022:
-    name: 'Цикл підвищення ставок 2022'
+    name: 'Rate Hike Cycle 2022'
     start_date: '2022-03-01'
     end_date: '2023-07-01'
     type: 'monetary_policy'
@@ -124,7 +124,7 @@ historical_events:
     duration_days: 488
     recovery_time: '1+ years'
   banking_crisis_2023:
-    name: 'Банківська криза 2023'
+    name: 'Banking Crisis 2023'
     start_date: '2023-03-08'
     end_date: '2023-05-01'
     type: 'banking_crisis'
@@ -139,7 +139,7 @@ historical_events:
     duration_days: 54
     recovery_time: '6 months'
   tech_bubble_2021:
-    name: 'Технологічна бульбашка 2021'
+    name: 'Tech Bubble 2021'
     start_date: '2020-11-01'
     end_date: '2022-12-31'
     type: 'bubble_burst'
@@ -154,7 +154,7 @@ historical_events:
     duration_days: 425
     recovery_time: '2+ years'
   crypto_crash_2022:
-    name: 'Крипто крах 2022'
+    name: 'Crypto Crash 2022'
     start_date: '2022-04-01'
     end_date: '2022-12-31'
     type: 'crash'
@@ -169,7 +169,7 @@ historical_events:
     duration_days: 274
     recovery_time: '1+ years'
   geopolitical_crisis:
-    name: 'Геополітична криза'
+    name: 'Geopolitical Crisis'
     start_date: '2022-02-24'
     end_date: '2022-12-31'
     type: 'geopolitical'
@@ -184,7 +184,7 @@ historical_events:
     duration_days: 310
     recovery_time: '2+ years'
   energy_crisis:
-    name: 'Енергетична криза'
+    name: 'Energy Crisis'
     start_date: '2021-09-01'
     end_date: '2022-12-31'
     type: 'energy'
@@ -199,7 +199,7 @@ historical_events:
     duration_days: 486
     recovery_time: '2+ years'
   supply_chain_crisis:
-    name: 'Криза ланцюгів постачання'
+    name: 'Supply Chain Crisis'
     start_date: '2020-03-01'
     end_date: '2022-06-01'
     type: 'supply_chain'
@@ -214,7 +214,7 @@ historical_events:
     duration_days: 823
     recovery_time: '2+ years'
   housing_crisis:
-    name: 'Житлова криза'
+    name: 'Housing Crisis'
     start_date: '2006-07-01'
     end_date: '2009-03-01'
     type: 'housing'
@@ -244,7 +244,7 @@ historical_events:
     duration_days: 0.01
     recovery_time: 'hours'
   european_debt_crisis:
-    name: 'Європейська боргова криза'
+    name: 'European Debt Crisis'
     start_date: '2010-01-01'
     end_date: '2012-07-01'
     type: 'debt_crisis'
@@ -259,7 +259,7 @@ historical_events:
     duration_days: 912
     recovery_time: '3+ years'
   asian_financial_crisis:
-    name: 'Азійська фінансова криза'
+    name: 'Asian Financial Crisis'
     start_date: '1997-07-01'
     end_date: '1998-12-31'
     type: 'currency_crisis'

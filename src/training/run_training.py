@@ -12,28 +12,20 @@ import argparse
 import logging
 from typing import List
 
-# Ensure the script can find other modules in the src directory
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from src.core.logging.logger import ProjectLogger
+from src.config.unified_config_manager import get_current_config
+from src.config.tickers import get_tickers
+from src.training.adaptive_training_manager import (
+    AdaptiveTrainingManager, 
+    TrainingMode
+)
+from src.training.base_trainer import TrainerConfig
 
-from training.adaptive_training_manager import AdaptiveTrainingManager, AdaptiveTrainingConfig, TrainingMode
-from config.tickers import get_tickers
-
-
-def setup_logging():
-    """Configures the root logger for the application."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - [%(levelname)s] - %(name)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
+ProjectLogger.setup_logging()
+logger = ProjectLogger.get_logger("TrainingRunner")
 
 def main():
     """Main function to run the adaptive training process."""
-    setup_logging()
-    logger = logging.getLogger(__name__)
 
     parser = argparse.ArgumentParser(description="Run the Adaptive Training Pipeline.")
     parser.add_argument(
@@ -79,26 +71,26 @@ def main():
 
     # --- 2. Initialize the Manager ---
     # The manager will create a training plan based on its analysis
-    config = AdaptiveTrainingConfig(mode=TrainingMode(args.mode))
+    config = TrainerConfig(mode=TrainingMode(args.mode))
     manager = AdaptiveTrainingManager(config)
 
     # --- 3. Create or Execute Plan ---
     if args.analyze_only:
         logger.info("Running in 'analyze-only' mode.")
         plan = manager.create_adaptive_training_plan(ticker_list)
-        plan_file = manager._save_adaptive_plan(plan) # Using internal method for convenience
+        plan_file = manager._save_adaptive_report(plan, "plan") # Updated to use the correct method name from the manager
         logger.info(f"Full adaptive training plan has been generated and saved to {plan_file}")
-        # Here you could add more detailed printouts of the plan if desired
     else:
-        logger.info("Executing full training and evaluation cycle...")
+        logger.info("Executing full training cycle...")
         # This will internally create a plan and then execute it.
-        # Currently, execution is a simulation as noted in the README.
+        # Currently, execution is a simulation as noted in the module documentation.
         results = manager.execute_adaptive_training(ticker_list)
         logger.info("Adaptive training execution finished.")
         summary = results.get("execution_summary", {})
-        logger.info(f"Execution Summary: {summary}")
+        if summary:
+            logger.info(f"Execution Summary: {summary}")
 
-    logger.info("Script finished.")
+    logger.info("Script execution completed.")
 
 if __name__ == "__main__":
     main()

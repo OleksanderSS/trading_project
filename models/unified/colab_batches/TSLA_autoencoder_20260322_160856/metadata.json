@@ -1,0 +1,11 @@
+{
+  "batch_id": "TSLA_autoencoder_20260322_160856",
+  "ticker": "TSLA",
+  "model_name": "autoencoder",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_direction_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T16:08:56.407303",
+  "status": "PENDING_COLAB"
+}

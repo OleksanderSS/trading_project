@@ -1,91 +1,83 @@
 """
-Manages the persistence and retrieval of model performance results.
+Model Results Manager
+Manages the persistence, retrieval, and caching of model performance results and analysis.
 """
 import pandas as pd
 import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-
+from src.core.exceptions import DataLoadError, DataProcessingError
 logger = logging.getLogger(__name__)
+
 
 class ModelResultsManager:
     """
-    Handles all file I/O for model results, including saving, loading, 
-    and combining results from different model types (light/heavy).
-
-    This class acts as a data access layer for model performance data.
+    Handles all file I/O and in-memory management for model results.
+    Support for saving/loading results from different model categories (light/heavy).
+    Acts as a centralized data access layer for analytical performance artifacts.
     """
-    
-    # Constants for filenames and model types
-    LIGHT_MODELS_FILENAME = "light_models_results.parquet"
-    HEAVY_MODELS_FILENAME = "heavy_models_results.parquet"
-    COMBINED_FILENAME = "combined_analysis.parquet"
-    LIGHT_MODEL_TYPES = ["lgbm", "rf", "linear", "mlp", "ensemble"]
+    LIGHT_MODELS_FILENAME = 'light_models_results.parquet'
+    HEAVY_MODELS_FILENAME = 'heavy_models_results.parquet'
+    COMBINED_FILENAME = 'combined_analysis.parquet'
 
-    def __init__(self, base_path: str = "data/models"):
+    def __init__(self, base_path: str='data/models'):
+        self.LIGHT_MODEL_TYPES = ['lgbm', 'rf', 'linear', 'mlp', 'ensemble']
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
-        
         self.light_results_path = self.base_path / self.LIGHT_MODELS_FILENAME
         self.heavy_results_path = self.base_path / self.HEAVY_MODELS_FILENAME
         self.combined_path = self.base_path / self.COMBINED_FILENAME
-        
-        # In-memory cache to avoid redundant file reads
         self._cache: Dict[str, pd.DataFrame] = {}
-        logger.info(f"ModelResultsManager initialized with base path: {self.base_path}")
+        logger.info(
+            f'ModelResultsManager synchronized with base path: {self.base_path}'
+            )
 
-    def save_results(self, results_df: pd.DataFrame, is_heavy: bool = False):
+    def save_results(self, results_df: pd.DataFrame, is_heavy: bool=False):
         """
-        Saves a DataFrame of model results to the appropriate Parquet file.
+        Persists model results to the appropriate Parquet structure.
         
         Args:
-            results_df (pd.DataFrame): The DataFrame containing model results.
-            is_heavy (bool): Flag indicating if the results are from heavy models.
+            results_df: DataFrame containing the fresh model performance metrics.
+            is_heavy: Boolean flag to switch between light and heavy storage buckets.
         """
         if not isinstance(results_df, pd.DataFrame) or results_df.empty:
-            logger.warning("Attempted to save an empty or invalid DataFrame. Aborting.")
-            return
-
-        target_path = self.heavy_results_path if is_heavy else self.light_results_path
-        model_type = 'heavy' if is_heavy else 'light'
-
-        # Standardize the DataFrame
+            raise DataProcessingError('Attempted to persist an empty or invalid results DataFrame.')
+            
+        target_path = (self.heavy_results_path if is_heavy else self.
+            light_results_path)
+        model_category = 'heavy' if is_heavy else 'light'
         df_to_save = results_df.copy()
-        df_to_save['model_type'] = model_type
-        df_to_save['timestamp'] = datetime.now()
-
+        df_to_save['model_category'] = model_category
+        df_to_save['ingestion_timestamp'] = datetime.now()
         try:
             if target_path.exists():
                 existing_df = pd.read_parquet(target_path)
-                combined_df = pd.concat([existing_df, df_to_save], ignore_index=True)
-                # Deduplicate to keep the latest results for a given run
-                combined_df = combined_df.drop_duplicates(
-                    subset=['model', 'ticker', 'timeframe', 'timestamp'], 
-                    keep='last'
-                )
+                combined_df = pd.concat([existing_df, df_to_save],
+                    ignore_index=True)
+                combined_df = combined_df.drop_duplicates(subset=['model',
+                    'ticker', 'timeframe', 'ingestion_timestamp'], keep='last')
             else:
                 combined_df = df_to_save
-
             combined_df.to_parquet(target_path)
-            logger.info(f"Successfully saved {len(df_to_save)} new results to {target_path}")
-            
-            # Invalidate cache for the saved file and combined results
+            logger.info(
+                f'Persisted {len(df_to_save)} new results to {target_path}')
             self._cache.pop(str(target_path), None)
             self._cache.pop('combined', None)
-
         except Exception as e:
-            logger.error(f"Error saving results to {target_path}: {e}", exc_info=True)
+            logger.error(f'Failed to persist results to {target_path}: {e}',
+                exc_info=True)
+            raise DataProcessingError(f'Failed to persist results to {target_path}: {e}') from e
 
-    def get_results(self, model_type: str = 'all') -> pd.DataFrame:
+    def get_results(self, model_type: str='all') ->pd.DataFrame:
         """
-        Loads model results from Parquet files.
+        Retrieves historical performance records from Parquet storage.
 
         Args:
-            model_type (str): Type of results to load ('light', 'heavy', or 'all').
+            model_type: Result category filter ('light', 'heavy', or 'all').
 
         Returns:
-            pd.DataFrame: A DataFrame with the requested model results.
+            pd.DataFrame: Merged or filtered historical performance dataset.
         """
         if model_type == 'light':
             return self._load_file(self.light_results_path)
@@ -93,78 +85,126 @@ class ModelResultsManager:
             return self._load_file(self.heavy_results_path)
         elif model_type == 'all':
             if 'combined' in self._cache:
-                logger.debug("Returning combined results from cache.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug('Retrieving combined analysis from session cache.'
+                        )
                 return self._cache['combined']
-            
             light_df = self.get_results('light')
             heavy_df = self.get_results('heavy')
-            
             if not light_df.empty and not heavy_df.empty:
                 combined = pd.concat([light_df, heavy_df], ignore_index=True)
             elif not light_df.empty:
                 combined = light_df
             else:
                 combined = heavy_df
-            
             self._cache['combined'] = combined
             return combined
         else:
-            logger.warning(f"Unknown model_type '{model_type}' requested.")
-            return pd.DataFrame()
+            raise DataProcessingError(f"Requested unknown model result category: '{model_type}'.")
 
-    def _load_file(self, file_path: Path) -> pd.DataFrame:
-        """
-        Internal method to load a single Parquet file with caching.
-        """
+    def _load_file(self, file_path: Path) ->pd.DataFrame:
+        """Internal helper for Parquet ingestion with session caching."""
         if str(file_path) in self._cache:
-            logger.debug(f"Returning cached DataFrame for {file_path.name}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'Cache hit for persistence layer: {file_path.name}')
             return self._cache[str(file_path)]
-        
         if file_path.exists():
             try:
                 df = pd.read_parquet(file_path)
                 self._cache[str(file_path)] = df
-                logger.info(f"Loaded {len(df)} records from {file_path.name}")
+                logger.info(
+                    f'Loaded {len(df)} performance records from {file_path.name}'
+                    )
                 return df
             except Exception as e:
-                logger.error(f"Failed to load Parquet file {file_path}: {e}", exc_info=True)
-                return pd.DataFrame()
-        
-        logger.info(f"File not found: {file_path.name}")
+                error_msg = f'Data corruption or I/O error reading {file_path}: {e}'
+                logger.error(error_msg, exc_info=True)
+                raise DataLoadError(error_msg) from e
         return pd.DataFrame()
 
-    def get_confidence_score(self, model_id: str, context_fingerprint: str, diary_path: str = "logs/experience_diary.csv") -> float:
+    def get_confidence_score(self, model_id: str, context_fingerprint: str,
+        diary_path: str='logs/experience_diary.csv') ->float:
         """
-        Retrieves historical reliability from the Experience Diary for a specific model/context.
-        This can be used to dynamically weight signals.
+        Calculates a confidence metric from historical Experience Diary records.
+        Used for dynamic signal weighting and anomaly detection.
 
         Args:
-            model_id (str): The name or ID of the model.
-            context_fingerprint (str): A unique string representing the context (e.g., ticker + timeframe).
-            diary_path (str): The path to the experience diary CSV.
+            model_id: Identifier of the trained model instance.
+            context_fingerprint: Unique identifier for the market context (e.g., asset_timeframe).
+            diary_path: File path to the experience diary ledger.
 
         Returns:
-            float: The confidence score (typically between 0 and 1), defaulting to 0.5.
+            float: Calculated confidence score (0.0 - 1.0), defaults to 0.5 (neutral).
         """
         diary_p = Path(diary_path)
         if not diary_p.exists():
-            return 0.5  # Default neutral confidence
-
+            return 0.5
         try:
             diary = pd.read_csv(diary_p)
-            # Filter by model and context
-            mask = (diary['model_name'] == model_id) & (diary['context_fingerprint'] == context_fingerprint)
+            mask = (diary['model_name'] == model_id) & (diary[
+                'context_fingerprint'] == context_fingerprint)
             relevant_history = diary[mask]
-
             if relevant_history.empty:
-                # Fallback to model-only average if context is new
                 relevant_history = diary[diary['model_name'] == model_id]
-
             if not relevant_history.empty:
-                # Simple recency-weighted average (last 10 results)
                 return float(relevant_history['metric_value'].tail(10).mean())
-            
-            return 0.5 # Default if no history found
-        except Exception as e:
-            logger.warning(f"Error reading Experience Diary for {model_id}: {e}")
             return 0.5
+        except Exception as e:
+            logger.error(f'Experience Diary lookup failed for {model_id}: {e}', exc_info=True)
+            raise DataProcessingError(f'Experience Diary lookup failed for {model_id}: {e}') from e
+
+    def get_cached_analysis(self, data_hash: str) ->Optional[Dict[str, Any]]:
+        """
+        Retrieves cached analytical results based on input data fingerprint.
+        
+        Args:
+            data_hash: Fingerprint of the input datasets.
+            
+        Returns:
+            Optional[Dict[str, Any]]: Cached analytical report or None if miss.
+        """
+        cache_key = f'analysis_cache_{data_hash}'
+        if cache_key in self._cache:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    f'Retrieving cached analysis results for hash: {data_hash}')
+            cached_result = self._cache[cache_key]
+            if isinstance(cached_result, dict):
+                return cached_result
+            else:
+                logger.warning(
+                    f'Cache contains invalid type for key {cache_key}: {type(cached_result)}'
+                    )
+                return None
+        return None
+
+    def cache_analysis(self, data_hash: str, results: Dict[str, Any]) ->None:
+        """
+        Stores analytical results in the session cache using data fingerprint.
+        
+        Args:
+            data_hash: Fingerprint of the input datasets.
+            results: The analytical payload to be cached.
+        """
+        cache_key = f'analysis_cache_{data_hash}'
+        self._cache[cache_key] = results
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'Analytical payload cached for hash: {data_hash}')
+
+    def save_json_result(self, data: Dict[str, Any], filename: str) ->None:
+        """
+        Saves a JSON report to the base path.
+        
+        Args:
+            data: The JSON serializable dictionary to save.
+            filename: The name of the file.
+        """
+        import json
+        target_path = self.base_path / filename
+        try:
+            with open(target_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4)
+            logger.info(f'Saved JSON report to {target_path}')
+        except Exception as e:
+            logger.error(f'Failed to save JSON report to {target_path}: {e}')
+            raise DataProcessingError(f'Failed to save JSON report to {target_path}: {e}') from e

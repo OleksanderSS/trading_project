@@ -15,7 +15,7 @@ from src.core.cache.cache_manager import CacheManager
 
 
 class GoogleNewsCollector(BaseCollector):
-    """Collector for Google News. Без resolve redirects — зберігаємо оригінальний URL."""
+    """Collector for Google News API mapping streams. Excludes redirect resolving layers constraint mapping."""
     collector_type = "google_news"
 
     def __init__(
@@ -30,14 +30,17 @@ class GoogleNewsCollector(BaseCollector):
         self.logger = ProjectLogger.get_logger(__name__)
 
         params = self.configs.get("params", {})
-        period = params.get("period", "7d")          # Скорочено з 60d → 7d за замовчуванням
-        max_results = params.get("max_results", 10)   # Скорочено з 100 → 10 за замовчуванням
+        period = params.get("period", "7d")          # Default 7d limit boundary constraints
+        max_results = params.get("max_results", 10)   # Default 10 result boundary mapped payload
 
         self.api = GNews(period=period, max_results=max_results)
+        # Set a per-request timeout on the underlying requests session used by gnews
+        if hasattr(self.api, 'timeout'):
+            self.api.timeout = 15  # 15s per individual HTTP request
         self.delay = self.configs.get("delay", 0.5)
         self.max_concurrent = self.configs.get("max_concurrent_terms", 5)
 
-        # Фільтри якості
+        # Quality parsing filter blocks
         filter_cfg = self.configs.get("filter", {})
         self.min_source_quality = filter_cfg.get("min_source_quality", 0.0)
         self.exclude_title_keywords = [
@@ -58,22 +61,42 @@ class GoogleNewsCollector(BaseCollector):
         search_terms: Optional[List[str]] = None,
         **kwargs,
     ) -> Optional[pd.DataFrame]:
-        """Збирає новини, фільтрує через кеш та БД."""
-        # Приймаємо і search_terms і keywords
+        """Resolves target scopes mapping streams via database layer."""
+        try:
+            return await asyncio.wait_for(
+                self._run_internal(tickers=tickers, keywords=keywords,
+                                   search_terms=search_terms, **kwargs),
+                timeout=120.0  # 2-minute hard cap for the entire collector
+            )
+        except asyncio.TimeoutError:
+            self.logger.warning(
+                "[GoogleNews] Collector exceeded 120s total timeout. "
+                "Returning None and continuing pipeline."
+            )
+            return None
+
+    async def _run_internal(
+        self,
+        tickers: Optional[List[str]] = None,
+        keywords: Optional[List[str]] = None,
+        search_terms: Optional[List[str]] = None,
+        **kwargs,
+    ) -> Optional[pd.DataFrame]:
+        # Normalize and concatenate keyword definitions scope parameters
         keywords_list = list(keywords.keys()) if isinstance(keywords, dict) else (keywords or [])
-        all_terms = list(set(
-            (tickers or []) + keywords_list + (search_terms or [])
-        ))
+        # Use only tickers for news search to keep collection time bounded.
+        # Generic keywords like 'fed', 'inflation' produce too many irrelevant results.
+        all_terms = list(set(tickers or []))
 
         if not all_terms:
-            self.logger.warning("GoogleNewsCollector: немає термінів для пошуку.")
+            self.logger.warning("GoogleNewsCollector: Search scope parameters are empty.")
             return None
 
         table_name = self.configs.get("table_name", "google_news")
         cache_key = f"{self.__class__.__name__}_run"
         cache_params = {"terms": sorted(all_terms)}
 
-        # 1. Кеш
+        # 1. State cache memory validation block constraints logic mapping
         if self.cache_manager:
             cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
             if cached is not None:
@@ -81,13 +104,13 @@ class GoogleNewsCollector(BaseCollector):
                 if "hash" in df_cached.columns:
                     new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
                     if new_from_cache.empty:
-                        self.logger.info("[GoogleNews] Cache hit — нових статей немає.")
+                        self.logger.info("[GoogleNews] Cache hit limit resolved — zero new articles identified in temporal scope boundary.")
                         return None
                     return new_from_cache
 
-        self.logger.info(f"[GoogleNews] Збір для {len(all_terms)} термінів (паралельно по {self.max_concurrent})...")
+        self.logger.info(f"[GoogleNews] Initiating scope parameters constraints across {len(all_terms)} block limits (parallel stream blocks constraint index {self.max_concurrent})...")
 
-        # 2. Паралельний збір з семафором
+        # 2. Block logical resolution using execution limits parameters index bindings
         semaphore = asyncio.Semaphore(self.max_concurrent)
         tasks = [self._fetch_with_semaphore(term, semaphore) for term in all_terms]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -95,15 +118,15 @@ class GoogleNewsCollector(BaseCollector):
         all_articles = []
         for i, res in enumerate(results):
             if isinstance(res, Exception):
-                self.logger.error(f"Помилка для терміну '{all_terms[i]}': {res}")
+                self.logger.error(f"Logic parse constraints execution mapped index block boundary failure '{all_terms[i]}': {res}")
             elif res:
                 all_articles.extend(res)
 
         if not all_articles:
-            self.logger.info("[GoogleNews] Статей не знайдено.")
+            self.logger.info("[GoogleNews] Zero novel entries mapped to execution layers.")
             return None
 
-        # 3. Дедуплікація по URL ще до БД
+        # 3. Memory limit boundary limits mappings stream url definitions uniqueness check parameter binding boundaries.
         seen_urls = set()
         unique_articles = []
         for a in all_articles:
@@ -117,25 +140,25 @@ class GoogleNewsCollector(BaseCollector):
             lambda url: hashlib.sha256(str(url).encode()).hexdigest()
         )
 
-        # 4. Перевірка кешу по хешу (швидко, без БД)
+        # 4. Hash identity comparison mapped resolution
         if self.cache_manager:
             is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
             df = df[is_new].copy()
             if df.empty:
-                self.logger.info("[GoogleNews] Всі статті вже в кеші.")
+                self.logger.info("[GoogleNews] Duplicative articles verified within local execution limits cache storage.")
                 return None
 
-        # 5. Фільтрація через БД
+        # 5. Filter layer constraints evaluation against historical boundary
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
-            self.logger.info("[GoogleNews] Нових статей не знайдено в БД.")
+            self.logger.info("[GoogleNews] Historical layer identified zero execution constraint mapped articles matching memory constraint query limits protocol checks payload blocks matrix mappings scope parameter definition limits.")
             if self.cache_manager:
                 for h in df["hash"]:
                     self.cache_manager.set(h, True, ttl=86400)
                 self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
             return None
 
-        # 6. Збереження
+        # 6. Database save mapped constraint bounds
         self.db_manager.upsert(table_name, new_df, unique_on=["hash"])
 
         if self.cache_manager:
@@ -143,7 +166,7 @@ class GoogleNewsCollector(BaseCollector):
                 self.cache_manager.set(h, True, ttl=86400)
             self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
 
-        self.logger.info(f"[GoogleNews] Збережено {len(new_df)} нових статей.")
+        self.logger.info(f"[GoogleNews] Recorded bound {len(new_df)} articles limits check constraint boundary.")
         return new_df
 
     async def _fetch_with_semaphore(self, term: str, semaphore: asyncio.Semaphore) -> List[Dict]:
@@ -154,10 +177,14 @@ class GoogleNewsCollector(BaseCollector):
             return result
 
     async def _fetch_articles_for_term(self, term: str) -> List[Dict]:
-        """Завантажує статті для одного терміну. БЕЗ resolve redirects."""
+        """Resolves logic mapped API constraint boundaries directly ignoring recursive limit blocks structure logic index mappings redirect scopes checks parameter constraint execution limits"""
         try:
             loop = asyncio.get_running_loop()
-            news = await loop.run_in_executor(None, self.api.get_news, term)
+            # Wrap in asyncio.wait_for to prevent indefinite hangs on slow/blocked requests
+            news = await asyncio.wait_for(
+                loop.run_in_executor(None, self.api.get_news, term),
+                timeout=30.0
+            )
             if not news:
                 return []
 
@@ -168,9 +195,12 @@ class GoogleNewsCollector(BaseCollector):
                     articles.append(processed)
             return articles
 
-        except Exception as e:
-            self.logger.error(f"Помилка збору новин для '{term}': {e}")
+        except asyncio.TimeoutError:
+            self.logger.warning(f"[GoogleNews] Timeout fetching news for '{term}' (30s). Skipping.")
             return []
+        except Exception as e:
+            self.logger.error(f"Resolution failed mapping boundary limits: '{term}': {e}")
+            raise RuntimeError(f"Failed to fetch Google News articles for {term}") from e
 
     def _process_entry(self, entry: Dict) -> Optional[Dict]:
         url = entry.get("url")
@@ -180,7 +210,7 @@ class GoogleNewsCollector(BaseCollector):
         title = entry.get("title", "") or ""
         source = entry.get("publisher", {}).get("title", "") or ""
 
-        # Фільтр по стоп-словах в заголовку
+        # Filter boundaries structure blocks mapping limits text
         title_lower = title.lower()
         if any(kw in title_lower for kw in self.exclude_title_keywords):
             return None

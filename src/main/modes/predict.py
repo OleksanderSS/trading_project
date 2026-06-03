@@ -4,15 +4,19 @@ Predict mode - inference mode for generating real-time signals.
 Uses the PipelineOrchestrator to run only the prediction and signal generation stages.
 """
 
-from typing import List, Dict, Any, Optional
+import asyncio
+import inspect
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
 from src.main.modes.base import BaseMode
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
-from src.config.unified_config_manager import UnifiedConfigManager
+
 
 class PredictMode(BaseMode):
     """
     PredictMode handles the inference lifecycle.
-    It orchestrates the pipeline to process data and generate trading signals 
+    It orchestrates the pipeline to process data and generate trading signals
     based on previously trained models.
     """
 
@@ -26,7 +30,7 @@ class PredictMode(BaseMode):
         super().__init__(config_manager)
         self.logger.info("PredictMode initialized for signal generation.")
 
-    def run(self, tickers: Optional[List[str]] = None, timeframes: Optional[List[str]] = None, **kwargs) -> Dict[str, Any]:
+    def run(self, tickers: list[str] | None = None, timeframes: list[str] | None = None, **kwargs) -> dict[str, Any]:
         """
         Runs the inference pipeline to generate real-time signals.
 
@@ -36,10 +40,10 @@ class PredictMode(BaseMode):
             **kwargs: Additional parameters passed to the pipeline.
 
         Returns:
-            Dict[str, Any]: The results of the prediction pipeline including signals.
+            dict[str, Any]: The results of the prediction pipeline including signals.
         """
         self.logger.info(f"Starting Prediction Mode (Inference) for tickers: {tickers or 'Default'}")
-        
+
         try:
             # 1. Initialize the Pipeline Orchestrator
             # Note: The brain can be passed via kwargs if 'intelligent' mode is used
@@ -50,10 +54,12 @@ class PredictMode(BaseMode):
             # This typically executes Stage 0 (Setup), Stage 1 (Collection), Stage 2 (Processing),
             # Stage 3 (Features), and then jumps to Stage 5 (Prediction) and Stage 6 (Signals).
             results = pipeline.run(
-                tickers=tickers, 
-                timeframes=timeframes, 
+                tickers=tickers,
+                timeframes=timeframes,
                 run_mode='predict'
             )
+            if inspect.isawaitable(results):
+                results = asyncio.run(results)
 
             if not results:
                 self.logger.warning("Pipeline completed but returned no results.")

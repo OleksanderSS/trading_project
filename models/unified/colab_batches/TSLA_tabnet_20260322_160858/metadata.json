@@ -1,0 +1,11 @@
+{
+  "batch_id": "TSLA_tabnet_20260322_160858",
+  "ticker": "TSLA",
+  "model_name": "tabnet",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_rsi14_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T16:08:58.259349",
+  "status": "PENDING_COLAB"
+}

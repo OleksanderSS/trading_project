@@ -20,6 +20,13 @@ class BaseStage(ABC):
         # Allow for other dependencies to be passed, but they won't be standard attributes
         self.brain = kwargs.get('brain', {}) # Optional brain object for state sharing
 
+    def handle_stage_error(self, error: Exception, context: str = "", severity: str = "error", should_raise: bool = False) -> Dict[str, Any]:
+        """Standardized stage error handling wrapper."""
+        full_context = f"{self.__class__.__name__}:{context}" if context else self.__class__.__name__
+        if self.error_handler:
+            return self.error_handler.handle_error(error, full_context, severity, should_raise)
+        raise error
+
     @abstractmethod
     async def run(self, **kwargs: Any) -> Dict[str, Any]:
         """Each stage must implement a run method."""

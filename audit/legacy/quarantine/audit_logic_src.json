@@ -1,0 +1,3680 @@
+{
+  "stats": {
+    "files": 480,
+    "lines": 83050,
+    "issues": 461,
+    "by_severity": {
+      "MEDIUM": 216,
+      "LOW": 235,
+      "HIGH": 6,
+      "INFO": 4
+    },
+    "by_category": {
+      "MATH": 82,
+      "LOGIC": 168,
+      "FEAT": 146,
+      "STATE": 42,
+      "ASYNC": 8,
+      "RES": 5,
+      "API": 10
+    }
+  },
+  "issues": [
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\regime_detector.py",
+      "line": 425,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\regime_detector.py",
+      "line": 425,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "algorithms\\regime_detector.py",
+      "line": 68,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "algorithms\\regime_detector.py",
+      "line": 261,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "algorithms\\regime_detector.py",
+      "line": 262,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\regime_detector.py",
+      "line": 425,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "algorithms\\regime_detector.py",
+      "line": 478,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 215,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 279,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 280,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 143,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 253,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 364,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 417,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 423,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 225,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 282,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 283,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 300,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 355,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 377,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 379,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 415,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 432,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 434,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\hedge_fund_analyzer.py",
+      "line": 139,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\hedge_fund_analyzer.py",
+      "line": 178,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\hedge_fund_analyzer.py",
+      "line": 179,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\hedge_fund_analyzer.py",
+      "line": 82,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\news_impact_analyzer.py",
+      "line": 43,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\performance_attribution_analyzer.py",
+      "line": 329,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\performance_attribution_analyzer.py",
+      "line": 332,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\performance_attribution_analyzer.py",
+      "line": 137,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\performance_attribution_analyzer.py",
+      "line": 139,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\risk_decomposition_analyzer.py",
+      "line": 113,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\risk_decomposition_analyzer.py",
+      "line": 121,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\risk_decomposition_analyzer.py",
+      "line": 154,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\analyzers\\risk_decomposition_analyzer.py",
+      "line": 156,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "analytics\\arena\\arena_battle.py",
+      "line": 458,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\battle_groups.py",
+      "line": 195,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\battle_groups.py",
+      "line": 198,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "analytics\\arena\\battle_groups.py",
+      "line": 275,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\ensemble_performance_bridge.py",
+      "line": 76,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\ensemble_performance_bridge.py",
+      "line": 80,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "analytics\\arena\\performance_tracker.py",
+      "line": 470,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\calculators\\fama_french_factors.py",
+      "line": 236,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\calculators\\fama_french_factors.py",
+      "line": 243,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\calculators\\fama_french_factors.py",
+      "line": 247,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\calculators\\risk_reward_calculator.py",
+      "line": 98,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\calculators\\risk_reward_calculator.py",
+      "line": 120,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\calculators\\risk_reward_calculator.py",
+      "line": 186,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\calculators\\volatility_calculator.py",
+      "line": 36,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\calculators\\volatility_calculator.py",
+      "line": 65,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\context\\causal_engine.py",
+      "line": 128,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "analytics\\context\\contextual_model_selector.py",
+      "line": 142,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 432,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 66,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 326,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 340,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 432,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\context\\ensemble_selector.py",
+      "line": 84,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "analytics\\context\\market_context_analyzer.py",
+      "line": 91,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "analytics\\reporting\\model_analyzer.py",
+      "line": 132,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "analytics\\reporting\\model_analyzer.py",
+      "line": 133,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\reporting\\results_manager.py",
+      "line": 45,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "analytics\\signals\\significance_detector.py",
+      "line": 38,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\unified_analytics_engine.py",
+      "line": 60,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "analytics\\utils\\analytics_math.py",
+      "line": 37,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 202,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 323,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 60,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 90,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 113,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 158,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 292,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 424,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 518,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "calibration\\adaptive_confidence_calibrator.py",
+      "line": 248,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "calibration\\calibration_engine.py",
+      "line": 277,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\argument_validator.py",
+      "line": 61,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_data_loader.py",
+      "line": 78,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_data_loader.py",
+      "line": 79,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 76,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 206,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 210,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 219,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 262,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "colab\\config\\config_loader.py",
+      "line": 19,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "config\\unified_config_manager.py",
+      "line": 458,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "config\\unified_config_manager.py",
+      "line": 457,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "config\\unified_config_manager.py",
+      "line": 463,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\cache\\cache_manager.py",
+      "line": 29,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 187,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 277,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "core\\logging\\log_standards.py",
+      "line": 37,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "core\\logging\\log_standards.py",
+      "line": 72,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\logging\\logger.py",
+      "line": 36,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\monitoring\\memory_profiler.py",
+      "line": 226,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "core\\monitoring\\memory_profiler.py",
+      "line": 225,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "core\\monitoring\\memory_profiler.py",
+      "line": 239,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "core\\system\\batch_processor.py",
+      "line": 206,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "core\\system\\batch_processor.py",
+      "line": 177,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\system\\batch_processor.py",
+      "line": 57,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "core\\system\\version_manager.py",
+      "line": 162,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "core\\validation\\validators.py",
+      "line": 408,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\collectors\\base_collector.py",
+      "line": 21,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\collectors\\yf_collector.py",
+      "line": 115,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 83,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 113,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "data\\management\\data_manager.py",
+      "line": 59,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "data\\management\\data_versioning.py",
+      "line": 263,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "data\\management\\handlers\\connection_handler.py",
+      "line": 62,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "data\\management\\handlers\\connection_handler.py",
+      "line": 81,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 105,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 76,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 77,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 81,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 156,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 245,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 276,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 280,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 208,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 96,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 193,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 384,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "factories\\model_factory.py",
+      "line": 101,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "factories\\model_factory.py",
+      "line": 124,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\analysis\\news_decay_modeler.py",
+      "line": 49,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\analysis\\regime_importance_tracker.py",
+      "line": 401,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\analysis\\regime_importance_tracker.py",
+      "line": 565,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\analysis\\regime_importance_tracker.py",
+      "line": 180,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\analysis\\regime_importance_tracker.py",
+      "line": 189,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\context_aware_feature_selector.py",
+      "line": 213,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\context_aware_feature_selector.py",
+      "line": 176,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\context_aware_feature_selector.py",
+      "line": 202,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\advanced_analytics_enricher.py",
+      "line": 40,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\context_map_enricher.py",
+      "line": 188,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\enrichers\\context_map_enricher.py",
+      "line": 70,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\decay_features_enricher.py",
+      "line": 66,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\keyword_entity_enricher.py",
+      "line": 27,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\enrichers\\market_context_enricher.py",
+      "line": 27,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\news_quality_enricher.py",
+      "line": 119,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\enrichers\\technical_analysis_enricher.py",
+      "line": 160,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 41,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 42,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 43,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 56,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 57,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 58,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "features\\feature_cache.py",
+      "line": 279,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\feature_cache.py",
+      "line": 292,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\feature_orchestrator.py",
+      "line": 101,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\feature_selection_cache.py",
+      "line": 131,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "features\\feature_selection_cache.py",
+      "line": 219,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\feature_selection_cache.py",
+      "line": 224,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\news_clusterer.py",
+      "line": 100,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\news_clusterer.py",
+      "line": 171,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\news_clusterer.py",
+      "line": 53,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\extractors\\keyword_extractor.py",
+      "line": 148,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\finbert_pipeline.py",
+      "line": 43,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\finbert_pipeline.py",
+      "line": 12,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\nlp\\models\\finbert_pipeline.py",
+      "line": 23,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\roberta_sentiment.py",
+      "line": 47,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\roberta_sentiment.py",
+      "line": 87,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\roberta_sentiment.py",
+      "line": 91,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\roberta_sentiment.py",
+      "line": 92,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 38,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 52,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 58,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 88,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 93,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_harmonizer.py",
+      "line": 32,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_harmonizer.py",
+      "line": 49,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\selection\\enhanced_smart_selector.py",
+      "line": 390,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\selection\\enhanced_smart_selector.py",
+      "line": 389,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\selection\\enhanced_smart_selector.py",
+      "line": 294,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\selection\\enhanced_smart_selector.py",
+      "line": 411,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\selection\\enhanced_smart_selector.py",
+      "line": 448,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\selection\\enhanced_smart_selector.py",
+      "line": 451,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\selection\\smart_selector.py",
+      "line": 209,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\selection\\smart_selector.py",
+      "line": 210,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\selection\\smart_selector.py",
+      "line": 211,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\selection\\smart_selector.py",
+      "line": 50,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 17,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 23,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 61,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 63,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 92,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 93,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 97,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 100,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\modular_adaptive_technical_indicators.py",
+      "line": 196,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\technical_indicators_lib.py",
+      "line": 25,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\technical_indicators_lib.py",
+      "line": 31,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\technical_indicators_lib.py",
+      "line": 38,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\technical_indicators_lib.py",
+      "line": 39,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "features\\utils\\technical_indicators_lib.py",
+      "line": 41,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 28,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 33,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 203,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 213,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\validation\\redundancy_detector.py",
+      "line": 143,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\validation\\redundancy_detector.py",
+      "line": 329,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\validation\\redundancy_detector.py",
+      "line": 449,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "main\\modes\\backtest.py",
+      "line": 142,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "main\\modes\\backtest.py",
+      "line": 143,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "main\\modes\\backtest.py",
+      "line": 144,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\modes\\backtest.py",
+      "line": 61,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\modes\\backtest.py",
+      "line": 69,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\modes\\backtest.py",
+      "line": 70,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\modes\\training_data_pipeline.py",
+      "line": 50,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\system_orchestrator.py",
+      "line": 128,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\awareness\\context_engine.py",
+      "line": 108,
+      "message": "Unreachable code  return  _ensure_connection()",
+      "fix_hint": "     return  "
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\awareness\\context_engine.py",
+      "line": 164,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 117,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 64,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\memory\\diary_engine.py",
+      "line": 402,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 308,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 309,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 437,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 181,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 191,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 36,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "metrics\\financial\\financial_metrics_library.py",
+      "line": 48,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "metrics\\financial\\financial_metrics_library.py",
+      "line": 58,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "metrics\\financial\\financial_metrics_library.py",
+      "line": 68,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "metrics\\financial\\financial_metrics_library.py",
+      "line": 201,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "metrics\\model\\ml_evaluator.py",
+      "line": 80,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "metrics\\utils\\calculation_tools.py",
+      "line": 64,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\adapters\\sentiment_integration.py",
+      "line": 176,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\adapters\\sentiment_integration.py",
+      "line": 282,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\adapters\\unified_model_adapter.py",
+      "line": 27,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\overfitting_detector.py",
+      "line": 799,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\overfitting_detector.py",
+      "line": 800,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\overfitting_detector.py",
+      "line": 829,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\overfitting_detector.py",
+      "line": 852,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\overfitting_detector.py",
+      "line": 858,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\overfitting_detector.py",
+      "line": 872,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\analysis\\overfitting_detector.py",
+      "line": 397,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\analysis\\regime_winner_analyzer.py",
+      "line": 428,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\regime_winner_analyzer.py",
+      "line": 588,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\analysis\\regime_winner_analyzer.py",
+      "line": 163,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\analysis\\regime_winner_analyzer.py",
+      "line": 172,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\dean\\dean_bootstrap_system.py",
+      "line": 375,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\confidence_calibrator.py",
+      "line": 554,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\confidence_calibrator.py",
+      "line": 254,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\confidence_calibrator.py",
+      "line": 254,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\confidence_calibrator.py",
+      "line": 256,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\confidence_calibrator.py",
+      "line": 301,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\dynamic_weights.py",
+      "line": 120,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\dynamic_weights.py",
+      "line": 99,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\dynamic_weights.py",
+      "line": 123,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\model_correlation_analyzer.py",
+      "line": 705,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\model_correlation_analyzer.py",
+      "line": 278,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\model_correlation_analyzer.py",
+      "line": 286,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "models\\ensemble\\model_correlation_analyzer.py",
+      "line": 119,
+      "message": "np.random  seed   ",
+      "fix_hint": "rng = np.random.default_rng(42); rng.random(...)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\weight_stability_monitor.py",
+      "line": 357,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensembling\\composer.py",
+      "line": 35,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 309,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "models\\model_pool.py",
+      "line": 239,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "models\\model_pool.py",
+      "line": 238,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\model_pool.py",
+      "line": 256,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\model_pool.py",
+      "line": 268,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 27,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 265,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 266,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 274,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 275,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 494,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 498,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 572,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 281,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 371,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\neural\\transformer_model.py",
+      "line": 316,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\persistent_pool.py",
+      "line": 298,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "models\\persistent_pool.py",
+      "line": 311,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\persistent_pool.py",
+      "line": 325,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\prototypes\\registry.py",
+      "line": 206,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "models\\prototypes\\registry.py",
+      "line": 220,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\prototypes\\registry.py",
+      "line": 230,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\quality\\controller.py",
+      "line": 171,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "models\\quality\\controller.py",
+      "line": 172,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "models\\quality\\controller.py",
+      "line": 326,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\quality\\controller.py",
+      "line": 339,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\base.py",
+      "line": 38,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\config.py",
+      "line": 161,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\data_freshness_monitor.py",
+      "line": 61,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\example_usage.py",
+      "line": 180,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\example_usage.py",
+      "line": 260,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\example_usage.py",
+      "line": 304,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "monitoring\\feature_drift_monitor.py",
+      "line": 96,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "monitoring\\feature_drift_monitor.py",
+      "line": 97,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "monitoring\\feature_drift_monitor.py",
+      "line": 100,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\feature_drift_monitor.py",
+      "line": 151,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "monitoring\\health_hub.py",
+      "line": 278,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 170,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 250,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 255,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 125,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 263,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 128,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "API",
+      "severity": "MEDIUM",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 236,
+      "message": "train_test_split  random_state   ",
+      "fix_hint": "train_test_split(X, y, test_size=0.2, random_state=42)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 475,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 479,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\reporting\\performance_reports.py",
+      "line": 129,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\run_dashboard.py",
+      "line": 16,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\tests.py",
+      "line": 90,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\tests.py",
+      "line": 348,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\tests.py",
+      "line": 420,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 205,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 215,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 192,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 220,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 234,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 330,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 344,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 369,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 390,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 406,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 412,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 455,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 43,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\guards\\safe_feature_combiner.py",
+      "line": 266,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "pipeline\\guards\\temporal_leakage_guard.py",
+      "line": 26,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_executor.py",
+      "line": 154,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_executor.py",
+      "line": 157,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_orchestrator.py",
+      "line": 42,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_orchestrator.py",
+      "line": 47,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_orchestrator.py",
+      "line": 62,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "pipeline\\hybrid\\model_training_orchestrator.py",
+      "line": 221,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\orchestrator_config.py",
+      "line": 101,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\orchestrator_config.py",
+      "line": 102,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\orchestrator_context.py",
+      "line": 68,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\storage_helpers.py",
+      "line": 90,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid_orchestrator.py",
+      "line": 241,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 50,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 263,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 264,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 265,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 266,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 267,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 53,
+      "message": "     O(n)   list + join()",
+      "fix_hint": "parts = []; parts.append(s); result = ''.join(parts)"
+    },
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 98,
+      "message": "     O(n)   list + join()",
+      "fix_hint": "parts = []; parts.append(s); result = ''.join(parts)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\metrics.py",
+      "line": 14,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\modeling\\metrics.py",
+      "line": 12,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 51,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 34,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 95,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 118,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\anomaly_engine.py",
+      "line": 34,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\anomaly_engine.py",
+      "line": 55,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\anomaly_engine.py",
+      "line": 87,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "HIGH",
+      "file": "pipeline\\stages\\prediction\\model_selector.py",
+      "line": 143,
+      "message": "Mean of means       ",
+      "fix_hint": " : (sum * count).sum() / count.sum()"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\model_selector.py",
+      "line": 129,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\prediction_generator.py",
+      "line": 50,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\prediction_generator.py",
+      "line": 86,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_0_data_generation.py",
+      "line": 106,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_0_data_generation.py",
+      "line": 154,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_0_data_generation.py",
+      "line": 155,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_0_data_generation.py",
+      "line": 78,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_0_data_generation.py",
+      "line": 79,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_0_data_generation.py",
+      "line": 83,
+      "message": "ewm()   adjust=      ",
+      "fix_hint": "ewm(span=N, adjust=False)   EMA"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_0_data_generation.py",
+      "line": 161,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_1_collection.py",
+      "line": 176,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_3_feature_engineering.py",
+      "line": 450,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_3_feature_engineering.py",
+      "line": 321,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_3_feature_engineering.py",
+      "line": 323,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_3_feature_engineering.py",
+      "line": 465,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_3_feature_engineering.py",
+      "line": 485,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_3_improvements.py",
+      "line": 145,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_3_improvements.py",
+      "line": 146,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_4_modeling.py",
+      "line": 229,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_4_modeling.py",
+      "line": 246,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_4_modeling.py",
+      "line": 574,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_4_modeling.py",
+      "line": 572,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_4_modeling.py",
+      "line": 353,
+      "message": "     O(n)   list + join()",
+      "fix_hint": "parts = []; parts.append(s); result = ''.join(parts)"
+    },
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_4_modeling.py",
+      "line": 555,
+      "message": "     O(n)   list + join()",
+      "fix_hint": "parts = []; parts.append(s); result = ''.join(parts)"
+    },
+    {
+      "category": "MATH",
+      "severity": "HIGH",
+      "file": "pipeline\\stages\\stage_5_prediction.py",
+      "line": 330,
+      "message": "Mean of means       ",
+      "fix_hint": " : (sum * count).sum() / count.sum()"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_5_prediction.py",
+      "line": 144,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_5_prediction.py",
+      "line": 481,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 432,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 459,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 438,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 465,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 325,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 90,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 92,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 93,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 94,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 647,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_7_evaluation.py",
+      "line": 467,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_7_evaluation.py",
+      "line": 469,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_7_evaluation.py",
+      "line": 470,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_7_evaluation.py",
+      "line": 72,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_7_evaluation.py",
+      "line": 523,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 318,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 268,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "predictions\\caching.py",
+      "line": 210,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "predictions\\caching.py",
+      "line": 211,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "predictions\\caching.py",
+      "line": 216,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "predictions\\caching.py",
+      "line": 224,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "predictions\\caching.py",
+      "line": 232,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "predictions\\deep_predict.py",
+      "line": 21,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "predictions\\models_predict.py",
+      "line": 73,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "predictions\\models_predict.py",
+      "line": 77,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "processing\\cleaners.py",
+      "line": 43,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "processing\\data_filter.py",
+      "line": 73,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "processing\\filters\\price_filter.py",
+      "line": 54,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "processing\\normalization_manager.py",
+      "line": 155,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 310,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 140,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 265,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 267,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 273,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "risk\\metrics.py",
+      "line": 53,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "risk\\metrics.py",
+      "line": 59,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "risk\\metrics.py",
+      "line": 112,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "risk\\metrics.py",
+      "line": 130,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "risk\\metrics.py",
+      "line": 158,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "risk\\risk_manager.py",
+      "line": 87,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "sentiment\\sentiment_models.py",
+      "line": 24,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "simulation\\simulation_engine.py",
+      "line": 188,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "simulation\\simulation_engine.py",
+      "line": 217,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\consensus_engine.py",
+      "line": 294,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\elite_risk_sizer.py",
+      "line": 81,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "trading\\elite_risk_sizer.py",
+      "line": 152,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "trading\\live_adaptive_ensemble.py",
+      "line": 205,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\portfolio_manager.py",
+      "line": 251,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "trading\\post_inference_filter.py",
+      "line": 5,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "trading\\post_inference_filter.py",
+      "line": 50,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "trading\\post_inference_filter.py",
+      "line": 130,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "trading\\post_inference_filter.py",
+      "line": 146,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "trading\\post_inference_filter.py",
+      "line": 161,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\virtual_portfolio.py",
+      "line": 36,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\virtual_portfolio.py",
+      "line": 46,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 167,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\base_trainer.py",
+      "line": 384,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "training\\portfolio_optimizer.py",
+      "line": 140,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "training\\portfolio_optimizer.py",
+      "line": 129,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "training\\portfolio_optimizer.py",
+      "line": 89,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "training\\portfolio_optimizer.py",
+      "line": 133,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "training\\progressive_trainer.py",
+      "line": 447,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 170,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 292,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 427,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 552,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 553,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "utils\\math_utils.py",
+      "line": 16,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "MEDIUM",
+      "file": "utils\\metrics.py",
+      "line": 18,
+      "message": "np.log/sqrt   inf/NaN  ",
+      "fix_hint": "df.replace([np.inf, -np.inf], np.nan).fillna(0)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "utils\\missing_data_anomaly_detector.py",
+      "line": 128,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "utils\\rate_limiter.py",
+      "line": 42,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "utils\\rate_limiter.py",
+      "line": 43,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "utils\\smart_missing_data_handler.py",
+      "line": 45,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "utils\\smart_missing_data_handler.py",
+      "line": 252,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "FEAT",
+      "severity": "LOW",
+      "file": "utils\\smart_missing_data_handler.py",
+      "line": 339,
+      "message": "RSI   [0, 100]     ",
+      "fix_hint": "rsi = rsi.clip(0, 100)"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "validation\\data_leakage_detector.py",
+      "line": 78,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "validation\\time_series_validator.py",
+      "line": 431,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    }
+  ]
+}

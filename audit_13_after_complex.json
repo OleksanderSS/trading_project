@@ -1,0 +1,312 @@
+{
+  "root": "src",
+  "file_count_scanned": 605,
+  "issues": [
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/algorithms/risk_parity_allocator.py",
+      "line": 356,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/analytics/calculators/macro_score_calculator.py",
+      "line": 90,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "return series.pct_change(periods=int(rolling_window/12), fill_method=None).fillna(0)",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/colab/config/config_loader.py",
+      "line": 50,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/data/collectors/insider_collector.py",
+      "line": 144,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/data/collectors/vix_collector.py",
+      "line": 24,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/features/colab_context_integration.py",
+      "line": 126,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/features/feature_selector.py",
+      "line": 67,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/features/feature_selector.py",
+      "line": 77,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/features/feature_selector.py",
+      "line": 196,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/models/adapters/unified_model_adapter.py",
+      "line": 189,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/monitoring/config.py",
+      "line": 78,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/monitoring/example_usage.py",
+      "line": 176,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/evaluation/metrics_calculator.py",
+      "line": 77,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = values.pct_change().dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/stage_0_data_generation.py",
+      "line": 100,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "features['volatility'] = features['close'].pct_change().rolling(window=20, min_periods=1).std()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/stage_0_data_generation.py",
+      "line": 103,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "features['returns_1h'] = features['close'].pct_change()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/stage_0_data_generation.py",
+      "line": 104,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "features['returns_4h'] = features['close'].pct_change(4)",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/stage_0_data_generation.py",
+      "line": 105,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "features['returns_24h'] = features['close'].pct_change(24)",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/trading/recommendation_engine.py",
+      "line": 167,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = ticker_df['close'].pct_change().fillna(0).dropna(",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/trading/recommendation_engine.py",
+      "line": 199,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = ticker_df['close'].pct_change().fillna(0).dropna(",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "Errors",
+      "severity": "HIGH",
+      "file": "src/pipeline/stages/trading/recommendation_engine.py",
+      "line": 419,
+      "message": "Exception handler contains only 'pass' (silent swallow).",
+      "code": "",
+      "hint": "Log or re-raise; avoid silent failure."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/analyzers/correlation_analyzer.py",
+      "line": 29,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns_df[symbol] = market_data[symbol].pct_change().fillna(0)",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/analyzers/correlation_analyzer.py",
+      "line": 31,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns_df[symbol] = market_data[\"close\"][symbol].pct_change().fillna(0)",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/elite_risk_metrics.py",
+      "line": 386,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = price_data.pct_change()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/kill_switch/calculator.py",
+      "line": 116,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "symbol_returns = close_prices[symbol].pct_change().dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/kill_switch/calculator.py",
+      "line": 143,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "symbol_returns = symbol_prices.pct_change().dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/kill_switch/calculator.py",
+      "line": 174,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = close_prices.pct_change().dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/max_exposure_monitor.py",
+      "line": 55,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "self.elite_metrics.update_returns(symbol, market_data[symbol].pct_change().dropna())",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/metrics.py",
+      "line": 36,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "symbol_returns = close_df[symbol].pct_change().fillna(0).dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/metrics.py",
+      "line": 110,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "symbol_returns = symbol_prices.pct_change().fillna(0).dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/risk/metrics.py",
+      "line": 153,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = close_df.pct_change().fillna(0).dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/training/pattern_aware_training.py",
+      "line": 108,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = frame['close'].astype(float).pct_change().dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/training/pattern_aware_training.py",
+      "line": 110,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns = frame.select_dtypes(include=[np.number]).pct_change().stack().replace([np.inf, -np.inf], np.nan).dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/training/portfolio_optimizer.py",
+      "line": 76,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "returns_data[ticker] = df['close'].pct_change().dropna()",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    },
+    {
+      "area": "Errors",
+      "severity": "MEDIUM",
+      "file": "src/devtools/rule_generator.py",
+      "line": 151,
+      "message": "except Exception: without binding/logging can hide root cause.",
+      "code": "except Exception:",
+      "hint": "Bind as 'e' and log; consider re-raise vs fallback."
+    }
+  ]
+}

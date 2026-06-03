@@ -1,0 +1,18 @@
+# Development and Audit Tools
+ruff>=0.1.0
+mypy>=1.5.0
+bandit>=1.7.0
+mlflow>=2.0.0
+pytest>=7.0.0
+pytest-cov>=4.0.0
+snyk>=1.1200.0
+deepchecks>=0.17.0
+great-expectations>=0.17.0
+
+# Type Stubs (Fixes IDE and Mypy "Cannot find module" errors)
+pandas-stubs
+types-psutil
+types-PyYAML
+types-requests
+types-aiofiles
+types-setuptools

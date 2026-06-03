@@ -45,7 +45,8 @@ class NewsScorer:
         self.primary_tickers: Set[str] = {ticker.upper() for ticker in primary_tickers} if primary_tickers else set()
 
         logger.info(f"NewsScorer initialized with primary tickers: {self.primary_tickers or 'None'}")
-        logger.debug(f"Scorer weights: {self.weights}, parameters: {self.params}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Scorer weights: {self.weights}, parameters: {self.params}")
 
     def _calculate_directional_sentiment(self, sentiment_details: Dict[str, float]) -> float:
         """
@@ -133,8 +134,9 @@ class NewsScorer:
         # Clamp the result to a standard [-1, 1] range for consistency.
         final_score = max(-1.0, min(final_score, 1.0))
 
-        logger.debug(
-            f"Scoring complete: Direction={sentiment_direction:.2f}, Relevance={relevance_magnitude:.2f}, "
-            f"Significance={significance_magnitude:.2f} -> Final Score={final_score:.2f}"
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"Scoring complete: Direction={sentiment_direction:.2f}, Relevance={relevance_magnitude:.2f}, "
+                f"Significance={significance_magnitude:.2f} -> Final Score={final_score:.2f}"
+            )
         return round(final_score, 4)

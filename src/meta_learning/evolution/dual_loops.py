@@ -156,7 +156,7 @@ class LearningLoopsEngine(BaseMetaComponent):
         return pd.DataFrame(records)
 
     def run_performance_review(self) -> Dict[str, Any]:
-        self.logger.info(f"Running system-wide performance review using DiaryEngine.")
+        self.logger.info("Running system-wide performance review using DiaryEngine.")
 
         agent_ids = [model['model_name'] for model in self.arena.get_leaderboard().get('leaderboard', [])]
         if not agent_ids:
@@ -197,7 +197,9 @@ class LearningLoopsEngine(BaseMetaComponent):
         with self.conn:
             self.conn.execute("UPDATE rules SET status = ? WHERE rule_id LIKE ?", (new_status, f"%{agent_id.upper()}%"))
 
-    def get_rules_for_agent(self, status_list: List[str] = ["active", "validated"]) -> List[TradingRule]:
+    def get_rules_for_agent(self, status_list: Optional[List[str]]=None) -> List[TradingRule]:
+        if status_list is None:
+            status_list = ["active", "validated"]
         placeholders = ', '.join(['?'] * len(status_list))
         query = f"SELECT * FROM rules WHERE status IN ({placeholders})"
         

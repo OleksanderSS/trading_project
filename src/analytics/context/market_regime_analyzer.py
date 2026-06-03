@@ -1,88 +1,103 @@
-import pandas as pd
-import numpy as np
-import logging
-from typing import Dict, Any, Optional
+# src/analytics/context/market_regime_analyzer.py
+"""
+MarketRegimeAnalyzer - wrapper around MarketRegimeDetector that implements IAnalyzer.
+Used by UnifiedAnalyticsEngine (Stage 7) via analysis.yaml registration.
+"""
 
-from ..interfaces import IAnalyzer
-from .market_regime_calculator import MarketRegimeCalculator
+import logging
+from typing import Any
+
+import pandas as pd
+
+from src.algorithms.regime_detector import MarketRegimeDetector
+from src.analytics.interfaces import IAnalyzer
 
 logger = logging.getLogger(__name__)
 
+
 class MarketRegimeAnalyzer(IAnalyzer):
     """
-    Analyzes and classifies the market into regimes (e.g., Trend, Volatile, Range)
-    by using calculated metrics and a set of configurable rules.
+    Analyzes price data to detect the current market regime.
+
+    Wraps MarketRegimeDetector so it can be registered in UnifiedAnalyticsEngine
+    via analysis.yaml and called uniformly through the IAnalyzer interface.
+
+    Expected input (data): pd.DataFrame with at least a 'close' column.
+    Returns: dict with 'regime', 'confidence', and supporting metrics.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, window_size: int = 20, entropy_window: int = 50):
+        self.window_size = window_size
+        self.entropy_window = entropy_window
+        self._detector = MarketRegimeDetector()
+        logger.info(f"MarketRegimeAnalyzer initialized (window={window_size}, entropy_window={entropy_window})")
+
+    def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         """
-        Initializes the analyzer with configuration.
+        Detect market regime from price data.
 
         Args:
-            config (Dict[str, Any]): Configuration dictionary containing:
-                - 'window_size' (int): The main rolling window for calculations.
-                - 'entropy_window' (int): Window for entropy calculation.
-                - 'rules' (Dict): Thresholds for classifying regimes.
-        """
-        self.config = config or {}
-        self.window_size = self.config.get('window_size', 20)
-        self.entropy_window = self.config.get('entropy_window', 50)
-        self.rules = self.config.get('rules', {
-            'trend_threshold_multiplier': 2.0,
-            'volatile_threshold_multiplier': 2.0,
-            'range_volume_threshold': 0.1
-        })
-        logger.info("MarketRegimeAnalyzer initialized.")
-
-    def analyze(self, data: pd.DataFrame, **kwargs) -> Dict[str, Any]:
-        """
-        Performs the full market regime analysis.
-
-        Args:
-            data (pd.DataFrame): Input DataFrame containing at least 'close' and 'volume' columns.
-            **kwargs: Not used.
+            data: pd.DataFrame with 'close' column, or dict with key 'price_data'.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the calculated regimes and other metrics.
+            dict with keys: regime, confidence, volatility, mean_return, adx
         """
-        if not all(col in data.columns for col in ['close', 'volume']):
-            logger.error("Input data for MarketRegimeAnalyzer must contain 'close' and 'volume' columns.")
-            return {}
+        df = self._resolve_dataframe(data)
+        if df is None or df.empty:
+            logger.warning("MarketRegimeAnalyzer: no valid price data received.")
+            return self._empty_result()
 
-        # 1. Calculate all necessary indicators using the vectorized calculator
-        regime_indicators = MarketRegimeCalculator.get_regime_indicators(data, window=self.window_size)
-        
-        # 2. Classify regime based on indicators and rules
-        regimes = self._classify_regime(regime_indicators)
-        
-        # 3. (Optional) Calculate other metrics like entropy or reversal probability if needed
-        entropy = MarketRegimeCalculator.calculate_market_entropy(data['close'], window=self.entropy_window)
-        reversal_prob = MarketRegimeCalculator.calculate_reversal_probability(data['close'])
+        if "close" not in df.columns:
+            logger.warning(f"MarketRegimeAnalyzer: 'close' column missing. Available: {df.columns.tolist()}")
+            return self._empty_result()
 
+        try:
+            returns_series = df["close"].pct_change(fill_method=None).replace(
+                [float("inf"), float("-inf")], pd.NA).dropna()
+            returns = returns_series.values
+            if len(returns) < 30:
+                logger.warning(f"MarketRegimeAnalyzer: insufficient data ({len(returns)} rows, need ≥30).")
+                return self._empty_result()
+
+            data_bundle: dict[str, Any] = {
+                "prices": df["close"].values,
+            }
+            if "volume" in df.columns:
+                data_bundle["volume"] = df["volume"].values
+
+            result = self._detector.detect_regime(
+                returns=returns,
+                data_bundle=data_bundle,
+            )
+            logger.info(
+                f"MarketRegimeAnalyzer: regime={result.get('regime')}, confidence={result.get('confidence', 0):.3f}"
+            )
+            return result
+
+        except Exception as e:
+            logger.error(f"MarketRegimeAnalyzer error: {e}", exc_info=True)
+            return self._empty_result()
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _resolve_dataframe(self, data: Any) -> pd.DataFrame | None:
+        """Accept DataFrame directly or dict with 'price_data' key."""
+        if isinstance(data, pd.DataFrame):
+            return data
+        if isinstance(data, dict):
+            for key in ("price_data", "prices", "market_data"):
+                if key in data and isinstance(data[key], pd.DataFrame):
+                    return data[key]
+        return None
+
+    @staticmethod
+    def _empty_result() -> dict[str, Any]:
         return {
-            "market_regime": regimes,
-            "market_entropy": entropy,
-            "reversal_probability": reversal_prob,
-            "regime_indicators": regime_indicators # For debugging or further analysis
+            "regime": "UNKNOWN",
+            "confidence": 0.0,
+            "volatility": None,
+            "mean_return": None,
+            "adx": None,
         }
-
-    def _classify_regime(self, indicators: pd.DataFrame) -> pd.Series:
-        """
-        Applies the configured rules to classify the market regime.
-        """
-        conditions = [
-            (indicators['trend_strength'] > indicators['volatility'] * self.rules.get('trend_threshold_multiplier', 2)),
-            (indicators['volatility'] > indicators['trend_strength'] * self.rules.get('volatile_threshold_multiplier', 2)),
-            (indicators['volume_trend'].abs() < self.rules.get('range_volume_threshold', 0.1))
-        ]
-        
-        choices = ['Trend', 'Volatile', 'Range']
-        
-        # numpy.select is a vectorized equivalent of if/elif/else
-        regime_series = pd.Series(np.select(conditions, choices, default='Transition'), index=indicators.index)
-        
-        # Set initial periods to 'Unknown' as they are unreliable
-        regime_series.iloc[:self.window_size] = 'Unknown'
-        
-        logger.info("Market regime classification complete.")
-        return regime_series

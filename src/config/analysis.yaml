@@ -40,6 +40,8 @@ engine:
       module: "src.analytics.context.macro_context_analyzer"
       class: "MacroContextAnalyzer"
       data_mapping: ["macro_data"]
+      params:
+        context_features: []
     - name: "critical_signals"
       module: "src.analytics.detectors.critical_signal_detector"
       class: "CriticalSignalDetector"
@@ -67,8 +69,8 @@ calculators_config:
     module: "src.analytics.calculators.sentiment_stats_calculator"
     class: "SentimentStatsCalculator"
   market_regime_calc:
-    module: "src.analytics.calculators.market_regime_calculator"
-    class: "MarketRegimeCalculator"
+    module: "src.algorithms.regime_detector"
+    class: "MarketRegimeDetector"
   macro_score:
     module: "src.analytics.calculators.macro_score_calculator"
     class: "MacroScoreCalculator"

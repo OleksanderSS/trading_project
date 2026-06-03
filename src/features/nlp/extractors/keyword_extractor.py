@@ -4,6 +4,7 @@
 import re
 import logging
 from typing import List, Dict, Optional, Set
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +55,10 @@ class KeywordExtractor:
 
         # Process tickers: typically uppercase, 2-5 chars, not in noise words
         raw_tickers = keyword_config.get('tickers', [])
-        self.tickers = sorted(list({ 
+        self.tickers = sorted({ 
             t for t in raw_tickers 
             if isinstance(t, str) and 2 <= len(t) <= 5 and t.isupper() and t not in self.noise_words
-        }))
+        })
 
         # Process other keywords: lowercase, not noise, not tickers
         other_keywords = []
@@ -66,10 +67,10 @@ class KeywordExtractor:
                 other_keywords.extend(kws)
         
         ticker_set = set(self.tickers)
-        self.keywords = sorted(list({ 
+        self.keywords = sorted({ 
             kw.lower() for kw in other_keywords
             if isinstance(kw, str) and kw.upper() not in self.noise_words and kw.upper() not in ticker_set
-        }))
+        })
 
         # --- Compile Regex for Performance ---
         if self.keywords:
@@ -82,6 +83,7 @@ class KeywordExtractor:
 
         logger.info(f"Extractor updated with {len(self.tickers)} tickers and {len(self.keywords)} keywords.")
 
+    @lru_cache(maxsize=1024)
     def extract(self, text: str) -> List[str]:
         """
         Extracts all configured keywords and tickers from the given text.
@@ -110,5 +112,5 @@ class KeywordExtractor:
             return []
             
         # Return a sorted list for consistent output
-        return sorted(list(found_matches))
+        return sorted(found_matches)
 

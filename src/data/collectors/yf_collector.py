@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 import logging
 import time
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
@@ -13,6 +14,18 @@ from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
 
 logger = logging.getLogger(__name__)
+
+def _configure_yfinance_cache() -> None:
+    cache_dir = Path("data/cache/yfinance").resolve()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        yf.set_tz_cache_location(str(cache_dir))
+    except AttributeError:
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("Installed yfinance version does not support cache location override.")
+    except Exception as e:
+        logger.warning(f"Could not configure yfinance cache directory '{cache_dir}': {e}", exc_info=True)
+        raise RuntimeError(f"Could not configure yfinance cache directory '{cache_dir}'") from e
 
 class YFCollector(BaseCollector):
     """
@@ -47,7 +60,7 @@ class YFCollector(BaseCollector):
             "end_date": end_date.isoformat()
         }
 
-        if self.cache_manager:
+        if self.cache_manager and self.db_manager:
             cached_data = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
             if cached_data is not None:
                 self.logger.info(f"Checking cached data for {len(tickers)} tickers against database.")
@@ -130,7 +143,8 @@ class YFCollector(BaseCollector):
         return None
 
     def _blocking_download(self, tickers: List[str], interval: str, start_date: datetime, end_date: datetime) -> List[Dict[str, Any]]:
-        self.logger.debug(f"Started blocking download for interval '{interval}'.")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"Started blocking download for interval '{interval}'.")
         all_ticker_data = []
         for ticker in tickers:
             df = self._single_ticker_download_with_retry(ticker, interval, start_date, end_date)
@@ -140,6 +154,8 @@ class YFCollector(BaseCollector):
         return all_ticker_data
 
     def _single_ticker_download_with_retry(self, ticker: str, interval: str, start_date: datetime, end_date: datetime, retries: int = 3, delay: int = 5) -> pd.DataFrame:
+        _configure_yfinance_cache()
+        last_error = None
         for attempt in range(retries):
             try:
                 # Use objects directly for intraday or precise strings
@@ -155,31 +171,37 @@ class YFCollector(BaseCollector):
                     self.logger.info(f"Successfully downloaded {len(df)} rows for {ticker}/{interval}")
                     return df
                 self.logger.warning(f"No data for {ticker}/{interval} on attempt {attempt + 1}/{retries}. Retrying in {delay}s.")
-            except Exception as e:
-                self.logger.error(f"Error downloading {ticker}/{interval} on attempt {attempt + 1}/{retries}: {e}")
+            except (ValueError, TypeError, Exception) as e:
+                self.logger.error(f"Error downloading {ticker}/{interval} on attempt {attempt + 1}/{retries}: {e}", exc_info=True)
+                last_error = e
             
             if attempt < retries - 1:
                 time.sleep(delay)
 
         self.logger.error(f"Failed to download data for {ticker}/{interval} after {retries} attempts.")
-        return pd.DataFrame()
+        raise RuntimeError(f"Data download failed for {ticker}/{interval} after {retries} attempts: {last_error}") from last_error
 
     def _process_single_ticker_dataframe(self, df: pd.DataFrame, ticker: str, interval: str) -> List[Dict[str, Any]]:
         if df.empty:
             return []
         
-        # Flatten MultiIndex if yfinance returns it (Ticker level)
+        # Flatten MultiIndex PROPERLY
         if isinstance(df.columns, pd.MultiIndex):
+            # Get the first level (Price names: Close, High, Low, Open, Volume)
             df.columns = df.columns.get_level_values(0)
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Flattened MultiIndex columns for {ticker}/{interval}")
 
         # Ensure index name is set before reset for clear column naming
         if df.index.name is None:
             df.index.name = 'datetime'
         
         df = df.reset_index()
+        
         # Remove duplicated columns if any (e.g. after MultiIndex flattening)
         df = df.loc[:, ~df.columns.duplicated()]
         
+        # Lowercase column names AFTER flattening
         df.rename(columns={col: str(col).lower() for col in df.columns}, inplace=True)
         
         # Identify date column
@@ -189,20 +211,33 @@ class YFCollector(BaseCollector):
         if date_col:
             df.rename(columns={date_col: 'datetime'}, inplace=True)
         else:
-            self.logger.error(f"Could not find date/datetime column for {ticker}/{interval}. Available: {df.columns.tolist()}")
-            return []
+            raise RuntimeError(f"Could not find date/datetime column for {ticker}/{interval}. Available: {df.columns.tolist()}")
         
-        df['datetime'] = pd.to_datetime(df['datetime'], utc=True)
+        # Parse datetime with error handling
+        try:
+            df['datetime'] = pd.to_datetime(df['datetime'], utc=True)
+            nat_count = df['datetime'].isna().sum()
+            if nat_count > 0:
+                self.logger.warning(f"Found {nat_count} NaT values in datetime for {ticker}/{interval}")
+                # Remove rows with NaT datetime
+                df = df[df['datetime'].notna()]
+                if df.empty:
+                    raise ValueError(f"All datetime values are NaT for {ticker}/{interval}")
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f"Failed to parse datetime for {ticker}/{interval}: {e}", exc_info=True)
+            raise RuntimeError(f"Datetime parsing failed for {ticker}/{interval}: {e}") from e
+        
         df['ticker'] = ticker
         df['interval'] = interval
         
         required_cols = ['datetime', 'ticker', 'interval']
         for col in required_cols:
             if col not in df.columns:
-                self.logger.error(f"Missing required column '{col}' for {ticker}/{interval}. Cannot generate hash.")
-                return []
+                raise ValueError(f"Missing required column '{col}' for {ticker}/{interval}. Cannot generate hash.")
         
         # Consistent hash generation using isoformat with microsecond precision
         df['hash'] = df.apply(lambda row: hashlib.sha256(f"{row['datetime'].strftime('%Y-%m-%dT%H:%M:%S.%f%z')}{row['ticker']}{row['interval']}".encode()).hexdigest(), axis=1)
+        
+        self.logger.info(f"✅ Processed {len(df)} rows for {ticker}/{interval} (after NaT removal)")
         
         return df.to_dict('records')

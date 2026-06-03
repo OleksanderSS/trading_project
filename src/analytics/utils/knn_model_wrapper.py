@@ -1,9 +1,9 @@
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
-import logging
+from src.core.logging.logger import ProjectLogger
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class KnnModelWrapper:
     """
@@ -24,6 +24,9 @@ class KnnModelWrapper:
         """
         Fits the KNN model on the provided historical feature data.
         It scales the data and stores the index for later reference.
+        
+        Note: To prevent scaler leakage, ensure features_df contains only
+        historical/training data, not future/test data.
         """
         if features_df.empty:
             logger.error("Cannot fit on an empty DataFrame.")

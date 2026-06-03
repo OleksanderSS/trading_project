@@ -13,12 +13,12 @@ def _get_adjusted_threshold(indicator: str, config: Dict, ticker: Optional[str] 
     base_threshold = config.get('thresholds', {}).get(indicator, 0.05) # Default to 5%
     
     if ticker and ticker in config.get('adjustments', {}).get('tickers', {}):
-        return config['adjustments']['tickers'][ticker].get(indicator, base_threshold)
+        return float(config['adjustments']['tickers'][ticker].get(indicator, base_threshold))
         
     if timeframe and timeframe in config.get('adjustments', {}).get('timeframes', {}):
-        return config['adjustments']['timeframes'][timeframe].get(indicator, base_threshold)
+        return float(config['adjustments']['timeframes'][timeframe].get(indicator, base_threshold))
         
-    return base_threshold
+    return float(base_threshold)
 
 def _is_change_significant(
     current_value: float, 
@@ -70,6 +70,32 @@ def detect_significant_events(
         logger.warning("Input DataFrame is empty.")
         return data
 
+    df = _prepare_dataframe(data)
+    all_sig_cols = []
+    
+    # Process regular columns
+    col_map = {
+        'price_change': price_cols or [],
+        'volume_change': volume_cols or [],
+        'sentiment_change': sentiment_cols or [],
+    }
+    
+    all_sig_cols.extend(_process_regular_columns(df, col_map, config))
+    
+    # Process macro columns
+    if macro_cols:
+        all_sig_cols.extend(_process_macro_columns(df, macro_cols, config))
+
+    # Set significance flag
+    _set_significance_flag(df, all_sig_cols)
+    
+    # Clean up temporary ticker column
+    df = _cleanup_dataframe(df)
+        
+    return df
+
+def _prepare_dataframe(data: pd.DataFrame) -> pd.DataFrame:
+    """Prepare DataFrame for significance detection"""
     df = data.copy()
     
     if 'ticker' not in df.columns:
@@ -78,57 +104,89 @@ def detect_significant_events(
     sort_keys = ['ticker', 'date'] if 'date' in df.columns else ['ticker']
     df = df.sort_values(by=sort_keys).reset_index(drop=True)
     
-    all_sig_cols = []
-    
-    col_map = {
-        'price_change': price_cols or [],
-        'volume_change': volume_cols or [],
-        'sentiment_change': sentiment_cols or [],
-    }
+    return df
 
+def _process_regular_columns(df: pd.DataFrame, col_map: Dict[str, List[str]], 
+                           config: Dict[str, Any]) -> List[str]:
+    """Process regular columns for significance detection"""
+    all_sig_cols = []
     known_tickers = config.get('known_tickers', [])
     known_timeframes = config.get('known_timeframes', [])
 
     for indicator, columns in col_map.items():
         for col in columns:
-            if col not in df.columns: continue
+            if col not in df.columns:
+                continue
 
-            ticker = _extract_from_col(col, known_tickers)
-            timeframe = _extract_from_col(col, known_timeframes)
+            sig_col = _create_significance_column(df, col, indicator, config, known_tickers, known_timeframes)
+            if sig_col:
+                all_sig_cols.append(sig_col)
+    
+    return all_sig_cols
+
+def _process_macro_columns(df: pd.DataFrame, macro_cols: List[str], 
+                         config: Dict[str, Any]) -> List[str]:
+    """Process macro columns for significance detection"""
+    all_sig_cols = []
+    
+    for col in macro_cols:
+        if col not in df.columns:
+            continue
             
-            prev_col = df.groupby('ticker')[col].shift(1)
-            sig_col_name = f"sig_{col}"
-            
-            df[sig_col_name] = df.apply(
-                lambda row: _is_change_significant(
-                    row[col], prev_col.loc[row.name], indicator, config, ticker, timeframe
-                ), 
-                axis=1
-            )
-            all_sig_cols.append(sig_col_name)
+        indicator = _detect_macro_indicator_type(col)
+        sig_col = _create_macro_significance_column(df, col, indicator, config)
+        if sig_col:
+            all_sig_cols.append(sig_col)
+    
+    return all_sig_cols
 
-    if macro_cols:
-        for col in macro_cols:
-            if col not in df.columns: continue
-            indicator = _detect_macro_indicator_type(col)
-            prev_col = df[col].shift(1)
-            sig_col_name = f"sig_{col}"
-            df[sig_col_name] = df.apply(
-                lambda row: _is_change_significant(
-                    row[col], prev_col.loc[row.name], indicator, config
-                ),
-                axis=1
-            )
-            all_sig_cols.append(sig_col_name)
+def _create_significance_column(df: pd.DataFrame, col: str, indicator: str, 
+                               config: Dict[str, Any], known_tickers: List[str], 
+                               known_timeframes: List[str]) -> Optional[str]:
+    """Create significance column for regular indicators"""
+    ticker = _extract_from_col(col, known_tickers)
+    timeframe = _extract_from_col(col, known_timeframes)
+    
+    prev_col = df.groupby('ticker')[col].shift(1)
+    sig_col_name = f"sig_{col}"
+    
+    # Use helper function to avoid lambda closure issues
+    def check_significance(row, col_name=col, prev_col_data=prev_col, 
+                          ind=indicator, cfg=config, tk=ticker, tf=timeframe):
+        return _is_change_significant(
+            row[col_name], prev_col_data.loc[row.name], ind, cfg, tk, tf
+        )
+    
+    df[sig_col_name] = df.apply(check_significance, axis=1)
+    return sig_col_name
 
+def _create_macro_significance_column(df: pd.DataFrame, col: str, 
+                                    indicator: str, config: Dict[str, Any]) -> Optional[str]:
+    """Create significance column for macro indicators"""
+    prev_col = df[col].shift(1)
+    sig_col_name = f"sig_{col}"
+    
+    # Use helper function to avoid lambda closure issues
+    def check_macro_significance(row, col_name=col, prev_col_data=prev_col, 
+                               ind=indicator, cfg=config):
+        return _is_change_significant(
+            row[col_name], prev_col_data.loc[row.name], ind, cfg
+        )
+    
+    df[sig_col_name] = df.apply(check_macro_significance, axis=1)
+    return sig_col_name
+
+def _set_significance_flag(df: pd.DataFrame, all_sig_cols: List[str]) -> None:
+    """Set the overall significance flag"""
     if all_sig_cols:
         df['is_significant'] = df[all_sig_cols].any(axis=1)
     else:
         df['is_significant'] = False
 
+def _cleanup_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Clean up temporary columns"""
     if 'default_ticker' in df['ticker'].values:
         df = df.drop(columns=['ticker'])
-        
     return df
 
 def get_significance_summary(df: pd.DataFrame) -> Dict:
@@ -141,10 +199,10 @@ def get_significance_summary(df: pd.DataFrame) -> Dict:
     total_records = len(df)
     significant_records = df['is_significant'].sum()
     
-    summary = {
+    summary: Dict[str, Any] = {
         'total_records': total_records,
         'significant_records': int(significant_records),
-        'significance_ratio': significant_records / total_records if total_records > 0 else 0,
+        'significance_ratio': float(significant_records / total_records if total_records > 0 else 0),
         'ticker_stats': {}
     }
     

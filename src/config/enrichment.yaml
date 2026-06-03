@@ -1,27 +1,43 @@
 enrichment:
-  # Налаштування для аналізу сентименту
+  # Settings for sentiment analysis
   sentiment:
-    # Конфігурація для єдиної, основної моделі сентименту
+    # Configuration for the single, main sentiment model
     default_model:
       name: "DistilBERT SST-2"
       confidence_threshold: 0.75 
       
-  # Налаштування для видобування сутностей
+  # Settings for macroeconomic indicators from FRED
+  macro_features:
+    macro_fred_series:
+      fed_funds_rate: "FEDFUNDS"
+      treasury_10y: "DGS10"
+      treasury_2y: "GS2"
+      yield_curve: "T10Y2Y"
+      cpi: "CPIAUCSL"
+      core_pce: "PCEPILFE"
+      unemployment: "UNRATE"
+      payrolls: "PAYEMS"
+      gdp: "GDP"
+      industrial_production: "INDPRO"
+      vix: "VIXCLS"
+      consumer_sentiment: "UMCSENT" 
+      
+  # Settings for entity extraction
   entity_extraction:
     spacy_model: "en_core_web_sm"
     disable_components: ["parser", "lemmatizer", "attribute_ruler"]
     ticker_patterns:
       'TSLA': '\b(tesla|tsla|musk|gigafactory)\b'
       'NVDA': '\b(nvidia|nvda|jensen|huang|blackwell|h100)\b'
-      # ... (інші тікери, як і раніше)
+      # ... (other tickers as before)
 
-  # Налаштування для створення коротких зведень (Summarization)
+  # Settings for creating short summaries (Summarization)
   summarization:
     model_name: "t5-small"
     max_length: 150
     min_length: 30
 
-  # Фільтрація новин за ключовими словами (Рівень 2)
+  # News filtering by keywords (Level 2)
   keyword_filter_micro:
     - "buyback"
     - "dividend"
@@ -50,13 +66,62 @@ enrichment:
 
   significance_features:
     module: "src.features.enrichers.significance_features_enricher"
-    class: "SignificanceAnalyzer"
+    class: "SignificanceFeaturesEnricher"
     params:
       significance_col: "is_significant"
       mode: "feature_engineering"
+
+  market_context:
+    module: "src.features.enrichers.market_context_enricher"
+    class: "MarketContextEnricher"
+    params:
+      context_features:
+        - "volatility_5d"
+        - "volatility_20d"
+        - "volatility_ratio"
+        - "trend_5d"
+        - "trend_20d"
+        - "trend_alignment"
+        - "rsi_current"
+        - "volume_ratio"
+        - "price_to_ma20"
+        - "hour_of_day"
+        - "day_of_week"
+        - "yield_curve_slope"
+        - "yield_curve_inverted"
+        - "fed_funds_trend"
+        - "fed_funds_velocity"
+        - "market_breadth"
+        - "dollar_strength"
+        - "put_call_ratio"
+
+  nlp_features:
+    n_clusters: 5
+    max_features: 1000
+    text_column: "title"
+    date_column: "publishedAt"
+
+  keyword_entity:
+    keywords:
+      tickers: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "AMD", "INTC"]
+      technologies: ["ai", "artificial intelligence", "machine learning", "blockchain", "cloud", "quantum"]
+      financial: ["earnings", "revenue", "profit", "loss", "dividend", "buyback", "merger", "acquisition"]
+    entities:
+      spacy_model: "en_core_web_sm"
+      disable_components: ["parser", "lemmatizer", "attribute_ruler"]
+
+  news_impact:
+    sentiment_weights:
+      positive: 1.0
+      negative: -1.5  # Negative news has stronger impact
+      neutral: 0.0
+    half_life_hours: 48  # News impact decays with 48h half-life
+    significance_thresholds:
+      high_impact: 0.8
+      medium_impact: 0.3
 
   time_features:
     module: "src.features.enrichers.time_features_enricher"
     class: "TimeFeaturesEnricher"
 
-  # ... (інші збагачувачі, як і раніше)
+  # ... (other enrichers as before)

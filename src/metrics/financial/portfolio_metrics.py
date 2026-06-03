@@ -3,7 +3,7 @@ import numpy as np
 from typing import Optional, Dict, Any, List
 from src.core.logging.logger import ProjectLogger
 from src.metrics.base import BaseMetricCalculator
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config
 
 class PortfolioMetricsCalculator(BaseMetricCalculator):
     """
@@ -11,13 +11,13 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
     Обчислює показники прибутковості, ризику та просідання.
     """
 
-    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None):
-        self.config = config_manager or UnifiedConfigManager()
+    def __init__(self, config_manager: Optional[Any] = None):
+        self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("PortfolioMetrics")
         
         # Отримання параметрів з конфігурації
-        self._trading_days_per_year = self.config.get_setting('metrics.trading_days_per_year', 252)
-        self._risk_free_rate = self.config.get_setting('metrics.risk_free_rate', 0.02) # Default to 2%
+        self._trading_days_per_year = self.config.get('metrics.trading_days_per_year', 252)
+        self._risk_free_rate = self.config.get('metrics.risk_free_rate', 0.02) # Default to 2%
 
     @property
     def category(self) -> str:
@@ -40,7 +40,7 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
 
         self.logger.info("Початок розрахунку фінансових метрик портфеля...")
         
-        returns = equity_curve.pct_change().dropna()
+        returns = equity_curve.pct_change(fill_method=None).dropna()
         
         pnl_metrics = self.calculate_pnl(equity_curve)
         risk_metrics = self.calculate_risk_metrics(returns, **kwargs)
@@ -52,6 +52,9 @@ class PortfolioMetricsCalculator(BaseMetricCalculator):
         return all_metrics
 
     def calculate_pnl(self, equity_curve: pd.Series) -> Dict[str, Any]:
+        if equity_curve.empty:
+            return {'initial_equity': 0.0, 'final_equity': 0.0, 'total_return_pct': 0.0}
+        
         initial_equity = equity_curve.iloc[0]
         final_equity = equity_curve.iloc[-1]
         

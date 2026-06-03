@@ -21,8 +21,10 @@ class ClassificationCalculator:
         future_price = df[base_col].shift(shift)
         returns = (future_price - df[base_col]) / df[base_col]
         
-        target_series = (returns > threshold).astype(int)
-        target_series[returns.isna()] = np.nan # Propagate NaNs
+        target_series = pd.Series(
+            np.where(returns.isna(), np.nan, (returns > threshold).astype(float)),
+            index=df.index
+        )
         return target_series
 
     def calculate_multiclass(self, df: pd.DataFrame, base_col: str, shift: int, thresholds: List[float], **kwargs) -> pd.Series:

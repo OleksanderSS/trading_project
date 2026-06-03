@@ -1,4 +1,4 @@
-# src.analytics/rule_generator.py
+# src/devtools/rule_generator.py
 
 import pandas as pd
 import yaml
@@ -52,7 +52,7 @@ class ContextRuleGenerator:
                 return
         except Exception as e:
             logger.error(f"Failed to load historical data: {e}", exc_info=True)
-            return
+            raise RuntimeError("Failed to load historical data for rule generation") from e
 
         # 2. Generate rules
         generated_rules = self._generate_rules(historical_data)
@@ -100,7 +100,7 @@ class ContextRuleGenerator:
             return None
 
         # Prepare future returns for the target asset
-        target_returns = data[self.target_asset].pct_change()
+        target_returns = data[self.target_asset].pct_change(fill_method=None)
         for window in effect_windows:
             data[f'target_return_{window}d'] = target_returns.shift(-window)
 
@@ -149,4 +149,5 @@ class ContextRuleGenerator:
                 yaml.dump({'generated_context_rules': rules}, f, allow_unicode=True, sort_keys=False)
             logger.info(f"Rules successfully saved to {path}")
         except Exception as e:
-            logger.exception(f"Failed to save rules to {path}")
+            logger.exception(f"Failed to save rules to {path}: {e}")
+            raise RuntimeError(f"Failed to save rules to {path}") from e

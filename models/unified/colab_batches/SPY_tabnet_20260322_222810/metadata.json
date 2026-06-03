@@ -1,0 +1,11 @@
+{
+  "batch_id": "SPY_tabnet_20260322_222810",
+  "ticker": "SPY",
+  "model_name": "tabnet",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_atr14_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T22:28:10.379895",
+  "status": "PENDING_COLAB"
+}

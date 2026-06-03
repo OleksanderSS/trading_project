@@ -1,0 +1,19 @@
+{
+  "stats": {
+    "files": 605,
+    "lines": 89819,
+    "issues": 4910,
+    "by_severity": {
+      "INFO": 4319,
+      "LOW": 591
+    },
+    "by_category": {
+      "EXP": 1469,
+      "MON": 2601,
+      "TEST": 63,
+      "DOC": 591,
+      "ENG": 186
+    }
+  },
+  "issues": []
+}

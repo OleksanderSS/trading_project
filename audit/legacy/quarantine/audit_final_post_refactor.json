@@ -1,0 +1,1337 @@
+{
+  "stats": {
+    "files": 673,
+    "lines": 101914,
+    "issues": 3483,
+    "by_severity": {
+      "LOW": 2424,
+      "HIGH": 164,
+      "MEDIUM": 895
+    },
+    "by_category": {
+      "IMP": 928,
+      "CMX": 247,
+      "TYP": 283,
+      "BUG": 95,
+      "LOG": 1152,
+      "CFG": 27,
+      "SEC": 4,
+      "ARC": 3,
+      "DUP": 744
+    }
+  },
+  "issues": [
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\algorithms\\risk_parity_allocator.py",
+      "line": 33,
+      "message": "God Class: RiskParityAllocator = 480  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\cli\\pipeline_data_loader.py",
+      "line": 47,
+      "message": " cyclomatic complexity: load_from_db_fallback() = 17 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\cli\\pipeline_executor.py",
+      "line": 250,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\config\\tickers.py",
+      "line": 276,
+      "message": " cyclomatic complexity: get_ticker_categories() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\ensembling\\stacked_ensemble.py",
+      "line": 181,
+      "message": " cyclomatic complexity: _predict_weighted_average() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\factories\\tree_model_factory.py",
+      "line": 37,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\features\\feature_cache.py",
+      "line": 104,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\feature_orchestrator.py",
+      "line": 161,
+      "message": " cyclomatic complexity: run() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\feature_selection_cache.py",
+      "line": 144,
+      "message": " cyclomatic complexity: invalidate() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\features\\news_dataset_builder.py",
+      "line": 108,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\features\\news_dataset_builder.py",
+      "line": 134,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\integration\\ensemble_selector.py",
+      "line": 27,
+      "message": "God Class: EnsembleSelector = 456  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\integration\\ensemble_selector.py",
+      "line": 163,
+      "message": " cyclomatic complexity: _check_requirements() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\integration\\ensemble_selector.py",
+      "line": 293,
+      "message": " cyclomatic complexity: _generate_selection_reasoning() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\integrated_model_manager.py",
+      "line": 68,
+      "message": " cyclomatic complexity: comprehensive_model_analysis() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\loader.py",
+      "line": 21,
+      "message": "God Class: ModelLoaderStrategy = 463  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\loader.py",
+      "line": 46,
+      "message": " cyclomatic complexity: load_model() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\monitoring\\data_freshness_monitor.py",
+      "line": 20,
+      "message": "God Class: DataFreshnessMonitor = 519  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\monitoring\\data_freshness_monitor.py",
+      "line": 226,
+      "message": " cyclomatic complexity: _get_latest_timestamp() = 18 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\monitoring\\feature_drift_monitor.py",
+      "line": 71,
+      "message": " cyclomatic complexity: check_drift() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\monitoring\\health_hub.py",
+      "line": 259,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\monitoring\\ml_analytics.py",
+      "line": 127,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\patterns\\pattern_analyzer.py",
+      "line": 274,
+      "message": " cyclomatic complexity: _analyze_news_batch() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\predictions\\models_predict.py",
+      "line": 20,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\processing\\price_preprocessor.py",
+      "line": 68,
+      "message": " cyclomatic complexity: _normalize_structure() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\risk\\elite_risk_metrics.py",
+      "line": 21,
+      "message": "God Class: EliteRiskMetrics = 458  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\targets\\target_orchestrator.py",
+      "line": 20,
+      "message": " cyclomatic complexity: __init__() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\targets\\target_orchestrator.py",
+      "line": 86,
+      "message": " cyclomatic complexity: _filter_targets_by_timeframe() = 17 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\trading\\live_adaptive_ensemble.py",
+      "line": 120,
+      "message": " cyclomatic complexity: compute_ensemble_weights() = 19 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\training\\adaptive_training_manager.py",
+      "line": 130,
+      "message": " cyclomatic complexity: _calculate_target_quality_score() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\utils\\smart_missing_data_handler.py",
+      "line": 16,
+      "message": "God Class: SmartMissingDataHandler = 427  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\validation\\pipeline_schemas.py",
+      "line": 274,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\analytics\\arena\\arena_battle.py",
+      "line": 63,
+      "message": "God Class: TradingModelArena = 407  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\analytics\\context\\counterfactual_generator.py",
+      "line": 18,
+      "message": "God Class: CounterfactualGenerator = 492  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\core\\cache\\cache_manager.py",
+      "line": 1,
+      "message": "SyntaxError    ",
+      "fix_hint": "  "
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\core\\cloud\\gcs_manager.py",
+      "line": 34,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\core\\security\\secure_secrets_manager.py",
+      "line": 22,
+      "message": " cyclomatic complexity: load_dotenv() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\core\\security\\secure_secrets_manager.py",
+      "line": 47,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\core\\validation\\validators.py",
+      "line": 82,
+      "message": " cyclomatic complexity: validate_ohlc_logic() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 146,
+      "message": " cyclomatic complexity: _parse_cftc_csv() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\fred_collector.py",
+      "line": 41,
+      "message": " cyclomatic complexity: run() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\google_news_collector.py",
+      "line": 78,
+      "message": " cyclomatic complexity: _run_internal() = 22 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\insider_collector.py",
+      "line": 152,
+      "message": " cyclomatic complexity: run() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\newsapi_collector.py",
+      "line": 54,
+      "message": " cyclomatic complexity: run() = 22 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\put_call_ratio_collector.py",
+      "line": 76,
+      "message": " cyclomatic complexity: _fetch_put_call_data() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\rss_collector.py",
+      "line": 65,
+      "message": " cyclomatic complexity: _run_internal() = 20 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\sec_filings_collector.py",
+      "line": 70,
+      "message": " cyclomatic complexity: run() = 19 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\yf_collector.py",
+      "line": 42,
+      "message": " cyclomatic complexity: run() = 20 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\yf_collector.py",
+      "line": 183,
+      "message": " cyclomatic complexity: _process_single_ticker_dataframe() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\data\\collectors\\yf_collector.py",
+      "line": 26,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 53,
+      "message": "God Class: DataManager = 473  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 79,
+      "message": " cyclomatic complexity: get_connection() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 301,
+      "message": " cyclomatic complexity: _prepare_upsert_df() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 487,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 525,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 118,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "SEC",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 498,
+      "message": " SQL injection  f-string",
+      "fix_hint": "  : con.execute(sql, params)"
+    },
+    {
+      "category": "SEC",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 501,
+      "message": " SQL injection  f-string",
+      "fix_hint": "  : con.execute(sql, params)"
+    },
+    {
+      "category": "SEC",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\data_manager.py",
+      "line": 502,
+      "message": " SQL injection  f-string",
+      "fix_hint": "  : con.execute(sql, params)"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\quality\\news_price_availability_filter.py",
+      "line": 15,
+      "message": " cyclomatic complexity: quick_filter_news_by_data_availability() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\data\\management\\handlers\\connection_handler.py",
+      "line": 35,
+      "message": " cyclomatic complexity: get_connection() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\analysis\\importance_stability_analyzer.py",
+      "line": 158,
+      "message": " cyclomatic complexity: calculate_importance_changes() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\analysis\\news_decay_modeler.py",
+      "line": 302,
+      "message": " cyclomatic complexity: get_model_performance_summary() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\features\\builders\\news_event_dataset_builder.py",
+      "line": 78,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\features\\enrichers\\context_map_enricher.py",
+      "line": 62,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\enrichers\\decay_features_enricher.py",
+      "line": 33,
+      "message": " cyclomatic complexity: _enrich_impl() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\enrichers\\sentiment_features_enricher.py",
+      "line": 158,
+      "message": " cyclomatic complexity: _aggregate_news_sentiment() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\monitoring\\feature_drift_detector.py",
+      "line": 59,
+      "message": " cyclomatic complexity: detect_drift() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\selection\\smart_selector.py",
+      "line": 68,
+      "message": " cyclomatic complexity: select() = 18 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\validation\\feature_leakage_guard.py",
+      "line": 138,
+      "message": " cyclomatic complexity: _check_correlation() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\validation\\redundancy_detector.py",
+      "line": 19,
+      "message": "God Class: RedundancyDetector = 484  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\analysis\\decay\\decay_model_fitter.py",
+      "line": 120,
+      "message": " cyclomatic complexity: select_best_overall_model() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\analysis\\decay\\decay_predictor.py",
+      "line": 38,
+      "message": " cyclomatic complexity: predict_news_impact() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\nlp\\extractors\\keyword_extractor.py",
+      "line": 47,
+      "message": " cyclomatic complexity: update_keywords() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\nlp\\models\\roberta_sentiment.py",
+      "line": 64,
+      "message": " cyclomatic complexity: analyze() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\features\\nlp\\utils\\gdelt_utils.py",
+      "line": 6,
+      "message": " cyclomatic complexity: normalize_gdelt_signals() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\meta_learning\\memory\\diary_engine.py",
+      "line": 75,
+      "message": "God Class: DiaryEngine = 466  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\meta_learning\\security\\agent_permissions.py",
+      "line": 64,
+      "message": "God Class: AgentPermissionSystem = 419  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\meta_learning\\security\\agent_permissions.py",
+      "line": 140,
+      "message": " cyclomatic complexity: check_permission() = 17 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\meta_learning\\security\\agent_permissions.py",
+      "line": 349,
+      "message": " cyclomatic complexity: _check_conditions() = 19 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\meta_learning\\security\\constraint_engine.py",
+      "line": 64,
+      "message": "God Class: SecurityConstraintEngine = 565  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\meta_learning\\security\\constraint_engine.py",
+      "line": 115,
+      "message": " cyclomatic complexity: validate_action() = 23 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\dean\\dean_bootstrap_system.py",
+      "line": 118,
+      "message": " cyclomatic complexity: calculate_reward() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\ensemble\\dynamic_weights.py",
+      "line": 134,
+      "message": " cyclomatic complexity: _context_aware_weights() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\health\\model_health_evaluator.py",
+      "line": 31,
+      "message": " cyclomatic complexity: calculate_overall_health_score() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\monitoring\\prediction_drift_monitor.py",
+      "line": 310,
+      "message": " cyclomatic complexity: get_drift_summary() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\models\\ensemble\\calibration\\strategies.py",
+      "line": 18,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\models\\ensemble\\calibration\\strategies.py",
+      "line": 37,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\ensemble\\correlation\\correlation_engine.py",
+      "line": 21,
+      "message": "God Class: CorrelationEngine = 509  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\ensemble\\correlation\\correlation_engine.py",
+      "line": 342,
+      "message": " cyclomatic complexity: find_best_subset() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\models\\monitoring\\drift\\alert_system.py",
+      "line": 70,
+      "message": " cyclomatic complexity: generate_retraining_recommendations() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\optimization\\portfolio\\optimizer.py",
+      "line": 32,
+      "message": "God Class: PortfolioOptimizer = 471  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\guards\\macro_release_timing_guard.py",
+      "line": 18,
+      "message": "God Class: MacroReleaseTimingGuard = 453  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\guards\\temporal_leakage_guard.py",
+      "line": 16,
+      "message": "God Class: TemporalLeakageGuard = 491  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\guards\\temporal_target_guard.py",
+      "line": 17,
+      "message": " cyclomatic complexity: generate_targets_safe() = 18 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\guards\\timeframe_alignment_guard.py",
+      "line": 67,
+      "message": " cyclomatic complexity: validate_timeframe_compatibility() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\hybrid\\colab_manager.py",
+      "line": 208,
+      "message": " cyclomatic complexity: load_colab_results() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\hybrid\\final_stages_executor.py",
+      "line": 114,
+      "message": " cyclomatic complexity: _merge_model_results() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "ARC",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\hybrid\\orchestrator_context.py",
+      "line": 1,
+      "message": "Tight coupling: 22   ( 15)   God Module",
+      "fix_hint": "   facade  dependency injection"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\hybrid\\results_processor.py",
+      "line": 37,
+      "message": " cyclomatic complexity: _find_batch_directory() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\stage_5_prediction.py",
+      "line": 61,
+      "message": "God Class: PredictionStage = 636  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\stage_5_prediction.py",
+      "line": 653,
+      "message": " cyclomatic complexity: _save_stage_5_results() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "ARC",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\stage_5_prediction.py",
+      "line": 1,
+      "message": "Tight coupling: 23   ( 15)   God Module",
+      "fix_hint": "   facade  dependency injection"
+    },
+    {
+      "category": "ARC",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 1,
+      "message": "Tight coupling: 26   ( 15)   God Module",
+      "fix_hint": "   facade  dependency injection"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\evaluation\\backtest_analyzer.py",
+      "line": 149,
+      "message": " cyclomatic complexity: run_backtest() = 22 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\modeling\\io.py",
+      "line": 193,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 82,
+      "message": " cyclomatic complexity: prepare_context_data() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 170,
+      "message": " cyclomatic complexity: prepare_ticker_data() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 219,
+      "message": " cyclomatic complexity: load_target_scaler() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\model_resolver.py",
+      "line": 49,
+      "message": " cyclomatic complexity: resolve_batch_directory() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\model_resolver.py",
+      "line": 83,
+      "message": " cyclomatic complexity: update_local_model_paths() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\prediction_context_manager.py",
+      "line": 58,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\result_builder.py",
+      "line": 25,
+      "message": " cyclomatic complexity: build_result() = 20 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\prediction\\result_builder.py",
+      "line": 162,
+      "message": " cyclomatic complexity: _save_stage_5_results() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\processing\\orchestrator.py",
+      "line": 48,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 13,
+      "message": "God Class: TradingRecommendationEngine = 446  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 155,
+      "message": " cyclomatic complexity: _generate_trading_recommendations() = 32 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 23,
+      "message": " cyclomatic complexity: calculate() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "src\\targets\\calculators\\pre_news_target_calculator.py",
+      "line": 23,
+      "message": " cyclomatic complexity: calculate() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\check_enrichers_integration.py",
+      "line": 23,
+      "message": "God Class: EnrichersChecker = 411  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\check_enrichers_integration.py",
+      "line": 334,
+      "message": " cyclomatic complexity: generate_report() = 18 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\cleanup_system.py",
+      "line": 15,
+      "message": " cyclomatic complexity: cleanup() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\diagnose_analytics.py",
+      "line": 50,
+      "message": " cyclomatic complexity: main() = 19 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\diagnose_analytics.py",
+      "line": 44,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\diagnose_features.py",
+      "line": 58,
+      "message": " cyclomatic complexity: main() = 13 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\diagnose_features.py",
+      "line": 53,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\diagnose_features.py",
+      "line": 40,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\diagnose_features.py",
+      "line": 43,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 164,
+      "message": " cyclomatic complexity: main() = 18 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\run_audit_checks.py",
+      "line": 35,
+      "message": " cyclomatic complexity: check_data_layer() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\simple_accumulate.py",
+      "line": 23,
+      "message": " cyclomatic complexity: main() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\test_metrics_integration.py",
+      "line": 114,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\test_sentiment_integration.py",
+      "line": 97,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "SEC",
+      "severity": "HIGH",
+      "file": "scripts\\verify_data_quality.py",
+      "line": 46,
+      "message": " SQL injection  f-string",
+      "fix_hint": "  : con.execute(sql, params)"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\analysis\\analyze_batch_data.py",
+      "line": 10,
+      "message": " cyclomatic complexity: analyze_batch() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\analysis\\analyze_cache.py",
+      "line": 83,
+      "message": " cyclomatic complexity: analyze_model_batches() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\analysis\\analyze_errors_and_crashes.py",
+      "line": 79,
+      "message": " cyclomatic complexity: analyze_errors() = 16 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\analysis\\analyze_news_quality.py",
+      "line": 19,
+      "message": " cyclomatic complexity: analyze_news_quality() = 19 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\analysis\\deep_analysis_all_components.py",
+      "line": 11,
+      "message": " cyclomatic complexity: analyze_all_components() = 44 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\analysis\\diagnose_pipeline.py",
+      "line": 83,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 432,
+      "message": "God Class: ColabTrainingController = 755  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 158,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 163,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 168,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 173,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 178,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 1211,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 1223,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 481,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 488,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 613,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 716,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 749,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 765,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 822,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\colab_clean_cell.py",
+      "line": 273,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\colab\\run_complete_data_pipeline.py",
+      "line": 57,
+      "message": " cyclomatic complexity: run() = 14 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\core\\accumulate_real_data.py",
+      "line": 114,
+      "message": " cyclomatic complexity: _stage_1_collection() = 15 ( 12)",
+      "fix_hint": "    / use early returns"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 1,
+      "message": "SyntaxError    ",
+      "fix_hint": "  "
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\core\\generate_synthetic_data.py",
+      "line": 36,
+      "message": "God Class: SyntheticDataGenerator = 438  ( 400)",
+      "fix_hint": "    /  "
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\core\\generate_synthetic_data.py",
+      "line": 380,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\core\\test_calibration.py",
+      "line": 58,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "BUG",
+      "severity": "HIGH",
+      "file": "scripts\\core\\test_calibration.py",
+      "line": 118,
+      "message": "Broad except     re-raise    ",
+      "fix_hint": " logger.error(exc)  re-raise"
+    },
+    {
+      "category": "CMX",
+      "severity": "HIGH",
+      "file": "scripts\\monitoring\\verify_ready_for_colab.py",
+      "line": 16,
+      "message": " cyclomatic complexity: check_ready_for_colab() = 19 ( 12)",
+      "fix_hint": "    / use early returns"
+    }
+  ]
+}

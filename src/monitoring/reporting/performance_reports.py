@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from src.config.unified_config_manager import UnifiedConfigManager
+from src.config.unified_config_manager import get_current_config, UnifiedConfigManager
 from src.core.error_handling.error_handler import ErrorHandler
 from src.core.logging.logger import ProjectLogger
 from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
@@ -18,8 +18,8 @@ class ComprehensiveReporter:
     performance, and model integrity, as outlined in the architectural blueprints.
     """
 
-    def __init__(self, config_manager: UnifiedConfigManager):
-        self.config_manager = config_manager
+    def __init__(self, config_manager: Optional[UnifiedConfigManager] = None):
+        self.config_manager = config_manager or get_current_config()
         self.config = self.config_manager.get_specific_config('monitoring', 'reporter') or {}
         
         self.thresholds = self.config.get('thresholds', {
@@ -123,30 +123,30 @@ class ComprehensiveReporter:
         return report
 
     def _print_console_summary(self, report: Dict[str, Any]):
-        """Outputs a human-readable summary to the console."""
-        print("\n" + "="*50)
-        print(f" SYSTEM HEALTH REPORT - {report['timestamp']}")
-        print("="*50)
+        """Outputs a human-readable summary to the logs."""
+        logger.info("\n" + "="*50)
+        logger.info(f" SYSTEM HEALTH REPORT - {report['timestamp']}")
+        logger.info("="*50)
         
         sys = report['system_status']
-        print(f"CPU:    {sys['cpu']['percent']}%  [{sys['cpu']['status']}]")
-        print(f"MEM:    {sys['memory']['percent']}%  [{sys['memory']['status']}]")
+        logger.info(f"CPU:    {sys['cpu']['percent']}%  [{sys['cpu']['status']}]")
+        logger.info(f"MEM:    {sys['memory']['percent']}%  [{sys['memory']['status']}]")
         
-        print("\nPIPELINE PERFORMANCE:")
+        logger.info("\nPIPELINE PERFORMANCE:")
         for stage, t in self.stage_timings.items():
-            print(f" - {stage:.<25} {t:>8.2f}s")
+            logger.info(f" - {stage:.<25} {t:>8.2f}s")
         
         if self.alerts:
-            print("\nACTIVE ALERTS:")
+            logger.info("\nACTIVE alerts:")
             for alert in self.alerts:
-                print(f" [!] {alert}")
+                logger.info(f" [!] {alert}")
         else:
-            print("\nNo critical issues detected.")
-        print("="*50 + "\n")
+            logger.info("\nNo critical issues detected.")
+        logger.info("="*50 + "\n")
 
 if __name__ == "__main__":
     # Mock usage
-    cfg = UnifiedConfigManager()
+    cfg = get_current_config()
     reporter = ComprehensiveReporter(cfg)
     
     reporter.record_stage_time("Collection", 12.5)

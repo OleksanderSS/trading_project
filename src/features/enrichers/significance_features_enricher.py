@@ -1,7 +1,7 @@
 
 import logging
 import pandas as pd
-from typing import Dict, Any, Optional
+from typing import Any
 
 from src.features.enrichers.base import BaseEnricher
 
@@ -14,6 +14,14 @@ class SignificanceFeaturesEnricher(BaseEnricher):
     modeling process.
     """
 
+    @property
+    def name(self) -> str:
+        return "significance_features"
+    
+    @property
+    def priority(self) -> int:
+        return 70
+
     def __init__(self, significance_col: str = 'is_significant', min_events_per_ticker: int = 10, mode: str = 'feature_engineering'):
         """
         Initializes the SignificanceAnalyzer.
@@ -23,42 +31,58 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             min_events_per_ticker (int): The minimum number of significant events required for a ticker to be included in 'filter' mode.
             mode (str): The operational mode. Can be 'filter', 'balance', or 'feature_engineering'.
         """
+        super().__init__()  # Initialize BaseEnricher (sets up self.logger)
+        
+        # Ensure significance_col is a string, not a dict
+        if isinstance(significance_col, dict):
+            significance_col = significance_col.get('name', 'is_significant')
+        
         self.significance_col = significance_col
         self.min_events_per_ticker = min_events_per_ticker
         self.mode = mode
         logger.info(f"SignificanceAnalyzer initialized in '{self.mode}' mode.")
 
-    def enrich(self, data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+    def _enrich_impl(self, df: pd.DataFrame, **kwargs: Any) -> pd.DataFrame:
         """
-        Analyzes the data to filter, balance, or create features based on event significance.
+        Analyzes data to filter, balance, or create features based on event significance.
 
         Args:
-            data (pd.DataFrame): The input data with a significance column.
+            df (pd.DataFrame): The input data with a significance column.
             **kwargs: Not used in this implementation.
 
         Returns:
             pd.DataFrame: The processed DataFrame.
         """
-        if self.significance_col not in data.columns:
-            logger.warning(f"Significance column '{self.significance_col}' not found in data. Skipping analysis.")
-            return data
+        # Ensure significance_col is a string for column check
+        col_name = self.significance_col
+        if isinstance(col_name, dict):
+            col_name = col_name.get('name', 'is_significant')
+        
+        # ✅ If column is missing, create it based on volatility or other metrics
+        if col_name not in df.columns:
+            logger.info(f"Significance column '{col_name}' not found. Creating it based on volatility...")
+            df = self._create_significance_column(df, col_name)
+            if col_name not in df.columns:
+                logger.warning(f"Failed to create significance column '{col_name}'. Skipping analysis.")
+                return df
 
         if self.mode == 'filter':
-            return self._filter_significant_events(data)
+            return self._filter_significant_events(df)
         elif self.mode == 'feature_engineering':
-            return self._create_significance_features(data)
+            return self._create_significance_features(df)
         elif self.mode == 'balance':
             logger.warning("Mode 'balance' is not implemented. A dedicated preprocessor should be used.")
-            return data
+            return df
         else:
             logger.warning(f"Unknown mode '{self.mode}'. Returning original data.")
-            return data
+            return df
 
     def _filter_significant_events(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Filters the DataFrame, keeping only significant events and tickers with enough data.
         """
-        logger.debug(f"Original size for filtering: {len(df)}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Original size for filtering: {len(df)}")
         
         filtered_df = df[df[self.significance_col] == True].copy()
         
@@ -103,4 +127,38 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         if 'ticker' in df_out.columns and df_out['ticker'].nunique() == 1 and df_out['ticker'].iloc[0] == 'default':
             df_out = df_out.drop(columns=['ticker'])
             
+        return df_out
+
+    def _create_significance_column(self, df: pd.DataFrame, col_name: str) -> pd.DataFrame:
+        """
+        Creates is_significant column based on volatility or price movements.
+        An event is significant if it's in the top 20% of volatility or price changes.
+        """
+        df_out = df.copy()
+        
+        # Try to calculate significance based on available columns
+        if 'returns' in df_out.columns:
+            # Use returns volatility
+            threshold = df_out['returns'].abs().quantile(0.80)  # Top 20%
+            df_out[col_name] = df_out['returns'].abs() >= threshold
+            logger.info(f"Created '{col_name}' based on returns (threshold: {threshold:.4f})")
+        elif 'close' in df_out.columns:
+            # Calculate returns from close price
+            df_out['_temp_returns'] = (
+                df_out['close']
+                .pct_change(fill_method=None)
+                .replace([float('inf'), float('-inf')], float('nan'))
+            )
+            threshold = df_out['_temp_returns'].abs().quantile(0.80)
+            df_out[col_name] = df_out['_temp_returns'].abs() >= threshold
+            df_out = df_out.drop(columns=['_temp_returns'])
+            logger.info(f"Created '{col_name}' based on price changes (threshold: {threshold:.4f})")
+        elif 'VOLATILITY_20' in df_out.columns:
+            # Use existing volatility feature
+            threshold = df_out['VOLATILITY_20'].quantile(0.80)
+            df_out[col_name] = df_out['VOLATILITY_20'] >= threshold
+            logger.info(f"Created '{col_name}' based on VOLATILITY_20 (threshold: {threshold:.4f})")
+        else:
+            logger.warning("Cannot create significance column: no suitable columns found (returns, close, or VOLATILITY_20)")
+        
         return df_out

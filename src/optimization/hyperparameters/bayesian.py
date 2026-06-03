@@ -1,24 +1,35 @@
 # src/optimization/hyperparameters/bayesian.py
 
 import numpy as np
-from typing import Dict, Any, Optional, Callable
-from sklearn.model_selection import cross_val_score
+from typing import Any, Callable, Optional
+from sklearn.model_selection import cross_val_score, TimeSeriesSplit
 from src.core.logging.logger import ProjectLogger
 from src.optimization.base import BaseOptimizer
 
 try:
     import optuna
-except ImportError as e:
-    # Raise the error immediately to signal a missing critical dependency.
-    # This prevents the system from silently proceeding with default parameters.
-    raise ImportError("Optuna is not installed. Please install it to use Bayesian optimization: `pip install optuna`") from e
+    OPTUNA_AVAILABLE = True
+except ImportError:
+    OPTUNA_AVAILABLE = False
 
 class BayesianOptimizer(BaseOptimizer):
     """
     Інструмент для підбору гіперпараметрів моделей за допомогою байєсівської оптимізації (Optuna).
+    
+    Combines features from both implementations:
+    - Inherits from BaseOptimizer (structured approach)
+    - Configurable scoring and cv (flexibility)
+    - Graceful Optuna handling (soft dependency)
     """
 
-    def __init__(self, model_func: Callable, param_space: Dict[str, Any], n_trials: int = 50):
+    def __init__(
+        self, 
+        model_func: Callable, 
+        param_space: dict[str, Any], 
+        n_trials: int = 50,
+        scoring: str = 'neg_mean_squared_error',
+        cv: int = 3
+    ):
         """
         Ініціалізує оптимізатор.
 
@@ -26,13 +37,25 @@ class BayesianOptimizer(BaseOptimizer):
             model_func: Функція або клас моделі для ініціалізації.
             param_space: Словник з визначенням простору параметрів.
             n_trials: Кількість спроб оптимізації.
+            scoring: Метрика для оцінки (sklearn scoring).
+            cv: Кількість фолдів для cross-validation.
         """
-        self.logger = ProjectLogger.get_logger("BayesianOptimizer")
+        super().__init__()
+        
+        if not OPTUNA_AVAILABLE:
+            raise ImportError(
+                "Optuna is not installed. Please install it to use Bayesian optimization: "
+                "`pip install optuna`"
+            )
+        
         self.model_func = model_func
         self.param_space = param_space
         self.n_trials = n_trials
-        self.best_params = None
+        self.scoring = scoring
+        self.cv = cv
+        self.best_params: dict[str, Any] = {}
         self.best_score = -np.inf
+        self.study: Optional['optuna.Study'] = None
 
     @property
     def optimizer_type(self) -> str:
@@ -41,9 +64,14 @@ class BayesianOptimizer(BaseOptimizer):
     def objective(self, trial: "optuna.trial.Trial", X: np.ndarray, y: np.ndarray) -> float:
         """
         Цільова функція для Optuna. 
-        Note: We removed the try-except block here. If any systemic error occurs during
-        model training or evaluation, it will propagate up and stop the optimization study,
-        making the problem immediately visible.
+        
+        Args:
+            trial: Optuna trial object
+            X: Feature matrix
+            y: Target vector
+            
+        Returns:
+            Mean cross-validation score
         """
         # Генеруємо параметри для поточної спроби
         params = {}
@@ -58,48 +86,77 @@ class BayesianOptimizer(BaseOptimizer):
         # Тренуємо модель з вибраними параметрами
         model = self.model_func(**params)
         
-        # Оцінюємо через cross-validation (максимізуємо, тому Optuna максимізує це значення)
-        scores = cross_val_score(model, X, y, cv=3, scoring='neg_mean_squared_error')
+        # Оцінюємо через cross-validation
+        scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.cv), scoring=self.scoring)
         return float(scores.mean())
 
-    def optimize(self, X: Any, y: Any, **kwargs) -> Dict[str, Any]:
+    def optimize(self, data: Any, target: Any = None, **kwargs) -> dict[str, Any]:
         """
         Запускає процес байєсівської оптимізації.
-
+        
         Args:
-            X: Ознаки для навчання.
-            y: Цільова змінна.
-            **kwargs: Додаткові параметри.
-
+            data: Feature matrix (X)
+            target: Target vector (y)
+            **kwargs: Additional arguments (ignored)
+            
         Returns:
-            Словник з найкращими знайденими параметрами.
+            Dict with best_params and best_score
         """
+        if target is None:
+            raise ValueError("BayesianOptimizer requires 'target' data for optimization.")
+
         try:
-            self.logger.info(f"Запуск байєсівської оптимізації ({self.n_trials} спроб)...")
-            
-            study = optuna.create_study(direction='maximize', sampler=optuna.samplers.TPESampler())
-            
-            # We pass `catch=()` to ensure that any exception inside the objective function
-            # is NOT caught by Optuna. This makes the entire process fail fast, 
-            # which is crucial for identifying and debugging systemic issues quickly.
-            study.optimize(
-                lambda trial: self.objective(trial, X, y), 
-                n_trials=self.n_trials, 
-                show_progress_bar=False,
-                catch=()
+            self.logger.info(
+                f"Запуск байєсівської оптимізації ({self.n_trials} спроб, "
+                f"scoring={self.scoring}, cv={self.cv})..."
             )
+
+            self.study = optuna.create_study(
+                direction="maximize", 
+                sampler=optuna.samplers.TPESampler()
+            )
+
+            self.study.optimize(
+                lambda trial: self.objective(trial, data, target),
+                n_trials=self.n_trials,
+                show_progress_bar=False,
+                catch=(),
+            )
+
+            self.best_params = self.study.best_params
+            self.best_score = float(self.study.best_value)
+
+            self.logger.info(
+                f"Байєсівська оптимізація завершена: найкращий скор = {self.best_score:.4f}"
+            )
+            self.logger.info(f"Найкращі параметри: {self.best_params}")
             
-            self.best_params = study.best_params
-            self.best_score = study.best_value
-            
-            self.logger.info(f"Байєсівська оптимізація завершена: найкращий скор = {self.best_score:.4f}")
-            return self.best_params
-            
+            return {"best_params": self.best_params, "best_score": self.best_score}
+
         except Exception as e:
             self.logger.error(f"Критична помилка під час оптимізації: {e}", exc_info=True)
-            # Re-raise the exception to ensure the calling process is aware of the failure.
             raise
 
-    def validate_params(self, params: Dict[str, Any]) -> bool:
+    def validate_params(self, params: dict[str, Any]) -> bool:
         """Перевіряє валідність простору параметрів."""
         return bool(params and isinstance(params, dict))
+    
+    def get_optimization_history(self) -> list[dict[str, Any]]:
+        """
+        Повертає історію оптимізації.
+        
+        Returns:
+            List of trials with params and scores
+        """
+        if self.study is None:
+            return []
+        
+        return [
+            {
+                'trial_number': trial.number,
+                'params': trial.params,
+                'value': trial.value,
+                'state': trial.state.name
+            }
+            for trial in self.study.trials
+        ]

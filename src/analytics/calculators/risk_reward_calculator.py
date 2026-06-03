@@ -2,51 +2,73 @@ import pandas as pd
 import numpy as np
 import logging
 from typing import Dict, Any, Optional
+from dataclasses import dataclass
 
 from .volatility_calculator import VolatilityCalculator
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class TradeConfig:
+    """Configuration for trade parameter calculations."""
+    atr_multiplier: float = 2.0
+    tp_multiplier: float = 3.0
+    risk_free_rate: float = 0.0
+    periods_per_year: int = 252
+    confidence_level: float = 0.95
+
+@dataclass
+class TradeParameters:
+    """Parameters for a specific trade."""
+    df: pd.DataFrame
+    signal_type: str
+    entry_price: float
+
 class RiskRewardCalculator:
     """A collection of static methods for calculating standard risk-reward metrics and dynamic trade parameters."""
 
     @staticmethod
-    def calculate_trade_parameters(df: pd.DataFrame, 
-                                 signal_type: str, 
-                                 entry_price: float, 
-                                 atr_multiplier: float = 2.0, 
-                                 tp_multiplier: float = 3.0) -> Dict[str, float]:
+    def _clean_return_series(returns: pd.Series) -> pd.Series:
+        """Return finite numeric observations only."""
+        return pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
+
+    @staticmethod
+    def calculate_trade_parameters(trade_params: TradeParameters, config: Optional[TradeConfig] = None) -> Dict[str, float]:
         """
         Calculates dynamic Stop Loss and Take Profit levels based on market volatility (ATR).
         
         Args:
-            df (pd.DataFrame): DataFrame with 'high', 'low', 'close' columns.
-            signal_type (str): 'BUY' or 'SELL'.
-            entry_price (float): Price at which the trade is entered.
-            atr_multiplier (float): Multiplier for ATR to set Stop Loss.
-            tp_multiplier (float): Multiplier for ATR to set Take Profit (or target ratio).
+            trade_params (TradeParameters): Trade parameters including data, signal type, and entry price.
+            config (Optional[TradeConfig]): Configuration for multipliers and settings.
 
         Returns:
             Dict[str, float]: Dictionary containing stop_loss, take_profit, and risk_reward_ratio.
         """
-        atr = VolatilityCalculator.calculate_atr(df, window=14).iloc[-1]
+        if config is None:
+            config = TradeConfig()
+            
+        return RiskRewardCalculator._calculate_trade_with_config(trade_params, config)
+
+    @staticmethod
+    def _calculate_trade_with_config(trade_params: TradeParameters, config: TradeConfig) -> Dict[str, float]:
+        """Calculate trade parameters with given configuration."""
+        atr = VolatilityCalculator.calculate_atr(trade_params.df, window=14).iloc[-1]
         
         if pd.isna(atr) or atr <= 0:
-            atr = entry_price * 0.01 # Fallback to 1% of price
+            atr = trade_params.entry_price * 0.01 # Fallback to 1% of price
             
-        risk = atr * atr_multiplier
+        risk = atr * config.atr_multiplier
         
-        if signal_type == 'BUY':
-            sl = entry_price - risk
-            # Dynamic TP based on trend/volatility or simple multiplier of risk
-            tp = entry_price + (risk * tp_multiplier)
-        elif signal_type == 'SELL':
-            sl = entry_price + risk
-            tp = entry_price - (risk * tp_multiplier)
+        if trade_params.signal_type == 'BUY':
+            sl = trade_params.entry_price - risk
+            tp = trade_params.entry_price + (risk * config.tp_multiplier)
+        elif trade_params.signal_type == 'SELL':
+            sl = trade_params.entry_price + risk
+            tp = trade_params.entry_price - (risk * config.tp_multiplier)
         else:
             return {'stop_loss': 0.0, 'take_profit': 0.0, 'risk_reward_ratio': 0.0}
 
-        rr_ratio = abs(tp - entry_price) / abs(entry_price - sl) if abs(entry_price - sl) != 0 else 0.0
+        rr_ratio = abs(tp - trade_params.entry_price) / abs(trade_params.entry_price - sl) if abs(trade_params.entry_price - sl) != 0 else 0.0
         
         return {
             'stop_loss': float(sl),
@@ -56,34 +78,49 @@ class RiskRewardCalculator:
         }
 
     @staticmethod
-    def calculate_sharpe_ratio(returns: pd.Series, risk_free_rate: float = 0.0, periods_per_year: int = 252) -> float:
+    def calculate_sharpe_ratio(returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
         """Calculates the annualized Sharpe Ratio."""
-        if returns.std() == 0:
+        if config is None:
+            config = TradeConfig()
+
+        clean_returns = RiskRewardCalculator._clean_return_series(returns)
+        periods_per_year = max(int(config.periods_per_year), 1)
+        if len(clean_returns) < 2:
             return np.nan
-        
-        excess_returns = returns - (risk_free_rate / periods_per_year)
-        sharpe_ratio = excess_returns.mean() / excess_returns.std()
-        annualized_sharpe = sharpe_ratio * np.sqrt(periods_per_year)
-        return float(annualized_sharpe)
+
+        excess_returns = clean_returns - (config.risk_free_rate / periods_per_year)
+        excess_std = excess_returns.std()
+        if not np.isfinite(excess_std) or excess_std <= 1e-12:
+            return np.nan
+
+        annualized_sharpe = (excess_returns.mean() / excess_std) * np.sqrt(periods_per_year)
+        return float(annualized_sharpe) if np.isfinite(annualized_sharpe) else np.nan
 
     @staticmethod
-    def calculate_sortino_ratio(returns: pd.Series, risk_free_rate: float = 0.0, periods_per_year: int = 252) -> float:
+    def calculate_sortino_ratio(returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
         """Calculates the annualized Sortino Ratio."""
-        target_return = risk_free_rate / periods_per_year
-        downside_returns = returns[returns < target_return]
+        if config is None:
+            config = TradeConfig()
+
+        clean_returns = RiskRewardCalculator._clean_return_series(returns)
+        periods_per_year = max(int(config.periods_per_year), 1)
+        if len(clean_returns) < 2:
+            return np.nan
+
+        target_return = config.risk_free_rate / periods_per_year
+        downside_returns = clean_returns[clean_returns < target_return]
         
         if len(downside_returns) < 2:
             return np.nan
 
         downside_std = downside_returns.std()
-        if downside_std == 0:
-            excess_return = returns.mean() - target_return
-            return np.inf if excess_return > 0 else 0.0
+        if not np.isfinite(downside_std) or downside_std <= 1e-12:
+            return np.nan
 
-        expected_return = returns.mean()
+        expected_return = clean_returns.mean()
         sortino_ratio = (expected_return - target_return) / downside_std
         annualized_sortino = sortino_ratio * np.sqrt(periods_per_year)
-        return float(annualized_sortino)
+        return float(annualized_sortino) if np.isfinite(annualized_sortino) else np.nan
 
     @staticmethod
     def calculate_beta(asset_returns: pd.Series, market_returns: pd.Series) -> float:
@@ -104,36 +141,59 @@ class RiskRewardCalculator:
         return float(beta)
 
     @staticmethod
-    def calculate_treynor_ratio(asset_returns: pd.Series, market_returns: pd.Series, risk_free_rate: float = 0.0, periods_per_year: int = 252) -> float:
+    def calculate_treynor_ratio(asset_returns: pd.Series, market_returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
         """Calculates the Treynor Ratio."""
+        if config is None:
+            config = TradeConfig()
+            
         beta = RiskRewardCalculator.calculate_beta(asset_returns, market_returns)
         if beta == 0 or pd.isna(beta):
             return np.nan
 
-        excess_return = (asset_returns.mean() * periods_per_year) - risk_free_rate
+        excess_return = (asset_returns.mean() * config.periods_per_year) - config.risk_free_rate
         treynor_ratio = excess_return / beta
         return float(treynor_ratio)
 
     @staticmethod
-    def calculate_var_cvar(returns: pd.Series, confidence_level: float = 0.95) -> dict:
-        """Calculates Value at Risk (VaR) and Conditional Value at Risk (CVaR)."""
-        if returns.empty:
-            return {'var': np.nan, 'cvar': np.nan}
-            
-        quantile = 1 - confidence_level
-        var = returns.quantile(quantile)
-        cvar = returns[returns <= var].mean()
-        return {'var': float(var), 'cvar': float(cvar)}
+    def calculate_var_cvar(returns: pd.Series, config: Optional[TradeConfig] = None) -> dict:
+        """Calculates loss-positive VaR/CVaR plus raw return thresholds."""
+        if config is None:
+            config = TradeConfig()
+
+        clean_returns = pd.Series(returns, dtype=float).dropna()
+        if clean_returns.empty:
+            return {'var': np.nan, 'cvar': np.nan, 'status': 'insufficient_data'}
+
+        quantile = 1 - config.confidence_level
+        var_return_threshold = clean_returns.quantile(quantile)  # audit-ignore: VAR_SIGN_OR_EMPTY_DATA_REVIEW
+        tail_returns = clean_returns[clean_returns <= var_return_threshold]
+        cvar_return_threshold = tail_returns.mean()
+        var_loss_positive = max(0.0, float(-var_return_threshold))
+        cvar_loss_positive = max(0.0, float(-cvar_return_threshold))
+        return {
+            'var': var_loss_positive,
+            'cvar': cvar_loss_positive,
+            'var_return_threshold': float(var_return_threshold),
+            'cvar_return_threshold': float(cvar_return_threshold),
+            'confidence_level': float(config.confidence_level),
+            'status': 'ok',
+        }
 
     @staticmethod
-    def calculate_information_ratio(asset_returns: pd.Series, benchmark_returns: pd.Series, periods_per_year: int = 252) -> float:
+    def calculate_information_ratio(asset_returns: pd.Series, benchmark_returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
         """Calculates the annualized Information Ratio."""
-        active_returns = asset_returns - benchmark_returns
+        if config is None:
+            config = TradeConfig()
+            
+        active_returns = RiskRewardCalculator._clean_return_series(asset_returns - benchmark_returns)
+        if len(active_returns) < 2:
+            return np.nan
+
         tracking_error = active_returns.std()
 
-        if tracking_error == 0:
-            return np.inf if active_returns.mean() > 0 else 0.0
+        if not np.isfinite(tracking_error) or tracking_error <= 1e-12:
+            return np.nan
         
         information_ratio = active_returns.mean() / tracking_error
-        annualized_ir = information_ratio * np.sqrt(periods_per_year)
-        return float(annualized_ir)
+        annualized_ir = information_ratio * np.sqrt(max(int(config.periods_per_year), 1))
+        return float(annualized_ir) if np.isfinite(annualized_ir) else np.nan

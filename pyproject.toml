@@ -1,0 +1,34 @@
+[tool.ruff]
+# Налаштування Ruff - найшвидшого лінтера
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = ["E501"] # Ignore long lines (handled by formatter)
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+# Налаштування Mypy для суворої типізації
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false # Почнемо з м'якого режиму
+check_untyped_defs = true
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
+
+[tool.bandit]
+# Налаштування Bandit для аудиту безпеки
+exclude_dirs = ["tests", "venv", ".gemini"]
+tests = ["B201", "B301"] # Специфічні тести на безпеку

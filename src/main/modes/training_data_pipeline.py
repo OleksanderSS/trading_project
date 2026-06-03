@@ -45,14 +45,18 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
     logger.info(f"Successfully collected data. Types: {list(raw_data.keys())}")
 
     # 2. Feature Engineering Stage
-    feature_orchestrator = FeatureOrchestrator.create_from_config(config_manager, raw_data)
-    features_df = feature_orchestrator.run(market_data)
+    feature_orchestrator = FeatureOrchestrator.create_from_config(config_manager)
+    features_df = feature_orchestrator.run(market_data, **raw_data)
     logger.info(f"Feature engineering complete. DataFrame shape: {features_df.shape}")
 
     # 3. Target Generation Stage
     targets_list = config_manager.get_config('targets', [])
     target_orchestrator = TargetOrchestrator(targets_list=targets_list)
-    final_df = target_orchestrator.generate_targets(features_df)
+    targets_df = target_orchestrator.generate_targets(features_df)
+    target_cols = [col for col in targets_df.columns if col.startswith('target_')]
+    final_df = features_df.copy()
+    for col in target_cols:
+        final_df[col] = targets_df[col].reindex(final_df.index)
     logger.info(f"Target generation complete. Final DataFrame shape: {final_df.shape}")
 
     # 4. Save the final dataset
@@ -65,7 +69,7 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
         output_path = output_dir / output_filename
         
         final_df.to_parquet(output_path, index=False)
-        logger.info(f"--- Pipeline Finished Successfully ---")
+        logger.info("--- Pipeline Finished Successfully ---")
         logger.info(f"Final dataset saved to: {output_path}")
 
     except Exception as e:

@@ -1,0 +1,14 @@
+# Snyk (https://snyk.io) policy file
+
+# Exclude temporary test cache directories
+exclude:
+  global:
+    - pytest-cache-files-*
+    - pytest-cache-files-*/**
+    - .pytest_cache/**
+    - __pycache__/**
+    - .mypy_cache/**
+    - .ruff_cache/**
+    - .venv/**
+    - venv/**
+    - node_modules/**

@@ -1,3 +1,4 @@
+import logging
 # src/utils/rate_limiter.py
 
 import asyncio
@@ -12,87 +13,91 @@ logger = ProjectLogger.get_logger("RateLimiter")
 
 class RateLimiter:
     """
-    Реалізує алгоритм обмеження швидкості "Token Bucket" з плавним поповненням токенів.
+    Implements a "Token Bucket" rate limiting algorithm with smooth token replenishment.
 
-    Цей клас є безпечним для використання як у синхронному, так і в асинхронному коді
-    завдяки використанню `threading.Lock` та `asyncio.Lock`.
+    This class is safe for use in both synchronous and asynchronous code
+    due to the use of `threading.Lock` and `asyncio.Lock`.
 
-    В архітектурі проєкту цей лімітер централізовано інтегрований у `HttpClientFactory`,
-    що гарантує, що всі HTTP-запити до зовнішніх API автоматично дотримуються
-    встановлених лімітів швидкості, підвищуючи надійність системи.
+    In the project architecture, this limiter is centrally integrated into `HttpClientFactory`,
+    ensuring that all HTTP requests to external APIs automatically adhere to
+    established rate limits, enhancing system reliability.
     """
 
     def __init__(self, rate_limit: int = 10, per_seconds: float = 1.0):
         """
-        Ініціалізує лімітер швидкості.
+        Initializes the rate limiter.
 
         Args:
-            rate_limit: Максимальна кількість запитів (токенів) у "відрі".
-            per_seconds: Часове вікно в секундах, за яке поповнюється повне "відро" токенів.
+            rate_limit: Maximum number of requests (tokens) in the bucket.
+            per_seconds: Time window in seconds over which a full bucket of tokens is replenished.
         """
         if rate_limit <= 0 or per_seconds <= 0:
-            raise ValueError("Ліміт швидкості та період мають бути позитивними числами.")
+            raise ValueError("Rate limit and period must be positive numbers.")
         
         self.rate_limit = rate_limit
         self.per_seconds = per_seconds
-        self.allowance = float(rate_limit)  # Поточна кількість доступних токенів
+        self.allowance = float(rate_limit)  # Current number of available tokens
         self.last_check_time = time.monotonic()
         
-        # Блокування для потоко- та асинхронної безпеки
+        # Locks for thread and async safety
         self._lock = threading.Lock()
         self._async_lock = asyncio.Lock()
         
-        logger.info(f"RateLimiter ініціалізовано: {rate_limit} запитів за {per_seconds} секунд.")
+        logger.info(f"RateLimiter initialized: {rate_limit} requests per {per_seconds} seconds.")
 
     def _update_allowance(self) -> None:
-        """Поповнює "відро" токенів на основі часу, що минув."""
+        """Replenishes the token bucket based on elapsed time."""
         current_time = time.monotonic()
         time_passed = current_time - self.last_check_time
         self.last_check_time = current_time
         
-        # Додаємо нові токени. Кількість пропорційна часу, що минув.
+        # Add new tokens. Quantity is proportional to elapsed time.
         replenishment = time_passed * (self.rate_limit / self.per_seconds)
         self.allowance += replenishment
         
-        # Обмежуємо кількість токенів максимальним значенням
+        # Cap tokens at maximum value
         if self.allowance > self.rate_limit:
             self.allowance = float(self.rate_limit)
 
     def acquire(self) -> None:
-        """Синхронно очікує, доки не з'явиться вільний токен."""
+        """Synchronously waits until a token is available."""
         with self._lock:
             self._update_allowance()
             if self.allowance < 1.0:
-                # Обчислюємо точний час очікування до появи наступного токена
+                # Calculate precise wait time until the next token appears
                 sleep_duration = (1.0 - self.allowance) * (self.per_seconds / self.rate_limit)
-                logger.debug(f"Ліміт швидкості досягнуто. Очікування: {sleep_duration:.4f} сек.")
+                # Only log if wait time is significant (>50ms) to reduce log noise
+                if sleep_duration > 0.05:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Rate limit reached. Waiting: {sleep_duration:.4f} sec.")
                 time.sleep(sleep_duration)
-                self._update_allowance() # Повторне оновлення після очікування
+                self._update_allowance() # Re-update after waiting
             
             self.allowance -= 1.0
-        logger.debug("Токен отримано (синхронно).")
+        # Reduce log noise - only log on significant waits
 
     def try_acquire(self) -> bool:
-        """Спроба отримати токен без блокування (синхронно)."""
+        """Attempts to acquire a token without blocking (synchronously)."""
         with self._lock:
             self._update_allowance()
             if self.allowance >= 1.0:
                 self.allowance -= 1.0
-                logger.debug("Токен отримано (try_acquire).")
                 return True
         
-        logger.debug("Немає доступних токенів (try_acquire).")
         return False
 
     async def acquire_async(self) -> None:
-        """Асинхронно очікує, доки не з'явиться вільний токен."""
+        """Asynchronously waits until a token is available."""
         async with self._async_lock:
             self._update_allowance()
             if self.allowance < 1.0:
                 sleep_duration = (1.0 - self.allowance) * (self.per_seconds / self.rate_limit)
-                logger.debug(f"Ліміт швидкості досягнуто. Асинхронне очікування: {sleep_duration:.4f} сек.")
+                # Only log if wait time is significant (>50ms) to reduce log noise
+                if sleep_duration > 0.05:
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Rate limit reached. Async waiting: {sleep_duration:.4f} sec.")
                 await asyncio.sleep(sleep_duration)
-                self._update_allowance() # Повторне оновлення після очікування
+                self._update_allowance() # Re-update after waiting
             
             self.allowance -= 1.0
-        logger.debug("Токен отримано (асинхронно).")
+        # Reduce log noise - only log on significant waits

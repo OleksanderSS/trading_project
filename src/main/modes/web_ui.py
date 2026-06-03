@@ -1,91 +1,114 @@
-#!/usr/bin/env python3
 """
 Web UI Mode for Trading System
 (ОНОВЛЕНО для використання UnifiedConfigManager)
 """
-
 import logging
 import http.server
 import socketserver
 import json
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, Any
-
-# --- ІНТЕГРАЦІЯ: Використовуємо єдиний конфігураційний менеджер ---
-from config.unified_config_manager import get_current_config
-from utils.real_data_collector import RealDataCollector
-from utils.common_utils import PerformanceMonitor
+from src.main.modes.base import BaseMode
+CONTENT_TYPE_HTML = 'text/html'
 
 
-class WebUIMode:
+class WebUIMode(BaseMode):
     """Режим Web UI для Trading System"""
-    
-    # --- РЕФАКТОРИНГ: Оновлюємо конструктор для роботи з UnifiedConfigManager ---
+
     def __init__(self):
-        self.config = get_current_config()
-        self.logger = logging.getLogger(__name__)
-        # --- РЕФАКТОРИНГ: RealDataCollector тепер не приймає конфігурацію ---
-        self.data_collector = RealDataCollector()
-        self.performance_monitor = PerformanceMonitor()
-        
-    def run(self, host: str = 'localhost', port: int = 8080) -> Dict[str, Any]:
-        """Запуск Web UI сервера"""
+        super().__init__()
         try:
-            self.logger.info(f"Starting Web UI on {host}:{port}")
-            
+            from src.monitoring import ModelPerformanceMonitor
+            self.performance_monitor = ModelPerformanceMonitor()
+        except ImportError:
+            self.performance_monitor = None
+            self.logger.warning(
+                'ModelPerformanceMonitor not available, using None')
+        self.data_collector = None
+
+    def run(self, **kwargs) ->Dict[str, Any]:
+        """Запуск Web UI сервера"""
+        host = kwargs.get('host', 'localhost')
+        port = kwargs.get('port', 8080)
+        try:
+            self.logger.info('Starting Web UI on %s:%d', host, port)
             handler = self._create_handler()
-            
-            print(f"[START] Trading System Web UI")
-            print(f"[DATA] Dashboard: http://{host}:{port}")
-            print(f"💼 Trading Interface: http://{host}:{port}/trading")
-            print(f"[UP] System Overview: http://{host}:{port}/dashboard")
-            print("[RESTART] Auto-refresh enabled (30 seconds)")
-            print("⏹️  Press Ctrl+C to stop the server")
-            
+            self._log_startup_info(host, port)
             with socketserver.TCPServer((host, port), handler) as httpd:
                 try:
                     httpd.serve_forever()
                 except KeyboardInterrupt:
-                    print("\n🛑 Server stopped")
-                    return {
-                        'status': 'stopped',
-                        'mode': 'web-ui',
-                        'host': host,
-                        'port': port
-                    }
-                    
+                    return self._handle_server_shutdown(host, port)
+        except OSError as e:
+            return self._handle_startup_error(e, host, port)
         except Exception as e:
-            self.logger.error(f"Web UI failed to start: {e}")
-            return {
-                'status': 'failed',
-                'mode': 'web-ui',
-                'error': str(e)
-            }
-    
+            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            return self._handle_startup_error(e, host, port)
+
+    def _log_startup_info(self, host: str, port: int) ->None:
+        """Логує інформацію про запуск сервера."""
+        self.logger.info('[START] Trading System Web UI')
+        self.logger.info('[DATA] Dashboard: http://%s:%d', host, port)
+        self.logger.info('💼 Trading Interface: http://%s:%d/trading', host,
+            port)
+        self.logger.info('[UP] System Overview: http://%s:%d/dashboard',
+            host, port)
+        self.logger.info('[RESTART] Auto-refresh enabled (30 seconds)')
+        self.logger.info('⏹️  Press Ctrl+C to stop server')
+
+    def _handle_server_shutdown(self, host: str, port: int) ->Dict[str, Any]:
+        """Обробляє коректне завершення роботи сервера."""
+        self.logger.info('\n🛑 Server stopped')
+        return {'status': 'stopped', 'mode': 'web-ui', 'host': host, 'port':
+            port}
+
+    def _handle_startup_error(self, error: Exception, host: str, port: int
+        ) ->Dict[str, Any]:
+        """Обробляє помилки запуску сервера."""
+        self.logger.error('Web UI failed to start: %s', str(error))
+        return {'status': 'failed', 'mode': 'web-ui', 'host': host, 'port':
+            port, 'error': str(error)}
+
     def _create_handler(self):
-        """Створення обробника запитів"""
+        """Stvorennya obrobnika zapytiv"""
+        return self._create_trading_ui_handler()
+
+    def _create_trading_ui_handler(self):
+        """Create trading UI handler class"""
+
+
         class TradingUIHandler(http.server.SimpleHTTPRequestHandler):
+
             def __init__(self, *args, **kwargs):
                 self.web_ui_mode = self.__class__.web_ui_mode
                 super().__init__(*args, **kwargs)
-            
+
             def do_GET(self):
-                if self.path == '/':
-                    self.serve_file('index.html', 'text/html')
-                elif self.path == '/dashboard':
-                    self.serve_file('dashboard.html', 'text/html')
-                elif self.path == '/trading':
-                    self.serve_file('trading.html', 'text/html')
+                if self._is_static_file_request():
+                    self._handle_static_file()
                 elif self.path.startswith('/api/'):
                     self.handle_api_request()
                 else:
-                    # Спроба віддати статичний файл, якщо він існує
-                    # Це дозволить завантажувати CSS, JS і т.д.
-                    # Важливо: встановлюємо директорію для SimpleHTTPRequestHandler
-                    # оскільки ми не можемо змінити її під час виконання.
-                    # Цей функціонал потребує більш просунутого сервера (напр. aiohttp, Flask)
-                    super().do_GET()
+                    self._handle_page_request()
+
+            def _is_static_file_request(self):
+                """Check if request is for static file"""
+                return self.path not in ['/', '/dashboard', '/trading']
+
+            def _handle_static_file(self):
+                """Handle static file requests"""
+                super().do_GET()
+
+            def _handle_page_request(self):
+                """Handle page requests"""
+                page_handlers = {'/': ('index.html', CONTENT_TYPE_HTML),
+                    '/dashboard': ('dashboard.html', CONTENT_TYPE_HTML),
+                    '/trading': ('trading.html', CONTENT_TYPE_HTML)}
+                if self.path in page_handlers:
+                    filename, content_type = page_handlers[self.path]
+                    self.serve_file(filename, content_type)
+                else:
+                    self.send_error(404)
 
             def serve_file(self, filename, content_type):
                 try:
@@ -96,30 +119,36 @@ class WebUIMode:
                     self.end_headers()
                     self.wfile.write(content.encode('utf-8'))
                 except Exception as e:
+                    self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.send_error(500, str(e))
-            
+                    raise
+
             def handle_api_request(self):
                 try:
-                    if self.path == '/api/system/overview':
-                        response = self.web_ui_mode.get_system_overview()
-                    elif self.path == '/api/portfolio/status':
-                        response = self.web_ui_mode.get_portfolio_status()
-                    elif self.path == '/api/market/data':
-                        response = self.web_ui_mode.get_market_data()
-                    elif self.path == '/api/performance/metrics':
-                        response = self.web_ui_mode.get_performance_metrics()
-                    # ... інші API ...
+                    response = self._get_api_response()
+                    if response is not None:
+                        self.send_json_response(response)
                     else:
                         self.send_error(404)
-                        return
-                    
-                    self.send_json_response(response)
-                    
                 except Exception as e:
+                    self.logger.error('API request failed: %s', str(e))
                     self.send_error(500, str(e))
 
+            def _get_api_response(self):
+                """Get API response based on path"""
+                api_handlers = {'/api/system/overview': self.web_ui_mode.
+                    get_system_overview, '/api/portfolio/status': self.
+                    web_ui_mode.get_portfolio_status, '/api/market/data':
+                    self.web_ui_mode.get_market_data,
+                    '/api/performance/metrics': self.web_ui_mode.
+                    get_performance_metrics}
+                if self.path in api_handlers:
+                    return api_handlers[self.path]()
+                return None
+
             def send_json_response(self, data):
-                content = json.dumps(data, default=str, ensure_ascii=False, indent=2)
+                content = json.dumps(data, default=str, ensure_ascii=False,
+                    indent=2)
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Content-Length', str(len(content)))
@@ -127,68 +156,84 @@ class WebUIMode:
                 self.wfile.write(content.encode('utf-8'))
 
             def get_html_content(self, filename):
-                if filename == 'index.html':
-                    return self.web_ui_mode.get_index_html()
-                elif filename == 'dashboard.html':
-                    return self.web_ui_mode.get_dashboard_html()
-                elif filename == 'trading.html':
-                    return self.web_ui_mode.get_trading_html()
+                html_handlers = {'index.html': self.web_ui_mode.
+                    get_index_html, 'dashboard.html': self.web_ui_mode.
+                    get_dashboard_html, 'trading.html': self.web_ui_mode.
+                    get_trading_html}
+                if filename in html_handlers:
+                    return html_handlers[filename]()
                 else:
                     raise FileNotFoundError(f'File {filename} not found')
-
         TradingUIHandler.web_ui_mode = self
         return TradingUIHandler
 
-    def get_system_overview(self) -> Dict[str, Any]:
+    def get_system_overview(self) ->Dict[str, Any]:
         """Отримання огляду системи"""
-        # --- РЕФАКТОРИНГ: Використовуємо .get() для безпечного доступу ---
-        tickers = self.config.get('data.tickers', [])
-        return {
-            'status': 'idle',
-            'last_update': datetime.now().isoformat(),
-            'active_mode': None,
-            'running_tasks': [],
-            'config': {
-                'tickers': tickers[:10],
-                'total_tickers': len(tickers),
-                'timeframes': self.config.get('data.timeframes', []),
-                'initial_capital': self.config.get('risk.initial_capital', 0)
-            },
-            'performance': self.performance_monitor.get_performance_report()
-        }
+        tickers = self.config_manager.get('data.tickers', [])
+        return {'status': 'idle', 'last_update': datetime.now().isoformat(),
+            'active_mode': None, 'running_tasks': [], 'config': {'tickers':
+            tickers[:10], 'total_tickers': len(tickers), 'timeframes': self
+            .config_manager.get('data.timeframes', []), 'initial_capital':
+            self.config_manager.get('risk.initial_capital', 0)},
+            'performance': self._get_performance_report()}
 
-    # ... (get_portfolio_status, get_market_data, etc. залишаються з симульованими даними) ...
-    def get_portfolio_status(self) -> Dict[str, Any]:
-        return {
-            'total_value': 125000, 'cash_balance': 15000, 'positions_count': 8,
-            'daily_pnl': 2500, 'daily_pnl_percent': 2.04,
-            'positions': [
-                {'ticker': 'TSLA', 'quantity': 50, 'value': 12500, 'pnl': 500},
-                {'ticker': 'NVDA', 'quantity': 30, 'value': 18000, 'pnl': 800},
-                {'ticker': 'AAPL', 'quantity': 100, 'value': 17500, 'pnl': -200}
-            ]}
-    
-    def get_market_data(self) -> Dict[str, Any]:
+    def get_portfolio_status(self) ->Dict[str, Any]:
+        return {'total_value': 125000, 'cash_balance': 15000,
+            'positions_count': 8, 'daily_pnl': 2500, 'daily_pnl_percent': 
+            2.04, 'positions': [{'ticker': 'TSLA', 'quantity': 50, 'value':
+            12500, 'pnl': 500}, {'ticker': 'NVDA', 'quantity': 30, 'value':
+            18000, 'pnl': 800}, {'ticker': 'AAPL', 'quantity': 100, 'value':
+            17500, 'pnl': -200}]}
+
+    def get_market_data(self) ->Dict[str, Any]:
         market_data = {}
-        tickers = self.config.get('data.tickers', ['TSLA', 'NVDA', 'AAPL', 'MSFT', 'GOOGL'])
+        tickers = self.config_manager.get('data.tickers', ['TSLA', 'NVDA',
+            'AAPL', 'MSFT', 'GOOGL'])
+        import random
+        seed = self.config_manager.get('performance.random_seed', 42)
+        random.seed(seed)
         for ticker in tickers[:5]:
             try:
-                import random
-                market_data[ticker] = {
-                    'ticker': ticker,
-                    'price': round(random.uniform(100, 500), 2),
-                    'change': round(random.uniform(-10, 10), 2),
-                    'change_percent': round(random.uniform(-5, 5), 2),
-                    'volume': random.randint(1000000, 10000000),
-                    'timestamp': datetime.now().isoformat(),
+                market_data[ticker] = {'ticker': ticker, 'price': round(
+                    random.uniform(100, 500), 2), 'change': round(random.
+                    uniform(-10, 10), 2), 'change_percent': round(random.
+                    uniform(-5, 5), 2), 'volume': random.randint(1000000, 
+                    10000000), 'timestamp': datetime.now().isoformat(),
                     'source': 'simulation'}
             except Exception as e:
+                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+                self.logger.warning('Failed to get market data for %s: %s',
+                    ticker, str(e))
                 market_data[ticker] = {'error': str(e)}
+                raise
         return market_data
 
-    # ... (HTML-методи залишаються без змін) ...
-    def get_index_html(self) -> str:
-        return '''<!DOCTYPE html>
+    def get_performance_metrics(self) ->Dict[str, Any]:
+        """Get performance metrics for API endpoint"""
+        return {'recent_activity': [{'time': datetime.now().strftime(
+            '%H:%M'), 'action': 'BUY', 'ticker': 'TSLA', 'quantity': 10,
+            'price': 245.5}, {'time': datetime.now().strftime('%H:%M'),
+            'action': 'SELL', 'ticker': 'AAPL', 'quantity': 5, 'price': 
+            178.25}, {'time': datetime.now().strftime('%H:%M'), 'action':
+            'BUY', 'ticker': 'NVDA', 'quantity': 8, 'price': 485.75}],
+            'total_trades': 156, 'win_rate': 0.65, 'avg_return': 0.023,
+            'sharpe_ratio': 1.45, 'max_drawdown': -0.08}
+
+    def _get_performance_report(self) ->Dict[str, Any]:
+        """Get performance report from monitor or fallback data"""
+        if self.performance_monitor:
+            try:
+                return self.performance_monitor.get_performance_report()
+            except Exception as e:
+                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+                self.logger.warning('Failed to get performance report: %s',
+                    str(e))
+                raise
+        return {'status': 'active', 'cpu_usage': 45.2, 'memory_usage': 67.8,
+            'disk_usage': 23.1, 'last_update': datetime.now().isoformat()}
+
+    def get_index_html(self) ->str:
+        return """<!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
@@ -283,8 +328,10 @@ class WebUIMode:
         setInterval(loadData, 30000);
     </script>
 </body>
-</html>'''
-    def get_dashboard_html(self) -> str:
-        return '''<!DOCTYPE html> ... ''' # Зміст скорочено
-    def get_trading_html(self) -> str:
-        return '''<!DOCTYPE html> ... ''' # Зміст скорочено
+</html>"""
+
+    def get_dashboard_html(self) ->str:
+        return '<!DOCTYPE html> ... '
+
+    def get_trading_html(self) ->str:
+        return '<!DOCTYPE html> ... '

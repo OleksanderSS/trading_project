@@ -51,9 +51,10 @@ class FredCollector(BaseCollector):
             self.logger.warning("No series_ids specified for FRED. Skipping collection.")
             return None
 
-        client = self.http_client_factory.get_http_client()
-        tasks = [self._fetch_series(series_id, client, api_key) for series_id in series_ids]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        client = await self.http_client_factory.get_http_client()
+        async with client:
+            tasks = [self._fetch_series(series_id, client, api_key) for series_id in series_ids]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_series_data = []
         for res in results:
@@ -110,4 +111,4 @@ class FredCollector(BaseCollector):
             return observations
         except Exception as e:
             self.logger.error(f"Failed to fetch FRED series {series_id}: {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch FRED series {series_id}") from e

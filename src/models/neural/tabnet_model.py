@@ -5,8 +5,8 @@ import pandas as pd
 import joblib
 from pathlib import Path
 
-# Попередження: pytorch_tabnet не є стандартною бібліотекою.
-# Переконайтеся, що її встановлено: pip install pytorch-tabnet
+# Warning: pytorch_tabnet is not a standard library.
+# Ensure it is installed: pip install pytorch-tabnet
 try:
     from pytorch_tabnet.tab_model import TabNetRegressor, TabNetClassifier
 except ImportError:
@@ -18,18 +18,18 @@ from src.core.logging.logger import ProjectLogger
 
 class TabNetModel(BaseModel):
     """
-    Обгортка для моделі TabNet, що відповідає інтерфейсу BaseModel.
+    Wrapper for TabNet model matching BaseModel interface.
     """
     def __init__(self, task_type: str = "regression", **kwargs):
         if TabNetRegressor is None:
-            raise ImportError("pytorch_tabnet не встановлено. Будь ласка, встановіть її, щоб використовувати TabNetModel.")
+            raise ImportError("pytorch_tabnet not installed. Please install it to use TabNetModel.")
         
         super().__init__(model_type="tabnet", task_type=task_type)
         self.model = self._create_model_instance(**kwargs)
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
 
     def _create_model_instance(self, **kwargs):
-        """Створює екземпляр моделі TabNet на основі типу задачі."""
+        """Creates TabNet model instance based on task type."""
         if self.task_type == "classification":
             return TabNetClassifier(**kwargs)
         else:
@@ -37,19 +37,19 @@ class TabNetModel(BaseModel):
 
     def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> dict:
         """
-        Тренує модель TabNet.
+        Trains model TabNet.
         
-        :param X: Навчальні дані (ознаки).
-        :param y: Навчальні дані (цільова змінна).
+        :param X: Training data (features).
+        :param y: Навчальні дані (Target variable..
         :param kwargs: Додаткові параметри для методу `fit`, наприклад, `eval_set`.
         """
         self.feature_cols = X.columns.tolist()
         
         # TabNet вимагає, щоб X та y були у форматі np.ndarray
-        X_np = X.values
-        y_np = y.values.reshape(-1, 1)
+        x_np = X.values.astype(np.float32)
+        y_np = y.values.reshape(-1, 1).astype(np.float32)
 
-        self.logger.info(f"Тренування моделі {self.name}...")
+        self.logger.info(f"Train the model {self.name}...")
         
         # Використовуємо параметри з kwargs, якщо вони надані
         fit_params = {
@@ -60,27 +60,27 @@ class TabNetModel(BaseModel):
         }
 
         self.model.fit(
-            X_train=X_np,
+            X_train=x_np,
             y_train=y_np,
             **fit_params
         )
         self.is_trained = True
-        self.logger.info("Тренування завершено.")
+        self.logger.info("Training завершено.")
         return {"status": "success", "message": f"Модель {self.name} успішно натренована."}
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """
-        Робить прогнози за допомогою натренованої моделі.
+        Makes predictions.за допомогою натренованої моделі.
         
-        :param X: Дані для прогнозування.
+        :param X: Дані для Prediction.
         :return: Масив прогнозів.
         """
         if not self.is_trained:
-            raise RuntimeError("Модель ще не натренована. Викличте метод `train` перед прогнозуванням.")
+            raise RuntimeError("Модель ще не натренована. Викличте метод `train` перед Predictionм.")
         
-        X_np = X[self.feature_cols].values
+        x_np = X[self.feature_cols].values
         self.logger.info(f"Створення прогнозів з моделлю {self.name}...")
-        predictions = self.model.predict(X_np)
+        predictions = self.model.predict(x_np)
         return predictions.flatten()
 
     def save_model(self, path: str) -> bool:
@@ -118,14 +118,21 @@ class TabNetModel(BaseModel):
         """
         try:
             # Завантажуємо метадані
-            metadata_path = Path(path).with_suffix('.meta')
-            metadata = joblib.load(metadata_path)
+            model_path = self._resolve_model_artifact_path(
+                path,
+                allowed_suffixes={'.zip'},
+            )
+            metadata_path = self._resolve_model_artifact_path(
+                Path(path).with_suffix('.meta'),
+                allowed_suffixes={'.meta'},
+            )
+            metadata = joblib.load(metadata_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             self.feature_cols = metadata['feature_cols']
             self.task_type = metadata['task_type']
             
             # Створюємо екземпляр моделі і завантажуємо стан
             self.model = self._create_model_instance()
-            self.model.load_model(path)
+            self.model.load_model(str(model_path))
             
             self.is_trained = True
             self.logger.info(f"Модель успішно завантажено з {path}")

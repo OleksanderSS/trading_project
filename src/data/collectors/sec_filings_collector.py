@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class SECFilingsCollector(BaseCollector):
-    """Збирає поточні SEC filings з EDGAR API."""
+    """Collects current SEC filings via the EDGAR API protocol."""
     collector_type = "sec_filings"
     data_type = "fundamental"
 
@@ -27,7 +27,7 @@ class SECFilingsCollector(BaseCollector):
         self,
         configs: Dict[str, Any],
         http_client_factory: HttpClientFactory,
-        db_manager: DataManager,               # ФІКС: тепер явно в __init__
+        db_manager: DataManager,               # FIX: now explicitly defined in __init__
         cache_manager: Optional[CacheManager] = None,
         config_manager: Optional[UnifiedConfigManager] = None,
         **kwargs,
@@ -80,7 +80,7 @@ class SECFilingsCollector(BaseCollector):
         cache_key = f"{self.__class__.__name__}_run"
         cache_params = {"tickers": sorted(tickers), "start_date": str(start_date.date())}
 
-        # 1. Кеш
+        # 1. Cache Verification
         if self.cache_manager:
             cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
             if cached is not None:
@@ -88,11 +88,11 @@ class SECFilingsCollector(BaseCollector):
                 if "hash" in df_cached.columns:
                     new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
                     if new_from_cache.empty:
-                        logger.info("[SEC] Cache hit — нових filings немає.")
+                        logger.info("[SEC] Cache hit — no new filings detected.")
                         return None
                     return new_from_cache
 
-        # 2. Збір
+        # 2. Sequential Data Acquisition
         cik_map = self._get_cik_map()
         valid_ciks = {
             ticker: str(cik_map.get(ticker.upper(), "")).zfill(10)
@@ -122,12 +122,12 @@ class SECFilingsCollector(BaseCollector):
                 logger.error(f"Error fetching filings for {ticker}: {res}")
 
         if not all_filings:
-            logger.info("[SEC] No raw filings received.")
+            logger.info("[SEC] Zero raw filings retrieved from external queries.")
             return None
 
         df = pd.DataFrame(all_filings)
 
-        # Hash
+        # 3. Cryptographic Deduplication Hash
         for key in self.hash_keys:
             if key in df.columns:
                 df[key] = df[key].astype(str)
@@ -138,17 +138,17 @@ class SECFilingsCollector(BaseCollector):
             axis=1,
         )
 
-        # 3. Фільтрація через БД
+        # 4. Database Level Filtering
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
-            logger.info("[SEC] Нових filings не знайдено в БД.")
+            logger.info("[SEC] No novel filings identified against historical database.")
             if self.cache_manager:
                 self.cache_manager.set(
                     cache_key, df.to_dict("records"), cache_params, namespace="collectors"
                 )
             return None
 
-        # 4. Збереження
+        # 5. Persistence to Storage
         self.db_manager.upsert(table_name, new_df, unique_on=["hash"])
 
         if self.cache_manager:
@@ -156,7 +156,7 @@ class SECFilingsCollector(BaseCollector):
                 cache_key, df.to_dict("records"), cache_params, namespace="collectors"
             )
 
-        logger.info(f"[SEC] Збережено {len(new_df)} нових filings.")
+        logger.info(f"[SEC] Successfully persisted {len(new_df)} new filings.")
         return new_df
 
     async def _fetch_filings_for_cik(
@@ -189,7 +189,7 @@ class SECFilingsCollector(BaseCollector):
                     if filing_date >= start_date:
                         filing["ticker"] = ticker
                         filing["cik"] = cik
-                        # Серіалізуємо списки в JSON рядки
+                        # Serialize sub-arrays to JSON string equivalents
                         for k, v in filing.items():
                             if isinstance(v, list):
                                 filing[k] = json.dumps(v)
@@ -201,4 +201,4 @@ class SECFilingsCollector(BaseCollector):
 
         except Exception as e:
             logger.error(f"Error processing {ticker} (CIK: {cik}): {e}")
-            return []
+            raise RuntimeError(f"Failed to fetch SEC filings for {ticker} ({cik})") from e

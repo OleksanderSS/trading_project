@@ -1,0 +1,2401 @@
+
+----------------------------------------------------------------------
+  [HIGH] HIGH
+----------------------------------------------------------------------
+
+[HIGH] [ARC] src\factories\model_factory.py:1
+   Tight coupling: 17   ( 15)   God Module
+   -    facade  dependency injection
+
+[HIGH] [ARC] src\pipeline\hybrid\orchestrator_context.py:1
+   Tight coupling: 25   ( 15)   God Module
+   -    facade  dependency injection
+
+[HIGH] [ARC] src\pipeline\stages\stage_1_collection.py:1
+   Tight coupling: 17   ( 15)   God Module
+   -    facade  dependency injection
+
+[HIGH] [ARC] src\pipeline\stages\stage_3_feature_engineering.py:1
+   Tight coupling: 30   ( 15)   God Module
+   -    facade  dependency injection
+
+[HIGH] [ARC] src\pipeline\stages\stage_5_prediction.py:1
+   Tight coupling: 20   ( 15)   God Module
+   -    facade  dependency injection
+
+[HIGH] [ARC] src\pipeline\stages\stage_6_trading_execution.py:1
+   Tight coupling: 26   ( 15)   God Module
+   -    facade  dependency injection
+
+[HIGH] [ARC] src\pipeline\stages\stage_7_evaluation.py:1
+   Tight coupling: 23   ( 15)   God Module
+   -    facade  dependency injection
+
+[HIGH] [BUG] scripts\analysis\analyze_cache.py:74
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\analyze_cache.py:128
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\analyze_news_quality.py:137
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\analyze_stages.py:63
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\check_cache_dates.py:165
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\compare_databases.py:48
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\compare_databases.py:87
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\diagnose_pipeline.py:75
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\diagnose_pipeline.py:109
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\diagnose_pipeline.py:130
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\analysis\system_audit.py:172
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:97
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:128
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:162
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:213
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:233
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:241
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:269
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_enrichers_integration.py:306
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\check_module_usage.py:21
+   Broad except     re-raise    
+   > except Exception:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\cleanup_system.py:27
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\cleanup_system.py:34
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\cleanup_system.py:44
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\colab\colab_clean_cell.py:1
+   SyntaxError    
+   -   
+
+[HIGH] [BUG] scripts\core\generate_synthetic_data.py:380
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\core\integrate_cached_data.py:55
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\core\test_calibration.py:58
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\core\test_calibration.py:118
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\diagnose_analytics.py:43
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\diagnose_features.py:41
+   Broad except     re-raise    
+   > except:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\diagnose_features.py:44
+   Broad except     re-raise    
+   > except:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\diagnose_features.py:54
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\monitoring\check_all_news.py:43
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\monitoring\check_news_in_db.py:35
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\monitoring\check_news_in_db.py:42
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\monitoring\check_news_in_db.py:49
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\monitoring\run_audit_gates.py:88
+   Broad except     re-raise    
+   > except Exception as exc:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\monitoring\verify_ready_for_colab.py:88
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\test_metrics_integration.py:113
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] scripts\test_sentiment_integration.py:96
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\analytics\calculators\advanced_econometrics_calculator.py:113
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\analytics\calculators\advanced_econometrics_calculator.py:133
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\analytics\calculators\advanced_econometrics_calculator.py:186
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\analytics\calculators\advanced_econometrics_calculator.py:207
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\analytics\calculators\advanced_econometrics_calculator.py:224
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\features\enrichers\macro_features_enricher.py:302
+   Broad except     re-raise    
+   > except Exception:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\features\feature_cache.py:109
+   Broad except     re-raise    
+   > except Exception as unlink_err:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\modeling\io.py:172
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\modeling\io.py:181
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\modeling\io.py:208
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\modeling\orchestration.py:87
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\data_preparer.py:176
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\data_preparer.py:250
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\data_preparer.py:269
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\data_preparer.py:299
+   Broad except     re-raise    
+   > except Exception:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\model_selector.py:73
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\model_selector.py:154
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\result_builder.py:60
+   Broad except     re-raise    
+   > except Exception as fe:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\result_builder.py:80
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\prediction\result_builder.py:239
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\trading\data_io.py:105
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\trading\recommendation_engine.py:166
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\trading\recommendation_engine.py:200
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\trading\recommendation_engine.py:226
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\trading\recommendation_engine.py:304
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [BUG] src\pipeline\stages\trading\recommendation_engine.py:374
+   Broad except     re-raise    
+   > except Exception as e:
+   -  logger.error(exc)  re-raise
+
+[HIGH] [CMX] scripts\analysis\analyze_batch_data.py:10
+    cyclomatic complexity: analyze_batch() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\analysis\analyze_cache.py:79
+    cyclomatic complexity: analyze_model_batches() = 16 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\analysis\analyze_errors_and_crashes.py:79
+    cyclomatic complexity: analyze_errors() = 16 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\analysis\analyze_news_quality.py:16
+    cyclomatic complexity: analyze_news_quality() = 19 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\analysis\deep_analysis_all_components.py:11
+    cyclomatic complexity: analyze_all_components() = 44 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\check_enrichers_integration.py:309
+    cyclomatic complexity: generate_report() = 18 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\cleanup_system.py:7
+    cyclomatic complexity: cleanup() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\colab\run_complete_data_pipeline.py:57
+    cyclomatic complexity: run() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\core\accumulate_real_data.py:114
+    cyclomatic complexity: _stage_1_collection() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\core\generate_synthetic_data.py:36
+   God Class: SyntheticDataGenerator = 438  ( 400)
+   -     /  
+
+[HIGH] [CMX] scripts\diagnose_analytics.py:49
+    cyclomatic complexity: main() = 19 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\diagnose_feature_selection.py:164
+    cyclomatic complexity: main() = 18 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\diagnose_features.py:59
+    cyclomatic complexity: main() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\monitoring\verify_ready_for_colab.py:11
+    cyclomatic complexity: check_ready_for_colab() = 19 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\run_audit_checks.py:35
+    cyclomatic complexity: check_data_layer() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] scripts\simple_accumulate.py:23
+    cyclomatic complexity: main() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\algorithms\regime_detector.py:60
+   God Class: MarketRegimeDetector = 539  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\algorithms\risk_parity_allocator.py:33
+   God Class: RiskParityAllocator = 480  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\analytics\arena\performance_tracker.py:54
+   God Class: ModelPerformanceTracker = 408  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\analytics\context\counterfactual_generator.py:19
+   God Class: CounterfactualGenerator = 490  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\cli\pipeline_data_loader.py:45
+    cyclomatic complexity: load_from_db_fallback() = 17 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\core\validation\validators.py:94
+    cyclomatic complexity: validate_ohlc_logic() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\cftc_collector.py:146
+    cyclomatic complexity: _parse_cftc_csv() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\fred_collector.py:41
+    cyclomatic complexity: run() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\google_news_collector.py:78
+    cyclomatic complexity: _run_internal() = 22 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\insider_collector.py:150
+    cyclomatic complexity: run() = 16 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\newsapi_collector.py:55
+    cyclomatic complexity: run() = 22 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\put_call_ratio_collector.py:76
+    cyclomatic complexity: _fetch_put_call_data() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\rss_collector.py:65
+    cyclomatic complexity: _run_internal() = 20 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\sec_filings_collector.py:70
+    cyclomatic complexity: run() = 19 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\collectors\yf_collector.py:30
+    cyclomatic complexity: run() = 20 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\management\handlers\connection_handler.py:35
+    cyclomatic complexity: get_connection() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\data\quality\news_price_availability_filter.py:15
+    cyclomatic complexity: quick_filter_news_by_data_availability() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\ensembling\stacked_ensemble.py:185
+    cyclomatic complexity: _predict_weighted_average() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\analysis\news_decay_modeler.py:19
+   God Class: NewsDecayModeler = 483  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\features\analysis\news_decay_modeler.py:292
+    cyclomatic complexity: _select_best_overall_model() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\analysis\news_decay_modeler.py:443
+    cyclomatic complexity: get_model_performance_summary() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\analysis\regime_importance_tracker.py:17
+   God Class: RegimeImportanceTracker = 566  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\features\analysis\regime_importance_tracker.py:233
+    cyclomatic complexity: _analyze_importance_stability() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\analysis\regime_importance_tracker.py:323
+    cyclomatic complexity: _calculate_importance_changes() = 19 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\enrichers\news_impact_enricher.py:12
+   God Class: NewsImpactEnricher = 495  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\features\enrichers\news_quality_enricher.py:131
+    cyclomatic complexity: _classify_news_type() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\enrichers\news_quality_enricher.py:248
+    cyclomatic complexity: _calculate_news_freshness() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\enrichers\sentiment_features_enricher.py:159
+    cyclomatic complexity: _aggregate_news_sentiment() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\feature_selection_cache.py:142
+    cyclomatic complexity: invalidate() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\news_dataset_builder.py:148
+    cyclomatic complexity: build_dataset() = 17 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\nlp\extractors\keyword_extractor.py:122
+    cyclomatic complexity: update_keywords() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\nlp\models\roberta_sentiment.py:58
+    cyclomatic complexity: analyze() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\nlp\scoring\news_scorer.py:83
+    cyclomatic complexity: _calculate_significance_score() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\selection\enhanced_smart_selector.py:20
+   God Class: EnhancedSmartFeatureSelector = 529  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\features\selection\enhanced_smart_selector.py:94
+    cyclomatic complexity: select_with_full_analysis() = 17 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\selection\smart_selector.py:138
+    cyclomatic complexity: select() = 18 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\validation\feature_leakage_guard.py:148
+    cyclomatic complexity: _check_correlation() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\features\validation\redundancy_detector.py:20
+   God Class: RedundancyDetector = 458  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\meta_learning\awareness\context_engine.py:89
+   God Class: ContextAwarenessEngine = 883  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\meta_learning\memory\diary_engine.py:79
+   God Class: DiaryEngine = 464  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\analysis\overfitting_detector.py:23
+   God Class: OverfittingDetector = 847  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\analysis\overfitting_detector.py:501
+    cyclomatic complexity: _generate_prevention_recommendations() = 22 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\analysis\regime_winner_analyzer.py:18
+   God Class: RegimeWinnerAnalyzer = 623  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\dean\dean_bootstrap_system.py:152
+    cyclomatic complexity: calculate_reward() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\ensemble\confidence_calibrator.py:23
+   God Class: ConfidenceCalibrator = 695  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\ensemble\dynamic_weights.py:128
+    cyclomatic complexity: _context_aware_weights() = 16 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\ensemble\model_correlation_analyzer.py:20
+   God Class: ModelCorrelationAnalyzer = 722  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\ensemble\model_correlation_analyzer.py:431
+    cyclomatic complexity: _find_best_subset() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\ensemble\weight_stability_monitor.py:17
+   God Class: WeightStabilityMonitor = 817  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\ensemble\weight_stability_monitor.py:415
+    cyclomatic complexity: _generate_stability_recommendations() = 16 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\ensemble\weight_stability_monitor.py:714
+    cyclomatic complexity: plot_stability_metrics() = 25 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\integrated_model_manager.py:24
+   God Class: IntegratedModelManager = 649  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\integrated_model_manager.py:303
+    cyclomatic complexity: _calculate_overall_health_score() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\loader.py:23
+   God Class: ModelLoaderStrategy = 464  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\loader.py:261
+    cyclomatic complexity: _wrap_keras_model() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\loader.py:268
+    cyclomatic complexity: predict() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\monitoring\prediction_drift_monitor.py:18
+   God Class: PredictionDriftMonitor = 583  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\models\monitoring\prediction_drift_monitor.py:375
+    cyclomatic complexity: _analyze_performance_trend() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\monitoring\prediction_drift_monitor.py:460
+    cyclomatic complexity: _generate_retraining_recommendations() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\models\monitoring\prediction_drift_monitor.py:548
+    cyclomatic complexity: get_drift_summary() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\optimization\portfolio\optimizer.py:33
+   God Class: PortfolioOptimizer = 476  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\patterns\pattern_analyzer.py:266
+    cyclomatic complexity: _analyze_news_batch() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\guards\macro_release_timing_guard.py:19
+   God Class: MacroReleaseTimingGuard = 419  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\guards\temporal_leakage_guard.py:19
+   God Class: TemporalLeakageGuard = 464  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\guards\timeframe_alignment_guard.py:69
+    cyclomatic complexity: validate_timeframe_compatibility() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\hybrid\colab_manager.py:51
+    cyclomatic complexity: prepare_colab_batch() = 24 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\hybrid\colab_manager.py:180
+    cyclomatic complexity: load_colab_results() = 16 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\hybrid\final_stages_executor.py:115
+    cyclomatic complexity: _merge_model_results() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\hybrid\model_training_orchestrator.py:23
+    cyclomatic complexity: train_models_for_contexts() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\hybrid\results_processor.py:35
+    cyclomatic complexity: _find_batch_directory() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\hybrid_orchestrator.py:122
+   God Class: HybridOrchestrator = 628  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\hybrid_orchestrator.py:553
+    cyclomatic complexity: _extract_features_and_targets() = 24 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\prediction\data_preparer.py:209
+    cyclomatic complexity: load_target_scaler() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\prediction\model_resolver.py:42
+    cyclomatic complexity: resolve_batch_directory() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\prediction\model_resolver.py:73
+    cyclomatic complexity: update_local_model_paths() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\prediction\result_builder.py:27
+    cyclomatic complexity: build_result() = 20 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\prediction\result_builder.py:183
+    cyclomatic complexity: _save_stage_5_results() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\stage_2_processing.py:23
+   God Class: ProcessingStage = 693  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\stages\stage_2_processing.py:300
+    cyclomatic complexity: _process_news_locally() = 22 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\stage_3_feature_engineering.py:51
+   God Class: FeatureEngineeringStage = 578  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\stages\stage_3_feature_engineering.py:290
+    cyclomatic complexity: _run_feature_leakage_gate() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\stage_3_feature_engineering.py:327
+    cyclomatic complexity: run() = 49 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\stage_4_modeling.py:142
+   God Class: ModelingStage = 528  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\stages\stage_5_prediction.py:58
+   God Class: PredictionStage = 575  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\stages\stage_5_prediction.py:582
+    cyclomatic complexity: _save_stage_5_results() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\stage_6_trading_execution.py:42
+   God Class: TradingExecutionStage = 681  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\stages\stage_7_evaluation.py:32
+   God Class: EvaluationStage = 584  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\stages\stage_7_evaluation.py:235
+    cyclomatic complexity: _run_backtest() = 23 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\pipeline\stages\trading\recommendation_engine.py:15
+   God Class: TradingRecommendationEngine = 428  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\pipeline\stages\trading\recommendation_engine.py:172
+    cyclomatic complexity: _generate_trading_recommendations() = 31 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\processing\price_preprocessor.py:65
+    cyclomatic complexity: _normalize_structure() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\risk\elite_risk_metrics.py:22
+   God Class: EliteRiskMetrics = 488  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\trading\live_adaptive_ensemble.py:112
+    cyclomatic complexity: compute_ensemble_weights() = 19 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\training\adaptive_training_manager.py:136
+    cyclomatic complexity: _calculate_target_quality_score() = 14 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\training\progressive_trainer.py:106
+   God Class: ProgressiveTrainer = 520  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\utils\feature_preparation.py:91
+    cyclomatic complexity: _clean_numeric_data() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\utils\smart_missing_data_handler.py:15
+   God Class: SmartMissingDataHandler = 425  ( 400)
+   -     /  
+
+[HIGH] [CMX] src\validation\data_leakage_detector.py:150
+    cyclomatic complexity: run_comprehensive_audit() = 13 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\validation\pipeline_schemas.py:127
+    cyclomatic complexity: validate() = 16 ( 12)
+   -     / use early returns
+
+[HIGH] [CMX] src\validation\pipeline_schemas.py:352
+    cyclomatic complexity: validate_batch_dir() = 15 ( 12)
+   -     / use early returns
+
+[HIGH] [SEC] scripts\analysis\analyze_pipeline_stages.py:344
+    SQL injection  f-string
+   > logger.info(f"\n⚙️ Runtime Parameters (from {RUNTIME_PARAMS_FILE}):")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\analysis\analyze_stages.py:60
+    SQL injection  f-string
+   > result = db_manager.fetch_one(f"SELECT COUNT(*) as cnt FROM {table}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\core\accumulate_real_data.py:150
+    SQL injection  f-string
+   > logger.info(f"✓ Extracted from prices dict: {type(market_df)}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\core\auto_colab_sync.py:181
+    SQL injection  f-string
+   > logger.info(f"[OK] Cleanup complete. Deleted {count} files.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\core\ticker_config_updater.py:44
+    SQL injection  f-string
+   > self.logger.info(f"Updated YF collector with {len(tickers)} tickers from category '{category}'")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\core\train_consensus_model.py:120
+    SQL injection  f-string
+   > logger.error(f"Failed to load training data from DataManager: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\core\train_light_models_locally.py:304
+    SQL injection  f-string
+   > selected_features_path = batch_dir / f"selected_features_{model_type}_{ticker}_{target_col}.json"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\diagnose_feature_selection.py:92
+    SQL injection  f-string
+   > logger.error(f"Error analyzing feature selection: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\manage_arena.py:16
+    SQL injection  f-string
+   > logger.info(f"Loading previous arena state from {state_file}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] scripts\manage_arena.py:19
+    SQL injection  f-string
+   > logger.info(f"Loading performance data from {perf_file}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\analyzers\performance_attribution_analyzer.py:235
+    SQL injection  f-string
+   > logger.warning(f"Selection attribution exception: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\arena\arena_battle.py:301
+    SQL injection  f-string
+   > logger.info(f"[ARENA] Created {battles_created} battles from group '{group_name}'")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\arena\arena_battle.py:304
+    SQL injection  f-string
+   > logger.error(f"[ARENA] Failed to create battles from group '{group_name}': {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\arena\arena_battle.py:343
+    SQL injection  f-string
+   > logger.error(f"[ARENA] Failed to get predictions from {model_name}: {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\arena\performance_tracker.py:217
+    SQL injection  f-string
+   > logger.error(f"[TRACKER] Failed to update battle stats: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\arena\performance_tracker.py:230
+    SQL injection  f-string
+   > logger.info(f"[TRACKER] Leaderboard updated with {len(leaderboard_entries)} models")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\arena\performance_tracker.py:232
+    SQL injection  f-string
+   > logger.error(f"[TRACKER] Failed to update leaderboard: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\arena\performance_tracker.py:458
+    SQL injection  f-string
+   > logger.info(f"[TRACKER] Performance data loaded from {filepath}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\calculators\advanced_econometrics_calculator.py:134
+    SQL injection  f-string
+   > logger.warning(f"Lag selection failed: {e}, using default lag 2", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\calculators\fama_french_factors.py:196
+    SQL injection  f-string
+   > logger.info(f"Ingesting historical benchmarks from yfinance ({len(tickers)} assets)...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\context\contextual_model_selector.py:29
+    SQL injection  f-string
+   > logger.info(f"ContextualModelSelector initialized for models: {self.available_models}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\context\contextual_model_selector.py:53
+    SQL injection  f-string
+   > logger.error(f"Error during kNN model selection: {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\context\contextual_model_selector.py:183
+    SQL injection  f-string
+   > logger.info(f"Model selection complete. Best model: {best_model_name} with confidence {confidence:.2f}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\context\contextual_model_selector.py:188
+    SQL injection  f-string
+   > logger.warning(f"Falling back to heuristic model selection. Reason: {reason}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\context\ensemble_selector.py:95
+    SQL injection  f-string
+   > self.logger.info(f"Selected '{best}' ensemble (score={best_score:.2f})")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\data_managers\model_results_manager.py:109
+    SQL injection  f-string
+   > logger.info(f"Loaded {len(df)} performance records from {file_path.name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\reporting\results_manager.py:85
+    SQL injection  f-string
+   > logger.info(f"Results loaded from {filepath}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\reporting\results_manager.py:141
+    SQL injection  f-string
+   > logger.info(f"Results file deleted: {filepath}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\reporting\results_manager.py:148
+    SQL injection  f-string
+   > logger.error(f"Failed to delete results: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\analytics\unified_analytics_engine.py:66
+    SQL injection  f-string
+   > logger.warning(f"Class '{class_name}' from '{module_path}' is not a valid IAnalyzer instance.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\calibration\adaptive_confidence_calibrator.py:133
+    SQL injection  f-string
+   > self.logger.warning(f"Update failed: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\calibration\adaptive_confidence_calibrator.py:293
+    SQL injection  f-string
+   > self.logger.info(f"✅ Calibrator loaded from {filepath}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\cli\pipeline_data_loader.py:21
+    SQL injection  f-string
+   > logger.error(f"Error loading {label} from {path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\cli\pipeline_data_loader.py:88
+    SQL injection  f-string
+   > logger.warning(f"⚠️ Failed to load news/macro fallback from database: {ex}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\cli\pipeline_data_loader.py:102
+    SQL injection  f-string
+   > logger.info(f"✅ Reconstructed {label} data from database fallback: {df.shape}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\cli\pipeline_executor.py:212
+    SQL injection  f-string
+   > logger.info(f"Loaded {len(tickers)} unique tickers from all sectors: {tickers}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\cache\cache_manager.py:291
+    SQL injection  f-string
+   > self.logger.warning(f'Failed to delete {f}: {e}')
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\cloud\gcs_manager.py:57
+    SQL injection  f-string
+   > logger.info(f"Uploading from memory to GCS path '{destination_blob_name}'...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\cloud\gcs_manager.py:63
+    SQL injection  f-string
+   > logger.error(f"Failed to upload from memory to '{destination_blob_name}': {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:90
+    SQL injection  f-string
+   > self.logger.info(f"Loaded YAML from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:93
+    SQL injection  f-string
+   > self.logger.error(f"Failed to load YAML from {path}: {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:128
+    SQL injection  f-string
+   > self.logger.info(f"Loaded JSON from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:131
+    SQL injection  f-string
+   > self.logger.error(f"Failed to load JSON from {path}: {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:207
+    SQL injection  f-string
+   > self.logger.info(f"Loaded {len(df)} rows from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:210
+    SQL injection  f-string
+   > self.logger.error(f"Failed to load DataFrame from {path}: {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:231
+    SQL injection  f-string
+   > self.logger.warning(f"Failed to delete {f}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\file_management\file_manager.py:234
+    SQL injection  f-string
+   > self.logger.info(f"Cleanup in {path}: Deleted {deleted_count} files older than {max_age_days} days.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\logging\log_standards.py:183
+    SQL injection  f-string
+   > logger.info(f"📦 Model loaded: {model_id} (from {source}){context_str}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\core\system\version_manager.py:52
+    SQL injection  f-string
+   > logger.info(f"Loaded {len(self.versions)} versions from {self.history_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\alternative_me_collector.py:107
+    SQL injection  f-string
+   > self.logger.warning(f"Unexpected data format from Alternative.me V1: {type(data)}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\bigquery_collector.py:41
+    SQL injection  f-string
+   > f"Successfully pulled {len(df)} indexed data execution block elements limits mapped structure arrays checks fr
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\cftc_collector.py:107
+    SQL injection  f-string
+   > self.logger.info(f"Fetching FREE CFTC data for {instrument} from {url}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\fred_collector.py:23
+    SQL injection  f-string
+   > self.logger.info(f"FredCollector configured to fetch data from {self.start_date} onwards.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\insider_collector.py:80
+    SQL injection  f-string
+   > self.logger.debug(f"Parsing DOM layout from URL: {url}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\insider_collector.py:90
+    SQL injection  f-string
+   > self.logger.error(f"Error handling DOM layout state from {url}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\local_file_collector.py:35
+    SQL injection  f-string
+   > f'Fetching raw data from local {self.file_type} file: {self.file_path}'
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\local_file_collector.py:51
+    SQL injection  f-string
+   > f'Successfully loaded {len(df)} rows from {self.file_path}')
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\put_call_ratio_collector.py:82
+    SQL injection  f-string
+   > self.logger.info(f"Fetching FREE Put/Call Ratio from {url}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\data\collectors\sec_filings_collector.py:107
+    SQL injection  f-string
+   > logger.info(f"[SEC] Fetching filings for {len(valid_ciks)} tickers from {start_date.date()}.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\analysis\regime_importance_tracker.py:308
+    SQL injection  f-string
+   > switch_detection["switch_reason"] = f"Regime changed from {previous_regime} to {current_regime}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\context_aware_feature_selector.py:59
+    SQL injection  f-string
+   > logger.info(f"✅ Initialized {self.method} feature selector (top_k={self.top_k})")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\context_aware_feature_selector.py:100
+    SQL injection  f-string
+   > logger.info(f"✅ Selected {len(selected_features)} features:")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\context_aware_feature_selector.py:158
+    SQL injection  f-string
+   > logger.error(f"Feature selection failed: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\context_aware_feature_selector.py:182
+    SQL injection  f-string
+   > logger.error(f"Random Forest selection failed: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\context_map_enricher.py:52
+    SQL injection  f-string
+   > logger.info(f"✅ Loaded {len(self.noise_filter_thresholds)} noise thresholds from {config_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\context_map_enricher.py:57
+    SQL injection  f-string
+   > logger.error(f"❌ Failed to load noise config from {config_path}: {e}. Using defaults.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\context_map_enricher.py:112
+    SQL injection  f-string
+   > logger.info(f"Generating context map from {len(context_columns)} indicators")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\decay_features_enricher.py:58
+    SQL injection  f-string
+   > logger.info(f"Using default event_columns from config: {event_columns}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\decay_features_enricher.py:62
+    SQL injection  f-string
+   > logger.info(f"Using default half_life_periods from config: {half_life_periods}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\derived_features_enricher.py:92
+    SQL injection  f-string
+   > logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\hype_enricher.py:62
+    SQL injection  f-string
+   > logger.info(f"Calculating hype scores using window: {hype_window} from {news_count} news items")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\keyword_entity_enricher.py:129
+    SQL injection  f-string
+   > logger.info(f"Extracting keywords and entities from {len(news_copy)} news items...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\macro_features_enricher.py:82
+    SQL injection  f-string
+   > logger.info(f"Using macro_data from Stage 1 ({len(macro_data)} rows)")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\macro_features_enricher.py:140
+    SQL injection  f-string
+   > f"MacroFeaturesEnricher processing {len(df)} records ({unique_dates} unique dates) from {start_date} to {end_d
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\macro_features_enricher.py:256
+    SQL injection  f-string
+   > logger.info(f"Loading macro data from cache: {self.cache_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\macro_features_enricher.py:264
+    SQL injection  f-string
+   > logger.debug(f"Loading FRED data from {start_date_str} to {end_date_str}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\macro_features_enricher.py:297
+    SQL injection  f-string
+   > logger.error(f"Error loading data from FRED: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\nlp_features_enricher.py:175
+    SQL injection  f-string
+   > logger.info(f"Created 'datetime' column from '{date_col}' (tz-naive, ns precision)")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\nlp_features_enricher.py:198
+    SQL injection  f-string
+   > logger.info(f"Removed timezone from {col_name} for merge compatibility")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\sentiment_features_enricher.py:106
+    SQL injection  f-string
+   > logger.info(f"Attempting to merge sentiment from news data ({news_count} rows)")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\enrichers\significance_features_enricher.py:103
+    SQL injection  f-string
+   > logger.info(f"Filtered from {len(df)} to {len(filtered_df)} rows based on significance.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:30
+    SQL injection  f-string
+   > logger.info(f"FeatureSelectionCache initialized: {self.cache_file}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:38
+    SQL injection  f-string
+   > logger.info(f"✅ Loaded feature selection cache: {len(cache)} entries")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:52
+    SQL injection  f-string
+   > logger.debug(f"💾 Saved feature selection cache: {len(self.cache)} entries")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:90
+    SQL injection  f-string
+   > logger.info(f"🚀 Feature selection cache HIT: {cache_key}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:91
+    SQL injection  f-string
+   > logger.info(f"   Selected {len(cached_data['selected_features'])} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:94
+    SQL injection  f-string
+   > logger.info(f"🔄 Feature selection cache MISS: {cache_key}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:134
+    SQL injection  f-string
+   > logger.info(f"💾 Saved feature selection to cache: {cache_key}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selection_cache.py:135
+    SQL injection  f-string
+   > logger.info(f"   Selected {len(selected_features)}/{len(available_features)} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selector.py:57
+    SQL injection  f-string
+   > self.logger.info(f"🔍 Selecting features for {ticker} (Target: {target_col}, Model: {model_type})")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selector.py:89
+    SQL injection  f-string
+   > self.logger.warning(f"⚠️ Selection returned no features for {ticker}. Using fallback.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\feature_selector.py:95
+    SQL injection  f-string
+   > self.logger.info(f"✅ Selected {len(selected_names)} features for {ticker}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\news_clusterer.py:100
+    SQL injection  f-string
+   > logger.info(f"✅ Selected {n_representatives} representatives ({reduction_pct:.1f}% reduction)")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\news_impact_classifier.py:206
+    SQL injection  f-string
+   > logger.debug(f"Found ticker {ticker} from company name '{company}'")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\nlp\extractors\keyword_extractor.py:165
+    SQL injection  f-string
+   > logger.info(f"Extractor updated with {len(self.tickers)} tickers and {len(self.keywords)} keywords.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\nlp\processors\news_analyzer.py:130
+    SQL injection  f-string
+   > f"[NewsAnalyzer] Set DatetimeIndex from '{date_column}' column. Index type: {type(df_copy.index)}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\enhanced_smart_selector.py:119
+    SQL injection  f-string
+   > self.logger.info(f"🧠 Starting enhanced feature selection for {context_id}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\enhanced_smart_selector.py:178
+    SQL injection  f-string
+   > f"✅ Enhanced feature selection complete. Selected {selected_count} features from {len(features_df.columns)}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\enhanced_smart_selector.py:182
+    SQL injection  f-string
+   > self.logger.error(f"Error in enhanced feature selection: {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\enhanced_smart_selector.py:317
+    SQL injection  f-string
+   > self.logger.info(f"✅ Enhanced selection: {len(selected_features)} features selected")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\enhanced_smart_selector.py:324
+    SQL injection  f-string
+   > self.logger.error(f"Error in enhanced feature selection: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\enhanced_smart_selector.py:442
+    SQL injection  f-string
+   > self.logger.info(f"📊 Features: {original_count} → {selected_count} ({reduction_ratio:.1f}% reduction)")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\enhanced_smart_selector.py:471
+    SQL injection  f-string
+   > self.logger.error(f"Error logging selection summary: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\smart_selector.py:127
+    SQL injection  f-string
+   > logger.error(f"Failed to load feature cache from {self.storage_path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\smart_selector.py:169
+    SQL injection  f-string
+   > logger.info(f"Running dynamic feature selection for {regime_context_id}...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\smart_selector.py:201
+    SQL injection  f-string
+   > f"Feature selection method {method_func.__name__} failed for {regime_context_id}: {e}",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\smart_selector.py:205
+    SQL injection  f-string
+   > logger.warning(f"No features were selected for {regime_context_id}. Returning empty list.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\smart_selector.py:214
+    SQL injection  f-string
+   > f"Limited selected features to {max_features} (from {len(positive_scores[positive_scores >= selection_threshol
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\selection\smart_selector.py:227
+    SQL injection  f-string
+   > f"Selected {len(selected)} features for {regime_context_id} with threshold {selection_threshold:.2f}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\validation\redundancy_detector.py:349
+    SQL injection  f-string
+   > self.logger.info(f"✅ Selected {len(final_features.columns)} representative features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\validation\redundancy_detector.py:354
+    SQL injection  f-string
+   > self.logger.error(f"Error in feature selection: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\validation\redundancy_detector.py:391
+    SQL injection  f-string
+   > self.logger.error(f"Error selecting best feature from group: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\features\validation\redundancy_detector.py:420
+    SQL injection  f-string
+   > self.logger.info(f"Selected Features: {selected_count}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\main\system_orchestrator.py:222
+    SQL injection  f-string
+   > self.logger.warning(f"Could not get advice from ExperienceDiary: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\awareness\context_engine.py:146
+    SQL injection  f-string
+   > self.logger.error(f"Failed to update context awareness: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\awareness\context_engine.py:254
+    SQL injection  f-string
+   > self.logger.info(f" Fetched {len(source_events)} events from {source_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\awareness\context_engine.py:256
+    SQL injection  f-string
+   > self.logger.error(f"Failed to fetch from {source_name}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\awareness\context_engine.py:350
+    SQL injection  f-string
+   > self.logger.info(f"Updated sentiment for {ticker}: {avg_sentiment:.3f}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\evolution\dual_loops.py:152
+    SQL injection  f-string
+   > self.logger.info(f"New hypothesis generated and saved from diary analysis: {rule_id}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\evolution\dual_loops.py:213
+    SQL injection  f-string
+   > query = f"SELECT * FROM rules WHERE status IN ({placeholders})"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\memory\diary_engine.py:242
+    SQL injection  f-string
+   > query = f"SELECT * FROM {self.table_name} WHERE agent_id = ?"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\meta_learning\real_time_learning.py:135
+    SQL injection  f-string
+   > self.logger.info(f"📊 Trade history updated: {len(self.trade_history)} total trades")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\adapters\unified_model_adapter.py:128
+    SQL injection  f-string
+   > f"⚠️ Feature selection returned too few features ({len(selected_names)}). Using heuristic fallback."
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\analysis\overfitting_detector.py:769
+    SQL injection  f-string
+   > self.logger.error(f"Error loading overfitting history from {file_path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\analysis\regime_winner_analyzer.py:486
+    SQL injection  f-string
+   > switch_key = f"{switch['from_regime']}->{switch['to_regime']}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\enhanced_factory.py:94
+    SQL injection  f-string
+   > logger.debug(f"✅ Got model from prototype: {model_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\enhanced_factory.py:103
+    SQL injection  f-string
+   > logger.debug(f"✅ Got model from registry: {model_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\ensemble\confidence_calibrator.py:713
+    SQL injection  f-string
+   > self.logger.info(f"Calibrator loaded from {filepath}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\ensemble\dynamic_weights.py:256
+    SQL injection  f-string
+   > self.logger.info(f"Imported weights from {filepath}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\ensemble\ensemble_model.py:81
+    SQL injection  f-string
+   > self.logger.info(f"Ensemble model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\ensemble\model_correlation_analyzer.py:171
+    SQL injection  f-string
+   > self.logger.error(f"Error getting predictions from {model_name}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\ensemble\model_correlation_analyzer.py:428
+    SQL injection  f-string
+   > self.logger.error(f"Error selecting optimal subsets: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\ensemble\model_correlation_analyzer.py:579
+    SQL injection  f-string
+   > self.logger.error(f"Error selecting diverse subset: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\ensemble\weight_stability_monitor.py:141
+    SQL injection  f-string
+   > self.logger.info(f"✅ Weight stability update complete. Status: {self.stability_status}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\linear\knn_model.py:81
+    SQL injection  f-string
+   > self.logger.info(f"KNN model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\linear\linear_model.py:79
+    SQL injection  f-string
+   > self.logger.info(f"Linear model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\linear\svm_model.py:90
+    SQL injection  f-string
+   > self.logger.info(f"SVM model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:66
+    SQL injection  f-string
+   > self.logger.debug(f"Attempting to load model {model_id} from {model_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:119
+    SQL injection  f-string
+   > raise ModelLoadingError(f"Failed to load model from path {model_path}: {e}") from e
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:134
+    SQL injection  f-string
+   > self.logger.debug(f"Loading local model from {model_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:145
+    SQL injection  f-string
+   > self.logger.debug(f"Loading Colab model from {model_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:189
+    SQL injection  f-string
+   > self.logger.debug(f"Loading joblib model from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:196
+    SQL injection  f-string
+   > self.logger.debug(f"Loading pickle model from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:211
+    SQL injection  f-string
+   > self.logger.debug(f"Loading Keras model from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:303
+    SQL injection  f-string
+   > self.logger.debug(f"Loading PyTorch model from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:309
+    SQL injection  f-string
+   > self.logger.debug(f"Loaded dict from {path}, resolving state_dict or wrapper")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\loader.py:326
+    SQL injection  f-string
+   > raise ModelLoadingError(f"Failed to load PyTorch model from {path}: {e}") from e
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\model_selector\adaptive_selector.py:104
+    SQL injection  f-string
+   > logger.info(f"AdaptiveModelSelector initialized: leaderboard={leaderboard_path}, lr={learning_rate}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\model_selector\adaptive_selector.py:200
+    SQL injection  f-string
+   > logger.debug(f"Updated {model_id} for {context_fingerprint}: accuracy {accuracy:.3f}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\model_selector\adaptive_selector.py:210
+    SQL injection  f-string
+   > logger.warning(f"Failed to update Arena feedback: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\model_selector\fingerprint_selector.py:34
+    SQL injection  f-string
+   > self.logger.info(f"Exact match for '{context_fingerprint}'. Selected: {best_model}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\model_selector\fingerprint_selector.py:53
+    SQL injection  f-string
+   > self.logger.info(f"Fuzzy match '{best_sim_fp}' ({max_matches} bits). Selected: {best_model}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\model_selector\fingerprint_selector.py:58
+    SQL injection  f-string
+   > self.logger.error(f"Selection error: {e}", exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\model_selector\smart_selector.py:266
+    SQL injection  f-string
+   > logger.info(f"Best model selected: {best_model} with score {best_score:.3f}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\monitoring\prediction_drift_monitor.py:183
+    SQL injection  f-string
+   > self.logger.debug(f"Updated prediction history. Current size: {len(self.prediction_history)}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\neural\base_neural.py:159
+    SQL injection  f-string
+   > self.logger.info(f"Model and metadata loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\persistent_pool.py:212
+    SQL injection  f-string
+   > logger.debug(f"Updated {model_id} quality: {old_score:.2f} → {new_score:.2f}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\quality\controller.py:207
+    SQL injection  f-string
+   > f"Updated baseline for {model_id}: "
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\tree\catboost_model.py:143
+    SQL injection  f-string
+   > self.logger.info(f"CatBoost model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\tree\lightgbm_model.py:108
+    SQL injection  f-string
+   > self.logger.info(f"LightGBM model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\tree\random_forest_model.py:91
+    SQL injection  f-string
+   > self.logger.info(f"RandomForest model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\models\tree\xgboost_model.py:111
+    SQL injection  f-string
+   > self.logger.info(f"XGBoost model loaded from {path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\monitoring\example_usage.py:110
+    SQL injection  f-string
+   > logger.info(f"Processing data from source: {source_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\guards\macro_release_timing_guard.py:337
+    SQL injection  f-string
+   > self.logger.info(f"🛡️ Filtered macro data: {len(safe_df)} safe from {len(macro_df)} total")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\guards\safe_feature_combiner.py:208
+    SQL injection  f-string
+   > self.logger.debug(f"🗑️ Removed {len(dup_cols)} duplicate columns from {timeframe} merge")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\guards\temporal_leakage_guard.py:481
+    SQL injection  f-string
+   > self.logger.info(f"🛡️ Extracted safe features: {safe_df.shape} from {features_df.shape}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\colab_manager.py:135
+    SQL injection  f-string
+   > self.logger.warning(f"🗑️ Removing old config.json from previous test run: {old_config}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\colab_workflow_manager.py:65
+    SQL injection  f-string
+   > with open(b_dir / f"selected_features_{m}.json", "w", encoding="utf-8") as f:
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\data_manager.py:36
+    SQL injection  f-string
+   > self.logger.error(f"Error loading features from {features_path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\data_manager.py:50
+    SQL injection  f-string
+   > self.logger.error(f"Error loading targets from {targets_path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_loader.py:19
+    SQL injection  f-string
+   > self.batch_dir / f"selected_features_{model_type}_{ticker}_{target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_loader.py:20
+    SQL injection  f-string
+   > self.batch_dir / f"selected_features_{model_type}_{ticker}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_loader.py:21
+    SQL injection  f-string
+   > self.batch_dir / f"selected_features_{model_type}_{target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_loader.py:22
+    SQL injection  f-string
+   > self.batch_dir / f"selected_features_{model_type}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_selection_manager.py:41
+    SQL injection  f-string
+   > self.logger.info(f"Selected {len(mock_selected_features)} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_selection_manager.py:92
+    SQL injection  f-string
+   > feature_file = request.batch_dir / f"selected_features_{model}_{request.test_target}.json"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_selection_validator.py:83
+    SQL injection  f-string
+   > self.logger.warning(f"⚠️ Could not check time-based selection: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_selection_validator.py:106
+    SQL injection  f-string
+   > self.logger.info(f"Creating mock selected_features files: {request.test_ticker}, {request.test_target}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_selection_validator.py:109
+    SQL injection  f-string
+   > self.logger.info(f"Selected {len(mock_selected_features)} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\feature_selection_validator.py:159
+    SQL injection  f-string
+   > file_name = f"selected_features_{model_name}_{request.test_ticker}_{request.test_target}.json"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\light_models_trainer.py:126
+    SQL injection  f-string
+   > f"Training light models with pre-selected features for {len(config.light_models_to_train)} models..."
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\light_models_trainer.py:150
+    SQL injection  f-string
+   > self.logger.warning(f"Could not load features from {features_file}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\model_training_orchestrator.py:109
+    SQL injection  f-string
+   > self.logger.warning(f"⚠️ No selected features found in data for {context_ticker}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\model_training_orchestrator.py:114
+    SQL injection  f-string
+   > self.logger.warning(f"⚠️ Could not resolve ticker from {context_ticker}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\results_processor.py:32
+    SQL injection  f-string
+   > self.logger.info(f"✅ Loaded Colab results from {results_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\results_processor.py:88
+    SQL injection  f-string
+   > self.logger.error(f"❌ Error loading results from {results_path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid\results_processor.py:147
+    SQL injection  f-string
+   > self.logger.debug(f"✅ Updated selected features for {key}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid_orchestrator.py:436
+    SQL injection  f-string
+   > self.logger.warning(f"🔄 NEW FEATURE SELECTION NEEDED: {fs_check['reason']}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid_orchestrator.py:573
+    SQL injection  f-string
+   > logger.info(f"   ✅ Extracted features from enriched_prices: {features_df.shape}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid_orchestrator.py:591
+    SQL injection  f-string
+   > logger.info(f"   ✅ Extracted targets from all_targets: {targets_df.shape}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid_orchestrator.py:654
+    SQL injection  f-string
+   > logger.info(f"   ✅ Loaded features from saved file: {features_df.shape}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\hybrid_orchestrator.py:655
+    SQL injection  f-string
+   > logger.info(f"   ✅ Loaded targets from saved file: {targets_df.shape}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:17
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:18
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:19
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:20
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:30
+    SQL injection  f-string
+   > glob_candidates = list(config.batch_dir.glob(f"selected_features_{config.model_type}*.json"))
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:37
+    SQL injection  f-string
+   > logger.info(f"ℹ️ No selected features file for {config.model_type}, using all available features as fallback")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:51
+    SQL injection  f-string
+   > log_msg = f"✅ Loaded {len(selected_features)} features for {model_type} from {candidate.name}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:57
+    SQL injection  f-string
+   > logger.error(f'❌ Error loading features from {candidate}: {e}', exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:60
+    SQL injection  f-string
+   > logger.warning(f"⚠️ Failed to load features from {candidate}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:67
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:68
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:69
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:70
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:79
+    SQL injection  f-string
+   > glob_candidates = list(config.batch_dir.glob(f"selected_features_{config.model_type}*.json"))
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:85
+    SQL injection  f-string
+   > logger.info(f"ℹ️ No selected features file for {config.model_type}, using all available features as fallback")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:96
+    SQL injection  f-string
+   > log_msg = f"✅ Loaded {len(selected_features)} features for {model_type} from {candidate.name}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:102
+    SQL injection  f-string
+   > logger.error(f'❌ Exception loading features from {candidate}: {e}', exc_info=True)
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:103
+    SQL injection  f-string
+   > logger.warning(f"⚠️ Failed to load selected features file {candidate}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:170
+    SQL injection  f-string
+   > logger.debug(f"✅ Resolved batch_name from {runtime_params_path}: {batch_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:173
+    SQL injection  f-string
+   > logger.warning(f"⚠️ Failed to load batch_name from runtime_params.json: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\io.py:198
+    SQL injection  f-string
+   > logger.debug(f"✅ Resolved batch_name from nested runtime_params: {runtime_file} -> {batch_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\modeling\utils.py:21
+    SQL injection  f-string
+   > logger.info(f"   selected_features: {len(debug_info.selected_features)} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\data_preparer.py:106
+    SQL injection  f-string
+   > self.logger.debug(f"🔍 Stage 5: selected_features from metadata: {len(selected_features)} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\data_preparer.py:130
+    SQL injection  f-string
+   > f" No selected features for {model_type}, using all {ticker_df_clean.shape[1]} columns"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\data_preparer.py:261
+    SQL injection  f-string
+   > self.logger.info(f"Loaded target scaler from {scaler_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\data_preparer.py:270
+    SQL injection  f-string
+   > self.logger.warning(f"Failed to load scaler from {scaler_path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\model_resolver.py:52
+    SQL injection  f-string
+   > self.logger.info(f"✅ Resolved batch_dir from batch_name: {batch_dir}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\model_resolver.py:63
+    SQL injection  f-string
+   > self.logger.info(f"✅ Resolved batch_dir from model_path: {batch_dir}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\model_resolver.py:238
+    SQL injection  f-string
+   > self.logger.warning(f"Failed to load model from {path}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\model_resolver.py:285
+    SQL injection  f-string
+   > self.logger.info(f"Loaded {len(light_meta)} light models from {latest_light.name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\model_resolver.py:300
+    SQL injection  f-string
+   > self.logger.info(f"Loaded {len(heavy_meta)} heavy models from {colab_summary_file.name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\model_selector.py:56
+    SQL injection  f-string
+   > f"Contextual Selector chose '{best_model_name}' for {ticker} in {market_regime} regime."
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\model_selector.py:115
+    SQL injection  f-string
+   > f"🎯 KNN selected '{best_model_name}' with confidence {knn_confidence:.2f}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\prediction\result_builder.py:54
+    SQL injection  f-string
+   > features_path = batch_dir / f"selected_features_{ticker}_{target_col}_autoencoder.json"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_1_collection.py:77
+    SQL injection  f-string
+   > self.logger.info(f"✅ Collected {len(result)} rows from {collector.__class__.__name__}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_1_collection.py:89
+    SQL injection  f-string
+   > self.logger.info(f"✅ Collected {len(result)} items from {collector.__class__.__name__}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_1_collection.py:91
+    SQL injection  f-string
+   > self.logger.info(f"✅ Collected result from {collector.__class__.__name__}: {type(result)}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_1_collection.py:203
+    SQL injection  f-string
+   > self.logger.info(f"Received {len(df)} records from '{collector_type}'.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_1_collection.py:285
+    SQL injection  f-string
+   > self.logger.info(f"Fetched {len(df)} records from news table '{table_name}'.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_1_collection.py:288
+    SQL injection  f-string
+   > self.logger.info(f"Fetched {len(df)} records from '{table_name}'.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_2_processing.py:111
+    SQL injection  f-string
+   > self.logger.info(f"Normalizing and cleaning market data from key: {market_data_key}...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_2_processing.py:173
+    SQL injection  f-string
+   > self.logger.info(f"Processing news data from key: {news_key}...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_2_processing.py:338
+    SQL injection  f-string
+   > self.logger.info(f"Filtered news: {before_filter} → {after_filter} (60-day limit from {cutoff_date})")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_2_processing.py:435
+    SQL injection  f-string
+   > self.logger.info(f"Processing macro data from key: {macro_key}...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_2_processing.py:629
+    SQL injection  f-string
+   > self.logger.info(f"Extracted DataFrame from 'data' key: {df.shape}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_3_feature_engineering.py:215
+    SQL injection  f-string
+   > logger.info(f"✅ Copied datetime from original data for {timeframe}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_3_feature_engineering.py:265
+    SQL injection  f-string
+   > logger.debug(f"💾 Updated cache with context_fingerprint for {ticker_for_cache} {actual_tf}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_3_feature_engineering.py:394
+    SQL injection  f-string
+   > logger.info(f"✅ Extracted {len(target_cols)} targets from {tf}: {len(df)} rows")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_3_feature_engineering.py:396
+    SQL injection  f-string
+   > logger.info(f"✅ Total targets: {targets_df.shape} from {len(targets_dfs)} timeframes")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_3_feature_engineering.py:445
+    SQL injection  f-string
+   > logger.info(f"📰 Generating news-based dataset from {len(news_df)} news articles...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_3_feature_engineering.py:523
+    SQL injection  f-string
+   > logger.info(f"✅ Extracted {len(target_cols)} targets from {tf}: {len(df)} rows")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_3_feature_engineering.py:525
+    SQL injection  f-string
+   > logger.info(f"✅ Total targets: {targets_df.shape} from {len(targets_dfs)} timeframes")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:321
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:322
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:323
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:324
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:332
+    SQL injection  f-string
+   > glob_candidates = list(config.batch_dir.glob(f"selected_features_{config.model_type}*.json"))
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:338
+    SQL injection  f-string
+   > logger.warning(f"⚠️ No selected_features found for {config.model_type}. Using fallback features.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:350
+    SQL injection  f-string
+   > log_msg = f"✅ Loaded {len(selected_features)} features for {model_type} from {candidate.name}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:359
+    SQL injection  f-string
+   > logger.warning(f"⚠️ Failed to load features from {candidate}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:369
+    SQL injection  f-string
+   > logger.info(f"   selected_features: {len(debug_info.selected_features)} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:524
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:525
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.ticker}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:526
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}_{config.target_name}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:527
+    SQL injection  f-string
+   > config.batch_dir / f"selected_features_{config.model_type}.json",
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:534
+    SQL injection  f-string
+   > glob_candidates = list(config.batch_dir.glob(f"selected_features_{config.model_type}*.json"))
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:539
+    SQL injection  f-string
+   > logger.info(f"ℹ️ No selected features file for {config.model_type}, using all available features as fallback")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:552
+    SQL injection  f-string
+   > log_msg = f"✅ Loaded {len(selected_features)} features for {model_type} from {candidate.name}"
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:559
+    SQL injection  f-string
+   > logger.warning(f"⚠️ Failed to load selected features file {candidate}: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:629
+    SQL injection  f-string
+   > logger.debug(f"✅ Resolved batch_name from {runtime_params_path}: {batch_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:633
+    SQL injection  f-string
+   > logger.warning(f"⚠️ Failed to load batch_name from runtime_params.json: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_4_modeling.py:657
+    SQL injection  f-string
+   > logger.debug(f"✅ Resolved batch_name from nested runtime_params: {runtime_file} -> {batch_name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:277
+    SQL injection  f-string
+   > self.logger.debug(f"🔍 Stage 5: selected_features from metadata: {len(selected_features)} features")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:289
+    SQL injection  f-string
+   > self.logger.warning(f"⚠️ None of selected features found for {model_type}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:295
+    SQL injection  f-string
+   > self.logger.warning(f" No selected features for {model_type}, using all {ticker_df_clean.shape[1]} columns")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:366
+    SQL injection  f-string
+   > self.logger.info(f"✅ Loaded target scaler from {scaler_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:418
+    SQL injection  f-string
+   > self.logger.info(f"Contextual Selector chose '{best_model_name}' for {ticker} in {market_regime} regime.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:470
+    SQL injection  f-string
+   > self.logger.info(f"🎯 KNN selected '{best_model_name}' with confidence {knn_confidence:.2f}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:576
+    SQL injection  f-string
+   > self.logger.debug(f"Updated selector feedback for {ticker}: {model_id}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_5_prediction.py:579
+    SQL injection  f-string
+   > self.logger.warning(f"Failed to update selector feedback: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_6_trading_execution.py:199
+    SQL injection  f-string
+   > self.logger.info(f"✅ Loaded {len(predictions)} forecasts from {stage_5_file.name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_6_trading_execution.py:705
+    SQL injection  f-string
+   > self.logger.info(f"✅ Ensemble performance updated: score={self.current_performance_score:.3f}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_7_evaluation.py:138
+    SQL injection  f-string
+   > self.logger.info(f"✅ Loaded {len(signals)} signals from {stage_6_file.name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\stage_7_evaluation.py:493
+    SQL injection  f-string
+   > self.logger.warning(f"Failed to extract predictions from signals: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\trading\data_io.py:71
+    SQL injection  f-string
+   > self.logger.info(f"✅ Loaded {len(predictions)} forecasts from {stage_5_file.name}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\pipeline\stages\trading\recommendation_engine.py:199
+    SQL injection  f-string
+   > self.logger.info(f"📊 Dynamically detected global regime: {global_regime} (from {detected})")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\processing\cleaners.py:237
+    SQL injection  f-string
+   > logger.info(f"Normalized {len(normalized)} records from source '{source_type}' to unified schema.")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\processing\normalization_manager.py:198
+    SQL injection  f-string
+   > logger.info(f"Loading scalers from {self.scaler_dir}...")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\processing\parallel_processor.py:104
+    SQL injection  f-string
+   > f"Memory critical ({mem.percent}% used). Reducing chunk_size from {base_chunk_size} to {effective_chunk_size}.
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\trading\consensus_engine.py:67
+    SQL injection  f-string
+   > self.logger.info(f"Meta-model successfully synchronized from {meta_model_path}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\trading\consensus_engine.py:292
+    SQL injection  f-string
+   > self.logger.debug(f"Prediction from architecture {arch_type} is non-numeric: {e}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\trading\portfolio_manager.py:69
+    SQL injection  f-string
+   > self.logger.info(f"[PORTFOLIO] generate_orders_from_signals called with {len(signals)} signals")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\trading\portfolio_manager.py:230
+    SQL injection  f-string
+   > f"💰 BASIC [{ticker}]: shares={final_shares} (final) | constraints: risk={int(shares_from_risk)}, exposure={int
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\trading\virtual_portfolio.py:58
+    SQL injection  f-string
+   > logger.info(f"Portfolio loaded from {self.portfolio_file}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\training\progressive_trainer.py:618
+    SQL injection  f-string
+   > self.logger.info(f"Recovered from checkpoint: {checkpoint_file}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\training\unified_training_manager.py:85
+    SQL injection  f-string
+   > self.logger.info(f"Selected models for {ticker}: {models_to_train}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\training\unified_training_manager.py:115
+    SQL injection  f-string
+   > self.logger.debug(f"Selected models for {ticker}: {light_models}")
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\utils\trading_calendar.py:25
+    SQL injection  f-string
+   > f"TradingCalendar initialized for {country} from {start_year} to {end_year}. Found {len(self.holidays)} holida
+   -   : con.execute(sql, params)
+
+[HIGH] [SEC] src\utils\trading_calendar.py:113
+    SQL injection  f-string
+   > logger.info(f"Updated earnings dates. Total unique dates: {len(self.earnings_dates)}")
+   -   : con.execute(sql, params)
+
+----------------------------------------------------------------------
+  [MEDIUM] MEDIUM
+----------------------------------------------------------------------
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:31
+   Hardcoded    
+   > File "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py", line 118, in r
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:34
+   Hardcoded    
+   > File "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\base_events.py", line 691, 
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:40
+   Hardcoded    
+   > File "D:\\trading_project\\run_hybrid_pipeline.py", line 184, in <module>
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:42
+   Hardcoded    
+   > File "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py", line 195, in r
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:45
+   Hardcoded    
+   > File "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\asyncio\\runners.py", line 123, in r
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:52
+   Hardcoded    
+   > File "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\pandas\\core\\indexes
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:62
+   Hardcoded    
+   > File "D:\\trading_project\\src\\pipeline\\stages\\stage_3_feature_engineering.py", line 296, in run
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:65
+   Hardcoded    
+   > File "D:\\trading_project\\src\\features\\news_dataset_builder.py", line 192, in build_dataset
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:68
+   Hardcoded    
+   > File "D:\\trading_project\\src\\features\\news_dataset_builder.py", line 129, in _filter_news_with_sufficient_
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:71
+   Hardcoded    
+   > File "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\pandas\\core\\frame.p
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] scripts\analysis\analyze_errors_and_crashes.py:74
+   Hardcoded    
+   > File "C:\\Users\\Alexa\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\pandas\\core\\indexes
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CFG] src\monitoring\example_usage.py:151
+   Hardcoded    
+   > temp_file = f"/tmp/monitoring_test_{i}.tmp"
+   -  config_manager.get_config('paths.xxx')  Path(__file__).parent
+
+[MEDIUM] [CMX] scripts\analysis\analyze_batch_data.py:10
+    : analyze_batch() = 85  ( 60)
+   -    / dataclass
+
+[MEDIUM] [CMX] scripts\analysis\analyze_errors_and_crashes.py:79
+    : analyze_errors() = 266  ( 60)
+   -    / dataclass
+
+[MEDIUM] [CMX] scripts\analysis\analyze_feature_selection_issue.py:9
+    : analyze_feature_selection() = 210  ( 60)
+   -    / dataclass
+
+[MEDIUM] [CMX] scripts\analysis\analyze_news_quality.py:16
+    : analyze_news_quality() = 116  ( 60)
+   -    / dataclass
+
+[MEDIUM] [CMX] scripts\analysis\check_data_coverage.py:12
+    : check_data_coverage() = 76  ( 60)
+   -    / dataclass
+
+[MEDIUM] [CMX] scripts\analysis\deep_analysis_all_components.py:11
+    : analyze_all_components() = 227  ( 60)
+   -    / dataclass
+
+[MEDIUM] [CMX] scripts\check_enrichers_integration.py:170
+    : check_stage_3_features() = 77  ( 60)
+   -    / dataclass
+
+[MEDIUM] [CMX] scripts\check_enrichers_integration.py:309
+    : generate_report() = 87  ( 60)
+   -    / dataclass
+
+...   2475 issues ( --json  )
+
+----------------------------------------------------------------------
+  STATS:  
+----------------------------------------------------------------------
+    : 541
+              : 96,476
+   issues         : 2975
+
+  [HIGH] HIGH        : 480
+  [MEDIUM] MEDIUM      : 645
+  [LOW] LOW         : 1850
+
+   :
+    [LOG] 941
+    [IMP] 582
+    [DUP] 499
+    [SEC] 291
+    [CMX] 250
+    [TYP] 248
+    [BUG] 127
+    [CFG] 30
+    [ARC] 7
+----------------------------------------------------------------------

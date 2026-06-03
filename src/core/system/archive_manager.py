@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 def _is_valid_file(filepath: str, max_size_mb: int = 50) -> bool:
-    """Перевіряє чи file валідний для архівування"""
+    """Checks if file is valid for archiving"""
     if not os.path.exists(filepath) or not os.access(filepath, os.R_OK):
         return False
     
@@ -22,9 +22,9 @@ def _is_valid_file(filepath: str, max_size_mb: int = 50) -> bool:
 
 
 def archive_directory(source_dir: str, output_dir: str = "archives", archive_prefix: str = "archive") -> Optional[Dict[str, int]]:
-    """Архівує вказану директорію в ZIP file"""
+    """Archives the specified directory into a ZIP file"""
     if not os.path.exists(source_dir):
-        logger.warning(f" Директорія не існує: {source_dir}")
+        logger.warning(f" Directory does not exist: {source_dir}")
         return None
         
     os.makedirs(output_dir, exist_ok=True)
@@ -53,11 +53,11 @@ def archive_directory(source_dir: str, output_dir: str = "archives", archive_pre
                     zf.write(filepath, arcname)
                     files_added += 1
         
-        logger.info(f" Архівовано: {files_added} файлів, пропущено: {files_skipped}")
+        logger.info(f" Archived: {files_added} files, skipped: {files_skipped}")
         return {"files_added": files_added, "files_skipped": files_skipped}
         
     except Exception as e:
-        logger.error(f"[ERROR] Error архівування: {e}")
+        logger.error(f"[ERROR] Error archiving: {e}")
         if os.path.exists(archive_path):
             os.remove(archive_path)
-        return None
+        raise RuntimeError(f"Failed to archive directory {source_dir}") from e

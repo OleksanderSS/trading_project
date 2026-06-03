@@ -1,0 +1,11 @@
+{
+  "batch_id": "QQQ_lstm_20260322_222637",
+  "ticker": "QQQ",
+  "model_name": "lstm",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_volume_change_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T22:26:37.595495",
+  "status": "PENDING_COLAB"
+}

@@ -1,0 +1,31 @@
+{
+  "total_findings": 928,
+  "by_severity": {
+    "P2": 511,
+    "P3": 417
+  },
+  "by_category": {
+    "config_factory": 31,
+    "determinism": 339,
+    "error_policy": 363,
+    "financial_math": 36,
+    "heavy_imports": 21,
+    "security": 59,
+    "architecture": 10,
+    "data_lineage": 69
+  },
+  "by_rule": {
+    "HARDCODED_MODEL_LIST": 10,
+    "HARDCODED_MODEL_MAP_OR_ALIASES": 20,
+    "DUPLICATED_MODEL_REGISTRY_ENTRIES": 1,
+    "NON_INJECTED_CLOCK": 339,
+    "LOGGER_ERROR_THEN_RAISE": 363,
+    "DRAWDOWN_SIGN_CONVENTION_REVIEW": 36,
+    "HEAVY_TOP_LEVEL_IMPORT": 21,
+    "FILE_READ_NEEDS_PATH_VALIDATION": 32,
+    "ENV_LOADING_REVIEW": 27,
+    "GOD_CLASS_REVIEW": 9,
+    "LONG_MODULE_REVIEW": 1,
+    "FEATURE_WITHOUT_LOCAL_LINEAGE_HINT": 69
+  }
+}

@@ -19,7 +19,24 @@ class LightGBMModel(BaseModel):
         self.num_leaves = num_leaves
         self.random_state = random_state
         self.logger = ProjectLogger.get_logger("LightGBMModel")
-        self.model = None
+        
+        # ✅ INITIALIZE MODEL IN __INIT__ (for Ensemble)
+        if self.task_type == "classification":
+            self.model = lgb.LGBMClassifier(
+                n_estimators=self.n_estimators,
+                max_depth=self.max_depth,
+                learning_rate=self.learning_rate,
+                num_leaves=self.num_leaves,
+                random_state=self.random_state
+            )
+        else:
+            self.model = lgb.LGBMRegressor(
+                n_estimators=self.n_estimators,
+                max_depth=self.max_depth,
+                learning_rate=self.learning_rate,
+                num_leaves=self.num_leaves,
+                random_state=self.random_state
+            )
 
     @property
     def name(self) -> str:
@@ -28,25 +45,10 @@ class LightGBMModel(BaseModel):
     def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> Dict[str, Any]:
         """Trains the LightGBM model."""
         try:
-            if self.task_type == "classification":
-                self.model = lgb.LGBMClassifier(
-                    n_estimators=self.n_estimators,
-                    max_depth=self.max_depth,
-                    learning_rate=self.learning_rate,
-                    num_leaves=self.num_leaves,
-                    random_state=self.random_state,
-                    **kwargs
-                )
-            else:
-                self.model = lgb.LGBMRegressor(
-                    n_estimators=self.n_estimators,
-                    max_depth=self.max_depth,
-                    learning_rate=self.learning_rate,
-                    num_leaves=self.num_leaves,
-                    random_state=self.random_state,
-                    **kwargs
-                )
-            
+            # Update parameters if they are provided
+            if kwargs:
+                self.model.set_params(**kwargs)
+                
             self.model.fit(X, y)
             self.is_trained = True
             self.logger.info(f"LightGBM model trained successfully (task: {self.task_type})")
@@ -90,9 +92,28 @@ class LightGBMModel(BaseModel):
     def load_model(self, path: str) -> bool:
         """Loads a model from a file using joblib."""
         try:
-            loaded_model = joblib.load(path)
+            from src.config.unified_config_manager import get_current_config
+            from src.utils.artifact_security import resolve_trusted_artifact_path
+            from pathlib import Path
+
+            # Security validation: Ensure path is within expected data or models directories
+            trusted_path = resolve_trusted_artifact_path(
+                path,
+                allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+                must_exist=True,
+            )
+            
+            # Validate against configured model storage paths
+            config = get_current_config()
+            base_model_path = config.get('models.dual_model_manager.base_path', 'data/models')
+            
+            if not trusted_path.resolve().is_relative_to(Path(base_model_path).resolve()):
+                self.logger.warning(f"🚫 Blocking unsafe LightGBM model load attempt from: {path}")
+                raise ValueError(f"Unsafe path for loading: {path}")
+
+            loaded_model = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             self.__dict__.update(loaded_model.__dict__)
-            self.logger.info(f"LightGBM model loaded from {path}")
+            self.logger.info(f"LightGBM model loaded from {trusted_path}")
             return True
         except Exception as e:
             self.logger.error(f"Failed to load model: {e}")

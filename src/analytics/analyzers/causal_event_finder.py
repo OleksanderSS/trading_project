@@ -1,116 +1,126 @@
 import pandas as pd
 import numpy as np
 import logging
-from dowhy import CausalModel
+from typing import Dict, Any, List
+from src.core.logging.logger import ProjectLogger
+from src.core.exceptions import DataProcessingError
+from src.analytics.engines.causal_engine import CausalEngine
 
-logger = logging.getLogger(__name__)
+from ..interfaces import IAnalyzer
 
-class CausalEngine:
+logger = ProjectLogger.get_logger(__name__)
+
+class CausalEventFinder(IAnalyzer):
     """
-    Performs causal inference to estimate the effect of a specific treatment 
-    (e.g., a detected event) on an outcome (e.g., future returns).
+    Wrapper for CausalEngine that implements IAnalyzer interface.
+    Detects causal events and estimates their effects on outcomes.
     """
-
-    def __init__(self, data: pd.DataFrame, treatment: str, outcome: str, common_causes: list = None):
+    
+    def __init__(self, treatment: str = "event_detected", outcome: str = "target_future_return", 
+                 common_causes: list = None):
         """
-        Initializes the CausalEngine with data and model specifications.
-
-        Args:
-            data (pd.DataFrame): The dataset containing treatment, outcome, and common causes.
-            treatment (str): The name of the column representing the treatment (binary or continuous).
-            outcome (str): The name of the column representing the outcome.
-            common_causes (list, optional): A list of column names to be used as common causes (confounders).
+        Initialize the CausalEventFinder.
         """
-        if not all(col in data.columns for col in [treatment, outcome] + (common_causes or [])):
-            raise ValueError("Data must contain treatment, outcome, and all common cause columns.")
-
-        self.data = data
         self.treatment = treatment
         self.outcome = outcome
-        self.common_causes = common_causes
-        self._model = self._create_model()
-
-    def _create_model(self) -> CausalModel:
+        self.common_causes = common_causes or []
+        logger.info(f"CausalEventFinder initialized: treatment={treatment}, outcome={outcome}")
+    
+    def analyze(self, data: Any, **kwargs) -> Dict[str, Any]:
         """
-        Creates a CausalModel instance from the provided data and specifications.
+        Analyze data to find causal effects.
         """
-        try:
-            model = CausalModel(
-                data=self.data,
-                treatment=self.treatment,
-                outcome=self.outcome,
-                common_causes=self.common_causes
-            )
-            logger.info("Causal model created successfully.")
-            return model
-        except Exception as e:
-            logger.error(f"Error creating CausalModel: {e}", exc_info=True)
-            raise
-
-    def identify_effect(self):
-        """
-        Identifies the causal estimand (the query to be answered).
-        """
-        if not self._model:
-            raise RuntimeError("Model has not been created.")
+        df = self._prepare_analysis_data(data)
         
-        self.identified_estimand = self._model.identify_effect(proceed_when_unidentifiable=True)
-        logger.info(f"Causal estimand identified: {self.identified_estimand}")
-
-    def estimate_effect(self, method_name="backdoor.linear_regression", **kwargs) -> float:
-        """
-        Estimates the causal effect using a specified method.
-
-        Args:
-            method_name (str): The name of the estimation method to use.
-            **kwargs: Additional arguments for the estimation method.
-
-        Returns:
-            float: The estimated causal effect.
-        """
-        if not hasattr(self, 'identified_estimand'):
-            logger.warning("Estimand not identified. Identifying first.")
-            self.identify_effect()
-
-        try:
-            estimate = self._model.estimate_effect(
-                self.identified_estimand,
-                method_name=method_name,
-                **kwargs
-            )
-            effect_value = estimate.value
-            logger.info(f"Causal effect estimated using {method_name}: {effect_value}")
-            return effect_value
-        except Exception as e:
-            logger.error(f"Error during causal effect estimation: {e}", exc_info=True)
-            return np.nan
-
-    def run_refutation_tests(self, **kwargs) -> dict:
-        """
-        Runs refutation tests to check the robustness of the causal estimate.
-
-        Returns:
-            dict: A summary of the refutation test results.
-        """
-        if not hasattr(self, 'identified_estimand'):
-            raise RuntimeError("Cannot run refutation without an identified estimand.")
-
-        refutation_results = {}
+        # Validation checks
+        self._validate_data_columns(df)
         
-        # Example: Random Common Cause
-        try:
-            res_random = self._model.refute_estimate(self.identified_estimand, self._model.latest_estimate, method_name="random_common_cause")
-            refutation_results['random_common_cause'] = str(res_random)
-            logger.info(f"Refutation (Random Common Cause): {res_random.new_effect} (p-value: {res_random.p_value})")
-        except Exception as e:
-            logger.warning(f"Could not run random_common_cause refutation: {e}")
+        available_causes = self._filter_available_causes(df)
+        self._validate_treatment_outcome_variance(df)
+        
+        # Use CausalEngine for analysis
+        engine = CausalEngine(df, self.treatment, self.outcome, available_causes)
+        engine.identify_effect()
+        effect = engine.estimate_effect()
+        
+        return {
+            "causal_effect": float(effect),
+            "treatment": self.treatment,
+            "outcome": self.outcome,
+            "common_causes": available_causes,
+            "status": "success"
+        }
+    
+    def _filter_available_causes(self, df: pd.DataFrame) -> List[str]:
+        """Filter common causes to only existing columns."""
+        available_causes = [c for c in self.common_causes if c in df.columns]
+        
+        if not available_causes:
+            logger.warning("No common causes available, skipping causal analysis")
+        
+        return available_causes
+    
+    def _validate_treatment_outcome_variance(self, df: pd.DataFrame) -> None:
+        """Validate treatment and outcome have sufficient variance."""
+        if df[self.treatment].nunique() < 2:
+            raise DataProcessingError(f"Treatment '{self.treatment}' has no variance")
+        
+        if df[self.outcome].nunique() < 2:
+            raise DataProcessingError(f"Outcome '{self.outcome}' has no variance")
+    
+    def _prepare_analysis_data(self, data: Any) -> pd.DataFrame:
+        """Prepare and validate input data for analysis."""
+        if isinstance(data, dict):
+            return self._prepare_dict_data(data)
+        elif isinstance(data, pd.DataFrame):
+            return self._validate_dataframe(data)
+        else:
+            raise DataProcessingError("Unsupported data format")
+    
+    def _prepare_dict_data(self, data: dict) -> pd.DataFrame:
+        """Prepare data from dictionary input."""
+        price_data = data.get('price_data')
+        macro_data = data.get('macro_data')
+        
+        if price_data is None and macro_data is None:
+            raise DataProcessingError("Both price_data and macro_data are None")
+        
+        df = self._merge_data_sources(price_data, macro_data)
+        return self._validate_dataframe(df)
+    
+    def _merge_data_sources(self, price_data: Any, macro_data: Any) -> pd.DataFrame:
+        """Merge price and macro data sources."""
+        if price_data is not None and macro_data is not None:
+            return pd.merge(price_data, macro_data, 
+                          left_index=True, right_index=True, how='left', on=None,
+                          validate='one_to_one')
+        elif price_data is not None:
+            return price_data
+        else:
+            return macro_data
+    
+    def _validate_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Validate dataframe has sufficient data."""
+        if df.empty or len(df) < 10:
+            raise DataProcessingError("Insufficient data for causal analysis")
+        
+        return df
 
-        # Example: Data Subset Refuter
-        try:
-            res_subset = self._model.refute_estimate(self.identified_estimand, self._model.latest_estimate, method_name="data_subset_refuter", subset_fraction=0.8)
-            refutation_results['data_subset_refuter'] = str(res_subset)
-            logger.info(f"Refutation (Data Subset): {res_subset.new_effect} (p-value: {res_subset.p_value})")
-        except Exception as e:
-            logger.warning(f"Could not run data_subset_refuter refutation: {e}")
+    def _validate_data_columns(self, df: pd.DataFrame) -> None:
+        """Validate that required columns exist in the data and follow naming conventions."""
+        
+        # Check leakage naming convention
+        forbidden_patterns = ['future_', 'next_', 'tomorrow_', 'forward_', 'fwd_', 'ahead_']  # audit-ignore: validation pattern list
+        
+        for col_name in [self.treatment, self.outcome]:
+            if any(p in col_name.lower() for p in forbidden_patterns) and not col_name.startswith('target_'):
+                raise DataProcessingError(
+                    f"Leakage hazard: '{col_name}' contains future data patterns but lacks 'target_' prefix. "
+                    "Please rename to 'target_<name>'."
+                )
 
-        return refutation_results
+        if self.treatment not in df.columns:
+            raise DataProcessingError(f"Treatment column '{self.treatment}' not found")
+        
+        if self.outcome not in df.columns:
+            raise DataProcessingError(f"Outcome column '{self.outcome}' not found")

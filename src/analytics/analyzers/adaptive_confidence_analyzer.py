@@ -1,9 +1,10 @@
-import logging
 from typing import Dict, Any, List, Optional
 
 from ..interfaces import IAnalyzer
+from src.core.logging.logger import ProjectLogger
+from src.core.exceptions import DataProcessingError
 
-logger = logging.getLogger(__name__)
+logger = ProjectLogger.get_logger(__name__)
 
 class AdaptiveConfidenceAnalyzer(IAnalyzer):
     """
@@ -43,7 +44,7 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
                 if self._evaluate_rule_conditions(rule.get('if', {}), data):
                     confidence_threshold = self._apply_rule_action(rule.get('then', {}), confidence_threshold)
             except Exception as e:
-                logger.error(f"Error processing rule '{rule.get('name', 'Unnamed')}': {e}", exc_info=True)
+                raise DataProcessingError(f"Error processing rule '{rule.get('name', 'Unnamed')}': {e}") from e
         
         # Cap the confidence threshold to a reasonable maximum
         final_threshold = min(confidence_threshold, self.config.get('max_confidence', 0.85))

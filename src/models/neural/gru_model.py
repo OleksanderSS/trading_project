@@ -68,6 +68,10 @@ class GRUModel(BaseNeuralModel):
             # Assuming each row is a timestep, and we have one feature
             X = np.reshape(X, (X.shape[0], X.shape[1], 1))
 
+        # Перетворення в числові типи для Keras
+        X = X.astype(np.float32)
+        y = y.astype(np.float32)
+
         return super().train(X, y, **kwargs)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -80,8 +84,10 @@ class GRUModel(BaseNeuralModel):
         if len(X.shape) == 2:
             X = np.reshape(X, (X.shape[0], X.shape[1], 1))
 
-        X_norm = self._normalize_data(X, fit=False)
-        predictions = self.model.predict(X_norm, verbose=0)
+        # Перетворення в числовий тип для Keras
+        X = X.astype(np.float32)
+        x_norm = self._normalize_data(X, fit=False)
+        predictions = self.model.predict(x_norm, verbose=0)
 
         self.logger.info(f"Made predictions for {X.shape[0]} samples.")
         return predictions.flatten() # Flatten to return a 1D array of predictions
