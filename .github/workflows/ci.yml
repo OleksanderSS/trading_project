@@ -1,11 +1,10 @@
-ковою логікою чи як
 name: CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [production]
   pull_request:
-    branches: [main]
+    branches: [production]
 
 jobs:
   test:
@@ -24,17 +23,29 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
           
+      - name: Run Snyk Code Scan
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
       - name: Run Ruff
-        run: ruff check src/calibration/ src/backtesting/advanced/
-        
+        run: |
+          ruff check src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/
+
       - name: Run Black check
-        run: black --check src/calibration/ src/backtesting/advanced/
-        
+        run: |
+          black --check src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/
+
       - name: Run Bandit
-        run: bandit -r src/calibration/ src/backtesting/advanced/
-        
+        run: |
+          bandit -r src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/
+
       - name: Run mypy
-        run: mypy src/calibration/ src/backtesting/advanced/ --ignore-missing-imports
+        run: |
+          mypy src/algorithms/ src/analytics/ src/backtesting/ src/calibration/ src/core/ src/data/ src/data_sources/ src/ensembling/ src/factories/ src/feature_engineering/ src/features/ src/models/ src/optimization/ src/pipeline/ src/risk_management/ src/trading/ --ignore-missing-imports
         
-      - name: Run pytest with coverage
-        run: pytest tests/unit/test_calibration_engine.py tests/unit/test_advanced_engine.py --cov=src/calibration --cov=src/backtesting/advanced --cov-report=xml --cov-report=html
+      - name: Run pytest
+        run: |
+          pytest tests/

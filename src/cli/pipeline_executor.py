@@ -1,12 +1,27 @@
 """
 Pipeline execution utilities for hybrid pipeline.
 """
+import time
+import functools
 import logging
 from pathlib import Path
 from typing import Any
 import pandas as pd
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger(__name__)
+
+def profile_execution(func):
+    """Decorator to log execution time of async functions."""
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        result = await func(*args, **kwargs)
+        end_time = time.perf_counter()
+        logger.info(f"⏱️ {func.__name__} took {end_time - start_time:.2f} seconds")
+        return result
+    return wrapper
+
 FEATURES_FILE = 'features.parquet'
 TARGETS_FILE = 'targets.parquet'
 
@@ -15,6 +30,7 @@ class PipelineExecutor:
     """Handles pipeline execution for different modes."""
 
     @staticmethod
+    @profile_execution
     async def execute_local_mode(orchestrator, tickers: list, timeframes: list
         ):
         """Execute local pipeline stages only."""
@@ -23,6 +39,7 @@ class PipelineExecutor:
             timeframes=timeframes)
 
     @staticmethod
+    @profile_execution
     async def execute_light_mode(orchestrator, tickers: list, timeframes: list
         ):
         """Execute light models training only."""
@@ -30,6 +47,7 @@ class PipelineExecutor:
         return await orchestrator.run_light_models(tickers=tickers)
 
     @staticmethod
+    @profile_execution
     async def execute_prepare_mode(orchestrator, tickers: list, timeframes:
         list, **kwargs):
         """Execute preparation for Colab (stages 0-3 + packaging)."""
@@ -45,6 +63,7 @@ class PipelineExecutor:
             targets_df=targets_df, **kwargs)
 
     @staticmethod
+    @profile_execution
     async def execute_full_mode(orchestrator, tickers: list, timeframes: list):
         """Execute the full hybrid preparation flow and pause for Colab."""
         logger.info('Running full hybrid pipeline...')
@@ -54,6 +73,7 @@ class PipelineExecutor:
             accumulate=True))
 
     @staticmethod
+    @profile_execution
     async def execute_continue_mode(orchestrator, args):
         """Execute the continue mode after Colab results are ready."""
         logger.info('Running continue mode...')
