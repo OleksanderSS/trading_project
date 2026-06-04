@@ -1,14 +1,17 @@
-import logging
 import importlib
 import inspect
+import logging
 import os
 import pkgutil
 from typing import Any
+
 import pandas as pd
+
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.features.enrichers.base import BaseEnricher
 from src.features.selection.volatility_driver_selector import VolatilityDriverSelector
+
 logger = ProjectLogger.get_logger('FeatureOrchestrator')
 
 
@@ -167,31 +170,31 @@ class FeatureOrchestrator:
         """Process a single enricher and return (df_enriched, stats_dict)."""
         start_time = pd.Timestamp.now()
         initial_shape = df.shape
-        
+
         logger.info(f"🔄 Running enricher '{enricher.name}' (Priority: {enricher.priority})...")
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'   Enricher class: {enricher.__class__.__name__}')
             logger.debug(f'   Input shape: {df.shape}')
-        
+
         df_enriched = enricher.enrich(df, **kwargs)
-        
+
         end_time = pd.Timestamp.now()
         duration = (end_time - start_time).total_seconds()
         final_shape = df_enriched.shape
         cols_added = final_shape[1] - initial_shape[1]
-        
+
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'   Output shape: {df_enriched.shape}')
-        
+
         logger.info(f"✅ Enricher '{enricher.name}' completed: +{cols_added} columns in {duration:.2f}s")
-        
+
         stats = {
             'enricher': enricher.name,
             'duration_sec': duration,
             'cols_added': cols_added,
             'final_cols': final_shape[1]
         }
-        
+
         return df_enriched, stats
 
     def _handle_duplicate_columns(self, df: pd.DataFrame, enricher_name: str) -> pd.DataFrame:
@@ -240,30 +243,30 @@ class FeatureOrchestrator:
         logger.info(f'🔄 Starting enrichment: {df.shape[0]} rows, {df.shape[1]} columns')
         df_enriched = df.copy()
         run_kwargs = kwargs.copy()
-        
+
         context_selection_config = self.config_manager.get_config('features', {}).get('context_selection', {})
         if context_selection_config.get('enabled', False):
             df_enriched = self._run_dynamic_context_selection(df_enriched, context_selection_config, run_kwargs)
-        
+
         enrichment_stats = []
         for i, enricher in enumerate(self.enrichers):
             try:
                 df_enriched, stats = self._process_single_enricher(enricher, df_enriched, run_kwargs)
                 enrichment_stats.append(stats)
-                
+
                 df_enriched = self._handle_duplicate_columns(df_enriched, enricher.name)
                 df_enriched = self._optimize_dataframe_memory(df_enriched, i)
             except Exception as e:
                 logger.error(f"❌ Error in enricher '{enricher.name}': {e}", exc_info=True)
                 raise
-        
+
         if add_timeframe_suffix:
             df_enriched = self._add_timeframe_suffix(df_enriched)
-        
+
         logger.info('✅ Feature enrichment pipeline completed.')
         logger.info(f'📊 Final result: {df_enriched.shape[0]} rows, {df_enriched.shape[1]} columns')
         self._log_enrichment_summary(enrichment_stats)
-        
+
         return df_enriched
 
     def _add_timeframe_suffix(self, df: pd.DataFrame) ->pd.DataFrame:

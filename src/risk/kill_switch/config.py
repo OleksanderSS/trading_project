@@ -1,12 +1,13 @@
-from typing import Dict, Any, Optional
 from pathlib import Path
+from typing import Any
+
 
 class KillSwitchConfig:
     """Configuration and thresholds for the Kill Switch system."""
-    
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        
+
         # Risk levels and triggers
         self.RISK_LEVELS = {
             'normal': {
@@ -55,7 +56,7 @@ class KillSwitchConfig:
                 'action': 'immediate_closure'
             }
         }
-        
+
         self.EMERGENCY_TRIGGERS = {
             'portfolio_var_exceeded': {
                 'description': 'Portfolio variance exceeded threshold',
@@ -88,7 +89,7 @@ class KillSwitchConfig:
                 'cooldown_minutes': 60
             }
         }
-        
+
         self.risk_limits = self.config.get('risk_limits', {})
         self.custom_emergency_triggers = self.config.get('emergency_triggers', {})
         self.storage_path = Path(self.config.get('storage_path', 'data/risk/kill_switch'))

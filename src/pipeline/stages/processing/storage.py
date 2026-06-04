@@ -1,8 +1,8 @@
-import os
-import json
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
+
 import pandas as pd
+
 from src.core.file_management.file_manager import FileManager
 from src.core.logging.logger import ProjectLogger
 
@@ -10,16 +10,16 @@ logger = ProjectLogger.get_logger('ProcessingStorage')
 
 class ProcessingStorage:
     """Handles saving and loading of processed data."""
-    
+
     def __init__(self, file_manager: FileManager):
         self.logger = logger
         self.file_manager = file_manager
 
-    def save_cleaned_data_to_files(self, filtered_results: Dict[str, Any]) -> Dict[str, Any]:
+    def save_cleaned_data_to_files(self, filtered_results: dict[str, Any]) -> dict[str, Any]:
         """Save results to local storage."""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         saved_paths = {}
-        
+
         for key, data in filtered_results.items():
             try:
                 if isinstance(data, pd.DataFrame):
@@ -32,12 +32,12 @@ class ProcessingStorage:
                         saved_paths[key] = nested_paths
             except Exception as e:
                 self.logger.error(f"Error saving {key}: {e}")
-                
+
         return saved_paths
 
-    def _save_nested_dataframes(self, prefix: str, data: Dict[str, Any], timestamp: str) -> Dict[str, Any]:
+    def _save_nested_dataframes(self, prefix: str, data: dict[str, Any], timestamp: str) -> dict[str, Any]:
         """Save DataFrame leaves in nested dictionaries."""
-        saved_paths: Dict[str, Any] = {}
+        saved_paths: dict[str, Any] = {}
         for key, value in data.items():
             safe_key = str(key).replace('/', '_').replace('\\', '_')
             nested_key = f"{prefix}_{safe_key}"

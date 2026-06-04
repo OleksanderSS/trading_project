@@ -168,7 +168,7 @@ class WalkForwardOptimizer:
             return []
         keys = list(param_space)
         values = [value if isinstance(value, (list, tuple, set)) else [value] for value in param_space.values()]
-        return [dict(zip(keys, combo)) for combo in product(*values)]
+        return [dict(zip(keys, combo, strict=False)) for combo in product(*values)]
 
     @staticmethod
     def _calculate_stability_score(folds: list[dict[str, Any]]) -> float:

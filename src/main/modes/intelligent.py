@@ -33,7 +33,7 @@ class IntelligentMode:
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         if loop.is_running():
             # If we're already in an event loop (e.g. pytest or another async run)
             import nest_asyncio

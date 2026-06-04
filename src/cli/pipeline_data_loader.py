@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -12,7 +12,7 @@ class PipelineDataLoader:
     """Helper to handle data loading for pipeline execution."""
 
     @staticmethod
-    def load_parquet_from_path(path: Path, label: str) -> Optional[pd.DataFrame]:
+    def load_parquet_from_path(path: Path, label: str) -> pd.DataFrame | None:
         """Load a parquet file if it exists."""
         if path.exists():
             try:
@@ -26,7 +26,7 @@ class PipelineDataLoader:
         return None
 
     @staticmethod
-    def load_news_economic_data(batch_dir: Path) -> tuple[Optional[pd.DataFrame], Optional[pd.DataFrame]]:
+    def load_news_economic_data(batch_dir: Path) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
         """Load news and economic data with fallbacks."""
         news_data = PipelineDataLoader.load_parquet_from_path(batch_dir / "news_data.parquet", "news data")
         if news_data is None:
@@ -45,7 +45,7 @@ class PipelineDataLoader:
 
     @staticmethod
     def load_from_db_fallback(
-        orchestrator: Any, news_data: Optional[pd.DataFrame], economic_data: Optional[pd.DataFrame]
+        orchestrator: Any, news_data: pd.DataFrame | None, economic_data: pd.DataFrame | None
     ):
         """DuckDB Database Fallback for news and macro data."""
         try:

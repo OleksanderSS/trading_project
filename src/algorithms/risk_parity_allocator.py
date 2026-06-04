@@ -12,10 +12,12 @@
 """
 from enum import Enum
 from typing import Any
+
 import numpy as np
 from scipy.optimize import Bounds, minimize
 from scipy.spatial.distance import squareform
 from sklearn.cluster import AgglomerativeClustering
+
 from src.core.logging.logger import ProjectLogger
 
 

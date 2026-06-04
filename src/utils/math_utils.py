@@ -1,10 +1,11 @@
+
 import numpy as np
 import pandas as pd
-from typing import Union
 
-def safe_div(numerator: Union[float, np.ndarray, pd.Series], 
-             denominator: Union[float, np.ndarray, pd.Series], 
-             fill_value: float = 0.0) -> Union[float, np.ndarray, pd.Series]:
+
+def safe_div(numerator: float | np.ndarray | pd.Series,
+             denominator: float | np.ndarray | pd.Series,
+             fill_value: float = 0.0) -> float | np.ndarray | pd.Series:
     """
     Performs safe division to prevent division by zero, returning fill_value.
     """

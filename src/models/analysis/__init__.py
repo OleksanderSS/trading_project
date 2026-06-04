@@ -12,8 +12,8 @@ These components enable sophisticated model analysis and adaptation to changing 
 """
 
 from .baseline_dominance_detector import BaselineDominanceDetector
-from .regime_winner_analyzer import RegimeWinnerAnalyzer
 from .overfitting_detector import OverfittingDetector
+from .regime_winner_analyzer import RegimeWinnerAnalyzer
 
 __all__ = [
     'BaselineDominanceDetector',

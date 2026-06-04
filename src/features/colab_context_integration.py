@@ -5,9 +5,11 @@ This module provides a drop-in replacement for ColabFeatureSelector
 that includes context awareness and feature importance analysis.
 """
 from pathlib import Path
-from typing import Tuple, List, Dict, Any
-import pandas as pd
+from typing import Any
+
 import numpy as np
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger('ColabContextIntegration')
@@ -16,8 +18,8 @@ logger = ProjectLogger.get_logger('ColabContextIntegration')
 class ContextAwareColabFeatureSelector:
     """
     Enhanced feature selector for Colab with context awareness.
-    
-    Automatically detects and analyzes context features (state_*) 
+
+    Automatically detects and analyzes context features (state_*)
     during feature selection.
     """
 
@@ -69,17 +71,17 @@ class ContextAwareColabFeatureSelector:
 
     def select_features(self, features_df: pd.DataFrame, targets_df: pd.
         DataFrame, ticker: str, target_col: str, model_type: str='mlp'
-        ) ->Tuple[np.ndarray, List[str], Dict[str, Any]]:
+        ) ->tuple[np.ndarray, list[str], dict[str, Any]]:
         """
         Select features with context awareness.
-        
+
         Args:
             features_df: Features DataFrame
             targets_df: Targets DataFrame
             ticker: Ticker symbol
             target_col: Target column name
             model_type: Model type for max features
-        
+
         Returns:
             Tuple of (selected_features_array, feature_names, analysis_metadata)
         """
@@ -111,7 +113,7 @@ class ContextAwareColabFeatureSelector:
             f"   Base: {analysis.get('base_count', 0)}, Context: {analysis.get('context_count', 0)}, Temporal: {analysis.get('temporal_count', 0)}"
             )
         if analysis.get('top_context_features'):
-            print(f'   Top context features:')
+            print('   Top context features:')
             for feat in analysis['top_context_features'][:5]:
                 print(f"      - {feat['name']}: {feat['importance']:.4f}")
         return selected_array, selected_names, analysis
@@ -135,11 +137,11 @@ class ContextAwareColabFeatureSelector:
         return max_features_map.get(model_type.lower(), 128)
 
 
-def save_feature_analysis(analysis: Dict[str, Any], ticker: str, target:
+def save_feature_analysis(analysis: dict[str, Any], ticker: str, target:
     str, model_type: str, output_dir: Path):
     """
     Save feature analysis to JSON file.
-    
+
     Args:
         analysis: Analysis metadata from feature selection
         ticker: Ticker symbol
@@ -163,11 +165,11 @@ def save_feature_analysis(analysis: Dict[str, Any], ticker: str, target:
         raise
 
 
-def visualize_context_importance(analysis: Dict[str, Any], output_path:
+def visualize_context_importance(analysis: dict[str, Any], output_path:
     Path=None):
     """
     Create visualization of context feature importance.
-    
+
     Args:
         analysis: Analysis metadata with feature importances
         output_path: Optional path to save plot

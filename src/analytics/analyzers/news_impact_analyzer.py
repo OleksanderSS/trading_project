@@ -1,10 +1,14 @@
-from ..interfaces import IAnalyzer
-import pandas as pd
+from typing import Any
+
 import numpy as np
-from typing import Dict, Any, Optional
-from src.core.logging.logger import ProjectLogger
+import pandas as pd
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 from src.sentiment.sentiment_models import analyze_sentiment
+
+from ..interfaces import IAnalyzer
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -13,7 +17,7 @@ class NewsImpactAnalyzer(IAnalyzer):
     Analyzes raw news text to calculate a sentiment-based, time-decaying impact score.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         """
         Initializes the analyzer with configuration.
 
@@ -38,15 +42,15 @@ class NewsImpactAnalyzer(IAnalyzer):
             return 0.0
         return np.exp(-np.log(2) * (series_freq_hours / self.half_life_hours))
 
-    def analyze(self, news_data: pd.DataFrame, **kwargs) ->Dict[str, Any]:
+    def analyze(self, news_data: pd.DataFrame, **kwargs) ->dict[str, Any]:
         """
         Performs sentiment analysis and calculates a weighted, time-decaying news impact score.
         """
         if not isinstance(news_data, pd.DataFrame) or news_data.empty or 'text' not in news_data.columns:
             raise DataProcessingError("Input data must be a non-empty DataFrame with a 'text' column.")
-            
+
         sentiment_results = self._perform_sentiment_analysis(news_data)
-        
+
         weighted_scores = self._calculate_weighted_scores(sentiment_results)
         aggregated_scores = self._aggregate_scores_by_timestamp(weighted_scores
             , news_data)
@@ -66,7 +70,7 @@ class NewsImpactAnalyzer(IAnalyzer):
         sentiment_results = analyze_sentiment(news_data['text'].tolist())
         if sentiment_results.empty:
             raise DataProcessingError('Sentiment analysis returned no results.')
-            
+
         sentiment_results.index = news_data.index
         return sentiment_results
 

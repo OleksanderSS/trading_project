@@ -1,8 +1,8 @@
-from .orchestrator import IntelligentDataFilter
-from .price_filter import PriceFilter
 from .news_filter import NewsFilter
-from .social_filter import SocialFilter
+from .orchestrator import IntelligentDataFilter
 from .pattern_extractor import PatternExtractor
+from .price_filter import PriceFilter
+from .social_filter import SocialFilter
 
 __all__ = [
     'IntelligentDataFilter',

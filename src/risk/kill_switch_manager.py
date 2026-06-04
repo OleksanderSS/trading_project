@@ -4,10 +4,13 @@ Kill Switch Manager - Facade for the modular Kill-Switch System.
 This module maintains backward compatibility while delegating to the new modular structure.
 """
 
-from typing import Dict, Any, Optional
+from typing import Any
+
 import pandas as pd
-from .kill_switch.manager import KillSwitchManager as ModularKillSwitchManager
+
 from .kill_switch.alerts import AlertManager as ModularAlertManager
+from .kill_switch.manager import KillSwitchManager as ModularKillSwitchManager
+
 
 # Re-exporting the main class under the same name for backward compatibility
 class KillSwitchManager(ModularKillSwitchManager):
@@ -23,22 +26,22 @@ class AlertManager(ModularAlertManager):
     pass
 
 # Factory function for easy instantiation
-def get_kill_switch_manager(config: Optional[Dict[str, Any]] = None) -> KillSwitchManager:
+def get_kill_switch_manager(config: dict[str, Any] | None = None) -> KillSwitchManager:
     """Factory function to get KillSwitchManager instance."""
     return KillSwitchManager(config)
 
 # Convenience function for quick emergency monitoring
-async def monitor_risk_emergency_quick(portfolio_data: Dict[str, Any],
+async def monitor_risk_emergency_quick(portfolio_data: dict[str, Any],
                                  market_data: pd.DataFrame,
-                                 config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                                 config: dict[str, Any] | None = None) -> dict[str, Any]:
     """
     Quick emergency risk monitoring.
-    
+
     Args:
         portfolio_data: Current portfolio positions
         market_data: Current market data
         config: Configuration dictionary
-        
+
     Returns:
         Risk monitoring result dictionary
     """

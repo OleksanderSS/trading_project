@@ -1,13 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Any
+
 import numpy as np
+
 from src.core.exceptions import DataProcessingError
+
 
 class CalibrationStrategy(ABC):
     """Базовий клас для стратегій калібрування впевненості."""
 
     @abstractmethod
-    def fit(self, predictions: np.ndarray, targets: np.ndarray, **kwargs) -> Dict[str, Any]:
+    def fit(self, predictions: np.ndarray, targets: np.ndarray, **kwargs) -> dict[str, Any]:
         """Навчання стратегії."""
         pass
 

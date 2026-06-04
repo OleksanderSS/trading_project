@@ -5,6 +5,7 @@ Maintains backward compatibility with the original ProcessingStage.
 
 from .processing.orchestrator import ProcessingStage as ModularProcessingStage
 
+
 class ProcessingStage(ModularProcessingStage):
     """
     Facade for ProcessingStage.

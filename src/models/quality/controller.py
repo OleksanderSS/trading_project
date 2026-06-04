@@ -6,9 +6,8 @@ ModelQualityController: Quality control for model predictions and drift detectio
 - Detects regime-specific drift (e.g. model works in Bull but drifts in Chaos).
 """
 import logging
-
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -20,7 +19,7 @@ logger = ProjectLogger.get_logger(__name__)
 class ModelQualityController:
     """
     Quality control for model predictions and drift detection.
-    
+
     🎯 PATTERN-EXPERT TRACKING:
     - baseline_stats: Dict[f"{model_id}_{pattern_id}", statistics]
     """
@@ -49,7 +48,7 @@ class ModelQualityController:
         current_mean = np.mean(current)
         baseline_mean = np.mean(baseline)
         baseline_std = np.std(baseline)
-        
+
         drift = abs(current_mean - baseline_mean) / (baseline_std + 1e-6)
         if drift > self.drift_threshold:
             self.logger.warning(f"Drift detected: {drift:.3f} > {self.drift_threshold}")
@@ -62,7 +61,7 @@ class ModelQualityController:
         """
         key = f"{model_id}_{pattern_id}"
         baseline = self.baseline_stats.get(key)
-        
+
         if not baseline:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f"No baseline for {key}. Initializing now.")
@@ -112,15 +111,15 @@ class ModelQualityController:
         }
         key = f"{model_id}_{pattern_id}"
         self.baseline_stats[key] = stats_dict
-        
+
         # Backward compatibility for tests expecting model_id key
         if pattern_id == "normal" or pattern_id == "":
             self.baseline_stats[model_id] = stats_dict
-            
+
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"✅ Baseline updated for Expert: {key}")
 
-    def get_baseline(self, model_id: str) -> Optional[dict[str, Any]]:
+    def get_baseline(self, model_id: str) -> dict[str, Any] | None:
         """Get baseline statistics for a model."""
         for key in [f"{model_id}_normal", model_id]:
             if key in self.baseline_stats:
@@ -141,11 +140,11 @@ class ModelQualityController:
         z_scores = np.abs(predictions - mean) / std
         return z_scores > threshold
 
-    def compare_models(self, model_a_preds: np.ndarray, model_b_preds: np.ndarray, actuals: Optional[np.ndarray] = None) -> dict[str, Any]:
+    def compare_models(self, model_a_preds: np.ndarray, model_b_preds: np.ndarray, actuals: np.ndarray | None = None) -> dict[str, Any]:
         """Compare predictions of two models."""
         correlation = float(np.corrcoef(model_a_preds, model_b_preds)[0, 1]) if len(model_a_preds) > 1 else 1.0
         mean_abs_diff = float(np.mean(np.abs(model_a_preds - model_b_preds)))
-        
+
         report = {
             'correlation': correlation,
             'mean_absolute_difference': mean_abs_diff,
@@ -154,7 +153,7 @@ class ModelQualityController:
             'model_a_std': float(np.std(model_a_preds)),
             'model_b_std': float(np.std(model_b_preds))
         }
-        
+
         if actuals is not None:
             mae_a = float(np.mean(np.abs(model_a_preds - actuals)))
             mae_b = float(np.mean(np.abs(model_b_preds - actuals)))
@@ -162,7 +161,7 @@ class ModelQualityController:
             report['model_b_mae'] = mae_b
             report['better_model'] = "A" if mae_a < mae_b else "B"
             report['improvement'] = float(abs(mae_a - mae_b))
-            
+
         return report
 
     def generate_report(self) -> dict[str, Any]:
@@ -173,18 +172,18 @@ class ModelQualityController:
             else:
                 base_id = key
             unique_models.add(base_id)
-            
+
         baseline_models = list(unique_models)
         return {
             'drift_threshold': self.drift_threshold,
             'total_baselines': len(baseline_models),
             'baseline_models': baseline_models,
-            'regimes_tracked': list(set(s['pattern'] for s in self.baseline_stats.values())),
+            'regimes_tracked': list({s['pattern'] for s in self.baseline_stats.values()}),
             'timestamp': datetime.now().isoformat()
         }
 
 # Global singleton
-_quality_controller: Optional[ModelQualityController] = None
+_quality_controller: ModelQualityController | None = None
 
 def get_quality_controller(drift_threshold: float = 0.3) -> ModelQualityController:
     global _quality_controller

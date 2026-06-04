@@ -3,11 +3,14 @@ Cache management component for Hybrid Orchestrator.
 Handles feature selection caching and data change detection.
 """
 import json
-import pandas as pd
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger(__name__)
 FEATURES_FILE = 'features.parquet'
 
@@ -21,7 +24,7 @@ class CacheManager:
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
 
     def check_if_feature_selection_needed(self, batch_dir: Path,
-        new_rows_count: int, force: bool=False) ->Dict[str, Any]:
+        new_rows_count: int, force: bool=False) ->dict[str, Any]:
         """Checks if new feature selection is required."""
         initial_check = self._check_initial_or_forced_selection(batch_dir,
             force)
@@ -33,7 +36,7 @@ class CacheManager:
         return self._check_data_change_percentage(batch_dir, new_rows_count)
 
     def _check_initial_or_forced_selection(self, batch_dir: Path, force: bool
-        ) ->Optional[Dict[str, Any]]:
+        ) ->dict[str, Any] | None:
         """Check if selection is needed due to initial run or force."""
         files = list(batch_dir.glob('selected_features_*.json'))
         if not files:
@@ -44,14 +47,13 @@ class CacheManager:
                 'Forced feature selection requested'}
         return None
 
-    def _check_time_based_selection(self, batch_dir: Path) ->Optional[Dict[
-        str, Any]]:
+    def _check_time_based_selection(self, batch_dir: Path) ->dict[str, Any] | None:
         """Check if selection is needed based on time elapsed."""
         files = list(batch_dir.glob('selected_features_*.json'))
         if not files:
             return None
         try:
-            with open(files[0], 'r', encoding='utf-8') as f:
+            with open(files[0], encoding='utf-8') as f:
                 data = json.load(f)
                 last_ts = data.get('timestamp')
             if last_ts:
@@ -64,7 +66,7 @@ class CacheManager:
         return None
 
     def _check_data_change_percentage(self, batch_dir: Path, new_rows_count:
-        int) ->Dict[str, Any]:
+        int) ->dict[str, Any]:
         """Check if selection is needed based on data change percentage."""
         f_path = batch_dir / FEATURES_FILE
         if not f_path.exists():
@@ -88,9 +90,9 @@ class CacheManager:
                 return True
             old_features = pd.read_parquet(features_path)
             known = set(zip(pd.to_datetime(old_features['datetime']).dt.
-                tz_localize(None), old_features['ticker']))
+                tz_localize(None), old_features['ticker'], strict=False))
             current = set(zip(pd.to_datetime(new_features['datetime']).dt.
-                tz_localize(None), new_features['ticker']))
+                tz_localize(None), new_features['ticker'], strict=False))
             return len(current - known) > 0
         except Exception as e:
             self.logger.error(f'Cache integrity check failed: {e}', exc_info=True)

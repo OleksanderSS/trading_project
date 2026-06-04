@@ -2,12 +2,15 @@
 Model Results Manager
 Manages the persistence, retrieval, and caching of model performance results and analysis.
 """
-import pandas as pd
 import logging
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
 from src.core.exceptions import DataLoadError, DataProcessingError
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,7 +31,7 @@ class ModelResultsManager:
         self.light_results_path = self.base_path / self.LIGHT_MODELS_FILENAME
         self.heavy_results_path = self.base_path / self.HEAVY_MODELS_FILENAME
         self.combined_path = self.base_path / self.COMBINED_FILENAME
-        self._cache: Dict[str, pd.DataFrame] = {}
+        self._cache: dict[str, pd.DataFrame] = {}
         logger.info(
             f'ModelResultsManager synchronized with base path: {self.base_path}'
             )
@@ -36,14 +39,14 @@ class ModelResultsManager:
     def save_results(self, results_df: pd.DataFrame, is_heavy: bool=False):
         """
         Persists model results to the appropriate Parquet structure.
-        
+
         Args:
             results_df: DataFrame containing the fresh model performance metrics.
             is_heavy: Boolean flag to switch between light and heavy storage buckets.
         """
         if not isinstance(results_df, pd.DataFrame) or results_df.empty:
             raise DataProcessingError('Attempted to persist an empty or invalid results DataFrame.')
-            
+
         target_path = (self.heavy_results_path if is_heavy else self.
             light_results_path)
         model_category = 'heavy' if is_heavy else 'light'
@@ -153,13 +156,13 @@ class ModelResultsManager:
             logger.error(f'Experience Diary lookup failed for {model_id}: {e}', exc_info=True)
             raise DataProcessingError(f'Experience Diary lookup failed for {model_id}: {e}') from e
 
-    def get_cached_analysis(self, data_hash: str) ->Optional[Dict[str, Any]]:
+    def get_cached_analysis(self, data_hash: str) ->dict[str, Any] | None:
         """
         Retrieves cached analytical results based on input data fingerprint.
-        
+
         Args:
             data_hash: Fingerprint of the input datasets.
-            
+
         Returns:
             Optional[Dict[str, Any]]: Cached analytical report or None if miss.
         """
@@ -178,10 +181,10 @@ class ModelResultsManager:
                 return None
         return None
 
-    def cache_analysis(self, data_hash: str, results: Dict[str, Any]) ->None:
+    def cache_analysis(self, data_hash: str, results: dict[str, Any]) ->None:
         """
         Stores analytical results in the session cache using data fingerprint.
-        
+
         Args:
             data_hash: Fingerprint of the input datasets.
             results: The analytical payload to be cached.
@@ -191,10 +194,10 @@ class ModelResultsManager:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'Analytical payload cached for hash: {data_hash}')
 
-    def save_json_result(self, data: Dict[str, Any], filename: str) ->None:
+    def save_json_result(self, data: dict[str, Any], filename: str) ->None:
         """
         Saves a JSON report to the base path.
-        
+
         Args:
             data: The JSON serializable dictionary to save.
             filename: The name of the file.

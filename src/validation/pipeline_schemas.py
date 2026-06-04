@@ -16,10 +16,10 @@ Usage:
     return schema.dict()
 """
 
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel, ConfigDict, Field, validator
+from typing import Any
+
 import pandas as pd
-import numpy as np
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RawDataSchema(BaseModel):
@@ -28,8 +28,8 @@ class RawDataSchema(BaseModel):
     Validates market data, news, and macro data presence and structure.
     """
     market_data: pd.DataFrame = Field(description="OHLCV price data with ticker and datetime")
-    news: Optional[pd.DataFrame] = Field(default=None, description="News events with sentiment")
-    macro_data: Optional[pd.DataFrame] = Field(default=None, description="Macroeconomic indicators")
+    news: pd.DataFrame | None = Field(default=None, description="News events with sentiment")
+    macro_data: pd.DataFrame | None = Field(default=None, description="Macroeconomic indicators")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -59,9 +59,9 @@ class ProcessedDataSchema(BaseModel):
     Schema for data output from Stage 2 (Processing).
     Validates cleaned data and normalization parameters.
     """
-    cleaned_data: Dict[str, Any] = Field(description="Cleaned data by timeframe")
-    normalization_params: Dict[str, Any] = Field(default_factory=dict, description="Scaling parameters for reverse transformation")
-    quality_metrics: Dict[str, float] = Field(default_factory=dict, description="Data quality scores")
+    cleaned_data: dict[str, Any] = Field(description="Cleaned data by timeframe")
+    normalization_params: dict[str, Any] = Field(default_factory=dict, description="Scaling parameters for reverse transformation")
+    quality_metrics: dict[str, float] = Field(default_factory=dict, description="Data quality scores")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -71,12 +71,12 @@ class ProcessedDataSchema(BaseModel):
         self._validate_prices_structure()
         self._validate_news_data()
         self._validate_macro_data()
-    
+
     def _validate_cleaned_data(self):
         """Validate cleaned data dictionary is not empty."""
         if not self.cleaned_data:
             raise ValueError("Cleaned data dictionary is empty")
-    
+
     def _validate_prices_structure(self):
         """Validate prices dictionary and DataFrames."""
         if 'prices' not in self.cleaned_data or not isinstance(self.cleaned_data['prices'], dict):
@@ -84,7 +84,7 @@ class ProcessedDataSchema(BaseModel):
 
         for tf, df in self.cleaned_data['prices'].items():
             self._validate_price_dataframe(tf, df)
-    
+
     def _validate_price_dataframe(self, timeframe: str, df: pd.DataFrame):
         """Validate individual price DataFrame."""
         if not isinstance(df, pd.DataFrame):
@@ -93,13 +93,13 @@ class ProcessedDataSchema(BaseModel):
             raise ValueError(f"Cleaned data for timeframe '{timeframe}' is empty")
         if 'ticker' not in df.columns:
             raise ValueError(f"Cleaned data for '{timeframe}' missing 'ticker' column")
-    
+
     def _validate_news_data(self):
         """Validate news data if present."""
         if 'news' in self.cleaned_data and self.cleaned_data['news'] is not None:
             if not isinstance(self.cleaned_data['news'], pd.DataFrame):
                 raise ValueError("News data must be a DataFrame")
-    
+
     def _validate_macro_data(self):
         """Validate macro data if present."""
         if 'macro_data' in self.cleaned_data and self.cleaned_data['macro_data'] is not None:
@@ -112,12 +112,12 @@ class EnrichedDataSchema(BaseModel):
     Schema for data output from Stage 3 (Feature Engineering).
     Validates enriched features and target generation.
     """
-    enriched_prices: Dict[str, pd.DataFrame] = Field(description="Price data with technical indicators")
-    selected_features: List[str] = Field(description="Feature selection results")
-    feature_importance: Dict[str, float] = Field(description="Feature importance scores")
-    all_targets: Optional[Dict[str, Any]] = Field(default=None, description="Generated targets by timeframe")
-    combined_features: Optional[pd.DataFrame] = Field(default=None, description="Combined features DataFrame")
-    models_metadata: Optional[Dict[str, Any]] = Field(default=None, description="Metadata for training models")
+    enriched_prices: dict[str, pd.DataFrame] = Field(description="Price data with technical indicators")
+    selected_features: list[str] = Field(description="Feature selection results")
+    feature_importance: dict[str, float] = Field(description="Feature importance scores")
+    all_targets: dict[str, Any] | None = Field(default=None, description="Generated targets by timeframe")
+    combined_features: pd.DataFrame | None = Field(default=None, description="Combined features DataFrame")
+    models_metadata: dict[str, Any] | None = Field(default=None, description="Metadata for training models")
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -148,7 +148,7 @@ class ModelMetadataSchema(BaseModel):
     model_type: str = Field(description="Model architecture type")
     ticker: str = Field(description="Associated ticker symbol")
     target: str = Field(description="Prediction target")
-    metrics: Optional[Dict[str, float]] = Field(default=None, description="Model performance metrics")
+    metrics: dict[str, float] | None = Field(default=None, description="Model performance metrics")
 
     def validate(self) -> None:
         """Custom validation."""
@@ -166,10 +166,10 @@ class PredictionResultsSchema(BaseModel):
     Schema for prediction results from Stage 5.
     Validates prediction outputs and confidence scores.
     """
-    predictions: List[Dict[str, Any]] = Field(description="Individual model predictions")
-    ensemble_predictions: Dict[str, Any] = Field(description="Ensemble prediction results")
-    confidence_scores: Dict[str, float] = Field(description="Prediction confidence metrics")
-    model_metadata: Dict[str, ModelMetadataSchema] = Field(description="Models used for predictions")
+    predictions: list[dict[str, Any]] = Field(description="Individual model predictions")
+    ensemble_predictions: dict[str, Any] = Field(description="Ensemble prediction results")
+    confidence_scores: dict[str, float] = Field(description="Prediction confidence metrics")
+    model_metadata: dict[str, ModelMetadataSchema] = Field(description="Models used for predictions")
 
     def validate(self) -> None:
         """Custom validation."""
@@ -186,7 +186,7 @@ class PredictionResultsSchema(BaseModel):
 
 
 # Utility functions for schema validation
-def validate_stage_output(stage_name: str, output: Dict[str, Any], schema_class: type) -> Dict[str, Any]:
+def validate_stage_output(stage_name: str, output: dict[str, Any], schema_class: type) -> dict[str, Any]:
     """
     Validate stage output against a schema.
 
@@ -209,7 +209,7 @@ def validate_stage_output(stage_name: str, output: Dict[str, Any], schema_class:
         raise ValueError(f"Stage {stage_name} output validation failed: {e}") from e
 
 
-def create_validation_middleware(schema_map: Dict[str, type]):
+def create_validation_middleware(schema_map: dict[str, type]):
     """
     Create validation middleware for pipeline stages.
 
@@ -242,40 +242,40 @@ def create_validation_middleware(schema_map: Dict[str, type]):
     return validate_stage
 
 
-def validate_batch_dir(batch_dir: str) -> Dict[str, Any]:
+def validate_batch_dir(batch_dir: str) -> dict[str, Any]:
     """
     Validate the Colab batch directory contract for continue mode.
-    
+
     Args:
         batch_dir: Path to the batch directory.
-        
+
     Returns:
         Dict containing 'valid' (bool), 'errors' (list), and 'manifest' (dict).
     """
-    import os
     import json
-    
+    import os
+
     errors = []
     manifest = {}
-    
+
     if not os.path.exists(batch_dir):
         return {'valid': False, 'errors': [f"Batch directory does not exist: {batch_dir}"], 'manifest': {}}
-        
+
     metadata_path = os.path.join(batch_dir, 'batch_metadata.json')
     if not os.path.exists(metadata_path):
         errors.append("batch_metadata.json is missing")
     else:
         try:
-            with open(metadata_path, 'r', encoding='utf-8') as f:
+            with open(metadata_path, encoding='utf-8') as f:
                 manifest = json.load(f)
         except Exception as e:
             errors.append(f"Failed to read batch_metadata.json: {e}")
-            
+
     required_files = ['features.parquet', 'targets.parquet']
     for req_file in required_files:
         if not os.path.exists(os.path.join(batch_dir, req_file)):
             errors.append(f"Required file {req_file} is missing")
-            
+
     return {
         'valid': len(errors) == 0,
         'errors': errors,

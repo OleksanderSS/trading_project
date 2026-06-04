@@ -3,11 +3,12 @@ Model Comparison Analyzer
 Analyzes and compares the performance of various machine learning architectures.
 Facilitates champion model selection by contrasting heavy vs. light model results.
 """
+from typing import Any
+
 import pandas as pd
-import numpy as np
-from typing import Any, cast, Dict, List, Optional, Tuple
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 from ..interfaces import IAnalyzer
 
@@ -15,14 +16,14 @@ logger = ProjectLogger.get_logger(__name__)
 
 class ModelComparisonAnalyzer(IAnalyzer):
     """
-    Performs comparative analysis on model result DataFrames to identify 
+    Performs comparative analysis on model result DataFrames to identify
     optimal architectures and assess performance stability across different cycles.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initializes the ModelComparisonAnalyzer.
-        
+
         Args:
             config: Optional configuration override for heavy model categorization.
         """
@@ -32,10 +33,10 @@ class ModelComparisonAnalyzer(IAnalyzer):
         self.configured_heavy_models = self.config.get('heavy_models', self.HEAVY_MODELS)
         logger.info("ModelComparisonAnalyzer initialized for comparative benchmarking.")
 
-    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs: Any) -> Dict[str, Any]:
+    def analyze(self, data: dict[str, pd.DataFrame], **kwargs: Any) -> dict[str, Any]:
         """
         Main interface for UnifiedAnalyticsEngine.
-        
+
         Args:
             data: Dictionary containing a 'results' DataFrame with performance metrics.
             **kwargs: Control flags for specific analytical routines.
@@ -43,19 +44,19 @@ class ModelComparisonAnalyzer(IAnalyzer):
         results_df = data.get('results')
         if not isinstance(results_df, pd.DataFrame) or results_df.empty:
             raise DataProcessingError("Input 'results' DataFrame is empty or invalid.")
-        
+
         # Categorize models as 'heavy' or 'light' if metadata is missing
         if 'model_type' not in results_df.columns:
             results_df['model_type'] = results_df['model'].apply(
                 lambda x: 'heavy' if str(x).lower() in [m.lower() for m in self.configured_heavy_models] else 'light'
             )
 
-        analysis_payload: Dict[str, Any] = {}
+        analysis_payload: dict[str, Any] = {}
 
         # Architecture Benchmarking Routine
         if kwargs.get("run_architecture_comparison", True):
             analysis_payload['architecture_comparison'] = self._compare_architectures(results_df)
-        
+
         # Segmented Leaderboard Routine
         if kwargs.get("run_best_model_finder", True):
             analysis_payload['best_models_by_type'] = self._get_best_models_by_type(results_df)
@@ -66,7 +67,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
 
         return analysis_payload
 
-    def _compare_architectures(self, results_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def _compare_architectures(self, results_df: pd.DataFrame) -> list[dict[str, Any]]:
         """Evaluates reliability and stability across competing model architectures."""
         if 'accuracy' not in results_df.columns:
             raise DataProcessingError("'accuracy' column missing from results.")
@@ -84,16 +85,16 @@ class ModelComparisonAnalyzer(IAnalyzer):
             # Reliability Score: Performance normalized by inverse volatility (stability)
             metrics['reliability_score'] = metrics['mean_accuracy'] * (1 - metrics.get('stability_std', 0.0))
             arch_stats.append(metrics)
-        
+
         return sorted(arch_stats, key=lambda x: x['reliability_score'], reverse=True)
 
-    def _get_best_models_by_type(self, results_df: pd.DataFrame) -> Dict[str, Any]:
+    def _get_best_models_by_type(self, results_df: pd.DataFrame) -> dict[str, Any]:
         """Identifies champions for each category within asset/timeframe cohorts."""
         if 'accuracy' not in results_df.columns:
             return {}
-        
-        leaders: Dict[str, Dict[str, Any]] = {'light': {}, 'heavy': {}}
-        
+
+        leaders: dict[str, dict[str, Any]] = {'light': {}, 'heavy': {}}
+
         # Determine champion indices via group maximization
         try:
             leader_indices = results_df.loc[results_df.groupby(['ticker', 'timeframe', 'model_type'])['accuracy'].idxmax()]
@@ -108,14 +109,14 @@ class ModelComparisonAnalyzer(IAnalyzer):
         except Exception as e:
             logger.error(f"Failed to calculate best models by type: {e}")
             raise DataProcessingError(f"Failed to calculate best models by type: {e}") from e
-            
+
         return leaders
 
-    def _summarize_by_type(self, results_df: pd.DataFrame) -> List[Dict[str, Any]]:
+    def _summarize_by_type(self, results_df: pd.DataFrame) -> list[dict[str, Any]]:
         """Provides a high-level statistical summary of the light vs. heavy model split."""
         if 'accuracy' not in results_df.columns:
             return []
-        
+
         summary = []
         for model_type, group in results_df.groupby('model_type'):
             summary.append({
@@ -128,30 +129,30 @@ class ModelComparisonAnalyzer(IAnalyzer):
                 'ticker_coverage': int(group['ticker'].nunique()),
                 'timeframe_coverage': int(group['timeframe'].nunique())
             })
-        
+
         return summary
 
-    def compare_models(self, training_results: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
+    def compare_models(self, training_results: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
         """
         Contrasts live training results to select the final 'Champion' for production.
         """
         logger.info("Conducting model cross-comparison to determine production champion...")
-        
+
         tickers_results = training_results.get('tickers_results', {})
-        
+
         if not tickers_results:
             raise DataProcessingError("Champion selection aborted: No valid training results provided.")
-        
+
         model_cohort = self._build_model_cohort(tickers_results)
-        
+
         if not model_cohort:
             raise DataProcessingError("No successful model instances found in the provided cohort.")
-        
+
         best_heavy, best_light = self._identify_cluster_leaders(model_cohort)
         champion, reason = self._arbitrate_champion(best_heavy, best_light)
-        
+
         logger.info(f"DETERMINED CHAMPION: {champion} | Methodology: {reason}")
-        
+
         return {
             'champion_model': champion,
             'selection_reason': reason,
@@ -160,19 +161,19 @@ class ModelComparisonAnalyzer(IAnalyzer):
             'cohort_data': model_cohort
         }
 
-    def _build_model_cohort(self, tickers_results: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _build_model_cohort(self, tickers_results: dict[str, Any]) -> list[dict[str, Any]]:
         """Build cohort of successful models from ticker results."""
         model_cohort = []
         for ticker, ticker_data in tickers_results.items():
             if ticker_data.get('status') != 'success':
                 continue
-            
+
             winner = ticker_data.get('winner', 'unknown')
             metrics = ticker_data.get('metrics', {})
-            
+
             model_type = self._classify_model_type(winner)
             accuracy = self._extract_performance_metric(metrics)
-            
+
             model_cohort.append({
                 'model_name': winner,
                 'model_type': model_type,
@@ -180,31 +181,31 @@ class ModelComparisonAnalyzer(IAnalyzer):
                 'full_metrics': metrics,
                 'source_ticker': ticker
             })
-        
+
         return model_cohort
 
     def _classify_model_type(self, winner: str) -> str:
         """Classify model as heavy or light based on configuration."""
         return 'heavy' if str(winner).lower() in [m.lower() for m in self.configured_heavy_models] else 'light'
 
-    def _extract_performance_metric(self, metrics: Dict[str, Any]) -> float:
+    def _extract_performance_metric(self, metrics: dict[str, Any]) -> float:
         """Extract primary performance metric from metrics dictionary."""
         return float(metrics.get('accuracy', metrics.get('test_accuracy', metrics.get('r2', 0.0))))
 
-    def _identify_cluster_leaders(self, model_cohort: List[Dict[str, Any]]) -> tuple:
+    def _identify_cluster_leaders(self, model_cohort: list[dict[str, Any]]) -> tuple:
         """Identify best performing models in each cluster."""
         heavy_leaders = [m for m in model_cohort if m['model_type'] == 'heavy']
         light_leaders = [m for m in model_cohort if m['model_type'] == 'light']
-        
+
         best_heavy = max(heavy_leaders, key=lambda x: x['performance_score']) if heavy_leaders else None
         best_light = max(light_leaders, key=lambda x: x['performance_score']) if light_leaders else None
-        
+
         logger.info(f"Cohort Population: Heavy={len(heavy_leaders)}, Light={len(light_leaders)}")
         if best_heavy:
             logger.info(f"Heavy Cluster Leader: {best_heavy['model_name']} (score: {best_heavy['performance_score']:.4f})")
         if best_light:
             logger.info(f"Light Cluster Leader: {best_light['model_name']} (score: {best_light['performance_score']:.4f})")
-        
+
         return best_heavy, best_light
 
     def _arbitrate_champion(self, best_heavy: dict[str, Any] | None, best_light: dict[str, Any] | None) -> tuple[str, str]:
@@ -224,5 +225,5 @@ class ModelComparisonAnalyzer(IAnalyzer):
             reason = "Defaulted to light cluster leader (no heavy alternatives)"
         else:
             raise DataProcessingError("Arbitration failed: zero model population")
-        
+
         return champion, reason

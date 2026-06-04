@@ -2,18 +2,20 @@
 Unified Analytics Engine
 Orchestrates the execution of various analytical modules in a parallelized and cached environment.
 """
-import pandas as pd
-import logging
-import importlib
 import hashlib
+import importlib
 import json
-from typing import Dict, List, Any, Optional
+import logging
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.data_managers.model_results_manager import ModelResultsManager
 from src.analytics.interfaces import IAnalyzer
 from src.config.unified_config_manager import UnifiedConfigManager
-from src.analytics.data_managers.model_results_manager import ModelResultsManager
 from src.core.exceptions import ConfigurationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,8 +39,8 @@ class UnifiedAnalyticsEngine:
             config_manager: UnifiedConfigManager instance for loading engine and analyzer settings.
         """
         self.config_manager = config_manager
-        self.analyzers: Dict[str, IAnalyzer] = {}
-        self.analyzer_data_map: Dict[str, List[str]] = {}
+        self.analyzers: dict[str, IAnalyzer] = {}
+        self.analyzer_data_map: dict[str, list[str]] = {}
         engine_config = self.config_manager.get('analysis.engine', {})
         self.max_workers = engine_config.get('max_workers', 4)
         self.analyzer_configs = engine_config.get('analyzers', [])
@@ -82,12 +84,12 @@ class UnifiedAnalyticsEngine:
         self.analyzers[name] = analyzer
         logger.info(f'Registered analyzer component: {name}')
 
-    def _generate_data_hash(self, data_map: Dict[str, Any]) ->str:
+    def _generate_data_hash(self, data_map: dict[str, Any]) ->str:
         """
         Generates a stable fingerprint (MD5 hash) for input datasets to support result caching.
         """
         try:
-            stable_repr: Dict[str, Any] = {}
+            stable_repr: dict[str, Any] = {}
             for key in sorted(data_map.keys()):
                 value = data_map[key]
                 if isinstance(value, pd.DataFrame):
@@ -122,11 +124,11 @@ class UnifiedAnalyticsEngine:
                     hash_input += f'{key}_{str(value)}'
             return hashlib.sha256(hash_input.encode()).hexdigest()
 
-    def run_full_analysis(self, data_map: Dict[str, Any], **kwargs) ->Dict[
+    def run_full_analysis(self, data_map: dict[str, Any], **kwargs) ->dict[
         str, Any]:
         """
         Executes all registered analyzers in parallel using the thread pool.
-        
+
         Workflow:
         1. Generate input data fingerprint.
         2. Check cache for existing results.
@@ -163,8 +165,8 @@ class UnifiedAnalyticsEngine:
         self.results_manager.cache_analysis(data_hash, results)
         return results
 
-    def _get_data_for_analyzer(self, analyzer_name: str, data_map: Dict[str,
-        Any]) ->Optional[Any]:
+    def _get_data_for_analyzer(self, analyzer_name: str, data_map: dict[str,
+        Any]) ->Any | None:
         """Routes specific data subsets to an analyzer based on its configured requirements."""
         required_keys = self.analyzer_data_map.get(analyzer_name, [])
         if not required_keys:
@@ -181,13 +183,13 @@ class UnifiedAnalyticsEngine:
             return data_map[required_keys[0]]
         return {key: data_map[key] for key in required_keys}
 
-    def get_contextual_report(self) ->Dict[str, Any]:
+    def get_contextual_report(self) ->dict[str, Any]:
         """Generates an observability report on the engine's current operational state."""
         return {'engine_status': 'operational', 'active_analyzers_count':
             len(self.analyzers), 'registered_modules': list(self.analyzers.
             keys()), 'max_concurrency': self.max_workers,
             'orchestration_map': self.analyzer_data_map}
 
-    def get_registered_components(self) ->Dict[str, List[str]]:
+    def get_registered_components(self) ->dict[str, list[str]]:
         """Returns the list of registered analysis components."""
         return {'analyzers': list(self.analyzers.keys())}

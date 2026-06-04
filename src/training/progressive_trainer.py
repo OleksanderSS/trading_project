@@ -14,9 +14,10 @@ from typing import Any, cast
 import numpy as np
 
 from src.config.unified_config_manager import get_current_config
+from src.core.exceptions import ModelTrainingError
 from src.core.logging.logger import ProjectLogger
 from src.training.base_trainer import BaseTrainer, TrainerConfig
-from src.core.exceptions import ModelTrainingError
+from src.training.batch.batch_processor import BatchProcessor
 from src.training.constants import (
     PROGRESSIVE_BATCH_GROWTH_FACTOR,
     PROGRESSIVE_CHECKPOINT_INTERVAL,
@@ -29,7 +30,6 @@ from src.training.constants import (
 )
 from src.training.security.path_security_validator import PathSecurityValidator
 from src.training.state.training_state_manager import TrainingStateManager
-from src.training.batch.batch_processor import BatchProcessor
 
 logger = ProjectLogger.get_logger("ProgressiveTrainer")
 
@@ -53,7 +53,7 @@ class ProgressiveTrainer(BaseTrainer):
                 max_time_hours=PROGRESSIVE_MAX_TIME_HOURS,
                 checkpoint_interval=PROGRESSIVE_CHECKPOINT_INTERVAL
             )
-        
+
         super().__init__(config=config)
 
         # Directory structure initialization

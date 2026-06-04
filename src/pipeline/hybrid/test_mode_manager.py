@@ -4,17 +4,18 @@ Test Mode Manager for Hybrid Orchestrator.
 Handles test mode configuration loading and data filtering based on test criteria.
 """
 import json
-import pandas as pd
 from pathlib import Path
-from typing import Optional, Tuple, List
+
 import aiofiles
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 
 class TestModeManager:
     """
     Manages test mode configuration and filtering.
-    
+
     Handles loading test parameters from runtime_params.json
     and applying filters to data and contexts.
     """
@@ -22,14 +23,14 @@ class TestModeManager:
     def __init__(self):
         self.logger = ProjectLogger.get_logger(__name__)
 
-    async def _load_test_mode_config(self, batch_dir: Path) ->Tuple[
-        Optional[str], Optional[str], Optional[str]]:
+    async def _load_test_mode_config(self, batch_dir: Path) ->tuple[
+        str | None, str | None, str | None]:
         """Load test mode configuration from runtime_params.json."""
         runtime_params_path = batch_dir / 'runtime_params.json'
         test_ticker = test_target = test_model = None
         if runtime_params_path.exists():
             try:
-                async with aiofiles.open(runtime_params_path, 'r', encoding
+                async with aiofiles.open(runtime_params_path, encoding
                     ='utf-8') as f:
                     content = await f.read()
                     runtime_params = json.loads(content)
@@ -47,9 +48,9 @@ class TestModeManager:
         return test_ticker, test_target, test_model
 
     def _filter_data_for_test_mode(self, features_df: pd.DataFrame,
-        targets_df: pd.DataFrame, test_ticker: Optional[str], test_target:
-        Optional[str]) ->Tuple[pd.DataFrame, pd.DataFrame, List[str],
-        Optional[str]]:
+        targets_df: pd.DataFrame, test_ticker: str | None, test_target:
+        str | None) ->tuple[pd.DataFrame, pd.DataFrame, list[str],
+        str | None]:
         """Filter data for test mode."""
         target_cols = [c for c in targets_df.columns if c.startswith('target_')
             ]
@@ -63,24 +64,24 @@ class TestModeManager:
                 ].copy()
         return features_df, targets_df, target_cols, ticker_col
 
-    def _should_skip_model(self, model_name: str, test_model: Optional[str]
+    def _should_skip_model(self, model_name: str, test_model: str | None
         ) ->bool:
         """Check if model should be skipped based on test filter."""
         return test_model is not None and model_name != test_model
 
     def _should_skip_ticker(self, context_ticker: str, test_ticker:
-        Optional[str]) ->bool:
+        str | None) ->bool:
         """Check if context should be skipped based on ticker filter."""
-        return (test_ticker is not None and context_ticker and 
+        return (test_ticker is not None and context_ticker and
             context_ticker != test_ticker.upper())
 
     def _should_skip_target(self, context_target: str, test_target:
-        Optional[str]) ->bool:
+        str | None) ->bool:
         """Check if context should be skipped based on target filter."""
-        return (test_target is not None and context_target and 
+        return (test_target is not None and context_target and
             context_target != test_target)
 
-    def _should_skip_features(self, selected_features: List[str],
-        model_name: str, light_models_to_train: List[str]) ->bool:
+    def _should_skip_features(self, selected_features: list[str],
+        model_name: str, light_models_to_train: list[str]) ->bool:
         """Check if context should be skipped based on features and model availability."""
         return not selected_features or model_name not in light_models_to_train

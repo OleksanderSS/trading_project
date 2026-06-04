@@ -2,14 +2,16 @@
 HuggingFace Data Collector
 Collects datasets from HuggingFace
 """
-import asyncio
 import hashlib
+from typing import Any
+
 import pandas as pd
-from typing import List, Dict, Any, Optional
-from .base_collector import BaseCollector
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
 
 
 class HuggingfaceCollector(BaseCollector):
@@ -17,9 +19,8 @@ class HuggingfaceCollector(BaseCollector):
     collector_type = 'huggingface'
     data_type = 'alternative'
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory:
-        HttpClientFactory, db_manager: DataManager, cache_manager: Optional
-        [CacheManager]=None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory:
+        HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
         self.dataset_name = self.configs.get('dataset_name', 'financial_news')
@@ -27,8 +28,8 @@ class HuggingfaceCollector(BaseCollector):
         self.split = self.configs.get('split', 'train')
         self.hash_keys = self.configs.get('hash_keys', ['text', 'timestamp'])
 
-    async def run(self, tickers: Optional[List[str]]=None, **kwargs
-        ) ->Optional[pd.DataFrame]:
+    async def run(self, tickers: list[str] | None=None, **kwargs
+        ) ->pd.DataFrame | None:
         """Fetches datasets from HuggingFace, filters novel entries, and persists to DataManager."""
         table_name = self.configs.get('table_name', 'huggingface_data')
         cache_key = f'{self.__class__.__name__}_run'
@@ -79,7 +80,7 @@ class HuggingfaceCollector(BaseCollector):
             )
         return new_df
 
-    async def _fetch_from_huggingface(self) ->List[Dict[str, Any]]:
+    async def _fetch_from_huggingface(self) ->list[dict[str, Any]]:
         """Downloads datasets from HuggingFace Datasets."""
         try:
             from datasets import load_dataset
@@ -95,7 +96,7 @@ class HuggingfaceCollector(BaseCollector):
             else:
                 dataset = load_dataset(self.dataset_name, split=self.split)
             self.logger.info(
-                f'[HuggingFace] Serializing dataset mapping into Pandas Interface...'
+                '[HuggingFace] Serializing dataset mapping into Pandas Interface...'
                 )
             try:
                 df = dataset.to_pandas()

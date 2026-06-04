@@ -1,20 +1,20 @@
 """
 System health monitoring using Machine Learning to predict failures and financial drift.
 """
-import json
-import numpy as np
-import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple, Union
-from sklearn.preprocessing import StandardScaler
+from typing import Any
+
 import joblib
-from src.config.unified_config_manager import get_current_config, UnifiedConfigManager
-from src.core.logging.logger import ProjectLogger
+import numpy as np
+import pandas as pd
+
 from src.analytics.data_managers.model_results_manager import ModelResultsManager
-from src.data.management.data_manager import DataManager
-from src.core.logging.notifier import UniversalNotifier as Notifier
+from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
 from src.core.cache.cache_manager import CacheManager
+from src.core.logging.logger import ProjectLogger
+from src.core.logging.notifier import UniversalNotifier as Notifier
+from src.data.management.data_manager import DataManager
 from src.monitoring.infrastructure.resource_monitor import ResourceMonitor
 from src.utils.artifact_security import resolve_trusted_artifact_path
 
@@ -25,9 +25,8 @@ class HealthHub:
     and generates corrective recommendations.
     """
 
-    def __init__(self, config_manager: Optional[UnifiedConfigManager]=None,
-        data_manager: Optional[DataManager]=None, results_manager: Optional
-        [ModelResultsManager]=None, notifier: Optional[Notifier]=None):
+    def __init__(self, config_manager: UnifiedConfigManager | None=None,
+        data_manager: DataManager | None=None, results_manager: ModelResultsManager | None=None, notifier: Notifier | None=None):
         """Initializes HealthHub with necessary dependencies."""
         self._initialize_core_components(config_manager, data_manager,
             results_manager, notifier)
@@ -37,10 +36,8 @@ class HealthHub:
         self.load_ml_models()
         self.logger.info('HealthHub initialized successfully')
 
-    def _initialize_core_components(self, config_manager: Optional[
-        UnifiedConfigManager], data_manager: Optional[DataManager],
-        results_manager: Optional[ModelResultsManager], notifier: Optional[
-        Notifier]) ->None:
+    def _initialize_core_components(self, config_manager: UnifiedConfigManager | None, data_manager: DataManager | None,
+        results_manager: ModelResultsManager | None, notifier: Notifier | None) ->None:
         """Initialize core components and dependencies."""
         self.config_manager = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger('HealthHub')
@@ -78,7 +75,7 @@ class HealthHub:
             self.logger.error(
                 f'Failed to load internal health monitoring ML models: {e}')
 
-    def _get_model_file_mapping(self) ->Dict[str, str]:
+    def _get_model_file_mapping(self) ->dict[str, str]:
         """Get mapping of model names to their file paths."""
         return {'performance_predictor': 'performance_predictor.pkl',
             'memory_predictor': 'memory_predictor.pkl', 'disk_predictor':
@@ -110,7 +107,7 @@ class HealthHub:
             )
             self.scalers['resource_scaler'] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
 
-    def check_system_health(self) ->Dict[str, Any]:
+    def check_system_health(self) ->dict[str, Any]:
         """Retrieves hardware metrics and runs ML diagnostics/projections."""
         try:
             current_metrics = self._get_current_metrics()
@@ -127,7 +124,7 @@ class HealthHub:
             self.logger.error(f'HealthHub diagnostic loop failure: {e}')
             return {'status': 'failed', 'error': str(e)}
 
-    def _get_current_metrics(self) ->Optional[Dict[str, Any]]:
+    def _get_current_metrics(self) ->dict[str, Any] | None:
         """Get current system metrics with validation."""
         current_metrics = self.resource_monitor.get_health_status()
         if not current_metrics or current_metrics.get('overall_status'
@@ -135,7 +132,7 @@ class HealthHub:
             return None
         return current_metrics
 
-    def _handle_memory_management(self, current_metrics: Dict[str, Any]
+    def _handle_memory_management(self, current_metrics: dict[str, Any]
         ) ->None:
         """Handle autonomous memory management."""
         if not self.cache_manager:
@@ -147,7 +144,7 @@ class HealthHub:
                 'System memory > 90%. Automatic cache purge triggered.')
             self.cache_manager.clear()
 
-    def _predict_resource_risks(self, features: List[float]) ->Dict[str, Any]:
+    def _predict_resource_risks(self, features: list[float]) ->dict[str, Any]:
         """Predict risks for all resource types."""
         predictions = {}
         problem_types = ['performance', 'memory', 'disk', 'network']
@@ -158,8 +155,8 @@ class HealthHub:
                     features)
         return predictions
 
-    def _predict_single_risk(self, model_name: str, features: List[float]
-        ) ->Dict[str, Any]:
+    def _predict_single_risk(self, model_name: str, features: list[float]
+        ) ->dict[str, Any]:
         """Predict risk for a single resource type."""
         model = self.models[model_name]
         scaler = self.scalers.get('resource_scaler')
@@ -169,8 +166,8 @@ class HealthHub:
         risk = self.calculate_risk_level(prob)
         return {'probability': float(prob), 'risk_level': risk}
 
-    def _build_health_report(self, current_metrics: Dict[str, Any],
-        predictions: Dict[str, Any], anomaly_result: Dict) ->Dict[str, Any]:
+    def _build_health_report(self, current_metrics: dict[str, Any],
+        predictions: dict[str, Any], anomaly_result: dict) ->dict[str, Any]:
         """Build comprehensive health report."""
         return {'timestamp': datetime.now().isoformat(), 'metrics':
             current_metrics, 'predictions': predictions, 'anomalies':
@@ -178,7 +175,7 @@ class HealthHub:
             predictions), 'recommendations': self.
             generate_ml_recommendations(predictions, anomaly_result)}
 
-    def extract_features_from_metrics(self, metrics: Dict) ->List[float]:
+    def extract_features_from_metrics(self, metrics: dict) ->list[float]:
         """Exctracts stabilized feature vector for ML diagnostic analysis."""
         try:
             sys_m = metrics.get('system', {})
@@ -202,12 +199,12 @@ class HealthHub:
             return 'medium'
         return 'low'
 
-    def calculate_overall_risk(self, predictions: Dict) ->str:
+    def calculate_overall_risk(self, predictions: dict) ->str:
         """Determines worst-case risk across all monitored subsystems."""
         probs = [p['probability'] for p in predictions.values()]
         return self.calculate_risk_level(max(probs)) if probs else 'low'
 
-    def detect_anomalies(self, features: List[float]) ->Dict:
+    def detect_anomalies(self, features: list[float]) ->dict:
         """Runs isolation forest to detect deviations from normal baseline behavior."""
         if 'anomaly_detector' not in self.models:
             return {'is_anomaly': False, 'score': 0.0}
@@ -221,8 +218,8 @@ class HealthHub:
             self.logger.error(f'Error detecting anomalies: {e}', exc_info=True)
             return {'is_anomaly': False, 'score': 0.0}
 
-    def generate_ml_recommendations(self, predictions: Dict, anomaly: Dict
-        ) ->List[str]:
+    def generate_ml_recommendations(self, predictions: dict, anomaly: dict
+        ) ->list[str]:
         """Generates actionable recommendations based on prediction outcomes."""
         recs = []
         for subsystem, data in predictions.items():
@@ -236,7 +233,7 @@ class HealthHub:
                 )
         return recs
 
-    def check_model_drift(self, model_name: str, window_days: int=7) ->Dict:
+    def check_model_drift(self, model_name: str, window_days: int=7) ->dict:
         """Detects financial and performance drift by comparing against historical baseline."""
         if not self.data_manager:
             return {'status': 'error', 'message':
@@ -257,8 +254,7 @@ class HealthHub:
             self.logger.error(f'Financial drift analysis failure: {e}', exc_info=True)
             return {'status': 'error', 'message': str(e)}
 
-    def _load_performance_data(self, model_name: str) ->Union[pd.DataFrame,
-        Dict[str, str]]:
+    def _load_performance_data(self, model_name: str) ->pd.DataFrame | dict[str, str]:
         """Load and validate performance data for drift analysis."""
         try:
             # Use parameterized query through table_name and filter_params
@@ -272,14 +268,14 @@ class HealthHub:
             self.logger.warning(f'Initial performance load failed, attempting fallback: {e}')
             query = "SELECT win_rate, sharpe_ratio, timestamp FROM model_performance WHERE model_name = ? ORDER BY timestamp DESC"
             perf_df = self.data_manager.query_data(query, params=[model_name])
-        
+
         if len(perf_df) < 10:
             return {'status': 'insufficient_data', 'message':
                 'Threshold for historical comparison not met'}
         return perf_df
 
     def _split_performance_data(self, perf_df: pd.DataFrame, window_days: int
-        ) ->Tuple[Optional[pd.DataFrame], Union[pd.DataFrame, Dict[str, str]]]:
+        ) ->tuple[pd.DataFrame | None, pd.DataFrame | dict[str, str]]:
         """Split performance data into recent and historical windows."""
         perf_df['timestamp'] = pd.to_datetime(perf_df['timestamp'])
         cutoff = datetime.now() - timedelta(days=window_days)

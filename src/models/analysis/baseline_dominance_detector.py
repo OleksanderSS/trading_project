@@ -4,14 +4,13 @@ Baseline Dominance Detector - Detects When Simple Baselines Outperform Complex M
 Analyzes whether complex models provide real value over simple baselines.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional
 from datetime import datetime
-import logging
+from typing import Any
 
-from src.core.logging.logger import ProjectLogger
+import pandas as pd
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 from src.models.analysis.baseline.comparison import BaselineComparisonEngine
 from src.models.analysis.baseline.recommendations import BaselineRecommendationEngine
 
@@ -22,7 +21,7 @@ class BaselineDominanceDetector:
     Виявляє та аналізує домінування базових моделей над складними моделями.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Ініціалізує Baseline Dominance Detector.
         """
@@ -39,15 +38,18 @@ class BaselineDominanceDetector:
 
         self.min_samples = self.config.get('min_samples', 100)
         self.dominance_threshold = self.config.get('dominance_threshold', 0.05)
-        
+
         self._init_components()
         self.logger.info("✅ BaselineDominanceDetector initialized")
 
     def _init_components(self):
         """Ініціалізує модульні компоненти."""
         from .baselines import (
-            BuyAndHoldBaseline, MovingAverageBaseline, MeanReversionBaseline,
-            LinearRegressionBaseline, SimpleRandomForestBaseline
+            BuyAndHoldBaseline,
+            LinearRegressionBaseline,
+            MeanReversionBaseline,
+            MovingAverageBaseline,
+            SimpleRandomForestBaseline,
         )
         self.baseline_implementations = {
             'buy_and_hold': BuyAndHoldBaseline(self.BASELINE_MODELS['buy_and_hold']['complexity_score']),
@@ -63,10 +65,10 @@ class BaselineDominanceDetector:
         )
 
     async def analyze_baseline_dominance(self,
-                                      complex_model_results: Dict[str, Any],
+                                      complex_model_results: dict[str, Any],
                                       market_data: pd.DataFrame,
-                                      features_df: Optional[pd.DataFrame] = None,
-                                      target_series: Optional[pd.Series] = None) -> Dict[str, Any]:
+                                      features_df: pd.DataFrame | None = None,
+                                      target_series: pd.Series | None = None) -> dict[str, Any]:
         """Аналізує домінування базових моделей."""
         self.logger.info("🔍 Analyzing baseline dominance...")
 
@@ -84,7 +86,7 @@ class BaselineDominanceDetector:
             results['baseline_results'] = baseline_results
 
             dominance_analysis = self.comparison_engine.compare(
-                complex_model_results.get('metrics', {}), 
+                complex_model_results.get('metrics', {}),
                 baseline_results
             )
             results['dominance_analysis'] = dominance_analysis
@@ -108,8 +110,8 @@ class BaselineDominanceDetector:
 
     async def _train_baseline_models(self,
                                   market_data: pd.DataFrame,
-                                  features_df: Optional[pd.DataFrame],
-                                  target_series: Optional[pd.Series]) -> Dict[str, Any]:
+                                  features_df: pd.DataFrame | None,
+                                  target_series: pd.Series | None) -> dict[str, Any]:
         """Навчає та оцінює всі доступні базові моделі."""
         baseline_results = {}
         for name, model in self.baseline_implementations.items():
@@ -119,9 +121,9 @@ class BaselineDominanceDetector:
                     baseline_results[name] = result
             except Exception as e:
                 self.logger.error(f"Error training baseline {name}: {e}", exc_info=True)
-        
+
         if not baseline_results:
             raise DataProcessingError("Failed to train any baseline models")
-            
+
         self.logger.info(f"📊 Trained {len(baseline_results)} baseline models")
         return baseline_results

@@ -1,6 +1,6 @@
+
 import numpy as np
-import pandas as pd
-from typing import Tuple, Dict, Any
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -9,7 +9,7 @@ class RegimeMetricsCalculator:
     logger = ProjectLogger.get_logger(__name__)
 
     @staticmethod
-    def calculate_basic_metrics(returns: np.ndarray) ->Tuple[float, float,
+    def calculate_basic_metrics(returns: np.ndarray) ->tuple[float, float,
         float]:
         """Розраховує волатильність, середню дохідність та ADX."""
         volatility = float(np.std(returns))

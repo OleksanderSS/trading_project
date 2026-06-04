@@ -2,16 +2,17 @@
 
 import asyncio
 import hashlib
-import pandas as pd
-import httpx
-from gnews import GNews
-from typing import List, Optional, Dict, Any
+from typing import Any
 
-from .base_collector import BaseCollector
+import pandas as pd
+from gnews import GNews
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
 
 
 class GoogleNewsCollector(BaseCollector):
@@ -20,10 +21,10 @@ class GoogleNewsCollector(BaseCollector):
 
     def __init__(
         self,
-        configs: Dict[str, Any],
+        configs: dict[str, Any],
         http_client_factory: HttpClientFactory,
         db_manager: DataManager,
-        cache_manager: Optional[CacheManager] = None,
+        cache_manager: CacheManager | None = None,
         **kwargs,
     ):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
@@ -56,11 +57,11 @@ class GoogleNewsCollector(BaseCollector):
 
     async def run(
         self,
-        tickers: Optional[List[str]] = None,
-        keywords: Optional[List[str]] = None,
-        search_terms: Optional[List[str]] = None,
+        tickers: list[str] | None = None,
+        keywords: list[str] | None = None,
+        search_terms: list[str] | None = None,
         **kwargs,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         """Resolves target scopes mapping streams via database layer."""
         try:
             return await asyncio.wait_for(
@@ -68,7 +69,7 @@ class GoogleNewsCollector(BaseCollector):
                                    search_terms=search_terms, **kwargs),
                 timeout=120.0  # 2-minute hard cap for the entire collector
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.logger.warning(
                 "[GoogleNews] Collector exceeded 120s total timeout. "
                 "Returning None and continuing pipeline."
@@ -77,13 +78,13 @@ class GoogleNewsCollector(BaseCollector):
 
     async def _run_internal(
         self,
-        tickers: Optional[List[str]] = None,
-        keywords: Optional[List[str]] = None,
-        search_terms: Optional[List[str]] = None,
+        tickers: list[str] | None = None,
+        keywords: list[str] | None = None,
+        search_terms: list[str] | None = None,
         **kwargs,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         # Normalize and concatenate keyword definitions scope parameters
-        keywords_list = list(keywords.keys()) if isinstance(keywords, dict) else (keywords or [])
+        list(keywords.keys()) if isinstance(keywords, dict) else (keywords or [])
         # Use only tickers for news search to keep collection time bounded.
         # Generic keywords like 'fed', 'inflation' produce too many irrelevant results.
         all_terms = list(set(tickers or []))
@@ -169,14 +170,14 @@ class GoogleNewsCollector(BaseCollector):
         self.logger.info(f"[GoogleNews] Recorded bound {len(new_df)} articles limits check constraint boundary.")
         return new_df
 
-    async def _fetch_with_semaphore(self, term: str, semaphore: asyncio.Semaphore) -> List[Dict]:
+    async def _fetch_with_semaphore(self, term: str, semaphore: asyncio.Semaphore) -> list[dict]:
         async with semaphore:
             result = await self._fetch_articles_for_term(term)
             if self.delay > 0:
                 await asyncio.sleep(self.delay)
             return result
 
-    async def _fetch_articles_for_term(self, term: str) -> List[Dict]:
+    async def _fetch_articles_for_term(self, term: str) -> list[dict]:
         """Resolves logic mapped API constraint boundaries directly ignoring recursive limit blocks structure logic index mappings redirect scopes checks parameter constraint execution limits"""
         try:
             loop = asyncio.get_running_loop()
@@ -195,14 +196,14 @@ class GoogleNewsCollector(BaseCollector):
                     articles.append(processed)
             return articles
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.logger.warning(f"[GoogleNews] Timeout fetching news for '{term}' (30s). Skipping.")
             return []
         except Exception as e:
             self.logger.error(f"Resolution failed mapping boundary limits: '{term}': {e}")
             raise RuntimeError(f"Failed to fetch Google News articles for {term}") from e
 
-    def _process_entry(self, entry: Dict) -> Optional[Dict]:
+    def _process_entry(self, entry: dict) -> dict | None:
         url = entry.get("url")
         if not url:
             return None

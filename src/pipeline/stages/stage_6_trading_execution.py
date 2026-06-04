@@ -5,9 +5,10 @@ This stage takes the final predictions from Stage 5 and orchestrates the entire
 trading process using the refactored trading module.
 """
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional, Dict, List
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
 from src.meta_learning.memory.diary_engine import (
     DecisionOutcome,
@@ -48,18 +49,18 @@ class TradingExecutionStage(BaseStage):
         self.risk_sizer = EliteRiskSizer(logger=self.logger)
         self.risk_metrics = EliteRiskMetrics(logger=self.logger)
         self.param_manager = AdaptiveParameterManager(logger=self.logger)
-        
+
         self.portfolio_manager = PortfolioManager(
-            virtual_portfolio=self.portfolio, 
-            elite_risk_sizer=self.risk_sizer, 
+            virtual_portfolio=self.portfolio,
+            elite_risk_sizer=self.risk_sizer,
             config=self.config_manager.get('strategy.risk_management', {})
         )
         self.trader = Trader(paper_trading=True)
-        
+
         self.trading_orchestrator = TradingOrchestrator(
-            consensus_engine=None, 
+            consensus_engine=None,
             portfolio_manager=self.portfolio_manager,
-            virtual_portfolio=self.portfolio, 
+            virtual_portfolio=self.portfolio,
             trader=self.trader,
             post_inference_filter=self.post_inference_filter
         )
@@ -69,7 +70,7 @@ class TradingExecutionStage(BaseStage):
         """Runs the context-aware trading cycle."""
         if not hasattr(self, 'trading_orchestrator'):
             self._initialize_trading_stack()
-            
+
         predictions, current_prices = await self._load_or_extract_data(kwargs)
         if not predictions:
             return {}
@@ -77,13 +78,13 @@ class TradingExecutionStage(BaseStage):
         # 1. Адаптивне виконання на основі контексту
         processed_signals = self._apply_context_rules(predictions)
         existing_tx_count = len(getattr(self.portfolio, 'transactions', []))
-        
+
         # 2. Торгівля
         self.trading_orchestrator.process_signals(
-            raw_predictions=processed_signals, 
+            raw_predictions=processed_signals,
             current_prices=current_prices
         )
-        
+
         new_transactions = getattr(self.portfolio, 'transactions', [])[existing_tx_count:]
         diary_records_written = self._record_transactions_to_diary(
             new_transactions, processed_signals)
@@ -91,7 +92,7 @@ class TradingExecutionStage(BaseStage):
         result['diary_records_written'] = diary_records_written
         return result
 
-    def _apply_context_rules(self, predictions: List[Dict]) -> List[Dict]:
+    def _apply_context_rules(self, predictions: list[dict]) -> list[dict]:
         """
         🎯 ANXIETY & EXPERT SYNC:
         Застосовує правила "тривожності" та синхронізує прогнози з Чемпіонами патернів.
@@ -100,29 +101,29 @@ class TradingExecutionStage(BaseStage):
         for pred in predictions:
             ticker = pred.get('ticker')
             velocity = self._safe_float(pred.get('context_velocity')) or 0.0
-            
+
             # --- Rule 1: Anxiety Kill-Switch ---
             # Якщо ринок занадто швидко змінюється (velocity > 0.7), знижуємо впевненість
             if velocity > 0.7:
                 pred['confidence'] = self._safe_float(pred.get('confidence')) or 0.0
                 self.logger.warning(f"🚨 High Context Velocity ({velocity:.2f}) for {ticker}. Reducing exposure.")
                 pred['confidence'] *= 0.5 # Штраф 50%
-                
+
             # --- Rule 2: Panic Block ---
             # Якщо швидкість критична, блокуємо нові BUY (Anxiety Index proxy)
             if velocity > 0.85:
                 if (self._extract_model_prediction(pred) or 0.0) > 0:
                      self.logger.error(f"🛑 CRITICAL ANXIETY for {ticker}. Blocking BUY signal.")
                      pred['confidence'] = 0.0 # Повністю анулюємо сигнал
-            
+
             filtered_signals.append(pred)
-            
+
         return filtered_signals
 
     def _record_transactions_to_diary(
         self,
-        transactions: List[Dict[str, Any]],
-        predictions: List[Dict[str, Any]],
+        transactions: list[dict[str, Any]],
+        predictions: list[dict[str, Any]],
     ) -> int:
         if not transactions:
             return 0
@@ -158,8 +159,8 @@ class TradingExecutionStage(BaseStage):
 
     def _build_decision_record(
         self,
-        transaction: Dict[str, Any],
-        prediction: Dict[str, Any],
+        transaction: dict[str, Any],
+        prediction: dict[str, Any],
     ) -> DecisionRecord:
         ticker = str(transaction.get('ticker') or prediction.get('ticker') or '').upper()
         tx_type = str(transaction.get('type', '')).upper()
@@ -220,7 +221,7 @@ class TradingExecutionStage(BaseStage):
     def _transaction_outcome(
         self,
         tx_type: str,
-        pnl: Optional[float],
+        pnl: float | None,
     ) -> DecisionOutcome:
         if tx_type == 'BUY' or pnl is None:
             return DecisionOutcome.PENDING
@@ -240,18 +241,18 @@ class TradingExecutionStage(BaseStage):
             try:
                 timestamp = datetime.fromisoformat(value.replace('Z', '+00:00'))
             except ValueError:
-                timestamp = datetime.now(timezone.utc)
+                timestamp = datetime.now(UTC)
         else:
-            timestamp = datetime.now(timezone.utc)
+            timestamp = datetime.now(UTC)
 
         if timestamp.tzinfo is None:
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
+            timestamp = timestamp.replace(tzinfo=UTC)
         return int(timestamp.timestamp() * 1000)
 
     def _transaction_prices(
         self,
-        transaction: Dict[str, Any],
-    ) -> tuple[Optional[float], Optional[float]]:
+        transaction: dict[str, Any],
+    ) -> tuple[float | None, float | None]:
         tx_type = str(transaction.get('type', '')).upper()
         price = self._safe_float(transaction.get('price'))
         if tx_type == 'BUY':
@@ -264,14 +265,14 @@ class TradingExecutionStage(BaseStage):
             return (net_revenue - pnl) / quantity, price
         return None, price
 
-    def _extract_model_prediction(self, prediction: Dict[str, Any]) -> Optional[float]:
+    def _extract_model_prediction(self, prediction: dict[str, Any]) -> float | None:
         for key in ('predictions', 'raw_forecast', 'prediction'):
             value = self._safe_float(prediction.get(key))
             if value is not None:
                 return value
         return None
 
-    def _safe_float(self, value: Any) -> Optional[float]:
+    def _safe_float(self, value: Any) -> float | None:
         if value is None:
             return None
         if isinstance(value, (list, tuple)):
@@ -310,7 +311,7 @@ class TradingExecutionStage(BaseStage):
     async def _load_predictions_from_disk(self, kwargs: dict) -> tuple:
         batch_name = kwargs.get('batch_name') or self._find_latest_batch_name()
         output_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
-        
+
         if batch_name:
             batch_dir = output_dir / batch_name
             file = batch_dir / 'stage_5_results.json'
@@ -321,7 +322,7 @@ class TradingExecutionStage(BaseStage):
                     return data.get('predictions', []), data.get('current_prices', {}), kwargs
         return [], {}, kwargs
 
-    def _find_latest_batch_name(self) -> Optional[str]:
+    def _find_latest_batch_name(self) -> str | None:
         output_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
         batch_dirs = list(output_dir.glob('test_ticker_*'))
         return max(batch_dirs, key=lambda p: p.stat().st_mtime).name if batch_dirs else None
@@ -329,7 +330,7 @@ class TradingExecutionStage(BaseStage):
     def _finalize_results(self, predictions, current_prices, kwargs):
         portfolio_summary = self.portfolio.get_portfolio_summary(current_prices)
         trade_history = getattr(self.portfolio, 'transactions', [])
-        
+
         self.logger.info(f"📊 Portfolio Final Value: {portfolio_summary.get('total_value', 0):.2f}")
         return {
             'trading_activity': trade_history[-5:],

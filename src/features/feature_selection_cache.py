@@ -2,15 +2,15 @@
 Feature Selection Cache
 Кешує результати SmartFeatureSelector для пришвидшення повторних запусків
 """
+import hashlib
+import json
 import logging
-import pandas as pd
-import numpy as np
-from typing import List, Dict, Optional, Any
 from datetime import datetime
 from pathlib import Path
-import json
-import hashlib
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('FeatureSelectionCache')
 
 
@@ -30,11 +30,11 @@ class FeatureSelectionCache:
         self.cache = self._load_cache()
         logger.info(f'FeatureSelectionCache initialized: {self.cache_file}')
 
-    def _load_cache(self) ->Dict[str, Any]:
+    def _load_cache(self) ->dict[str, Any]:
         """Завантажити кеш з диску"""
         if self.cache_file.exists():
             try:
-                with open(self.cache_file, 'r') as f:
+                with open(self.cache_file) as f:
                     cache = json.load(f)
                 logger.info(
                     f'✅ Loaded feature selection cache: {len(cache)} entries')
@@ -58,10 +58,10 @@ class FeatureSelectionCache:
             logger.error(f'Failed to save cache: {e}')
 
     def _compute_cache_key(self, model_type: str, target_name: str,
-        market_regime: str, available_features: List[str]) ->str:
+        market_regime: str, available_features: list[str]) ->str:
         """
         Обчислити унікальний ключ для кешу
-        
+
         Ключ включає:
         - model_type
         - target_name
@@ -76,11 +76,10 @@ class FeatureSelectionCache:
         return cache_key
 
     def get_selection(self, model_type: str, target_name: str,
-        market_regime: str, available_features: List[str]) ->Optional[Dict[
-        str, Any]]:
+        market_regime: str, available_features: list[str]) ->dict[str, Any] | None:
         """
         Отримати закешовані результати feature selection
-        
+
         Returns:
             Dict з:
             - selected_features: List[str]
@@ -102,12 +101,12 @@ class FeatureSelectionCache:
             return None
 
     def save_selection(self, model_type: str, target_name: str,
-        market_regime: str, available_features: List[str],
-        selected_features: List[str], feature_importance: Dict[str, float],
-        selection_metadata: Optional[Dict[str, Any]]=None):
+        market_regime: str, available_features: list[str],
+        selected_features: list[str], feature_importance: dict[str, float],
+        selection_metadata: dict[str, Any] | None=None):
         """
         Зберегти результати feature selection в кеш
-        
+
         Args:
             model_type: Тип моделі (lgbm, xgboost, mlp, etc.)
             target_name: Назва таргету
@@ -135,17 +134,17 @@ class FeatureSelectionCache:
             )
 
     def is_cached(self, model_type: str, target_name: str, market_regime:
-        str, available_features: List[str]) ->bool:
+        str, available_features: list[str]) ->bool:
         """Перевірити, чи є результати в кеші"""
         cache_key = self._compute_cache_key(model_type, target_name,
             market_regime, available_features)
         return cache_key in self.cache
 
-    def invalidate(self, model_type: Optional[str]=None, target_name:
-        Optional[str]=None, market_regime: Optional[str]=None):
+    def invalidate(self, model_type: str | None=None, target_name:
+        str | None=None, market_regime: str | None=None):
         """
         Інвалідувати кеш для певних параметрів
-        
+
         Якщо параметри не вказані, інвалідує весь кеш
         """
         if (model_type is None and target_name is None and market_regime is
@@ -171,7 +170,7 @@ class FeatureSelectionCache:
         self._save_cache()
         logger.info(f'🗑️ Invalidated {len(keys_to_remove)} cache entries')
 
-    def get_statistics(self) ->Dict[str, Any]:
+    def get_statistics(self) ->dict[str, Any]:
         """Отримати статистику кешу"""
         if not self.cache:
             return {'total_entries': 0, 'cache_size_mb': 0}
@@ -216,10 +215,10 @@ class FeatureSelectionCache:
         logger.info('=' * 60)
 
 
-_global_cache: Optional[FeatureSelectionCache] = None
+_global_cache: FeatureSelectionCache | None = None
 
 
-def get_feature_selection_cache(cache_dir: Optional[str]=None
+def get_feature_selection_cache(cache_dir: str | None=None
     ) ->FeatureSelectionCache:
     """Отримати глобальний інстанс кешу"""
     global _global_cache

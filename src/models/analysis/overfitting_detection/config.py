@@ -1,11 +1,13 @@
-from typing import Dict, Any, Optional
 from pathlib import Path
+from typing import Any
+
 import numpy as np
+
 
 class OverfittingConfig:
     """Configuration and thresholds for the Overfitting Detector."""
-    
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
 
         # Overfitting signal types
@@ -31,10 +33,10 @@ class OverfittingConfig:
                 'severity': 'low'
             }
         }
-        
+
         self.thresholds = self.OVERFITTING_SIGNALS.copy()
         self.thresholds.update(self.config.get('thresholds', {}))
-        
+
         self.cv_folds = self.config.get('cv_folds', 5)
         self.scoring_metric = self.config.get('scoring_metric', 'neg_mean_squared_error')
         self.train_sizes = self.config.get('train_sizes', np.linspace(0.1, 1.0, 10))

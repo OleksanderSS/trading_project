@@ -1,12 +1,21 @@
 import json
 from typing import Any
+
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 from src.models.adapters.data_preparation import prepare_data_for_models
 from src.pipeline.stages.modeling import io as modeling_io
 from src.pipeline.stages.modeling import training as modeling_training
-from src.pipeline.stages.modeling.dataclasses import ChampionInfoConfig, FeatureLoadingConfig, SuccessfulTrainingConfig, TargetProcessingConfig, TrainingDebugInfo
+from src.pipeline.stages.modeling.dataclasses import (
+    ChampionInfoConfig,
+    FeatureLoadingConfig,
+    SuccessfulTrainingConfig,
+    TargetProcessingConfig,
+    TrainingDebugInfo,
+)
 from src.training.constants import DEFAULT_TEST_SIZE
+
 logger = ProjectLogger.get_logger('Modeling.Orchestration')
 
 

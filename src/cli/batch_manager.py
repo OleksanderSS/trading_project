@@ -2,8 +2,9 @@
 Batch management utilities for hybrid pipeline.
 """
 
-from pathlib import Path
 import re
+from pathlib import Path
+
 from src.core.logging.logger import ProjectLogger
 from src.utils.path_utils import sanitize_path_input
 
@@ -70,7 +71,7 @@ class BatchManager:
         """
         # Centralized sanitization
         sanitized = sanitize_path_input(path_input)
-        
+
         # Remove null bytes and other dangerous characters
         sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
 

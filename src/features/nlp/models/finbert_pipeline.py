@@ -1,18 +1,18 @@
 # src/feature_engineering/nlp/finbert_pipeline.py
 
 from threading import Lock
-from typing import Any, Optional
-from src.core.logging.logger import ProjectLogger
+from typing import Any
 
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
-_FINBERT_PIPELINE: Optional[Any] = None
+_FINBERT_PIPELINE: Any | None = None
 _LOCK = Lock()
 _DEVICE = None
 
 
-def get_finbert_pipeline(device_preference: str = "auto") -> Optional[Any]:
+def get_finbert_pipeline(device_preference: str = "auto") -> Any | None:
     """
     Synchronously returns FinBERT pipeline.
     - Lazy loading, blocks on lock.

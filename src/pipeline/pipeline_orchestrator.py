@@ -1,23 +1,29 @@
-import logging
 import asyncio
 import inspect
+import logging
 import queue
 import threading
 import time
-from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
-from src.config.unified_config_manager import UnifiedConfigManager
-from src.core.logging.logger import ProjectLogger
-from src.utils.dynamic_module_loader import DynamicModuleLoader
-from src.monitoring.health_hub import HealthHub
-from src.data.management.data_manager import DataManager
+from typing import Any
+
 from src.analytics.data_managers.model_results_manager import ModelResultsManager
+from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.clients.http_client_factory import HttpClientFactory
-from src.processing.normalization_manager import NormalizationManager
-from src.core.monitoring.memory_profiler import get_memory_profiler, get_memory_stats
-from src.validation.pipeline_schemas import validate_stage_output, RawDataSchema, ProcessedDataSchema, EnrichedDataSchema
 from src.core.error_handling.error_handler import ErrorHandler
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+from src.core.monitoring.memory_profiler import get_memory_profiler, get_memory_stats
+from src.data.management.data_manager import DataManager
+from src.monitoring.health_hub import HealthHub
+from src.processing.normalization_manager import NormalizationManager
+from src.utils.dynamic_module_loader import DynamicModuleLoader
+from src.validation.pipeline_schemas import (
+    EnrichedDataSchema,
+    ProcessedDataSchema,
+    RawDataSchema,
+    validate_stage_output,
+)
 
 
 @dataclass
@@ -36,7 +42,7 @@ class PipelineOrchestrator:
     """
 
     def __init__(self, config_manager: UnifiedConfigManager, brain:
-        Optional[Dict[str, Any]]=None, stages_to_run: Optional[List[int]]=None
+        dict[str, Any] | None=None, stages_to_run: list[int] | None=None
         ):
         self.config_manager = config_manager
         self.logger = ProjectLogger.get_logger(__name__)
@@ -65,7 +71,7 @@ class PipelineOrchestrator:
             )
         self.stages = self._load_stages()
 
-    def _load_stages(self) ->List[Any]:
+    def _load_stages(self) ->list[Any]:
         """Loads pipeline stages from the configuration.
 
         Only instantiates stages that are in stages_to_run (if specified).
@@ -143,20 +149,19 @@ class PipelineOrchestrator:
             return payload
         return coro
 
-    def execute_full_pipeline(self, tickers: Optional[List[str]]=None,
-        timeframes: Optional[List[str]]=None, **kwargs) ->Dict[str, Any]:
+    def execute_full_pipeline(self, tickers: list[str] | None=None,
+        timeframes: list[str] | None=None, **kwargs) ->dict[str, Any]:
         return self._execute_sync(self.run(tickers=tickers, timeframes=
             timeframes, run_mode='predict', **kwargs))
 
-    def execute_training_pipeline(self, tickers: Optional[List[str]]=None,
-        timeframes: Optional[List[str]]=None, **kwargs) ->Dict[str, Any]:
+    def execute_training_pipeline(self, tickers: list[str] | None=None,
+        timeframes: list[str] | None=None, **kwargs) ->dict[str, Any]:
         return self._execute_sync(self.run(tickers=tickers, timeframes=
             timeframes, run_mode='train', **kwargs))
 
-    def run_incremental_pipeline(self, execution_params: Optional[Dict[str,
-        Any]]=None, **kwargs) ->Dict[str, Any]:
+    def run_incremental_pipeline(self, execution_params: dict[str, Any] | None=None, **kwargs) ->dict[str, Any]:
         """Legacy compatibility wrapper for older experiments.
-        
+
         Args:
             execution_params: Dictionary containing tickers, start_date, end_date, feature_layers
             **kwargs: Additional parameters
@@ -165,8 +170,8 @@ class PipelineOrchestrator:
         params.update(kwargs)
         return self._execute_sync(self.run(**params))
 
-    async def run(self, tickers: Optional[List[str]]=None, timeframes:
-        Optional[List[str]]=None, run_mode: str='train', **kwargs):
+    async def run(self, tickers: list[str] | None=None, timeframes:
+        list[str] | None=None, run_mode: str='train', **kwargs):
         """Runs the entire pipeline or specific stages if provided."""
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug('PipelineOrchestrator.run() called')
@@ -187,10 +192,10 @@ class PipelineOrchestrator:
         self.logger.info('Pipeline execution completed successfully.')
         return stage_outputs
 
-    def _initialize_stage_outputs(self, execution_context: Dict[str, Any]
-        ) ->Dict[str, Any]:
+    def _initialize_stage_outputs(self, execution_context: dict[str, Any]
+        ) ->dict[str, Any]:
         """Initialize stage outputs with basic parameters.
-        
+
         Args:
             execution_context: Dictionary containing tickers, timeframes, run_mode, and additional kwargs
         """
@@ -216,7 +221,7 @@ class PipelineOrchestrator:
         return stage_outputs
 
     def _should_run_stage(self, stage_index: int, stage: Any, stages_to_run:
-        Optional[List[int]]) ->bool:
+        list[int] | None) ->bool:
         """Check if stage should be executed."""
         stage_name = type(stage).__name__
         if stages_to_run and stage_index not in stages_to_run:
@@ -227,11 +232,11 @@ class PipelineOrchestrator:
         return True
 
     async def _execute_stage(self, stage: Any,
-        stage_outputs: Dict[str, Any], stage_index: int=0) ->Dict[str, Any]:
+        stage_outputs: dict[str, Any], stage_index: int=0) ->dict[str, Any]:
         """Execute a single stage and return results."""
         stage_name = type(stage).__name__
         self.logger.info(
-            f'===== Executing Stage {stage_index}: {stage_name} =====' if stage_index > 0 
+            f'===== Executing Stage {stage_index}: {stage_name} =====' if stage_index > 0
             else f'===== Executing {stage_name} ====='
         )
         start_time = time.time()
@@ -260,25 +265,24 @@ class PipelineOrchestrator:
             raise RuntimeError(f"Stage {stage_name} execution failed: {e}") from e
 
     async def _run_stage_with_memory_tracking(self, stage_index: int,
-        stage_name: str, stage: Any, stage_outputs: Dict[str, Any]) ->Optional[
-        Dict[str, Any]]:
+        stage_name: str, stage: Any, stage_outputs: dict[str, Any]) ->dict[str, Any] | None:
         """Run stage with memory tracking."""
         with self.memory_profiler.track(f'stage_{stage_index}_{stage_name}'):
             return await stage.run(**stage_outputs)
 
     def _validate_stage_output(self, stage_name: str, stage_output:
-        Optional[Dict[str, Any]]) ->Optional[Dict[str, Any]]:
+        dict[str, Any] | None) ->dict[str, Any] | None:
         """Validate stage output against schema."""
         if not stage_output:
             return None
         stage_schema_map = {'CollectionStage': RawDataSchema,
             'ProcessingStage': ProcessedDataSchema,
             'FeatureEngineeringStage': EnrichedDataSchema}
-        
+
         schema = stage_schema_map.get(stage_name)
         if not schema:
             return stage_output
-            
+
         try:
             return validate_stage_output(stage_name, stage_output, schema)
         except Exception as e:
@@ -290,7 +294,7 @@ class PipelineOrchestrator:
         return self.health_hub.resource_monitor.get_health_status()['system'][
             'memory']['used_gb']
 
-    def _log_models_metadata(self, stage_name: str, stage_outputs: Dict[str,
+    def _log_models_metadata(self, stage_name: str, stage_outputs: dict[str,
         Any]) ->None:
         """Log models metadata presence after stage execution."""
         self.logger.info('Updated stage_outputs with keys')
@@ -309,7 +313,7 @@ class PipelineOrchestrator:
             )
 
     def _handle_stage_error(self, error: Exception, stage_name: str,
-        stage_outputs: Dict[str, Any]) ->None:
+        stage_outputs: dict[str, Any]) ->None:
         """Handle stage execution error."""
         self.error_handler.handle_error(error, context=
             f'PipelineOrchestrator:{stage_name}', severity='critical')

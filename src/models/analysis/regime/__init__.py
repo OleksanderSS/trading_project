@@ -1,8 +1,8 @@
 from .detector import RegimeDetector
 from .metrics import RegimeMetrics
 from .patterns import RegimePatternAnalyzer
-from .stability import RegimeStabilityAnalyzer
 from .recommendations import RegimeRecommendationEngine
+from .stability import RegimeStabilityAnalyzer
 
 __all__ = [
     'RegimeDetector',

@@ -16,7 +16,7 @@ from src.core.logging.logger import ProjectLogger
 class DataGenerator:
     """
     Synthetic data generator for trading pipeline.
-    
+
     Generates realistic market data with various regimes and scenarios
     for model training and testing purposes.
     """
@@ -29,7 +29,7 @@ class DataGenerator:
     def generate_synthetic_data(self) -> dict[str, Any]:
         """
         Generate complete synthetic dataset
-        
+
         Returns:
             Dictionary containing features and targets DataFrames
         """
@@ -51,7 +51,7 @@ class DataGenerator:
     def generate_synthetic_features(self) -> pd.DataFrame:
         """
         Generate synthetic features DataFrame
-        
+
         Returns:
             DataFrame with technical indicators and market features
         """
@@ -121,7 +121,7 @@ class DataGenerator:
     def generate_synthetic_targets(self) -> pd.DataFrame:
         """
         Generate synthetic targets DataFrame
-        
+
         Returns:
             DataFrame with target variables for prediction
         """
@@ -136,7 +136,7 @@ class DataGenerator:
         targets['return_1h'] = (close_prices.shift(-1) / close_prices) - 1  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
         targets['return_4h'] = (close_prices.shift(-4) / close_prices) - 1  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
         targets['return_24h'] = (close_prices.shift(-24) / close_prices) - 1  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
-        
+
         # Drop rows where we don't have enough future data (the look-ahead window)
         targets = targets.dropna()
         features_df = features_df.loc[targets.index]
@@ -178,10 +178,10 @@ class DataGenerator:
     def _generate_price_series(self, n_points: int) -> np.ndarray:
         """
         Generate realistic price series with market regimes
-        
+
         Args:
             n_points: Number of data points to generate
-            
+
         Returns:
             Array of price values
         """
@@ -199,7 +199,7 @@ class DataGenerator:
         current_regime = None
         regime_duration = 0
 
-        for i in range(1, n_points):
+        for _i in range(1, n_points):
             # Switch regimes occasionally
             if current_regime is None or regime_duration <= 0:
                 current_regime = self.rng.choice(regimes, p=[r['probability'] for r in regimes])

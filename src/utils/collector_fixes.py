@@ -21,7 +21,7 @@ class CollectorFixes:
                 if result is not None and len(result) > 0:
                     return result
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(f"Collector {collector.__class__.__name__} timed out (attempt {attempt + 1})")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(5)  # Wait before retry

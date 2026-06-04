@@ -4,7 +4,7 @@ Regime Adapter - Adaptation Recommendations and Method Weight Updates
 Handles regime-specific adaptation recommendations and method weight updates.
 """
 
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 from src.core.logging.logger import ProjectLogger
 
@@ -14,17 +14,17 @@ logger = ProjectLogger.get_logger("RegimeAdapter")
 class RegimeAdapter:
     """
     Regime adapter for feature selection adaptation.
-    
+
     Handles:
     - Adaptation recommendations generation
     - Regime-specific recommendations
     - Method weight updates
     """
-    
-    def __init__(self, regime_types: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, regime_types: dict[str, Any] | None = None):
         """
         Initialize Regime Adapter.
-        
+
         Args:
             regime_types: Dictionary of regime type configurations
         """
@@ -57,14 +57,14 @@ class RegimeAdapter:
             }
         }
         self.logger.info("✅ RegimeAdapter initialized")
-    
+
     def generate_adaptation_recommendations(self,
                                            current_regime: str,
-                                           stability_analysis: Dict[str, Any],
-                                           importance_changes: Dict[str, Any]) -> List[str]:
+                                           stability_analysis: dict[str, Any],
+                                           importance_changes: dict[str, Any]) -> list[str]:
         """Generate adaptation recommendations based on analysis."""
         recommendations = []
-        
+
         try:
             stability_score = stability_analysis.get('stability_score', 1.0)
             if stability_score < 0.5:
@@ -72,33 +72,33 @@ class RegimeAdapter:
                     f'⚠️ Low importance stability ({stability_score:.2f}) in {current_regime} regime. '
                     'Consider increasing feature selection frequency.'
                 )
-            
+
             unstable_features = stability_analysis.get('unstable_features', [])
             if unstable_features:
                 recommendations.append(
                     f'🔄 {len(unstable_features)} features show unstable importance in {current_regime} regime. '
                     'Consider regime-specific feature selection.'
                 )
-            
+
             significant_changes = importance_changes.get('significant_changes', [])
             if significant_changes:
                 recommendations.append(
                     f'📊 {len(significant_changes)} features show significant importance changes. '
                     'Review feature engineering pipeline.'
                 )
-            
+
             regime_recommendations = self.get_regime_specific_recommendations(current_regime)
             recommendations.extend(regime_recommendations)
-            
+
             return recommendations
         except Exception as e:
             self.logger.error(f'Error generating recommendations: {e}')
             return []
-    
-    def get_regime_specific_recommendations(self, regime: str) -> List[str]:
+
+    def get_regime_specific_recommendations(self, regime: str) -> list[str]:
         """Get regime-specific feature selection recommendations."""
         recommendations = []
-        
+
         try:
             if regime == 'volatile':
                 recommendations.extend([
@@ -130,15 +130,15 @@ class RegimeAdapter:
                     '✅ Maintain standard feature weights',
                     '✅ Regular model retraining schedule'
                 ])
-            
+
             return recommendations
         except Exception as e:
             self.logger.error(f'Error getting regime-specific recommendations: {e}')
             return recommendations
-    
+
     def update_method_weights(self,
                              current_regime: str,
-                             recommendations: List[str]) -> Dict[str, float]:
+                             recommendations: list[str]) -> dict[str, float]:
         """Update feature selection method weights based on regime and recommendations."""
         base_weights = {
             'normal': {'correlation': 0.4, 'mutual_info': 0.3, 'lgbm': 0.2, 'rf': 0.1},
@@ -147,9 +147,9 @@ class RegimeAdapter:
             'trending_down': {'correlation': 0.3, 'mutual_info': 0.2, 'lgbm': 0.4, 'rf': 0.1},
             'crisis': {'correlation': 0.1, 'mutual_info': 0.5, 'lgbm': 0.3, 'rf': 0.1}
         }
-        
+
         method_weights = base_weights.get(current_regime, base_weights['normal']).copy()
-        
+
         for recommendation in recommendations:
             if 'unstable importance' in recommendation:
                 method_weights['correlation'] *= 0.8
@@ -161,9 +161,9 @@ class RegimeAdapter:
                 method_weights['lgbm'] *= 1.15
                 method_weights['mutual_info'] *= 1.1
                 method_weights['correlation'] *= 0.9
-        
+
         total_weight = sum(method_weights.values())
         if total_weight > 0:
             method_weights = {k: (v / total_weight) for k, v in method_weights.items()}
-        
+
         return method_weights

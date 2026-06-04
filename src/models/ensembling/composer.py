@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -9,10 +9,10 @@ logger = logging.getLogger(__name__)
 class EnsembleResult:
     """Type-safe container for ensemble results."""
 
-    model_names: List[str]
-    weights: Dict[str, float]
-    metrics: Dict[str, Any]
-    meta_info: Dict[str, Any]
+    model_names: list[str]
+    weights: dict[str, float]
+    metrics: dict[str, Any]
+    meta_info: dict[str, Any]
 
 
 class EnsembleComposer:
@@ -24,7 +24,7 @@ class EnsembleComposer:
     def __init__(self, composer_type: str = "weighted_avg"):
         self.composer_type = composer_type
 
-    def compose(self, models: Dict[str, Any], results: Dict[str, Any], ticker: str, target: str) -> EnsembleResult:
+    def compose(self, models: dict[str, Any], results: dict[str, Any], ticker: str, target: str) -> EnsembleResult:
         """
         Creates an ensemble from top models and returns a type-safe result.
         """
@@ -44,7 +44,7 @@ class EnsembleComposer:
             meta_info={"ticker": ticker, "target": target, "type": self.composer_type},
         )
 
-    def _aggregate_metrics(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _aggregate_metrics(self, results: dict[str, Any]) -> dict[str, Any]:
         """Simple aggregation logic for ensemble metrics."""
         # This can be expanded based on specific requirements
         return {"status": "composed", "n_models": len(results)}

@@ -1,8 +1,11 @@
+from typing import Any
+
 import numpy as np
-from typing import Dict, Any, Optional
-from sklearn.linear_model import LogisticRegression
 from sklearn.isotonic import IsotonicRegression
+from sklearn.linear_model import LogisticRegression
+
 from .base import CalibrationStrategy
+
 
 class PlattScalingStrategy(CalibrationStrategy):
     """Platt scaling (logistic regression) для бінарної класифікації."""
@@ -10,7 +13,7 @@ class PlattScalingStrategy(CalibrationStrategy):
     def __init__(self):
         self.calibrator = LogisticRegression(random_state=42)
 
-    def fit(self, predictions: np.ndarray, targets: np.ndarray, **kwargs) -> Dict[str, Any]:
+    def fit(self, predictions: np.ndarray, targets: np.ndarray, **kwargs) -> dict[str, Any]:
         try:
             scores = predictions[:, 1].reshape(-1, 1) if predictions.ndim == 2 else predictions.reshape(-1, 1)
             self.calibrator.fit(scores, targets)
@@ -29,7 +32,7 @@ class IsotonicRegressionStrategy(CalibrationStrategy):
         self.task_type = task_type
         self.calibrator = None
 
-    def fit(self, predictions: np.ndarray, targets: np.ndarray, **kwargs) -> Dict[str, Any]:
+    def fit(self, predictions: np.ndarray, targets: np.ndarray, **kwargs) -> dict[str, Any]:
         try:
             self.calibrator = IsotonicRegression(out_of_bounds='clip')
             self.calibrator.fit(predictions, targets)

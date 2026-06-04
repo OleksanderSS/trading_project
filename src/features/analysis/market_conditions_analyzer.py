@@ -4,10 +4,11 @@ Market Conditions Analyzer - Regime Detection and Market Analysis
 Handles market regime detection and market conditions calculation.
 """
 
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, Optional
 import logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
@@ -17,18 +18,18 @@ logger = ProjectLogger.get_logger("MarketConditionsAnalyzer")
 class MarketConditionsAnalyzer:
     """
     Market conditions analyzer.
-    
+
     Handles:
     - Market regime detection
     - Volatility calculation
     - Trend calculation
     - Market conditions analysis
     """
-    
-    def __init__(self, regime_types: Optional[Dict[str, Any]] = None):
+
+    def __init__(self, regime_types: dict[str, Any] | None = None):
         """
         Initialize Market Conditions Analyzer.
-        
+
         Args:
             regime_types: Dictionary of regime type configurations
         """
@@ -61,17 +62,17 @@ class MarketConditionsAnalyzer:
             }
         }
         self.logger.info("✅ MarketConditionsAnalyzer initialized")
-    
+
     def detect_market_regime(self, market_data: pd.DataFrame) -> str:
         """Detect current market regime based on market conditions."""
         try:
             volatility = self.calculate_volatility(market_data)
             trend = self.calculate_trend(market_data)
-            
+
             for regime_name, regime_config in self.regime_types.items():
                 vol_range = regime_config['volatility_range']
                 trend_range = regime_config['trend_strength']
-                
+
                 if (vol_range[0] <= float(volatility) <= vol_range[1] and
                     trend_range[0] <= float(trend) <= trend_range[1]):
                     if self.logger.isEnabledFor(logging.DEBUG):
@@ -79,12 +80,12 @@ class MarketConditionsAnalyzer:
                             f'Detected regime: {regime_name} (vol={volatility:.4f}, trend={trend:.4f})'
                         )
                     return regime_name
-            
+
             return 'normal'
         except Exception as e:
             self.logger.error(f'Error detecting market regime: {e}')
             return 'normal'
-    
+
     def calculate_volatility(self, market_data: pd.DataFrame) -> float:
         """Calculate market volatility."""
         try:
@@ -92,7 +93,7 @@ class MarketConditionsAnalyzer:
                 returns = market_data['close'].pct_change(fill_method=None).dropna()
                 return float(returns.std() * np.sqrt(252))
             else:
-                price_cols = [col for col in market_data.columns 
+                price_cols = [col for col in market_data.columns
                             if 'price' in col.lower() or col in ['open', 'high', 'low', 'close']]
                 if price_cols:
                     returns = market_data[price_cols[0]].pct_change(fill_method=None).dropna()
@@ -101,7 +102,7 @@ class MarketConditionsAnalyzer:
         except Exception as e:
             self.logger.error(f'Error calculating volatility: {e}')
             return 0.02
-    
+
     def calculate_trend(self, market_data: pd.DataFrame) -> float:
         """Calculate market trend."""
         try:
@@ -116,30 +117,30 @@ class MarketConditionsAnalyzer:
         except Exception as e:
             self.logger.error(f'Error calculating trend: {e}')
             return 0.0
-    
-    def calculate_market_conditions(self, market_data: pd.DataFrame) -> Dict[str, float]:
+
+    def calculate_market_conditions(self, market_data: pd.DataFrame) -> dict[str, float]:
         """Calculate comprehensive market conditions."""
         conditions = {}
         try:
             conditions['volatility'] = self.calculate_volatility(market_data)
             conditions['trend'] = self.calculate_trend(market_data)
-            
+
             if 'volume' in market_data.columns:
                 recent_volume = market_data['volume'].tail(10).mean()
                 historical_volume = market_data['volume'].mean()
-                conditions['volume_ratio'] = (recent_volume / historical_volume 
+                conditions['volume_ratio'] = (recent_volume / historical_volume
                                            if historical_volume > 0 else 1.0)
             else:
                 conditions['volume_ratio'] = 1.0
-            
+
             if 'close' in market_data.columns:
-                momentum_5d = (market_data['close'].iloc[-1] / market_data['close'].iloc[-6] - 1 
+                momentum_5d = (market_data['close'].iloc[-1] / market_data['close'].iloc[-6] - 1
                               if len(market_data) >= 6 else 0)
-                momentum_20d = (market_data['close'].iloc[-1] / market_data['close'].iloc[-21] - 1 
+                momentum_20d = (market_data['close'].iloc[-1] / market_data['close'].iloc[-21] - 1
                                if len(market_data) >= 21 else 0)
                 conditions['momentum_5d'] = momentum_5d
                 conditions['momentum_20d'] = momentum_20d
         except Exception as e:
             self.logger.error(f'Error calculating market conditions: {e}')
-        
+
         return conditions

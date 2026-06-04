@@ -1,12 +1,14 @@
-import asyncio
-import pandas as pd
 import hashlib
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
-from .base_collector import BaseCollector
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
 
 
 class FearGreedCollector(BaseCollector):
@@ -15,9 +17,8 @@ class FearGreedCollector(BaseCollector):
     data_type = 'alternative'
     collector_name = 'fear_greed'
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory:
-        HttpClientFactory, db_manager: DataManager, cache_manager: Optional
-        [CacheManager]=None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory:
+        HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
         self.enabled = self.configs.get('enabled', True)
@@ -34,7 +35,7 @@ class FearGreedCollector(BaseCollector):
         hash_string = '|'.join(str(row.get(key, '')) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    async def run(self, **kwargs) ->Optional[pd.DataFrame]:
+    async def run(self, **kwargs) ->pd.DataFrame | None:
         """Fetches Fear & Greed data and returns DataFrame."""
         if not self.enabled:
             self.logger.warning('FearGreedCollector is disabled')
@@ -62,7 +63,7 @@ class FearGreedCollector(BaseCollector):
             self.logger.error(f'Error in FearGreedCollector: {e}')
             return None
 
-    async def _fetch_fear_greed_data(self) ->List[Dict[str, Any]]:
+    async def _fetch_fear_greed_data(self) ->list[dict[str, Any]]:
         """Fetches data from CNN Fear & Greed API."""
         try:
             client = await self.http_client_factory.get_http_client(timeout=self.
@@ -159,7 +160,7 @@ class FearGreedCollector(BaseCollector):
         else:
             return 0
 
-    async def collect_data(self, **kwargs) ->Optional[List[Dict[str, Any]]]:
+    async def collect_data(self, **kwargs) ->list[dict[str, Any]] | None:
         """
         UNIFIED data collection - retrieval only, without database storage.
         """

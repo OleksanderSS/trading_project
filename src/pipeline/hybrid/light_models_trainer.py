@@ -1,16 +1,18 @@
 """
 Light Models Trainer - Handles light model training logic
 """
-import time
 import copy
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, cast
+
 import aiofiles
 import pandas as pd
-from typing import Dict, List, Any, Optional, cast
-from datetime import datetime
-from dataclasses import dataclass
-from pathlib import Path
+
 from src.core.logging.logger import ProjectLogger
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -20,15 +22,15 @@ class LightModelTrainingConfig:
     test_ticker: str
     test_target: str
     test_model: str
-    light_models_to_train: List[str]
-    target_cols: List[str]
-    selected_features_files: List[str]
+    light_models_to_train: list[str]
+    target_cols: list[str]
+    selected_features_files: list[str]
 
 
 class LightModelsTrainer:
     """Handles light model training and result accumulation."""
 
-    def __init__(self, trainer_config: Dict[str, Any]):
+    def __init__(self, trainer_config: dict[str, Any]):
         self.config_manager = trainer_config['config_manager']
         self.output_dir = trainer_config['output_dir']
         self.batch_name = trainer_config['batch_name']
@@ -37,7 +39,7 @@ class LightModelsTrainer:
         self.logger = ProjectLogger.get_logger(__name__)
 
     async def run_light_models(self, features_df: pd.DataFrame, targets_df:
-        pd.DataFrame, tickers: Optional[List[str]]=None) ->Dict[str, Any]:
+        pd.DataFrame, tickers: list[str] | None=None) ->dict[str, Any]:
         """Trains light models locally and accumulates results."""
         self.logger.info('Launching light model training...')
         original_config = self.config_manager.merged_config.get('models')
@@ -68,10 +70,9 @@ class LightModelsTrainer:
         temp_config_dict['categories'] = {'light': self.light_models}
         self.config_manager.merged_config['models'] = temp_config_dict
 
-    async def _save_light_model_results(self, results: Dict[str, Any],
-        timestamp: str) ->Dict[str, Any]:
+    async def _save_light_model_results(self, results: dict[str, Any],
+        timestamp: str) ->dict[str, Any]:
         """Save light model results."""
-        from pathlib import Path
         light_results_path = self.output_dir / 'light_models_results.json'
         current_run = {'timestamp': timestamp, 'models_metadata': results.
             get('models_metadata', {}), 'metrics': results.get('metrics', {})}
@@ -89,13 +90,13 @@ class LightModelsTrainer:
             'accumulated_results_path': str(light_results_path)}
 
     def _load_or_create_accumulated_results(self, results_path: Path,
-        current_run: Dict[str, Any]) ->Dict[str, Any]:
+        current_run: dict[str, Any]) ->dict[str, Any]:
         """Load existing results or create new accumulation structure."""
         import json
         if results_path.exists():
             try:
-                with open(results_path, 'r', encoding='utf-8') as f:
-                    accumulated = cast(Dict[str, Any], json.load(f))
+                with open(results_path, encoding='utf-8') as f:
+                    accumulated = cast(dict[str, Any], json.load(f))
                 if 'runs' not in accumulated:
                     accumulated['runs'] = []
                 accumulated['runs'].append(current_run)
@@ -111,7 +112,7 @@ class LightModelsTrainer:
 
     async def run_light_models_with_selected_features(self, features_df: pd
         .DataFrame, targets_df: pd.DataFrame, config: LightModelTrainingConfig
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Run light models with pre-selected features."""
         self.logger.info(
             f'Training light models with pre-selected features for {len(config.light_models_to_train)} models...'
@@ -127,8 +128,8 @@ class LightModelsTrainer:
             'timeframe', 'datetime'] + config.target_cols]
         return await self.run_light_models(filtered_features, targets_df)
 
-    def _load_selected_features(self, selected_features_files: List[str],
-        model_name: str) ->List[str]:
+    def _load_selected_features(self, selected_features_files: list[str],
+        model_name: str) ->list[str]:
         """Load selected features for a specific model."""
         import json
         from pathlib import Path
@@ -136,10 +137,10 @@ class LightModelsTrainer:
             features_path = Path(features_file)
             if features_path.exists():
                 try:
-                    with open(features_path, 'r', encoding='utf-8') as f:
+                    with open(features_path, encoding='utf-8') as f:
                         features_data = json.load(f)
                     if features_data.get('model_name') == model_name:
-                        return cast(List[str], features_data.get(
+                        return cast(list[str], features_data.get(
                             'selected_features', []))
                 except Exception as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)

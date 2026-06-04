@@ -1,18 +1,20 @@
 """
 Virtual Portfolio - Virtual account for paper trading with real prices.
 """
-import logging
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any
 import json
+import logging
+from datetime import datetime
 from pathlib import Path
-from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import get_current_config
-from src.metrics.financial.portfolio_metrics import PortfolioMetricsCalculator
-from src.core.error_handling.error_handler import get_error_handler
+from typing import Any
+
+import pandas as pd
+
 from src.backtesting.advanced.advanced_engine import TransactionCostModel
+from src.config.unified_config_manager import get_current_config
+from src.core.error_handling.error_handler import get_error_handler
+from src.core.logging.logger import ProjectLogger
+from src.metrics.financial.portfolio_metrics import PortfolioMetricsCalculator
+
 logger = ProjectLogger.get_logger('VirtualPortfolio')
 error_handler = get_error_handler()
 
@@ -29,9 +31,9 @@ class VirtualPortfolio:
         self.initial_balance = initial_balance
         self.current_balance = initial_balance
         self.portfolio_name = portfolio_name
-        self.positions: Dict[str, Any] = {}
-        self.transactions: List[Dict[str, Any]] = []
-        self.performance_history: List[Dict[str, Any]] = []
+        self.positions: dict[str, Any] = {}
+        self.transactions: list[dict[str, Any]] = []
+        self.performance_history: list[dict[str, Any]] = []
         self.metrics_calculator = PortfolioMetricsCalculator()
         risk_config = self.config_manager.get_config('strategy.risk_management'
             , {})
@@ -57,7 +59,7 @@ class VirtualPortfolio:
             if not self.portfolio_file.exists():
                 self.save_portfolio()
                 return
-            with open(self.portfolio_file, 'r', encoding='utf-8') as f:
+            with open(self.portfolio_file, encoding='utf-8') as f:
                 data = json.load(f)
             self._load_portfolio_data(data)
             logger.info(f'Portfolio loaded from {self.portfolio_file}')
@@ -69,7 +71,7 @@ class VirtualPortfolio:
             error_handler.handle_error(e, 'Loading Virtual Portfolio')
             raise
 
-    def _load_portfolio_data(self, data: Dict[str, Any]):
+    def _load_portfolio_data(self, data: dict[str, Any]):
         """Load portfolio data from loaded JSON."""
         self.current_balance = data.get('current_balance', self.initial_balance
             )
@@ -104,7 +106,7 @@ class VirtualPortfolio:
             error_handler.handle_error(e, 'Saving Virtual Portfolio')
             raise
 
-    def _prepare_portfolio_data(self) ->Dict[str, Any]:
+    def _prepare_portfolio_data(self) ->dict[str, Any]:
         """Prepare portfolio data for JSON serialization."""
         return {'portfolio_name': self.portfolio_name, 'initial_balance':
             self.initial_balance, 'current_balance': self.current_balance,
@@ -112,7 +114,7 @@ class VirtualPortfolio:
             _serialize_transactions(), 'performance_history': self.
             performance_history, 'last_updated': datetime.now().isoformat()}
 
-    def _serialize_positions(self) ->Dict[str, Any]:
+    def _serialize_positions(self) ->dict[str, Any]:
         """Serialize positions for JSON storage."""
         serialized = {}
         for ticker, pos in self.positions.items():
@@ -122,7 +124,7 @@ class VirtualPortfolio:
             serialized[ticker] = pos_copy
         return serialized
 
-    def _serialize_transactions(self) ->List[Dict[str, Any]]:
+    def _serialize_transactions(self) ->list[dict[str, Any]]:
         """Serialize transactions for JSON storage."""
         serialized = []
         for tx in self.transactions:
@@ -132,7 +134,7 @@ class VirtualPortfolio:
             serialized.append(tx_copy)
         return serialized
 
-    def get_total_value(self, current_prices: Dict[str, float]) ->float:
+    def get_total_value(self, current_prices: dict[str, float]) ->float:
         """Calculates total portfolio value (cash + mark-to-market positions)."""
         total_value = self.current_balance
         for ticker, position in self.positions.items():
@@ -141,7 +143,7 @@ class VirtualPortfolio:
                 total_value += position['quantity'] * price
         return total_value
 
-    def buy_stock(self, order_params: Dict[str, Any]) ->Dict[str, Any]:
+    def buy_stock(self, order_params: dict[str, Any]) ->dict[str, Any]:
         """Executes a virtual buy order with transaction costs."""
         try:
             ticker = order_params['ticker']
@@ -151,7 +153,7 @@ class VirtualPortfolio:
             trade_value = quantity * price
             daily_volume = order_params.get('daily_volume', 1000000)
             volatility = order_params.get('volatility', 0.02)
-            order_size_pct = (quantity * price / daily_volume if 
+            order_size_pct = (quantity * price / daily_volume if
                 daily_volume > 0 else 0.01)
             cost_breakdown = (self.transaction_cost_model.
                 calculate_execution_costs(trade_value=trade_value,
@@ -177,8 +179,8 @@ class VirtualPortfolio:
                 f"Buy Stock {order_params.get('ticker', 'unknown')}")
             return {'success': False, 'error': str(e)}
 
-    def _create_buy_transaction(self, order_params: Dict[str, Any],
-        trade_value: float, cost_breakdown: Dict[str, Any]) ->Dict[str, Any]:
+    def _create_buy_transaction(self, order_params: dict[str, Any],
+        trade_value: float, cost_breakdown: dict[str, Any]) ->dict[str, Any]:
         """Create buy transaction record with cost breakdown."""
         return {'timestamp': datetime.now(), 'type': 'BUY', 'ticker':
             order_params['ticker'], 'quantity': order_params['quantity'],
@@ -199,12 +201,12 @@ class VirtualPortfolio:
                 total_cost) / new_qty
             self.positions[ticker]['quantity'] = new_qty
         else:
-            self.positions[ticker] = {'quantity': quantity, 'avg_price': 
+            self.positions[ticker] = {'quantity': quantity, 'avg_price':
                 total_cost / quantity, 'entry_time': datetime.now(),
                 'confidence': confidence}
 
     def sell_stock(self, ticker: str, quantity: int, price: float, reason:
-        str='', daily_volume: float=1000000, volatility: float=0.02) ->Dict[
+        str='', daily_volume: float=1000000, volatility: float=0.02) ->dict[
         str, Any]:
         """Executes a virtual sell order with transaction costs."""
         try:
@@ -214,7 +216,7 @@ class VirtualPortfolio:
             pos = self.positions[ticker]
             trade_value = quantity * price
             cost_basis = quantity * pos['avg_price']
-            order_size_pct = (quantity * price / daily_volume if 
+            order_size_pct = (quantity * price / daily_volume if
                 daily_volume > 0 else 0.01)
             cost_breakdown = (self.transaction_cost_model.
                 calculate_execution_costs(trade_value=trade_value,
@@ -244,10 +246,10 @@ class VirtualPortfolio:
             error_handler.handle_error(e, f'Sell Stock {ticker}')
             return {'success': False, 'error': str(e)}
 
-    def get_portfolio_summary(self, current_prices: Dict[str, float]) ->Dict[
+    def get_portfolio_summary(self, current_prices: dict[str, float]) ->dict[
         str, Any]:
         """
-        Generates a comprehensive portfolio report, including risk metrics 
+        Generates a comprehensive portfolio report, including risk metrics
         from PortfolioMetricsCalculator.
         """
         total_value = self.get_total_value(current_prices)
@@ -272,7 +274,7 @@ class VirtualPortfolio:
             positions_report, 'metrics': metrics, 'timestamp': datetime.now
             ().isoformat()}
 
-    def update_performance(self, current_prices: Dict[str, float]):
+    def update_performance(self, current_prices: dict[str, float]):
         """Records current portfolio valuation into history."""
         total_val = self.get_total_value(current_prices)
         record = {'timestamp': datetime.now().isoformat(), 'total_value':

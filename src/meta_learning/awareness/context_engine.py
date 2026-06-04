@@ -4,7 +4,7 @@ Maintains backward compatibility with the original ContextAwarenessEngine.
 """
 
 from .context.manager import ContextAwarenessEngine as ModularContextAwarenessEngine
-from .context.models import EventType, EventImpact, MarketRegime, MarketEvent, MarketContext
+
 
 class ContextAwarenessEngine(ModularContextAwarenessEngine):
     """

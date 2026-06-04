@@ -1,7 +1,7 @@
-from typing import Dict, List, Tuple, Any
-import logging
-from src.core.logging.logger import ProjectLogger
+from typing import Any
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -10,10 +10,10 @@ class RegimeMetrics:
     """Розрахунок метрик продуктивності моделей у контексті режимів ринку."""
 
     @staticmethod
-    def calculate_performance_score(metrics: Dict[str, float]) ->float:
+    def calculate_performance_score(metrics: dict[str, float]) ->float:
         """Розраховує уніфікований показник продуктивності."""
         try:
-            metric_weights = {'accuracy': 0.3, 'precision': 0.2, 'recall': 
+            metric_weights = {'accuracy': 0.3, 'precision': 0.2, 'recall':
                 0.2, 'f1': 0.2, 'r2': 0.1, 'mse': -0.1, 'mae': -0.1, 'rmse':
                 -0.1}
             score = 0.0
@@ -33,7 +33,7 @@ class RegimeMetrics:
             raise DataProcessingError(f"Performance score calculation failed: {e}") from e
 
     @staticmethod
-    def calculate_score_gap(ranked_models: List[Tuple[str, Dict[str, Any]]]
+    def calculate_score_gap(ranked_models: list[tuple[str, dict[str, Any]]]
         ) ->float:
         """Розраховує розрив між лідером та наступною моделлю."""
         if len(ranked_models) < 2:

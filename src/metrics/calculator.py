@@ -1,11 +1,13 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, Union
 
-from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import get_current_config
-from src.metrics.model.ml_evaluator import MLEvaluator
+from src.core.logging.logger import ProjectLogger
 from src.metrics.financial.portfolio_metrics import PortfolioMetricsCalculator
+from src.metrics.model.ml_evaluator import MLEvaluator
+
 
 class MetricsCalculator:
     """
@@ -21,20 +23,20 @@ class MetricsCalculator:
                 return accessor(key, default)
         return default
 
-    def __init__(self, config_manager: Optional[Any] = None):
+    def __init__(self, config_manager: Any | None = None):
         """
         Ініціалізація калькулятора метрик.
-        
+
         Args:
             config_manager: Менеджер конфігурацій для налаштування порогів та параметрів.
         """
         self.config = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger("MetricsCalculator")
-        
+
         # Ініціалізація спеціалізованих калькуляторів
         self.ml_evaluator = MLEvaluator()  # MLEvaluator не приймає параметри
         self.portfolio_metrics = PortfolioMetricsCalculator(config_manager=config_manager)  # Передаємо оригінальний config_manager
-        
+
         # Отримання порогів для оцінки з конфігурації
         self.grade_thresholds = self._get_config_value(self.config,
             'metrics.grade_thresholds', {})
@@ -43,35 +45,35 @@ class MetricsCalculator:
 
         self.logger.info("MetricsCalculator successfully initialized.")
 
-    def get_ml_metrics(self, 
-                       y_true: Union[np.ndarray, pd.Series], 
-                       y_pred: Union[np.ndarray, pd.Series], 
-                       y_prob: Optional[Union[np.ndarray, pd.Series]] = None,
-                       **kwargs) -> Dict[str, Any]:
+    def get_ml_metrics(self,
+                       y_true: np.ndarray | pd.Series,
+                       y_pred: np.ndarray | pd.Series,
+                       y_prob: np.ndarray | pd.Series | None = None,
+                       **kwargs) -> dict[str, Any]:
         """
         Розраховує метрики машинного навчання (точність, повнота, F1 тощо).
         """
         self.logger.info("Розрахунок ML метрик...")
         return self.ml_evaluator.calculate(y_true=y_true, y_pred=y_pred, y_prob=y_prob, **kwargs)
 
-    def get_portfolio_metrics(self, 
-                             equity_curve: Union[np.ndarray, pd.Series], 
-                             **kwargs) -> Dict[str, Any]:
+    def get_portfolio_metrics(self,
+                             equity_curve: np.ndarray | pd.Series,
+                             **kwargs) -> dict[str, Any]:
         """
         Розраховує фінансові метрики портфеля (Sharpe, Drawdown, PnL).
         """
         self.logger.info("Розрахунок фінансових метрик портфеля...")
-        
+
         if isinstance(equity_curve, np.ndarray):
             equity_curve = pd.Series(equity_curve)
-            
+
         return self.portfolio_metrics.calculate(equity_curve=equity_curve, **kwargs)
 
-    def calculate(self, 
-                  y_true: Optional[Union[np.ndarray, pd.Series]] = None, 
-                  y_pred: Optional[Union[np.ndarray, pd.Series]] = None, 
-                  equity_curve: Optional[Union[np.ndarray, pd.Series]] = None,
-                  **kwargs) -> Dict[str, Any]:
+    def calculate(self,
+                  y_true: np.ndarray | pd.Series | None = None,
+                  y_pred: np.ndarray | pd.Series | None = None,
+                  equity_curve: np.ndarray | pd.Series | None = None,
+                  **kwargs) -> dict[str, Any]:
         """
         Standardized calculation method returning a unified dictionary.
         """
@@ -89,11 +91,11 @@ class MetricsCalculator:
 
         return results
 
-    def get_full_report(self, 
-                        y_true: Optional[Union[np.ndarray, pd.Series]] = None,
-                        y_pred: Optional[Union[np.ndarray, pd.Series]] = None,
-                        equity_curve: Optional[Union[np.ndarray, pd.Series]] = None,
-                        **kwargs) -> Dict[str, Any]:
+    def get_full_report(self,
+                        y_true: np.ndarray | pd.Series | None = None,
+                        y_pred: np.ndarray | pd.Series | None = None,
+                        equity_curve: np.ndarray | pd.Series | None = None,
+                        **kwargs) -> dict[str, Any]:
         """
         Генерує повний звіт, що поєднує ML та фінансові метрики.
         """

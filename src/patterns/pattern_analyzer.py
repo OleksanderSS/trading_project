@@ -1,13 +1,16 @@
-import pandas as pd
-import numpy as np
-import logging
 import json
+import logging
 import time
 from datetime import datetime
-from typing import Dict, List, Any
 from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from src.analytics.interfaces import IAnalyzer
 from src.config.unified_config_manager import get_current_config
+
 ta = None
 logger = logging.getLogger(__name__)
 
@@ -81,13 +84,13 @@ class PatternDebugger:
             info = {'type': 'List', 'length': len(data), 'sample': data[0] if
                 data else None}
         elif isinstance(data, dict):
-            info = {'type': 'Dict', 'keys': list(data.keys()), 'sample': 
+            info = {'type': 'Dict', 'keys': list(data.keys()), 'sample':
                 list(data.items())[:3] if data else None}
         else:
             info = {'type': str(type(data).__name__), 'value': str(data)}
         self.log('DEBUG', f"Data info for '{data_name}'", info)
 
-    def log_patterns(self, patterns: Dict[str, Any], pattern_type: str):
+    def log_patterns(self, patterns: dict[str, Any], pattern_type: str):
         """Log detected patterns."""
         if not self.enable_debug:
             return
@@ -101,8 +104,8 @@ class PatternDebugger:
         else:
             self.log('INFO', f'No {pattern_type} patterns detected')
 
-    def log_bias_calculation(self, price_patterns: Dict, news_patterns:
-        Dict, final_bias: float):
+    def log_bias_calculation(self, price_patterns: dict, news_patterns:
+        dict, final_bias: float):
         """Log bias calculation details."""
         if not self.enable_debug:
             return
@@ -132,7 +135,7 @@ class PatternDebugger:
         self.log('INFO', f'Bias calculation completed: {final_bias:.3f}',
             bias_info)
 
-    def save_debug_session(self, results: Dict[str, Any]=None):
+    def save_debug_session(self, results: dict[str, Any]=None):
         """Save debug session to file."""
         if not self.enable_debug:
             return
@@ -147,7 +150,7 @@ class PatternDebugger:
             json.dump(session_data, f, indent=2)
         self.log('INFO', f'Debug session saved to: {debug_file}')
 
-    def end_analysis(self, results: Dict[str, Any]=None):
+    def end_analysis(self, results: dict[str, Any]=None):
         """End debugging session and save results."""
         if not self.enable_debug:
             return
@@ -171,10 +174,10 @@ class PatternAnalyzer(IAnalyzer):
         self.debugger = PatternDebugger(enable_debug=enable_debug)
         logger.info('PatternAnalyzer initialized with Price & News awareness.')
 
-    def analyze(self, data: Dict[str, Any], **kwargs) ->Dict[str, Any]:
+    def analyze(self, data: dict[str, Any], **kwargs) ->dict[str, Any]:
         """
         Main analysis method for UnifiedAnalyticsEngine.
-        
+
         Args:
             data: Dictionary containing 'news_data' (List[Dict]) and 'price_data' (pd.DataFrame).
         """
@@ -236,7 +239,7 @@ class PatternAnalyzer(IAnalyzer):
         self.debugger.end_analysis(results)
         return results
 
-    def _detect_price_patterns(self, df: pd.DataFrame) ->Dict[str, Any]:
+    def _detect_price_patterns(self, df: pd.DataFrame) ->dict[str, Any]:
         """Detects key candlestick and chart patterns."""
         patterns = {}
         if ta is not None:
@@ -268,13 +271,13 @@ class PatternAnalyzer(IAnalyzer):
                 patterns['potential_double_top'] = -1
         return patterns
 
-    def _analyze_news_batch(self, news_list: List[Dict]) ->Dict:
+    def _analyze_news_batch(self, news_list: list[dict]) ->dict:
         """Analyzes a batch of news for thematic patterns."""
         themes = {'ai_euphoria': 0, 'rate_hike_stress': 0,
             'geopolitical_risk': 0}
         for news in news_list:
             text = (news.get('text', '') + ' ' + news.get('title', '')).lower()
-            if ('ai' in text or 'nvidia' in text or 
+            if ('ai' in text or 'nvidia' in text or
                 'artificial intelligence' in text):
                 themes['ai_euphoria'] += 1
             if ('fed' in text or 'rate hike' in text or 'federal reserve' in
@@ -287,14 +290,14 @@ class PatternAnalyzer(IAnalyzer):
                     ) + 1
         return {k: v for k, v in themes.items() if v > 0}
 
-    def get_signal_bias(self, price_patterns: Dict, news_patterns: Dict
+    def get_signal_bias(self, price_patterns: dict, news_patterns: dict
         ) ->float:
         """
         Calculates alignment between technical and fundamental patterns.
         Returns value between -1.0 (Strongly Bearish) and 1.0 (Strongly Bullish).
         """
         bias = 0.0
-        for p, val in price_patterns.items():
+        for _p, val in price_patterns.items():
             bias += val / 500.0
         if 'ai_euphoria' in news_patterns and bias > 0:
             bias *= 1.2
@@ -302,7 +305,7 @@ class PatternAnalyzer(IAnalyzer):
             bias -= 0.3
         return max(-1.0, min(1.0, bias))
 
-    def _find_fractal_similarity(self, df: pd.DataFrame) ->Dict[str, Any]:
+    def _find_fractal_similarity(self, df: pd.DataFrame) ->dict[str, Any]:
         """Finds the most similar sequence in recent history using simple Euclidean distance."""
         seq_len = 10
         returns = (df['close'].pct_change(fill_method=None).replace([np.inf,
@@ -329,8 +332,8 @@ class PatternAnalyzer(IAnalyzer):
                 str(returns.index[best_match_idx])}
         return {}
 
-    def detect_regime_patterns(self, market_data: Dict, news_patterns: Dict
-        ) ->List[str]:
+    def detect_regime_patterns(self, market_data: dict, news_patterns: dict
+        ) ->list[str]:
         """Identifies significant shifts in market regime."""
         warnings = []
         if market_data.get('vix', 0) > 30 or news_patterns.get(

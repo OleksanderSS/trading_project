@@ -1,10 +1,13 @@
 import logging
+
 import pandas as pd
-from src.core.logging.logger import ProjectLogger
+
 from src.config.unified_config_manager import get_current_config
-from src.targets.calculators.regression_calculator import RegressionCalculator
+from src.core.logging.logger import ProjectLogger
 from src.targets.calculators.classification_calculator import ClassificationCalculator
 from src.targets.calculators.indicator_prediction_calculator import IndicatorPredictionCalculator
+from src.targets.calculators.regression_calculator import RegressionCalculator
+
 logger = ProjectLogger.get_logger('TargetOrchestrator')
 
 
@@ -17,7 +20,7 @@ class TargetOrchestrator:
     def __init__(self, targets_list, timeframe=None):
         """
         Initialize with targets in either dict or list format.
-        
+
         Args:
             targets_list: Either a dict {target_name: config} or list [{name: ..., type: ..., params: ...}]
             timeframe: Optional timeframe to filter targets (e.g., '15m', '60m', '1d')
@@ -50,7 +53,7 @@ class TargetOrchestrator:
         params_path = config_manager.get_runtime_params_path()
         if params_path.exists():
             try:
-                with open(params_path, 'r') as f:
+                with open(params_path) as f:
                     runtime_params = json.load(f)
             except Exception as e:
                 logger.error(f'Виникла помилка: {e}', exc_info=True)
@@ -83,15 +86,15 @@ class TargetOrchestrator:
     def _filter_targets_by_timeframe(self, timeframe: str) ->list:
         """
         Filter targets based on timeframe.
-        
+
         Rules:
         - 15m timeframe: Only intraday_15m targets
         - 60m timeframe: Only hourly_1h targets + general targets that make sense
         - 1d timeframe: Only daily/weekly targets + general targets
-        
+
         Args:
             timeframe: The timeframe to filter for
-            
+
         Returns:
             Filtered list of target configurations
         """
@@ -123,7 +126,7 @@ class TargetOrchestrator:
     def generate_targets(self, df: pd.DataFrame, **kwargs) ->pd.DataFrame:
         """
         Generates all configured targets for the given DataFrame.
-        
+
         Returns ONLY target columns + minimal metadata (datetime, ticker, interval).
         This prevents data leakage and keeps targets DataFrame clean.
         """

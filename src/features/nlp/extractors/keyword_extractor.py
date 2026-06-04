@@ -1,9 +1,8 @@
 
 # src/feature_engineering/nlp/keyword_extractor.py
 
-import re
 import logging
-from typing import List, Dict, Optional, Set
+import re
 from functools import lru_cache
 
 logger = logging.getLogger(__name__)
@@ -26,25 +25,25 @@ class KeywordExtractor:
     Efficiently extracts pre-defined keywords and tickers from text using compiled regex.
     """
 
-    def __init__(self, keyword_config: Optional[Dict[str, List[str]]] = None, noise_words: Optional[Set[str]] = None):
+    def __init__(self, keyword_config: dict[str, list[str]] | None = None, noise_words: set[str] | None = None):
         """
         Initializes the extractor and compiles regex for efficient searching.
 
         Args:
-            keyword_config (Optional[Dict[str, List[str]]]): A dictionary where keys are categories 
+            keyword_config (Optional[Dict[str, List[str]]]): A dictionary where keys are categories
                 (e.g., 'tickers', 'technologies') and values are lists of keywords.
             noise_words (Optional[Set[str]]): A set of uppercase words to ignore during extraction.
         """
         self.noise_words = noise_words if noise_words is not None else DEFAULT_NOISE_WORDS
-        self.tickers: List[str] = []
-        self.keywords: List[str] = []
-        self.keyword_regex: Optional[re.Pattern] = None
-        self.ticker_regex: Optional[re.Pattern] = None
+        self.tickers: list[str] = []
+        self.keywords: list[str] = []
+        self.keyword_regex: re.Pattern | None = None
+        self.ticker_regex: re.Pattern | None = None
 
         if keyword_config:
             self.update_keywords(keyword_config)
 
-    def update_keywords(self, keyword_config: Dict[str, List[str]]):
+    def update_keywords(self, keyword_config: dict[str, list[str]]):
         """
         Updates the keyword lists and recompiles the regex.
         This allows for dynamic updates without creating a new instance.
@@ -55,8 +54,8 @@ class KeywordExtractor:
 
         # Process tickers: typically uppercase, 2-5 chars, not in noise words
         raw_tickers = keyword_config.get('tickers', [])
-        self.tickers = sorted({ 
-            t for t in raw_tickers 
+        self.tickers = sorted({
+            t for t in raw_tickers
             if isinstance(t, str) and 2 <= len(t) <= 5 and t.isupper() and t not in self.noise_words
         })
 
@@ -65,9 +64,9 @@ class KeywordExtractor:
         for category, kws in keyword_config.items():
             if category != 'tickers':
                 other_keywords.extend(kws)
-        
+
         ticker_set = set(self.tickers)
-        self.keywords = sorted({ 
+        self.keywords = sorted({
             kw.lower() for kw in other_keywords
             if isinstance(kw, str) and kw.upper() not in self.noise_words and kw.upper() not in ticker_set
         })
@@ -76,7 +75,7 @@ class KeywordExtractor:
         if self.keywords:
             # Search for keywords case-insensitively, matching whole words
             self.keyword_regex = re.compile(r"\b(" + "|".join(map(re.escape, self.keywords)) + r")\b", re.IGNORECASE)
-        
+
         if self.tickers:
             # Search for tickers case-sensitively, matching whole words
             self.ticker_regex = re.compile(r"\b(" + "|".join(map(re.escape, self.tickers)) + r")\b")
@@ -84,7 +83,7 @@ class KeywordExtractor:
         logger.info(f"Extractor updated with {len(self.tickers)} tickers and {len(self.keywords)} keywords.")
 
     @lru_cache(maxsize=1024)
-    def extract(self, text: str) -> List[str]:
+    def extract(self, text: str) -> list[str]:
         """
         Extracts all configured keywords and tickers from the given text.
 
@@ -110,7 +109,7 @@ class KeywordExtractor:
 
         if not found_matches:
             return []
-            
+
         # Return a sorted list for consistent output
         return sorted(found_matches)
 

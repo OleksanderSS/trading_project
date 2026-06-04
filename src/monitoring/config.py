@@ -4,15 +4,15 @@ Monitoring Configuration - Monitoring system configuration.
 Contains configurations for all monitors, alert settings, and dashboard.
 """
 import os
-from typing import Dict, Any, Optional
-from pathlib import Path
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
 
 
 class MonitoringConfig:
     """Class for managing monitoring configuration"""
 
-    def __init__(self, config_file: Optional[str]=None):
+    def __init__(self, config_file: str | None=None):
         self.config_file = config_file or self._get_default_config_path()
         self.config = {}
         self.logger = ProjectLogger.get_logger('MonitoringConfig')
@@ -28,7 +28,7 @@ class MonitoringConfig:
         try:
             if os.path.exists(self.config_file):
                 import yaml
-                with open(self.config_file, 'r', encoding='utf-8') as f:
+                with open(self.config_file, encoding='utf-8') as f:
                     self.config = yaml.safe_load(f) or {}
             else:
                 self.config = self._get_default_config()
@@ -83,7 +83,7 @@ class MonitoringConfig:
             return False
         return value
 
-    def _set_nested_config(self, config: Dict[str, Any], path: tuple, value:
+    def _set_nested_config(self, config: dict[str, Any], path: tuple, value:
         Any):
         current = config
         for key in path[:-1]:
@@ -103,10 +103,10 @@ class MonitoringConfig:
             if not isinstance(value, (int, float)) or not 0 <= value <= 100:
                 raise ValueError(f'{threshold} must be between 0 and 100')
 
-    def _get_default_config(self) ->Dict[str, Any]:
+    def _get_default_config(self) ->dict[str, Any]:
         return {'collection_interval': 30, 'enabled_monitors': [
             'system_health', 'model_performance', 'data_quality'],
-            'system_health': {'cpu_threshold': 80.0, 'memory_threshold': 
+            'system_health': {'cpu_threshold': 80.0, 'memory_threshold':
             85.0, 'disk_threshold': 90.0, 'network_timeout': 30,
             'history_size': 100, 'enabled_metrics': ['cpu', 'memory',
             'disk', 'network', 'processes']}, 'model_performance': {
@@ -125,7 +125,7 @@ class MonitoringConfig:
             'monitoring_reports', 'web': {'port': 8050, 'host': 'localhost',
             'debug': False, 'update_interval': 5000}}}
 
-    def get_config_for_environment(self, environment: str) ->Dict[str, Any]:
+    def get_config_for_environment(self, environment: str) ->dict[str, Any]:
         base_config = self.config.copy()
         if environment == 'development':
             base_config.update({'collection_interval': 10})
@@ -141,7 +141,7 @@ class MonitoringConfig:
 _default_config = None
 
 
-def get_monitoring_config(config_file: Optional[str]=None) ->MonitoringConfig:
+def get_monitoring_config(config_file: str | None=None) ->MonitoringConfig:
     global _default_config
     if _default_config is None:
         _default_config = MonitoringConfig(config_file)

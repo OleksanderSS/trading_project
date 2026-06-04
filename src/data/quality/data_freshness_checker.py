@@ -3,10 +3,9 @@ Data Freshness Checker
 Monitors data lag and ensures data is up-to-date.
 """
 
-import pandas as pd
-import logging
-from typing import Dict, Optional
 from datetime import datetime, timedelta
+
+import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
@@ -16,10 +15,10 @@ logger = ProjectLogger.get_logger("DataFreshnessChecker")
 class DataFreshnessChecker:
     """
     Checks data freshness and alerts if data is stale.
-    
+
     Audit Point: DATA LAYER → Data Freshness
     """
-    
+
     def __init__(
         self,
         warning_threshold_hours: float = 1.0,
@@ -27,7 +26,7 @@ class DataFreshnessChecker:
     ):
         """
         Initialize freshness checker.
-        
+
         Args:
             warning_threshold_hours: Warn if data older than this (hours)
             error_threshold_hours: Error if data older than this (hours)
@@ -42,25 +41,25 @@ class DataFreshnessChecker:
             'last_data_time': None,
             'last_lag_hours': None
         }
-    
+
     def check_freshness(
         self,
         df: pd.DataFrame,
         timestamp_column: str = 'timestamp'
-    ) -> Dict[str, any]:
+    ) -> dict[str, any]:
         """
         Check data freshness and return metrics.
-        
+
         Args:
             df: DataFrame with timestamp column
             timestamp_column: Name of timestamp column
-            
+
         Returns:
             Dict with freshness metrics and status
         """
         self.metrics['checks_performed'] += 1
         self.metrics['last_check_time'] = datetime.now()
-        
+
         if df.empty:
             logger.error("❌ Cannot check freshness: DataFrame is empty")
             return {
@@ -68,7 +67,7 @@ class DataFreshnessChecker:
                 'message': 'Empty DataFrame',
                 'lag_hours': None
             }
-        
+
         if timestamp_column not in df.columns:
             logger.error(f"❌ Timestamp column '{timestamp_column}' not found in DataFrame")
             return {
@@ -76,7 +75,7 @@ class DataFreshnessChecker:
                 'message': f'Column {timestamp_column} not found',
                 'lag_hours': None
             }
-        
+
         # Get latest timestamp
         try:
             latest_timestamp = pd.to_datetime(df[timestamp_column]).max()
@@ -91,13 +90,13 @@ class DataFreshnessChecker:
                 'message': f'Timestamp parsing error: {e}',
                 'lag_hours': None
             }
-        
+
         # Calculate lag
         now = pd.Timestamp.now()  # This is tz-naive by default
         lag = now - latest_timestamp
         lag_hours = lag.total_seconds() / 3600
         self.metrics['last_lag_hours'] = lag_hours
-        
+
         # Determine status
         if lag > self.error_threshold:
             self.metrics['errors_issued'] += 1
@@ -114,7 +113,7 @@ class DataFreshnessChecker:
                 'latest_timestamp': latest_timestamp,
                 'current_time': now
             }
-        
+
         elif lag > self.warning_threshold:
             self.metrics['warnings_issued'] += 1
             logger.warning(
@@ -129,7 +128,7 @@ class DataFreshnessChecker:
                 'latest_timestamp': latest_timestamp,
                 'current_time': now
             }
-        
+
         else:
             logger.info(f"✅ Data is fresh: {lag_hours:.2f} hours old")
             return {
@@ -139,11 +138,11 @@ class DataFreshnessChecker:
                 'latest_timestamp': latest_timestamp,
                 'current_time': now
             }
-    
-    def get_metrics(self) -> Dict[str, any]:
+
+    def get_metrics(self) -> dict[str, any]:
         """Get freshness checker metrics."""
         return self.metrics.copy()
-    
+
     def reset_metrics(self):
         """Reset metrics counters."""
         self.metrics = {
@@ -162,16 +161,16 @@ def check_data_freshness(
     timestamp_column: str = 'timestamp',
     warning_threshold_hours: float = 1.0,
     error_threshold_hours: float = 24.0
-) -> Dict[str, any]:
+) -> dict[str, any]:
     """
     Quick function to check data freshness.
-    
+
     Args:
         df: DataFrame with timestamp column
         timestamp_column: Name of timestamp column
         warning_threshold_hours: Warn if older than this
         error_threshold_hours: Error if older than this
-        
+
     Returns:
         Freshness check result
     """

@@ -1,19 +1,19 @@
-from typing import Dict, Any, Optional
-import logging
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("WeightStabilizer")
 
 class WeightStabilizer:
     """Provides methods to stabilize weight changes."""
-    
+
     def __init__(self, config: Any):
         self.logger = logger
         self.config = config
 
-    def apply_constrained_stabilization(self, 
-                                      proposed_weights: Dict[str, float], 
-                                      last_weights: Dict[str, float]) -> Dict[str, float]:
+    def apply_constrained_stabilization(self,
+                                      proposed_weights: dict[str, float],
+                                      last_weights: dict[str, float]) -> dict[str, float]:
         """Limit weight changes to a maximum allowed value per update."""
         stabilized = {}
         for model_name, weight in proposed_weights.items():
@@ -25,10 +25,10 @@ class WeightStabilizer:
                 stabilized[model_name] = weight
         return self._normalize(stabilized)
 
-    def apply_exponential_smoothing(self, 
-                                  proposed_weights: Dict[str, float], 
-                                  last_weights: Dict[str, float], 
-                                  alpha: float = 0.7) -> Dict[str, float]:
+    def apply_exponential_smoothing(self,
+                                  proposed_weights: dict[str, float],
+                                  last_weights: dict[str, float],
+                                  alpha: float = 0.7) -> dict[str, float]:
         """Apply EMA to weights."""
         smoothed = {}
         for model_name, weight in proposed_weights.items():
@@ -36,10 +36,10 @@ class WeightStabilizer:
             smoothed[model_name] = alpha * weight + (1 - alpha) * last_weight
         return self._normalize(smoothed)
 
-    def apply_volatility_based_stabilization(self, 
-                                           proposed_weights: Dict[str, float], 
-                                           last_weights: Dict[str, float],
-                                           model_volatilities: Dict[str, float]) -> Dict[str, float]:
+    def apply_volatility_based_stabilization(self,
+                                           proposed_weights: dict[str, float],
+                                           last_weights: dict[str, float],
+                                           model_volatilities: dict[str, float]) -> dict[str, float]:
         """Adjust constraints based on historical volatility."""
         stabilized = {}
         for model_name, weight in proposed_weights.items():
@@ -53,6 +53,6 @@ class WeightStabilizer:
                 stabilized[model_name] = weight
         return self._normalize(stabilized)
 
-    def _normalize(self, weights: Dict[str, float]) -> Dict[str, float]:
+    def _normalize(self, weights: dict[str, float]) -> dict[str, float]:
         total = sum(weights.values())
         return {m: w/total for m, w in weights.items()} if total > 0 else weights

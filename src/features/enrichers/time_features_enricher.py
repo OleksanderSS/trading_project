@@ -1,8 +1,11 @@
 import logging
 from typing import Any
+
 import pandas as pd
+
 from src.features.enrichers.base import BaseEnricher
 from src.features.utils.time_utils import add_time_features
+
 
 class TimeFeaturesEnricher(BaseEnricher):
     """

@@ -1,5 +1,6 @@
 
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("IndicatorPredictionCalculator")
@@ -23,6 +24,6 @@ class IndicatorPredictionCalculator:
         if indicator_col not in df.columns:
             logger.warning(f"Indicator column '{indicator_col}' not found for target generation. Returning NaNs.")
             return pd.Series(index=df.index, dtype=float)
-            
+
         target_series = df[indicator_col].shift(shift)
         return target_series

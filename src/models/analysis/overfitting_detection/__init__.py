@@ -1,7 +1,7 @@
-from .manager import OverfittingDetector
-from .config import OverfittingConfig
-from .metrics import OverfittingMetrics
 from .analyzer import OverfittingAnalyzer
+from .config import OverfittingConfig
+from .manager import OverfittingDetector
+from .metrics import OverfittingMetrics
 from .visualizer import OverfittingVisualizer
 
 __all__ = [

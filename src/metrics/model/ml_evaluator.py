@@ -1,7 +1,19 @@
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, List, Union
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, log_loss
+from sklearn.metrics import (
+    accuracy_score,
+    f1_score,
+    log_loss,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
+    roc_auc_score,
+)
+
 from src.core.logging.logger import ProjectLogger
 from src.metrics.base import BaseMetricCalculator
 
@@ -29,11 +41,11 @@ class MLEvaluator(BaseMetricCalculator):
             return False
         return True
 
-    def calculate(self, y_true: Any, y_pred: Any, task_type: Optional[str]=
-        None, **kwargs) ->Dict[str, float]:
+    def calculate(self, y_true: Any, y_pred: Any, task_type: str | None=
+        None, **kwargs) ->dict[str, float]:
         """
         Розраховує ML метрики на основі типу задачі.
-        
+
         Args:
             y_true: Істинні значення.
             y_pred: Прогнозовані значення.
@@ -65,7 +77,7 @@ class MLEvaluator(BaseMetricCalculator):
             return {}
 
     def calculate_regression_metrics(self, y_true: np.ndarray, y_pred: np.
-        ndarray) ->Dict[str, float]:
+        ndarray) ->dict[str, float]:
         """Розраховує метрики регресії."""
         mse = mean_squared_error(y_true, y_pred)
         return {'MAE': float(mean_absolute_error(y_true, y_pred)), 'MSE':
@@ -73,7 +85,7 @@ class MLEvaluator(BaseMetricCalculator):
             y_true, y_pred))}
 
     def calculate_classification_metrics(self, y_true: np.ndarray, y_pred:
-        np.ndarray, y_prob: Optional[np.ndarray]=None) ->Dict[str, float]:
+        np.ndarray, y_prob: np.ndarray | None=None) ->dict[str, float]:
         """Розраховує метрики класифікації."""
         metrics = {'Accuracy': float(accuracy_score(y_true, y_pred)),
             'Precision': float(precision_score(y_true, y_pred, average=
@@ -92,7 +104,7 @@ class MLEvaluator(BaseMetricCalculator):
         return metrics
 
     def _calculate_probabilistic_metrics(self, y_true: np.ndarray, y_pred:
-        np.ndarray, y_prob: Optional[np.ndarray]=None) ->Dict[str, float]:
+        np.ndarray, y_prob: np.ndarray | None=None) ->dict[str, float]:
         """Розраховує імовірнісні метрики (ROC AUC, Log Loss)."""
         probs = y_prob if y_prob is not None else y_pred
         try:
@@ -114,8 +126,7 @@ class MLEvaluator(BaseMetricCalculator):
             return 'regression'
 
 
-def calculate_all_metrics(y_true: Any, y_pred: Any, task_type: Optional[str
-    ]=None, **kwargs) ->Dict[str, float]:
+def calculate_all_metrics(y_true: Any, y_pred: Any, task_type: str | None=None, **kwargs) ->dict[str, float]:
     """Глобальна функція-обгортка для сумісності з іншими модулями."""
     evaluator = MLEvaluator()
     return evaluator.calculate(y_true, y_pred, task_type=task_type, **kwargs)

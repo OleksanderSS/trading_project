@@ -4,16 +4,18 @@ Aggregates predictions from multiple heterogeneous models using an ensemble meta
 or regime-aware weighted averaging.
 """
 import logging
-import pandas as pd
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.core.utils.prediction_utils import normalize_prediction
-from src.models.dean.dean_bootstrap_system import get_dean_system
 from src.ensembling.stacked_ensemble import StackedEnsemble
-from src.config.unified_config_manager import get_current_config
+from src.models.dean.dean_bootstrap_system import get_dean_system
 
 
 @dataclass
@@ -24,7 +26,7 @@ class ConsensusReport:
     confidence: float
     market_regime: str
     context_fingerprint: str
-    model_contributions: Dict[str, float]
+    model_contributions: dict[str, float]
     knn_adjustment: float
     critic_score: float
     blocked_by_critic: bool
@@ -33,14 +35,14 @@ class ConsensusReport:
 
 class ConsensusEngine:
     """
-    The central decision node of the architecture. 
-    Aggregates predictions using a trained meta-model, 
+    The central decision node of the architecture.
+    Aggregates predictions using a trained meta-model,
     cross-references with historical KNN patterns, and applies Critic risk filters.
     """
 
     def __init__(self, experience_diary: Any, threshold_analyzer: Any,
-        config_manager: Optional[Any]=None, meta_model_path: Optional[str]=
-        None, live_ensemble: Optional[Any]=None):
+        config_manager: Any | None=None, meta_model_path: str | None=
+        None, live_ensemble: Any | None=None):
         """Initializes the ConsensusEngine with its required dependencies."""
         self.config_manager = config_manager or get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
@@ -69,8 +71,8 @@ class ConsensusEngine:
                 f'Meta-model not found at {meta_model_path}. Falling back to live-adaptive ensembling.'
                 )
 
-    def generate_consensus(self, model_predictions: Dict[str, float],
-        context_data: Dict[str, Any], knn_results: Optional[Dict[str, Any]]
+    def generate_consensus(self, model_predictions: dict[str, float],
+        context_data: dict[str, Any], knn_results: dict[str, Any] | None
         =None) ->ConsensusReport:
         """
         Processes predictions from all architectures to reach a single unified trade decision.
@@ -106,8 +108,8 @@ class ConsensusEngine:
             critic_score, blocked_by_critic=blocked_by_critic)
         return report
 
-    def _predict_with_meta_model(self, model_predictions: Dict[str, float],
-        context_data: Dict[str, Any], regime: str) ->Tuple[float, Dict[str,
+    def _predict_with_meta_model(self, model_predictions: dict[str, float],
+        context_data: dict[str, Any], regime: str) ->tuple[float, dict[str,
         float]]:
         """Predict consensus score using the trained meta-model."""
         if self.meta_model is None:
@@ -125,13 +127,13 @@ class ConsensusEngine:
         contributions = ensemble_result.active_weights
         return raw_score, contributions
 
-    def _predict_with_weighted_aggregation(self, model_predictions: Dict[
-        str, float], fingerprint: str) ->Tuple[float, Dict[str, float]]:
+    def _predict_with_weighted_aggregation(self, model_predictions: dict[
+        str, float], fingerprint: str) ->tuple[float, dict[str, float]]:
         """Predict consensus score using contextual weighted averaging."""
         weights = self.diary.get_contextual_model_weights(fingerprint)
         weighted_sum = 0.0
         total_weight = 0.0
-        contributions: Dict[str, float] = {}
+        contributions: dict[str, float] = {}
         for model_id, pred in model_predictions.items():
             pred_value = self._safe_normalize_prediction(model_id, pred)
             w = weights.get(model_id, 1.0)
@@ -151,8 +153,7 @@ class ConsensusEngine:
                 f'Normalization failed for {model_id}: {e}. Defaulting to 0.0')
             return 0.0
 
-    def _apply_knn_adjustment(self, raw_score: float, knn_results: Optional
-        [Dict[str, Any]]) ->Tuple[float, float]:
+    def _apply_knn_adjustment(self, raw_score: float, knn_results: dict[str, Any] | None) ->tuple[float, float]:
         """Adjust raw score using KNN reversal probability if available."""
         knn_adjustment = 1.0
         if not knn_results or 'reversal_probability' not in knn_results:
@@ -161,7 +162,7 @@ class ConsensusEngine:
         knn_adjustment = 1.0 - reversal_prob
         return raw_score * knn_adjustment, knn_adjustment
 
-    def _get_min_confidence_threshold(self, context_data: Dict[str, Any]
+    def _get_min_confidence_threshold(self, context_data: dict[str, Any]
         ) ->float:
         """Get minimum confidence threshold from AdaptiveConfidenceAnalyzer."""
         threshold_report = self.threshold_analyzer.analyze(context_data)
@@ -185,7 +186,7 @@ class ConsensusEngine:
         return max(0.01, abs(signal_threshold))
 
     def _log_consensus_inference(self, raw_score: float, normalized_score:
-        float, signal_threshold: float, context_data: Dict[str, Any]) ->None:
+        float, signal_threshold: float, context_data: dict[str, Any]) ->None:
         """Log decision diagnostics."""
         self.logger.info(
             f"[CONSENSUS] Inference: raw={raw_score:.4f} → normalized={normalized_score:.4f}, threshold={signal_threshold:.4f}, asset={context_data.get('ticker')}"
@@ -200,8 +201,8 @@ class ConsensusEngine:
             return 'SELL'
         return 'HOLD'
 
-    def _apply_critic_filter(self, initial_signal: str, context_data: Dict[
-        str, Any]) ->Tuple[str, float, bool]:
+    def _apply_critic_filter(self, initial_signal: str, context_data: dict[
+        str, Any]) ->tuple[str, float, bool]:
         """Apply DEAN critic and Anomaly hard-block to potentially block risky decisions."""
         final_signal = initial_signal
         blocked_by_critic = False
@@ -231,12 +232,12 @@ class ConsensusEngine:
             blocked_by_critic = True
         return final_signal, critic_score, blocked_by_critic
 
-    def get_ensemble_summary(self, reports: List[ConsensusReport]) ->Dict[
+    def get_ensemble_summary(self, reports: list[ConsensusReport]) ->dict[
         str, Any]:
         """Analyzes historical reports to determine architectural leaders in the current regime."""
         if not reports:
             return {}
-        leaderboard: Dict[str, float] = {}
+        leaderboard: dict[str, float] = {}
         for r in reports:
             for arch, contrib in r.model_contributions.items():
                 leaderboard[arch] = leaderboard.get(arch, 0.0) + abs(contrib)
@@ -254,11 +255,11 @@ class EnhancedConsensusEngine(ConsensusEngine):
         self.logger = ProjectLogger.get_logger('EnhancedConsensusEngine')
         self.regime_weights = {'trending_up': {'transformer': 0.35, 'lstm':
             0.25, 'cnn': 0.2, 'linear': 0.1, 'catboost': 0.1}, 'ranging': {
-            'linear': 0.3, 'catboost': 0.25, 'knn': 0.2, 'transformer': 
-            0.15, 'lstm': 0.1}, 'volatile': {'cnn': 0.3, 'transformer': 
+            'linear': 0.3, 'catboost': 0.25, 'knn': 0.2, 'transformer':
+            0.15, 'lstm': 0.1}, 'volatile': {'cnn': 0.3, 'transformer':
             0.25, 'lstm': 0.2, 'linear': 0.15, 'catboost': 0.1}}
 
-    def _determine_regime(self, market_context: Dict[str, Any]) ->str:
+    def _determine_regime(self, market_context: dict[str, Any]) ->str:
         """Identifies current market regime using provided technical context."""
         try:
             volatility = market_context.get('volatility', 0.01)
@@ -276,8 +277,8 @@ class EnhancedConsensusEngine(ConsensusEngine):
                 )
             return 'ranging'
 
-    def generate_weighted_ensemble(self, predictions_dict: Dict[str, float],
-        market_context: Dict[str, Any]) ->Dict[str, Any]:
+    def generate_weighted_ensemble(self, predictions_dict: dict[str, float],
+        market_context: dict[str, Any]) ->dict[str, Any]:
         """Generates a weighted ensemble score based on active market regime."""
         regime = self._determine_regime(market_context)
         weights = self.regime_weights.get(regime, self.regime_weights[

@@ -14,6 +14,8 @@ secrets/
 logs/
 cache/
 backups/
+# Keep src/core/cache/ for cache manager module
+!src/core/cache/
 results/
 monitoring_reports/
 src/trained_models/

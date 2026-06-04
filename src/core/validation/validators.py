@@ -6,12 +6,12 @@ and optimized vector operations in Pandas for large DataFrame validation.
 
 import re
 from datetime import date, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 import numpy as np
 import pandas as pd
-from pydantic import BaseModel, Field, ValidationError, model_validator, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
 from src.core.logging.logger import ProjectLogger
 
@@ -24,13 +24,13 @@ class DataValidationError(Exception):
 
 # --- Pydantic models for record-level validation ---
 
-class TradingAction(str, Enum):
+class TradingAction(StrEnum):
     """Allowed trading actions"""
     BUY = "BUY"
     SELL = "SELL"
     HOLD = "HOLD"
 
-class Timeframe(str, Enum):
+class Timeframe(StrEnum):
     """Allowed timeframes"""
     MINUTE_1 = "1m"
     MINUTE_5 = "5m"
@@ -41,14 +41,14 @@ class Timeframe(str, Enum):
     DAY_1 = "1d"
     WEEK_1 = "1w"
 
-class OrderType(str, Enum):
+class OrderType(StrEnum):
     """Order types"""
     MARKET = "MARKET"
     LIMIT = "LIMIT"
     STOP = "STOP"
     STOP_LIMIT = "STOP_LIMIT"
 
-class SignalStrength(str, Enum):
+class SignalStrength(StrEnum):
     """Signal strength levels"""
     WEAK = "WEAK"
     MODERATE = "MODERATE"

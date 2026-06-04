@@ -7,6 +7,7 @@ or a simulated paper trading account.
 """
 
 from dataclasses import dataclass
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("Trader")
@@ -34,7 +35,7 @@ class Trader:
         else:
             self.logger.warning("Trader initialized in LIVE TRADING mode. Real orders will be placed.")
             # In a real scenario, you would initialize the broker connection here.
-            # e.g., self.broker = Alpaca(...) 
+            # e.g., self.broker = Alpaca(...)
 
     def execute_order(self, order: TradeOrder) -> bool:
         """

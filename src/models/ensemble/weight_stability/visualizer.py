@@ -1,34 +1,36 @@
-import numpy as np
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg", force=True)
+from typing import Any
+
 import matplotlib.pyplot as plt
-from typing import Dict, List, Any, Optional
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("WeightStabilityVisualizer")
 
 class WeightStabilityVisualizer:
     """Provides visualization for weight stability metrics."""
-    
+
     def __init__(self, config: Any):
         self.logger = logger
         self.config = config
 
-    def plot_stability_metrics(self, 
-                             weight_history: List[Dict[str, Any]], 
-                             weight_changes: List[Dict[str, float]],
-                             current_models: List[str],
-                             save_path: Optional[str] = None) -> None:
+    def plot_stability_metrics(self,
+                             weight_history: list[dict[str, Any]],
+                             weight_changes: list[dict[str, float]],
+                             current_models: list[str],
+                             save_path: str | None = None) -> None:
         """Plot stability metrics over time."""
         try:
             if len(weight_history) < 2:
                 return
-            
+
             timestamps = [record['timestamp'] for record in weight_history]
             fig, axes = plt.subplots(2, 2, figsize=(15, 10))
             fig.suptitle('Weight Stability Metrics Over Time')
-            
+
             for model in current_models:
                 weights = [record.get('weights', {}).get(model, np.nan) for record in weight_history]
                 axes[0, 0].plot(timestamps, weights, marker='o', label=model)
@@ -65,7 +67,7 @@ class WeightStabilityVisualizer:
 
             for axis in axes.flatten():
                 axis.tick_params(axis='x', rotation=30)
-            
+
             plt.tight_layout()
             if save_path:
                 plt.savefig(save_path, dpi=300, bbox_inches='tight')

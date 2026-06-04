@@ -4,9 +4,9 @@ Drift Monitoring Package
 Components for prediction drift detection and monitoring.
 """
 
+from .alert_system import AlertSystem, get_alert_system
 from .drift_calculator import DriftCalculator, get_drift_calculator
 from .drift_visualizer import DriftVisualizer, get_drift_visualizer
-from .alert_system import AlertSystem, get_alert_system
 
 __all__ = [
     'DriftCalculator',

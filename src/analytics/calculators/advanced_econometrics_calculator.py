@@ -1,14 +1,16 @@
 """
 Advanced econometric tools for comprehensive causal analysis.
 """
-import pandas as pd
-import numpy as np
 import logging
-from typing import Dict, List, Any, Optional
-from statsmodels.tsa.stattools import grangercausalitytests, adfuller
-from statsmodels.tsa.api import VAR
-from statsmodels.tsa.vector_ar.vecm import coint_johansen
+from typing import Any
+
+import numpy as np
+import pandas as pd
 from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import adfuller, grangercausalitytests
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,18 +19,18 @@ class AdvancedEconometricsCalculator:
 
     @staticmethod
     def run_comprehensive_causal_analysis(df: pd.DataFrame, target_col: str,
-        predictor_cols: List[str], maxlag: int=10, lag_selection: str='aic'
-        ) ->Dict[str, Any]:
+        predictor_cols: list[str], maxlag: int=10, lag_selection: str='aic'
+        ) ->dict[str, Any]:
         """
         Comprehensive causal analysis with Granger tests, stationarity, cointegration, and validation.
-        
+
         Args:
             df: DataFrame with time series data
             target_col: Target variable column name
             predictor_cols: List of predictor variable column names
             maxlag: Maximum lag to consider
             lag_selection: Lag selection method ('aic', 'bic', 'hqic')
-            
+
         Returns:
             Dictionary with comprehensive causality analysis results
         """
@@ -46,7 +48,7 @@ class AdvancedEconometricsCalculator:
 
     @staticmethod
     def _test_single_predictor_comprehensive(df: pd.DataFrame, target_col:
-        str, predictor_col: str, maxlag: int, lag_selection: str) ->Dict[
+        str, predictor_col: str, maxlag: int, lag_selection: str) ->dict[
         str, Any]:
         """Comprehensive Granger causality test with optimal lag selection and validation."""
         if not AdvancedEconometricsCalculator._validate_columns(df,
@@ -89,7 +91,7 @@ class AdvancedEconometricsCalculator:
 
     @staticmethod
     def _test_stationarity(test_data: pd.DataFrame, target_col: str,
-        predictor_col: str) ->Dict[str, Any]:
+        predictor_col: str) ->dict[str, Any]:
         """Test stationarity of both series using ADF test."""
         results = {}
         for col in [target_col, predictor_col]:
@@ -97,7 +99,7 @@ class AdvancedEconometricsCalculator:
                 adf_result = adfuller(test_data[col])
                 results[col] = {'adf_statistic': adf_result[0], 'p_value':
                     adf_result[1], 'critical_values': adf_result[4],
-                    'is_stationary': adf_result[1] < 0.05, 'is_i1': not 
+                    'is_stationary': adf_result[1] < 0.05, 'is_i1': not
                     adf_result[1] < 0.05}
             except Exception as e:
                 logger.error(f"Stationarity test failed for {col}: {e}", exc_info=True)
@@ -113,7 +115,7 @@ class AdvancedEconometricsCalculator:
             model = VAR(test_data)
             lag_results = model.select_order(maxlags=maxlag)
             if hasattr(lag_results, lag_selection):
-                return int(lag_results.aic if lag_selection == 'aic' else 
+                return int(lag_results.aic if lag_selection == 'aic' else
                     lag_results.bic if lag_selection == 'bic' else
                     lag_results.hqic)
             else:
@@ -123,7 +125,7 @@ class AdvancedEconometricsCalculator:
             return 2
 
     @staticmethod
-    def _run_granger_with_validation(test_data: pd.DataFrame, lag: int) ->Dict[
+    def _run_granger_with_validation(test_data: pd.DataFrame, lag: int) ->dict[
         str, Any]:
         """Run Granger causality test with additional validation."""
         try:
@@ -139,7 +141,7 @@ class AdvancedEconometricsCalculator:
             return {'p_value': min_p_value, 'best_lag': best_lag,
                 'all_p_values': f_p_values, 'residual_diagnostics': {
                 'ljung_box_pvalue': lb_test['lb_pvalue'].iloc[0],
-                'residuals_autocorrelated': lb_test['lb_pvalue'].iloc[0] < 
+                'residuals_autocorrelated': lb_test['lb_pvalue'].iloc[0] <
                 0.05}, 'is_valid': min_p_value < 0.05 and lb_test[
                 'lb_pvalue'].iloc[0] > 0.05}
         except Exception as e:
@@ -147,7 +149,7 @@ class AdvancedEconometricsCalculator:
             return {'error': str(e), 'p_value': 1.0, 'is_valid': False}
 
     @staticmethod
-    def _test_cointegration(test_data: pd.DataFrame) ->Dict[str, Any]:
+    def _test_cointegration(test_data: pd.DataFrame) ->dict[str, Any]:
         """Test for cointegration between two I(1) series."""
         try:
             result = coint_johansen(test_data, det_order=0, k_ar_diff=1)
@@ -161,7 +163,7 @@ class AdvancedEconometricsCalculator:
 
     @staticmethod
     def _calculate_impulse_response(test_data: pd.DataFrame, lag: int,
-        periods: int=10) ->Dict[str, Any]:
+        periods: int=10) ->dict[str, Any]:
         """Calculate impulse response functions."""
         try:
             model = VAR(test_data)
@@ -176,7 +178,7 @@ class AdvancedEconometricsCalculator:
 
     @staticmethod
     def _calculate_variance_decomposition(test_data: pd.DataFrame, lag: int,
-        periods: int=10) ->Dict[str, Any]:
+        periods: int=10) ->dict[str, Any]:
         """Calculate forecast error variance decomposition."""
         try:
             model = VAR(test_data)
@@ -189,8 +191,8 @@ class AdvancedEconometricsCalculator:
             return {'error': str(e)}
 
     @staticmethod
-    def _calculate_causality_strength(granger_results: Dict[str, Any],
-        stationarity: Dict[str, Any], cointegration: Dict[str, Any]) ->float:
+    def _calculate_causality_strength(granger_results: dict[str, Any],
+        stationarity: dict[str, Any], cointegration: dict[str, Any]) ->float:
         """Calculate comprehensive causality strength metric."""
         base_strength = 1 - granger_results.get('p_value', 1.0)
         stationarity_bonus = 0.0
@@ -200,15 +202,15 @@ class AdvancedEconometricsCalculator:
         if cointegration and cointegration.get('is_cointegrated', False):
             cointegration_bonus += 0.2
         residual_bonus = 0.0
-        if granger_results.get('residual_diagnostics', {}).get(
-            'residuals_autocorrelated') == False:
+        if not granger_results.get('residual_diagnostics', {}).get(
+            'residuals_autocorrelated'):
             residual_bonus += 0.1
         total_strength = (base_strength + stationarity_bonus +
             cointegration_bonus + residual_bonus)
         return float(min(total_strength, 1.0))
 
     @staticmethod
-    def _generate_causality_summary(causality_results: Dict[str, Any]) ->Dict[
+    def _generate_causality_summary(causality_results: dict[str, Any]) ->dict[
         str, Any]:
         """Generate summary statistics for causality analysis."""
         if not causality_results:
@@ -226,7 +228,7 @@ class AdvancedEconometricsCalculator:
             'average_causality_strength': avg_strength,
             'strongest_predictor': max(results.keys(), key=lambda k:
             results[k].get('causality_strength', 0)) if results else None,
-            'recommendation': 'Strong causal relationships found' if 
+            'recommendation': 'Strong causal relationships found' if
             significant_count > 0 else 'No significant causal relationships'}
 
     @staticmethod

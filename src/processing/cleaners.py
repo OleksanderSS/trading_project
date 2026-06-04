@@ -1,30 +1,31 @@
-import logging
-import pandas as pd
-import numpy as np
 import hashlib
+import logging
 import re
-from typing import List, Dict, Optional, Union
+
+import numpy as np
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('DataCleaner')
 
 
 class DataCleaner:
     """
-    A utility class providing static methods for data sanitization and cleaning 
+    A utility class providing static methods for data sanitization and cleaning
     of market and news data before feature engineering.
     """
 
     @staticmethod
-    def remove_outliers_zscore(df: pd.DataFrame, columns: Union[str, List[
-        str]]='close', threshold: float=3.0) ->pd.DataFrame:
+    def remove_outliers_zscore(df: pd.DataFrame, columns: str | list[str]='close', threshold: float=3.0) ->pd.DataFrame:
         """
         Removes outliers from specified columns based on Z-score calculated on rolling log returns.
-        
+
         Args:
             df: Input DataFrame.
             columns: Column name or list of columns to analyze.
             threshold: Z-score threshold for outlier detection (default 3.0).
-            
+
         Returns:
             DataFrame with rows containing outliers in specified columns removed.
         """
@@ -95,7 +96,7 @@ class DataCleaner:
         return df_out
 
     @staticmethod
-    def validate_schema(df: pd.DataFrame, required_cols: List[str]) ->bool:
+    def validate_schema(df: pd.DataFrame, required_cols: list[str]) ->bool:
         """
         Validates if the DataFrame contains all required columns.
         """
@@ -133,7 +134,7 @@ def harmonize_dataframe(df: pd.DataFrame, dropna_cols: bool=False
     return df
 
 
-def safe_fill(df: pd.DataFrame, zero_fill_cols: Optional[List[str]]=None,
+def safe_fill(df: pd.DataFrame, zero_fill_cols: list[str] | None=None,
     unknown_fill_val: str='unknown') ->pd.DataFrame:
     """
     Safely fills NaN values based on column types and specific column requirements.
@@ -201,7 +202,7 @@ def sanitize_dataframe_timezone(df: pd.DataFrame, label: str='sanitize_df'
     return df
 
 
-def generate_content_hash(df: pd.DataFrame, cols_to_hash: Optional[List[str]]=None) ->pd.Series:
+def generate_content_hash(df: pd.DataFrame, cols_to_hash: list[str] | None=None) ->pd.Series:
     """
     Generates hashes for rows based on content. Optimized for performance.
     """
@@ -223,7 +224,7 @@ def generate_content_hash(df: pd.DataFrame, cols_to_hash: Optional[List[str]]=No
     return hashes
 
 
-def _apply_column_mapping(normalized: pd.DataFrame, column_mapping: Dict[
+def _apply_column_mapping(normalized: pd.DataFrame, column_mapping: dict[
     str, str]) ->None:
     """Apply column mapping to normalized DataFrame."""
     for old_col, new_col in column_mapping.items():
@@ -232,7 +233,7 @@ def _apply_column_mapping(normalized: pd.DataFrame, column_mapping: Dict[
 
 
 def _add_missing_columns(normalized: pd.DataFrame, source_type: str,
-    required_columns: List[str]) ->None:
+    required_columns: list[str]) ->None:
     """Add missing required columns with defaults."""
     for col in required_columns:
         if col not in normalized.columns:
@@ -254,7 +255,7 @@ def _process_published_at(normalized: pd.DataFrame) ->None:
 
 
 def normalize_to_unified_schema(df: pd.DataFrame, source_type: str,
-    required_columns: List[str], column_mapping: Dict[str, str]
+    required_columns: list[str], column_mapping: dict[str, str]
     ) ->pd.DataFrame:
     """
     Normalizes a DataFrame to a standard project-wide schema using dynamic mapping.
@@ -272,7 +273,7 @@ def normalize_to_unified_schema(df: pd.DataFrame, source_type: str,
     return normalized[required_columns]
 
 
-def merge_and_deduplicate(dataframes: List[pd.DataFrame], hash_col: str='hash'
+def merge_and_deduplicate(dataframes: list[pd.DataFrame], hash_col: str='hash'
     ) ->pd.DataFrame:
     """
     Merges DataFrames and removes duplicates based on a hash column.
@@ -293,7 +294,7 @@ def merge_and_deduplicate(dataframes: List[pd.DataFrame], hash_col: str='hash'
     return merged
 
 
-def filter_by_terms(df: pd.DataFrame, terms: List[str], search_col: str=
+def filter_by_terms(df: pd.DataFrame, terms: list[str], search_col: str=
     'description') ->pd.DataFrame:
     """
     Filters a DataFrame based on search terms in a specific column.

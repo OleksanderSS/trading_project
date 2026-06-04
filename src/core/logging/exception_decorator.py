@@ -1,6 +1,6 @@
 import functools
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 
 def log_and_raise(logger: logging.Logger):

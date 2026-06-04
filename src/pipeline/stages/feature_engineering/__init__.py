@@ -1,6 +1,6 @@
-from .orchestrator import FeatureEngineeringStage
-from .guards import FeatureGuards
 from .enricher import FeatureEnricher
+from .guards import FeatureGuards
+from .orchestrator import FeatureEngineeringStage
 from .targets import TargetGenerator
 
 __all__ = [

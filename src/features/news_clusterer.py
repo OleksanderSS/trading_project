@@ -2,22 +2,24 @@
 News Clusterer
 Кластеризує схожі новини для пришвидшення тренування без втрати якості
 """
-import pandas as pd
-import numpy as np
-from typing import List, Dict, Optional, Tuple, Any
-from datetime import datetime
-from pathlib import Path
 import json
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('NewsClusterer')
 
 
 class NewsClusterer:
     """
     Кластеризує схожі новини для зменшення обсягу даних без втрати якості
-    
+
     Приклад:
-    - "Fed raises rates by 0.25%" 
+    - "Fed raises rates by 0.25%"
     - "Federal Reserve hikes interest rates"
     - "Fed increases rates"
     → Всі в один кластер, вибирається 1 представник
@@ -69,12 +71,12 @@ class NewsClusterer:
         return_representatives: bool=True) ->pd.DataFrame:
         """
         Кластеризувати новини та повернути датасет з cluster_id
-        
+
         Args:
             news_df: DataFrame з новинами
             text_column: Назва колонки з текстом новини
             return_representatives: Повернути тільки представників кластерів
-        
+
         Returns:
             DataFrame з додатковою колонкою cluster_id
         """
@@ -104,7 +106,7 @@ class NewsClusterer:
         else:
             return news_df
 
-    def _compute_embeddings(self, texts: List[str]) ->np.ndarray:
+    def _compute_embeddings(self, texts: list[str]) ->np.ndarray:
         """Обчислити ембедінги для текстів"""
         if self.model is None:
             raise ValueError(
@@ -120,7 +122,7 @@ class NewsClusterer:
     def _cluster_embeddings(self, embeddings: np.ndarray) ->np.ndarray:
         """
         Кластеризувати ембедінги
-        
+
         Використовуємо DBSCAN для автоматичного визначення кількості кластерів
         """
         from sklearn.cluster import DBSCAN
@@ -139,10 +141,10 @@ class NewsClusterer:
         return np.asarray(cluster_labels)
 
     def _select_representatives(self, news_df: pd.DataFrame, embeddings: np
-        .ndarray) ->List[int]:
+        .ndarray) ->list[int]:
         """
         Вибрати представників для кожного кластера
-        
+
         Стратегія: вибрати новину найближчу до центроїда кластера
         """
         representatives = []
@@ -160,7 +162,7 @@ class NewsClusterer:
                 representatives.append(cluster_indices[closest_idx])
         return representatives
 
-    def get_cluster_statistics(self, news_df: pd.DataFrame) ->Dict[str, Any]:
+    def get_cluster_statistics(self, news_df: pd.DataFrame) ->dict[str, Any]:
         """Отримати статистику кластеризації"""
         if 'cluster_id' not in news_df.columns:
             return {}
@@ -184,7 +186,7 @@ class NewsClusterer:
             cluster_news = news_df[news_df['cluster_id'] == cluster_id]
             cluster_mapping[int(cluster_id)] = {'size': len(cluster_news),
                 'representative': cluster_news[cluster_news[
-                'is_cluster_representative']].iloc[0]['title'] if 
+                'is_cluster_representative']].iloc[0]['title'] if
                 'is_cluster_representative' in cluster_news.columns else
                 cluster_news.iloc[0]['title'], 'news_titles': cluster_news[
                 'title'].tolist() if 'title' in cluster_news.columns else []}
@@ -197,12 +199,12 @@ def cluster_news_simple(news_df: pd.DataFrame, similarity_threshold: float=
     0.85, text_column: str='title') ->pd.DataFrame:
     """
     Простий інтерфейс для кластеризації новин
-    
+
     Args:
         news_df: DataFrame з новинами
         similarity_threshold: Поріг схожості (0-1)
         text_column: Назва колонки з текстом
-    
+
     Returns:
         DataFrame тільки з представниками кластерів
     """

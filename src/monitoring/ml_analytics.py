@@ -1,18 +1,19 @@
 import logging
-import json
-import numpy as np
-import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score
+from typing import Any
+
 import joblib
-from src.core.logging.logger import ProjectLogger
+import pandas as pd
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+
 from src.analytics.data_managers.model_results_manager import ModelResultsManager as ResultsManager
-from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
+from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
+from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
 from src.utils.artifact_security import resolve_trusted_artifact_path
+
 logger = ProjectLogger.get_logger('MLAnalytics')
 
 
@@ -20,7 +21,7 @@ class MLAnalytics:
     """Machine Learning for analyzing system performance and predicting infrastructure issues."""
 
     def __init__(self, results_manager: ResultsManager, data_manager:
-        Optional[DataManager]=None):
+        DataManager | None=None):
         self.logger = logger
         self.results_manager = results_manager
         self.data_manager = data_manager
@@ -64,7 +65,7 @@ class MLAnalytics:
         except Exception as e:
             logger.error(f'Failed to load monitoring ML models: {e}')
 
-    def train_models(self, force_retrain: bool=False) ->Dict[str, Any]:
+    def train_models(self, force_retrain: bool=False) ->dict[str, Any]:
         """Trains monitoring models on historical system execution logs."""
         try:
             historical_data = self.load_historical_data(days=90)
@@ -91,7 +92,7 @@ class MLAnalytics:
                 exc_info=True)
             return {'status': 'failed', 'error': str(e)}
 
-    def predict_system_issues(self) ->Dict[str, Any]:
+    def predict_system_issues(self) ->dict[str, Any]:
         """Predicts potential system bottlenecks using real-time resource metrics."""
         try:
             health_status = self.resource_monitor.get_health_status()
@@ -123,7 +124,7 @@ class MLAnalytics:
             logger.error(f'Real-time issue prediction failed: {e}')
             return {'status': 'failed', 'error': str(e)}
 
-    def check_model_drift(self, model_name: str, window_days: int=7) ->Dict[
+    def check_model_drift(self, model_name: str, window_days: int=7) ->dict[
         str, Any]:
         """Detects performance degradation by comparing recent vs historical metrics."""
         if not self.data_manager:
@@ -140,7 +141,7 @@ class MLAnalytics:
                 # Fallback to parameterized query via query_data
                 query = "SELECT accuracy, timestamp FROM model_performance_logs WHERE model_id = ?"
                 df = self.data_manager.query_data(query, params=[model_name])
-            
+
             if len(df) < 10:
                 return {'status': 'insufficient_data'}
             df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -149,7 +150,7 @@ class MLAnalytics:
             historical = df[df['timestamp'] < cutoff]['accuracy']
             if recent.empty or historical.empty:
                 return {'status': 'missing_window_data'}
-            
+
             # Mathematical stability check
             hist_std = historical.std()
             if pd.isna(hist_std) or hist_std < 1e-04:
@@ -158,14 +159,14 @@ class MLAnalytics:
             recent_avg = float(recent.mean())
             baseline_avg = float(historical.mean())
             z_score = abs(recent_avg - baseline_avg) / hist_std
-            return {'model': model_name, 'drift_detected': bool(z_score > 
+            return {'model': model_name, 'drift_detected': bool(z_score >
                 2.0), 'z_score': float(z_score), 'recent_avg': recent_avg,
                 'baseline_avg': baseline_avg}
         except Exception as e:
             logger.error(f'Drift detection failed for {model_name}: {e}')
             return {'status': 'error', 'error': str(e)}
 
-    def extract_features_from_metrics(self, metrics: Dict[str, Any]) ->List[
+    def extract_features_from_metrics(self, metrics: dict[str, Any]) ->list[
         float]:
         """Converts raw ResourceMonitor dictionaries into ML feature vectors."""
         try:
@@ -192,11 +193,11 @@ class MLAnalytics:
             return 'medium'
         return 'low'
 
-    def calculate_overall_risk(self, predictions: Dict) ->str:
+    def calculate_overall_risk(self, predictions: dict) ->str:
         probs = [p['probability'] for p in predictions.values()]
         return self.calculate_risk_level(max(probs) if probs else 0.0)
 
-    def detect_anomalies(self, features: List[float]) ->Dict[str, Any]:
+    def detect_anomalies(self, features: list[float]) ->dict[str, Any]:
         if 'anomaly_detector' not in self.models:
             return {'is_anomaly': False, 'score': 0.0}
         score = float(self.models['anomaly_detector'].decision_function([
@@ -205,8 +206,8 @@ class MLAnalytics:
             ] == -1
         return {'is_anomaly': bool(is_anomaly), 'score': score}
 
-    def generate_ml_recommendations(self, predictions: Dict, anomaly: Dict
-        ) ->List[str]:
+    def generate_ml_recommendations(self, predictions: dict, anomaly: dict
+        ) ->list[str]:
         recs = []
         for issue, pred in predictions.items():
             if pred['probability'] > 0.6:
@@ -219,7 +220,7 @@ class MLAnalytics:
                 )
         return recs
 
-    def load_historical_data(self, days: int=90) ->List[Dict[str, Any]]:
+    def load_historical_data(self, days: int=90) ->list[dict[str, Any]]:
         """Loads past execution reports for training data generation."""
         if not self.results_manager:
             return []
@@ -234,8 +235,8 @@ class MLAnalytics:
             raise
         return []
 
-    def prepare_training_data(self, historical_data: List[Dict[str, Any]]
-        ) ->Tuple[pd.DataFrame, pd.DataFrame]:
+    def prepare_training_data(self, historical_data: list[dict[str, Any]]
+        ) ->tuple[pd.DataFrame, pd.DataFrame]:
         """Builds a conservative tabular dataset from historical monitoring records."""
         rows = []
         targets = []
@@ -250,7 +251,7 @@ class MLAnalytics:
         return pd.DataFrame(rows), pd.DataFrame(targets)
 
     def train_problem_predictor(self, features_df: pd.DataFrame, targets_df:
-        pd.DataFrame, problem_type: str, force_retrain: bool=False) ->Dict[
+        pd.DataFrame, problem_type: str, force_retrain: bool=False) ->dict[
         str, Any]:
         """Trains a simple monitoring classifier when enough labeled data exists."""
         if problem_type not in targets_df.columns:
@@ -289,12 +290,12 @@ class MLAnalytics:
         X: pd.DataFrame,
         y: pd.Series,
         test_size: float = 0.2,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
         split_idx = min(max(1, int(len(X) * (1 - test_size))), len(X) - 1)
         return X.iloc[:split_idx], X.iloc[split_idx:], y.iloc[:split_idx], y.iloc[split_idx:]
 
     def train_anomaly_detector(self, features_df: pd.DataFrame,
-        force_retrain: bool=False) ->Dict[str, Any]:
+        force_retrain: bool=False) ->dict[str, Any]:
         """Trains an isolation-forest anomaly detector for infrastructure metrics."""
         if features_df.empty:
             return {'status': 'skipped', 'reason': 'No feature data'}

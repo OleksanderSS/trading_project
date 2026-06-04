@@ -1,4 +1,3 @@
-from typing import Dict, Type
 
 from src.analytics.analyzers.causal_event_finder import CausalEventFinder
 from src.analytics.analyzers.drift_analyzer import DriftAnalyzer
@@ -9,7 +8,7 @@ from src.analytics.context.ensemble_selector import EnsembleSelector
 from src.analytics.interfaces import IAnalyzer
 
 # Registry
-ANALYZER_REGISTRY: Dict[str, Type[IAnalyzer]] = {
+ANALYZER_REGISTRY: dict[str, type[IAnalyzer]] = {
     "drift": DriftAnalyzer,
     "hedge_fund": HedgeFundAnalyzer,
     "causal_event": CausalEventFinder,
@@ -21,7 +20,7 @@ ANALYZER_REGISTRY: Dict[str, Type[IAnalyzer]] = {
 }
 
 
-def get_analyzer(name: str, config: Dict = None) -> IAnalyzer:
+def get_analyzer(name: str, config: dict = None) -> IAnalyzer:
     """Factory method to instantiate an analyzer by name."""
     if name not in ANALYZER_REGISTRY:
         raise ValueError(f"Analyzer '{name}' not found in registry. Available: {list(ANALYZER_REGISTRY.keys())}")

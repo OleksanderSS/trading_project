@@ -1,9 +1,12 @@
 from __future__ import annotations
+
 import logging
 from datetime import datetime
 from typing import Any
+
 import numpy as np
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 from src.core.utils.prediction_utils import normalize_prediction
 from src.risk.elite_risk_metrics import EliteRiskMetrics
@@ -157,15 +160,15 @@ class TradingRecommendationEngine:
         global_regime = 'ranging'
         if features_df is None or features_df.empty:
             return global_regime
-        
+
         try:
             tickers = features_df['ticker'].unique()
             ticker = 'SPY' if 'SPY' in tickers else tickers[0]
             ticker_df = features_df[features_df['ticker'] == ticker] if 'ticker' in features_df.columns else features_df
-            
+
             if 'close' not in ticker_df.columns:
                 return global_regime
-            
+
             returns = (
                 ticker_df['close']
                 .pct_change(fill_method=None)
@@ -176,7 +179,7 @@ class TradingRecommendationEngine:
             if len(returns) > 30 and self.regime_detector is not None:
                 regime_result = self.regime_detector.detect_regime(returns, data_bundle={'prices': ticker_df['close'].values})
                 detected = regime_result.get('regime', 'NORMAL').lower()
-                
+
                 if 'trend' in detected and 'up' in detected:
                     global_regime = 'bull'
                 elif 'trend' in detected and 'down' in detected:
@@ -185,25 +188,25 @@ class TradingRecommendationEngine:
                     global_regime = 'volatile'
                 else:
                     global_regime = 'ranging'
-                
+
                 self.logger.info(f'📊 Dynamically detected global regime: {global_regime} (from {detected})')
         except Exception as e:
             self.logger.warning(f'⚠️ Failed to detect dynamic regime: {e}')
             raise
-        
+
         return global_regime
 
     def _detect_ticker_regime(self, ticker: str, features_df: pd.DataFrame, global_regime: str) -> str:
         """Detect ticker-specific regime."""
         regime = global_regime
-        
+
         if features_df is None or features_df.empty or 'ticker' not in features_df.columns:
             return regime
-        
+
         ticker_df = features_df[features_df['ticker'] == ticker]
         if ticker_df.empty or 'close' not in ticker_df.columns:
             return regime
-        
+
         returns = (
             ticker_df['close']
             .pct_change(fill_method=None)
@@ -213,11 +216,11 @@ class TradingRecommendationEngine:
         )
         if len(returns) <= 30 or self.regime_detector is None:
             return regime
-        
+
         try:
             regime_result = self.regime_detector.detect_regime(returns, data_bundle={'prices': ticker_df['close'].values})
             detected = regime_result.get('regime', 'NORMAL').lower()
-            
+
             if 'trend' in detected and 'up' in detected:
                 regime = 'bull'
             elif 'trend' in detected and 'down' in detected:
@@ -226,26 +229,26 @@ class TradingRecommendationEngine:
                 regime = 'volatile'
             else:
                 regime = 'ranging'
-        except Exception as e:
+        except Exception:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Regime detection failed for {ticker}', exc_info=True)
             raise
-        
+
         return regime
 
     def _compute_adaptive_parameters(self, regime: str, asset_class: str) -> object:
         """Compute adaptive parameters for regime and asset class."""
         if self.param_manager is None:
             return type('P', (), {'buy_threshold': 0.01, 'sell_threshold': -0.01})()
-        
+
         return self.param_manager.compute_adaptive_params(
             regime=MarketRegime(regime.lower()),
             asset_class=AssetClass(asset_class.lower()),
             volatility_percentile=50
         )
 
-    def _build_recommendation(self, ticker: str, pred_value: float, current_price: float, 
-                             news_warning: str, mc_confidence: float, var_95: float, 
+    def _build_recommendation(self, ticker: str, pred_value: float, current_price: float,
+                             news_warning: str, mc_confidence: float, var_95: float,
                              pos_factor: float) -> dict:
         """Build recommendation dictionary."""
         return {
@@ -259,7 +262,7 @@ class TradingRecommendationEngine:
             'champion_model': 'ensemble'
         }
 
-    def _classify_recommendation(self, recommendation: dict, pred_value: float, 
+    def _classify_recommendation(self, recommendation: dict, pred_value: float,
                                 adaptive_params: object, recommendations: dict) -> None:
         """Classify recommendation as buy or sell based on thresholds."""
         if pred_value > adaptive_params.buy_threshold:
@@ -274,26 +277,26 @@ class TradingRecommendationEngine:
         Any], news_impact_scores: dict[str, Any], features_df: (pd.
         DataFrame | None)=None) ->None:
         global_regime = self._detect_global_regime(features_df)
-        
+
         for pred in predictions:
             ticker = pred.get('ticker')
             if not ticker:
                 continue
-            
+
             asset_class = self._determine_asset_class(ticker)
             regime = self._detect_ticker_regime(ticker, features_df, global_regime)
-            
+
             adaptive_params = self._compute_adaptive_parameters(regime, asset_class)
-            
+
             pred_value = self._extract_prediction_value(pred)
             news_warning = self._check_news_warning(ticker, news_impact_scores)
             mc_confidence, var_95, pos_factor = self._validate_with_monte_carlo(ticker)
-            
+
             recommendation = self._build_recommendation(
                 ticker, pred_value, current_prices.get(ticker), news_warning,
                 mc_confidence, var_95, pos_factor
             )
-            
+
             self._classify_recommendation(recommendation, pred_value, adaptive_params, recommendations)
 
     def _extract_prediction_value(self, pred: dict[str, Any]) ->float:
@@ -491,7 +494,7 @@ class TradingRecommendationEngine:
             total_models = len(values) if values else max(len(
                 supporting_models), 1)
             consensus = count / total_models
-            return {'ticker': ticker, 'action': action, 'priority': 1 if 
+            return {'ticker': ticker, 'action': action, 'priority': 1 if
                 action == 'BUY' else 3, 'confidence': rec['confidence'],
                 'signal_strength': self._get_signal_strength(rec[
                 'confidence']), 'predicted_return': rec['predicted_return'],

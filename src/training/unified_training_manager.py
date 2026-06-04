@@ -7,9 +7,11 @@ import json
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
+
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('UnifiedTrainingManager')
 if TYPE_CHECKING:
     from src.training.base_trainer import TrainerConfig

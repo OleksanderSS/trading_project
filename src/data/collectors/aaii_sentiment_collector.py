@@ -1,13 +1,15 @@
-import asyncio
-import pandas as pd
 import hashlib
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
 import re
-from .base_collector import BaseCollector
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
 
 
 class AIISentimentCollector(BaseCollector):
@@ -16,9 +18,8 @@ class AIISentimentCollector(BaseCollector):
     data_type = 'alternative'
     collector_name = 'aaii_sentiment'
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory:
-        HttpClientFactory, db_manager: DataManager, cache_manager: Optional
-        [CacheManager]=None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory:
+        HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
         self.enabled = self.configs.get('enabled', True)
@@ -35,7 +36,7 @@ class AIISentimentCollector(BaseCollector):
         hash_string = '|'.join(str(row.get(key, '')) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    async def run(self, **kwargs) ->Optional[pd.DataFrame]:
+    async def run(self, **kwargs) ->pd.DataFrame | None:
         """Fetches AAII Sentiment data and returns DataFrame."""
         if not self.enabled:
             self.logger.warning('AIISentimentCollector is disabled')
@@ -62,7 +63,7 @@ class AIISentimentCollector(BaseCollector):
             self.logger.error(f'Error in AIISentimentCollector: {e}')
             return None
 
-    async def _fetch_aaii_data(self) ->List[Dict[str, Any]]:
+    async def _fetch_aaii_data(self) ->list[dict[str, Any]]:
         """Fetches data from AAII website."""
         try:
             url = f'{self.base_url}/sentimentsurveyresults'
@@ -94,7 +95,7 @@ class AIISentimentCollector(BaseCollector):
             self.logger.error(f'Error fetching AAII data: {e}')
             return []
 
-    def _parse_aaii_html(self, html_content: str) ->List[Dict[str, Any]]:
+    def _parse_aaii_html(self, html_content: str) ->list[dict[str, Any]]:
         """Parse AAII HTML content to extract sentiment data."""
         try:
             data = self._extract_raw_data(html_content)
@@ -108,7 +109,7 @@ class AIISentimentCollector(BaseCollector):
             self.logger.error(f'Error parsing AAII HTML: {e}', exc_info=True)
             return []
 
-    def _extract_raw_data(self, html_content: str) ->List[Dict[str, Any]]:
+    def _extract_raw_data(self, html_content: str) ->list[dict[str, Any]]:
         """Extract sentiment data using regex patterns."""
         data = []
         date_pattern = '(\\w{3}\\s+\\d{1,2},\\s+\\d{4})'
@@ -187,7 +188,7 @@ class AIISentimentCollector(BaseCollector):
         else:
             return 0
 
-    async def collect_data(self, **kwargs) ->Optional[List[Dict[str, Any]]]:
+    async def collect_data(self, **kwargs) ->list[dict[str, Any]] | None:
         """
         UNIFIED data collection - retrieval only, without database storage.
         """

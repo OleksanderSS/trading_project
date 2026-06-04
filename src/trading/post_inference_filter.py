@@ -5,11 +5,12 @@ This module takes raw model predictions and multiplies their confidence scores
 by a weighted average of contextual multipliers (e.g., macro, RSI, sentiment, and CHAOS).
 """
 
-import pandas as pd
+
 import numpy as np
-from typing import Dict, List, Optional
+import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+
 
 class PostInferenceFilter:
     """
@@ -18,15 +19,15 @@ class PostInferenceFilter:
     - Penalizes confidence during high Context Velocity.
     - Boosts confidence for stable, high-reliability patterns.
     """
-    
-    def __init__(self, config: Optional[Dict] = None):
+
+    def __init__(self, config: dict | None = None):
         """
         Initializes the filter with configurable weights and thresholds.
         """
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
         if config is None:
             config = {}
-        
+
         self.params = {
             'macro_weight': config.get('macro_weight', 0.2),
             'rsi_weight': config.get('rsi_weight', 0.1),
@@ -35,7 +36,7 @@ class PostInferenceFilter:
             'min_confidence': config.get('min_confidence', 0.0), # Allow zero confidence for kill-switch
             'max_confidence': config.get('max_confidence', 0.95)
         }
-        self.logger.info(f"PostInferenceFilter initialized with Pattern & Chaos support.")
+        self.logger.info("PostInferenceFilter initialized with Pattern & Chaos support.")
 
     def _get_chaos_multiplier(self, velocity: pd.Series) -> pd.Series:
         """
@@ -74,40 +75,40 @@ class PostInferenceFilter:
         choices = [1.2, 1.1, 1.0]
         return pd.Series(np.select(conditions, choices, default=0.9), index=sentiment_score.index)
 
-    def apply(self, predictions_df: pd.DataFrame, config: Optional[Dict] = None) -> pd.DataFrame:
+    def apply(self, predictions_df: pd.DataFrame, config: dict | None = None) -> pd.DataFrame:
         """
         Applies vectorized filters including Chaos and Pattern awareness.
         """
         if config is None: config = {}
-        
+
         confidence_col = config.get('confidence_col', 'confidence')
         macro_col = config.get('macro_col', 'macro_decayed_strength')
         rsi_col = config.get('rsi_col', 'RSI_14')
         sentiment_col = config.get('sentiment_col', 'sentiment_score')
         velocity_col = config.get('velocity_col', 'context_velocity')
-        
+
         self._validate_input(predictions_df, confidence_col)
         result_df = predictions_df.copy()
         result_df['original_confidence'] = result_df[confidence_col]
-        
+
         # 1. Calculate Multipliers
         multipliers = pd.DataFrame(index=result_df.index)
-        
+
         # Macro
         if macro_col in result_df.columns:
             multipliers['macro'] = self._get_macro_multiplier(result_df[macro_col])
         else: multipliers['macro'] = 1.0
-            
+
         # RSI
         if rsi_col in result_df.columns:
             multipliers['rsi'] = self._get_rsi_multiplier(result_df[rsi_col])
         else: multipliers['rsi'] = 1.0
-            
+
         # Sentiment
         if sentiment_col in result_df.columns:
             multipliers['sentiment'] = self._get_sentiment_multiplier(result_df[sentiment_col])
         else: multipliers['sentiment'] = 1.0
-            
+
         # ✅ ELITE: Chaos (Velocity)
         if velocity_col in result_df.columns:
             multipliers['chaos'] = self._get_chaos_multiplier(result_df[velocity_col])
@@ -122,17 +123,17 @@ class PostInferenceFilter:
             multipliers['sentiment'] * weights['sentiment_weight'] +
             multipliers['chaos'] * weights['chaos_weight']
         )
-        
+
         result_df['confidence_multiplier'] = weighted_multiplier
         result_df['filtered_confidence'] = result_df['original_confidence'] * weighted_multiplier
-        
+
         # 3. Apply bounds
         result_df['filtered_confidence'] = result_df['filtered_confidence'].clip(
             self.params['min_confidence'], self.params['max_confidence']
         )
-        
+
         return result_df
-    
+
     def _validate_input(self, predictions_df: pd.DataFrame, confidence_col: str):
         if confidence_col not in predictions_df.columns:
              # If missing, we add it with a default to allow filtering

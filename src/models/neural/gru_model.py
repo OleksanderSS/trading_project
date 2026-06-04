@@ -1,12 +1,14 @@
 # src/models/neural/gru_model.py
 
+from typing import Any
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
-from typing import Dict, Any, Tuple
 
-from src.models.neural.base_neural import BaseNeuralModel
 from src.core.logging.logger import ProjectLogger
+from src.models.neural.base_neural import BaseNeuralModel
+
 
 class GRUModel(BaseNeuralModel):
     """
@@ -25,7 +27,7 @@ class GRUModel(BaseNeuralModel):
         """Returns the unique name of the model."""
         return "gru_tf"
 
-    def _build_architecture(self, input_shape: Tuple[int, ...]) -> tf.keras.Model:
+    def _build_architecture(self, input_shape: tuple[int, ...]) -> tf.keras.Model:
         """
         Defines the GRU architecture using TensorFlow/Keras.
         The input_shape is expected to be (timesteps, n_features).
@@ -36,12 +38,12 @@ class GRUModel(BaseNeuralModel):
         timesteps, n_features = input_shape
 
         inputs = layers.Input(shape=(timesteps, n_features))
-        
+
         x = layers.GRU(64, activation='relu', return_sequences=True)(inputs)
         x = layers.Dropout(0.2)(x)
         x = layers.GRU(32, activation='relu')(x)
         x = layers.Dropout(0.2)(x)
-        
+
         # Output layer depends on the task type
         if self.task_type == "classification":
             # Assuming binary classification for now
@@ -57,7 +59,7 @@ class GRUModel(BaseNeuralModel):
         self.logger.info(f"GRU architecture built for '{self.task_type}' task.")
         return model
 
-    def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> Dict[str, Any]:
+    def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> dict[str, Any]:
         """
         Trains the GRU model.
         """

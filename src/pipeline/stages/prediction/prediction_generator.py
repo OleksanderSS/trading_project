@@ -3,9 +3,11 @@ PredictionGenerator: ensemble/single-model prediction and denormalization
 extracted from PredictionStage to reduce file size.
 """
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
+
 import numpy as np
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -19,10 +21,10 @@ class PredictionGenerator:
         self.ensemble_cache = ensemble_cache
         self.adjuster = adjuster
 
-    def generate_prediction(self, models: Dict[str, Any], best_model_name:
-        str, ticker_df_clean: pd.DataFrame, filtered_features_list: List[
-        str], market_regime: str, context_id: str) ->Tuple[Optional[float],
-        Dict[str, float]]:
+    def generate_prediction(self, models: dict[str, Any], best_model_name:
+        str, ticker_df_clean: pd.DataFrame, filtered_features_list: list[
+        str], market_regime: str, context_id: str) ->tuple[float | None,
+        dict[str, float]]:
         """Route to ensemble or single-model prediction."""
         if len(models) > 1:
             return self.generate_ensemble_prediction(models,
@@ -31,12 +33,12 @@ class PredictionGenerator:
         return self.generate_single_model_prediction(models,
             best_model_name, ticker_df_clean, filtered_features_list)
 
-    def generate_ensemble_prediction(self, models: Dict[str, Any],
-        ticker_df_clean: pd.DataFrame, filtered_features_list: List[str],
-        market_regime: str, context_id: str) ->Tuple[Optional[float], Dict[
+    def generate_ensemble_prediction(self, models: dict[str, Any],
+        ticker_df_clean: pd.DataFrame, filtered_features_list: list[str],
+        market_regime: str, context_id: str) ->tuple[float | None, dict[
         str, float]]:
         """Generate ensemble prediction from multiple models."""
-        model_preds: Dict[str, Any] = {}
+        model_preds: dict[str, Any] = {}
         for m_name, m_inst in models.items():
             feature_cols = (filtered_features_list or ticker_df_clean.
                 columns.tolist())
@@ -68,9 +70,9 @@ class PredictionGenerator:
             'unknown'), 'regime': market_regime})
         return ensemble_result.final_signal, ensemble_result.active_weights
 
-    def generate_single_model_prediction(self, models: Dict[str, Any],
+    def generate_single_model_prediction(self, models: dict[str, Any],
         best_model_name: str, ticker_df_clean: pd.DataFrame,
-        filtered_features_list: List[str]) ->Tuple[Optional[float], Dict[
+        filtered_features_list: list[str]) ->tuple[float | None, dict[
         str, float]]:
         """Generate prediction from a single selected model."""
         selected_model = models.get(best_model_name, list(models.values())[0])

@@ -1,12 +1,14 @@
 """
 Pipeline execution utilities for hybrid pipeline.
 """
-import time
 import functools
 import logging
+import time
 from pathlib import Path
 from typing import Any
+
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
@@ -77,37 +79,37 @@ class PipelineExecutor:
     async def execute_continue_mode(orchestrator, args):
         """Execute the continue mode after Colab results are ready."""
         logger.info('Running continue mode...')
-        
+
         # 1. Contract validation
         val_report = PipelineExecutor._validate_batch_contract(orchestrator)
         if not val_report['valid']:
             return {'status': 'failed', 'reason': 'contract_validation_failed', 'errors': val_report['errors']}
-            
+
         manifest = val_report['manifest']
         PipelineExecutor._log_manifest_details(manifest)
-        
+
         # 2. Load data
         continue_data = PipelineExecutor._load_continue_data(orchestrator, args)
         (features_df, targets_df, colab_results, news_data, economic_data) = continue_data
-        
+
         # 3. Validation
         validation_error = PipelineExecutor._validate_continue_inputs(features_df, targets_df, colab_results, args.batch_name)
         if validation_error:
             return validation_error
-            
+
         # 4. Resolve tickers
         tickers = PipelineExecutor._resolve_tickers(args, colab_results, features_df)
-        
+
         # 5. Local light training
         light_results = await orchestrator.run_light_models(
             features_df=features_df,
             targets_df=targets_df,
-            tickers=tickers, 
+            tickers=tickers,
             test_ticker=getattr(args, 'test_ticker', None),
             test_target=getattr(args, 'test_target', None),
             batch_name=args.batch_name
         )
-        
+
         # 6. Final stages
         logger.info('Running final stages...')
         final_request = {
@@ -146,14 +148,14 @@ class PipelineExecutor:
         """
         # 1. Load core components (Colab results, Features, Targets)
         features_df, targets_df, colab_results = PipelineExecutor._load_core_continue_data(orchestrator, args)
-        
+
         if PipelineExecutor._is_error_result(colab_results):
             logger.error(f"No valid Colab results found for batch: {args.batch_name}")
             return None, None, colab_results, None, None
-            
+
         # 2. Load auxiliary data (News, Economic)
         news_data, economic_data = PipelineExecutor._load_extra_continue_data(orchestrator, args)
-        
+
         return features_df, targets_df, colab_results, news_data, economic_data
 
     @staticmethod
@@ -161,31 +163,31 @@ class PipelineExecutor:
         """Loads Colab results, features and targets dataframes."""
         batch_dir = orchestrator.config.output_dir
         colab_results = orchestrator.load_colab_results(args.batch_name)
-        
+
         if PipelineExecutor._is_error_result(colab_results):
             return None, None, colab_results
 
         features_path = batch_dir / FEATURES_FILE
         targets_path = batch_dir / TARGETS_FILE
-        
+
         features_df = PipelineExecutor._safe_load_parquet(features_path, "Features")
         targets_df = PipelineExecutor._safe_load_parquet(targets_path, "Targets")
-        
+
         return features_df, targets_df, colab_results
 
     @staticmethod
     def _load_extra_continue_data(orchestrator, args):
         """Loads or reconstructs news and economic data."""
         batch_dir = orchestrator.config.output_dir
-        
+
         # Try batch directory first
         news_data = PipelineExecutor._safe_load_parquet(batch_dir / 'news_data.parquet', "News (Batch)", silent=True)
         economic_data = PipelineExecutor._safe_load_parquet(batch_dir / 'economic_data.parquet', "Economic (Batch)", silent=True)
-        
+
         # Try persistent fallbacks
         if news_data is None:
             news_data = PipelineExecutor._safe_load_parquet(Path('data/processed/features/news_data.parquet'), "News (Persistent)", silent=True)
-            
+
         if economic_data is None:
             economic_data = PipelineExecutor._safe_load_parquet(Path('data/processed/features/macro_data.parquet'), "Macro (Persistent)", silent=True)
             if economic_data is None:
@@ -194,7 +196,7 @@ class PipelineExecutor:
         # Reconstruct from DB if still missing
         if news_data is None or economic_data is None:
             news_data, economic_data = PipelineExecutor._reconstruct_data_from_db(orchestrator, news_data, economic_data)
-            
+
         return news_data, economic_data
 
     @staticmethod
@@ -203,43 +205,43 @@ class PipelineExecutor:
         try:
             from src.data.management.data_manager import DataManager
             from src.processing.deduplication_utils import deduplicate_dataframe
-            
+
             db_manager = DataManager(orchestrator.config_manager)
             table_names = db_manager.get_all_table_names()
             collector_configs = orchestrator.config_manager.get_config('collectors', {})
-            
+
             news_dfs, macro_dfs = [], []
             skipped_tables = {'cache_metadata', 'huggingface_data', 'enriched_features', 'experience_diary', 'market_data'}
-            
+
             for table_name in table_names:
                 if table_name in skipped_tables:
                     continue
-                    
+
                 df = db_manager.fetch_data_from_table(table_name)
                 if df is None or df.empty:
                     continue
-                    
+
                 # Identify data type
                 data_type = PipelineExecutor._identify_table_data_type(table_name, collector_configs)
-                
+
                 if data_type == 'news':
                     news_dfs.append(df)
                 elif data_type == 'macro':
                     macro_dfs.append(df)
-            
+
             # Final reconstruction
             reconstructed_news = current_news
             if current_news is None and news_dfs:
                 reconstructed_news, _ = deduplicate_dataframe(pd.concat(news_dfs, ignore_index=True), subset_cols=['timestamp'])
                 logger.info(f"✅ Reconstructed news data from DB: {reconstructed_news.shape}")
-                
+
             reconstructed_econ = current_econ
             if current_econ is None and macro_dfs:
                 reconstructed_econ, _ = deduplicate_dataframe(pd.concat(macro_dfs, ignore_index=True), subset_cols=['timestamp'])
                 logger.info(f"✅ Reconstructed economic data from DB: {reconstructed_econ.shape}")
-                
+
             return reconstructed_news, reconstructed_econ
-            
+
         except Exception as ex:
             logger.error(f"⚠️ Critical failure reconstructing data from database: {ex}", exc_info=True)
             raise
@@ -253,7 +255,7 @@ class PipelineExecutor:
                 dt = config.get('data_type')
                 if dt == 'news': return 'news'
                 if dt == 'macro_data': return 'macro'
-        
+
         # Check by name
         name_lower = table_name.lower()
         if 'fred' in name_lower or 'macro' in name_lower:

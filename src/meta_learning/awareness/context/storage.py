@@ -1,15 +1,16 @@
-import sqlite3
 import json
-from typing import List, Dict, Any, Optional, Union
+import sqlite3
 from datetime import datetime, timedelta
-from .models import MarketEvent, MarketContext, EventType, EventImpact, MarketRegime
+
 from src.core.logging.logger import ProjectLogger
+
+from .models import EventImpact, EventType, MarketContext, MarketEvent
 
 logger = ProjectLogger.get_logger("ContextStorage")
 
 class ContextStorage:
     """Handles persistence of market events and context snapshots."""
-    
+
     def __init__(self, db_path: str):
         self.db_path = db_path
         self.conn = None
@@ -24,7 +25,7 @@ class ContextStorage:
     def _initialize_database(self):
         conn = self._ensure_connection()
         cursor = conn.cursor()
-        
+
         # Market Events Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS market_events (
@@ -46,7 +47,7 @@ class ContextStorage:
                 impact_assessment TEXT
             )
         ''')
-        
+
         # Market Context Table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS market_context (
@@ -72,7 +73,7 @@ class ContextStorage:
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO market_events (
-                timestamp, event_type, title, description, source, 
+                timestamp, event_type, title, description, source,
                 impact_level, affected_tickers, affected_sectors, keywords,
                 sentiment_score, confidence, relevance_score, expiration_time,
                 processed, impact_assessment
@@ -109,7 +110,7 @@ class ContextStorage:
         ))
         conn.commit()
 
-    def get_recent_events(self, hours: int = 24) -> List[MarketEvent]:
+    def get_recent_events(self, hours: int = 24) -> list[MarketEvent]:
         conn = self._ensure_connection()
         cursor = conn.cursor()
         cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()

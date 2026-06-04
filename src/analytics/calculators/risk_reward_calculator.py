@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
 import logging
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
 
 from .volatility_calculator import VolatilityCalculator
 
@@ -33,10 +33,10 @@ class RiskRewardCalculator:
         return pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
 
     @staticmethod
-    def calculate_trade_parameters(trade_params: TradeParameters, config: Optional[TradeConfig] = None) -> Dict[str, float]:
+    def calculate_trade_parameters(trade_params: TradeParameters, config: TradeConfig | None = None) -> dict[str, float]:
         """
         Calculates dynamic Stop Loss and Take Profit levels based on market volatility (ATR).
-        
+
         Args:
             trade_params (TradeParameters): Trade parameters including data, signal type, and entry price.
             config (Optional[TradeConfig]): Configuration for multipliers and settings.
@@ -46,19 +46,19 @@ class RiskRewardCalculator:
         """
         if config is None:
             config = TradeConfig()
-            
+
         return RiskRewardCalculator._calculate_trade_with_config(trade_params, config)
 
     @staticmethod
-    def _calculate_trade_with_config(trade_params: TradeParameters, config: TradeConfig) -> Dict[str, float]:
+    def _calculate_trade_with_config(trade_params: TradeParameters, config: TradeConfig) -> dict[str, float]:
         """Calculate trade parameters with given configuration."""
         atr = VolatilityCalculator.calculate_atr(trade_params.df, window=14).iloc[-1]
-        
+
         if pd.isna(atr) or atr <= 0:
             atr = trade_params.entry_price * 0.01 # Fallback to 1% of price
-            
+
         risk = atr * config.atr_multiplier
-        
+
         if trade_params.signal_type == 'BUY':
             sl = trade_params.entry_price - risk
             tp = trade_params.entry_price + (risk * config.tp_multiplier)
@@ -69,7 +69,7 @@ class RiskRewardCalculator:
             return {'stop_loss': 0.0, 'take_profit': 0.0, 'risk_reward_ratio': 0.0}
 
         rr_ratio = abs(tp - trade_params.entry_price) / abs(trade_params.entry_price - sl) if abs(trade_params.entry_price - sl) != 0 else 0.0
-        
+
         return {
             'stop_loss': float(sl),
             'take_profit': float(tp),
@@ -78,7 +78,7 @@ class RiskRewardCalculator:
         }
 
     @staticmethod
-    def calculate_sharpe_ratio(returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
+    def calculate_sharpe_ratio(returns: pd.Series, config: TradeConfig | None = None) -> float:
         """Calculates the annualized Sharpe Ratio."""
         if config is None:
             config = TradeConfig()
@@ -97,7 +97,7 @@ class RiskRewardCalculator:
         return float(annualized_sharpe) if np.isfinite(annualized_sharpe) else np.nan
 
     @staticmethod
-    def calculate_sortino_ratio(returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
+    def calculate_sortino_ratio(returns: pd.Series, config: TradeConfig | None = None) -> float:
         """Calculates the annualized Sortino Ratio."""
         if config is None:
             config = TradeConfig()
@@ -109,7 +109,7 @@ class RiskRewardCalculator:
 
         target_return = config.risk_free_rate / periods_per_year
         downside_returns = clean_returns[clean_returns < target_return]
-        
+
         if len(downside_returns) < 2:
             return np.nan
 
@@ -128,24 +128,24 @@ class RiskRewardCalculator:
         common_index = asset_returns.dropna().index.intersection(market_returns.dropna().index)
         if len(common_index) < 2:
             return np.nan
-            
+
         asset_returns = asset_returns.loc[common_index]
         market_returns = market_returns.loc[common_index]
 
         market_variance = market_returns.var()
         if market_variance == 0:
             return np.nan
-            
+
         covariance = asset_returns.cov(market_returns)
         beta = covariance / market_variance
         return float(beta)
 
     @staticmethod
-    def calculate_treynor_ratio(asset_returns: pd.Series, market_returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
+    def calculate_treynor_ratio(asset_returns: pd.Series, market_returns: pd.Series, config: TradeConfig | None = None) -> float:
         """Calculates the Treynor Ratio."""
         if config is None:
             config = TradeConfig()
-            
+
         beta = RiskRewardCalculator.calculate_beta(asset_returns, market_returns)
         if beta == 0 or pd.isna(beta):
             return np.nan
@@ -155,7 +155,7 @@ class RiskRewardCalculator:
         return float(treynor_ratio)
 
     @staticmethod
-    def calculate_var_cvar(returns: pd.Series, config: Optional[TradeConfig] = None) -> dict:
+    def calculate_var_cvar(returns: pd.Series, config: TradeConfig | None = None) -> dict:
         """Calculates loss-positive VaR/CVaR plus raw return thresholds."""
         if config is None:
             config = TradeConfig()
@@ -180,11 +180,11 @@ class RiskRewardCalculator:
         }
 
     @staticmethod
-    def calculate_information_ratio(asset_returns: pd.Series, benchmark_returns: pd.Series, config: Optional[TradeConfig] = None) -> float:
+    def calculate_information_ratio(asset_returns: pd.Series, benchmark_returns: pd.Series, config: TradeConfig | None = None) -> float:
         """Calculates the annualized Information Ratio."""
         if config is None:
             config = TradeConfig()
-            
+
         active_returns = RiskRewardCalculator._clean_return_series(asset_returns - benchmark_returns)
         if len(active_returns) < 2:
             return np.nan
@@ -193,7 +193,7 @@ class RiskRewardCalculator:
 
         if not np.isfinite(tracking_error) or tracking_error <= 1e-12:
             return np.nan
-        
+
         information_ratio = active_returns.mean() / tracking_error
         annualized_ir = information_ratio * np.sqrt(max(int(config.periods_per_year), 1))
         return float(annualized_ir) if np.isfinite(annualized_ir) else np.nan

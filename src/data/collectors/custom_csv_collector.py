@@ -1,8 +1,10 @@
 import asyncio
 import csv
 import logging
-from typing import List, Dict, Any
+from typing import Any
+
 from .base_collector import BaseCollector
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,14 +18,14 @@ class CustomCSVCollector(BaseCollector):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    async def fetch_raw_data(self, **kwargs) ->List[Dict[str, Any]]:
+    async def fetch_raw_data(self, **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously fetches and extracts structural logic constraints execution parameters mapping via threads mappings checks bounds.
         """
         file_path = self.configs.get('file_path')
         if not file_path:
             self.logger.error(
-                f"Logic structural boundary misses 'file_path' execution context limits scope payload definitions index bounds scopes."
+                "Logic structural boundary misses 'file_path' execution context limits scope payload definitions index bounds scopes."
                 )
             return []
         self.logger.info(
@@ -44,13 +46,13 @@ class CustomCSVCollector(BaseCollector):
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             raise RuntimeError(f"Failed to read custom CSV file {file_path}") from e
 
-    def _read_csv_sync(self, file_path: str) ->List[Dict[str, Any]]:
+    def _read_csv_sync(self, file_path: str) ->list[dict[str, Any]]:
         """
         Synchronous loop iteration parsing thread delegate execution bounds mapping block targets representation boundaries scope mapped structures definition constraint protocol
         """
         encoding = self.configs.get('encoding', 'utf-8')
         records = []
-        with open(file_path, mode='r', encoding=encoding) as infile:
+        with open(file_path, encoding=encoding) as infile:
             reader = csv.DictReader(infile)
             for row in reader:
                 records.append(dict(row))

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
 from datetime import datetime
+from typing import Any
 
 
 class BaseIntegration(ABC):
@@ -21,16 +21,16 @@ class BaseIntegration(ABC):
     def ping(self) ->bool:
         """
         Verifies if the external service or resource is reachable.
-        
+
         Returns:
             bool: True if reachable, False otherwise.
         """
         pass
 
-    def get_status(self) ->Dict[str, Any]:
+    def get_status(self) ->dict[str, Any]:
         """
         Returns a standardized dictionary containing the integration's status.
-        
+
         Returns:
             Dict[str, Any]: Status metadata including connectivity and timestamp.
         """

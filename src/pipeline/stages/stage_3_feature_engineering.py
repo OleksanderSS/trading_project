@@ -5,6 +5,7 @@ Maintains backward compatibility with the original FeatureEngineeringStage.
 
 from .feature_engineering.orchestrator import FeatureEngineeringStage as ModularFeatureEngineeringStage
 
+
 class FeatureEngineeringStage(ModularFeatureEngineeringStage):
     """
     Facade for FeatureEngineeringStage.

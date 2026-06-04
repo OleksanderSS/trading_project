@@ -1,7 +1,8 @@
 
 import logging
-import pandas as pd
 from typing import Any
+
+import pandas as pd
 
 from src.features.enrichers.base import BaseEnricher
 
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class SignificanceFeaturesEnricher(BaseEnricher):
     """
-    An analyzer that filters, balances, or engineers features based on the 
+    An analyzer that filters, balances, or engineers features based on the
     significance of events. It identifies important data points to focus the
     modeling process.
     """
@@ -17,7 +18,7 @@ class SignificanceFeaturesEnricher(BaseEnricher):
     @property
     def name(self) -> str:
         return "significance_features"
-    
+
     @property
     def priority(self) -> int:
         return 70
@@ -32,11 +33,11 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             mode (str): The operational mode. Can be 'filter', 'balance', or 'feature_engineering'.
         """
         super().__init__()  # Initialize BaseEnricher (sets up self.logger)
-        
+
         # Ensure significance_col is a string, not a dict
         if isinstance(significance_col, dict):
             significance_col = significance_col.get('name', 'is_significant')
-        
+
         self.significance_col = significance_col
         self.min_events_per_ticker = min_events_per_ticker
         self.mode = mode
@@ -57,7 +58,7 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         col_name = self.significance_col
         if isinstance(col_name, dict):
             col_name = col_name.get('name', 'is_significant')
-        
+
         # ✅ If column is missing, create it based on volatility or other metrics
         if col_name not in df.columns:
             logger.info(f"Significance column '{col_name}' not found. Creating it based on volatility...")
@@ -83,13 +84,13 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         """
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Original size for filtering: {len(df)}")
-        
-        filtered_df = df[df[self.significance_col] == True].copy()
-        
+
+        filtered_df = df[df[self.significance_col]].copy()
+
         if 'ticker' in filtered_df.columns:
             ticker_counts = filtered_df['ticker'].value_counts()
             valid_tickers = ticker_counts[ticker_counts >= self.min_events_per_ticker].index
-            
+
             if len(valid_tickers) < len(ticker_counts.index):
                 removed_tickers = set(ticker_counts.index) - set(valid_tickers)
                 logger.info(f"Removing tickers with insufficient significant events: {removed_tickers}")
@@ -126,7 +127,7 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         # If a default ticker was added, remove it before returning
         if 'ticker' in df_out.columns and df_out['ticker'].nunique() == 1 and df_out['ticker'].iloc[0] == 'default':
             df_out = df_out.drop(columns=['ticker'])
-            
+
         return df_out
 
     def _create_significance_column(self, df: pd.DataFrame, col_name: str) -> pd.DataFrame:
@@ -135,7 +136,7 @@ class SignificanceFeaturesEnricher(BaseEnricher):
         An event is significant if it's in the top 20% of volatility or price changes.
         """
         df_out = df.copy()
-        
+
         # Try to calculate significance based on available columns
         if 'returns' in df_out.columns:
             # Use returns volatility
@@ -160,5 +161,5 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             logger.info(f"Created '{col_name}' based on VOLATILITY_20 (threshold: {threshold:.4f})")
         else:
             logger.warning("Cannot create significance column: no suitable columns found (returns, close, or VOLATILITY_20)")
-        
+
         return df_out

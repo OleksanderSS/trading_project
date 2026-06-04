@@ -21,11 +21,11 @@ Usage:
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 # Standard logging macros
-def log_stage_start(logger: logging.Logger, component: str, context: Optional[Dict[str, Any]] = None) -> None:
+def log_stage_start(logger: logging.Logger, component: str, context: dict[str, Any] | None = None) -> None:
     """
     Log the start of a pipeline stage or major component.
 
@@ -39,7 +39,7 @@ def log_stage_start(logger: logging.Logger, component: str, context: Optional[Di
 
 
 def log_stage_end(logger: logging.Logger, component: str, duration: float,
-                  context: Optional[Dict[str, Any]] = None) -> None:
+                  context: dict[str, Any] | None = None) -> None:
     """
     Log the completion of a pipeline stage or major component.
 
@@ -54,7 +54,7 @@ def log_stage_end(logger: logging.Logger, component: str, duration: float,
 
 
 def log_progress(logger: logging.Logger, current: int, total: int, component: str = "",
-                 context: Optional[Dict[str, Any]] = None) -> None:
+                 context: dict[str, Any] | None = None) -> None:
     """
     Log progress updates for long-running operations.
 
@@ -71,7 +71,7 @@ def log_progress(logger: logging.Logger, current: int, total: int, component: st
     logger.info(f"📊 Progress{component_str}: {current}/{total} ({percentage:.1f}%){context_str}")
 
 
-def log_success(logger: logging.Logger, message: str, context: Optional[Dict[str, Any]] = None) -> None:
+def log_success(logger: logging.Logger, message: str, context: dict[str, Any] | None = None) -> None:
     """
     Log successful operations or milestones.
 
@@ -84,8 +84,8 @@ def log_success(logger: logging.Logger, message: str, context: Optional[Dict[str
     logger.info(f"✅ {message}{context_str}")
 
 
-def log_warning(logger: logging.Logger, message: str, context: Optional[Dict[str, Any]] = None,
-                fallback: Optional[str] = None) -> None:
+def log_warning(logger: logging.Logger, message: str, context: dict[str, Any] | None = None,
+                fallback: str | None = None) -> None:
     """
     Log warnings with optional fallback information.
 
@@ -100,8 +100,8 @@ def log_warning(logger: logging.Logger, message: str, context: Optional[Dict[str
     logger.warning(f"⚠️ {message}{context_str}{fallback_str}")
 
 
-def log_error(logger: logging.Logger, message: str, error: Optional[Exception] = None,
-              context: Optional[Dict[str, Any]] = None) -> None:
+def log_error(logger: logging.Logger, message: str, error: Exception | None = None,
+              context: dict[str, Any] | None = None) -> None:
     """
     Log errors with optional exception details.
 
@@ -116,7 +116,7 @@ def log_error(logger: logging.Logger, message: str, error: Optional[Exception] =
 
 
 def log_cache_hit(logger: logging.Logger, cache_type: str, key_info: str,
-                  context: Optional[Dict[str, Any]] = None) -> None:
+                  context: dict[str, Any] | None = None) -> None:
     """
     Log cache hits for performance monitoring.
 
@@ -132,7 +132,7 @@ def log_cache_hit(logger: logging.Logger, cache_type: str, key_info: str,
 
 
 def log_cache_miss(logger: logging.Logger, cache_type: str, key_info: str,
-                   context: Optional[Dict[str, Any]] = None) -> None:
+                   context: dict[str, Any] | None = None) -> None:
     """
     Log cache misses for performance monitoring.
 
@@ -148,7 +148,7 @@ def log_cache_miss(logger: logging.Logger, cache_type: str, key_info: str,
 
 
 def log_memory_usage(logger: logging.Logger, operation: str, memory_mb: float,
-                     delta_mb: Optional[float] = None) -> None:
+                     delta_mb: float | None = None) -> None:
     """
     Log memory usage for operations.
 
@@ -168,7 +168,7 @@ def log_memory_usage(logger: logging.Logger, operation: str, memory_mb: float,
 
 
 def log_model_loaded(logger: logging.Logger, model_id: str, source: str,
-                     context: Optional[Dict[str, Any]] = None) -> None:
+                     context: dict[str, Any] | None = None) -> None:
     """
     Log successful model loading.
 
@@ -183,7 +183,7 @@ def log_model_loaded(logger: logging.Logger, model_id: str, source: str,
 
 
 def log_prediction_stats(logger: logging.Logger, model_count: int, ensemble_count: int,
-                        cache_stats: Optional[Dict[str, Any]] = None) -> None:
+                        cache_stats: dict[str, Any] | None = None) -> None:
     """
     Log prediction generation statistics.
 
@@ -201,7 +201,7 @@ def log_prediction_stats(logger: logging.Logger, model_count: int, ensemble_coun
     logger.info(f"🎯 Predictions generated: {model_count} models, {ensemble_count} ensembles{cache_str}")
 
 
-def _format_context(context: Optional[Dict[str, Any]]) -> str:
+def _format_context(context: dict[str, Any] | None) -> str:
     """
     Format context dictionary into readable string.
 

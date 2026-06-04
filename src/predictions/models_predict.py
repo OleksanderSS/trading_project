@@ -1,15 +1,19 @@
 import os
+from pathlib import Path
+from typing import Any
+
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
-from pathlib import Path
-from typing import Dict, Any, Optional, cast
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 from src.ensembling.stacked_ensemble import ensemble_forecast
-from .deep_predict import predict_lstm, predict_cnn, predict_transformer
 from src.models.adapters.sentiment_integration import get_sentiment_integrator
 from src.utils.artifact_security import resolve_trusted_artifact_path
+
+from .deep_predict import predict_cnn, predict_lstm, predict_transformer
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -54,9 +58,9 @@ def predict_any(model: Any, X: np.ndarray, model_type: str) ->np.ndarray:
         raise DataProcessingError(f'Error predicting for {model_type}: {e}') from e
 
 
-def get_predictions(models_dict: Dict[str, Any], df_features: pd.DataFrame,
-    target_scaler=None, ensemble_weights: Optional[Dict[str, float]]=None
-    ) ->Dict[str, Any]:
+def get_predictions(models_dict: dict[str, Any], df_features: pd.DataFrame,
+    target_scaler=None, ensemble_weights: dict[str, float] | None=None
+    ) ->dict[str, Any]:
     """Get predictions from all models with safe inverse transform and ensembling."""
     X = df_features.values
     preds = {}
@@ -89,7 +93,7 @@ def get_predictions(models_dict: Dict[str, Any], df_features: pd.DataFrame,
 
 
 def predict_from_parquet(parquet_path: str, models_path: str=
-    'data/trained_models') ->Dict[str, Any]:
+    'data/trained_models') ->dict[str, Any]:
     """Full prediction based on final_features.parquet."""
     parquet_file = Path(parquet_path)
     if not parquet_file.exists():
@@ -122,7 +126,7 @@ def predict_from_parquet(parquet_path: str, models_path: str=
 
 
 def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame
-    ) ->Dict[str, Any]:
+    ) ->dict[str, Any]:
     """Prediction using sentiment models."""
     try:
         sentiment_integrator = get_sentiment_integrator()
@@ -144,6 +148,6 @@ def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame
 
 def convert_sentiment_signal_to_numeric(signal: str) ->float:
     """Converts sentiment signal string to numeric prediction value."""
-    signal_map = {'buy': 0.015, 'sell': -0.015, 'hold': 0.0, 'strong_buy': 
+    signal_map = {'buy': 0.015, 'sell': -0.015, 'hold': 0.0, 'strong_buy':
         0.025, 'strong_sell': -0.025}
     return signal_map.get(signal.lower(), 0.0)

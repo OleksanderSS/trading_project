@@ -1,8 +1,10 @@
-from typing import Dict, List, Any, Optional
-import numpy as np
 from collections import defaultdict
-from src.core.logging.logger import ProjectLogger
+from typing import Any
+
+import numpy as np
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("RegimePatternAnalyzer")
 
@@ -10,11 +12,11 @@ logger = ProjectLogger.get_logger("RegimePatternAnalyzer")
 class RegimePatternAnalyzer:
     """Аналізує патерни переможців серед моделей у різних режимах ринку."""
 
-    def __init__(self, regime_types: Dict[str, Any]):
+    def __init__(self, regime_types: dict[str, Any]):
         self.regime_types = regime_types
 
-    def calculate_model_consistency(self, regime_history: List[Dict[str, Any]]
-        ) ->Dict[str, float]:
+    def calculate_model_consistency(self, regime_history: list[dict[str, Any]]
+        ) ->dict[str, float]:
         """Розраховує оцінку стабільності моделей у певному режимі."""
         model_consistency = {}
         try:
@@ -38,8 +40,8 @@ class RegimePatternAnalyzer:
             logger.error(f"Error calculating model consistency: {e}", exc_info=True)
             raise DataProcessingError(f"Model consistency calculation failed: {e}") from e
 
-    def analyze_winner_patterns(self, regime_winners: Dict[str, Any],
-        current_regime: str) ->Dict[str, Any]:
+    def analyze_winner_patterns(self, regime_winners: dict[str, Any],
+        current_regime: str) ->dict[str, Any]:
         """Аналізує патерни лідерів порівняно з очікуваннями."""
         winner_patterns = {'current_regime': current_regime,
             'expected_winners': [], 'actual_winners': [],
@@ -80,8 +82,8 @@ class RegimePatternAnalyzer:
         else:
             return 'high' if position_weight < 0.5 else 'critical'
 
-    def generate_regime_insights(self, regime: str, expected_winners: List[
-        str], actual_winners: List[str]) ->Dict[str, Any]:
+    def generate_regime_insights(self, regime: str, expected_winners: list[
+        str], actual_winners: list[str]) ->dict[str, Any]:
         """Генерує інсайти щодо поточної відповідності режиму."""
         insights = {'regime_characteristics': self.regime_types[regime][
             'description'], 'alignment_score': 0.0, 'recommendations': []}
@@ -89,7 +91,7 @@ class RegimePatternAnalyzer:
             if not expected_winners:
                 return insights
             alignment_count = sum(1 for i, expected in enumerate(
-                expected_winners) if i < len(actual_winners) and 
+                expected_winners) if i < len(actual_winners) and
                 actual_winners[i] == expected)
             insights['alignment_score'] = alignment_count / len(
                 expected_winners)

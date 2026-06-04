@@ -1,16 +1,18 @@
 # src/data/collectors/cftc_collector.py
 
 import asyncio
-import pandas as pd
 import hashlib
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-import re
+from typing import Any
 
-from .base_collector import BaseCollector
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
+
 
 class CFTCCollector(BaseCollector):
     """Collector for CFTC Commitment of Traders Report data."""
@@ -18,8 +20,8 @@ class CFTCCollector(BaseCollector):
     data_type = "alternative"
     collector_name = "cftc"
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory: HttpClientFactory, 
-                 db_manager: DataManager, cache_manager: Optional[CacheManager] = None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory,
+                 db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.enabled = self.configs.get('enabled', True)
         self.timeout = self.configs.get('timeout', 30)
@@ -34,7 +36,7 @@ class CFTCCollector(BaseCollector):
         hash_string = "|".join(str(row.get(key, "")) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    async def run(self, **kwargs) -> Optional[pd.DataFrame]:
+    async def run(self, **kwargs) -> pd.DataFrame | None:
         """Fetches CFTC data and returns DataFrame."""
         if not self.enabled:
             self.logger.warning("CFTCCollector is disabled")
@@ -42,30 +44,30 @@ class CFTCCollector(BaseCollector):
 
         try:
             self.logger.info("Fetching CFTC Commitment of Traders data")
-            
+
             # Fetch data for major instruments
             instruments = ['S&P', 'NASDAQ', 'DOW', 'GOLD', 'CRUDE OIL']
             all_data = []
-            
+
             for instrument in instruments:
                 data = await self._fetch_cftc_data(instrument)
                 if data:
                     all_data.extend(data)
-            
+
             if not all_data:
                 self.logger.warning("No CFTC data received")
                 return None
 
             # Convert to DataFrame
             df = pd.DataFrame(all_data)
-            
+
             if df.empty:
                 self.logger.warning("No CFTC data received")
                 return None
 
             # Standardize columns
             df = self._standardize_columns(df)
-            
+
             # Add metadata
             df['collector_type'] = self.collector_type
             df['collector_name'] = self.collector_name
@@ -82,33 +84,33 @@ class CFTCCollector(BaseCollector):
             self.logger.error(f"Error in CFTCCollector: {e}")
             raise RuntimeError("CFTC collection failed") from e
 
-    async def _fetch_cftc_data(self, instrument: str) -> List[Dict[str, Any]]:
+    async def _fetch_cftc_data(self, instrument: str) -> list[dict[str, Any]]:
         """Fetches CFTC data for a specific instrument - FREE PUBLIC DATA!"""
         try:
             # CFTC PUBLIC DATA - NO API KEY REQUIRED!
             # Using direct CSV downloads from public reports
-            
+
             # Different instruments have different report URLs
             if instrument.upper() in ['S&P', 'NASDAQ', 'DOW']:
                 # Financial futures - Legacy COT reports
-                url = f"https://www.cftc.gov/files/dea/history/deacotlf.txt"
+                url = "https://www.cftc.gov/files/dea/history/deacotlf.txt"
                 report_type = "financial_futures"
             elif instrument.upper() in ['GOLD']:
                 # Gold futures
-                url = f"https://www.cftc.gov/files/dea/history/deacotgs.txt"
+                url = "https://www.cftc.gov/files/dea/history/deacotgs.txt"
                 report_type = "gold_futures"
             elif instrument.upper() in ['CRUDE OIL']:
                 # Oil futures
-                url = f"https://www.cftc.gov/files/dea/history/deacotcl.txt"
+                url = "https://www.cftc.gov/files/dea/history/deacotcl.txt"
                 report_type = "oil_futures"
             else:
                 self.logger.warning(f"Unknown CFTC instrument: {instrument}")
                 return []
 
             self.logger.info(f"Fetching FREE CFTC data for {instrument} from {url}")
-            
+
             http_client = await self.http_client_factory.get_http_client(timeout=self.timeout)
-            if hasattr(http_client, 'get') and asyncio.iscoroutinefunction(getattr(http_client, 'get')):
+            if hasattr(http_client, 'get') and asyncio.iscoroutinefunction(http_client.get):
                 response = await http_client.get(url)
             else:
                 response = await asyncio.to_thread(http_client.get, url)
@@ -132,7 +134,7 @@ class CFTCCollector(BaseCollector):
 
             # Parse the CSV content
             data = self._parse_cftc_csv(content, instrument, report_type)
-            
+
             if not data:
                 self.logger.warning(f"No data parsed for CFTC {instrument}")
                 return []
@@ -144,27 +146,27 @@ class CFTCCollector(BaseCollector):
             self.logger.error(f"Error fetching CFTC data for {instrument}: {e}")
             raise RuntimeError(f"Failed to fetch CFTC data for {instrument}") from e
 
-    def _parse_cftc_csv(self, content: str, instrument: str, report_type: str) -> List[Dict[str, Any]]:
+    def _parse_cftc_csv(self, content: str, instrument: str, report_type: str) -> list[dict[str, Any]]:
         """Parse CFTC CSV content to extract positioning data."""
         try:
             data = []
             lines = content.strip().split('\n')
-            
+
             # Skip header lines and find data start
             data_start = 0
             for i, line in enumerate(lines):
                 if 'Reportable Positions' in line or 'Nonreportable Positions' in line:
                     data_start = i + 2  # Skip header and separator
                     break
-            
+
             # Parse data lines
             for line in lines[data_start:]:
                 if not line.strip() or line.startswith('---'):
                     continue
-                
+
                 # Split by whitespace and filter empty strings
                 fields = [field.strip() for field in line.split() if field.strip()]
-                
+
                 if len(fields) >= 10:  # Ensure we have enough fields
                     try:
                         # CFTC CSV format: Date, Open, High, Low, Close, Volume, Open Interest, etc.
@@ -177,7 +179,7 @@ class CFTCCollector(BaseCollector):
                                 date_obj = datetime.strptime(date_str, '%m/%d/%Y')
                             except ValueError:
                                 continue
-                        
+
                         # Extract positioning data (fields indices may vary)
                         # This is a simplified parser - adjust based on actual CSV structure
                         if len(fields) >= 12:
@@ -189,11 +191,11 @@ class CFTCCollector(BaseCollector):
                             long_pos = 500000
                             short_pos = 350000
                             net_pos = 150000
-                        
+
                         total_positions = long_pos + short_pos
                         long_short_ratio = long_pos / short_pos if short_pos > 0 else float('inf')
                         net_position_pct = (net_pos / total_positions * 100) if total_positions > 0 else 0
-                        
+
                         data.append({
                             'date': date_obj.strftime('%Y-%m-%d'),
                             'instrument': instrument,
@@ -209,7 +211,7 @@ class CFTCCollector(BaseCollector):
                     except (ValueError, IndexError) as e:
                         self.logger.warning(f"Error parsing CFTC line: {e}")
                         continue
-            
+
             # If no data parsed, raise error to prevent silent data contamination
             if not data:
                 self.logger.error(f"CFTC CSV parsing failed for {instrument}")
@@ -217,7 +219,7 @@ class CFTCCollector(BaseCollector):
                     self.logger.warning(f"Using sample data fallback for {instrument}")
                     return self._create_sample_cftc_data(instrument)
                 raise RuntimeError(f"CFTC data missing and sample fallback disabled for {instrument}")
-            
+
             return data
 
         except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
@@ -227,14 +229,14 @@ class CFTCCollector(BaseCollector):
                 return self._create_sample_cftc_data(instrument)
             raise RuntimeError(f"CFTC data collection failed and sample fallback disabled: {e}")
 
-    def _create_sample_cftc_data(self, instrument: str) -> List[Dict[str, Any]]:
+    def _create_sample_cftc_data(self, instrument: str) -> list[dict[str, Any]]:
         """Create sample CFTC data for demonstration."""
         data = []
         base_date = datetime.now() - timedelta(days=140)
-        
+
         for i in range(20):  # Generate 20 weeks of data
             date_obj = base_date + timedelta(weeks=i)
-            
+
             # Simulate realistic positioning data
             if instrument.upper() in ['S&P', 'NASDAQ']:
                 # Equity indices - typically net long
@@ -253,11 +255,11 @@ class CFTCCollector(BaseCollector):
                 short_pos = 210000 + (i * 20000)
             else:
                 continue
-            
+
             total_positions = long_pos + short_pos
             long_short_ratio = long_pos / short_pos if short_pos > 0 else float('inf')
             net_position_pct = (net_pos / total_positions * 100) if total_positions > 0 else 0
-            
+
             data.append({
                 'date': date_obj.strftime('%Y-%m-%d'),
                 'instrument': instrument,
@@ -272,7 +274,7 @@ class CFTCCollector(BaseCollector):
                 'is_synthetic': True,
                 'eligible_for_training': False
             })
-        
+
         return data
 
     def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -281,7 +283,7 @@ class CFTCCollector(BaseCollector):
             # Ensure required columns exist
             if 'date' not in df.columns:
                 df['date'] = pd.to_datetime(df['timestamp']).dt.strftime('%Y-%m-%d')
-            
+
             required_cols = ['net_position', 'long_position', 'short_position', 'total_positions', 'net_position_pct']
             for col in required_cols:
                 if col not in df.columns:
@@ -290,19 +292,19 @@ class CFTCCollector(BaseCollector):
 
             # Convert date column
             df['date'] = pd.to_datetime(df['date'])
-            
+
             # Ensure numeric types
             for col in required_cols + ['long_short_ratio']:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
-            
+
             # Sort by date and instrument
             df = df.sort_values(['instrument', 'date']).reset_index(drop=True)
-            
+
             # Add derived features
             df['position_signal'] = df['net_position_pct'].apply(self._get_position_signal)
             df['position_level'] = df['net_position_pct'].apply(self._categorize_position)
             df['extreme_positioning'] = (abs(df['net_position_pct']) > 20).astype(int)
-            
+
             return df
 
         except Exception as e:
@@ -331,7 +333,7 @@ class CFTCCollector(BaseCollector):
         else:
             return 0  # Neutral
 
-    async def collect_data(self, **kwargs) -> Optional[List[Dict[str, Any]]]:
+    async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
         """
         UNIFIED data collection - retrieval only, without database storage.
         """

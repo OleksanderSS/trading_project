@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
-from src.core.logging.logger import ProjectLogger
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 from src.features.feature_selector import FeatureSelector
 
 logger = ProjectLogger.get_logger("UnifiedModelAdapter")

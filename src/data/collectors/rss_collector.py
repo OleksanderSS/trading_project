@@ -1,15 +1,19 @@
 import asyncio
 import hashlib
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
 import feedparser
 import httpx
 import pandas as pd
-from .base_collector import BaseCollector
+
 from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
 _CONNECT_TIMEOUT = 10.0
 _READ_TIMEOUT = 15.0
 _PARSE_TIMEOUT = 10.0
@@ -34,9 +38,8 @@ class RSSCollector(BaseCollector):
     collector_type = 'rss'
     data_type = 'news'
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory:
-        HttpClientFactory, db_manager: DataManager, cache_manager: Optional
-        [CacheManager]=None, **kwargs) ->None:
+    def __init__(self, configs: dict[str, Any], http_client_factory:
+        HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None=None, **kwargs) ->None:
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
         self.logger = ProjectLogger.get_logger(__name__)
@@ -46,15 +49,15 @@ class RSSCollector(BaseCollector):
             0.0)
         self.exclude_title_keywords: list = [kw.lower() for kw in
             filter_cfg.get('exclude_title_keywords', [])]
-        self._quality_weights: Dict[str, float] = kwargs.get('quality_weights',
+        self._quality_weights: dict[str, float] = kwargs.get('quality_weights',
             {})
         self._semaphore = asyncio.Semaphore(5)
         self.logger.info(
             f'RSSCollector initialised | period={self.period_days}d min_quality={self.min_source_quality} concurrency=5'
             )
 
-    async def run(self, tickers: Optional[List[str]]=None, keywords:
-        Optional[List[str]]=None, **kwargs) ->Optional[pd.DataFrame]:
+    async def run(self, tickers: list[str] | None=None, keywords:
+        list[str] | None=None, **kwargs) ->pd.DataFrame | None:
         return await self._run_internal(tickers=tickers, keywords=keywords,
             **kwargs)
 
@@ -62,8 +65,8 @@ class RSSCollector(BaseCollector):
         period_str = self.configs.get('params', {}).get('period', '7d')
         return int(period_str.replace('d', '')) if 'd' in period_str else 7
 
-    async def _run_internal(self, tickers: Optional[List[str]]=None,
-        keywords: Optional[List[str]]=None, **kwargs) ->Optional[pd.DataFrame]:
+    async def _run_internal(self, tickers: list[str] | None=None,
+        keywords: list[str] | None=None, **kwargs) ->pd.DataFrame | None:
         table_name = self.configs.get('table_name', 'rss_news')
         cache_key = f'{self.__class__.__name__}_run'
         cache_params = {'period_days': self.period_days}
@@ -80,7 +83,7 @@ class RSSCollector(BaseCollector):
                         self.logger.info('[RSS] Cache hit – no new articles.')
                         return None
                     return new_from_cache
-        feeds: List[Dict] = kwargs.get('rss_feeds') or self.configs.get('feeds'
+        feeds: list[dict] = kwargs.get('rss_feeds') or self.configs.get('feeds'
             , [])
         if not feeds:
             config_manager = kwargs.get('config_manager') or getattr(self,
@@ -97,7 +100,7 @@ class RSSCollector(BaseCollector):
         tasks = [asyncio.wait_for(self._fetch_feed(feed['name'], feed['url'
             ]), timeout=_FEED_TIMEOUT) for feed in feeds]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        flat_articles: List[Dict] = []
+        flat_articles: list[dict] = []
         for i, res in enumerate(results):
             feed_name = feeds[i]['name'] if i < len(feeds) else 'unknown'
             if isinstance(res, asyncio.TimeoutError):
@@ -134,8 +137,8 @@ class RSSCollector(BaseCollector):
         self.logger.info(f'[RSS] Persisted {len(new_df)} new articles.')
         return new_df
 
-    def _update_cache(self, cache_key: str, cache_params: Dict, df: pd.
-        DataFrame, new_df: Optional[pd.DataFrame]=None) ->None:
+    def _update_cache(self, cache_key: str, cache_params: dict, df: pd.
+        DataFrame, new_df: pd.DataFrame | None=None) ->None:
         if not self.cache_manager:
             return
         hashes = new_df['hash'] if new_df is not None else df['hash']
@@ -144,7 +147,7 @@ class RSSCollector(BaseCollector):
         self.cache_manager.set(cache_key, df.to_dict('records'),
             cache_params, namespace='collectors')
 
-    async def _fetch_feed(self, name: str, url: str) ->List[Dict]:
+    async def _fetch_feed(self, name: str, url: str) ->list[dict]:
         """
         Fetch + parse one RSS feed.
 
@@ -177,7 +180,7 @@ class RSSCollector(BaseCollector):
                 feed_data = await asyncio.wait_for(loop.run_in_executor(
                     None, lambda : feedparser.parse(response_text)),
                     timeout=_PARSE_TIMEOUT)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self.logger.warning(
                     f"[RSS] '{name}' feedparser timed out after {_PARSE_TIMEOUT}s. Skipping."
                     )
@@ -187,12 +190,12 @@ class RSSCollector(BaseCollector):
                     exc_info=True)
                 raise RuntimeError(f"RSS feed '{name}' parse error") from exc
             limit = self.configs.get('params', {}).get('limit_per_feed', 20)
-            cutoff = datetime.now(timezone.utc) - timedelta(days=self.
+            cutoff = datetime.now(UTC) - timedelta(days=self.
                 period_days)
             entries = feed_data.entries[:limit]
             self.logger.info(
                 f"[RSS] '{name}' retrieved – parsing {len(entries)} entries.")
-            articles: List[Dict] = []
+            articles: list[dict] = []
             skipped_old = skipped_filter = 0
             for entry in entries:
                 processed = self._process_entry(entry, name)
@@ -208,7 +211,7 @@ class RSSCollector(BaseCollector):
                 )
             return articles
 
-    def _process_entry(self, entry: Any, source_name: str) ->Optional[Dict]:
+    def _process_entry(self, entry: Any, source_name: str) ->dict | None:
         published_str = entry.get('published')
         if not published_str:
             return None

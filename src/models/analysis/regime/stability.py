@@ -1,8 +1,9 @@
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 import numpy as np
-from datetime import datetime
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("RegimeStabilityAnalyzer")
 
@@ -11,7 +12,7 @@ class RegimeStabilityAnalyzer:
     """Аналізує стабільність режимів та частоту їх зміни."""
 
     @staticmethod
-    def get_most_frequent_switch(switches: List[Dict[str, Any]]) ->Dict[str, Any]:
+    def get_most_frequent_switch(switches: list[dict[str, Any]]) ->dict[str, Any]:
         """Визначає найбільш частий тип зміни режиму."""
         if not switches:
             return {}
@@ -30,7 +31,7 @@ class RegimeStabilityAnalyzer:
             raise DataProcessingError("Could not determine most frequent switch") from e
 
     @staticmethod
-    def calculate_average_stable_period(switches: List[Dict[str, Any]]) ->float:
+    def calculate_average_stable_period(switches: list[dict[str, Any]]) ->float:
         """Розраховує середній період стабільності режиму (в годинах)."""
         try:
             if len(switches) < 2:
@@ -49,7 +50,7 @@ class RegimeStabilityAnalyzer:
             raise DataProcessingError("Could not calculate average stable period") from e
 
     @staticmethod
-    def calculate_regime_stability(records: List[Dict[str, Any]]) ->float:
+    def calculate_regime_stability(records: list[dict[str, Any]]) ->float:
         """Розраховує загальний показник стабільності режиму."""
         if not records or len(records) < 2:
             return 1.0

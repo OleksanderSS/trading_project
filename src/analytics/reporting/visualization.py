@@ -1,10 +1,8 @@
 # src/core/reporting/visualization.py
 
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -28,7 +26,7 @@ class Visualizer:
         self.fm.ensure_directory(self.output_dir)
         logger.info(f"Visualizer initialized. Charts will be saved to '{self.output_dir}'.")
 
-    def _save_plot(self, fig: plt.Figure, filename: str) -> Optional[Path]:
+    def _save_plot(self, fig: plt.Figure, filename: str) -> Path | None:
         """Saves a matplotlib figure to the specified file."""
         try:
             full_path = self.output_dir / filename
@@ -41,7 +39,7 @@ class Visualizer:
             plt.close(fig)
             raise RuntimeError(f"Failed to save plot {filename}") from e
 
-    def plot_price_history(self, df: pd.DataFrame, price_col: str, title: str, filename: str) -> Optional[Path]:
+    def plot_price_history(self, df: pd.DataFrame, price_col: str, title: str, filename: str) -> Path | None:
         """
         Plots the historical price data.
 
@@ -66,10 +64,10 @@ class Visualizer:
         ax.legend()
         ax.grid(True, which='both', linestyle='--', linewidth=0.5)
         fig.tight_layout()
-        
+
         return self._save_plot(fig, filename)
 
-    def plot_distribution(self, data: pd.Series, title: str, filename: str, bins: int = 30) -> Optional[Path]:
+    def plot_distribution(self, data: pd.Series, title: str, filename: str, bins: int = 30) -> Path | None:
         """
         Plots the distribution of a data series.
 
@@ -91,7 +89,7 @@ class Visualizer:
 
         return self._save_plot(fig, filename)
 
-    def plot_correlation_matrix(self, df: pd.DataFrame, title: str, filename: str) -> Optional[Path]:
+    def plot_correlation_matrix(self, df: pd.DataFrame, title: str, filename: str) -> Path | None:
         """
         Plots a heatmap of the correlation matrix for a DataFrame.
 
@@ -104,10 +102,10 @@ class Visualizer:
             The path to the saved chart, or None on failure.
         """
         corr_matrix = df.corr()
-        
+
         fig, ax = plt.subplots(figsize=(12, 10))
         sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm", ax=ax)
         ax.set_title(title, fontsize=16)
         fig.tight_layout()
-        
+
         return self._save_plot(fig, filename)

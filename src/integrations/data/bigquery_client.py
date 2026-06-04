@@ -1,14 +1,17 @@
 import os
-import pandas as pd
-import numpy as np
 import random
-from typing import Dict, Optional, Any
 from datetime import datetime, timedelta
-from google.cloud import bigquery
+from typing import Any
+
+import numpy as np
+import pandas as pd
 from google.auth.exceptions import DefaultCredentialsError
+from google.cloud import bigquery
 from pandas_gbq.gbq import GenericGBQException
-from src.core.logging.logger import ProjectLogger
+
 from src.core.base_integration import BaseIntegration
+from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('BigQueryClient')
 
 
@@ -19,7 +22,7 @@ class BigQueryClient(BaseIntegration):
     Supports a simulation mode for local development.
     """
 
-    def __init__(self, project_id: Optional[str]=None, location: str='US'):
+    def __init__(self, project_id: str | None=None, location: str='US'):
         """
         Initializes the BigQuery client.
 
@@ -32,8 +35,8 @@ class BigQueryClient(BaseIntegration):
         """
         super().__init__()
         self.location = location
-        self.client: Optional[bigquery.Client] = None
-        self.project_id: Optional[str] = project_id
+        self.client: bigquery.Client | None = None
+        self.project_id: str | None = project_id
         self.use_simulator = os.environ.get('BIGQUERY_SIMULATOR_MODE', 'false'
             ).lower() == 'true'
         if self.use_simulator:
@@ -106,7 +109,7 @@ class BigQueryClient(BaseIntegration):
             logger.error(f'Error executing BigQuery query: {e}', exc_info=True)
             return pd.DataFrame()
 
-    def validate_query(self, query: str) ->Dict[str, Any]:
+    def validate_query(self, query: str) ->dict[str, Any]:
         """Performs basic and specific validation on the SQL query."""
         result = {'valid': True, 'errors': [], 'warnings': [],
             'suggestions': []}
@@ -130,7 +133,7 @@ class BigQueryClient(BaseIntegration):
             logger.error(f"Query validation failed: {result['errors']}")
         return result
 
-    def get_query_cost_estimate(self, query: str) ->Dict[str, Any]:
+    def get_query_cost_estimate(self, query: str) ->dict[str, Any]:
         """
         Estimates the processing cost of the query.
         In real mode, uses BigQuery's dry run feature. In simulated mode, uses heuristics.
@@ -158,7 +161,7 @@ class BigQueryClient(BaseIntegration):
                 )
             return self._get_heuristic_cost_estimate(query)
 
-    def _get_heuristic_cost_estimate(self, query: str) ->Dict[str, Any]:
+    def _get_heuristic_cost_estimate(self, query: str) ->dict[str, Any]:
         """Provides a rough, heuristic-based cost estimate for simulator mode."""
         estimate = {'estimated_gb': 0.1, 'estimated_cost_usd': 0.05,
             'complexity': 'low', 'optimization_suggestions': []}

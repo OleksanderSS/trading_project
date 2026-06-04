@@ -1,11 +1,13 @@
-import pandas as pd
+from typing import Any
+
 import numpy as np
-from typing import Dict, Any, List, Optional
+import pandas as pd
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 from ..interfaces import IAnalyzer
 from ..utils.knn_model_wrapper import KnnModelWrapper
-from src.core.logging.logger import ProjectLogger
-from src.core.exceptions import DataProcessingError
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -16,7 +18,7 @@ class KnnSimilarityFinder(IAnalyzer):
     Знаходить схожі історичні моменти, пріоритезуючи той самий ринковий режим.
     """
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         self.config = config or {}
         self.n_neighbors = self.config.get('n_neighbors', 5)
         self.min_regime_samples = self.config.get('min_regime_samples', 20)
@@ -25,9 +27,9 @@ class KnnSimilarityFinder(IAnalyzer):
         self.feature_medians: pd.Series = pd.Series(dtype=float)
         self.historical_outcomes: pd.DataFrame = pd.DataFrame()
         self._fitted_positions: np.ndarray = np.array([], dtype=int)
-        logger.info(f"KnnSimilarityFinder initialized with Contextual Filtering support.")
+        logger.info("KnnSimilarityFinder initialized with Contextual Filtering support.")
 
-    def fit(self, historical_features: pd.DataFrame, historical_outcomes: Optional[pd.DataFrame] = None) -> None:
+    def fit(self, historical_features: pd.DataFrame, historical_outcomes: pd.DataFrame | None = None) -> None:
         """Fit the reusable KNN index for contextual model selection."""
         X_hist, _ = self._prepare_feature_matrices(historical_features, historical_features)
         n_neighbors = min(len(X_hist), self.n_neighbors)
@@ -45,7 +47,7 @@ class KnnSimilarityFinder(IAnalyzer):
         )
         self._fitted_positions = np.array([historical_features.index.get_loc(idx) for idx in X_hist.index], dtype=int)
 
-    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: dict[str, pd.DataFrame], **kwargs) -> dict[str, Any]:
         """
         Знаходить сусідів, враховуючи 'context_pattern_id'.
         """
@@ -59,7 +61,7 @@ class KnnSimilarityFinder(IAnalyzer):
             # ✅ ELITE: Контекстна фільтрація
             # Якщо у нас є pattern_id, спочатку шукаємо в ньому
             pattern_id = kwargs.get('context_pattern_id')
-            
+
             working_historical = historical_df
             if pattern_id and 'context_pattern_id' in historical_df.columns:
                 regime_df = historical_df[historical_df['context_pattern_id'] == pattern_id]
@@ -72,18 +74,18 @@ class KnnSimilarityFinder(IAnalyzer):
             # Очищуємо не-числові колонки для KNN
             X_hist = working_historical.select_dtypes(include=['number'])
             X_target = target_df.select_dtypes(include=['number'])
-            
+
             # Вирівнюємо колонки
             common_cols = X_hist.columns.intersection(X_target.columns)
             if len(common_cols) == 0:
                 raise DataProcessingError("No common numeric columns for KNN analysis.")
-            
+
             X_hist, X_target = self._prepare_feature_matrices(working_historical, target_df)
 
             n_neighbors = min(len(X_hist), kwargs.get('n_neighbors', self.n_neighbors))
-            if n_neighbors <= 0: 
+            if n_neighbors <= 0:
                 return {"similarities": {}}
-            
+
             knn_model = KnnModelWrapper(n_neighbors=n_neighbors)
             knn_model.fit(X_hist)
             distances, indices = knn_model.find_neighbors(X_target)
@@ -142,7 +144,7 @@ class KnnSimilarityFinder(IAnalyzer):
         neighbor_positions = self._fitted_positions[np.asarray(indices[0], dtype=int)]
         return neighbor_positions, np.asarray(distances[0], dtype=float)
 
-    def _format_results(self, distances: List, indices: List, target_index: pd.Index, historical_index: pd.Index) -> Dict:
+    def _format_results(self, distances: list, indices: list, target_index: pd.Index, historical_index: pd.Index) -> dict:
         results = {}
         for i, target_id in enumerate(target_index):
             similar_items = []

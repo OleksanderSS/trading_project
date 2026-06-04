@@ -1,10 +1,11 @@
 # src/devtools/rule_generator.py
 
-import pandas as pd
-import yaml
 import logging
 import os
-from typing import Dict, Any, List, Optional
+from typing import Any
+
+import pandas as pd
+import yaml
 
 # Assuming these imports are correct relative to the project structure
 from src.config.unified_config_manager import UnifiedConfigManager
@@ -17,7 +18,7 @@ class ContextRuleGenerator:
     Analyzes historical data to identify statistically significant market regimes
     and generates rules for their application.
     """
-    
+
     def __init__(self, config_manager: UnifiedConfigManager, data_manager: DataManager):
         """
         Initializes the generator with config and data managers.
@@ -29,7 +30,7 @@ class ContextRuleGenerator:
         self.config_manager = config_manager
         self.data_manager = data_manager
         self.analysis_config = self.config_manager.get_config('context_rule_generation')
-        
+
         if not self.analysis_config:
             raise ValueError("'context_rule_generation' section not found in configuration.")
 
@@ -65,7 +66,7 @@ class ContextRuleGenerator:
         else:
             logger.warning("No rules were generated.")
 
-    def _generate_rules(self, historical_data: pd.DataFrame) -> List[Dict[str, Any]]:
+    def _generate_rules(self, historical_data: pd.DataFrame) -> list[dict[str, Any]]:
         """
         Analyzes indicators and generates rules based on the provided data.
         """
@@ -73,21 +74,21 @@ class ContextRuleGenerator:
         for indicator_config in self.indicators_to_analyze:
             indicator = indicator_config['name']
             thresholds = indicator_config.get('thresholds', [])
-            
+
             if indicator not in historical_data.columns:
                 logger.warning(f"Indicator '{indicator}' not found in historical data. Skipping.")
                 continue
 
             logger.info(f"Analyzing indicator: {indicator}")
-            
+
             for threshold in thresholds:
                 rule = self._analyze_single_indicator(historical_data.copy(), indicator, threshold)
                 if rule:
                     all_rules.append(rule)
-        
+
         return all_rules
 
-    def _analyze_single_indicator(self, data: pd.DataFrame, indicator: str, threshold: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _analyze_single_indicator(self, data: pd.DataFrame, indicator: str, threshold: dict[str, Any]) -> dict[str, Any] | None:
         """
         Analyzes the impact of a single indicator crossing a specific threshold.
         """
@@ -114,11 +115,11 @@ class ContextRuleGenerator:
             return None
 
         event_data = data[event_mask].dropna(subset=[f'target_return_{w}d' for w in effect_windows])
-        
+
         if event_data.empty:
             logger.info(f"No events found for {indicator} {condition} {value}")
             return None
-            
+
         effects = {}
         for window in effect_windows:
             returns_col = f'target_return_{window}d'
@@ -135,11 +136,11 @@ class ContextRuleGenerator:
             'event_count': int(event_mask.sum()),
             'effects_on_target': effects
         }
-        
+
         logger.info(f"Generated rule: {rule}")
         return rule
 
-    def _save_rules_to_yaml(self, rules: List[Dict[str, Any]], path: str):
+    def _save_rules_to_yaml(self, rules: list[dict[str, Any]], path: str):
         """
         Saves the generated rules to a YAML file. Expects a full path.
         """

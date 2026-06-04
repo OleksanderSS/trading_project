@@ -1,15 +1,16 @@
-import logging
 # src/data/collectors/market_data_collector.py
-
 import asyncio
-from typing import Dict, List, Optional, Any
+import logging
+from typing import Any
+
 import pandas as pd
 
-from .base_collector import BaseCollector
-from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.cache.cache_manager import CacheManager
-from src.data.management.data_manager import DataManager
+from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
 
 logger = ProjectLogger.get_logger("MarketDataCollector")
 
@@ -21,9 +22,9 @@ class MarketDataCollector(BaseCollector):
     tickers in parallel using async/await patterns.
     """
     collector_type = "market_data"
-    
-    def __init__(self, configs: Dict[str, Any], http_client_factory: HttpClientFactory, 
-                 db_manager: DataManager, cache_manager: Optional[CacheManager] = None, **kwargs):
+
+    def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory,
+                 db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.api_clients = configs.get('api_clients', [])
         if not self.api_clients:
@@ -32,7 +33,7 @@ class MarketDataCollector(BaseCollector):
 
 
 
-    async def _fetch_data_for_ticker_async(self, ticker: str, period: str = "1y", interval: str = "1d") -> Optional[pd.DataFrame]:
+    async def _fetch_data_for_ticker_async(self, ticker: str, period: str = "1y", interval: str = "1d") -> pd.DataFrame | None:
         """
         Asynchronously tries to fetch data for a single ticker from available clients.
         """
@@ -51,11 +52,11 @@ class MarketDataCollector(BaseCollector):
             except Exception as e:
                 logger.error(f"Client {client_name} failed for {ticker}: {e}. Trying next client.", exc_info=True)
                 await asyncio.sleep(0.5)  # Brief delay before retry
-        
+
         logger.error(f"All {len(self.api_clients)} clients failed to fetch data for {ticker}.")
         return None
 
-    async def run(self, tickers: List[str], **kwargs) -> Optional[Dict[str, pd.DataFrame]]:
+    async def run(self, tickers: list[str], **kwargs) -> dict[str, pd.DataFrame] | None:
         """
         Asynchronously collects historical data for a batch of tickers.
 
@@ -68,21 +69,21 @@ class MarketDataCollector(BaseCollector):
         """
         period = kwargs.get('period', '1y')
         interval = kwargs.get('interval', '1d')
-        
+
         logger.info(f"Starting async batch data collection for {len(tickers)} tickers.")
-        results: Dict[str, pd.DataFrame] = {}
+        results: dict[str, pd.DataFrame] = {}
 
         # Create async tasks for all tickers
         tasks = [self._fetch_data_for_ticker_async(ticker, period, interval) for ticker in tickers]
-        
+
         # Gather results with error handling
         responses = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        for ticker, response in zip(tickers, responses):
+
+        for ticker, response in zip(tickers, responses, strict=False):
             if isinstance(response, Exception):
                 logger.error(f"Exception for {ticker}: {response}")
             elif response is not None:
                 results[ticker] = response
-        
+
         logger.info(f"Batch collection complete. Successfully fetched data for {len(results)}/{len(tickers)} tickers.")
         return results if results else None

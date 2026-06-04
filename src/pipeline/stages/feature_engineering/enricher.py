@@ -1,14 +1,16 @@
+from typing import Any
+
 import pandas as pd
-from typing import Dict, Any, Optional, List
-from src.features.feature_orchestrator import FeatureOrchestrator
-from src.features.feature_cache import get_feature_cache
+
 from src.core.logging.logger import ProjectLogger
+from src.features.feature_cache import get_feature_cache
+from src.features.feature_orchestrator import FeatureOrchestrator
 
 logger = ProjectLogger.get_logger('FeatureEnricher')
 
 class FeatureEnricher:
     """Handles feature generation and enrichment."""
-    
+
     def __init__(self, config_manager: Any):
         self.logger = logger
         self.orchestrator = FeatureOrchestrator.create_from_config(config_manager)
@@ -19,7 +21,7 @@ class FeatureEnricher:
         """Enrich data with technical and statistical features."""
         self.logger.info(f"Enriching features for timeframe: {timeframe}")
         return self.orchestrator.run(df, add_timeframe_suffix=True, timeframe=timeframe)
-        
+
     def add_macro_features(self, df: pd.DataFrame, macro_data: pd.DataFrame) -> pd.DataFrame:
         """Add macro-economic indicators."""
         return df # Integration logic here

@@ -1,18 +1,19 @@
 # src/data/collectors/vix_collector.py
 
-import asyncio
-import pandas as pd
 import hashlib
+import logging
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
+from typing import Any
 
-from .base_collector import BaseCollector
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
 
-import logging
+from .base_collector import BaseCollector
+
 logger = logging.getLogger(__name__)
 
 def _configure_yfinance_cache() -> None:
@@ -32,20 +33,20 @@ class VIXCollector(BaseCollector):
     data_type = "alternative"
     collector_name = "vix"
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory: HttpClientFactory, 
-                 db_manager: DataManager, cache_manager: Optional[CacheManager] = None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory,
+                 db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.enabled = self.configs.get('enabled', True)
         self.timeout = self.configs.get('timeout', 30)
         self.table_name = self.configs.get('table_name', "vix_data")
         self.hash_keys = self.configs.get('hash_keys', ["date", "vix_current", "volatility_regime"])
-        
+
         # Merge parameters from configuration structure
         params = self.configs.get('params', {})
         self.period = params.get('period', '30d')
         self.interval = params.get('interval', '1d')
         self.ticker = self.configs.get('ticker', '^VIX')
-        
+
         self.logger.info(f"VIXCollector initialized. Enabled: {self.enabled}, Period: {self.period}, Interval: {self.interval}")
 
     def _generate_hash(self, row: pd.Series) -> str:
@@ -53,7 +54,7 @@ class VIXCollector(BaseCollector):
         hash_string = "|".join(str(row.get(key, "")) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    async def run(self, **kwargs) -> Optional[pd.DataFrame]:
+    async def run(self, **kwargs) -> pd.DataFrame | None:
         """Fetches VIX data and returns DataFrame."""
         if not self.enabled:
             self.logger.warning("VIXCollector is disabled")
@@ -61,7 +62,7 @@ class VIXCollector(BaseCollector):
 
         try:
             self.logger.info("Fetching FREE VIX data from Yahoo Finance")
-            
+
             # Fetch data
             data = await self._fetch_vix_data()
             if not data:
@@ -69,14 +70,14 @@ class VIXCollector(BaseCollector):
 
             # Convert to DataFrame
             df = pd.DataFrame(data)
-            
+
             if df.empty:
                 self.logger.warning("No VIX data received")
                 return None
 
             # Standardize columns
             df = self._standardize_columns(df)
-            
+
             # Add metadata
             df['collector_type'] = self.collector_type
             df['collector_name'] = self.collector_name
@@ -93,23 +94,23 @@ class VIXCollector(BaseCollector):
             self.logger.error(f"Error in VIXCollector: {e}")
             raise RuntimeError("VIX collection failed") from e
 
-    async def _fetch_vix_data(self) -> List[Dict[str, Any]]:
+    async def _fetch_vix_data(self) -> list[dict[str, Any]]:
         """Fetches VIX data from Yahoo Finance - FREE!"""
         try:
             # Use Yahoo Finance for VIX data - FREE and no API key required!
             import yfinance as yf
             _configure_yfinance_cache()
-            
+
             self.logger.info("Fetching VIX data from Yahoo Finance")
-            
+
             # Download VIX data for last 60 days
             vix_ticker = yf.Ticker("^VIX")
             hist = vix_ticker.history(period="60d", interval="1d")
-            
+
             if hist.empty:
                 self.logger.warning("No VIX data from Yahoo Finance")
                 return []
-            
+
             # Process historical data
             data = []
             for date, row in hist.iterrows():
@@ -117,15 +118,15 @@ class VIXCollector(BaseCollector):
                 vix_high = row['High']
                 vix_low = row['Low']
                 vix_volume = row['Volume']
-                
+
                 # Calculate volatility regime
                 vix_sma = hist['Close'].rolling(window=20).mean().shift(1).iloc[-1] if len(hist) >= 20 else vix_close
                 volatility_regime = 'high' if vix_close > vix_sma else 'low'
-                
+
                 # Calculate VIX percentiles
                 vix_percentile_20 = hist['Close'].quantile(0.2)
                 vix_percentile_80 = hist['Close'].quantile(0.8)
-                
+
                 # Classify VIX level
                 if vix_close >= 30:
                     vix_classification = "Extreme Fear"
@@ -137,7 +138,7 @@ class VIXCollector(BaseCollector):
                     vix_classification = "Greed"
                 else:
                     vix_classification = "Extreme Greed"
-                
+
                 data.append({
                     'date': date.strftime('%Y-%m-%d'),
                     'vix_open': row['Open'],
@@ -155,7 +156,7 @@ class VIXCollector(BaseCollector):
                     'extreme_volatility': 1 if vix_close >= 30 or vix_close <= 12 else 0,
                     'timestamp': date
                 })
-            
+
             return data
 
         except Exception as e:
@@ -168,7 +169,7 @@ class VIXCollector(BaseCollector):
             # Ensure required columns exist
             if 'date' not in df.columns:
                 df['date'] = pd.to_datetime(df['timestamp']).dt.strftime('%Y-%m-%d')
-            
+
             required_cols = ['vix_close', 'volatility_regime', 'vix_classification']
             for col in required_cols:
                 if col not in df.columns:
@@ -177,29 +178,29 @@ class VIXCollector(BaseCollector):
 
             # Convert date column
             df['date'] = pd.to_datetime(df['date'])
-            
+
             # Ensure numeric types
-            numeric_cols = ['vix_open', 'vix_high', 'vix_low', 'vix_close', 'vix_volume', 
-                           'vix_sma_20', 'vix_percentile_20', 'vix_percentile_80', 
+            numeric_cols = ['vix_open', 'vix_high', 'vix_low', 'vix_close', 'vix_volume',
+                           'vix_sma_20', 'vix_percentile_20', 'vix_percentile_80',
                            'vix_range', 'vix_change', 'extreme_volatility']
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-            
+
             # Sort by date
             df = df.sort_values('date').reset_index(drop=True)
-            
+
             # Add derived features
             df['vix_signal'] = df['volatility_regime'].apply(lambda x: 1 if x == 'high' else -1)
             df['vix_zscore'] = (df['vix_close'] - df['vix_close'].rolling(20).mean().shift(1)) / df['vix_close'].rolling(20).std().shift(1)
-            
+
             return df
 
         except Exception as e:
             self.logger.error(f"Error standardizing VIX columns: {e}")
             return pd.DataFrame()
 
-    async def collect_data(self, **kwargs) -> Optional[List[Dict[str, Any]]]:
+    async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
         """
         UNIFIED data collection - retrieval only, without database storage.
         """

@@ -1,8 +1,9 @@
 # src/features/utils/technical_indicators_lib.py
 
-import pandas as pd
+
 import numpy as np
-from typing import Tuple
+import pandas as pd
+
 
 class TechnicalIndicators:
     """Centralized library for calculating technical indicators."""
@@ -28,7 +29,7 @@ class TechnicalIndicators:
         return rsi
 
     @staticmethod
-    def calculate_macd(prices: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    def calculate_macd(prices: pd.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> tuple[pd.Series, pd.Series, pd.Series]:
         """Calculation of Moving Average Convergence Divergence (MACD)"""
         ema_fast = prices.ewm(span=fast).mean()
         ema_slow = prices.ewm(span=slow).mean()
@@ -38,7 +39,7 @@ class TechnicalIndicators:
         return macd_line, signal_line, histogram
 
     @staticmethod
-    def calculate_bollinger_bands(prices: pd.Series, period: int = 20, std: float = 2.0) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    def calculate_bollinger_bands(prices: pd.Series, period: int = 20, std: float = 2.0) -> tuple[pd.Series, pd.Series, pd.Series]:
         """Calculation of Bollinger Bands"""
         rolling_mean = prices.rolling(period, min_periods=1).mean()
         rolling_std = prices.rolling(period, min_periods=1).std()
@@ -57,7 +58,7 @@ class TechnicalIndicators:
         return atr
 
     @staticmethod
-    def calculate_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, k_period: int = 14, d_period: int = 3) -> Tuple[pd.Series, pd.Series]:
+    def calculate_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, k_period: int = 14, d_period: int = 3) -> tuple[pd.Series, pd.Series]:
         """Calculation of Stochastic Oscillator"""
         lowest_low = low.rolling(window=k_period, min_periods=1).min()
         highest_high = high.rolling(window=k_period, min_periods=1).max()

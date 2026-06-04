@@ -8,9 +8,10 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
 
 from src.core.logging.logger import ProjectLogger
+
 from .monitoring_system import MonitoringSystem
 
 logger = ProjectLogger.get_logger("MonitoringDashboard")
@@ -19,11 +20,11 @@ logger = ProjectLogger.get_logger("MonitoringDashboard")
 GAUGE_NUMBER_MODE = "gauge+number"
 
 try:
-    import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
     import dash
-    from dash import html, dcc
+    import plotly.graph_objects as go
+    from dash import dcc, html
     from dash.dependencies import Input, Output
+    from plotly.subplots import make_subplots
     PLOTLY_AVAILABLE = True
 except ImportError:
     PLOTLY_AVAILABLE = False
@@ -41,7 +42,7 @@ if PLOTLY_AVAILABLE:
         def __init__(
             self,
             monitoring_system: MonitoringSystem,
-            config: Optional[Dict[str, Any]] = None,
+            config: dict[str, Any] | None = None,
         ):
             self.monitoring_system = monitoring_system
             self.config = config or {}
@@ -173,7 +174,7 @@ if PLOTLY_AVAILABLE:
                     return "Error loading dashboard", {}, {}, {}, {}, "Error loading alerts"
 
         def _create_cpu_memory_graph(
-            self, data: Dict[str, Any]
+            self, data: dict[str, Any]
         ) -> go.Figure:
             system_metrics = (
                 data.get('monitors', {})
@@ -221,7 +222,7 @@ if PLOTLY_AVAILABLE:
             return fig
 
         def _create_disk_network_graph(
-            self, data: Dict[str, Any]
+            self, data: dict[str, Any]
         ) -> go.Figure:
             system_metrics = (
                 data.get('monitors', {})
@@ -272,7 +273,7 @@ if PLOTLY_AVAILABLE:
             return fig
 
         def _create_model_performance_graph(
-            self, data: Dict[str, Any]
+            self, data: dict[str, Any]
         ) -> go.Figure:
             model_metrics = (
                 data.get('monitors', {})
@@ -307,7 +308,7 @@ if PLOTLY_AVAILABLE:
             return fig
 
         def _create_data_quality_graph(
-            self, data: Dict[str, Any]
+            self, data: dict[str, Any]
         ) -> go.Figure:
             data_metrics = (
                 data.get('monitors', {})
@@ -361,7 +362,7 @@ if PLOTLY_AVAILABLE:
             return fig
 
         def _create_alerts_table(
-            self, data: Dict[str, Any]
+            self, data: dict[str, Any]
         ) -> html.Div:
             alerts = data.get('alerts', {}).get('active', [])
             if not alerts:
@@ -508,7 +509,7 @@ class MonitoringDashboardGenerator:
     def __init__(
         self,
         monitoring_system: MonitoringSystem,
-        config: Optional[Dict[str, Any]] = None,
+        config: dict[str, Any] | None = None,
     ):
         self.monitoring_system = monitoring_system
         self.config = config or {}

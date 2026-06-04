@@ -14,22 +14,25 @@ Uses:
 - Інтеграційні тести
 """
 
-import unittest
-import time
 import logging
-from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
-import json
-import tempfile
 import os
+import tempfile
+import time
+import unittest
+from datetime import datetime
+from unittest.mock import Mock, patch
 
-from src.monitoring.monitoring_system import (
-    MonitoringSystem, SystemHealthMonitor, ModelPerformanceMonitor,
-    DataQualityMonitor, AlertManager, MonitoringDashboard,
-    alertseverity, alertstatus, MetricType
-)
 from src.monitoring.dashboard import MonitoringDashboardGenerator, TextBasedDashboard
-from src.core.logging.logger import ProjectLogger
+from src.monitoring.monitoring_system import (
+    AlertManager,
+    DataQualityMonitor,
+    ModelPerformanceMonitor,
+    MonitoringDashboard,
+    MonitoringSystem,
+    SystemHealthMonitor,
+    alertseverity,
+)
+
 
 class TestSystemHealthMonitor(unittest.TestCase):
     """   '"""
@@ -46,7 +49,7 @@ class TestSystemHealthMonitor(unittest.TestCase):
     @patch('src.monitoring.monitoring_system.psutil')
     def test_collect_metrics(self, mock_psutil):
         """   """
-# 
+#
         mock_psutil.cpu_percent.return_value = 45.5
         mock_psutil.virtual_memory.return_value = Mock(
             percent=67.8,
@@ -64,10 +67,10 @@ class TestSystemHealthMonitor(unittest.TestCase):
         )
         mock_psutil.pids.return_value = [1, 2, 3, 4, 5]
 
-# 
+#
         metrics = self.monitor.collect_metrics()
 
-# 
+#
         self.assertIn('cpu_percent', metrics)
         self.assertIn('memory_percent', metrics)
         self.assertIn('disk_percent', metrics)
@@ -103,20 +106,20 @@ class TestModelPerformanceMonitor(unittest.TestCase):
 
     def test_update_model_metrics(self):
         """   """
-# 
+#
         self.monitor.update_model_metrics('model_1', {
             'accuracy': 0.85,
             'mae': 0.02,
             'timestamp': datetime.now().isoformat()
         })
 
-# 
+#
         self.assertIn('model_1', self.monitor.baseline_metrics)
         self.assertEqual(self.monitor.baseline_metrics['model_1']['accuracy'], 0.85)
 
     def test_drift_detection(self):
         """  drift"""
-# 
+#
         self.monitor.update_model_metrics('model_1', {'accuracy': 0.85})
 
 # drift
@@ -175,7 +178,7 @@ class TestAlertManager(unittest.TestCase):
 
         self.manager.process_alert(alert)
 
-# 
+#
         self.assertIn('test_alert_1', self.manager.active_alerts)
         self.assertEqual(len(self.manager.alert_history), 1)
 
@@ -194,10 +197,10 @@ class TestAlertManager(unittest.TestCase):
         self.manager.process_alert(alert)
         self.assertIn('test_alert_2', self.manager.active_alerts)
 
-# 
+#
         self.manager.resolve_alert('test_alert_2', 'manually resolved')
 
-# 
+#
         self.assertNotIn('test_alert_2', self.manager.active_alerts)
         self.assertEqual(self.manager.active_alerts['test_alert_2']['status'], 'resolved')
 
@@ -223,7 +226,7 @@ class TestAlertManager(unittest.TestCase):
         for alert in alerts:
             self.manager.process_alert(alert)
 
-# 
+#
         warnings = self.manager.get_active_alerts(alertseverity.WARNING)
         errors = self.manager.get_active_alerts(alertseverity.ERROR)
 
@@ -234,7 +237,7 @@ class TestMonitoringDashboard(unittest.TestCase):
     """  """
 
     def setUp(self):
-# 
+#
         self.mock_monitor1 = Mock()
         self.mock_monitor1.name = 'system_health'
         self.mock_monitor1.is_running = True
@@ -271,17 +274,17 @@ class TestMonitoringDashboard(unittest.TestCase):
         """   """
         data = self.dashboard.generate_dashboard_data()
 
-# 
+#
         self.assertIn('system_status', data)
         self.assertIn('monitors', data)
         self.assertIn('alerts', data)
         self.assertIn('summary', data)
 
-# 
+#
         self.assertIn('system_health', data['monitors'])
         self.assertIn('model_performance', data['monitors'])
 
-# 
+#
         summary = data['summary']
         self.assertIn('total_monitors', summary)
         self.assertIn('active_monitors', summary)
@@ -292,7 +295,7 @@ class TestTextBasedDashboard(unittest.TestCase):
     """  """
 
     def setUp(self):
-# 
+#
         self.mock_monitoring_system = Mock()
         self.mock_monitoring_system.get_dashboard_data.return_value = {
             'system_status': 'healthy',
@@ -334,14 +337,14 @@ class TestTextBasedDashboard(unittest.TestCase):
         """   """
         report = self.dashboard.generate_report()
 
-# 
+#
         self.assertIn('TRADING SYSTEM MONITORING DASHBOARD', report)
         self.assertIn('System Status: HEALTHY', report)
         self.assertIn('SYSTEM METRICS:', report)
         self.assertIn('MODEL PERFORMANCE:', report)
         self.assertIn('ACTIVE alerts:', report)
 
-# 
+#
         self.assertIn('CPU Usage: 45.5%', report)
         self.assertIn('Memory Usage: 67.8%', report)
         self.assertIn('Total Models: 5', report)
@@ -354,11 +357,11 @@ class TestTextBasedDashboard(unittest.TestCase):
         try:
             self.dashboard.save_report(tmp_path)
 
-# 
+#
             self.assertTrue(os.path.exists(tmp_path))
 
-# 
-            with open(tmp_path, 'r', encoding='utf-8') as f:
+#
+            with open(tmp_path, encoding='utf-8') as f:
                 content = f.read()
                 self.assertIn('TRADING SYSTEM MONITORING DASHBOARD', content)
 
@@ -396,14 +399,14 @@ class TestMonitoringSystem(unittest.TestCase):
 
     def test_start_stop(self):
         """    """
-# 
+#
         self.system.start()
         self.assertTrue(self.system.is_running)
 
-# 
+#
         time.sleep(0.1)
 
-# 
+#
         self.system.stop()
         self.assertFalse(self.system.is_running)
 
@@ -423,7 +426,7 @@ class TestMonitoringSystem(unittest.TestCase):
 
         self.system.update_model_metrics('test_model', metrics)
 
-# 
+#
         self.assertIn('test_model', self.system.model_monitor.model_metrics)
 
     def test_update_data_quality(self):
@@ -436,7 +439,7 @@ class TestMonitoringSystem(unittest.TestCase):
 
         self.system.update_data_quality('test_source', quality_report)
 
-# 
+#
         self.assertIn('test_source', self.system.data_monitor.data_sources)
 
 class TestMonitoringDashboardGenerator(unittest.TestCase):
@@ -481,7 +484,7 @@ class TestMonitoringDashboardGenerator(unittest.TestCase):
 
             self.generator.save_current_report(filepath)
 
-# 
+#
             self.assertTrue(os.path.exists(filepath))
 
     def test_get_dashboard_summary(self):
@@ -499,5 +502,5 @@ if __name__ == '__main__':
 # Configure logging
     logging.basicConfig(level=logging.WARNING)
 
-# 
+#
     unittest.main(verbosity=2)

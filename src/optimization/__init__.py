@@ -6,9 +6,9 @@ Optimization package.
 Handles portfolio allocation and hyperparameter optimization.
 """
 
-from .portfolio.optimizer import PortfolioOptimizer
-from .hyperparameters.bayesian import BayesianOptimizer
 from .factory import OptimizationFactory
+from .hyperparameters.bayesian import BayesianOptimizer
+from .portfolio.optimizer import PortfolioOptimizer
 
 __all__ = [
     "PortfolioOptimizer",

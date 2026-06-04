@@ -13,16 +13,16 @@ Uses:
 - Demonstration of all features
 """
 
-import os
-import time
-import random
 import logging
-import numpy as np
-from datetime import datetime, timedelta
+import os
+import random
+import time
+from datetime import datetime
 
-from src.monitoring.monitoring_system import MonitoringSystem
-from src.monitoring.dashboard import MonitoringDashboardGenerator
 from src.core.logging.logger import ProjectLogger
+from src.monitoring.dashboard import MonitoringDashboardGenerator
+from src.monitoring.monitoring_system import MonitoringSystem
+
 
 def create_sample_config():
     """Creating example configuration"""

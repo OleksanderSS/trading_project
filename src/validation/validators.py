@@ -35,10 +35,10 @@ class UnifiedValidator:
         """
         Validates the output of the ProcessingStage.
         Checks for data integrity, continuity, and statistical health.
-        
+
         Args:
             data_map: Dictionary containing dataframes (e.g., {'market_data': df})
-            
+
         Returns:
             Dict containing 'is_valid' (bool) and 'issues' (list of strings).
         """

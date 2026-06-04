@@ -1,11 +1,14 @@
 import logging
+from datetime import datetime
+from pathlib import Path
+
 import pandas as pd
 import pandas_datareader.data as web
-from pathlib import Path
-from datetime import datetime
+
 from src.config.unified_config_manager import get_current_config
-from src.features.enrichers.base import BaseEnricher
 from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
+
 logger = ProjectLogger.get_logger('MacroFeaturesEnricher')
 DATETIME64_NS = 'datetime64[ns]'
 
@@ -67,7 +70,7 @@ class MacroFeaturesEnricher(BaseEnricher):
         params_path = config_manager.get_runtime_params_path()
         if params_path.exists():
             try:
-                with open(params_path, 'r') as f:
+                with open(params_path) as f:
                     runtime_params = json.load(f)
                 test_ticker = runtime_params.get('test_mode', {}).get(
                     'test_ticker')

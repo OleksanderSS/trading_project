@@ -2,14 +2,14 @@
 Enhanced Ensemble Model - Refactored Version
 Reduced cognitive complexity by extracting helper methods
 """
-import json
 import logging
+from pathlib import Path
+from typing import Any
+
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
-from pathlib import Path
-from typing import Dict, Any, List, Optional
-from datetime import datetime
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,7 +23,7 @@ class EnhancedEnsembleModel:
         self.diary = None
         self.logger = logger
 
-    def load_colab_results(self, colab_results: Dict[str, Any]) ->Dict[str, Any
+    def load_colab_results(self, colab_results: dict[str, Any]) ->dict[str, Any
         ]:
         """Load results of heavy models from Colab"""
         logger.info('📥 Loading heavy models from Colab...')
@@ -39,8 +39,8 @@ class EnhancedEnsembleModel:
         logger.info(f'✅ Loaded {len(heavy_models)} heavy models')
         return heavy_models
 
-    def _process_models_metadata(self, models_metadata: Dict, batch_name: str
-        ) ->Dict[str, Any]:
+    def _process_models_metadata(self, models_metadata: dict, batch_name: str
+        ) ->dict[str, Any]:
         """Process models metadata format"""
         heavy_models = {}
         for model_key, model_data in models_metadata.items():
@@ -62,7 +62,7 @@ class EnhancedEnsembleModel:
                     )
         return heavy_models
 
-    def _process_timeframe_format(self, colab_results: Dict) ->Dict[str, Any]:
+    def _process_timeframe_format(self, colab_results: dict) ->dict[str, Any]:
         """Process timeframe format results"""
         heavy_models = {}
         ticker = colab_results.get('ticker')
@@ -71,7 +71,7 @@ class EnhancedEnsembleModel:
             return heavy_models
         return self._process_timeframes_data(timeframes, ticker)
 
-    def _process_timeframes_data(self, timeframes: Dict, ticker: str) ->Dict[
+    def _process_timeframes_data(self, timeframes: dict, ticker: str) ->dict[
         str, Any]:
         """Process timeframes data"""
         heavy_models = {}
@@ -98,11 +98,11 @@ class EnhancedEnsembleModel:
         return heavy_models
 
     def _load_model_from_path(self, model_path: str, batch_name: str
-        ) ->Optional[Any]:
+        ) ->Any | None:
         """Load model from various possible paths with security validation"""
         if not model_path:
             return None
-        
+
         # Security validation: Ensure path is within expected data directories
         def is_safe_path(p: str) -> bool:
             abs_p = Path(p).resolve()
@@ -118,7 +118,7 @@ class EnhancedEnsembleModel:
             f'data/colab/accumulated/{batch_name}/models/{model_filename}',
             f'data/colab/accumulated/test_ticker_amd_target_1d_ep5_iter5/models/{model_filename}'
             , f'data/colab/accumulated/main_database/models/{model_filename}'])
-        
+
         for path_candidate in possible_paths:
             if Path(path_candidate).exists():
                 if not is_safe_path(path_candidate):
@@ -141,8 +141,8 @@ class EnhancedEnsembleModel:
                     raise
         return None
 
-    def _should_skip_model(self, model_info: Dict, target_cols: List[str],
-        tickers: List[str], timeframes: List[str]) ->bool:
+    def _should_skip_model(self, model_info: dict, target_cols: list[str],
+        tickers: list[str], timeframes: list[str]) ->bool:
         """Check if model should be skipped based on filters"""
         if target_cols and model_info['target'] not in target_cols:
             return True
@@ -152,8 +152,8 @@ class EnhancedEnsembleModel:
             return True
         return False
 
-    def _load_single_model(self, model_file: Path, light_model_types: List[str]
-        ) ->Optional[Dict[str, Any]]:
+    def _load_single_model(self, model_file: Path, light_model_types: list[str]
+        ) ->dict[str, Any] | None:
         """Load a single model file with security validation"""
         try:
             # Security validation: Ensure path is within expected models directory
@@ -179,8 +179,8 @@ class EnhancedEnsembleModel:
             logger.warning(f'⚠️ Failed to load {model_file}: {e}')
             raise RuntimeError(f"Failed to load model file {model_file}") from e
 
-    def load_local_light_models(self, target_cols: List[str]=None, tickers:
-        List[str]=None, timeframes: List[str]=None) ->Dict[str, Any]:
+    def load_local_light_models(self, target_cols: list[str]=None, tickers:
+        list[str]=None, timeframes: list[str]=None) ->dict[str, Any]:
         """Load ALL 8 types of light models locally considering timeframe"""
         logger.info(
             '📥 Loading ALL 8 types of light models locally (with TF support)...'
@@ -206,7 +206,7 @@ class EnhancedEnsembleModel:
         self._log_model_statistics(light_models)
         return light_models
 
-    def _parse_model_filename(self, stem: str) ->Optional[Dict[str, str]]:
+    def _parse_model_filename(self, stem: str) ->dict[str, str] | None:
         """Parse model filename to extract components"""
         ticker = None
         timeframe = None
@@ -231,15 +231,15 @@ class EnhancedEnsembleModel:
                 target, 'model_type': model_type}
         return None
 
-    def _log_model_statistics(self, light_models: Dict[str, Any]):
+    def _log_model_statistics(self, light_models: dict[str, Any]):
         """Log model statistics"""
         timeframes = set()
-        for key, info in light_models.items():
+        for _key, info in light_models.items():
             timeframes.add(info.get('timeframe'))
         if timeframes:
             logger.info(f'   Timeframes: {sorted(timeframes)}')
         model_types = {}
-        for key, info in light_models.items():
+        for _key, info in light_models.items():
             m_type = info.get('model_type')
             model_types[m_type] = model_types.get(m_type, 0) + 1
         if model_types:
@@ -247,16 +247,16 @@ class EnhancedEnsembleModel:
             for m_type, count in sorted(model_types.items()):
                 logger.info(f'   - {m_type}: {count}')
 
-    def get_model_statistics(self) ->Dict[str, Any]:
+    def get_model_statistics(self) ->dict[str, Any]:
         """Get model statistics"""
         return {'heavy_models_count': len(self.heavy_models),
-            'light_models_count': len(self.light_models), 'total_models': 
+            'light_models_count': len(self.light_models), 'total_models':
             len(self.heavy_models) + len(self.light_models), 'heavy_models':
             list(self.heavy_models.keys())[:10], 'light_models': list(self.
             light_models.keys())[:10]}
 
     def vectorized_comparison(self, features_df: pd.DataFrame, label_names:
-        List[str]) ->Dict[str, Any]:
+        list[str]) ->dict[str, Any]:
         """Vectorized comparison of models"""
         logger.info('🔍 Vectorized comparison of models...')
         comparison_results = {}
@@ -270,7 +270,7 @@ class EnhancedEnsembleModel:
         logger.info(f'✅ Compared {len(comparison_results)} model combinations')
         return comparison_results
 
-    def _get_unique_tickers(self, features_df: pd.DataFrame) ->List[str]:
+    def _get_unique_tickers(self, features_df: pd.DataFrame) ->list[str]:
         """Get unique tickers from features dataframe"""
         return features_df['ticker'].unique().tolist()
 
@@ -280,21 +280,21 @@ class EnhancedEnsembleModel:
         return features_df[features_df['ticker'] == ticker]
 
     def _create_comparison_result(self, ticker: str, label_name: str,
-        ticker_features: pd.DataFrame) ->Dict[str, Any]:
+        ticker_features: pd.DataFrame) ->dict[str, Any]:
         """Create comparison result for ticker-label combination"""
         if label_name not in ticker_features.columns:
             return None
         label_series = ticker_features[label_name]
-        analysis_features = ticker_features.drop(columns=[label_name],
+        ticker_features.drop(columns=[label_name],
             errors='ignore')
         label_data = label_series.dropna()
         if len(label_data) < 10:
             return None
-        return {'ticker': ticker, 'target': label_name, 'heavy_quality': 
+        return {'ticker': ticker, 'target': label_name, 'heavy_quality':
             0.5, 'heavy_predictions': [], 'light_predictions': [],
             'light_qualities': []}
 
-    def create_ensemble(self, comparison_results: Dict[str, Any]) ->Dict[
+    def create_ensemble(self, comparison_results: dict[str, Any]) ->dict[
         str, Any]:
         """Create ensemble of heavy + light models with dynamic confidence and KNN correction"""
         logger.info('🎯 Creating heavy + light ensemble with KNN correction...')
@@ -306,7 +306,7 @@ class EnhancedEnsembleModel:
         logger.info(f'✅ Ensemble ready: {len(ensemble_results)} predictions')
         return ensemble_results
 
-    def _create_single_ensemble(self, comp_result: Dict[str, Any]) ->Dict[
+    def _create_single_ensemble(self, comp_result: dict[str, Any]) ->dict[
         str, Any]:
         """Create ensemble for a single comparison result"""
         ticker = comp_result['ticker']
@@ -315,7 +315,7 @@ class EnhancedEnsembleModel:
         heavy_predictions = comp_result.get('heavy_predictions', [])
         light_predictions = comp_result.get('light_predictions', [])
         light_qualities = comp_result.get('light_qualities', [])
-        if (not light_predictions and not heavy_predictions and 
+        if (not light_predictions and not heavy_predictions and
             heavy_quality == 0):
             return None
         if heavy_predictions and light_predictions:

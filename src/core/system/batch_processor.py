@@ -144,7 +144,7 @@ class BatchProcessor:
             'total_tickers'], 'processed_tickers': self.processing_stats[
             'processed_tickers'], 'failed_tickers': self.processing_stats[
             'failed_tickers'], 'processing_time': self.processing_stats[
-            'processing_time'], 'batch_results': results, 'success_rate': 
+            'processing_time'], 'batch_results': results, 'success_rate':
             self.processing_stats['processed_tickers'] / self.
             processing_stats['total_tickers'] if self.processing_stats[
             'total_tickers'] > 0 else 0}
@@ -218,7 +218,7 @@ class BatchProcessor:
             return {'batch': batch, 'status': 'success', 'results':
                 batch_results, 'processed_count': len(batch),
                 'failed_count': 0, 'processing_time': processing_time,
-                'tickers_per_second': len(batch) / processing_time if 
+                'tickers_per_second': len(batch) / processing_time if
                 processing_time > 0 else 0}
         except Exception as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)

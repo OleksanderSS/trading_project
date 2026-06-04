@@ -1,10 +1,10 @@
-from typing import Any, Dict
+from typing import Any
 
 import shap
 
 from src.analytics.interfaces import IAnalyzer
-from src.core.logging.logger import ProjectLogger
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -18,7 +18,7 @@ class ShapAnalyzer(IAnalyzer):
         self.explainer = None
         self.logger = logger
 
-    def analyze(self, data: Any, **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         """
         Calculates SHAP values for the provided data.
 
@@ -26,10 +26,10 @@ class ShapAnalyzer(IAnalyzer):
         """
         model = kwargs.get("model") or data.get("model")
         features = data.get("features_data")
-        
+
         if model is None or features is None:
             raise DataProcessingError("Missing model or features_data for SHAP analysis.")
-            
+
         try:
             self.explainer = shap.TreeExplainer(model)
             shap_values = self.explainer.shap_values(features)

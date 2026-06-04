@@ -11,9 +11,11 @@
 7. Market regime adaptation
 """
 import logging
-import numpy as np
-from typing import Dict, Any, Optional
 from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+
 from src.core.logging.logger import ProjectLogger
 from src.risk_management import VaRCalculator
 
@@ -27,9 +29,9 @@ class PositionSizingParams:
     max_drawdown: float = 0.0
     active_positions: int = 0
     market_regime: str = 'NORMAL'
-    daily_volume: Optional[float] = None
-    current_price: Optional[float] = None
-    historical_returns: Optional[np.ndarray] = None
+    daily_volume: float | None = None
+    current_price: float | None = None
+    historical_returns: np.ndarray | None = None
 
 
 @dataclass
@@ -38,14 +40,14 @@ class LiquidityParams:
     base_size: float
     var_adjustment: float
     kelly_adjustment: float
-    daily_volume: Optional[float]
-    current_price: Optional[float]
+    daily_volume: float | None
+    current_price: float | None
 
 
 class AdaptivePositionSizer:
     """Адаптивно розраховує розмір позиції з використанням сучасних методів"""
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         self.logger = ProjectLogger.get_logger('AdaptivePositionSizer')
         self.config = config or {}
         self._initialize_position_parameters()
@@ -82,7 +84,7 @@ class AdaptivePositionSizer:
         """Initialize VaR calculator for risk-based sizing"""
         self.var_calculator = VaRCalculator()
 
-    def calculate_position_size(self, params: PositionSizingParams) ->Dict[
+    def calculate_position_size(self, params: PositionSizingParams) ->dict[
         str, Any]:
         """Calculate position size using parameter object"""
         return self._calculate_position_size_from_params(params)
@@ -93,7 +95,7 @@ class AdaptivePositionSizer:
         """
         Factory method to create PositionSizingParams with required params only.
         Optional params passed as keyword arguments.
-        
+
         Args:
             portfolio_value: Required portfolio value
             volatility: Required volatility
@@ -111,12 +113,12 @@ class AdaptivePositionSizer:
     def calculate_position_size_legacy(self, portfolio_value: float,
         volatility: float, confidence: float, max_drawdown: float=0.0,
         active_positions: int=0, market_regime: str='NORMAL', daily_volume:
-        Optional[float]=None, current_price: Optional[float]=None,
-        historical_returns: Optional[np.ndarray]=None) ->Dict[str, Any]:
+        float | None=None, current_price: float | None=None,
+        historical_returns: np.ndarray | None=None) ->dict[str, Any]:
         """
         @deprecated: Use calculate_position_size(params) instead.
         This method has too many parameters and is kept for backward compatibility only.
-        
+
         Args:
             portfolio_value: Вартість портфеля
             volatility: Волатильність активу
@@ -127,7 +129,7 @@ class AdaptivePositionSizer:
             daily_volume: Добовий обсяг торгів (для liquidity check)
             current_price: Поточна ціна активу
             historical_returns: Історичні повернення для VaR
-            
+
         Returns:
             Dict з розміром позиції та детальними розрахунками
         """
@@ -139,7 +141,7 @@ class AdaptivePositionSizer:
         return self._calculate_position_size_from_params(params)
 
     def _calculate_position_size_from_params(self, params: PositionSizingParams
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Розраховує розмір позиції з параметрів"""
         try:
             base_size = params.portfolio_value * self.base_position_size_pct
@@ -200,8 +202,7 @@ class AdaptivePositionSizer:
                 'position_size_pct': float(self.base_position_size_pct),
                 'error': str(e), 'fallback_used': True}
 
-    def _calculate_var_adjustment(self, historical_returns: Optional[np.
-        ndarray]) ->float:
+    def _calculate_var_adjustment(self, historical_returns: np.ndarray | None) ->float:
         """Calculate VaR-based adjustment factor"""
         if historical_returns is None or len(historical_returns) <= 30:
             return 1.0
@@ -288,18 +289,18 @@ class AdaptivePositionSizer:
         avg_loss: float) ->float:
         """
         Розраховує Kelly Fraction для оптимального розміру позиції
-        
+
         Kelly % = (bp - q) / b
         де:
         - b = avg_win / avg_loss (коефіцієнт виграшу)
         - p = win_rate (ймовірність виграшу)
         - q = 1 - p (ймовірність програшу)
-        
+
         Args:
             win_rate: Відсоток виграшних торгів (0-1)
             avg_win: Середній виграш
             avg_loss: Середній програш
-        
+
         Returns:
             Kelly fraction (0-1)
         """

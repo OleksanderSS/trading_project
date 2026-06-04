@@ -1,13 +1,15 @@
 """
 Final Stages Executor - Handles final stages execution
 """
-import time
 import json
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+import time
 from datetime import datetime
+from pathlib import Path
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -21,9 +23,7 @@ class FinalStagesExecutor:
         self.logger = ProjectLogger.get_logger(__name__)
 
     async def run_final_stages(self, features_df, targets_df, colab_results:
-        Optional[Dict[str, Any]]=None, light_results: Optional[Dict[str,
-        Any]]=None, tickers: Optional[List[str]]=None, timeframes: Optional
-        [List[str]]=None, batch_name: Optional[str]=None) ->Dict[str, Any]:
+        dict[str, Any] | None=None, light_results: dict[str, Any] | None=None, tickers: list[str] | None=None, timeframes: list[str] | None=None, batch_name: str | None=None) ->dict[str, Any]:
         """Runs final stages 4-7 after Colab results are loaded."""
         batch_name, stages_to_run = self._prepare_final_stages_params(
             colab_results, batch_name, [4, 5, 6, 7])
@@ -83,14 +83,14 @@ class FinalStagesExecutor:
         """Тренування heavy models"""
         self.logger.info(
             '🔥 Training heavy models: CNN, LSTM, GRU, Transformer, TabNet')
-        heavy_results: Dict[str, Any] = {'ticker_results': {}}
+        heavy_results: dict[str, Any] = {'ticker_results': {}}
         heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet']
         for ticker in tickers[:3]:
             heavy_results['ticker_results'][ticker] = {'timeframes': {'all':
                 {'results': {}}}}
             for target_col in [col for col in targets_df.columns if col.
                 startswith('target_')]:
-                target_data = targets_df[target_col]
+                targets_df[target_col]
                 heavy_results['ticker_results'][ticker]['timeframes']['all'][
                     'results'][target_col] = {'models': {}}
                 for model_type in heavy_models:
@@ -149,9 +149,8 @@ class FinalStagesExecutor:
                                         existing_models.update(new_models)
         return merged
 
-    def _prepare_final_stages_params(self, colab_results: Optional[Dict[str,
-        Any]], batch_name: Optional[str], stages_to_run: Optional[List[int]]
-        ) ->Tuple[str, List[int]]:
+    def _prepare_final_stages_params(self, colab_results: dict[str, Any] | None, batch_name: str | None, stages_to_run: list[int] | None
+        ) ->tuple[str, list[int]]:
         """Prepare and validate parameters for final stages."""
         if colab_results is None:
             colab_results = {}
@@ -162,8 +161,8 @@ class FinalStagesExecutor:
             stages_to_run = sorted(set(stages_to_run) | {5})
         return batch_name, stages_to_run
 
-    def _build_models_metadata(self, colab_results: Dict[str, Any],
-        light_results: Optional[Dict[str, Any]]) ->Dict[str, Any]:
+    def _build_models_metadata(self, colab_results: dict[str, Any],
+        light_results: dict[str, Any] | None) ->dict[str, Any]:
         """Build comprehensive models metadata from all sources."""
         models_metadata = {}
         if colab_results and 'models_metadata' in colab_results:
@@ -174,7 +173,7 @@ class FinalStagesExecutor:
             ) / 'light_models_results.json'
         if accumulated_results_path.exists():
             try:
-                with open(accumulated_results_path, 'r', encoding='utf-8'
+                with open(accumulated_results_path, encoding='utf-8'
                     ) as f:
                     accumulated = json.load(f)
                 if 'runs' in accumulated:
@@ -187,9 +186,8 @@ class FinalStagesExecutor:
                 raise
         return models_metadata
 
-    def _create_final_summary(self, results: Dict[str, Any],
-        models_metadata: Dict[str, Any], duration: float, tickers: Optional
-        [List[str]]) ->Dict[str, Any]:
+    def _create_final_summary(self, results: dict[str, Any],
+        models_metadata: dict[str, Any], duration: float, tickers: list[str] | None) ->dict[str, Any]:
         """Create final summary of pipeline execution."""
         return {'timestamp': datetime.now().isoformat(), 'batch_name': self
             .batch_name, 'tickers': tickers or [], 'models_trained': list(
@@ -197,7 +195,7 @@ class FinalStagesExecutor:
             'pipeline_results': results, 'duration_seconds': duration,
             'status': 'completed'}
 
-    async def _save_final_results(self, final_summary: Dict[str, Any]) ->Path:
+    async def _save_final_results(self, final_summary: dict[str, Any]) ->Path:
         """Save final results to JSON file."""
         import aiofiles
         output_path = Path(self.output_dir

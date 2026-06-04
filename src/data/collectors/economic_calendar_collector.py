@@ -1,13 +1,16 @@
 import asyncio
 import hashlib
-import pandas as pd
-from io import StringIO
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
-from .base_collector import BaseCollector
+from io import StringIO
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
 
 
 class EconomicCalendarCollector(BaseCollector):
@@ -15,13 +18,12 @@ class EconomicCalendarCollector(BaseCollector):
     collector_type = 'economic_calendar'
     data_type = 'economic'
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory:
-        HttpClientFactory, db_manager: DataManager, cache_manager: Optional
-        [CacheManager]=None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory:
+        HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
 
-    async def run(self, **kwargs) ->Optional[pd.DataFrame]:
+    async def run(self, **kwargs) ->pd.DataFrame | None:
         table_name = self.configs.get('table_name', 'economic_calendar')
         cache_key = f'{self.__class__.__name__}_run'
         start_date, end_date = self._get_date_range()
@@ -67,7 +69,7 @@ class EconomicCalendarCollector(BaseCollector):
             )
         return new_df
 
-    async def fetch_raw_data(self, **kwargs) ->List[Dict[str, Any]]:
+    async def fetch_raw_data(self, **kwargs) ->list[dict[str, Any]]:
         api_url = self.configs.get('api_url')
         if not api_url:
             self.logger.error(
@@ -109,20 +111,20 @@ class EconomicCalendarCollector(BaseCollector):
         end = datetime.now() + timedelta(days=days_ahead)
         return start, end
 
-    def _build_payload(self, start_date: datetime, end_date: datetime) ->Dict:
+    def _build_payload(self, start_date: datetime, end_date: datetime) ->dict:
         countries = self.configs.get('countries', [])
         importance = self.configs.get('importance', [])
         api_mappings = self.configs.get('api_mappings', {})
         country_map = api_mappings.get('country', {})
         impact_map = api_mappings.get('impact', {})
         payload = self.configs.get('request_payload', {}).copy()
-        payload.update({'country[]': [country_map[c] for c in countries if 
+        payload.update({'country[]': [country_map[c] for c in countries if
             c in country_map], 'importance[]': [impact_map[i] for i in
             importance if i in impact_map], 'startDate': start_date.
             strftime('%Y-%m-%d'), 'endDate': end_date.strftime('%Y-%m-%d')})
         return payload
 
-    def _parse_html(self, html_data: str) ->List[Dict[str, Any]]:
+    def _parse_html(self, html_data: str) ->list[dict[str, Any]]:
         column_names = self.configs.get('column_names')
         if not column_names:
             self.logger.error(

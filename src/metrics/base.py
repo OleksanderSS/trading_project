@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
+
 
 class BaseMetricCalculator(ABC):
     """
@@ -8,7 +9,7 @@ class BaseMetricCalculator(ABC):
     """
 
     @abstractmethod
-    def calculate(self, data: Any, **kwargs) -> Dict[str, Any]:
+    def calculate(self, data: Any, **kwargs) -> dict[str, Any]:
         """
         Performs the metric calculations on the provided data.
 
@@ -42,7 +43,7 @@ class BaseMetricCalculator(ABC):
         """
         pass
 
-    def get_summary(self, metrics: Dict[str, Any]) -> str:
+    def get_summary(self, metrics: dict[str, Any]) -> str:
         """
         Generates a human-readable summary of the calculated metrics.
         """

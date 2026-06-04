@@ -1,10 +1,12 @@
+import json
+from datetime import datetime
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from datetime import datetime
-import json
-from src.core.logging.logger import ProjectLogger
+
 from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
 
 
 class HyperparameterSearcher:
@@ -63,7 +65,7 @@ class HyperparameterSearcher:
         metric_func=None):
         """Пошук параметрів для LSTM"""
         param_space = {'hidden_size': [32, 64, 128], 'n_layers': [1, 2, 3],
-            'dropout': [0.1, 0.2, 0.3], 'learning_rate': [0.0001, 0.0005, 
+            'dropout': [0.1, 0.2, 0.3], 'learning_rate': [0.0001, 0.0005,
             0.001], 'batch_size': [16, 32, 64], 'epochs': [50, 100, 200]}
         if self.optuna_available and self.method == 'optuna':
             return self._optimize_optuna_lstm(X_train, y_train, x_val,
@@ -181,7 +183,7 @@ class HyperparameterSearcher:
             combinations = rng.choice(combinations, self.n_trials, replace=
                 False).tolist()
         for combo in combinations:
-            params = dict(zip(keys, combo))
+            params = dict(zip(keys, combo, strict=False))
             try:
                 if model_type == 'mlp':
                     score = self._evaluate_mlp_params(x_train, y_train,
@@ -289,7 +291,7 @@ class HyperparameterSearcher:
     def _get_default_param_space(self, model_type):
         """Get default parameter space for model"""
         if model_type == 'mlp':
-            return {'hidden_size_1': [64, 128, 256], 'hidden_size_2': [32, 
+            return {'hidden_size_1': [64, 128, 256], 'hidden_size_2': [32,
                 64, 128], 'dropout': [0.1, 0.2, 0.3], 'learning_rate': [
                 0.001, 0.005], 'batch_size': [32, 64], 'epochs': [50, 100]}
         elif model_type == 'lstm':

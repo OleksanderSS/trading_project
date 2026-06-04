@@ -1,5 +1,5 @@
-from typing import Dict, Any, List
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ class BaselineComparisonEngine:
         self.dominance_threshold = dominance_threshold
         self.logger = logger
 
-    def compare(self, complex_metrics: Dict[str, float], baseline_results: Dict[str, Any]) -> Dict[str, Any]:
+    def compare(self, complex_metrics: dict[str, float], baseline_results: dict[str, Any]) -> dict[str, Any]:
         """Порівнює результати складної моделі з базовими."""
         comparison_results = {
             'dominant_baselines': [],
@@ -26,7 +26,7 @@ class BaselineComparisonEngine:
             for baseline_name, baseline_result in baseline_results.items():
                 if baseline_result.get('status') == 'error' or 'metrics' not in baseline_result:
                     continue
-                
+
                 baseline_metrics = baseline_result['metrics']
                 performance_diff = self._calculate_performance_difference(complex_metrics, baseline_metrics)
                 dominance_info = self._check_baseline_dominance(performance_diff, baseline_result.get('complexity_score', 1))
@@ -50,7 +50,7 @@ class BaselineComparisonEngine:
             self.logger.error(f"Error comparing with baselines: {e}")
             raise
 
-    def _calculate_performance_difference(self, complex_metrics: Dict[str, float], baseline_metrics: Dict[str, float]) -> Dict[str, float]:
+    def _calculate_performance_difference(self, complex_metrics: dict[str, float], baseline_metrics: dict[str, float]) -> dict[str, float]:
         differences = {}
         for metric in ['mse', 'mae', 'r2']:
             if metric in complex_metrics and metric in baseline_metrics:
@@ -59,7 +59,7 @@ class BaselineComparisonEngine:
                 differences[metric] = (baseline_val - complex_val) if metric == 'r2' else (complex_val - baseline_val)
         return differences
 
-    def _check_baseline_dominance(self, performance_diff: Dict[str, float], baseline_complexity: float) -> Dict[str, Any]:
+    def _check_baseline_dominance(self, performance_diff: dict[str, float], baseline_complexity: float) -> dict[str, Any]:
         dominance_info = {'is_dominant': False, 'strength': 0.0, 'complexity_savings': 0.0}
         dominant_count = 0
         total_advantage = 0.0
@@ -67,7 +67,7 @@ class BaselineComparisonEngine:
             if diff > self.dominance_threshold:
                 dominant_count += 1
                 total_advantage += diff
-        
+
         if dominant_count > 0:
             dominance_info['strength'] = total_advantage / dominant_count
             dominance_info['is_dominant'] = True

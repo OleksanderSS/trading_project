@@ -1,8 +1,11 @@
-from typing import Dict, Any, Optional
+from typing import Any
+
 import pandas as pd
-from .base import BaseBaseline
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+from .base import BaseBaseline
 
 logger = ProjectLogger.get_logger("BaselineStrategies")
 
@@ -14,8 +17,8 @@ class BuyAndHoldBaseline(BaseBaseline):
         super().__init__(complexity_score)
 
     def train_and_evaluate(self, market_data: pd.DataFrame, features_df:
-        Optional[pd.DataFrame]=None, target_series: Optional[pd.Series]=None
-        ) ->Dict[str, Any]:
+        pd.DataFrame | None=None, target_series: pd.Series | None=None
+        ) ->dict[str, Any]:
         try:
             if target_series is not None:
                 predictions = target_series.shift(1).fillna(target_series.mean()
@@ -38,14 +41,13 @@ class BuyAndHoldBaseline(BaseBaseline):
 class MovingAverageBaseline(BaseBaseline):
     """Стратегія на основі ковзного середнього."""
 
-    def __init__(self, complexity_score: float=0.5, windows: Optional[list[
-        int]]=None):
+    def __init__(self, complexity_score: float=0.5, windows: list[int] | None=None):
         super().__init__(complexity_score)
         self.windows = windows or [5, 10, 20]
 
     def train_and_evaluate(self, market_data: pd.DataFrame, features_df:
-        Optional[pd.DataFrame]=None, target_series: Optional[pd.Series]=None
-        ) ->Dict[str, Any]:
+        pd.DataFrame | None=None, target_series: pd.Series | None=None
+        ) ->dict[str, Any]:
         try:
             if 'close' not in market_data.columns:
                 return {'model_type': 'moving_average', 'status': 'no_data'}
@@ -83,8 +85,8 @@ class MeanReversionBaseline(BaseBaseline):
         self.lookback_window = lookback_window
 
     def train_and_evaluate(self, market_data: pd.DataFrame, features_df:
-        Optional[pd.DataFrame]=None, target_series: Optional[pd.Series]=None
-        ) ->Dict[str, Any]:
+        pd.DataFrame | None=None, target_series: pd.Series | None=None
+        ) ->dict[str, Any]:
         try:
             if 'close' not in market_data.columns:
                 return {'model_type': 'mean_reversion', 'status': 'no_data'}

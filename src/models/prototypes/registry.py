@@ -3,9 +3,8 @@ Prototype Registry for managing model prototypes
 
 Provides centralized storage and retrieval of prototypes with persistence.
 """
-import logging
-
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -177,14 +176,14 @@ class PrototypeRegistry:
         try:
             with open(self.registry_path) as f:
                 data = json.load(f)
-            
+
             # Reconstruct prototypes
             from src.models.prototypes.prototype import ModelPrototype
-            
-            # Note: We need a way to resolve model_class from name. 
+
+            # Note: We need a way to resolve model_class from name.
             # For now, if it's MockModel, we assume the test environment context.
             # In production, we'd use a registry or importlib.
-            
+
             for model_id, info in data.items():
                 proto = ModelPrototype(
                     model_id=model_id,
@@ -194,7 +193,7 @@ class PrototypeRegistry:
                     metadata=info["metadata"]
                 )
                 self.prototypes[model_id] = proto
-            
+
             logger.info(f"📖 Loaded {len(data)} prototypes from registry")
         except Exception as e:
             logger.error(f"Failed to load registry: {e}")

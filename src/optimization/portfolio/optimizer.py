@@ -2,14 +2,16 @@
 Portfolio Optimization Module
 Оптимізація портфоліо: Markowitz, Black-Litterman, Risk Parity, Hierarchical Risk Parity, Kelly Criterion
 """
-import pandas as pd
-import numpy as np
-from typing import Dict, Any, List, Optional, Union
 from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.optimize import minimize
-from scipy.cluster.hierarchy import linkage, dendrogram
+
+from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
 from src.core.logging.logger import ProjectLogger
-from src.core.error_handling.error_handler import IErrorHandler, ErrorHandler
 from src.metrics.calculator import MetricsCalculator
 from src.optimization.base import BaseOptimizer
 
@@ -17,7 +19,7 @@ from src.optimization.base import BaseOptimizer
 @dataclass
 class BlackLittermanParams:
     """Parameters for Black-Litterman optimization"""
-    views: Optional[Dict[str, float]] = None
+    views: dict[str, float] | None = None
     tau: float = 0.025
     risk_free_rate: float = 0.02
     benchmark_ticker: str = 'SPY'
@@ -31,7 +33,7 @@ class PortfolioOptimizer(BaseOptimizer):
     Оптимізатор портфоліо з різними методами та підтримкою мульти-таймфреймів.
     """
 
-    def __init__(self, timeframe: str='1d', transaction_cost_lambda: float=0.001, error_handler: Optional[IErrorHandler] = None):
+    def __init__(self, timeframe: str='1d', transaction_cost_lambda: float=0.001, error_handler: IErrorHandler | None = None):
         self.logger = ProjectLogger.get_logger('PortfolioOptimizer')
         self.timeframe = timeframe
         self.transaction_cost_lambda = transaction_cost_lambda
@@ -62,7 +64,7 @@ class PortfolioOptimizer(BaseOptimizer):
         return float(sharpe) if np.isfinite(sharpe) else np.nan
 
     def optimize(self, returns: pd.DataFrame, method: str='max_sharpe', **
-        kwargs) ->Dict[str, Any]:
+        kwargs) ->dict[str, Any]:
         """
         Головна точка входу для оптимізації портфоліо.
         """
@@ -74,7 +76,7 @@ class PortfolioOptimizer(BaseOptimizer):
             raise RuntimeError(f"Optimization failed for method '{method}': {e}") from e
 
     def _dispatch_optimization(self, returns: pd.DataFrame, method: str, **
-        kwargs) ->Dict[str, Any]:
+        kwargs) ->dict[str, Any]:
         """Dispatch optimization to appropriate method"""
         optimization_methods = {'markowitz': lambda : self.
             markowitz_optimization(returns, **kwargs), 'max_sharpe': lambda :
@@ -94,7 +96,7 @@ class PortfolioOptimizer(BaseOptimizer):
             return {'success': False, 'error': f'Unknown method: {method}'}
         return optimization_methods[method]()
 
-    def _handle_optimization_error(self, error: Exception, method: str) ->Dict[
+    def _handle_optimization_error(self, error: Exception, method: str) ->dict[
         str, Any]:
         """Handle optimization errors consistently"""
         self.logger.error(
@@ -104,7 +106,7 @@ class PortfolioOptimizer(BaseOptimizer):
         return {'success': False, 'error': str(error)}
 
     def _black_litterman_with_params(self, returns: pd.DataFrame, **kwargs
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Black-Litterman optimization with parameter object"""
         if 'params' in kwargs and isinstance(kwargs['params'],
             BlackLittermanParams):
@@ -143,7 +145,7 @@ class PortfolioOptimizer(BaseOptimizer):
             return pd.DataFrame()
 
     def calculate_covariance_matrix(self, returns: pd.DataFrame, method:
-        Union[str, pd.DataFrame]='ledoit-wolf') ->pd.DataFrame:
+        str | pd.DataFrame='ledoit-wolf') ->pd.DataFrame:
         """Розрахувати коваріаційну матрицю або використати надану."""
         try:
             if isinstance(method, pd.DataFrame):
@@ -167,8 +169,7 @@ class PortfolioOptimizer(BaseOptimizer):
             return returns.cov()
 
     def markowitz_optimization(self, returns: pd.DataFrame, risk_free_rate:
-        float=0.02, target_return: float=None, current_weights: Optional[np
-        .ndarray]=None) ->Dict[str, Any]:
+        float=0.02, target_return: float=None, current_weights: np.ndarray | None=None) ->dict[str, Any]:
         """Markowitz mean-variance оптимізація."""
         try:
             mu = returns.mean() * self.periods_per_year
@@ -188,7 +189,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 return np.dot(weights.T, mu)
             constraints = [{'type': 'eq', 'fun': lambda x: np.sum(x) - 1}]
             if target_return is not None:
-                constraints.append({'type': 'eq', 'fun': lambda x: 
+                constraints.append({'type': 'eq', 'fun': lambda x:
                     portfolio_return(x) - target_return})
             bounds = tuple((self.constraints['min_weight'], self.
                 constraints['max_weight']) for _ in range(n_assets))
@@ -212,7 +213,7 @@ class PortfolioOptimizer(BaseOptimizer):
             raise RuntimeError(f"Markowitz optimization failed: {e}") from e
 
     def max_sharpe_optimization(self, returns: pd.DataFrame, risk_free_rate:
-        float=0.02, current_weights: Optional[np.ndarray]=None) ->Dict[str, Any
+        float=0.02, current_weights: np.ndarray | None=None) ->dict[str, Any
         ]:
         """Максимізація Sharpe ratio."""
         try:
@@ -257,7 +258,7 @@ class PortfolioOptimizer(BaseOptimizer):
             raise RuntimeError(f"Max Sharpe optimization failed: {e}") from e
 
     def kelly_optimization(self, win_rate: float, profit_factor: float,
-        tickers: List[str]) ->Dict[str, Any]:
+        tickers: list[str]) ->dict[str, Any]:
         """Kelly Criterion optimization with robust constraints."""
         try:
             p, b = win_rate, profit_factor
@@ -282,21 +283,21 @@ class PortfolioOptimizer(BaseOptimizer):
             return {'success': False, 'error': str(e)}
 
     def black_litterman_optimization(self, returns: pd.DataFrame, params:
-        Optional[BlackLittermanParams]=None) ->Dict[str, Any]:
+        BlackLittermanParams | None=None) ->dict[str, Any]:
         """Black-Litterman оптимізація."""
         if params is None:
             params = BlackLittermanParams()
         return self._black_litterman_calculation(returns, params)
 
     def black_litterman_optimization_legacy(self, returns: pd.DataFrame,
-        params: BlackLittermanParams=None) ->Dict[str, Any]:
+        params: BlackLittermanParams=None) ->dict[str, Any]:
         """Legacy Black-Litterman optimization for backward compatibility"""
         if params is None:
             params = BlackLittermanParams()
         return self._black_litterman_calculation(returns, params)
 
     def _black_litterman_calculation(self, returns: pd.DataFrame, params:
-        BlackLittermanParams) ->Dict[str, Any]:
+        BlackLittermanParams) ->dict[str, Any]:
         """Black-Litterman оптимізація."""
         try:
             mu = returns.mean() * self.periods_per_year
@@ -337,7 +338,7 @@ class PortfolioOptimizer(BaseOptimizer):
         rounded = (weights * 100).round() / 100
         return rounded / rounded.sum() if rounded.sum() > 0 else rounded
 
-    def risk_parity_optimization(self, returns: pd.DataFrame) ->Dict[str, Any]:
+    def risk_parity_optimization(self, returns: pd.DataFrame) ->dict[str, Any]:
         """Risk Parity оптимізація."""
         try:
             cov_matrix = self.calculate_covariance_matrix(returns)
@@ -374,7 +375,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 exc_info=True)
             return {'success': False, 'error': str(e)}
 
-    def hierarchical_risk_parity(self, returns: pd.DataFrame) ->Dict[str, Any]:
+    def hierarchical_risk_parity(self, returns: pd.DataFrame) ->dict[str, Any]:
         """Hierarchical Risk Parity (HRP)"""
         try:
             cov_matrix = self.calculate_covariance_matrix(returns)
@@ -397,7 +398,7 @@ class PortfolioOptimizer(BaseOptimizer):
             self.logger.error(f'Error in HRP optimization: {e}', exc_info=True)
             return {'success': False, 'error': str(e)}
 
-    def equal_weight_portfolio(self, returns: pd.DataFrame) ->Dict[str, Any]:
+    def equal_weight_portfolio(self, returns: pd.DataFrame) ->dict[str, Any]:
         """Рівноваговий портфоліо"""
         try:
             n_assets = len(returns.columns)
@@ -419,7 +420,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 exc_info=True)
             return {'success': False, 'error': str(e)}
 
-    def inverse_volatility_portfolio(self, returns: pd.DataFrame) ->Dict[
+    def inverse_volatility_portfolio(self, returns: pd.DataFrame) ->dict[
         str, Any]:
         """Портфоліо з оберненою волатильністю"""
         try:
@@ -449,8 +450,8 @@ class PortfolioOptimizer(BaseOptimizer):
                 f'Error in inverse volatility portfolio: {e}', exc_info=True)
             return {'success': False, 'error': str(e)}
 
-    def compare_optimization_methods(self, returns: pd.DataFrame) ->Dict[
-        str, Dict]:
+    def compare_optimization_methods(self, returns: pd.DataFrame) ->dict[
+        str, dict]:
         """Порівняти різні методи оптимізації"""
         try:
             results = {}
@@ -496,10 +497,10 @@ class PortfolioOptimizer(BaseOptimizer):
                 condensed_distance.append(distance_matrix[i, j])
         return linkage(condensed_distance, method='single')
 
-    def _get_cluster_order(self, linkage_matrix: np.ndarray) ->List[int]:
+    def _get_cluster_order(self, linkage_matrix: np.ndarray) ->list[int]:
         return dendrogram(linkage_matrix, no_plot=True)['leaves']
 
-    def _recursive_bisection(self, cov_matrix: pd.DataFrame, clusters: List
+    def _recursive_bisection(self, cov_matrix: pd.DataFrame, clusters: list
         [int]) ->np.ndarray:
         n_assets = len(cov_matrix)
         weights = np.zeros(n_assets)
@@ -517,7 +518,7 @@ class PortfolioOptimizer(BaseOptimizer):
         allocate_cluster(clusters, 1.0)
         return weights
 
-    def _create_comparison_table(self, results: Dict[str, Dict]
+    def _create_comparison_table(self, results: dict[str, dict]
         ) ->pd.DataFrame:
         comparison_data = []
         for method, result in results.items():

@@ -1,10 +1,12 @@
 # DynamicConfigurationUpdater Implementation
 # Minimal dependencies - uses only psutil, built-in modules
 
-import json
-import psutil
 import datetime
+import json
 from pathlib import Path
+
+import psutil
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -24,7 +26,7 @@ class DynamicConfigurationUpdater:
         self.project_path = Path(project_path) if project_path else Path.cwd()
         self.adjustment_log = []
         self.logger = ProjectLogger.get_logger("DynamicConfigUpdater")
-        
+
         # Пороги для адаптації
         self.memory_critical_threshold = 90  # %
         self.memory_warning_threshold = 80   # %
@@ -38,7 +40,7 @@ class DynamicConfigurationUpdater:
             memory_percent = psutil.virtual_memory().percent
 
         previous_batch = current_batch_size
-        
+
         if memory_percent >= self.memory_critical_threshold:
             new_batch = max(int(current_batch_size * 0.5), 4)
             adjustment = "critical_memory"
@@ -76,7 +78,7 @@ class DynamicConfigurationUpdater:
         self._log_adjustment("epochs", self.base_config.get('epochs', 100), new_epochs, reason, None)
         self.current_config['epochs'] = new_epochs
         self.logger.info(f"Epochs reduced: {self.base_config.get('epochs', 100)} → {new_epochs} ({reason})")
-        
+
         return new_epochs
 
     def update_learning_rate_for_loss(self, current_loss, previous_loss, improvement_rate=0.01):
@@ -85,7 +87,7 @@ class DynamicConfigurationUpdater:
         """
         base_lr = self.base_config.get('learning_rate', 0.001)
         current_lr = self.current_config.get('learning_rate', base_lr)
-        
+
         if previous_loss is None:
             return current_lr
 
@@ -107,7 +109,7 @@ class DynamicConfigurationUpdater:
         self._log_adjustment("learning_rate", current_lr, new_lr, reason, loss_improvement)
         self.current_config['learning_rate'] = new_lr
         self.logger.info(f"Learning rate adjusted: {current_lr:.6f} → {new_lr:.6f} ({reason})")
-        
+
         return new_lr
 
     def update_max_features_for_memory(self, current_features, memory_percent=None):
@@ -118,7 +120,7 @@ class DynamicConfigurationUpdater:
             memory_percent = psutil.virtual_memory().percent
 
         base_max_features = self.base_config.get('max_features', 100)
-        
+
         if memory_percent > 85 and current_features > int(base_max_features * 0.5):
             new_features = max(int(current_features * 0.75), 20)
             self._log_adjustment("max_features", current_features, new_features, "memory_pressure", memory_percent)
@@ -162,14 +164,14 @@ class DynamicConfigurationUpdater:
         """Зберегти лог змін конфігурації"""
         if filepath is None:
             filepath = self.project_path / "config_adjustments.json"
-        
+
         with open(filepath, 'w') as f:
             json.dump({
                 'base_config': self.base_config,
                 'final_config': self.current_config,
                 'adjustments': self.adjustment_log
             }, f, indent=2)
-        
+
         self.logger.info(f"Configuration adjustment log saved to {filepath}")
         return filepath
 
@@ -183,7 +185,7 @@ class DynamicConfigurationUpdater:
 if __name__ == "__main__":
     ProjectLogger.setup_logging()
     logger = ProjectLogger.get_logger("ConfigUpdaterRunner")
-    
+
     # Базова конфігурація
     base_config = {
         'batch_size': 32,
@@ -202,22 +204,22 @@ if __name__ == "__main__":
     # Цикл 1: Нормальна пам'ять
     logger.info("Step 1: Normal memory (60%)")
     new_batch = updater.update_batch_size_for_memory(32, memory_percent=60)
-    
+
     # Цикл 2: Висока пам'ять
     logger.info("Step 2: High memory (85%)")
     new_batch = updater.update_batch_size_for_memory(32, memory_percent=85)
-    
+
     # Цикл 3: Критична пам'ять
     logger.info("Step 3: Critical memory (92%)")
     new_batch = updater.update_batch_size_for_memory(new_batch, memory_percent=92)
-    
+
     # Цикл 4: Адаптація learning rate
     logger.info("Step 4: Loss improvement detected")
     updater.update_learning_rate_for_loss(current_loss=0.045, previous_loss=0.050)
-    
+
     # Цикл 5: Адаптація epochs
     logger.info("Step 5: Patience counter approaching limit")
-    updater.update_epochs_for_convergence(current_epoch=30, 
+    updater.update_epochs_for_convergence(current_epoch=30,
                                           patience_counter=12, patience_limit=15)
 
     # Зберегти лог

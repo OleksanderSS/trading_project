@@ -2,10 +2,8 @@
 
 import hashlib
 from pathlib import Path
-from functools import wraps
-import time
+
 from src.core.logging.logger import ProjectLogger
-from src.colab.utils.retry import retry_on_timeout
 from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = ProjectLogger.get_logger(__name__)
@@ -44,7 +42,7 @@ def save_checkpoint(checkpoint_dir, ticker, target_col, m_type, model, optimizer
     if not TORCH_AVAILABLE:
         logger.warning("   ⚠️ torch не доступний, checkpoint не збережено")
         return None
-        
+
     checkpoint_path = Path(checkpoint_dir) / \
         f"checkpoint_{ticker}_{target_col}_{m_type}_ep{epoch}.pt"
     torch.save({
@@ -62,7 +60,7 @@ def load_checkpoint(checkpoint_path, model, optimizer):
     if not TORCH_AVAILABLE:
         logger.warning("   ⚠️ torch не доступний, checkpoint не завантажено")
         return 0, float('inf')
-        
+
     trusted_checkpoint_path = resolve_trusted_artifact_path(
         checkpoint_path,
         allowed_suffixes={'.pt', '.pth'},

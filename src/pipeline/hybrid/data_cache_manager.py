@@ -3,9 +3,11 @@ Data Cache Manager: Handles cache validation and data freshness checks.
 Extracted from HybridOrchestrator to improve code organization and testability.
 """
 import logging
-import pandas as pd
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Any
+
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -15,9 +17,8 @@ class DataCacheManager:
     def __init__(self):
         self.logger = ProjectLogger.get_logger(__name__)
 
-    def handle_data_caching(self, local_res: Dict[str, Any], force_training:
-        bool, batch_name: str, output_dir: Path) ->Tuple[Optional[pd.
-        DataFrame], Optional[pd.DataFrame]]:
+    def handle_data_caching(self, local_res: dict[str, Any], force_training:
+        bool, batch_name: str, output_dir: Path) ->tuple[pd.DataFrame | None, pd.DataFrame | None]:
         """Handle data caching logic and return features and targets dataframes."""
         n_f, n_t = local_res['results'].get('features_df'), local_res['results'
             ].get('targets_df')
@@ -61,8 +62,8 @@ class DataCacheManager:
                 ).dt.tz_localize(None)
             new_datetime = pd.to_datetime(new_features['datetime']
                 ).dt.tz_localize(None)
-            known = set(zip(old_datetime, old_features.get('ticker', [])))
-            current = set(zip(new_datetime, new_features.get('ticker', [])))
+            known = set(zip(old_datetime, old_features.get('ticker', []), strict=False))
+            current = set(zip(new_datetime, new_features.get('ticker', []), strict=False))
             has_new = len(current - known) > 0
             if has_new:
                 self.logger.info(

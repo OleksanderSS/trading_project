@@ -5,14 +5,15 @@ Provides comprehensive constraint validation and enforcement for all agent actio
 Critical for preventing unsafe agent behavior in production environments.
 """
 
-from typing import Dict, List, Any, Optional, Callable
-from enum import Enum
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from enum import Enum
 from threading import RLock
+from typing import Any
 
+from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
 from src.core.logging.logger import ProjectLogger
-from src.core.error_handling.error_handler import IErrorHandler, ErrorHandler
 from src.meta_learning.security.constraint_validators import ConstraintValidators
 
 logger = ProjectLogger.get_logger(__name__)
@@ -41,11 +42,11 @@ class Constraint:
     """Individual constraint definition."""
     name: str
     constraint_type: ConstraintType
-    validator: Callable[[Dict[str, Any]], bool]
+    validator: Callable[[dict[str, Any]], bool]
     severity: ConstraintSeverity
     description: str
     enabled: bool = True
-    parameters: Dict[str, Any] = field(default_factory=dict)
+    parameters: dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class ConstraintViolation:
@@ -54,14 +55,14 @@ class ConstraintViolation:
     constraint_name: str
     severity: ConstraintSeverity
     agent_id: str
-    action_context: Dict[str, Any]
+    action_context: dict[str, Any]
     violation_details: str
     recommended_action: str
 
 class SecurityConstraintEngine:
     """
     Comprehensive security constraint validation engine.
-    
+
     Features:
     - Real-time constraint validation
     - Multiple constraint types
@@ -70,11 +71,11 @@ class SecurityConstraintEngine:
     - Emergency stop triggers
     - Adaptive constraint tuning
     """
-    
-    def __init__(self, config: Optional[Dict[str, Any]] = None, error_handler: Optional[IErrorHandler] = None):
+
+    def __init__(self, config: dict[str, Any] | None = None, error_handler: IErrorHandler | None = None):
         """
         Initialize the Security Constraint Engine.
-        
+
         Args:
             config: Configuration dictionary for constraints
             error_handler: Error handler instance
@@ -82,53 +83,53 @@ class SecurityConstraintEngine:
         self.config = config or {}
         self.logger = logger
         self.error_handler = error_handler or ErrorHandler()
-        
+
         # Initialize constraint validators
         self.validators = ConstraintValidators(self.logger, self.error_handler)
-        
+
         # Constraint storage
-        self._constraints: Dict[str, Constraint] = {}
-        self._constraint_violations: List[ConstraintViolation] = []
-        
+        self._constraints: dict[str, Constraint] = {}
+        self._constraint_violations: list[ConstraintViolation] = []
+
         # Engine settings
         self.enabled = self.config.get('enabled', True)
         self.strict_mode = self.config.get('strict_mode', True)
         self.emergency_stop_enabled = self.config.get('emergency_stop_enabled', True)
-        
+
         # Violation tracking
-        self.violation_history: Dict[str, List[datetime]] = {}
+        self.violation_history: dict[str, list[datetime]] = {}
         self.max_violations_per_hour = self.config.get('max_violations_per_hour', 10)
         self.critical_violation_threshold = self.config.get('critical_violation_threshold', 3)
-        
+
         # Market data cache
-        self.market_data_cache: Dict[str, Any] = {}
+        self.market_data_cache: dict[str, Any] = {}
         self.market_data_ttl = self.config.get('market_data_ttl', 300)  # 5 minutes
-        
+
         # Thread safety
         self._lock = RLock()
-        
+
         # Initialize default constraints
         self._initialize_default_constraints()
-        
+
         self.logger.info("✅ SecurityConstraintEngine initialized")
-    
-    def _check_constraint(self, constraint_name: str, constraint, agent_id: str, action_context: Dict[str, Any]) -> tuple:
+
+    def _check_constraint(self, constraint_name: str, constraint, agent_id: str, action_context: dict[str, Any]) -> tuple:
         """Check a single constraint and return (violations, warnings)."""
         violations = []
         warnings = []
-        
+
         try:
             is_valid = constraint.validator(action_context)
-            
+
             if not is_valid:
                 violation = self._create_violation(constraint, agent_id, action_context)
-                
+
                 if constraint.severity == ConstraintSeverity.WARNING:
                     warnings.append(violation)
                 else:
                     violations.append(violation)
                     self._record_violation(violation)
-        
+
         except Exception as e:
             self.logger.error(f"Error validating constraint {constraint_name}: {e}")
             self.error_handler.handle_error(
@@ -149,14 +150,14 @@ class SecurityConstraintEngine:
                 recommended_action="Review constraint implementation"
             )
             violations.append(error_violation)
-        
+
         return violations, warnings
 
     def _determine_action_allowed(self, violations: list, warnings: list) -> tuple:
         """Determine if action is allowed based on violations and warnings."""
         critical_violations = [v for v in violations if v.severity == ConstraintSeverity.CRITICAL]
         error_violations = [v for v in violations if v.severity == ConstraintSeverity.ERROR]
-        
+
         if critical_violations:
             allowed = False
             reason = f"Critical constraint violations: {[v.constraint_name for v in critical_violations]}"
@@ -169,10 +170,10 @@ class SecurityConstraintEngine:
         else:
             allowed = True
             reason = "All constraints satisfied" if not warnings else "Constraints satisfied with warnings"
-        
+
         return allowed, reason, critical_violations
 
-    def _build_validation_result(self, allowed: bool, reason: str, violations: list, warnings: list) -> Dict[str, Any]:
+    def _build_validation_result(self, allowed: bool, reason: str, violations: list, warnings: list) -> dict[str, Any]:
         """Build the validation result dictionary."""
         return {
             'allowed': allowed,
@@ -187,14 +188,14 @@ class SecurityConstraintEngine:
             }
         }
 
-    def validate_action(self, agent_id: str, action_context: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_action(self, agent_id: str, action_context: dict[str, Any]) -> dict[str, Any]:
         """
         Validate an agent action against all security constraints.
-        
+
         Args:
             agent_id: Agent identifier
             action_context: Context information about the action
-            
+
         Returns:
             Dictionary with validation results
         """
@@ -205,37 +206,37 @@ class SecurityConstraintEngine:
                 'violations': [],
                 'warnings': []
             }
-        
+
         with self._lock:
             try:
                 violations = []
                 warnings = []
-                
+
                 # Check all enabled constraints
                 for constraint_name, constraint in self._constraints.items():
                     if not constraint.enabled:
                         continue
-                    
+
                     constraint_violations, constraint_warnings = self._check_constraint(
                         constraint_name, constraint, agent_id, action_context
                     )
                     violations.extend(constraint_violations)
                     warnings.extend(constraint_warnings)
-                
+
                 # Determine if action is allowed
                 allowed, reason, critical_violations = self._determine_action_allowed(violations, warnings)
-                
+
                 # Trigger emergency stop if enabled and critical violations exist
                 if critical_violations and self.emergency_stop_enabled:
                     self._trigger_emergency_stop(agent_id, critical_violations)
-                
+
                 # Build result
                 result = self._build_validation_result(allowed, reason, violations, warnings)
-                
+
                 self.logger.info(f"Constraint validation for {agent_id}: {'ALLOWED' if allowed else 'DENIED'} - {reason}")
-                
+
                 return result
-                
+
             except Exception as e:
                 self.logger.error(f"Error in constraint validation for {agent_id}: {e}")
                 return {
@@ -244,14 +245,14 @@ class SecurityConstraintEngine:
                     'violations': [],
                     'warnings': []
                 }
-    
+
     def add_constraint(self, constraint: Constraint) -> bool:
         """
         Add a new constraint to the engine.
-        
+
         Args:
             constraint: Constraint to add
-            
+
         Returns:
             True if constraint added successfully
         """
@@ -263,14 +264,14 @@ class SecurityConstraintEngine:
             except Exception as e:
                 self.logger.error(f"Failed to add constraint {constraint.name}: {e}")
                 return False
-    
+
     def remove_constraint(self, constraint_name: str) -> bool:
         """
         Remove a constraint from the engine.
-        
+
         Args:
             constraint_name: Name of constraint to remove
-            
+
         Returns:
             True if constraint removed successfully
         """
@@ -286,8 +287,8 @@ class SecurityConstraintEngine:
             except Exception as e:
                 self.logger.error(f"Failed to remove constraint {constraint_name}: {e}")
                 return False
-    
-    def get_constraint_status(self) -> Dict[str, Any]:
+
+    def get_constraint_status(self) -> dict[str, Any]:
         """Get current status of all constraints."""
         with self._lock:
             return {
@@ -313,8 +314,8 @@ class SecurityConstraintEngine:
                     'emergency_stop_enabled': self.emergency_stop_enabled
                 }
             }
-    
-    def get_violation_history(self, hours: int = 24) -> List[Dict[str, Any]]:
+
+    def get_violation_history(self, hours: int = 24) -> list[dict[str, Any]]:
         """Get violation history for specified time period."""
         with self._lock:
             cutoff_time = datetime.now() - timedelta(hours=hours)
@@ -322,9 +323,9 @@ class SecurityConstraintEngine:
                 self._violation_to_dict(v) for v in self._constraint_violations
                 if v.timestamp > cutoff_time
             ]
-            
+
             return recent_violations
-    
+
     def _add_position_size_constraint(self) -> None:
         """Add position size constraint."""
         self.add_constraint(Constraint(
@@ -433,44 +434,44 @@ class SecurityConstraintEngine:
         self._add_volatility_constraint()
         self._add_liquidity_constraint()
         self._add_correlation_constraint()
-    
-    def _validate_position_size(self, context: Dict[str, Any]) -> bool:
+
+    def _validate_position_size(self, context: dict[str, Any]) -> bool:
         """Validate position size constraints."""
         constraints_dict = {name: constraint.parameters for name, constraint in self._constraints.items()}
         return self.validators.validate_position_size(context, constraints_dict)
-    
-    def _validate_risk_exposure(self, context: Dict[str, Any]) -> bool:
+
+    def _validate_risk_exposure(self, context: dict[str, Any]) -> bool:
         """Validate risk exposure constraints."""
         constraints_dict = {name: constraint.parameters for name, constraint in self._constraints.items()}
         return self.validators.validate_risk_exposure(context, constraints_dict)
-    
-    def _validate_trading_frequency(self, context: Dict[str, Any]) -> bool:
+
+    def _validate_trading_frequency(self, context: dict[str, Any]) -> bool:
         """Validate trading frequency constraints."""
         constraints_dict = {name: constraint.parameters for name, constraint in self._constraints.items()}
         return self.validators.validate_trading_frequency(context, constraints_dict, self.violation_history)
-    
-    def _validate_consecutive_losses(self, context: Dict[str, Any]) -> bool:
+
+    def _validate_consecutive_losses(self, context: dict[str, Any]) -> bool:
         """Validate consecutive losses constraint."""
         constraints_dict = {name: constraint.parameters for name, constraint in self._constraints.items()}
         return self.validators.validate_consecutive_losses(context, constraints_dict)
-    
-    def _validate_volatility_limits(self, context: Dict[str, Any]) -> bool:
+
+    def _validate_volatility_limits(self, context: dict[str, Any]) -> bool:
         """Validate volatility constraints."""
         constraints_dict = {name: constraint.parameters for name, constraint in self._constraints.items()}
         return self.validators.validate_volatility_limits(context, constraints_dict)
-    
-    def _validate_liquidity_requirements(self, context: Dict[str, Any]) -> bool:
+
+    def _validate_liquidity_requirements(self, context: dict[str, Any]) -> bool:
         """Validate liquidity requirements."""
         constraints_dict = {name: constraint.parameters for name, constraint in self._constraints.items()}
         return self.validators.validate_liquidity_requirements(context, constraints_dict)
-    
-    def _validate_correlation_limits(self, context: Dict[str, Any]) -> bool:
+
+    def _validate_correlation_limits(self, context: dict[str, Any]) -> bool:
         """Validate correlation constraints."""
         constraints_dict = {name: constraint.parameters for name, constraint in self._constraints.items()}
         return self.validators.validate_correlation_limits(context, constraints_dict)
-    
-    def _create_violation(self, constraint: Constraint, agent_id: str, 
-                          action_context: Dict[str, Any]) -> ConstraintViolation:
+
+    def _create_violation(self, constraint: Constraint, agent_id: str,
+                          action_context: dict[str, Any]) -> ConstraintViolation:
         """Create a constraint violation record."""
         return ConstraintViolation(
             timestamp=datetime.now(),
@@ -481,28 +482,28 @@ class SecurityConstraintEngine:
             violation_details=f"Constraint '{constraint.name}' violated: {constraint.description}",
             recommended_action=self._get_recommended_action(constraint)
         )
-    
+
     def _record_violation(self, violation: ConstraintViolation):
         """Record a constraint violation."""
         self._constraint_violations.append(violation)
-        
+
         # Add to agent violation history
         if violation.agent_id not in self.violation_history:
             self.violation_history[violation.agent_id] = []
         self.violation_history[violation.agent_id].append(violation.timestamp)
-        
+
         # Trim violation history
         cutoff_time = datetime.now() - timedelta(hours=24)
         self.violation_history[violation.agent_id] = [
             ts for ts in self.violation_history[violation.agent_id] if ts > cutoff_time
         ]
-        
+
         # Trim violations list
         if len(self._constraint_violations) > 10000:
             self._constraint_violations = self._constraint_violations[-10000:]
-        
+
         self.logger.warning(f"⚠️ Constraint violation: {violation.constraint_name} by agent {violation.agent_id}")
-    
+
     def _get_recommended_action(self, constraint: Constraint) -> str:
         """Get recommended action for constraint violation."""
         recommendations = {
@@ -514,25 +515,25 @@ class SecurityConstraintEngine:
             ConstraintType.LIQUIDITY_REQUIREMENTS: "Choose more liquid instruments",
             ConstraintType.CORRELATION_LIMITS: "Avoid highly correlated positions"
         }
-        
+
         return recommendations.get(constraint.constraint_type, "Review and adjust action")
-    
-    def _trigger_emergency_stop(self, agent_id: str, violations: List[ConstraintViolation]):
+
+    def _trigger_emergency_stop(self, agent_id: str, violations: list[ConstraintViolation]):
         """Trigger emergency stop for critical violations."""
         try:
             self.logger.critical(f"🚨 EMERGENCY STOP triggered for agent {agent_id}")
-            
+
             # Log all critical violations
             for violation in violations:
                 self.logger.critical(f"Critical violation: {violation.constraint_name} - {violation.violation_details}")
-            
+
             # This would integrate with the emergency stop system
             # For now, just log the event
-            
+
         except Exception as e:
             self.logger.error(f"Error triggering emergency stop: {e}")
-    
-    def _violation_to_dict(self, violation: ConstraintViolation) -> Dict[str, Any]:
+
+    def _violation_to_dict(self, violation: ConstraintViolation) -> dict[str, Any]:
         """Convert violation to dictionary format."""
         return {
             'timestamp': violation.timestamp.isoformat(),
@@ -545,27 +546,27 @@ class SecurityConstraintEngine:
 
 
 # Singleton instance
-_security_constraint_engine_instance: Optional[SecurityConstraintEngine] = None
+_security_constraint_engine_instance: SecurityConstraintEngine | None = None
 
 
-def get_security_constraint_engine(config: Optional[Dict[str, Any]] = None) -> SecurityConstraintEngine:
+def get_security_constraint_engine(config: dict[str, Any] | None = None) -> SecurityConstraintEngine:
     """Get or create singleton SecurityConstraintEngine instance."""
     global _security_constraint_engine_instance
-    
+
     if _security_constraint_engine_instance is None:
         _security_constraint_engine_instance = SecurityConstraintEngine(config)
-    
+
     return _security_constraint_engine_instance
 
 
-def validate_agent_action(agent_id: str, action_context: Dict[str, Any]) -> Dict[str, Any]:
+def validate_agent_action(agent_id: str, action_context: dict[str, Any]) -> dict[str, Any]:
     """
     Convenience function to validate agent action against constraints.
-    
+
     Args:
         agent_id: Agent identifier
         action_context: Context information about the action
-        
+
     Returns:
         Validation result
     """

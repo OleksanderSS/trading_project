@@ -1,8 +1,9 @@
 # src/features/enrichers/base.py
 
-from abc import ABC, abstractmethod
-import pandas as pd
 import logging
+from abc import ABC, abstractmethod
+
+import pandas as pd
 
 
 class EnricherError(Exception):

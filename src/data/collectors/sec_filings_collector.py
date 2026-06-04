@@ -4,16 +4,18 @@ import asyncio
 import hashlib
 import json
 import logging
-import pandas as pd
-import httpx
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any
 
-from .base_collector import BaseCollector
+import httpx
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
-from src.config.unified_config_manager import UnifiedConfigManager
+
+from .base_collector import BaseCollector
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +27,11 @@ class SECFilingsCollector(BaseCollector):
 
     def __init__(
         self,
-        configs: Dict[str, Any],
+        configs: dict[str, Any],
         http_client_factory: HttpClientFactory,
         db_manager: DataManager,               # FIX: now explicitly defined in __init__
-        cache_manager: Optional[CacheManager] = None,
-        config_manager: Optional[UnifiedConfigManager] = None,
+        cache_manager: CacheManager | None = None,
+        config_manager: UnifiedConfigManager | None = None,
         **kwargs,
     ):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
@@ -40,9 +42,9 @@ class SECFilingsCollector(BaseCollector):
         if not self.submissions_url_template:
             raise ValueError("'submissions_url_template' must be specified in SEC config.")
 
-        self._cik_map: Optional[Dict[str, str]] = None
+        self._cik_map: dict[str, str] | None = None
 
-    def _get_cik_map(self) -> Dict[str, str]:
+    def _get_cik_map(self) -> dict[str, str]:
         if self._cik_map is None:
             try:
                 assets_config = self.config_manager.get_config("assets")
@@ -67,7 +69,7 @@ class SECFilingsCollector(BaseCollector):
             days = 60
         return run_date - timedelta(days=days)
 
-    async def run(self, tickers: List[str], **kwargs) -> Optional[pd.DataFrame]:
+    async def run(self, tickers: list[str], **kwargs) -> pd.DataFrame | None:
         if not tickers:
             logger.warning("No tickers provided for SEC filings. Skipping.")
             return None
@@ -105,7 +107,7 @@ class SECFilingsCollector(BaseCollector):
             return None
 
         logger.info(f"[SEC] Fetching filings for {len(valid_ciks)} tickers from {start_date.date()}.")
-        all_filings: List[Dict[str, Any]] = []
+        all_filings: list[dict[str, Any]] = []
 
         async with self.http_client_factory.get_http_client() as client:
             tasks = [
@@ -165,7 +167,7 @@ class SECFilingsCollector(BaseCollector):
         cik: str,
         client: httpx.AsyncClient,
         start_date: datetime,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         url = self.submissions_url_template.format(cik=cik)
         headers = {"User-Agent": "Mozilla/5.0"}
 

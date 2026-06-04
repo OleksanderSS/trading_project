@@ -11,19 +11,15 @@ Key Components:
 These components enable proactive model maintenance and ensure production reliability.
 """
 
-from .prediction_drift_monitor import (
-    PredictionDriftMonitor,
-    get_prediction_drift_monitor,
-    monitor_predictions_quick
-)
+from .prediction_drift_monitor import PredictionDriftMonitor, get_prediction_drift_monitor, monitor_predictions_quick
 
 __all__ = [
     # Core monitoring classes
     'PredictionDriftMonitor',
-    
+
     # Factory functions
     'get_prediction_drift_monitor',
-    
+
     # Quick monitoring functions
     'monitor_predictions_quick'
 ]

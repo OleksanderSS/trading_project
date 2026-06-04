@@ -1,14 +1,15 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 from dowhy import CausalModel
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
 class CausalEngine:
     """
-    Performs causal inference to estimate the effect of a specific treatment 
+    Performs causal inference to estimate the effect of a specific treatment
     (e.g., a detected event) on an outcome (e.g., future returns).
     """
 
@@ -54,7 +55,7 @@ class CausalEngine:
         """
         if not self._model:
             raise DataProcessingError("Model has not been created.")
-        
+
         self.identified_estimand = self._model.identify_effect(proceed_when_unidentifiable=True)
         logger.info(f"Causal estimand identified: {self.identified_estimand}")
 
@@ -97,7 +98,7 @@ class CausalEngine:
             raise DataProcessingError("Cannot run refutation without an identified estimand.")
 
         refutation_results = {}
-        
+
         # Example: Random Common Cause
         try:
             res_random = self._model.refute_estimate(self.identified_estimand, self._model.latest_estimate, method_name="random_common_cause")

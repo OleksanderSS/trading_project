@@ -30,7 +30,7 @@ class TemporalLeakageGuard:
     def __init__(self):
         """Initialize the TemporalLeakageGuard."""
         self.logger = logger
-        
+
         # Patterns that commonly indicate temporal leakage
         self.LEAKAGE_PATTERNS = {
             'future_price': [

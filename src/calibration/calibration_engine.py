@@ -7,14 +7,17 @@ CalibrationEngine for DEAN hyperparameter tuning.
 - Optuna для оптимізації гіперпараметрів
 - Метрики: Sharpe Ratio, Max Drawdown, Win Rate
 """
-import logging
 import json
+import logging
 from pathlib import Path
 from typing import Any
+
 import numpy as np
 import pandas as pd
+
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger(__name__)
 try:
     import optuna
@@ -143,12 +146,12 @@ class CalibrationEngine:
         """
         if not OPTUNA_AVAILABLE:
             raise ImportError('optuna is required for calibration')
-        hyperparams = {'actor_lr': trial.suggest_float('actor_lr', 1e-05, 
+        hyperparams = {'actor_lr': trial.suggest_float('actor_lr', 1e-05,
             0.001, log=True), 'critic_lr': trial.suggest_float('critic_lr',
             1e-05, 0.001, log=True), 'hidden_dim': trial.
             suggest_categorical('hidden_dim', [128, 256, 512]),
             'num_layers': trial.suggest_int('num_layers', 2, 4),
-            'batch_size': trial.suggest_categorical('batch_size', [32, 64, 
+            'batch_size': trial.suggest_categorical('batch_size', [32, 64,
             128, 256]), 'replay_buffer_size': trial.suggest_categorical(
             'replay_buffer_size', [10000, 50000, 100000]), 'gamma': trial.
             suggest_float('gamma', 0.95, 0.999), 'tau': trial.suggest_float

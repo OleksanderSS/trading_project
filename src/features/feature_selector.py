@@ -1,9 +1,10 @@
 """
 Вибір ознак для моделей
 """
-from typing import List, Optional, Tuple, Dict, Any
-from pathlib import Path
+from typing import Any
+
 import numpy as np
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger('FeatureSelector')
@@ -20,7 +21,7 @@ class FeatureSelectorConfig:
 class SimpleFeatureSelector:
     """Простий вибір ознак"""
 
-    def select(self, X: np.ndarray, max_features: Optional[int]=None
+    def select(self, X: np.ndarray, max_features: int | None=None
         ) ->np.ndarray:
         """Вибрати ознаки"""
         if max_features is None or max_features >= X.shape[1]:
@@ -45,7 +46,7 @@ class ColabFeatureSelector:
             self.selector = SimpleFeatureSelector()
 
     def select_features(self, features_df: object, targets_df: object,
-        ticker: str, model_type: str) ->Tuple[np.ndarray, List[str]]:
+        ticker: str, model_type: str) ->tuple[np.ndarray, list[str]]:
         """Вибрати ознаки для тікера"""
         ticker_features = self._filter_features_for_ticker(features_df, ticker)
         ticker_targets = self._filter_targets_for_ticker(targets_df, ticker)
@@ -87,7 +88,7 @@ class ColabFeatureSelector:
                 )
 
     def _perform_feature_selection(self, ticker_features: object,
-        ticker_targets: object, ticker: str, model_type: str) ->List[str]:
+        ticker_targets: object, ticker: str, model_type: str) ->list[str]:
         """Виконати вибір ознак"""
         if self.selector is None:
             return list(ticker_features.columns)
@@ -104,14 +105,14 @@ class ColabFeatureSelector:
             raise
         return list(ticker_features.columns[:max_features])
 
-    def _convert_feature_names_to_indices(self, selected_names: List[str],
-        ticker_features: object) ->List[int]:
+    def _convert_feature_names_to_indices(self, selected_names: list[str],
+        ticker_features: object) ->list[int]:
         """Конвертувати імена ознак в індекси"""
         return [list(ticker_features.columns).index(name) for name in
             selected_names]
 
     def _create_filtered_features(self, ticker_features: object,
-        feature_indices: List[int]) ->np.ndarray:
+        feature_indices: list[int]) ->np.ndarray:
         """Створити відфільтровані ознаки"""
         import numpy as np
         return np.array(ticker_features.iloc[:, feature_indices])
@@ -134,8 +135,8 @@ class FeatureSelector:
         """
         Initialize the unified feature selector.
         """
-        from src.features.selection.enhanced_smart_selector import EnhancedSmartFeatureSelector
         from src.core.logging.logger import ProjectLogger
+        from src.features.selection.enhanced_smart_selector import EnhancedSmartFeatureSelector
         self.selector = EnhancedSmartFeatureSelector()
         self.logger = ProjectLogger.get_logger('FeatureSelector')
         self.logger.info(
@@ -154,7 +155,6 @@ class FeatureSelector:
         """
         Unifies feature selection across assets and models.
         """
-        import pandas as pd
         self.logger.info(
             f'🔍 Selecting features for {ticker} (Target: {target_col}, Model: {model_type})'
             )

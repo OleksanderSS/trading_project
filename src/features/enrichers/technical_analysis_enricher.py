@@ -1,10 +1,13 @@
 import logging
+
 import pandas as pd
-from typing import Dict, List
-from .base import BaseEnricher
-from src.features.utils.technical_indicators_lib import TechnicalIndicators
-from src.core.logging.logger import ProjectLogger
+
 from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.features.utils.technical_indicators_lib import TechnicalIndicators
+
+from .base import BaseEnricher
+
 logger = ProjectLogger.get_logger('TechnicalAnalysisEnricher')
 
 
@@ -27,15 +30,15 @@ class TechnicalAnalysisEnricher(BaseEnricher):
     def _load_calculators(self):
         """Lazy load calculators only when needed."""
         if not self._calculators_loaded:
-            from src.analytics.calculators.volatility_calculator import VolatilityCalculator
             from src.algorithms.regime_detector import MarketRegimeDetector
-            from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
             from src.analytics.calculators.drawdown_calculator import DrawdownCalculator
             from src.analytics.calculators.econometrics_calculator import EconometricsCalculator
-            from src.analytics.calculators.risk_reward_calculator import RiskRewardCalculator
-            from src.analytics.calculators.macro_score_calculator import MacroScoreCalculator
-            from src.analytics.calculators.sentiment_stats_calculator import SentimentStatsCalculator
             from src.analytics.calculators.explainability_calculator import ExplainabilityCalculator
+            from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
+            from src.analytics.calculators.macro_score_calculator import MacroScoreCalculator
+            from src.analytics.calculators.risk_reward_calculator import RiskRewardCalculator
+            from src.analytics.calculators.sentiment_stats_calculator import SentimentStatsCalculator
+            from src.analytics.calculators.volatility_calculator import VolatilityCalculator
             self.VolatilityCalculator = VolatilityCalculator()
             self.MarketRegimeCalculator = MarketRegimeDetector()
             self.FamaFrenchFactors = FamaFrenchFactors()
@@ -98,7 +101,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             return False
         return True
 
-    def _get_indicator_mapping(self) ->Dict[str, tuple]:
+    def _get_indicator_mapping(self) ->dict[str, tuple]:
         """Get mapping from config keys to TechnicalIndicators methods and parameters."""
         return {'sma': (TechnicalIndicators.calculate_sma, ['close'], [
             'window'], ['SMA']), 'ema': (TechnicalIndicators.calculate_ema,
@@ -118,7 +121,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             TechnicalIndicators.calculate_cci, ['high', 'low', 'close'], [
             'period'], ['CCI'])}
 
-    def _is_indicator_enabled(self, indicator: str, settings: Dict) ->bool:
+    def _is_indicator_enabled(self, indicator: str, settings: dict) ->bool:
         """Check if indicator is enabled in config."""
         if not settings.get('enabled', False):
             if logger.isEnabledFor(logging.DEBUG):
@@ -127,7 +130,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         return True
 
     def _process_indicator(self, df_enriched: pd.DataFrame, indicator: str,
-        settings: Dict, indicator_map: Dict[str, tuple]):
+        settings: dict, indicator_map: dict[str, tuple]):
         """Process a single indicator."""
         method, input_cols, param_keys, output_cols = indicator_map[indicator]
         if indicator in ['sma', 'ema'] and 'windows' in settings:
@@ -138,7 +141,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             method, input_cols, param_keys, output_cols)
 
     def _process_multiple_windows(self, df_enriched: pd.DataFrame,
-        indicator: str, settings: Dict, method, input_cols: List[str]):
+        indicator: str, settings: dict, method, input_cols: list[str]):
         """Process indicators with multiple windows (SMA/EMA)."""
         windows = settings['windows']
         if not isinstance(windows, list):
@@ -158,8 +161,8 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                     exc_info=True)
 
     def _process_standard_indicator(self, df_enriched: pd.DataFrame,
-        indicator: str, settings: Dict, method, input_cols: List[str],
-        param_keys: List[str], output_cols: List[str]):
+        indicator: str, settings: dict, method, input_cols: list[str],
+        param_keys: list[str], output_cols: list[str]):
         """Process standard indicators with single parameter set."""
         params = {key: settings.get(key) for key in param_keys}
         if any(p is None for p in params.values()):
@@ -192,16 +195,16 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 .pct_change(fill_method=None)
                 .replace([float('inf'), float('-inf')], float('nan'))
             )
-            
+
             # --- NEW: Short-term Volatility (5d) ---
             df_enriched['VOLATILITY_5'] = returns.rolling(5, min_periods=2).std()
-            
+
             # --- NEW: Momentum Z-Score (20d) ---
             # Normalizes returns to see how "extreme" the current move is
             mean_ret = returns.rolling(20, min_periods=1).mean()
             std_ret = returns.rolling(20, min_periods=1).std()
             df_enriched['MOMENTUM_ZSCORE'] = (returns - mean_ret) / (std_ret + 1e-9)
-            
+
             # --- NEW: RSI Velocity ---
             if 'RSI_14' in df_enriched.columns:
                 df_enriched['RSI_VELOCITY'] = df_enriched['RSI_14'].diff(3)

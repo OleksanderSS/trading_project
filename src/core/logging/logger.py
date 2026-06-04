@@ -1,13 +1,13 @@
-import logging
-import sys
 import csv
 import json
-import threading
+import logging
 import queue
-from logging.handlers import RotatingFileHandler
+import sys
+import threading
 from datetime import datetime
-from typing import Optional, Dict, Any
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import Any
 
 
 class ContextAdapter(logging.LoggerAdapter):
@@ -80,14 +80,14 @@ class ProjectLogger:
                             newline='', encoding='utf-8') as f:
                             writer = csv.writer(f)
                             writer.writerow(record)
-                except (IOError, TypeError, Exception) as e:
+                except (OSError, TypeError, Exception) as e:
                     logging.error(f'Async CSV write failed: {e}', exc_info=True)
                     # We continue here to keep the listener thread alive, but we log the error
                 ProjectLogger._csv_queue.task_done()
         threading.Thread(target=csv_writer, daemon=True).start()
 
     @staticmethod
-    def setup_logging(level: str='DEBUG', format_string: Optional[str]=None
+    def setup_logging(level: str='DEBUG', format_string: str | None=None
         ) ->None:
         """
         Configures a clean logging setup with console and rotating file handlers.
@@ -109,7 +109,7 @@ class ProjectLogger:
             if hasattr(stream, 'reconfigure'):
                 try:
                     stream.reconfigure(encoding='utf-8', errors='replace')
-                except (IOError, TypeError, Exception) as e:
+                except (OSError, TypeError, Exception) as e:
                     logging.getLogger('ProjectLogger').error(
                         f"Could not reconfigure stream encoding: {e}", exc_info=True)
                     # Continue without reconfiguration
@@ -147,7 +147,7 @@ class ProjectLogger:
     @staticmethod
     def log_market_context_error(ticker: str, predicted: float, actual:
         float, volatility: float, sentiment: float, additional_context:
-        Optional[Dict[str, Any]]=None) ->None:
+        dict[str, Any] | None=None) ->None:
         """
         Queues a specialized structured entry to market_movers_log.csv for Meta-Learning analysis.
         """

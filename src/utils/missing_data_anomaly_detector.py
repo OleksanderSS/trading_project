@@ -159,7 +159,7 @@ class MissingDataAnomalyDetector:
 
             # Get previous value by positional index (works for any index type)
             try:
-                prev_idx = index_list[pos - 1]
+                index_list[pos - 1]
                 prev_val = filled_series.iloc[pos - 1]
             except (KeyError, IndexError):
                 prev_val = None

@@ -1,7 +1,7 @@
 import logging
-import duckdb
 import sqlite3
-from typing import Dict, Union, Any, Optional
+
+import duckdb
 
 logger = logging.getLogger(__name__)
 
@@ -17,17 +17,17 @@ def _logging_streams_open() -> bool:
 
 class ConnectionRegistry:
     """Centralized registry for all database connections to prevent resource leaks."""
-    _connections: Dict[str, Union[duckdb.DuckDBPyConnection, sqlite3.Connection]] = {}
+    _connections: dict[str, duckdb.DuckDBPyConnection | sqlite3.Connection] = {}
 
     @classmethod
-    def register(cls, name: str, conn: Union[duckdb.DuckDBPyConnection, sqlite3.Connection]):
+    def register(cls, name: str, conn: duckdb.DuckDBPyConnection | sqlite3.Connection):
         """Register an active connection."""
         cls._connections[name] = conn
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Connection registered: {name}")
 
     @classmethod
-    def get(cls, name: str) -> Optional[Union[duckdb.DuckDBPyConnection, sqlite3.Connection]]:
+    def get(cls, name: str) -> duckdb.DuckDBPyConnection | sqlite3.Connection | None:
         """Retrieve a registered connection."""
         return cls._connections.get(name)
 
@@ -46,4 +46,5 @@ class ConnectionRegistry:
 
 # Global cleanup hook
 import atexit
+
 atexit.register(ConnectionRegistry.close_all)

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from src.analytics.reporting.automated_reports import HistoricalAnalytics
 from src.analytics.reporting.model_analyzer import ModelAnalyzer
@@ -19,7 +19,7 @@ class ReportingOrchestrator:
         self.historical_analyzer = HistoricalAnalytics(results_manager)
         self.model_analyzer = ModelAnalyzer({})
 
-    def get_full_status_report(self) -> Dict[str, Any]:
+    def get_full_status_report(self) -> dict[str, Any]:
         """Consolidates all reporting data."""
         return {
             "latest_results": self.results_manager.get_latest_results(),

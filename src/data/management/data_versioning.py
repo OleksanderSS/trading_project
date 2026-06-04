@@ -2,12 +2,13 @@
 DATA VERSIONING UTILITIES
 Data versioning and freshness checking system
 """
-import json
 import hashlib
+import json
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
-import logging
+from typing import Any
+
 logger = logging.getLogger(__name__)
 
 
@@ -26,11 +27,11 @@ class DataVersioning:
             'news_data': 0.5, 'technical_indicators': 1, 'targets': 1,
             'cache': 0.1}
 
-    def _load_metadata(self) ->Dict[str, Any]:
+    def _load_metadata(self) ->dict[str, Any]:
         """Loading version metadata"""
         if self.metadata_file.exists():
             try:
-                with open(self.metadata_file, 'r') as f:
+                with open(self.metadata_file) as f:
                     return json.load(f)
             except Exception as e:
                 self.logger.error(f'Error loading metadata: {e}')
@@ -71,16 +72,16 @@ class DataVersioning:
         return datetime.fromtimestamp(file_path.stat().st_mtime)
 
     def register_file(self, file_path: str, data_type: str, description:
-        str='', metadata: Optional[Dict[str, Any]]=None) ->Dict[str, Any]:
+        str='', metadata: dict[str, Any] | None=None) ->dict[str, Any]:
         """
         Register file in versioning system
-        
+
         Args:
             file_path: Path to file
             data_type: Data type
             description: File description
             metadata: Additional metadata
-            
+
         Returns:
             Dict[str, Any]: Version information
         """
@@ -100,15 +101,15 @@ class DataVersioning:
         self.logger.info(f'[OK] Registered file: {file_key} ({data_type})')
         return version_info
 
-    def is_file_fresh(self, file_path: str, data_type: Optional[str]=None
-        ) ->Tuple[bool, Dict[str, Any]]:
+    def is_file_fresh(self, file_path: str, data_type: str | None=None
+        ) ->tuple[bool, dict[str, Any]]:
         """
         Check if file is fresh
-        
+
         Args:
             file_path: Path to file
             data_type: Data type
-            
+
         Returns:
             Tuple[bool, Dict[str, Any]]: (is_fresh, info)
         """
@@ -142,13 +143,13 @@ class DataVersioning:
                         'max_age_days': self.max_age_days[data_type]}
         return True, {'reason': 'file_fresh'}
 
-    def get_fresh_files(self, data_type: str=None) ->List[Dict[str, Any]]:
+    def get_fresh_files(self, data_type: str=None) ->list[dict[str, Any]]:
         """
         Get list of fresh files
-        
+
         Args:
             data_type: Data type
-            
+
         Returns:
             List[Dict[str, Any]]: List of fresh files
         """
@@ -163,13 +164,13 @@ class DataVersioning:
                     version_info, 'fresh_info': info})
         return fresh_files
 
-    def get_stale_files(self, data_type: str=None) ->List[Dict[str, Any]]:
+    def get_stale_files(self, data_type: str=None) ->list[dict[str, Any]]:
         """
         Get list of stale files
-        
+
         Args:
             data_type: Data type
-            
+
         Returns:
             List[Dict[str, Any]]: List of stale files
         """
@@ -184,15 +185,15 @@ class DataVersioning:
                     version_info, 'stale_info': info})
         return stale_files
 
-    def cleanup_stale_files(self, data_type: Optional[str]=None, dry_run:
-        bool=True) ->Dict[str, Any]:
+    def cleanup_stale_files(self, data_type: str | None=None, dry_run:
+        bool=True) ->dict[str, Any]:
         """
         Cleanup stale files
-        
+
         Args:
             data_type: Data type
             dry_run: Whether to run in simulation mode
-            
+
         Returns:
             Dict[str, Any]: Cleanup results
         """
@@ -227,13 +228,13 @@ class DataVersioning:
             )
         return results
 
-    def get_file_info(self, file_path: str) ->Dict[str, Any]:
+    def get_file_info(self, file_path: str) ->dict[str, Any]:
         """
         Get file information
-        
+
         Args:
             file_path: Path to file
-            
+
         Returns:
             Dict[str, Any]: File information
         """
@@ -249,13 +250,13 @@ class DataVersioning:
             info['metadata'] = self.metadata[file_key]
         return info
 
-    def generate_report(self, data_type: str=None) ->Dict[str, Any]:
+    def generate_report(self, data_type: str=None) ->dict[str, Any]:
         """
         Generate data status report
-        
+
         Args:
             data_type: Data type
-            
+
         Returns:
             Dict[str, Any]: Data status report
         """
@@ -269,7 +270,7 @@ class DataVersioning:
             fresh_files), 'stale_files': len(stale_files), 'freshness_rate':
             freshness_rate, 'files_by_type': {}, 'age_distribution': {},
             'recommendations': []}
-        for file_key, version_info in self.metadata.items():
+        for _file_key, version_info in self.metadata.items():
             file_type = version_info.get('data_type', 'unknown')
             if file_type not in report['files_by_type']:
                 report['files_by_type'][file_type] = 0
@@ -286,10 +287,10 @@ class DataVersioning:
 def create_data_versioning(version_dir: str='data/versions') ->DataVersioning:
     """
     Factory function for creating versioning system
-    
+
     Args:
         version_dir: Directory for versions
-        
+
     Returns:
         DataVersioning: Versioning system instance
     """

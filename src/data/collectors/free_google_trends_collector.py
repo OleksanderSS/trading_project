@@ -1,15 +1,18 @@
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 import pandas as pd
 from pytrends.request import TrendReq
+
 from .base_collector import BaseCollector
+
 logger = logging.getLogger(__name__)
 
 
 class FreeGoogleTrendsCollector(BaseCollector):
     """
-    Asynchronously collects Google Trends temporal logic data. 
+    Asynchronously collects Google Trends temporal logic data.
     Keywords and tickers parameters are delegated dynamically at runtime.
     """
     collector_type = 'free_google_trends'
@@ -25,7 +28,7 @@ class FreeGoogleTrendsCollector(BaseCollector):
         self.request_delay = self.configs.get('request_delay_seconds', 5)
         self.cat = self.configs.get('cat', 0)
         self.gprop = self.configs.get('gprop', '')
-        self.pytrends: Optional[TrendReq] = None
+        self.pytrends: TrendReq | None = None
 
     def _initialize_pytrends(self):
         """Lazy initialization mechanism for the TrendReq protocol wrapper."""
@@ -36,8 +39,8 @@ class FreeGoogleTrendsCollector(BaseCollector):
                 raise ConnectionError(
                     f'Failed to bootstrap TrendReq execution state: {e}')
 
-    async def fetch_raw_data(self, tickers: List[str], keywords: List[str],
-        **kwargs) ->List[Dict[str, Any]]:
+    async def fetch_raw_data(self, tickers: list[str], keywords: list[str],
+        **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously pulls Google Trends metrics bounded by given ticker and metric lists.
         """
@@ -56,7 +59,7 @@ class FreeGoogleTrendsCollector(BaseCollector):
             )
         keyword_batches = [search_terms[i:i + self.batch_size] for i in
             range(0, len(search_terms), self.batch_size)]
-        all_trends_data: List[Dict[str, Any]] = []
+        all_trends_data: list[dict[str, Any]] = []
         for i, batch in enumerate(keyword_batches):
             try:
                 if i > 0:
@@ -74,8 +77,8 @@ class FreeGoogleTrendsCollector(BaseCollector):
             )
         return all_trends_data
 
-    async def _fetch_trends_for_batch(self, keyword_batch: List[str]) ->List[
-        Dict[str, Any]]:
+    async def _fetch_trends_for_batch(self, keyword_batch: list[str]) ->list[
+        dict[str, Any]]:
         """
         Wraps and isolates a blocking sync execution via a delegated thread instance.
         """
@@ -104,8 +107,7 @@ class FreeGoogleTrendsCollector(BaseCollector):
                 , exc_info=True)
             raise
 
-    def _run_pytrends_request(self, keyword_batch: List[str]) ->Optional[pd
-        .DataFrame]:
+    def _run_pytrends_request(self, keyword_batch: list[str]) ->pd.DataFrame | None:
         """
         Pure synchronous request block mechanism interacting with the pytrends layer.
         """

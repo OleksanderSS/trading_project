@@ -1,9 +1,9 @@
 
+
 import pandas as pd
-import numpy as np
-from typing import Optional
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
@@ -43,7 +43,7 @@ class DeduplicationService:
 
         # 1. Drop exact duplicates
         df_deduped = df.drop_duplicates(subset=[text_column])
-        
+
         # Reset index to avoid issues with indexing later
         df_deduped = df_deduped.reset_index(drop=True)
 
@@ -57,7 +57,7 @@ class DeduplicationService:
         # 2. Cluster remaining articles
         try:
             tfidf_matrix = self.vectorizer.fit_transform(texts[non_empty_mask])
-            
+
             # Adjust n_clusters if there are fewer articles than clusters
             n_clusters = min(self.n_clusters, tfidf_matrix.shape[0])
             self.kmeans.n_clusters = n_clusters
@@ -69,7 +69,7 @@ class DeduplicationService:
 
             # 3. Select one representative article from each cluster (e.g., the longest one)
             unique_articles_idx = df_clustered.groupby('cluster')[text_column].apply(lambda x: x.str.len().idxmax())
-            
+
             # Get the original indices from the non-empty dataframe
             final_df = df_deduped.loc[unique_articles_idx]
 

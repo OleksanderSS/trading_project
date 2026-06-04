@@ -1,9 +1,12 @@
-import re
-import operator
-import pandas as pd
 import logging
-from typing import Dict, Any, List, Optional
+import operator
+import re
+from typing import Any
+
+import pandas as pd
+
 from ..interfaces import IAnalyzer
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +16,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
     from a configuration dictionary.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         """
         Initializes the analyzer with market phase definition rules.
 
@@ -32,7 +35,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
         self.logger.info(
             f'MarketPhaseAnalyzer initialized with {len(self.rules)} rules.')
 
-    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs) ->Dict[str, Any
+    def analyze(self, data: dict[str, pd.DataFrame], **kwargs) ->dict[str, Any
         ]:
         """
         Analyzes the latest market data to determine the current market phase.
@@ -46,7 +49,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
         """
         validation_result = self._validate_market_data(data)
         if not validation_result['valid']:
-            result: Dict[str, Any] = validation_result['result']
+            result: dict[str, Any] = validation_result['result']
             return result
         try:
             market_phase = self._determine_market_phase(validation_result[
@@ -63,7 +66,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
                 exc_info=True)
             return {'market_phase': 'error'}
 
-    def _validate_market_data(self, data: Dict[str, pd.DataFrame]) ->Dict[
+    def _validate_market_data(self, data: dict[str, pd.DataFrame]) ->dict[
         str, Any]:
         """Validate input market data."""
         market_data = data.get('market_data')
@@ -79,13 +82,13 @@ class MarketPhaseAnalyzer(IAnalyzer):
         """Check if market data is a valid DataFrame."""
         return isinstance(market_data, pd.DataFrame) and not market_data.empty
 
-    def _create_validation_error(self, reason: str) ->Dict[str, Any]:
+    def _create_validation_error(self, reason: str) ->dict[str, Any]:
         """Create validation error result."""
         return {'valid': False, 'result': {'market_phase': 'error',
             'reason': reason}}
 
     def _create_missing_columns_error(self, missing_columns: set,
-        market_data: pd.DataFrame) ->Dict[str, Any]:
+        market_data: pd.DataFrame) ->dict[str, Any]:
         """Create missing columns error result."""
         logger.warning(
             f'Missing required columns for market phase analysis: {missing_columns}'
@@ -106,20 +109,20 @@ class MarketPhaseAnalyzer(IAnalyzer):
         latest_values = self._extract_latest_values(latest_data_point)
         return self._evaluate_rules(latest_values)
 
-    def _extract_latest_values(self, latest_data_point: pd.Series) ->Dict[
+    def _extract_latest_values(self, latest_data_point: pd.Series) ->dict[
         str, float]:
         """Extract latest indicator values."""
         latest_values = self._build_indicator_values(latest_data_point)
         self._validate_extracted_values(latest_values)
         return latest_values
 
-    def _build_indicator_values(self, latest_data_point: pd.Series) ->Dict[
+    def _build_indicator_values(self, latest_data_point: pd.Series) ->dict[
         str, float]:
         """Build indicator values from latest data point."""
         return {key: latest_data_point[val] for key, val in self.indicators
             .items() if val in latest_data_point}
 
-    def _validate_extracted_values(self, latest_values: Dict[str, float]):
+    def _validate_extracted_values(self, latest_values: dict[str, float]):
         """Validate that all required indicators were extracted."""
         if len(latest_values) != len(self.indicators):
             missing = set(self.indicators.keys()) - set(latest_values.keys())
@@ -127,7 +130,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
                 f'Missing indicators in data: {missing}. Phase evaluation might be incorrect.'
                 )
 
-    def _evaluate_rules(self, latest_values: Dict[str, float]) ->str:
+    def _evaluate_rules(self, latest_values: dict[str, float]) ->str:
         """Evaluate phase rules against latest values."""
         for rule in self.rules:
             if self._evaluate_condition(rule.get('condition', 'False'),
@@ -136,7 +139,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
                 return phase
         return 'unknown'
 
-    def _evaluate_condition(self, condition_str: str, values: Dict[str, float]
+    def _evaluate_condition(self, condition_str: str, values: dict[str, float]
         ) ->bool:
         """
         Safely evaluates a condition string using the provided values.
@@ -157,7 +160,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
             return False
         return bool(self._CONDITION_ALLOWED.match(condition_str))
 
-    def _safe_eval_condition(self, condition_str: str, values: Dict[str, float]
+    def _safe_eval_condition(self, condition_str: str, values: dict[str, float]
         ) ->bool:
         """
         Safely evaluate a simple comparison condition without using eval().
@@ -198,7 +201,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
                 return True
         return False
 
-    def _log_evaluation_error(self, condition_str: str, values: Dict[str,
+    def _log_evaluation_error(self, condition_str: str, values: dict[str,
         float], error: Exception):
         """Log condition evaluation error."""
         self.logger.error(

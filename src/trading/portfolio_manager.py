@@ -6,13 +6,17 @@ trade orders based on signals from the Consensus Engine. It does not manage
 portfolio state directly but queries a VirtualPortfolio instance.
 """
 import logging
-import numpy as np
 from typing import Any
+
+import numpy as np
+
 from src.algorithms.adaptive_position_sizer import AdaptivePositionSizer, PositionSizingParams
 from src.algorithms.risk_parity_allocator import RiskParityAllocator
 from src.core.logging.logger import ProjectLogger
 from src.trading.virtual_portfolio import VirtualPortfolio
+
 from .trader import TradeOrder
+
 logger = ProjectLogger.get_logger('PortfolioManager')
 
 

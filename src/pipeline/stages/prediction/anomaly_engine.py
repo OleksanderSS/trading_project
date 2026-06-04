@@ -2,14 +2,15 @@
 AnomalyEngine: anomaly detection and ensemble confidence scoring
 extracted from PredictionStage to reduce file size.
 """
-import logging
-from typing import Any, Dict
+from typing import Any
+
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 
 class AnomalyEngine:
@@ -18,7 +19,7 @@ class AnomalyEngine:
     def __init__(self, diary: Any=None):
         self.logger = ProjectLogger.get_logger('AnomalyEngine')
         self.diary = diary
-        self._estimators_cache: Dict[str, Any] = {}
+        self._estimators_cache: dict[str, Any] = {}
 
     def calculate_anomaly_score(self, X: pd.DataFrame, context_id: str=
         'default') ->float:
@@ -44,26 +45,26 @@ class AnomalyEngine:
             self.logger.warning(f'Anomaly detection failure: {e}')
             return 0.5
 
-    def calculate_ensemble_confidence(self, models: Dict[str, Any], X: pd.
-        DataFrame, prediction: float, context_id: str) ->Dict[str, float]:
+    def calculate_ensemble_confidence(self, models: dict[str, Any], X: pd.
+        DataFrame, prediction: float, context_id: str) ->dict[str, float]:
         """Return multi-factor confidence dict with key 'score' in [0, 1]."""
         try:
             accuracy_score = self._fetch_diary_accuracy(context_id)
             volatility_factor = self._calc_volatility_factor(X)
-            
+
             if not models:
                 # No models available - use diary accuracy + volatility only
                 final = accuracy_score * 0.6 + volatility_factor * 0.4
                 return {'score': float(np.clip(final, 0, 1))}
-            
+
             raw_preds = self._collect_raw_predictions(models, X)
             if not raw_preds:
                 final = accuracy_score * 0.6 + volatility_factor * 0.4
                 return {'score': float(np.clip(final, 0, 1))}
-            
+
             consensus_score, dispersion_score = (self.
                 _calc_consensus_dispersion(raw_preds, prediction))
-            final = (consensus_score * 0.35 + dispersion_score * 0.25 + 
+            final = (consensus_score * 0.35 + dispersion_score * 0.25 +
                 accuracy_score * 0.25 + volatility_factor * 0.15)
             return {'score': float(np.clip(final, 0, 1))}
         except Exception as e:
@@ -122,7 +123,7 @@ class AnomalyEngine:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return 0.5
 
-    def _collect_raw_predictions(self, models: Dict[str, Any], X: pd.DataFrame
+    def _collect_raw_predictions(self, models: dict[str, Any], X: pd.DataFrame
         ) ->list[float]:
         raw_preds = []
         for m_inst in models.values():

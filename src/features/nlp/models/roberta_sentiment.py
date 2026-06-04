@@ -1,7 +1,9 @@
 import logging
+from typing import Any
+
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from typing import Dict, Any, Optional, List
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
 logger = logging.getLogger(__name__)
 
 
@@ -11,7 +13,7 @@ class RobertaSentimentAnalyzer:
     Supports lazy loading and batch processing.
     """
 
-    def __init__(self, model_config: Dict[str, Any]):
+    def __init__(self, model_config: dict[str, Any]):
         """
         Initializes the analyzer with model configuration.
 
@@ -30,8 +32,8 @@ class RobertaSentimentAnalyzer:
         self.device = model_config.get('device')
         if not self.device:
             self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.tokenizer: Optional[AutoTokenizer] = None
-        self.model: Optional[AutoModelForSequenceClassification] = None
+        self.tokenizer: AutoTokenizer | None = None
+        self.model: AutoModelForSequenceClassification | None = None
         logger.info(
             f"RobertaSentimentAnalyzer initialized for model '{self.model_name}' on device '{self.device}'."
             )
@@ -61,7 +63,7 @@ class RobertaSentimentAnalyzer:
             self.model = None
             raise
 
-    def analyze(self, text: str) ->Dict[str, Any]:
+    def analyze(self, text: str) ->dict[str, Any]:
         """
         Analyzes the sentiment of a single piece of text.
 

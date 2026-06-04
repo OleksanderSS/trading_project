@@ -1,8 +1,10 @@
-import logging
 import json
-import aiofiles
+import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
+import aiofiles
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger('Modeling.IO')
@@ -21,20 +23,20 @@ async def load_selected_features_async(stage, config) -> list[str]:
             selected_features = await try_load_features_file_async(stage, candidate, config.model_type)
             if selected_features:
                 break
-    
+
     if not selected_features:
         glob_candidates = list(config.batch_dir.glob(f'selected_features_{config.model_type}*.json'))
         for candidate in glob_candidates:
             selected_features = await try_load_features_file_async(stage, candidate, config.model_type, is_glob=True)
             if selected_features:
                 break
-                
+
     if not selected_features:
         logger.info(f'ℹ️ No selected features file for {config.model_type}, using all available features as fallback')
         exclude_cols = ['datetime', 'ticker', 'published_at', 'news_id', 'news_title', 'news_sentiment'] + \
                        [c for c in config.x_train.columns if c.startswith('target_')]
         selected_features = [c for c in config.x_train.columns if c not in exclude_cols]
-        
+
     return selected_features
 
 
@@ -70,13 +72,13 @@ def load_selected_features_sync(stage, config) -> list[str]:
             selected_features = try_load_features_file_sync(stage, candidate, config.model_type)
             if selected_features:
                 return selected_features
-                
+
     glob_candidates = list(config.batch_dir.glob(f'selected_features_{config.model_type}*.json'))
     for candidate in glob_candidates:
         selected_features = try_load_features_file_sync(stage, candidate, config.model_type, is_glob=True)
         if selected_features:
             return selected_features
-            
+
     logger.info(f'ℹ️ No selected features file for {config.model_type}, using all available features as fallback')
     exclude_cols = ['datetime', 'ticker', 'published_at', 'news_id', 'news_title', 'news_sentiment'] + \
                    [c for c in config.x_train.columns if c.startswith('target_')]
@@ -109,10 +111,10 @@ def save_light_models_results(stage, ticker: str, target_name: str, light_models
                 raw = json.load(f)
             if any(k not in ('batch_name', 'created', 'last_updated', 'runs') for k in raw):
                 existing = raw
-                
+
         ticker_data = existing.get(ticker, {})
         target_data = ticker_data.get(target_name, {})
-        
+
         for _context_key, info in light_models.items():
             model_type = info.get('model_type', 'unknown')
             target_data[model_type] = {
@@ -128,10 +130,10 @@ def save_light_models_results(stage, ticker: str, target_name: str, light_models
                 'timestamp': info.get('timestamp', ''),
                 'model_category': 'light'
             }
-            
+
         ticker_data[target_name] = target_data
         existing[ticker] = ticker_data
-        
+
         with open(results_file, 'w', encoding='utf-8') as f:
             json.dump(existing, f, indent=2, default=str)
         logger.info(f'✅ Saved light model results for {ticker}/{target_name} ({len(target_data)} models) -> {results_file.name}')
@@ -142,19 +144,19 @@ def save_light_models_results(stage, ticker: str, target_name: str, light_models
 def resolve_selected_features_batch_dir(stage) -> Path:
     runtime_params_path = stage.config_manager.get_runtime_params_path()
     accumulated_dir = Path(stage.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
-    
+
     batch_name = try_get_batch_name_from_runtime_params(runtime_params_path)
     if not batch_name:
         batch_name = search_nested_runtime_params(accumulated_dir)
-        
+
     if not batch_name:
         batch_name = 'main_database'
         logger.warning(f'⚠️ No batch_name found in runtime params, defaulting to {batch_name}')
-        
+
     return accumulated_dir / batch_name
 
 
-def try_get_batch_name_from_runtime_params(runtime_params_path: Path) -> Optional[str]:
+def try_get_batch_name_from_runtime_params(runtime_params_path: Path) -> str | None:
     if not runtime_params_path or not runtime_params_path.exists():
         return None
     try:
@@ -170,9 +172,9 @@ def try_get_batch_name_from_runtime_params(runtime_params_path: Path) -> Optiona
     return None
 
 
-def search_nested_runtime_params(accumulated_dir: Path) -> Optional[str]:
+def search_nested_runtime_params(accumulated_dir: Path) -> str | None:
     try:
-        runtime_files = sorted(accumulated_dir.glob('**/runtime_params.json'), 
+        runtime_files = sorted(accumulated_dir.glob('**/runtime_params.json'),
                               key=lambda p: p.stat().st_mtime, reverse=True)
         for runtime_file in runtime_files:
             batch_name = try_get_batch_name_from_file(runtime_file)
@@ -185,7 +187,7 @@ def search_nested_runtime_params(accumulated_dir: Path) -> Optional[str]:
     return None
 
 
-def try_get_batch_name_from_file(runtime_file: Path) -> Optional[str]:
+def try_get_batch_name_from_file(runtime_file: Path) -> str | None:
     try:
         with open(runtime_file) as f:
             runtime_params = json.load(f)

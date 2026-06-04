@@ -1,7 +1,10 @@
-import pandas as pd
+from typing import Any
+
 import numpy as np
-from typing import Dict, List, Any
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('EventDatasetValidator')
 
 
@@ -19,9 +22,9 @@ class EventDatasetValidator:
             'news_title', 'news_sentiment']
         self.target_prefix = 'target_'
 
-    def validate(self, df: pd.DataFrame) ->Dict[str, Any]:
+    def validate(self, df: pd.DataFrame) ->dict[str, Any]:
         """Validates the event dataset and returns a report."""
-        issues: List[str] = []
+        issues: list[str] = []
         if df is None:
             issues.append('Event dataset is None.')
             return self._make_report(False, issues, df)
@@ -39,23 +42,23 @@ class EventDatasetValidator:
             .startswith('Missing') or i.startswith('No target_')]) == 0
         return self._make_report(is_valid, issues, df)
 
-    def _make_report(self, is_valid: bool, issues: List[str], df: pd.DataFrame
-        ) ->Dict[str, Any]:
+    def _make_report(self, is_valid: bool, issues: list[str], df: pd.DataFrame
+        ) ->dict[str, Any]:
         return {'is_valid': is_valid, 'issues': issues, 'summary': {'rows':
             int(len(df)), 'columns': int(len(df.columns)), 'target_columns':
             len([c for c in df.columns if c.lower().startswith(self.
             target_prefix)]), 'missing_required': len([c for c in self.
-            required_columns if c not in df.columns]), 'duplicate_rows': 
+            required_columns if c not in df.columns]), 'duplicate_rows':
             int(df.duplicated(subset=['ticker', 'datetime']).sum()) if all(
             c in df.columns for c in ['ticker', 'datetime']) else 0}}
 
-    def _check_required_columns(self, df: pd.DataFrame) ->List[str]:
+    def _check_required_columns(self, df: pd.DataFrame) ->list[str]:
         missing = [col for col in self.required_columns if col not in df.
             columns]
         return [f'Missing required column: {col}' for col in missing]
 
-    def _check_datetime_columns(self, df: pd.DataFrame) ->List[str]:
-        issues: List[str] = []
+    def _check_datetime_columns(self, df: pd.DataFrame) ->list[str]:
+        issues: list[str] = []
         for column in ['published_at', 'datetime']:
             if column in df.columns:
                 try:
@@ -68,7 +71,7 @@ class EventDatasetValidator:
                     raise
         return issues
 
-    def _check_news_sentiment(self, df: pd.DataFrame) ->List[str]:
+    def _check_news_sentiment(self, df: pd.DataFrame) ->list[str]:
         if 'news_sentiment' not in df.columns:
             return ['Missing required column: news_sentiment']
         if not pd.api.types.is_numeric_dtype(df['news_sentiment']):
@@ -81,7 +84,7 @@ class EventDatasetValidator:
                 ]
         return []
 
-    def _check_target_columns(self, df: pd.DataFrame) ->List[str]:
+    def _check_target_columns(self, df: pd.DataFrame) ->list[str]:
         target_cols = [col for col in df.columns if col.lower().startswith(
             self.target_prefix)]
         if not target_cols:
@@ -90,7 +93,7 @@ class EventDatasetValidator:
             return ['CRITICAL: All target_* values are missing.']
         return []
 
-    def _check_ticker_column(self, df: pd.DataFrame) ->List[str]:
+    def _check_ticker_column(self, df: pd.DataFrame) ->list[str]:
         if 'ticker' not in df.columns:
             return ['CRITICAL: Missing ticker column.']
         if df['ticker'].isna().all():
@@ -99,8 +102,8 @@ class EventDatasetValidator:
                 ]
         return []
 
-    def _check_nan_inf(self, df: pd.DataFrame) ->List[str]:
-        issues: List[str] = []
+    def _check_nan_inf(self, df: pd.DataFrame) ->list[str]:
+        issues: list[str] = []
         numeric_df = df.select_dtypes(include=[np.number])
         if numeric_df.empty:
             return issues
@@ -115,8 +118,8 @@ class EventDatasetValidator:
                 f'CRITICAL: Detected {int(inf_count)} infinite values.')
         return issues
 
-    def _check_duplicates(self, df: pd.DataFrame) ->List[str]:
-        issues: List[str] = []
+    def _check_duplicates(self, df: pd.DataFrame) ->list[str]:
+        issues: list[str] = []
         if 'news_id' in df.columns:
             duplicated_news_id = int(df['news_id'].duplicated().sum())
             if duplicated_news_id > 0:

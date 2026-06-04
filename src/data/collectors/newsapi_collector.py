@@ -3,13 +3,15 @@
 import asyncio
 import hashlib
 import os
-import pandas as pd
-from typing import List, Dict, Any, Optional
+from typing import Any
 
-from .base_collector import BaseCollector
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
 
 
 class NewsAPICollector(BaseCollector):
@@ -20,10 +22,10 @@ class NewsAPICollector(BaseCollector):
 
     def __init__(
         self,
-        configs: Dict[str, Any],
+        configs: dict[str, Any],
         http_client_factory: HttpClientFactory,
         db_manager: DataManager,
-        cache_manager: Optional[CacheManager] = None,
+        cache_manager: CacheManager | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -42,21 +44,21 @@ class NewsAPICollector(BaseCollector):
         ]
         # api_key_name contains the env var name (e.g. "NEWS_API_KEY"), resolve it
         api_key_var = self.configs.get("api_key_name", "NEWS_API_KEY")
-        self._api_key: Optional[str] = os.getenv(api_key_var)
+        self._api_key: str | None = os.getenv(api_key_var)
 
-    def _get_api_key(self) -> Optional[str]:
+    def _get_api_key(self) -> str | None:
         if self._api_key is None:
             self.logger.error(
-                f"[NewsAPI] No API key available."
+                "[NewsAPI] No API key available."
             )
         return self._api_key
 
     async def run(
         self,
-        tickers: Optional[List[str]] = None,
-        keywords: Optional[List[str]] = None,
+        tickers: list[str] | None = None,
+        keywords: list[str] | None = None,
         **kwargs,
-    ) -> Optional[pd.DataFrame]:
+    ) -> pd.DataFrame | None:
         """Fetch news from NewsAPI, filter novel records, commit to DB."""
         api_key = self._get_api_key()
         if not api_key:
@@ -170,7 +172,7 @@ class NewsAPICollector(BaseCollector):
 
     async def _fetch_for_term(
         self, term: str, api_key: str
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         params = {
             "q": f'"{term}"',
             "language": self.language,
@@ -196,7 +198,7 @@ class NewsAPICollector(BaseCollector):
             )
             raise
 
-    async def collect_data(self, **kwargs) -> Optional[List[Dict[str, Any]]]:
+    async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
         """
         UNIFIED data collection - retrieval only, without database storage.
         """

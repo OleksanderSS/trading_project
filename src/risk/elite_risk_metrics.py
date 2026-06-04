@@ -10,18 +10,19 @@ Elite Risk Management System
 - Liquidity Risk Assessment
 - Risk Limits Management
 """
+import logging
+from datetime import datetime
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional, Tuple, List, Any, Union
-import logging
 from scipy import stats
-from datetime import datetime
 
 
 class EliteRiskMetrics:
     """
     Elite Risk Management System - Unified risk calculation and monitoring
-    
+
     Combines:
     - Multiple VaR methods (Historical, Parametric, Monte Carlo, GARCH, Cornish-Fisher)
     - Stress testing framework
@@ -50,8 +51,8 @@ class EliteRiskMetrics:
             self.limits = {'max_portfolio_var': risk_config.get(
                 'max_portfolio_var_pct', 0.05), 'max_single_position':
                 risk_config.get('max_single_position_pct', 0.1),
-                'max_daily_loss': risk_config.get('max_daily_loss_pct', 
-                0.03), 'max_drawdown': risk_config.get('max_drawdown_pct', 
+                'max_daily_loss': risk_config.get('max_daily_loss_pct',
+                0.03), 'max_drawdown': risk_config.get('max_drawdown_pct',
                 0.15), 'max_leverage': risk_config.get('max_leverage', 2.0)}
         else:
             self.limits = {'max_portfolio_var': 0.05, 'max_single_position':
@@ -72,7 +73,7 @@ class EliteRiskMetrics:
             'Extreme asset correlation breakdown'}}
 
     def _clean_recent_returns(self, ticker: str, min_samples: int=30,
-        lookback_days: Optional[int]=None) ->Optional[pd.Series]:
+        lookback_days: int | None=None) ->pd.Series | None:
         if ticker not in self.returns_history:
             return None
         returns = pd.Series(self.returns_history[ticker], dtype=float).replace(
@@ -84,7 +85,7 @@ class EliteRiskMetrics:
         return returns
 
     def _fallback_var_result(self, method: str, confidence_level: float,
-        time_horizon: int=1) ->Dict[str, Union[float, str]]:
+        time_horizon: int=1) ->dict[str, float | str]:
         return {'var': self.DEFAULT_VAR_LOSS, 'cvar': self.DEFAULT_CVAR_LOSS,
             'confidence': confidence_level, 'time_horizon': time_horizon,
             'method': method, 'status': 'insufficient_data'}
@@ -93,14 +94,14 @@ class EliteRiskMetrics:
         confidence_level: float=0.95, lookback_days: int=252) ->float:
         """
         Historical Simulation VaR
-        
+
         The simplest (but effective) - take historical returns,
         sort, take the percentile
-        
+
         Args:
             confidence_level: 0.95 = 95% VaR = 5% tail loss
             lookback_days: How far back to look
-        
+
         Returns:
             VaR (as percentage, e.g., 0.03 = 3% loss)
         """
@@ -114,12 +115,12 @@ class EliteRiskMetrics:
         return float(max(0.001, var_loss_positive))
 
     def compute_cornish_fisher_var(self, ticker: str, confidence_level:
-        float=0.95, lookback_days: int=252) ->Tuple[float, float]:
+        float=0.95, lookback_days: int=252) ->tuple[float, float]:
         """
         Cornish-Fisher VaR (accounts for skewness and kurtosis)
-        
+
         More accurate than normal VaR, especially for tails
-        
+
         Returns:
             (VaR, CVaR)  - Value at Risk & Conditional VaR (Expected Shortfall)
         """
@@ -142,10 +143,10 @@ class EliteRiskMetrics:
         ) ->float:
         """
         GARCH(1,1) dynamic volatility VaR
-        
+
         GARCH captures volatility clustering
         σ²_t = ω + α*ε²_{t-1} + β*σ²_{t-1}
-        
+
         Returns:
             Predicted VaR for tomorrow # audit-ignore: no leakage, risk estimation
         """
@@ -178,10 +179,10 @@ class EliteRiskMetrics:
                 confidence_level)
 
     def compute_comprehensive_risk_metrics(self, ticker: str, position_size:
-        int, entry_price: float, portfolio_value: float) ->Dict:
+        int, entry_price: float, portfolio_value: float) ->dict:
         """
         Compute comprehensive set of risk metrics
-        
+
         Returns:
             Dict with VaR, CVaR, portfolio impact, etc.
         """
@@ -201,15 +202,15 @@ class EliteRiskMetrics:
             'cornish_fisher': cf_var, 'garch': garch_var, 'ensemble':
             ensemble_var}, 'cvar_95_pct': cf_cvar, 'var_95_dollars':
             var_dollars, 'cvar_95_dollars': cvar_dollars,
-            'portfolio_var_impact': portfolio_var, 'status': 'ok' if 
+            'portfolio_var_impact': portfolio_var, 'status': 'ok' if
             var_dollars < portfolio_value * 0.05 else 'high_risk'}
 
     def update_returns(self, ticker: str, returns: pd.Series):
         """Update historical data"""
         self.returns_history[ticker] = returns
 
-    def get_risk_report(self, positions: Dict[str, int], prices: Dict[str,
-        float], portfolio_value: float) ->Dict:
+    def get_risk_report(self, positions: dict[str, int], prices: dict[str,
+        float], portfolio_value: float) ->dict:
         """
         Generate risk report for the portfolio
         """
@@ -224,9 +225,9 @@ class EliteRiskMetrics:
             total_position_var += risk_metrics['var_95_dollars']
             total_position_cvar += risk_metrics['cvar_95_dollars']
             position_risks.append(risk_metrics)
-        portfolio_var_pct = (total_position_var / portfolio_value if 
+        portfolio_var_pct = (total_position_var / portfolio_value if
             portfolio_value > 0 else 0)
-        portfolio_cvar_pct = (total_position_cvar / portfolio_value if 
+        portfolio_cvar_pct = (total_position_cvar / portfolio_value if
             portfolio_value > 0 else 0)
         return {'portfolio_var_95_dollars': total_position_var,
             'portfolio_var_95_pct': portfolio_var_pct,
@@ -244,17 +245,17 @@ class EliteRiskMetrics:
         return 'high'
 
     def compute_parametric_var(self, ticker: str, confidence_level: float=
-        0.95, time_horizon: int=1, distribution: str='normal') ->Dict[str,
+        0.95, time_horizon: int=1, distribution: str='normal') ->dict[str,
         float]:
         """
         Parametric VaR using Normal or Student's t distribution
-        
+
         Args:
             ticker: Asset ticker
             confidence_level: Confidence level (0.95, 0.99)
             time_horizon: Time horizon in days
             distribution: 'normal' or 't' distribution
-            
+
         Returns:
             Dict with VaR, CVaR, and parameters (values can be float or str)
         """
@@ -287,17 +288,17 @@ class EliteRiskMetrics:
             float(mu), 'sigma': float(sigma), 'status': 'ok'}
 
     def compute_monte_carlo_var(self, ticker: str, confidence_level: float=
-        0.95, time_horizon: int=1, n_simulations: int=10000) ->Dict[str, float
+        0.95, time_horizon: int=1, n_simulations: int=10000) ->dict[str, float
         ]:
         """
         Monte Carlo VaR simulation via bootstrap sampling
-        
+
         Args:
             ticker: Asset ticker
             confidence_level: Confidence level
             time_horizon: Forecast horizon in days
             n_simulations: Number of simulations
-            
+
         Returns:
             Dict with VaR, CVaR, and simulation stats
         """
@@ -325,15 +326,15 @@ class EliteRiskMetrics:
             n_simulations, 'mean_simulated': float(np.mean(simulated_returns
             )), 'std_simulated': float(np.std(simulated_returns))}
 
-    def run_stress_test(self, portfolio: Dict[str, float], scenario: str=
-        'market_crash') ->Dict[str, Any]:
+    def run_stress_test(self, portfolio: dict[str, float], scenario: str=
+        'market_crash') ->dict[str, Any]:
         """
         Run stress test simulation for portfolio
-        
+
         Args:
             portfolio: Dict of {ticker: weight}
             scenario: Scenario name ('market_crash', 'volatility_spike', etc.)
-            
+
         Returns:
             Impact analysis and recommendations
         """
@@ -364,7 +365,7 @@ class EliteRiskMetrics:
             portfolio_impact, scenario)}
 
     def _generate_stress_recommendations(self, impact: float, scenario: str
-        ) ->List[str]:
+        ) ->list[str]:
         """Generate recommendations based on stress test results"""
         recommendations = []
         if abs(impact) > 0.1:
@@ -383,16 +384,16 @@ class EliteRiskMetrics:
         return recommendations
 
     def assess_liquidity_risk(self, ticker: str, volume_data: pd.Series,
-        price_data: pd.Series, position_size: float) ->Dict[str, Any]:
+        price_data: pd.Series, position_size: float) ->dict[str, Any]:
         """
         Assess liquidity risk for an asset
-        
+
         Args:
             ticker: Asset ticker
             volume_data: Historical trading volumes
             price_data: Historical prices
             position_size: Planned position size in USD
-            
+
         Returns:
             Liquidity metrics and recommendations
         """
@@ -426,7 +427,7 @@ class EliteRiskMetrics:
             risk_level, position_size, avg_daily_volume_dollars)}
 
     def _generate_liquidity_recommendations(self, risk_level: str,
-        position_size: float, avg_daily_volume: float) ->List[str]:
+        position_size: float, avg_daily_volume: float) ->list[str]:
         """Generate liquidity recommendations"""
         recommendations = []
         if risk_level == 'HIGH':
@@ -440,18 +441,18 @@ class EliteRiskMetrics:
                     f'Reduce position below ${max_safe_size:,.0f}')
         return recommendations
 
-    def check_limits(self, portfolio_value: float, positions: Dict[str,
-        Dict[str, Any]], daily_pnl: float, current_drawdown: float) ->Dict[
+    def check_limits(self, portfolio_value: float, positions: dict[str,
+        dict[str, Any]], daily_pnl: float, current_drawdown: float) ->dict[
         str, Any]:
         """
         Check if portfolio adheres to risk limits
-        
+
         Args:
             portfolio_value: Total portfolio value
             positions: Dict of positions with size/value
             daily_pnl: Daily P&L
             current_drawdown: Current drawdown
-            
+
         Returns:
             Limit check report with violations and warnings
         """
@@ -459,7 +460,7 @@ class EliteRiskMetrics:
         warnings = []
         estimated_var = portfolio_value * 0.02
         if estimated_var > portfolio_value * self.limits['max_portfolio_var']:
-            violations.append({'type': 'portfolio_var', 'current': 
+            violations.append({'type': 'portfolio_var', 'current':
                 estimated_var / portfolio_value, 'limit': self.limits[
                 'max_portfolio_var'], 'message':
                 f'Portfolio VaR {estimated_var / portfolio_value:.1%} exceeds limit'

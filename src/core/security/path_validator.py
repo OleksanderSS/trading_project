@@ -1,18 +1,17 @@
-import os
 from pathlib import Path
-from typing import Union
+
 
 class PathValidationError(Exception):
     """Exception raised for path validation errors."""
     pass
 
 def validate_safe_path(
-    path: Union[str, Path],
-    base_dir: Union[str, Path],
+    path: str | Path,
+    base_dir: str | Path,
     allow_symlinks: bool = False
 ) -> Path:
     """
-    Validates that the given path is contained within the base_dir 
+    Validates that the given path is contained within the base_dir
     and prevents Path Traversal attacks.
 
     Args:

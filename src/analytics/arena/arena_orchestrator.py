@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
@@ -29,7 +29,7 @@ class ArenaOrchestrator:
         self.tracker = tracker
         self.bridge = ensemble_bridge
 
-    def run_recommended_battles(self, ticker: str, target: str) -> Dict[str, Any]:
+    def run_recommended_battles(self, ticker: str, target: str) -> dict[str, Any]:
         """Runs battles and records performance to the tracker."""
         logger.info(f"Starting arena battles for {ticker}...")
 
@@ -63,7 +63,7 @@ class ArenaOrchestrator:
         """API wrapper for creating custom battle groups."""
         return self.groups.create_custom_group(name, models, description)
 
-    def get_battle_group_details(self, group_name: str) -> Dict[str, Any]:
+    def get_battle_group_details(self, group_name: str) -> dict[str, Any]:
         """API wrapper for getting battle group info."""
         return self.groups.get_group_info(group_name)
 
@@ -71,7 +71,7 @@ class ArenaOrchestrator:
         """Expose top performers."""
         return self.tracker.get_top_performers()
 
-    def get_unified_arena_report(self) -> Dict[str, Any]:
+    def get_unified_arena_report(self) -> dict[str, Any]:
         """Expose bridge performance report."""
         if self.bridge:
             return self.bridge.get_unified_performance_view()

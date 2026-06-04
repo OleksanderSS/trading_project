@@ -9,7 +9,6 @@ All trainer implementations share common workflow:
 3. Generate results summary
 """
 import logging
-
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -38,13 +37,13 @@ class TrainingConfigException(TrainingException):
 class TrainerConfig:
     """
     Base configuration for all trainers.
-    
+
     This is the parent class for all training configurations.
     Subclasses can extend with additional parameters.
     """
     def __init__(
-        self, 
-        batch_size: int = 10, 
+        self,
+        batch_size: int = 10,
         max_memory_gb: float = 12.0,
         # Progressive-specific parameters (optional)
         initial_batch_size: int | None = None,
@@ -70,7 +69,7 @@ class TrainerConfig:
         # Common parameters
         self.batch_size = batch_size
         self.max_memory_gb = max_memory_gb
-        
+
         # Progressive parameters
         self.initial_batch_size = initial_batch_size
         self.max_batch_size = max_batch_size
@@ -83,7 +82,7 @@ class TrainerConfig:
         self.save_intermediate_results = save_intermediate_results
         self.checkpoint_interval = checkpoint_interval
         self.max_time_hours = max_time_hours
-        
+
         # Adaptive parameters
         self.mode = mode
         self.strategy = strategy
@@ -350,7 +349,7 @@ class BaseTrainer(ABC):
             joblib.dump(model, path)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f"Champion saved: {path}")
-        except (IOError, TypeError, Exception) as e:
+        except (OSError, TypeError, Exception) as e:
             self.logger.error(f"Error saving champion {filename}: {e}", exc_info=True)
             raise TrainingException(f"Failed to save champion {filename}: {e}") from e
 

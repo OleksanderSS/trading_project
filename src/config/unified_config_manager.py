@@ -1,13 +1,13 @@
 from __future__ import annotations
-import logging
 
-import json
+import logging
 import os
 import re
 import threading
+from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Any, TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Any
 
 from src.core.file_management.file_manager import FileManager
 from src.core.logging.logger import ProjectLogger
@@ -139,7 +139,7 @@ class UnifiedConfigManager:
 
             config_files = self.file_manager.find_files("*.yaml", search_dir=self.config_dir)
             self._process_config_files(config_files, key_sources)
-            
+
             # NOTE: Skip secret resolution during initial load to avoid circular dependency
             # Secrets will be resolved after full initialization
             # self._resolve_secrets_in_config()

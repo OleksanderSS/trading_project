@@ -11,50 +11,53 @@ Usage:
         predictions = model.predict(features)
 """
 import logging
-from typing import Any, Optional, Dict, Callable, List
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
+
 import joblib
+
+from src.config.unified_config_manager import get_current_config
 from src.core.error_handling.error_handler import ModelLoadingError
 from src.core.logging.logger import ProjectLogger
 from src.utils.artifact_security import resolve_trusted_artifact_path
-from src.config.unified_config_manager import get_current_config
 
 
 class ModelLoaderStrategy:
     """
     Encapsulates model loading logic with multiple fallback strategies.
-    
+
     Tries different strategies in order:
     1. Load from local filesystem (joblib)
     2. Load from Colab mounted drive
     3. Load consensus meta-model (fallback)
     4. Load stacked ensemble (final fallback)
-    
+
     Each strategy is tried in order, and the first successful one is returned.
     """
 
-    def __init__(self, logger: Optional[Any]=None):
+    def __init__(self, logger: Any | None=None):
         """
         Initialize ModelLoaderStrategy.
-        
+
         Args:
             logger: Optional logger instance (creates new if not provided)
         """
         self.logger = logger or ProjectLogger.get_logger('ModelLoaderStrategy')
-        self.loaders: List[Callable] = [self._load_local_model, self.
+        self.loaders: list[Callable] = [self._load_local_model, self.
             _load_colab_model, self._load_consensus_model, self.
             _load_stacked_ensemble]
 
-    def load_model(self, model_meta: Dict[str, Any]) ->Optional[Any]:
+    def load_model(self, model_meta: dict[str, Any]) ->Any | None:
         """
         Try loading model using multiple strategies.
-        
+
         Attempts each strategy in order until one succeeds.
         Returns None if all strategies fail.
-        
+
         Args:
             model_meta: Model metadata dictionary with 'model_path', 'model_id', etc.
-        
+
         Returns:
             Loaded model instance, or None if all strategies failed
         """
@@ -97,7 +100,7 @@ class ModelLoaderStrategy:
             f'❌ All loaders failed for model {model_id} (path: {model_path})')
         return None
 
-    def load_path(self, model_path: str, meta: Dict[str, Any]) ->Optional[Any]:
+    def load_path(self, model_path: str, meta: dict[str, Any]) ->Any | None:
         """
         Load a model directly from a given file path.
         Supports .joblib, .pkl, and .pt file formats.
@@ -125,18 +128,18 @@ class ModelLoaderStrategy:
         raise ModelLoadingError(f'Unsupported model file suffix: {path.suffix}'
             )
 
-    def _load_local_model(self, model_path: str, meta: Dict[str, Any]
-        ) ->Optional[Any]:
+    def _load_local_model(self, model_path: str, meta: dict[str, Any]
+        ) ->Any | None:
         """
         Load model from local filesystem.
-        
+
         Returns None if path is not local (e.g., Colab path).
         Raises FileNotFoundError if local path doesn't exist.
         """
         if not model_path or '/content/drive/' in model_path:
             return None
         try:
-            path = resolve_trusted_artifact_path(model_path, must_exist=True)
+            resolve_trusted_artifact_path(model_path, must_exist=True)
         except FileNotFoundError:
             raise FileNotFoundError(
                 f'Model not found at local path: {model_path}')
@@ -147,11 +150,11 @@ class ModelLoaderStrategy:
             self.logger.debug(f'Loading local model from {model_path}')
         return self.load_path(model_path, meta)
 
-    def _load_colab_model(self, model_path: str, meta: Dict[str, Any]
-        ) ->Optional[Any]:
+    def _load_colab_model(self, model_path: str, meta: dict[str, Any]
+        ) ->Any | None:
         """
         Load model from Colab mounted drive.
-        
+
         Returns None if path is not a Colab path.
         """
         if '/content/drive/' not in model_path:
@@ -160,8 +163,8 @@ class ModelLoaderStrategy:
             self.logger.debug(f'Loading Colab model from {model_path}')
         return self.load_path(model_path, meta)
 
-    def _load_consensus_model(self, model_path: str, meta: Dict[str, Any]
-        ) ->Optional[Any]:
+    def _load_consensus_model(self, model_path: str, meta: dict[str, Any]
+        ) ->Any | None:
         """
         Fallback: Load consensus meta-model.
         """
@@ -169,7 +172,7 @@ class ModelLoaderStrategy:
         registry = config.get('models.trained_models_registry', {})
         consensus_path_str = registry.get('consensus_meta_model', 'data/trained_models/consensus_meta_model.pkl')
         consensus_path = Path(consensus_path_str)
-        
+
         if not consensus_path.exists():
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Consensus model not found at {consensus_path}')
@@ -183,8 +186,8 @@ class ModelLoaderStrategy:
             self.logger.error(f'Помилка завантаження consensus моделі: {e}', exc_info=True)
             raise RuntimeError(f"Failed to load consensus model: {e}") from e
 
-    def _load_stacked_ensemble(self, model_path: str, meta: Dict[str, Any]
-        ) ->Optional[Any]:
+    def _load_stacked_ensemble(self, model_path: str, meta: dict[str, Any]
+        ) ->Any | None:
         """
         Final fallback: Create default stacked ensemble.
         """
@@ -227,7 +230,7 @@ class ModelLoaderStrategy:
                     f'Failed to load pickle model at {path} via both joblib ({e1}) and standard pickle ({e2})'
                     ) from e2
 
-    def _load_keras_model(self, path: Path, meta: Dict[str, Any]) ->Any:
+    def _load_keras_model(self, path: Path, meta: dict[str, Any]) ->Any:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'Loading Keras model from {path}')
         try:
@@ -287,8 +290,8 @@ class ModelLoaderStrategy:
 
     def _create_fallback_model(self, model_type: str):
         """Create a simple fallback model when loading fails"""
-        import tensorflow as tf
         import numpy as np
+        import tensorflow as tf
         self.logger.warning(
             f'Creating fallback model for {model_type} due to loading failure')
         model = tf.keras.Sequential([tf.keras.layers.Dense(64, activation=
@@ -329,8 +332,7 @@ class ModelLoaderStrategy:
                 return predictions.flatten()
         return KerasPredictor(model, model_type)
 
-    def _load_torch_model(self, path: Path, meta: Dict[str, Any]) ->Optional[
-        Any]:
+    def _load_torch_model(self, path: Path, meta: dict[str, Any]) ->Any | None:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f'Loading PyTorch model from {path}')
         try:
@@ -374,7 +376,7 @@ class ModelLoaderStrategy:
             raise ModelLoadingError(
                 f'Failed to load PyTorch model from {path}: {e}') from e
 
-    def _extract_input_size(self, state_dict: Dict[str, Any]) ->int:
+    def _extract_input_size(self, state_dict: dict[str, Any]) ->int:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug('Extracting input size from state_dict')
         for key, val in state_dict.items():
@@ -513,9 +515,9 @@ class ModelLoaderStrategy:
     def add_loader(self, loader: Callable, position: int=-1):
         """
         Add a custom loader strategy.
-        
+
         Allows extending ModelLoaderStrategy with custom loaders.
-        
+
         Args:
             loader: Callable that takes (model_path, metadata) and returns model or None
             position: Position to insert (default: -1 = before final fallback)
@@ -530,35 +532,35 @@ class ModelLoaderStrategy:
 class ModelLoaderFactory:
     """
     Factory for creating ModelLoaderStrategy instances.
-    
+
     Can be extended to create specialized loaders for different scenarios.
     """
 
     @staticmethod
-    def create_loader(logger: Optional[logging.Logger]=None
+    def create_loader(logger: logging.Logger | None=None
         ) ->ModelLoaderStrategy:
         """
         Create a standard ModelLoaderStrategy instance.
-        
+
         Args:
             logger: Optional logger instance
-        
+
         Returns:
             ModelLoaderStrategy instance
         """
         return ModelLoaderStrategy(logger)
 
     @staticmethod
-    def create_colab_loader(logger: Optional[logging.Logger]=None
+    def create_colab_loader(logger: logging.Logger | None=None
         ) ->ModelLoaderStrategy:
         """
         Create a loader optimized for Colab environment.
-        
+
         Prioritizes Colab mount points over local filesystem.
-        
+
         Args:
             logger: Optional logger instance
-        
+
         Returns:
             ModelLoaderStrategy optimized for Colab
         """

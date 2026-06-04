@@ -4,15 +4,13 @@ Enhanced Model Factory with Prototype Support
 Extends ModelFactory with prototype pattern for fast model cloning and metadata management.
 """
 import logging
+from typing import Any
 
-import importlib
-from typing import Dict, Any, Type, Optional
-
-from src.models.interfaces import BaseModel
+from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
+from src.models.interfaces import BaseModel
 from src.models.prototypes.prototype import ModelPrototype
 from src.models.prototypes.registry import PrototypeRegistry
-from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -41,8 +39,8 @@ class EnhancedModelFactory(ModelFactory):
         model = factory.get_model("catboost", iterations=100)
     """
 
-    _PROTOTYPES: Dict[str, ModelPrototype] = {}
-    _REGISTRY: Optional[PrototypeRegistry] = None
+    _PROTOTYPES: dict[str, ModelPrototype] = {}
+    _REGISTRY: PrototypeRegistry | None = None
 
     @classmethod
     def initialize_registry(cls, registry_path: str = "data/prototypes/registry.json"):
@@ -75,7 +73,7 @@ class EnhancedModelFactory(ModelFactory):
         return True
 
     @classmethod
-    def get_model(cls, model_name: str, **kwargs) -> Optional[BaseModel]:
+    def get_model(cls, model_name: str, **kwargs) -> BaseModel | None:
         """
         Get model instance via prototype or legacy factory.
 
@@ -99,7 +97,7 @@ class EnhancedModelFactory(ModelFactory):
 
         # Try registry
         if cls._REGISTRY:
-            registry_prototype: Optional[ModelPrototype] = cls._REGISTRY.get(model_name)
+            registry_prototype: ModelPrototype | None = cls._REGISTRY.get(model_name)
             if registry_prototype:
                 model = registry_prototype.clone(**kwargs)
                 if model:
@@ -132,7 +130,7 @@ class EnhancedModelFactory(ModelFactory):
         return sorted(all_models)
 
     @classmethod
-    def get_prototype(cls, model_id: str) -> Optional[ModelPrototype]:
+    def get_prototype(cls, model_id: str) -> ModelPrototype | None:
         """
         Get prototype by ID.
 
@@ -178,7 +176,7 @@ class EnhancedModelFactory(ModelFactory):
         return matching
 
     @classmethod
-    def get_factory_stats(cls) -> Dict[str, Any]:
+    def get_factory_stats(cls) -> dict[str, Any]:
         """
         Get factory statistics.
 
@@ -201,7 +199,7 @@ class EnhancedModelFactory(ModelFactory):
         return stats
 
     @classmethod
-    def export_summary(cls) -> Dict[str, Any]:
+    def export_summary(cls) -> dict[str, Any]:
         """
         Export factory summary.
 

@@ -8,15 +8,17 @@ This module connects the different components of the trading pipeline:
 - Synchronizes the state of the Virtual Portfolio.
 """
 import logging
-from typing import List, Dict, Optional, Any
+from typing import Any
+
 import numpy as np
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 from src.trading.consensus_engine import ConsensusEngine
 from src.trading.portfolio_manager import PortfolioManager
-from src.trading.virtual_portfolio import VirtualPortfolio
-from src.trading.trader import Trader, TradeOrder
 from src.trading.post_inference_filter import PostInferenceFilter
+from src.trading.trader import TradeOrder, Trader
+from src.trading.virtual_portfolio import VirtualPortfolio
 
 
 class TradingOrchestrator:
@@ -24,12 +26,11 @@ class TradingOrchestrator:
     Manages the data flow and operational logic from signal generation to order execution.
     """
 
-    def __init__(self, consensus_engine: Optional[ConsensusEngine],
+    def __init__(self, consensus_engine: ConsensusEngine | None,
         portfolio_manager: PortfolioManager, virtual_portfolio:
-        VirtualPortfolio, trader: Trader, post_inference_filter: Optional[
-        PostInferenceFilter]=None, risk_metrics: Optional[Any]=None,
-        param_manager: Optional[Any]=None, regime_detector: Optional[Any]=
-        None, knn_finder: Optional[Any]=None, macro_analyzer: Optional[Any]
+        VirtualPortfolio, trader: Trader, post_inference_filter: PostInferenceFilter | None=None, risk_metrics: Any | None=None,
+        param_manager: Any | None=None, regime_detector: Any | None=
+        None, knn_finder: Any | None=None, macro_analyzer: Any | None
         =None):
         """
         Initializes the orchestrator with its core and elite trading dependencies.
@@ -49,21 +50,19 @@ class TradingOrchestrator:
             'TradingOrchestrator initialized with full Elite-stack support (KNN + Macro).'
             )
 
-    def process_signals(self, raw_predictions: List[Dict[str, Any]],
-        current_prices: Dict[str, float], enriched_data: Optional[pd.
-        DataFrame]=None):
+    def process_signals(self, raw_predictions: list[dict[str, Any]],
+        current_prices: dict[str, float], enriched_data: pd.DataFrame | None=None):
         """
         The main pipeline entry point for processing a batch of new model predictions.
-        
+
         Args:
             raw_predictions: A list of prediction dictionaries output from Stage 5.
             current_prices: A map of tickers to their current realized market price.
             enriched_data: Optional full feature dataset for deep analysis.
         """
-        macro_results = None
         if self.macro_analyzer and enriched_data is not None:
             self.logger.info('Executing Macro Context Analysis...')
-            macro_results = self.macro_analyzer.analyze(enriched_data)
+            self.macro_analyzer.analyze(enriched_data)
         regime = 'ranging'
         if self.regime_detector:
             self.logger.info(
@@ -96,8 +95,8 @@ class TradingOrchestrator:
             'Trading cycle concluded. Portfolio metrics and state successfully synchronized.'
             )
 
-    def _apply_pre_filtering(self, raw_predictions: List[Dict[str, Any]]
-        ) ->List[Dict[str, Any]]:
+    def _apply_pre_filtering(self, raw_predictions: list[dict[str, Any]]
+        ) ->list[dict[str, Any]]:
         """Apply optional pre-filtering to reduce noise in predictions."""
         if not self.filter:
             return raw_predictions
@@ -107,9 +106,8 @@ class TradingOrchestrator:
         from typing import cast
         return cast(list[dict[str, Any]], filtered_df.to_dict('records'))
 
-    def _synthesize_consensus_signals(self, predictions_to_process: List[
-        Dict[str, Any]], regime: str='neutral', enriched_data: Optional[pd.
-        DataFrame]=None) ->List[Dict[str, Any]]:
+    def _synthesize_consensus_signals(self, predictions_to_process: list[
+        dict[str, Any]], regime: str='neutral', enriched_data: pd.DataFrame | None=None) ->list[dict[str, Any]]:
         """Synthesize consensus signals from predictions."""
         consensus_signals = []
         for prediction in predictions_to_process:
@@ -125,9 +123,9 @@ class TradingOrchestrator:
                 consensus_signals.append(signal_data)
         return consensus_signals
 
-    def _process_single_prediction(self, prediction: Dict[str, Any], ticker:
-        str, regime: str='neutral', enriched_data: Optional[pd.DataFrame]=None
-        ) ->Optional[Dict[str, Any]]:
+    def _process_single_prediction(self, prediction: dict[str, Any], ticker:
+        str, regime: str='neutral', enriched_data: pd.DataFrame | None=None
+        ) ->dict[str, Any] | None:
         """Process a single prediction and generate consensus signal."""
         pred_value = self._extract_prediction_value(prediction)
         model_predictions = self._build_model_predictions(prediction,
@@ -174,7 +172,7 @@ class TradingOrchestrator:
             raise RuntimeError(f"Consensus synthesis failed for {ticker}: {e}") from e
         return None
 
-    def _extract_prediction_value(self, prediction: Dict[str, Any]) ->float:
+    def _extract_prediction_value(self, prediction: dict[str, Any]) ->float:
         """Extract scalar prediction value from diverse source formats."""
         pred_value = prediction.get('predictions')
         if isinstance(pred_value, (list, tuple, np.ndarray)):
@@ -184,8 +182,8 @@ class TradingOrchestrator:
         else:
             return float(pred_value) if pred_value is not None else 0.0
 
-    def _build_model_predictions(self, prediction: Dict[str, Any],
-        pred_value: float) ->Dict[str, float]:
+    def _build_model_predictions(self, prediction: dict[str, Any],
+        pred_value: float) ->dict[str, float]:
         """Reconstruct architecture-specific prediction matrix."""
         predictions_by_model = prediction.get('predictions_by_model', {})
         if predictions_by_model:
@@ -195,8 +193,8 @@ class TradingOrchestrator:
             primary_model = prediction.get('selected_primary_model', 'unknown')
             return {primary_model: pred_value}
 
-    def _build_context_data(self, prediction: Dict[str, Any], ticker: str
-        ) ->Dict[str, Any]:
+    def _build_context_data(self, prediction: dict[str, Any], ticker: str
+        ) ->dict[str, Any]:
         """Build context data for regime-aware decision making."""
         return {'ticker': ticker, 'fingerprint': prediction.get(
             'context_fingerprint', '0|0|0'), 'regime': prediction.get(
@@ -205,7 +203,7 @@ class TradingOrchestrator:
             'anomaly_score': prediction.get('anomaly_score', 0.0),
             'timestamp': prediction.get('timestamp')}
 
-    def _handle_risk_exits(self, current_prices: Dict[str, float]) ->None:
+    def _handle_risk_exits(self, current_prices: dict[str, float]) ->None:
         """Handle high-priority risk exits (Stop-Loss / Take-Profit)."""
         exit_orders = self.portfolio_manager.check_risk_exits(current_prices)
         if exit_orders:
@@ -214,13 +212,13 @@ class TradingOrchestrator:
                 )
             self._execute_orders(exit_orders)
 
-    def _generate_trade_orders(self, consensus_signals: List[Dict[str, Any]
-        ], current_prices: Dict[str, float]) ->List[TradeOrder]:
+    def _generate_trade_orders(self, consensus_signals: list[dict[str, Any]
+        ], current_prices: dict[str, float]) ->list[TradeOrder]:
         """Generate trade orders from consensus signals."""
         return self.portfolio_manager.generate_orders_from_signals(
             consensus_signals, current_prices)
 
-    def _execute_orders(self, orders: List[TradeOrder]):
+    def _execute_orders(self, orders: list[TradeOrder]):
         """
         Dispatches orders to the trade execution interface and synchronizes the virtual portfolio state.
         """

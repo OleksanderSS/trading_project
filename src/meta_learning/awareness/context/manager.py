@@ -1,12 +1,13 @@
-from typing import Dict, Any, Optional
 from datetime import datetime
+from typing import Any
 
-from .models import MarketContext
-from .storage import ContextStorage
-from .analyzer import ContextAnalyzer
-from .scanner import EventScanner
 from src.core.logging.logger import ProjectLogger
 from src.meta_learning.base import BaseMetaComponent
+
+from .analyzer import ContextAnalyzer
+from .models import MarketContext
+from .scanner import EventScanner
+from .storage import ContextStorage
 
 logger = ProjectLogger.get_logger("ContextAwarenessEngine")
 
@@ -35,26 +36,26 @@ class ContextAwarenessEngine(BaseMetaComponent):
             new_events = self.scanner.scan_all_sources()
             for event in new_events:
                 self.storage.save_market_event(event)
-                
+
             # 2. Analyze context
             pattern_id = data.get('context_pattern_id') if isinstance(data, dict) else None
             self.analyze_market_context(pattern_id)
-            
+
             self.logger.info('Context awareness update completed.')
         except Exception as e:
             self.logger.error(f'Failed to update context awareness: {e}', exc_info=True)
 
-    def analyze_market_context(self, current_pattern_id: Optional[str] = None) -> MarketContext:
+    def analyze_market_context(self, current_pattern_id: str | None = None) -> MarketContext:
         """Analyze current context and sync with pattern memory."""
         recent_events = self.storage.get_recent_events(hours=24)
-        
+
         regime = self.analyzer.detect_market_regime(recent_events)
         vol_regime = self.analyzer.detect_volatility_regime(recent_events)
         sentiment = self.analyzer.calculate_sentiment_index(recent_events)
         memory_insight = self.analyzer.get_memory_insight(current_pattern_id)
         fear_greed_index = self._estimate_fear_greed_index(sentiment)
         vix_level = self._estimate_vix_level(vol_regime)
-        
+
         context = MarketContext(
             timestamp=datetime.now(),
             market_regime=regime,
@@ -69,7 +70,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
             opportunities=[],
             pattern_memory_insight=memory_insight
         )
-        
+
         self.storage.save_market_context(context)
         return context
 
@@ -89,7 +90,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
             'extreme': 35.0,
         }.get(volatility_regime, 20.0)
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """Return engine summary state."""
         return {
             'name': self.name,

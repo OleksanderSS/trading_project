@@ -3,9 +3,8 @@ Model Prototype Pattern Implementation
 
 Provides fast cloning and metadata management for models.
 """
-import logging
-
 import importlib
+import logging
 from datetime import datetime
 from typing import Any
 

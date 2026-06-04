@@ -8,7 +8,6 @@ def handle_categorical_features_split(
     """Кодує категоріальні колонки, використовуючи лише тренувальну вибірку."""
 
     # Визначаємо категоріальні колонки
-    all_cols = x_train.columns
     cat_cols = [
         c
         for c in x_train.select_dtypes(include=["object", "category"]).columns

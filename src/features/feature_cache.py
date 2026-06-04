@@ -21,19 +21,20 @@ Usage:
 import hashlib
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any
+
 import pandas as pd
-import json
+
 PARQUET_EXT = '*.parquet'
 
 
 class FeatureCache:
     """
     Disk-based cache for feature enrichment results.
-    
+
     Prevents recomputation of expensive enrichers for same ticker/date combinations.
     Uses parquet format for efficient storage and fast loading.
-    
+
     Attributes:
         cache_dir: Directory where cached features are stored
         compression: Compression method for parquet files ('snappy' recommended)
@@ -44,7 +45,7 @@ class FeatureCache:
         str='snappy', max_cache_age_days: int=7):
         """
         Initialize feature cache.
-        
+
         Args:
             cache_dir: Directory to store cached feature files
             compression: Parquet compression method ('snappy', 'gzip', 'brotli')
@@ -59,7 +60,7 @@ class FeatureCache:
         self._cleanup_old_cache()
 
     def get_features(self, ticker: str, date: str, config_hash: str
-        ) ->Optional[pd.DataFrame]:
+        ) ->pd.DataFrame | None:
         """
         Retrieve cached features for ticker/date combination.
         """
@@ -75,7 +76,7 @@ class FeatureCache:
                     f'⚠️ Cached features missing datetime column: {ticker} {date}'
                     )
                 self.logger.warning(
-                    f'   This cache file is corrupted. Removing it.')
+                    '   This cache file is corrupted. Removing it.')
                 cache_file.unlink()
                 self.stats['errors'] += 1
                 return None
@@ -96,7 +97,7 @@ class FeatureCache:
                 self.logger.warning(
                     f'⚠️ Removed corrupted cache file: {cache_file}')
                 return None
-        except (IOError, ValueError, TypeError, Exception) as e:
+        except (OSError, ValueError, TypeError, Exception) as e:
             self.logger.error(f'Помилка при читанні файлу кешу {cache_file}: {e}', exc_info=True)
             self.stats['errors'] += 1
             try:
@@ -125,7 +126,7 @@ class FeatureCache:
                         'index': 'datetime'})
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(
-                        f'✅ Converted DatetimeIndex to datetime column before caching'
+                        '✅ Converted DatetimeIndex to datetime column before caching'
                         )
             else:
                 features_to_save = features.copy()
@@ -143,7 +144,7 @@ class FeatureCache:
                 self.logger.debug(
                     f'💾 Cached features: {ticker} {date} ({len(features)} rows)')
             return True
-        except (IOError, TypeError, Exception) as e:
+        except (OSError, TypeError, Exception) as e:
             self.stats['errors'] += 1
             self.logger.error(
                 f'❌ Failed to cache features for {ticker} {date}: {e}', exc_info=True)
@@ -152,12 +153,12 @@ class FeatureCache:
     def invalidate_ticker(self, ticker: str) ->int:
         """
         Remove all cached features for a specific ticker.
-        
+
         Useful when updating enricher logic or when ticker data changes.
-        
+
         Args:
             ticker: Ticker symbol to invalidate
-        
+
         Returns:
             Number of cache files removed
         """
@@ -176,7 +177,7 @@ class FeatureCache:
     def clear_cache(self) ->int:
         """
         Remove all cached feature files.
-        
+
         Returns:
             Number of files removed
         """
@@ -191,10 +192,10 @@ class FeatureCache:
             self.logger.error(f'❌ Error clearing cache: {e}')
         return removed_count
 
-    def get_stats(self) ->Dict[str, Any]:
+    def get_stats(self) ->dict[str, Any]:
         """
         Get cache performance statistics.
-        
+
         Returns:
             Dict with hits, misses, saves, errors, hit_rate, cache_size_mb
         """
@@ -217,12 +218,12 @@ class FeatureCache:
         ) ->str:
         """
         Generate deterministic cache key from inputs.
-        
+
         Args:
             ticker: Stock ticker
             date: Date string
             config_hash: SHA256 hash of configuration
-        
+
         Returns:
             Cache key string safe for filenames
         """
@@ -233,7 +234,7 @@ class FeatureCache:
         expected_date: str) ->bool:
         """
         Validate cached features integrity.
-        
+
         Checks that metadata columns match expected values.
         """
         try:
@@ -274,16 +275,16 @@ class FeatureCache:
             raise
 
 
-_cache: Optional[FeatureCache] = None
+_cache: FeatureCache | None = None
 
 
 def get_feature_cache(cache_dir: str='data/cache/features') ->FeatureCache:
     """
     Get or create global feature cache (singleton).
-    
+
     Args:
         cache_dir: Only used on first call to create cache
-    
+
     Returns:
         Global FeatureCache instance
     """
@@ -299,7 +300,7 @@ def clear_feature_cache() ->int:
     return cache.clear_cache()
 
 
-def get_cache_stats() ->Dict[str, Any]:
+def get_cache_stats() ->dict[str, Any]:
     """Get statistics from global cache."""
     cache = get_feature_cache()
     return cache.get_stats()

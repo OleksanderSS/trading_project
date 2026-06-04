@@ -1,10 +1,11 @@
-import pandas as pd
 import logging
-from typing import List, Dict, Any, Optional
+from typing import Any
 
+import pandas as pd
+
+from src.analytics.calculators.volatility_calculator import VolatilityCalculator
 from src.config.unified_config_manager import get_current_config
 from src.features.enrichers.base import BaseEnricher
-from src.analytics.calculators.volatility_calculator import VolatilityCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +60,12 @@ class DerivedFeaturesEnricher(BaseEnricher):
             DataFrame with added features.
         """
         df_enriched = df.copy()
-        
+
         # Process price-based derived features
         price_target_col = self._resolve_price_target_column(df_enriched, kwargs.get('target_column', self.target_column))
         if price_target_col:
             self._add_price_based_features(df_enriched, price_target_col)
-        
+
         # Process returns-based derived features
         returns_col = kwargs.get('returns_column', self.returns_column)
         if isinstance(returns_col, str) and returns_col in df_enriched.columns:
@@ -73,7 +74,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
         logger.info(f"Derived features enrichment complete. Added {len(df_enriched.columns) - len(df.columns)} features.")
         return df_enriched
 
-    def _resolve_price_target_column(self, df_enriched: pd.DataFrame, target_col: str) -> Optional[str]:
+    def _resolve_price_target_column(self, df_enriched: pd.DataFrame, target_col: str) -> str | None:
         """Resolve the price target column to use."""
         if not isinstance(target_col, str) or target_col not in df_enriched.columns:
             # Fallback to 'close' if target_column is invalid
@@ -83,7 +84,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
     def _add_price_based_features(self, df_enriched: pd.DataFrame, price_target_col: str) -> None:
         """Add price-based derived features to DataFrame."""
         logger.info(f"Generating price-based derived features on column '{price_target_col}'...")
-        
+
         # Calculate returns if missing
         if self.returns_column not in df_enriched.columns:
             df_enriched[self.returns_column] = (
@@ -92,7 +93,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
                 .replace([float("inf"), float("-inf")], pd.NA)
             )
             logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
-        
+
         # Add various price-based features
         if 'lags' in self.config:
             self._add_lags(df_enriched, price_target_col, self.config['lags'])
@@ -108,25 +109,25 @@ class DerivedFeaturesEnricher(BaseEnricher):
     def _add_returns_based_features(self, df_enriched: pd.DataFrame, returns_col: str) -> None:
         """Add returns-based derived features to DataFrame."""
         logger.info(f"Generating returns-based derived features on column '{returns_col}'...")
-        
+
         if 'rolling_volatility' in self.config:
             self._add_rolling_stat(df_enriched, returns_col, 'rolling_volatility', self.config['rolling_volatility'])
         if 'forward_targets' in self.config:
             self._add_forward_targets(df_enriched, returns_col, self.config['forward_targets'])
 
-    def _add_lags(self, df: pd.DataFrame, target_col: str, lags: List[int]):
+    def _add_lags(self, df: pd.DataFrame, target_col: str, lags: list[int]):
         for lag in lags:
             df[f'LAG_{lag}'] = df[target_col].shift(lag)
 
-    def _add_velocity(self, df: pd.DataFrame, target_col: str, periods: List[int]):
+    def _add_velocity(self, df: pd.DataFrame, target_col: str, periods: list[int]):
         for p in periods:
             df[f'VELOCITY_{p}'] = df[target_col].diff(p)
 
-    def _add_acceleration(self, df: pd.DataFrame, target_col: str, periods: List[int]):
+    def _add_acceleration(self, df: pd.DataFrame, target_col: str, periods: list[int]):
         for p in periods:
             df[f'ACCELERATION_{p}'] = df[target_col].diff(p).diff(p)
 
-    def _add_rolling_stat(self, df: pd.DataFrame, col: str, stat_name: str, windows: List[int]):
+    def _add_rolling_stat(self, df: pd.DataFrame, col: str, stat_name: str, windows: list[int]):
         for window in windows:
             if stat_name == 'rolling_volatility':
                 df[f'ROLLING_VOL_{window}'] = VolatilityCalculator.calculate_rolling_volatility(df[col], window, self.periods_per_year)
@@ -134,8 +135,8 @@ class DerivedFeaturesEnricher(BaseEnricher):
                 df[f'ROLLING_SKEW_{window}'] = df[col].rolling(window=window, min_periods=1).skew()
             elif stat_name == 'rolling_kurtosis':
                 df[f'ROLLING_KURT_{window}'] = df[col].rolling(window=window, min_periods=1).kurt()
-    
-    def _add_forward_targets(self, df: pd.DataFrame, returns_col: str, config: Dict[str, Any]):
+
+    def _add_forward_targets(self, df: pd.DataFrame, returns_col: str, config: dict[str, Any]):
         """Adds forward-looking returns and direction as target labels."""
         periods = config.get('periods', [])
         if not periods: return

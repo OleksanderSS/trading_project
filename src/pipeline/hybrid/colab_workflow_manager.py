@@ -7,7 +7,8 @@ Manages Colab-specific workflow: instructions, fallback features, execution path
 
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
@@ -16,32 +17,32 @@ from src.core.logging.logger import ProjectLogger
 class ColabWorkflowManager:
     """
     Manages Colab workflow operations.
-    
+
     Handles Colab preparation, fallback features, and user instructions.
     """
-    
-    def __init__(self, output_dir: Path, batch_name: str, light_models: List[str]):
+
+    def __init__(self, output_dir: Path, batch_name: str, light_models: list[str]):
         self.output_dir = output_dir
         self.batch_name = batch_name
         self.light_models = light_models
         self.logger = ProjectLogger.get_logger(__name__)
-    
-    async def _handle_skip_colab_path(self, b_info: Dict[str, Any], n_f: pd.DataFrame, 
-                                     tickers: Optional[List[str]], 
-                                     timeframes: Optional[List[str]], 
-                                     final_stages_runner) -> Dict[str, Any]:
+
+    async def _handle_skip_colab_path(self, b_info: dict[str, Any], n_f: pd.DataFrame,
+                                     tickers: list[str] | None,
+                                     timeframes: list[str] | None,
+                                     final_stages_runner) -> dict[str, Any]:
         """Handle skip Colab path."""
         self._create_fallback_selected_features(b_info, n_f)
         final_results = await final_stages_runner(None, None, None, None, tickers, timeframes, self.batch_name)
         return {'status': 'completed_without_colab', 'final_results': final_results}
-    
-    def _handle_colab_path(self, b_info: Dict[str, Any]) -> Dict[str, Any]:
+
+    def _handle_colab_path(self, b_info: dict[str, Any]) -> dict[str, Any]:
         """Handle Colab training path."""
         instr = self._generate_colab_instructions(b_info)
         self.logger.info(f"🚨 PAUSED: Colab training required.\n{instr}")
         return {'status': 'paused_for_colab', 'colab_batch': b_info, 'colab_instructions': instr}
-    
-    def _generate_colab_instructions(self, batch_info: Dict[str, Any]) -> str:
+
+    def _generate_colab_instructions(self, batch_info: dict[str, Any]) -> str:
         """Generates instructions for running in Colab."""
         name = batch_info['batch_name']
         return f"""
@@ -51,8 +52,8 @@ COLAB INSTRUCTIONS:
 3. Perform feature selection and heavy model training.
 4. Once finished, run: python run_hybrid_pipeline.py --mode continue --batch-name {name}
 """
-    
-    def _create_fallback_selected_features(self, batch_info: Dict[str, Any], features_df: pd.DataFrame) -> None:
+
+    def _create_fallback_selected_features(self, batch_info: dict[str, Any], features_df: pd.DataFrame) -> None:
         """Creates fallback feature selection files (all features)."""
         b_dir = Path(batch_info['batch_dir'])
         b_dir.mkdir(parents=True, exist_ok=True)

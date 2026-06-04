@@ -1,23 +1,26 @@
 import asyncio
-import pandas as pd
 import hashlib
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any
 
-from .base_collector import BaseCollector
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
+
 
 class FredCollector(BaseCollector):
     """Collector for fetching economic data from the Federal Reserve Economic Data (FRED)."""
     collector_type = "fred"
     data_type = "macro_data"
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory: HttpClientFactory, db_manager: DataManager, cache_manager: Optional[CacheManager] = None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.timeout = self.configs.get('timeout', 20.0)
-        period_str = self.configs.get('params', {}).get('period', '1y') 
+        period_str = self.configs.get('params', {}).get('period', '1y')
         self.start_date = self._calculate_start_date(period_str)
         self.hash_keys = self.configs.get('hash_keys', ["date", "series_id", "value"])
         self.logger.info(f"FredCollector configured to fetch data from {self.start_date} onwards.")
@@ -38,7 +41,7 @@ class FredCollector(BaseCollector):
         hash_string = "|".join(str(row.get(key, "")) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    async def run(self, **kwargs) -> Optional[pd.DataFrame]:
+    async def run(self, **kwargs) -> pd.DataFrame | None:
         """Fetches data from FRED and filters for new records using cache and DB."""
         import os
         api_key = os.getenv("FRED_API_KEY")
@@ -90,8 +93,8 @@ class FredCollector(BaseCollector):
             return None
 
         self.logger.info(f"Found {len(new_records_df)} new FRED records.")
-        
-        # We don't save here, the stage will do it. 
+
+        # We don't save here, the stage will do it.
         # But we mark them in cache as "seen" so the stage doesn't have to (or can)
         if self.cache_manager:
             for h in new_records_df['hash']:
@@ -99,7 +102,7 @@ class FredCollector(BaseCollector):
 
         return new_records_df
 
-    async def _fetch_series(self, series_id: str, client, api_key:str) -> List[Dict[str, Any]]:
+    async def _fetch_series(self, series_id: str, client, api_key:str) -> list[dict[str, Any]]:
         url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={api_key}&file_type=json&observation_start={self.start_date}"
         try:
             response = await client.get(url, timeout=self.timeout)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -8,7 +8,7 @@ from src.core.logging.logger import ProjectLogger
 logger = ProjectLogger.get_logger(__name__)
 
 
-def calculate_financial_metrics(metrics_calculator, portfolio_history: pd.DataFrame) -> Dict[str, Any]:
+def calculate_financial_metrics(metrics_calculator, portfolio_history: pd.DataFrame) -> dict[str, Any]:
     if portfolio_history is None or portfolio_history.empty:
         return {}
 
@@ -26,9 +26,9 @@ def run_deep_analysis(
     analytics_engine,
     signals_df: pd.DataFrame,
     portfolio_history: pd.DataFrame,
-    enriched_data: Optional[pd.DataFrame] = None,
-    brain: Optional[dict] = None,
-) -> Dict[str, Any]:
+    enriched_data: pd.DataFrame | None = None,
+    brain: dict | None = None,
+) -> dict[str, Any]:
     if analytics_engine is None:
         return {}
 
@@ -95,8 +95,8 @@ def run_deep_analysis(
 
 
 def create_evaluation_summary(
-    financial_metrics: Dict[str, Any], backtest_results: Dict[str, Any], analysis_results: Dict[str, Any]
-) -> Dict[str, Any]:
+    financial_metrics: dict[str, Any], backtest_results: dict[str, Any], analysis_results: dict[str, Any]
+) -> dict[str, Any]:
     return {
         "metrics": financial_metrics,
         "backtest_stats": backtest_results.get("performance", {}),

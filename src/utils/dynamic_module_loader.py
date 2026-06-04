@@ -1,7 +1,7 @@
-import logging
 # utils/dynamic_module_loader.py
-
 import importlib
+import logging
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("DynamicModuleLoader")
@@ -10,12 +10,12 @@ class DynamicModuleLoader:
     """
     Critical utility implementing the Inversion of Control (IoC) principle.
 
-    This class allow the system to avoid hardcoded dependencies. Instead of 
-    code creating instances of specific classes directly (e.g., `obj = MyClass()`), 
-    it delegates instance creation to this loader. The specific classes to be 
-    loaded are defined in YAML configuration files. This makes the system 
-    extremely flexible: replacing, adding, or removing a component (e.g., a new 
-    data collector or analyzer) requires only changing the configuration, 
+    This class allow the system to avoid hardcoded dependencies. Instead of
+    code creating instances of specific classes directly (e.g., `obj = MyClass()`),
+    it delegates instance creation to this loader. The specific classes to be
+    loaded are defined in YAML configuration files. This makes the system
+    extremely flexible: replacing, adding, or removing a component (e.g., a new
+    data collector or analyzer) requires only changing the configuration,
     without modifying the core code.
     """
 
@@ -39,7 +39,7 @@ class DynamicModuleLoader:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"Module '{module_path}' successfully loaded.")
             return getattr(module, class_name)
-        except (ImportError, AttributeError, ValueError) as e:
+        except (ImportError, AttributeError, ValueError):
             raise
 
     @staticmethod
@@ -65,10 +65,10 @@ class DynamicModuleLoader:
             raise ValueError("Dynamic loading configuration must contain the 'class_path' key.")
 
         loaded_class = DynamicModuleLoader.load_class(class_path)
-        
+
         # Merge parameters: kwargs passed to the method have priority
         constructor_params = config.get('params', {})
         final_params = {**constructor_params, **kwargs}
-        
+
         logger.info(f"Creating instance of '{class_path}' with parameters: {list(final_params.keys())}")
         return loaded_class(*args, **final_params)

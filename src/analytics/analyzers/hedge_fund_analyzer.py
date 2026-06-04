@@ -3,18 +3,21 @@ Hedge Fund Analyzer
 Comprehensive evaluation of model/strategy performance as a professional investment vehicle.
 Includes risk-reward metrics, Fama-French factor exposures, and style drift detection.
 """
-import logging
-import pandas as pd
-import numpy as np
-import statsmodels.api as sm
-from typing import Dict, List, Any, Optional
 from datetime import datetime
-from ..interfaces import IAnalyzer
-from ..calculators.fama_french_factors import FamaFrenchFactors
-from ..calculators.drawdown_calculator import DrawdownCalculator
-from ..calculators.risk_reward_calculator import RiskRewardCalculator
-from src.core.logging.logger import ProjectLogger
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+from ..calculators.drawdown_calculator import DrawdownCalculator
+from ..calculators.fama_french_factors import FamaFrenchFactors
+from ..calculators.risk_reward_calculator import RiskRewardCalculator
+from ..interfaces import IAnalyzer
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -24,7 +27,7 @@ class HedgeFundAnalyzer(IAnalyzer):
     Evaluates statistical skill, benchmark relative performance, and potential style drift.
     """
 
-    def __init__(self, factor_provider: Optional[FamaFrenchFactors]=None,
+    def __init__(self, factor_provider: FamaFrenchFactors | None=None,
         **kwargs):
         """
         Initializes the HedgeFundAnalyzer with configurable thresholds.
@@ -44,7 +47,7 @@ class HedgeFundAnalyzer(IAnalyzer):
             'HedgeFundAnalyzer initialized for institutional-grade evaluation.'
             )
 
-    def analyze(self, data_map: Dict[str, Any], **kwargs) ->Dict[str, Any]:
+    def analyze(self, data_map: dict[str, Any], **kwargs) ->dict[str, Any]:
         """
         Orchestrates full performance and risk decomposition for a return stream.
 
@@ -73,7 +76,7 @@ class HedgeFundAnalyzer(IAnalyzer):
             raise DataProcessingError(f'Execution failure in HedgeFundAnalyzer: {e}') from e
 
     def calculate_performance_metrics(self, returns: pd.Series, benchmark:
-        Optional[pd.Series]=None) ->Dict[str, float]:
+        pd.Series | None=None) ->dict[str, float]:
         """Calculates institutional risk-reward metrics using centralized calculators."""
         metrics = {}
 
@@ -107,7 +110,7 @@ class HedgeFundAnalyzer(IAnalyzer):
             items()}
 
     def calculate_factor_exposures(self, returns: pd.Series, model_name:
-        str='carhart') ->Dict[str, Any]:
+        str='carhart') ->dict[str, Any]:
         """Estimates portfolio sensitivity to systematic risk factors."""
         min_idx = returns.index.min()
         max_idx = returns.index.max()
@@ -145,8 +148,8 @@ class HedgeFundAnalyzer(IAnalyzer):
             pvalues.to_dict(), 'r_squared': model.rsquared,
             'adjust_r_squared': model.rsquared_adj}
 
-    def detect_style_drift(self, current_exposures: Dict[str, float],
-        historical_exposures: List[Dict[str, float]]) ->Dict[str, Any]:
+    def detect_style_drift(self, current_exposures: dict[str, float],
+        historical_exposures: list[dict[str, float]]) ->dict[str, Any]:
         """Identifies statistical deviations from historical stylistic baselines."""
         if not historical_exposures or not current_exposures:
             return {'drift_detected': False, 'message':
@@ -155,21 +158,21 @@ class HedgeFundAnalyzer(IAnalyzer):
         for factor, current_val in current_exposures.items():
             if factor == 'const':
                 continue
-            hist_vals = [h.get(factor, 0) for h in historical_exposures if 
+            hist_vals = [h.get(factor, 0) for h in historical_exposures if
                 h and factor in h]
             if len(hist_vals) > 5:
                 mean_hist = np.mean(hist_vals)
                 std_hist = np.std(hist_vals)
-                z_score = abs(current_val - mean_hist) / (std_hist if 
+                z_score = abs(current_val - mean_hist) / (std_hist if
                     std_hist > 0 else 0.01)
-                drifts[factor] = {'z_score': z_score, 'significant': 
+                drifts[factor] = {'z_score': z_score, 'significant':
                     z_score > 2.0}
         drift_detected = any(d.get('significant', False) for d in drifts.
             values())
         return {'drift_detected': drift_detected, 'factor_drifts': drifts}
 
-    def analyze_manager_skill(self, returns: pd.Series, performance: Dict,
-        factors: Dict) ->Dict[str, Any]:
+    def analyze_manager_skill(self, returns: pd.Series, performance: dict,
+        factors: dict) ->dict[str, Any]:
         """Categorizes Alpha generation as either structural skill or coincidental beta."""
         alpha = factors.get('exposures', {}).get('const', 0
             ) * self.periods_per_year

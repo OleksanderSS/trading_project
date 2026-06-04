@@ -1,62 +1,64 @@
+import logging
+from typing import Any, cast
+
 import numpy as np
-from typing import Any, Dict, List, Optional, cast
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+
 from src.core.exceptions import DataProcessingError
-import logging
 
 logger = logging.getLogger(__name__)
 
 class RegimeClusteringEngine:
     """Виконує ML-кластеризацію для визначення режимів ринку."""
-    
+
     def __init__(self, n_clusters: int, min_samples: int, seed: int = 42):
         self.n_clusters = n_clusters
         self.min_samples = min_samples
         self.seed = seed
         self.scaler = StandardScaler()
-        self.cluster_model: Optional[KMeans] = None
+        self.cluster_model: KMeans | None = None
         self.logger = logger
 
-    def detect_regime_ml(self, returns: np.ndarray, prices: Optional[np.ndarray], volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> Dict[str, Any]:
+    def detect_regime_ml(self, returns: np.ndarray, prices: np.ndarray | None, volume: np.ndarray | None, sentiment: np.ndarray | None) -> dict[str, Any]:
         """ML-based regime detection using clustering."""
         try:
             features = self._extract_ml_features(returns, prices, volume, sentiment)
             features_scaled = self._normalize_features(features)
             self._ensure_cluster_model_fitted()
-            
+
             model = cast(KMeans, self.cluster_model)
             cluster = model.predict(features_scaled)[0]
-            
+
             regime = self._cluster_to_regime(cluster)
             confidence = self._calculate_ml_confidence(features_scaled)
-            
+
             return {
-                'regime': regime.value, 
+                'regime': regime.value,
                 'confidence': float(confidence),
-                'method': 'ml_clustering', 
+                'method': 'ml_clustering',
                 'cluster': int(cluster)
             }
         except Exception as e:
             raise DataProcessingError("ML regime detection failed") from e
 
-    def _extract_ml_features(self, returns: np.ndarray, prices: Optional[np.ndarray], volume: Optional[np.ndarray], sentiment: Optional[np.ndarray]) -> List[float]:
+    def _extract_ml_features(self, returns: np.ndarray, prices: np.ndarray | None, volume: np.ndarray | None, sentiment: np.ndarray | None) -> list[float]:
         features = [float(np.mean(returns)), float(np.std(returns)), float(np.min(returns)), float(np.max(returns))]
-        
+
         if prices is not None and len(prices) > 20:
             trend = np.polyfit(np.arange(len(prices)), prices, 1)[0]
             features.append(float(trend))
-            
+
         if volume is not None and len(volume) > 20:
             volume_sma = np.mean(volume[-20:])
             features.append(float(volume[-1] / volume_sma if volume_sma > 0 else 1))
-            
+
         if sentiment is not None and len(sentiment) > 0:
             features.append(float(np.mean(sentiment)))
-            
+
         return features
 
-    def _normalize_features(self, features: List[float]) -> np.ndarray:
+    def _normalize_features(self, features: list[float]) -> np.ndarray:
         features_array = np.array(features).reshape(1, -1)
         return self.scaler.fit_transform(features_array)
 
@@ -73,7 +75,7 @@ class RegimeClusteringEngine:
 
     def _initialize_cluster_centers(self):
         centers = np.array([
-            [0.001, 0.015, -0.03, 0.03, 0.001, 0.5, 0.1], 
+            [0.001, 0.015, -0.03, 0.03, 0.001, 0.5, 0.1],
             [-0.001, 0.015, -0.03, 0.03, -0.001, -0.5, -0.1],
             [0.0, 0.008, -0.01, 0.01, 0.0, 0.0, 0.0],
             [0.0, 0.035, -0.08, 0.08, 0.0, 0.0, 0.0],

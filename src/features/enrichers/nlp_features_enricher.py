@@ -1,13 +1,12 @@
 # src/features/enrichers/nlp_features_enricher.py
 
-import pandas as pd
-import logging
-from typing import Dict, Any, Optional
 
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
 from src.features.enrichers.base import BaseEnricher
 from src.features.nlp.processors.news_analyzer import NewsAnalyzer
-from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import get_current_config
 
 logger = ProjectLogger.get_logger("NLPFeaturesEnricher")
 
@@ -71,14 +70,14 @@ class NLPFeaturesEnricher(BaseEnricher):
 
             df_enriched = self._prepare_main_dataframe(df)
             final_df = self._merge_features_by_ticker(df_enriched, features_to_merge)
-            
+
             return final_df
 
         except Exception as e:
             logger.error(f"Error during NLP feature enrichment: {e}", exc_info=True)
             return df
 
-    def _validate_inputs(self, df: pd.DataFrame, news_df: Optional[pd.DataFrame]) -> bool:
+    def _validate_inputs(self, df: pd.DataFrame, news_df: pd.DataFrame | None) -> bool:
         """Validate input dataframes."""
         if news_df is None or news_df.empty:
             logger.warning("No news data provided for NLP enrichment. Skipping.")
@@ -93,7 +92,7 @@ class NLPFeaturesEnricher(BaseEnricher):
     def _analyze_news(self, news_df: pd.DataFrame) -> pd.DataFrame:
         """Perform news analysis using NewsAnalyzer."""
         analyzed_news = self.analyzer.cluster_news(
-            news_df, 
+            news_df,
             text_column=self.config.get('text_column', 'title'),
             date_column=self.config.get('date_column', 'published_at')
         )
@@ -107,24 +106,24 @@ class NLPFeaturesEnricher(BaseEnricher):
         """Prepare features dataframe for merging with main data."""
         nlp_cols = ['sentiment_score', 'subjectivity_score', 'cluster']
         available_cols = [c for c in nlp_cols if c in analyzed_news.columns]
-        
+
         features_to_merge = analyzed_news.copy()
-        
+
         # Create datetime column
         features_to_merge = self._create_datetime_column(features_to_merge)
         if features_to_merge.empty:
             return features_to_merge
-        
+
         # Select and rename columns
         keep_cols = ['datetime'] + available_cols + (['ticker'] if 'ticker' in features_to_merge.columns else [])
         features_to_merge = features_to_merge[keep_cols]
-        
+
         rename_map = {col: f"nlp_{col}" for col in available_cols}
         features_to_merge = features_to_merge.rename(columns=rename_map)
-        
+
         # Normalize timezone and precision
         features_to_merge = self._normalize_datetime_column(features_to_merge, 'datetime')
-        
+
         return features_to_merge
 
     def _create_datetime_column(self, features_to_merge: pd.DataFrame) -> pd.DataFrame:
@@ -144,14 +143,14 @@ class NLPFeaturesEnricher(BaseEnricher):
             else:
                 logger.error(f"No datetime column found. Columns: {features_to_merge.columns.tolist()}")
                 return pd.DataFrame()
-        
+
         if 'datetime' not in features_to_merge.columns:
             logger.error(f"No 'datetime' column after processing. Columns: {features_to_merge.columns.tolist()}")
             return pd.DataFrame()
-        
+
         return features_to_merge
 
-    def _find_date_column(self, df: pd.DataFrame) -> Optional[str]:
+    def _find_date_column(self, df: pd.DataFrame) -> str | None:
         """Find date column in dataframe."""
         possible_date_cols = ['published_at', 'publishedAt', 'published_date', 'date', 'timestamp']
         for col in possible_date_cols:
@@ -166,55 +165,55 @@ class NLPFeaturesEnricher(BaseEnricher):
                 if hasattr(df[col_name].dtype, 'tz') and df[col_name].dt.tz is not None:
                     df[col_name] = df[col_name].dt.tz_localize(None)
                     logger.info(f"Removed timezone from {col_name} for merge compatibility")
-                
+
                 if df[col_name].dtype != DATETIME64_NS:
                     df[col_name] = df[col_name].astype(DATETIME64_NS)
                     logger.info(f"Converted {col_name} to ns precision")
-        
+
         return df
 
     def _prepare_main_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         """Prepare main dataframe for merging."""
         df_enriched = df.copy()
-        
+
         if not isinstance(df_enriched.index, pd.DatetimeIndex):
             if 'datetime' in df_enriched.columns:
                 df_enriched = df_enriched.set_index('datetime')
             else:
                 df_enriched.index = pd.to_datetime(df_enriched.index)
-        
+
         # Normalize timezone and precision
         if df_enriched.index.tz is not None:
             df_enriched.index = df_enriched.index.tz_localize(None)
             logger.info("Removed timezone from df index for merge compatibility")
-        
+
         if df_enriched.index.dtype != DATETIME64_NS:
             df_enriched.index = df_enriched.index.astype(DATETIME64_NS)
             logger.info("Converted df index to ns precision")
-        
+
         return df_enriched.sort_index()
 
     def _merge_features_by_ticker(self, df_enriched: pd.DataFrame, features_to_merge: pd.DataFrame) -> pd.DataFrame:
         """Merge features with main dataframe by ticker groups."""
         features_to_merge = features_to_merge.sort_values('datetime')
         result_dfs = []
-        
+
         for ticker, group in df_enriched.groupby('ticker'):
             ticker_features = self._get_ticker_features(features_to_merge, ticker)
-            
+
             if ticker_features.empty:
                 result_dfs.append(group)
                 continue
-            
+
             merged_group = self._merge_group_features(group, ticker_features)
             result_dfs.append(merged_group)
-        
+
         final_df = pd.concat(result_dfs).sort_index()
-        
+
         # Log added features
         nlp_cols = [col for col in final_df.columns if col.startswith('nlp_')]
         logger.info(f"NLP enrichment complete. Added features: {nlp_cols}")
-        
+
         return final_df
 
     def _get_ticker_features(self, features_to_merge: pd.DataFrame, ticker: str) -> pd.DataFrame:
@@ -224,7 +223,7 @@ class NLPFeaturesEnricher(BaseEnricher):
         else:
             # Global news applies to all tickers
             ticker_features = features_to_merge.copy()
-        
+
         # Prevent merge_asof Duplicate Key ValueErrors
         return ticker_features.drop_duplicates(subset=['datetime'], keep='last')
 
@@ -232,10 +231,10 @@ class NLPFeaturesEnricher(BaseEnricher):
         """Merge features for a single ticker group."""
         drop_cols = ['ticker'] if 'ticker' in ticker_features.columns else []
         merged_group = pd.merge_asof(
-            group, 
-            ticker_features.drop(columns=drop_cols) if drop_cols else ticker_features, 
-            left_index=True, 
-            right_on='datetime', 
+            group,
+            ticker_features.drop(columns=drop_cols) if drop_cols else ticker_features,
+            left_index=True,
+            right_on='datetime',
             direction='backward'
         )
         # Restore the original index

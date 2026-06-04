@@ -1,9 +1,12 @@
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from ..interfaces import IAnalyzer
+
 logger = logging.getLogger(__name__)
 
 
@@ -14,7 +17,7 @@ class MarketContextAnalyzer(IAnalyzer):
     volatility, trend, momentum, and other user-defined features.
     """
 
-    def __init__(self, context_features: List[str]):
+    def __init__(self, context_features: list[str]):
         """
         Initializes the MarketContextAnalyzer.
 
@@ -29,7 +32,7 @@ class MarketContextAnalyzer(IAnalyzer):
             f'MarketContextAnalyzer initialized with {len(context_features)} features.'
             )
 
-    def analyze(self, data: pd.DataFrame, **kwargs) ->Dict[str, Any]:
+    def analyze(self, data: pd.DataFrame, **kwargs) ->dict[str, Any]:
         """
         Analyzes the provided market data to compute a context vector.
 
@@ -97,7 +100,7 @@ class MarketContextAnalyzer(IAnalyzer):
         self.volume_col = self._find_column(df, 'volume')
         self.rsi_col = self._find_rsi_column(df)
 
-    def _find_column(self, df: pd.DataFrame, column_type: str) ->Optional[str]:
+    def _find_column(self, df: pd.DataFrame, column_type: str) ->str | None:
         """Знайти колонку певного типу"""
         if column_type in df.columns:
             return column_type
@@ -108,9 +111,9 @@ class MarketContextAnalyzer(IAnalyzer):
             return next((col for col in cols if '_1d_' in col), cols[0])
         return None
 
-    def _find_rsi_column(self, df: pd.DataFrame) ->Optional[str]:
+    def _find_rsi_column(self, df: pd.DataFrame) ->str | None:
         """Знайти RSI колонку"""
-        rsi_cols = [col for col in df.columns if 'rsi' in col.lower() and 
+        rsi_cols = [col for col in df.columns if 'rsi' in col.lower() and
             not col.endswith('_+1') and not col.endswith('_+2')]
         if rsi_cols:
             return next((col for col in rsi_cols if '_1d_' in col), rsi_cols[0]
@@ -207,7 +210,7 @@ class MarketContextAnalyzer(IAnalyzer):
         return slope
 
     def _get_yield_rate(self, rate_name: str, df: pd.DataFrame, kwargs:
-        Dict[str, Any]) ->float:
+        dict[str, Any]) ->float:
         """Get yield rate from kwargs or DataFrame."""
         if rate_name in df.columns:
             return df[rate_name].iloc[-1]
@@ -292,7 +295,7 @@ class MarketContextAnalyzer(IAnalyzer):
         Ширина ринку (advance/decline ratio).
         > 1 = більше акцій зростає = здоровий тренд.
         < 1 = більше акцій падає = слабкий тренд.
-        
+
         Якщо немає даних про advance/decline, використовуємо proxy:
         % акцій вище SMA(50) / % акцій нижче SMA(50).
         """

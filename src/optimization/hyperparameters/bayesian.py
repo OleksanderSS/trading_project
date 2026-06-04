@@ -1,9 +1,11 @@
 # src/optimization/hyperparameters/bayesian.py
 
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
-from typing import Any, Callable, Optional
-from sklearn.model_selection import cross_val_score, TimeSeriesSplit
-from src.core.logging.logger import ProjectLogger
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score
+
 from src.optimization.base import BaseOptimizer
 
 try:
@@ -15,7 +17,7 @@ except ImportError:
 class BayesianOptimizer(BaseOptimizer):
     """
     Інструмент для підбору гіперпараметрів моделей за допомогою байєсівської оптимізації (Optuna).
-    
+
     Combines features from both implementations:
     - Inherits from BaseOptimizer (structured approach)
     - Configurable scoring and cv (flexibility)
@@ -23,9 +25,9 @@ class BayesianOptimizer(BaseOptimizer):
     """
 
     def __init__(
-        self, 
-        model_func: Callable, 
-        param_space: dict[str, Any], 
+        self,
+        model_func: Callable,
+        param_space: dict[str, Any],
         n_trials: int = 50,
         scoring: str = 'neg_mean_squared_error',
         cv: int = 3
@@ -41,13 +43,13 @@ class BayesianOptimizer(BaseOptimizer):
             cv: Кількість фолдів для cross-validation.
         """
         super().__init__()
-        
+
         if not OPTUNA_AVAILABLE:
             raise ImportError(
                 "Optuna is not installed. Please install it to use Bayesian optimization: "
                 "`pip install optuna`"
             )
-        
+
         self.model_func = model_func
         self.param_space = param_space
         self.n_trials = n_trials
@@ -55,7 +57,7 @@ class BayesianOptimizer(BaseOptimizer):
         self.cv = cv
         self.best_params: dict[str, Any] = {}
         self.best_score = -np.inf
-        self.study: Optional['optuna.Study'] = None
+        self.study: optuna.Study | None = None
 
     @property
     def optimizer_type(self) -> str:
@@ -63,13 +65,13 @@ class BayesianOptimizer(BaseOptimizer):
 
     def objective(self, trial: "optuna.trial.Trial", X: np.ndarray, y: np.ndarray) -> float:
         """
-        Цільова функція для Optuna. 
-        
+        Цільова функція для Optuna.
+
         Args:
             trial: Optuna trial object
             X: Feature matrix
             y: Target vector
-            
+
         Returns:
             Mean cross-validation score
         """
@@ -82,10 +84,10 @@ class BayesianOptimizer(BaseOptimizer):
                 params[param_name] = trial.suggest_float(param_name, *args)
             elif param_type == 'categorical':
                 params[param_name] = trial.suggest_categorical(param_name, args[0])
-                
+
         # Тренуємо модель з вибраними параметрами
         model = self.model_func(**params)
-        
+
         # Оцінюємо через cross-validation
         scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.cv), scoring=self.scoring)
         return float(scores.mean())
@@ -93,12 +95,12 @@ class BayesianOptimizer(BaseOptimizer):
     def optimize(self, data: Any, target: Any = None, **kwargs) -> dict[str, Any]:
         """
         Запускає процес байєсівської оптимізації.
-        
+
         Args:
             data: Feature matrix (X)
             target: Target vector (y)
             **kwargs: Additional arguments (ignored)
-            
+
         Returns:
             Dict with best_params and best_score
         """
@@ -112,7 +114,7 @@ class BayesianOptimizer(BaseOptimizer):
             )
 
             self.study = optuna.create_study(
-                direction="maximize", 
+                direction="maximize",
                 sampler=optuna.samplers.TPESampler()
             )
 
@@ -130,7 +132,7 @@ class BayesianOptimizer(BaseOptimizer):
                 f"Байєсівська оптимізація завершена: найкращий скор = {self.best_score:.4f}"
             )
             self.logger.info(f"Найкращі параметри: {self.best_params}")
-            
+
             return {"best_params": self.best_params, "best_score": self.best_score}
 
         except Exception as e:
@@ -140,17 +142,17 @@ class BayesianOptimizer(BaseOptimizer):
     def validate_params(self, params: dict[str, Any]) -> bool:
         """Перевіряє валідність простору параметрів."""
         return bool(params and isinstance(params, dict))
-    
+
     def get_optimization_history(self) -> list[dict[str, Any]]:
         """
         Повертає історію оптимізації.
-        
+
         Returns:
             List of trials with params and scores
         """
         if self.study is None:
             return []
-        
+
         return [
             {
                 'trial_number': trial.number,

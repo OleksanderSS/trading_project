@@ -11,10 +11,13 @@ Advanced Backtesting Framework - Розширена система бектес�
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
+
 import numpy as np
 import pandas as pd
+
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('AdvancedBacktesting')
 
 
@@ -45,7 +48,7 @@ class TransactionCostModel:
         commission = trade_value_abs * self.commission_pct
         spread_cost = trade_value_abs * (self.spread_bps / 10000)
         if order_size_pct is None:
-            order_size_pct = (trade_value_abs / daily_volume if 
+            order_size_pct = (trade_value_abs / daily_volume if
                 daily_volume > 0 else 0.01)
         market_impact = (trade_value_abs * self.market_impact_coefficient *
             np.sqrt(order_size_pct))
@@ -88,7 +91,7 @@ class BiasDetector:
             for ticker, corr in correlations[suspicious_mask].items():
                 is_bias = abs(corr) > critical_corr * 1.5
                 suspicious_results.append({'signal': ticker, 'correlation':
-                    float(corr), 'is_suspicious': is_bias, 'message': 
+                    float(corr), 'is_suspicious': is_bias, 'message':
                     'Виявлено look-ahead bias' if is_bias else
                     'Підозріло висока кореляція'})
             return {'lookahead_bias_detected': len(suspicious_results) > 0,

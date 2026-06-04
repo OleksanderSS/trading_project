@@ -4,16 +4,17 @@
 Production-grade management of system secrets, API keys, and environment variables.
 """
 
+import base64
 import os
 import re
 import sys
 from pathlib import Path
+
 from cryptography.fernet import Fernet
-import base64
 
 # Utilize centralized project-wide logger
 from src.core.logging.logger import ProjectLogger
-from src.core.security.path_validator import validate_safe_path, PathValidationError
+from src.core.security.path_validator import PathValidationError, validate_safe_path
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -56,21 +57,21 @@ def load_dotenv(dotenv_path: str = '.env'):
     1. Specified parameter path (default: .env)
     2. Configured search paths from config (if available)
 
-    Security Note: Only searches within project-local directories to prevent 
+    Security Note: Only searches within project-local directories to prevent
     unauthorized environment variable injection.
     """
     config_paths = _get_configured_env_search_paths()
-    
+
     # Hierarchical list of potential .env locations
     # Restricted to local project context
     potential_paths: list[str | Path] = [
         dotenv_path,
     ]
-    
+
     # Add configured paths if available
     if config_paths:
         potential_paths.extend(config_paths)
-    
+
     found_path: Path | None = None
     for path in potential_paths:
         try:
@@ -155,27 +156,27 @@ class SecretsManager:
                 key_bytes = key_bytes.ljust(32, b'\0')
             elif len(key_bytes) > 32:
                 key_bytes = key_bytes[:32]
-            
+
             fernet_key = base64.urlsafe_b64encode(key_bytes)
             fernet = Fernet(fernet_key)
-            
+
             # Read and decrypt the encrypted secrets file
             with open(safe_path, 'rb') as f:
                 encrypted_data = f.read()
-            
+
             decrypted_data = fernet.decrypt(encrypted_data)
-            
+
             # Parse the decrypted data (assumes JSON format)
             import json
             secrets_dict = json.loads(decrypted_data.decode('utf-8'))
-            
+
             # Load decrypted secrets into environment
             for key, value in secrets_dict.items():
                 os.environ[key] = value
                 self._secrets_cache[key] = value
-            
+
             logger.info(f"Successfully loaded {len(secrets_dict)} encrypted secrets from {safe_path}")
-            
+
         except (ValueError, TypeError, Exception) as e:
             logger.error(f"Failed to load encrypted secrets from {safe_path}: {e}", exc_info=True)
             raise SecurityError(f"Failed to load/decrypt encrypted secrets from {safe_path}: {e}") from e
@@ -186,7 +187,7 @@ class SecretsManager:
         if not crypto_key:
             logger.error("CRYPTO_KEY environment variable is required for encryption")
             raise SecurityError("CRYPTO_KEY environment variable is required for encryption")
-        
+
         try:
             # Validate output path before writing
             safe_output_path = validate_safe_path(output_path, base_dir=Path.cwd())
@@ -197,21 +198,21 @@ class SecretsManager:
                 key_bytes = key_bytes.ljust(32, b'\0')
             elif len(key_bytes) > 32:
                 key_bytes = key_bytes[:32]
-            
+
             fernet_key = base64.urlsafe_b64encode(key_bytes)
             fernet = Fernet(fernet_key)
-            
+
             # Convert secrets to JSON and encrypt
             import json
             secrets_json = json.dumps(secrets)
             encrypted_data = fernet.encrypt(secrets_json.encode('utf-8'))
-            
+
             # Save encrypted data to file
             with open(safe_output_path, 'wb') as f:
                 f.write(encrypted_data)
-            
+
             logger.info(f"Successfully encrypted {len(secrets)} secrets to {safe_output_path}")
-            
+
         except (ValueError, TypeError, Exception) as e:
             logger.error(f"Failed to encrypt secrets: {e}", exc_info=True)
             raise SecurityError(f"Failed to encrypt secrets: {e}") from e

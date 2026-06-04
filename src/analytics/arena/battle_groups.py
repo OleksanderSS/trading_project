@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -7,10 +7,10 @@ class BattleGroup:
     """Конфігурація групи боїв"""
     name: str
     description: str
-    models: List[str]
+    models: list[str]
     max_battles_per_model: int
     battle_format: str
-    scoring_weights: Dict[str, float]
+    scoring_weights: dict[str, float]
 
 
 BATTLE_GROUPS = {'traditional_vs_enhanced': BattleGroup(name=
@@ -32,7 +32,7 @@ BATTLE_GROUPS = {'traditional_vs_enhanced': BattleGroup(name=
     'catboost', 'linear', 'mlp', 'svm', 'knn', 'lstm', 'gru', 'transformer',
     'cnn', 'tabnet', 'autoencoder', 'dean_ensemble', 'sentiment',
     'lgbm_bayesian'], max_battles_per_model=2, battle_format='elimination',
-    scoring_weights={'accuracy': 0.2, 'sharpe_ratio': 0.35, 'win_rate': 
+    scoring_weights={'accuracy': 0.2, 'sharpe_ratio': 0.35, 'win_rate':
     0.25, 'max_drawdown': 0.15, 'confidence_score': 0.05}),
     'enhanced_showdown': BattleGroup(name='Enhanced Models Showdown',
     description='Бої між Enhanced моделями', models=['dean_ensemble',
@@ -55,7 +55,7 @@ BATTLE_GROUPS = {'traditional_vs_enhanced': BattleGroup(name=
     'Quick Test Battle', description='Швидкий тест між кількома моделями',
     models=['lgbm', 'rf', 'xgboost', 'dean_ensemble'],
     max_battles_per_model=2, battle_format='round_robin', scoring_weights={
-    'accuracy': 0.3, 'sharpe_ratio': 0.3, 'win_rate': 0.2, 'max_drawdown': 
+    'accuracy': 0.3, 'sharpe_ratio': 0.3, 'win_rate': 0.2, 'max_drawdown':
     0.15, 'confidence_score': 0.05})}
 
 
@@ -75,12 +75,12 @@ class BattleGroupManager:
         else:
             raise ValueError(f"Battle group '{group_name}' not found")
 
-    def list_groups(self) ->List[str]:
+    def list_groups(self) ->list[str]:
         """Список всіх доступних груп"""
         return list(self.available_groups.keys()) + list(self.custom_groups
             .keys())
 
-    def create_custom_group(self, name: str, models: List[str], description:
+    def create_custom_group(self, name: str, models: list[str], description:
         str='', battle_format: str='round_robin', max_battles: int=3
         ) ->BattleGroup:
         """Створити власну групу боїв"""
@@ -92,7 +92,7 @@ class BattleGroupManager:
         self.custom_groups[name] = custom_group
         return custom_group
 
-    def get_recommended_groups(self, available_models: List[str]) ->List[str]:
+    def get_recommended_groups(self, available_models: list[str]) ->list[str]:
         """Отримати рекомендовані групи на основі доступних моделей"""
         recommended = []
         for group_name, group in self.available_groups.items():
@@ -103,7 +103,7 @@ class BattleGroupManager:
         return recommended
 
     def generate_battle_schedule(self, group_name: str, available_models:
-        List[str]) ->List[tuple]:
+        list[str]) ->list[tuple]:
         """Згенерувати розклад боїв для групи"""
         group = self.get_group(group_name)
         available_in_group = [model for model in group.models if model in
@@ -123,8 +123,8 @@ class BattleGroupManager:
         else:
             return self._generate_round_robin_battles(available_in_group)
 
-    def _generate_round_robin_battles(self, available_models: List[str]
-        ) ->List[tuple]:
+    def _generate_round_robin_battles(self, available_models: list[str]
+        ) ->list[tuple]:
         """Згенерувати бої в форматі round-robin"""
         battles = []
         for i in range(len(available_models)):
@@ -132,8 +132,8 @@ class BattleGroupManager:
                 battles.append((available_models[i], available_models[j]))
         return battles
 
-    def _generate_tournament_battles(self, available_models: List[str],
-        max_battles_per_model: int) ->List[tuple]:
+    def _generate_tournament_battles(self, available_models: list[str],
+        max_battles_per_model: int) ->list[tuple]:
         """Згенерувати бої в турнірному форматі"""
         battles = []
         for i in range(len(available_models)):
@@ -142,8 +142,8 @@ class BattleGroupManager:
                 battles.append((available_models[i], available_models[j]))
         return battles
 
-    def _generate_elimination_battles(self, available_models: List[str]
-        ) ->List[tuple]:
+    def _generate_elimination_battles(self, available_models: list[str]
+        ) ->list[tuple]:
         """Згенерувати бої в форматі вибування"""
         battles = []
         for i in range(len(available_models)):
@@ -151,7 +151,7 @@ class BattleGroupManager:
                 battles.append((available_models[i], available_models[j]))
         return battles
 
-    def get_group_info(self, group_name: str) ->Dict[str, Any]:
+    def get_group_info(self, group_name: str) ->dict[str, Any]:
         """Отримати детальну інформацію про групу"""
         try:
             group = self.get_group(group_name)
@@ -174,13 +174,13 @@ def get_battle_group_manager() ->BattleGroupManager:
     return _battle_group_manager
 
 
-def get_all_battle_groups() ->Dict[str, BattleGroup]:
+def get_all_battle_groups() ->dict[str, BattleGroup]:
     """Отримати всі групи боїв"""
     manager = get_battle_group_manager()
     return {**manager.available_groups, **manager.custom_groups}
 
 
-def get_popular_groups() ->List[str]:
+def get_popular_groups() ->list[str]:
     """Отримати популярні групи боїв"""
     return ['traditional_vs_enhanced', 'light_vs_heavy',
         'enhanced_showdown', 'quick_test']

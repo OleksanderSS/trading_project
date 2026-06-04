@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
 import logging
+
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import IsolationForest
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ class AnomalyDetector:
     Anomaly detector based on the Isolation Forest algorithm.
     This class is designed to be trained once and then used for detection.
     """
-    
+
     def __init__(self, contamination: float = 0.1, random_state: int = 42):
         """
         Initializes the AnomalyDetector.
@@ -35,12 +35,12 @@ class AnomalyDetector:
         Trains the Isolation Forest model on the provided features.
         """
         logger.info(f"Training Isolation Forest on {features.shape[1]} features...")
-        
+
         numeric_features = features.select_dtypes(include=[np.number])
         if numeric_features.empty:
             logger.warning("No numeric features found for anomaly detection training. The model was not fitted.")
             return
-        
+
         # Drop rows with NaNs as the model cannot handle them
         numeric_features = numeric_features.dropna()
         if numeric_features.empty:
@@ -52,7 +52,7 @@ class AnomalyDetector:
         self.isolation_forest.fit(numeric_features)
         self._is_fitted = True
         logger.info("Isolation Forest training complete.")
-    
+
     def detect(self, features: pd.DataFrame) -> pd.Series:
         """
         Detects anomalies in the given feature set.
@@ -63,7 +63,7 @@ class AnomalyDetector:
         if not self._is_fitted:
             logger.warning("Isolation Forest has not been trained. Cannot detect anomalies.")
             return pd.Series(0, index=features.index, dtype=int)
-        
+
         numeric_features = features.select_dtypes(include=[np.number])
         if numeric_features.empty:
             logger.warning("No numeric features found for anomaly detection.")
@@ -72,10 +72,10 @@ class AnomalyDetector:
         numeric_features = numeric_features.reindex(columns=self.feature_columns)
         prediction_features = self._impute_with_training_medians(numeric_features)
         anomaly_labels = self.isolation_forest.predict(prediction_features)
-        
+
         # Convert labels from -1 (anomaly)/1 (normal) to 1 (anomaly)/0 (normal)
         anomaly_flags = (anomaly_labels == -1).astype(int)
-        
+
         logger.info(f"Detected {anomaly_flags.sum()} anomalies out of {len(anomaly_flags)} records.")
         return pd.Series(anomaly_flags, index=features.index)
 
@@ -87,10 +87,10 @@ class AnomalyDetector:
                 median = 0.0
             imputed[column] = imputed[column].mask(imputed[column].isna(), median)
         return imputed
-    
+
     @staticmethod
-    def calculate_anomaly_impact_weights(anomaly_flags: pd.Series, 
-                                         base_weights: Optional[pd.Series] = None, 
+    def calculate_anomaly_impact_weights(anomaly_flags: pd.Series,
+                                         base_weights: pd.Series | None = None,
                                          reduction_factor: float = 0.5) -> pd.Series:
         """
         Calculates signal weights, reducing them during anomalous periods.
@@ -111,6 +111,6 @@ class AnomalyDetector:
 
         anomaly_weights = base_weights.copy()
         anomaly_weights[anomaly_flags == 1] *= reduction_factor
-        
+
         logger.info(f"Reduced weights for {int(anomaly_flags.sum())} anomalous periods.")
         return anomaly_weights

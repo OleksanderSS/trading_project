@@ -6,10 +6,11 @@ Adaptive Parameter Manager
 """
 
 import logging
-import pandas as pd
-from enum import Enum
-from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
+
+import pandas as pd
 
 
 class MarketRegime(Enum):
@@ -32,47 +33,47 @@ class AdaptiveParameters:
     buy_threshold: float = 0.02 # Minimum prediction value for BUY
     sell_threshold: float = -0.02 # Maximum prediction value for SELL
     hold_threshold: float = 0.005 # Range for HOLD
-    
+
     # Confidence adjustment
     confidence_min_accepted: float = 0.50 # Do not trade if confidence < this
     confidence_boost_trending: float = 1.0 # Boost when in trend
     confidence_penalty_volatile: float = 0.9 # Penalty when volatile
-    
+
     # Risk sizing
     risk_per_trade_pct: float = 0.02 # % equity per trade
     max_position_size_pct: float = 0.10 # Max % in one position
     max_daily_drawdown_pct: float = 0.05 # Kill switch
-    
+
     # News impact
     news_negative_threshold: float = -0.6 # Threshold for negative news
     news_positive_threshold: float = 0.6 # Threshold for positive news
     news_decay_hours: float = 24.0 # How fast to forget new news
-    
+
     # Model weighting
     model_decay_days: float = 30.0 # How fast to forget old models
     ensemble_reweight_days: float = 7.0 # How often to reweight ensemble
-    
+
     regime: MarketRegime = MarketRegime.RANGING
     asset_class: AssetClass = AssetClass.LARGE_CAP
     volatility_percentile: float = 0.50  # 0.0 = low volatility, 1.0 = high volatility
 
 class AdaptiveParameterManager:
     """Elite-grade parameter management"""
-    
-    def __init__(self, config: Optional[Dict] = None, logger=None):
+
+    def __init__(self, config: dict | None = None, logger=None):
         self.logger = logger or logging.getLogger(__name__)
         self.config = config or {}
-        
+
         # Base parameters for each regime/asset combination
         self.regime_presets = self._build_regime_presets()
         self.asset_presets = self._build_asset_presets()
-        
+
         # Override with config if available
         self._apply_config_overrides()
-        
-        self.current_params: Optional[AdaptiveParameters] = None
-        self.param_history: List[Dict[str, Any]] = []  # Track changes
-    
+
+        self.current_params: AdaptiveParameters | None = None
+        self.param_history: list[dict[str, Any]] = []  # Track changes
+
     def _apply_config_overrides(self):
         """Override hardcoded presets with values from config_manager/params.json"""
         config_presets = self.config.get('regime_presets', {})
@@ -84,8 +85,8 @@ class AdaptiveParameterManager:
                     self.logger.info(f"✅ Applied config overrides for regime: {regime_str}")
             except (ValueError, KeyError):
                 continue
-    
-    def _build_trending_up_preset(self) -> Dict[str, float]:
+
+    def _build_trending_up_preset(self) -> dict[str, float]:
         """Build preset for trending up regime."""
         return {
             'buy_threshold': 0.02,
@@ -104,7 +105,7 @@ class AdaptiveParameterManager:
             'ensemble_reweight_days': 5.0,
         }
 
-    def _build_trending_down_preset(self) -> Dict[str, float]:
+    def _build_trending_down_preset(self) -> dict[str, float]:
         """Build preset for trending down regime."""
         return {
             'buy_threshold': 0.02,
@@ -123,7 +124,7 @@ class AdaptiveParameterManager:
             'ensemble_reweight_days': 3.0,
         }
 
-    def _build_ranging_preset(self) -> Dict[str, float]:
+    def _build_ranging_preset(self) -> dict[str, float]:
         """Build preset for ranging regime."""
         return {
             'buy_threshold': 0.01,
@@ -142,7 +143,7 @@ class AdaptiveParameterManager:
             'ensemble_reweight_days': 7.0,
         }
 
-    def _build_volatile_preset(self) -> Dict[str, float]:
+    def _build_volatile_preset(self) -> dict[str, float]:
         """Build preset for volatile regime."""
         return {
             'buy_threshold': 0.03,
@@ -161,7 +162,7 @@ class AdaptiveParameterManager:
             'ensemble_reweight_days': 2.0,
         }
 
-    def _build_dead_preset(self) -> Dict[str, float]:
+    def _build_dead_preset(self) -> dict[str, float]:
         """Build preset for dead regime."""
         return {
             'buy_threshold': 1.0,
@@ -180,7 +181,7 @@ class AdaptiveParameterManager:
             'ensemble_reweight_days': 30.0,
         }
 
-    def _build_regime_presets(self) -> Dict[MarketRegime, Dict[str, float]]:
+    def _build_regime_presets(self) -> dict[MarketRegime, dict[str, float]]:
         """
         Optimal parameters for each regime (result of historical backtest)
         """
@@ -191,8 +192,8 @@ class AdaptiveParameterManager:
             MarketRegime.VOLATILE: self._build_volatile_preset(),
             MarketRegime.DEAD: self._build_dead_preset(),
         }
-    
-    def _build_asset_presets(self) -> Dict[AssetClass, Dict[str, float]]:
+
+    def _build_asset_presets(self) -> dict[AssetClass, dict[str, float]]:
         """Коригування параметрів для класів активів"""
         return {
             AssetClass.LARGE_CAP: {
@@ -216,7 +217,7 @@ class AdaptiveParameterManager:
                 'confidence_multiplier': 1.08,
             }
         }
-    
+
     def _normalize_regime_input(self, regime) -> MarketRegime:
         """Convert regime string to Enum, default to RANGING if invalid."""
         if isinstance(regime, str):
@@ -258,7 +259,7 @@ class AdaptiveParameterManager:
         regime_params['confidence_min_accepted'] *= (1 + volatility_percentile * 0.15)  # Up to 15% increase
         return regime_params
 
-    def _apply_sharpe_adjustments(self, regime_params: dict, historical_sharpe: Optional[float]) -> dict:
+    def _apply_sharpe_adjustments(self, regime_params: dict, historical_sharpe: float | None) -> dict:
         """Apply Sharpe ratio-based adjustments if available."""
         if historical_sharpe is not None:
             if historical_sharpe < 0.5:
@@ -271,7 +272,7 @@ class AdaptiveParameterManager:
                 regime_params['confidence_min_accepted'] *= 0.95
         return regime_params
 
-    def _log_parameter_changes(self, regime: MarketRegime, asset_class: AssetClass, 
+    def _log_parameter_changes(self, regime: MarketRegime, asset_class: AssetClass,
                                regime_params: dict, volatility_percentile: float) -> None:
         """Log parameter changes and update history."""
         self.logger.info(f"🔄 Parameters adapted to {regime.value} / {asset_class.value}")
@@ -288,16 +289,16 @@ class AdaptiveParameterManager:
                                regime: MarketRegime,
                                asset_class: AssetClass,
                                volatility_percentile: float,
-                               historical_sharpe: Optional[float] = None) -> AdaptiveParameters:
+                               historical_sharpe: float | None = None) -> AdaptiveParameters:
         """
         Обчислити адаптивні параметри для поточного контексту
-        
+
         Args:
             regime: Поточний ринковий режим
             asset_class: Клас активу
             volatility_percentile: 0-1, де 1=максимальна Volatility
             historical_sharpe: Sharpe ratio асету за останній місяць (для fine-tuning)
-        
+
         Returns:
             AdaptiveParameters instance
         """
@@ -305,56 +306,56 @@ class AdaptiveParameterManager:
         regime = self._normalize_regime_input(regime)
         asset_class = self._normalize_asset_class_input(asset_class)
         volatility_percentile = self._normalize_volatility_percentile(volatility_percentile)
-        
+
         # 1. Start with regime-based parameters
         regime_params = self.regime_presets[regime].copy()
-        
+
         # 2. Apply asset class adjustments
         asset_params = self.asset_presets[asset_class]
         regime_params = self._apply_asset_class_adjustments(regime_params, asset_params)
-        
+
         # 3. Volatility-based fine-tuning
         regime_params = self._apply_volatility_adjustments(regime_params, volatility_percentile)
-        
+
         # 4. Sharpe-based adjustment (if available)
         regime_params = self._apply_sharpe_adjustments(regime_params, historical_sharpe)
-        
+
         params = AdaptiveParameters(
             regime=regime,
             asset_class=asset_class,
             volatility_percentile=volatility_percentile,
             **regime_params
         )
-        
+
         # 5. Log changes
         if self.current_params != params:
             self._log_parameter_changes(regime, asset_class, regime_params, volatility_percentile)
-        
+
         self.current_params = params
         return params
-    
+
     def validate_parameters(self, params: AdaptiveParameters) -> bool:
         """
         Перевірити що параметри залишаються розумними
         (попередити якщо відбулося щось дивне)
         """
         issues = []
-        
+
         if params.risk_per_trade_pct > 0.05:
             issues.append(f"Risk per trade very high: {params.risk_per_trade_pct:.2%}")
-        
+
         if params.confidence_min_accepted > 0.85:
             issues.append(f"Confidence threshold too high: {params.confidence_min_accepted:.2f}")
-        
+
         if params.confidence_min_accepted < 0.3:
             issues.append(f"Confidence threshold too low: {params.confidence_min_accepted:.2f}")
-        
+
         if params.buy_threshold <= params.sell_threshold:
             issues.append("Buy threshold <= sell threshold (logic error)")
-        
+
         if issues:
             for issue in issues:
                 self.logger.warning(f"⚠️ {issue}")
             return False
-        
+
         return True

@@ -1,17 +1,17 @@
-from typing import Any, Dict, Optional
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
-from src.pipeline.guards.timeframe_alignment_guard import get_timeframe_alignment_guard
-from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
-from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard
-from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
 from src.pipeline.guards.macro_release_timing_guard import get_macro_release_timing_guard
+from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
+from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
+from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard
+from src.pipeline.guards.timeframe_alignment_guard import get_timeframe_alignment_guard
 
 logger = ProjectLogger.get_logger('FeatureGuards')
 
 class FeatureGuards:
     """Manages temporal safety guards for feature engineering."""
-    
+
     def __init__(self, mode: str = 'full'):
         self.logger = logger
         self.mode = mode
@@ -64,7 +64,7 @@ class FeatureGuards:
 
         return guarded
 
-    def _infer_timeframe(self, df: pd.DataFrame) -> Optional[str]:
+    def _infer_timeframe(self, df: pd.DataFrame) -> str | None:
         if 'interval' in df.columns and df['interval'].nunique() == 1:
             return str(df['interval'].iloc[0])
         if 'timeframe' in df.columns and df['timeframe'].nunique() == 1:

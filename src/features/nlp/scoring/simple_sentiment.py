@@ -2,8 +2,8 @@
 # src/features/scoring/simple_sentiment.py
 
 import logging
-from typing import Dict, Any, Set, Optional
 import re
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class SimpleSentimentAnalyzer:
     It determines sentiment by counting positive and negative words in a text.
     """
 
-    def __init__(self, sentiment_config: Optional[Dict[str, Any]] = None):
+    def __init__(self, sentiment_config: dict[str, Any] | None = None):
         """
         Initializes the SimpleSentimentAnalyzer.
 
@@ -34,21 +34,21 @@ class SimpleSentimentAnalyzer:
                 - 'negative_words': A list of words to be considered negative.
         """
         config = sentiment_config or {}
-        
+
         # Use provided keywords or fall back to defaults
-        self.positive_words: Set[str] = set(config.get('positive_words')) or DEFAULT_POSITIVE_WORDS
-        self.negative_words: Set[str] = set(config.get('negative_words')) or DEFAULT_NEGATIVE_WORDS
+        self.positive_words: set[str] = set(config.get('positive_words')) or DEFAULT_POSITIVE_WORDS
+        self.negative_words: set[str] = set(config.get('negative_words')) or DEFAULT_NEGATIVE_WORDS
 
         # Regex to find all matching keywords in one pass
         all_words = self.positive_words.union(self.negative_words)
         self.keyword_regex = re.compile(r"\b(" + "|".join(map(re.escape, all_words)) + r")\b", re.IGNORECASE)
-        
+
         logger.info(
             f"SimpleSentimentAnalyzer initialized with "
             f"{len(self.positive_words)} positive and {len(self.negative_words)} negative words."
         )
 
-    def analyze(self, text: str) -> Dict[str, Any]:
+    def analyze(self, text: str) -> dict[str, Any]:
         """
         Analyzes the sentiment of a text based on keyword counts.
 

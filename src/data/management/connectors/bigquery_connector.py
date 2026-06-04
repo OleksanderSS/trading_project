@@ -1,7 +1,10 @@
-from typing import Dict, Any, Optional
+from typing import Any
+
 import pandas as pd
-from src.integrations.data.bigquery_client import BigQueryClient
+
 from src.core.logging.logger import ProjectLogger
+from src.integrations.data.bigquery_client import BigQueryClient
+
 logger = ProjectLogger.get_logger('BigQueryConnector')
 
 
@@ -13,7 +16,7 @@ class BigQueryConnector:
     ensuring a single point of configuration and interaction with BigQuery API.
     """
 
-    def __init__(self, project_id: Optional[str]=None, location: str='US'):
+    def __init__(self, project_id: str | None=None, location: str='US'):
         """
         Initializes the connector by creating a BigQueryClient instance.
 
@@ -33,8 +36,7 @@ class BigQueryConnector:
                 exc_info=True)
             raise
 
-    def execute_query(self, query: str, use_cache: bool=True) ->Optional[pd
-        .DataFrame]:
+    def execute_query(self, query: str, use_cache: bool=True) ->pd.DataFrame | None:
         """
         Delegates SQL query execution to BigQueryClient.
 
@@ -53,7 +55,7 @@ class BigQueryConnector:
                 exc_info=True)
             raise RuntimeError("BigQuery query execution failed") from e
 
-    def validate_query(self, query: str) ->Dict[str, Any]:
+    def validate_query(self, query: str) ->dict[str, Any]:
         """
         Делегує валідацію SQL-запиту до BigQueryClient.
 
@@ -65,7 +67,7 @@ class BigQueryConnector:
         """
         return self.client.validate_query(query)
 
-    def get_status(self) ->Dict[str, Any]:
+    def get_status(self) ->dict[str, Any]:
         """
         Отримує статус підключення від BigQueryClient.
 

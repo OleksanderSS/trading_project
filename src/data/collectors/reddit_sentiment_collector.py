@@ -1,15 +1,18 @@
 # src/data/collectors/reddit_sentiment_collector.py
 
-import pandas as pd
 import hashlib
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
+from typing import Any
 
-from .base_collector import BaseCollector
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
+
 
 class RedditSentimentCollector(BaseCollector):
     """Optional collector for aggregate Reddit sentiment."""
@@ -17,8 +20,8 @@ class RedditSentimentCollector(BaseCollector):
     data_type = "alternative"
     collector_name = "reddit_sentiment"
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory: HttpClientFactory, 
-                 db_manager: DataManager, cache_manager: Optional[CacheManager] = None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory,
+                 db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.enabled = self.configs.get('enabled', False)
         self.timeout = self.configs.get('timeout', 30)
@@ -36,7 +39,7 @@ class RedditSentimentCollector(BaseCollector):
         hash_string = "|".join(str(row.get(key, "")) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    async def run(self, **kwargs) -> Optional[pd.DataFrame]:
+    async def run(self, **kwargs) -> pd.DataFrame | None:
         """Fetches Reddit Sentiment data and returns DataFrame."""
         if not self.enabled:
             self.logger.warning("RedditSentimentCollector is disabled")
@@ -44,7 +47,7 @@ class RedditSentimentCollector(BaseCollector):
 
         try:
             self.logger.info("Fetching Reddit sentiment data")
-            
+
             # Fetch data
             data = await self._fetch_reddit_sentiment_data()
             if not data:
@@ -52,14 +55,14 @@ class RedditSentimentCollector(BaseCollector):
 
             # Convert to DataFrame
             df = pd.DataFrame(data)
-            
+
             if df.empty:
                 self.logger.warning("No Reddit Sentiment data received")
                 return None
 
             # Standardize columns
             df = self._standardize_columns(df)
-            
+
             # Add metadata
             df['collector_type'] = self.collector_type
             df['collector_name'] = self.collector_name
@@ -76,7 +79,7 @@ class RedditSentimentCollector(BaseCollector):
             self.logger.error(f"Error in RedditSentimentCollector: {e}")
             raise RuntimeError("Reddit sentiment collection failed") from e
 
-    async def _fetch_reddit_sentiment_data(self) -> List[Dict[str, Any]]:
+    async def _fetch_reddit_sentiment_data(self) -> list[dict[str, Any]]:
         """
         Fetches Reddit Sentiment data.
 
@@ -92,14 +95,14 @@ class RedditSentimentCollector(BaseCollector):
             "Reddit sentiment integration is disabled until a vetted aggregate sentiment adapter is configured"
         )
         return []
-    
-    async def _generate_synthetic_reddit_data(self) -> List[Dict[str, Any]]:
+
+    async def _generate_synthetic_reddit_data(self) -> list[dict[str, Any]]:
         """Generates realistic-looking synthetic Reddit sentiment data for testing."""
         self.logger.info("Generating synthetic Reddit sentiment data")
 
         try:
             base_date = datetime.now() - timedelta(days=60)
-            data: List[Dict[str, Any]] = []
+            data: list[dict[str, Any]] = []
 
             # Simulate data for each subreddit
             for subreddit in self.subreddits:
@@ -167,7 +170,7 @@ class RedditSentimentCollector(BaseCollector):
             # Ensure required columns exist
             if 'date' not in df.columns:
                 df['date'] = pd.to_datetime(df['timestamp']).dt.strftime('%Y-%m-%d')
-            
+
             required_cols = ['sentiment_score', 'sentiment_classification', 'mentions']
             for col in required_cols:
                 if col not in df.columns:
@@ -176,16 +179,16 @@ class RedditSentimentCollector(BaseCollector):
 
             # Convert date column
             df['date'] = pd.to_datetime(df['date'])
-            
+
             # Ensure numeric types
             numeric_cols = ['sentiment_score', 'mentions', 'viral_posts', 'engagement_score', 'extreme_sentiment']
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-            
+
             # Sort by date
             df = df.sort_values('date').reset_index(drop=True)
-            
+
             # Add derived features
             df['sentiment_sma'] = df.groupby('subreddit')['sentiment_score'].transform(lambda x: x.rolling(7).mean().shift(1))
             df['sentiment_volatility'] = df.groupby('subreddit')['sentiment_score'].transform(lambda x: x.rolling(7).std().shift(1))
@@ -196,7 +199,7 @@ class RedditSentimentCollector(BaseCollector):
             self.logger.error(f"Error standardizing Reddit Sentiment columns: {e}")
             return pd.DataFrame()
 
-    async def collect_data(self, **kwargs) -> Optional[List[Dict[str, Any]]]:
+    async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
         """
         UNIFIED data collection - retrieval only, without database storage.
         """

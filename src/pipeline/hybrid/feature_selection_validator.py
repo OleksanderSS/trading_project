@@ -2,14 +2,17 @@
 Feature Selection Validator: Checks if feature selection is needed and creates mock selections for testing.
 Extracted from HybridOrchestrator to improve code organization and testability.
 """
-import logging
 import json
-import pandas as pd
-from pathlib import Path
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+import logging
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+
 FEATURES_FILE = 'features.parquet'
 TARGETS_FILE = 'targets.parquet'
 SELECTED_FEATURES_PATTERN = 'selected_features_*.json'
@@ -21,8 +24,8 @@ class MockFeatureFilesRequest:
     batch_dir: Path
     test_ticker: str
     test_target: str
-    light_models: List[str]
-    selected_features: List[str]
+    light_models: list[str]
+    selected_features: list[str]
 
 
 @dataclass
@@ -31,7 +34,7 @@ class MockFeaturesRequest:
     batch_dir: Path
     test_ticker: str
     test_target: str
-    light_models: List[str]
+    light_models: list[str]
     features_df: pd.DataFrame
 
 
@@ -42,7 +45,7 @@ class FeatureSelectionValidator:
         self.logger = ProjectLogger.get_logger(__name__)
 
     def check_if_feature_selection_needed(self, batch_dir: Path,
-        new_rows_count: int, force: bool=False) ->Dict[str, Any]:
+        new_rows_count: int, force: bool=False) ->dict[str, Any]:
         """Check if new feature selection is required."""
         result = self._check_initial_or_forced_selection(batch_dir, force)
         if result:
@@ -53,7 +56,7 @@ class FeatureSelectionValidator:
         return self._check_data_change_percentage(batch_dir, new_rows_count)
 
     def _check_initial_or_forced_selection(self, batch_dir: Path, force: bool
-        ) ->Optional[Dict[str, Any]]:
+        ) ->dict[str, Any] | None:
         """Check if selection is needed due to initial run or force."""
         files = list(batch_dir.glob(SELECTED_FEATURES_PATTERN))
         if not files:
@@ -64,14 +67,13 @@ class FeatureSelectionValidator:
                 'Forced feature selection requested'}
         return None
 
-    def _check_time_based_selection(self, batch_dir: Path) ->Optional[Dict[
-        str, Any]]:
+    def _check_time_based_selection(self, batch_dir: Path) ->dict[str, Any] | None:
         """Check if selection is needed based on time elapsed."""
         files = list(batch_dir.glob(SELECTED_FEATURES_PATTERN))
         if not files:
             return None
         try:
-            with open(files[0], 'r', encoding='utf-8') as f:
+            with open(files[0], encoding='utf-8') as f:
                 data = json.load(f)
                 last_ts = data.get('timestamp')
             if last_ts:
@@ -85,7 +87,7 @@ class FeatureSelectionValidator:
         return None
 
     def _check_data_change_percentage(self, batch_dir: Path, new_rows_count:
-        int) ->Dict[str, Any]:
+        int) ->dict[str, Any]:
         """Check if selection is needed based on data change percentage."""
         f_path = batch_dir / FEATURES_FILE
         if not f_path.exists():
@@ -103,7 +105,7 @@ class FeatureSelectionValidator:
         return {'needed': False, 'reason': 'No feature selection needed'}
 
     def create_mock_selected_features_for_test(self, request:
-        MockFeaturesRequest) ->List[Path]:
+        MockFeaturesRequest) ->list[Path]:
         """Create mock selected_features files for testing when Colab results are not available."""
         self.logger.info(
             f'Creating mock selected_features files: {request.test_ticker}, {request.test_target}'
@@ -118,7 +120,7 @@ class FeatureSelectionValidator:
             selected_features=mock_selected_features)
         return self._write_mock_feature_files(mock_files_request)
 
-    def _extract_valid_features(self, features_df: pd.DataFrame) ->List[str]:
+    def _extract_valid_features(self, features_df: pd.DataFrame) ->list[str]:
         """Extract valid numeric features from dataframe."""
         feature_cols = [col for col in features_df.columns if not col.
             startswith('target_') and col not in ['ticker', 'timeframe',
@@ -142,7 +144,7 @@ class FeatureSelectionValidator:
             return False
 
     def _write_mock_feature_files(self, request: MockFeatureFilesRequest
-        ) ->List[Path]:
+        ) ->list[Path]:
         """Write mock feature files."""
         created_files = []
         request.batch_dir.mkdir(parents=True, exist_ok=True)

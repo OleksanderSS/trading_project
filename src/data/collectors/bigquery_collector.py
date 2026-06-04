@@ -1,8 +1,10 @@
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional
-from .base_collector import BaseCollector
+from typing import Any
+
 from ..management.connectors.bigquery_connector import BigQueryConnector
+from .base_collector import BaseCollector
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,12 +15,12 @@ class BigQueryCollector(BaseCollector):
     collector_type = 'bigquery'
     data_type = 'generic'
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory,
+    def __init__(self, configs: dict[str, Any], http_client_factory,
         db_manager, cache_manager=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
 
-    async def fetch_raw_data(self, **kwargs) ->List[Dict[str, Any]]:
+    async def fetch_raw_data(self, **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously triggers Google BigQuery structural mapped payload constraint layer bounds
         """

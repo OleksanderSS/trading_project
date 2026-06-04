@@ -3,9 +3,10 @@ Calculates various drawdown and recovery metrics for financial time series.
 This module provides a set of reusable static methods.
 """
 
-import pandas as pd
+
 import numpy as np
-from typing import Dict
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
@@ -22,7 +23,7 @@ class DrawdownCalculator:
         if not isinstance(returns, pd.Series) or returns.empty:
             logger.error("Input for drawdown calculation must be a non-empty pandas Series.")
             return pd.Series([], dtype=float)
-            
+
         cumulative = (1 + returns).cumprod()
         running_max = cumulative.expanding(min_periods=1).max()
         drawdown = (cumulative - running_max) / running_max
@@ -69,5 +70,5 @@ class DrawdownCalculator:
         drawdown_change = is_underwater.astype(int).diff()
         drawdown_blocks = (drawdown_change.where(drawdown_change.notna(), 0) != 0).cumsum()
         underwater_duration = is_underwater.groupby(drawdown_blocks).cumsum()
-        
+
         return underwater_duration

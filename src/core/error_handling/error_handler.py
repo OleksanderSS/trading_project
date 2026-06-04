@@ -1,14 +1,16 @@
+import json
 import logging
 import time
 import traceback
-from functools import wraps
-from typing import Dict, Any, Type, Callable, Optional, List
-from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
-import json
+from collections.abc import Callable
+from datetime import datetime, timedelta
+from functools import wraps
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.core.logging.notifier import UniversalNotifier
-from src.config.unified_config_manager import UnifiedConfigManager
 
 
 class TradingSystemError(Exception):
@@ -46,7 +48,7 @@ class IErrorHandler(ABC):
 
     @abstractmethod
     def handle_error(self, error: Exception, context: str='General',
-        severity: str='error', should_raise: bool=False) ->Dict[str, Any]:
+        severity: str='error', should_raise: bool=False) ->dict[str, Any]:
         """Handles an error with specified context and severity."""
         pass
 
@@ -54,7 +56,7 @@ class IErrorHandler(ABC):
 logger = ProjectLogger.get_logger('ErrorHandler')
 
 
-def log_and_raise(exception_class: Type[Exception], message: str, **kwargs):
+def log_and_raise(exception_class: type[Exception], message: str, **kwargs):
     """
     Logs an error message and then raises the specified exception.
 
@@ -96,7 +98,7 @@ def safe_execute(func: Callable, *args, **kwargs):
 class ErrorHandler(IErrorHandler):
     """Provides centralized error handling, including retries and error tracking."""
 
-    def __init__(self, config_manager: Optional[UnifiedConfigManager]=None,
+    def __init__(self, config_manager: UnifiedConfigManager | None=None,
         logger_name: str='ErrorHandler'):
         """Initializes the ErrorHandler with a logger name and notifier."""
         from src.config.unified_config_manager import get_current_config
@@ -104,12 +106,12 @@ class ErrorHandler(IErrorHandler):
         self.config_manager = config_manager or get_current_config()
         self.notifier = UniversalNotifier(self.config_manager
             ) if self.config_manager else None
-        self.error_counts: Dict[str, int] = {}
-        self.error_history: List[Dict[str, Any]] = []
-        self.notification_cooldowns: Dict[str, datetime] = {}
+        self.error_counts: dict[str, int] = {}
+        self.error_history: list[dict[str, Any]] = []
+        self.notification_cooldowns: dict[str, datetime] = {}
         self.cooldown_minutes = 10
 
-    def _format_error_message(self, error_info: Dict[str, Any]) ->str:
+    def _format_error_message(self, error_info: dict[str, Any]) ->str:
         """Formats error dictionary into a string for notification."""
         context = error_info.get('context', 'N/A')
         if isinstance(context, dict):
@@ -125,7 +127,7 @@ class ErrorHandler(IErrorHandler):
         return message
 
     def handle_error(self, error: Exception, context: Any='General',
-        severity: str='error', should_raise: bool=False) ->Dict[str, Any]:
+        severity: str='error', should_raise: bool=False) ->dict[str, Any]:
         """
         Logs and counts an error, with an option to re-raise it. Sends notification for critical/error severity.
         """
@@ -161,7 +163,7 @@ class ErrorHandler(IErrorHandler):
             raise error
         return error_info
 
-    def get_error_summary(self) ->Dict[str, Any]:
+    def get_error_summary(self) ->dict[str, Any]:
         """Returns a summary of all error counts."""
         total_errors = sum(self.error_counts.values())
         most_common = sorted(self.error_counts.items(), key=lambda x: x[1],
@@ -171,7 +173,7 @@ class ErrorHandler(IErrorHandler):
             'recent_errors': self.error_history[-10:],
             'error_rate_by_context': self._calculate_error_rates()}
 
-    def _calculate_error_rates(self) ->Dict[str, float]:
+    def _calculate_error_rates(self) ->dict[str, float]:
         """Calculates error rates by context."""
         context_errors = {}
         for error_key, count in self.error_counts.items():
@@ -262,7 +264,7 @@ class ErrorHandler(IErrorHandler):
 _error_handler = None
 
 
-def get_error_handler(config_manager: Optional[UnifiedConfigManager]=None
+def get_error_handler(config_manager: UnifiedConfigManager | None=None
     ) ->ErrorHandler:
     """Gets the global error handler."""
     global _error_handler
@@ -272,7 +274,7 @@ def get_error_handler(config_manager: Optional[UnifiedConfigManager]=None
 
 
 def handle_error(error: Exception, context: str='', severity: str='error'
-    ) ->Dict[str, Any]:
+    ) ->dict[str, Any]:
     """Handles an error globally."""
     handler = get_error_handler()
     return handler.handle_error(error, context, severity)

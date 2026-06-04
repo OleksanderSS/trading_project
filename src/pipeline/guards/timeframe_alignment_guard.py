@@ -41,7 +41,7 @@ class TimeframeAlignmentGuard:
         """
         self.logger = logger
         self.strict_mode = strict_mode
-        
+
         # Timeframe configurations
         self.TIMEFRAME_CONFIGS = {
             '15m': {
@@ -72,7 +72,7 @@ class TimeframeAlignmentGuard:
                 df = df.rename(columns={'index': 'datetime'})
                 return df, None
             else:
-                return df, f"No datetime column or index"
+                return df, "No datetime column or index"
         return df, None
 
     def _check_future_data(self, tf: str, latest_timestamp: pd.Timestamp, current_time: pd.Timestamp) -> str | None:
@@ -103,10 +103,10 @@ class TimeframeAlignmentGuard:
     def _validate_single_timeframe(self, tf: str, df: pd.DataFrame, current_time: pd.Timestamp) -> tuple:
         """Validate a single timeframe and return (is_valid, issue_message, warning_message)."""
         if tf not in self.TIMEFRAME_CONFIGS:
-            return False, f"Unknown timeframe", None
+            return False, "Unknown timeframe", None
 
         if df.empty:
-            return False, None, f"Empty dataframe"
+            return False, None, "Empty dataframe"
 
         df, datetime_error = self._ensure_datetime_column(df, tf)
         if datetime_error:
@@ -135,7 +135,7 @@ class TimeframeAlignmentGuard:
 
         return True, None, warning
 
-    def _build_validation_result(self, status: str, valid_timeframes: list, issues: list, warnings: list, 
+    def _build_validation_result(self, status: str, valid_timeframes: list, issues: list, warnings: list,
                                 current_time: pd.Timestamp, total_timeframes: int) -> dict:
         """Build validation result dictionary."""
         return {
@@ -180,14 +180,14 @@ class TimeframeAlignmentGuard:
 
         for tf, df in features_by_tf.items():
             is_valid, issue, warning = self._validate_single_timeframe(tf, df, current_time)
-            
+
             if issue:
                 issues.append(f"❌ {tf}: {issue}")
                 continue
-            
+
             if warning:
                 warnings.append(f"⚠️ {tf}: {warning}")
-            
+
             if is_valid:
                 valid_timeframes.append(tf)
                 latest_timestamp = pd.to_datetime(df['datetime'].max())

@@ -1,12 +1,12 @@
-import logging
 # src/feature_engineering/nlp/sentiment_core.py
-
 import hashlib
-import pandas as pd
+import logging
+
 from transformers import AutoModelForSequenceClassification
-from src.features.nlp.scoring.news_score import compute_news_score
-from src.core.logging.logger import ProjectLogger
+
 from src.config.sentiment_config import SENTIMENT_DEFAULTS
+from src.core.logging.logger import ProjectLogger
+from src.features.nlp.scoring.news_score import compute_news_score
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
@@ -50,7 +50,7 @@ def compute_news_score_safe(label: str, score: float, keywords: list) -> float:
         elif label.lower() == "negative":
             return float(-score)
         return 0.0
-    
+
     result = compute_news_score(sentiment_dict, keywords)
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(f"[sentiment_score] Final news_score: {result}")

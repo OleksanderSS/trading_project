@@ -16,17 +16,17 @@ def create_model(model_type, input_size):
     """Create model based on type with fallback to sklearn if torch unavailable"""
     if not _torch_available():
         return _create_sklearn_fallback_model(model_type, input_size)
-    
+
     return _create_torch_model(model_type, input_size)
 
 
 def _create_sklearn_fallback_model(model_type, input_size):
     """Create sklearn fallback model when torch is not available"""
     logger.warning(f"   ⚠️ torch не доступний, використовуємо sklearn fallback для {model_type}")
-    
+
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.linear_model import LinearRegression
-    
+
     class SklearnModelWrapper:
         def __init__(self, model_type, input_size):
             if model_type in ['mlp', 'cnn', 'lstm', 'gru', 'transformer']:
@@ -40,33 +40,32 @@ def _create_sklearn_fallback_model(model_type, input_size):
             else:
                 self.model = LinearRegression()
             self.input_size = input_size
-            
+
         def __call__(self, x):
             return self.forward(x)
-            
+
         def forward(self, x):
             if hasattr(x, 'detach'):
                 x_np = x.detach().cpu().numpy()
             else:
                 x_np = x
-            import numpy as np
             result = self.model.predict(x_np)
             return _create_fake_tensor(result)
-                
+
         def parameters(self):
             return []
-                
+
         def train(self):
             # Set model to training mode (no-op for sklearn wrapper)
             pass
-                
+
         def eval(self):
             # Set model to evaluation mode (no-op for sklearn wrapper)
             pass
-                
+
         def state_dict(self):
             return {'model': self.model}
-                
+
     return SklearnModelWrapper(model_type, input_size)
 
 
@@ -84,11 +83,15 @@ def _create_fake_tensor(data):
 
 def _create_torch_model(model_type, input_size):
     """Create PyTorch model"""
-    import torch
-    import torch.nn as nn
 
     # audit-ignore: AUTOENCODER_ROUTING_REVIEW
-    from src.colab.models.architectures import LSTMModel, GRUModel, CNNModel, TransformerModel, AutoencoderModel  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+    from src.colab.models.architectures import (  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+        AutoencoderModel,
+        CNNModel,
+        GRUModel,
+        LSTMModel,
+        TransformerModel,
+    )
 
     model_creators = {
         'mlp': _create_mlp_model,
@@ -100,11 +103,11 @@ def _create_torch_model(model_type, input_size):
         'random_forest': _create_random_forest_wrapper,
         'autoencoder': lambda sz: AutoencoderModel(sz)  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
     }
-    
+
     creator = model_creators.get(model_type)
     if creator is None:
         raise ValueError(f"Unknown model type: {model_type}")
-    
+
     return creator(input_size)
 
 
@@ -163,7 +166,7 @@ def _create_tabnet_model(input_size):
 def _create_random_forest_wrapper(input_size):
     """Create RandomForest wrapper for torch compatibility"""
     from sklearn.ensemble import RandomForestRegressor
-    
+
     class RandomForestWrapper:
         def __init__(self, input_size):
             self.model = RandomForestRegressor(
@@ -175,10 +178,10 @@ def _create_random_forest_wrapper(input_size):
                 random_state=42
             )
             self.input_size = input_size
-            
+
         def __call__(self, x):
             return self.forward(x)
-            
+
         def forward(self, x):
             if hasattr(x, 'detach'):
                 x_np = x.detach().cpu().numpy()
@@ -186,18 +189,18 @@ def _create_random_forest_wrapper(input_size):
                 x_np = x
             import torch
             return torch.tensor(self.model.predict(x_np), dtype=torch.float32)
-                
+
         def parameters(self):
             return []
-                
+
         def train(self):
             # Set model to training mode (no-op for sklearn wrapper)
             self.model.train = True
-                
+
         def eval(self):
             # Set model to evaluation mode (no-op for sklearn wrapper)
             self.model.train = False
-    
+
     return RandomForestWrapper(input_size)
 
 
@@ -219,5 +222,5 @@ def _create_autoencoder_model(input_size):
 
         def forward(self, x):
             return self.decoder(self.encoder(x))
-    
+
     return AutoencoderModel(input_size)  # audit-ignore: AUTOENCODER_ROUTING_REVIEW

@@ -1,11 +1,14 @@
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Tuple, Optional, Any
 import json
 import warnings
+from typing import Any
+
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+
 warnings.filterwarnings('ignore')
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('SmartModelSelector')
 
 
@@ -24,9 +27,9 @@ class SmartModelSelector:
             random_state=42)
         self.is_meta_model_trained = False
 
-    def _load_performance_history(self) ->Dict:
+    def _load_performance_history(self) ->dict:
         try:
-            with open(self.results_file, 'r') as f:
+            with open(self.results_file) as f:
                 return json.load(f)
         except FileNotFoundError:
             return {}
@@ -36,9 +39,9 @@ class SmartModelSelector:
                 f"Failed to load model performance history from {self.results_file}"
             ) from e
 
-    def _load_competence_map(self, file_path: str) ->Dict:
+    def _load_competence_map(self, file_path: str) ->dict:
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f'Не вдалося завантажити карту компетенцій: {e}')
@@ -74,7 +77,7 @@ class SmartModelSelector:
         logger.info(
             f'Мета-модель помилок для {history_key} успішно натренована.')
 
-    def analyze_context(self, df: pd.DataFrame) ->Dict[str, str]:
+    def analyze_context(self, df: pd.DataFrame) ->dict[str, str]:
         context = {}
         if 'close' not in df.columns:
             return {'data_quality': 'low'}
@@ -129,8 +132,8 @@ class SmartModelSelector:
         else:
             return 'low'
 
-    def critique_action(self, action: Dict[str, Any], context_df: pd.DataFrame
-        ) ->Dict[str, Any]:
+    def critique_action(self, action: dict[str, Any], context_df: pd.DataFrame
+        ) ->dict[str, Any]:
         """Оцінює запропоновану дію, using логіку Критика з DEAN."""
         model_name = action.get('model_name', 'unknown')
         target_type = action.get('target_type', 'classification')
@@ -146,11 +149,11 @@ class SmartModelSelector:
         points = self._generate_critique_points(context, expected_error,
             context_adjustment, historical_reliability)
         return {'score': float(np.clip(critique_score, -1.0, 1.0)),
-            'points': points, 'alternatives': [{'type': 'hold'}] if 
+            'points': points, 'alternatives': [{'type': 'hold'}] if
             critique_score < -0.3 else [], 'expected_error_by_critic':
             float(expected_error), 'confidence': 0.8}
 
-    def _get_expected_error(self, context: Dict) ->float:
+    def _get_expected_error(self, context: dict) ->float:
         """Get expected error from meta-model or default"""
         if not self.is_meta_model_trained:
             return 0.5
@@ -164,7 +167,7 @@ class SmartModelSelector:
 
 
     def _get_historical_reliability(self, model_name: str, target_type: str,
-        context: Dict) ->float:
+        context: dict) ->float:
         """Get historical reliability for model"""
         for key in self.performance_history:
             if key.startswith(model_name) and key.endswith(target_type):
@@ -185,9 +188,9 @@ class SmartModelSelector:
             critique_score -= 0.4
         return critique_score
 
-    def _generate_critique_points(self, context: Dict, expected_error:
+    def _generate_critique_points(self, context: dict, expected_error:
         float, context_adjustment: float, historical_reliability: float
-        ) ->List[str]:
+        ) ->list[str]:
         """Generate critique explanation points"""
         points = [f'Context: {context}']
         if expected_error > 0.4:
@@ -201,7 +204,7 @@ class SmartModelSelector:
         return points
 
     def calculate_model_score(self, model_name: str, target_type: str,
-        context: Dict) ->float:
+        context: dict) ->float:
         """Calculate model score based on history and context"""
         base_score = self._get_default_model_score(model_name, target_type)
         historical_score = self._get_historical_score(model_name, target_type)
@@ -213,7 +216,7 @@ class SmartModelSelector:
         return min(1.0, max(0.0, final_score))
 
     def _get_historical_score(self, model_name: str, target_type: str
-        ) ->Optional[float]:
+        ) ->float | None:
         """Calculate historical performance score for model"""
         for key in self.performance_history:
             if key.startswith(model_name) and key.endswith(target_type):
@@ -223,7 +226,7 @@ class SmartModelSelector:
                     return np.mean(scores)
         return None
 
-    def _calculate_run_scores(self, runs: List[Dict]) ->List[float]:
+    def _calculate_run_scores(self, runs: list[dict]) ->list[float]:
         """Calculate scores from individual runs"""
         scores = []
         for run in runs:
@@ -234,7 +237,7 @@ class SmartModelSelector:
                 scores.append(weighted_score / total_weight)
         return scores
 
-    def _calculate_weighted_score(self, metrics: Dict) ->Tuple[float, float]:
+    def _calculate_weighted_score(self, metrics: dict) ->tuple[float, float]:
         """Calculate weighted score from metrics"""
         weighted_score, total_weight = 0, 0
         for metric, weight in self.metric_weights.items():
@@ -248,7 +251,7 @@ class SmartModelSelector:
         return self.competence_map.get('default_scores', {}).get(target_type,
             {}).get(model_name, 0.5)
 
-    def _calculate_context_adjustment(self, model_name: str, context: Dict
+    def _calculate_context_adjustment(self, model_name: str, context: dict
         ) ->float:
         adjustment = 1.0
         rules = self.competence_map.get('context_rules', {})
@@ -259,7 +262,7 @@ class SmartModelSelector:
             for rule_name, rule_details in factor_rules.items():
                 is_trending = (factor == 'trend' and rule_name ==
                     'trending' and current_value in ['up', 'down'])
-                is_market_trending = (factor == 'market_regime' and 
+                is_market_trending = (factor == 'market_regime' and
                     rule_name == 'trending' and current_value in ['bull',
                     'bear'])
                 if (is_trending or is_market_trending or current_value ==
@@ -269,7 +272,7 @@ class SmartModelSelector:
         return adjustment
 
     def select_best_model(self, df: pd.DataFrame, target_type: str,
-        available_models: List[str]=None) ->Tuple[str, float]:
+        available_models: list[str]=None) ->tuple[str, float]:
         if available_models is None:
             available_models = list(self.competence_map.get(
                 'default_scores', {}).get(target_type, {}).keys())
@@ -283,7 +286,7 @@ class SmartModelSelector:
         return best_model, best_score
 
     def update_performance(self, model_name: str, ticker: str, target_type:
-        str, metrics: Dict, context: Dict):
+        str, metrics: dict, context: dict):
         history_key = f'{model_name}_{ticker}_{target_type}'
         if history_key not in self.performance_history:
             self.performance_history[history_key] = {'runs': []}

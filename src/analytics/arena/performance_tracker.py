@@ -1,12 +1,13 @@
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
 import json
-import logging
-from dataclasses import dataclass, asdict
 from collections import defaultdict
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from typing import Any
+
+import numpy as np
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -25,9 +26,9 @@ class ModelPerformanceRecord:
     win_rate: float
     execution_time: float
     confidence_score: float
-    battle_id: Optional[int] = None
-    opponent: Optional[str] = None
-    result: Optional[str] = None
+    battle_id: int | None = None
+    opponent: str | None = None
+    result: str | None = None
 
 
 @dataclass
@@ -52,10 +53,10 @@ class ModelPerformanceTracker:
     """Трекер продуктивності моделей"""
 
     def __init__(self):
-        self.performance_history: List[ModelPerformanceRecord] = []
-        self.model_stats: Dict[str, Dict] = defaultdict(dict)
-        self.leaderboard: List[LeaderboardEntry] = []
-        self.battle_results: List[Dict] = []
+        self.performance_history: list[ModelPerformanceRecord] = []
+        self.model_stats: dict[str, dict] = defaultdict(dict)
+        self.leaderboard: list[LeaderboardEntry] = []
+        self.battle_results: list[dict] = []
         self._initialize_model_stats()
         logger.info('[TRACKER] Model Performance Tracker initialized')
 
@@ -84,7 +85,7 @@ class ModelPerformanceTracker:
         else:
             return 'light'
 
-    def record_battle_performance(self, battle_data: Dict[str, Any]) ->bool:
+    def record_battle_performance(self, battle_data: dict[str, Any]) ->bool:
         """Запис продуктивності після бою"""
         try:
             battle_id = battle_data.get('battle_id')
@@ -118,13 +119,13 @@ class ModelPerformanceTracker:
                 , exc_info=True)
             return False
 
-    def _record_model_performance(self, model_name: str, metrics: Dict[str,
+    def _record_model_performance(self, model_name: str, metrics: dict[str,
         Any], battle_id: int, opponent: str, result: str):
         """Запис продуктивності окремої моделі"""
         try:
             record = ModelPerformanceRecord(model_name=model_name,
                 model_type=self.model_stats[model_name]['model_type'],
-                timestamp=datetime.now(), accuracy=metrics.get('accuracy', 
+                timestamp=datetime.now(), accuracy=metrics.get('accuracy',
                 0.0), precision=metrics.get('precision', 0.0), recall=
                 metrics.get('recall', 0.0), f1_score=metrics.get('f1_score',
                 0.0), sharpe_ratio=metrics.get('sharpe_ratio', 0.0),
@@ -205,7 +206,7 @@ class ModelPerformanceTracker:
             logger.error(f'[TRACKER] Failed to update leaderboard: {e}',
                 exc_info=True)
 
-    def _create_leaderboard_entry(self, model_name: str, stats: Dict[str, Any]
+    def _create_leaderboard_entry(self, model_name: str, stats: dict[str, Any]
         ) ->LeaderboardEntry:
         """Створити запис для таблиці лідерів"""
         avg_accuracy = np.mean(stats['accuracy_scores']) if stats[
@@ -224,7 +225,7 @@ class ModelPerformanceTracker:
             avg_accuracy), avg_sharpe_ratio=float(avg_sharpe), avg_win_rate
             =float(avg_win_rate), last_updated=datetime.now())
 
-    def get_leaderboard_categories(self) ->Dict[str, List[Dict[str, Any]]]:
+    def get_leaderboard_categories(self) ->dict[str, list[dict[str, Any]]]:
         """Return leaderboard grouped by model category."""
         categories = {'overall': [], 'enhanced': [], 'heavy': [], 'light': []}
         for entry in self.leaderboard:
@@ -241,7 +242,7 @@ class ModelPerformanceTracker:
         return categories
 
     def get_model_performance_history(self, model_name: str, days: int=30
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Отримати історію продуктивності моделі"""
         try:
             cutoff_date = datetime.now() - timedelta(days=days)
@@ -270,7 +271,7 @@ class ModelPerformanceTracker:
             return {'model_name': model_name, 'records': [], 'summary': {},
                 'period_days': days}
 
-    def _calculate_performance_trend(self, values: List[float]) ->str:
+    def _calculate_performance_trend(self, values: list[float]) ->str:
         """Розрахувати тренд продуктивності"""
         try:
             if len(values) < 2:
@@ -289,7 +290,7 @@ class ModelPerformanceTracker:
                 f'[TRACKER] Could not calculate performance trend: {e}')
             return 'unknown'
 
-    def get_model_stats(self, model_name: str) ->Dict[str, Any]:
+    def get_model_stats(self, model_name: str) ->dict[str, Any]:
         """Отримати детальну статистику моделі"""
         try:
             if model_name not in self.model_stats:
@@ -326,8 +327,8 @@ class ModelPerformanceTracker:
                 exc_info=True)
             return {'error': str(e)}
 
-    def get_top_performers(self, metric: str='points', limit: int=5) ->List[
-        Dict]:
+    def get_top_performers(self, metric: str='points', limit: int=5) ->list[
+        dict]:
         """Отримати топ виконавців за метрикою"""
         try:
             if metric == 'points':
@@ -381,7 +382,7 @@ class ModelPerformanceTracker:
     def load_performance_data(self, filepath: str) ->bool:
         """Завантажити дані продуктивності"""
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath) as f:
                 data = json.load(f)
             self.performance_history = []
             for record_data in data.get('performance_history', []):

@@ -5,11 +5,11 @@ Causal Effect Methods - Implementation of Causal Effect Estimation
 This module contains the implementation of causal effect estimation methods.
 """
 
-import pandas as pd
+
 import numpy as np
-from typing import Dict, Any, List
-from sklearn.ensemble import RandomForestRegressor
+import pandas as pd
 from scipy import stats
+from sklearn.ensemble import RandomForestRegressor
 
 from src.core.logging.logger import ProjectLogger
 
@@ -17,22 +17,22 @@ from src.core.logging.logger import ProjectLogger
 class CausalEffectMethods:
     """
     Implementation of causal effect estimation methods.
-    
+
     This class encapsulates the logic for causal effect estimation using
     linear regression, random forest, and double machine learning.
     """
-    
+
     def __init__(self, confidence_level: float = 0.95, logger=None):
         """
         Initialize the causal effect methods.
-        
+
         Args:
             confidence_level: Confidence level for statistical tests
             logger: Logger instance
         """
         self.confidence_level = confidence_level
         self.logger = logger or ProjectLogger.get_logger(self.__class__.__name__)
-    
+
     def linear_estimation(self, X, y, treatment_col):
         """Linear regression causal estimation."""
         x_values = X.astype(float).to_numpy()
@@ -48,7 +48,7 @@ class CausalEffectMethods:
         mse = float(np.sum(residuals ** 2) / dof)
         covariance = mse * np.linalg.pinv(design.T @ design)
         standard_error = float(np.sqrt(max(covariance[treatment_idx, treatment_idx], 0.0)))
-        
+
         if standard_error > 0:
             t_statistic = treatment_coef / standard_error
             p_value = float(2 * (1 - stats.t.cdf(abs(t_statistic), dof)))
@@ -57,7 +57,7 @@ class CausalEffectMethods:
             t_statistic = 0.0
             p_value = 1.0
             critical = 0.0
-        
+
         return {
             'treatment_effect': treatment_coef,
             'standard_error': standard_error,
@@ -69,7 +69,7 @@ class CausalEffectMethods:
             ),
             'effect_size': abs(treatment_coef)
         }
-    
+
     def rf_estimation(self, X, y, treatment_col):
         """Random forest causal estimation."""
         model = RandomForestRegressor(random_state=42)
@@ -80,7 +80,7 @@ class CausalEffectMethods:
         untreated[treatment_col] = 0
         individual_effects = model.predict(treated) - model.predict(untreated)
         treatment_effect = float(np.mean(individual_effects))
-        
+
         if len(individual_effects) > 1 and np.std(individual_effects, ddof=1) > 0:
             t_statistic, p_value = stats.ttest_1samp(individual_effects, popmean=0.0, nan_policy='omit')
             standard_error = float(np.std(individual_effects, ddof=1) / np.sqrt(len(individual_effects)))
@@ -90,7 +90,7 @@ class CausalEffectMethods:
             p_value = 1.0
             standard_error = 0.0
             critical = 0.0
-        
+
         return {
             'treatment_effect': treatment_effect,
             'standard_error': standard_error,
@@ -102,7 +102,7 @@ class CausalEffectMethods:
             ),
             'effect_size': abs(treatment_effect)
         }
-    
+
     def double_ml_estimation(self, X, y, treatment_col, covariates):
         """Double Machine Learning causal estimation."""
         if not covariates:
@@ -120,7 +120,7 @@ class CausalEffectMethods:
         outcome_residuals = outcome - outcome_model.predict(x_covariates)
         treatment_residuals = treatment - treatment_model.predict(x_covariates)
         denominator = float(np.dot(treatment_residuals, treatment_residuals))
-        
+
         if denominator <= 0:
             treatment_effect = 0.0
             standard_error = 0.0
@@ -133,7 +133,7 @@ class CausalEffectMethods:
             dof = max(len(outcome_residuals) - 1, 1)
             residual_variance = float(np.sum(residuals ** 2) / dof)
             standard_error = float(np.sqrt(residual_variance / denominator))
-            
+
             if standard_error > 0:
                 t_statistic = treatment_effect / standard_error
                 p_value = float(2 * (1 - stats.t.cdf(abs(t_statistic), dof)))
@@ -142,7 +142,7 @@ class CausalEffectMethods:
                 t_statistic = 0.0
                 p_value = 1.0
                 critical = 0.0
-        
+
         return {
             'treatment_effect': treatment_effect,
             'standard_error': standard_error,
@@ -154,11 +154,11 @@ class CausalEffectMethods:
             ),
             'effect_size': abs(treatment_effect)
         }
-    
+
     def robustness_checks(self, data, treatment_col, outcome_col, covariates):
         """Perform robustness checks for causal estimates."""
         model_columns = covariates + [treatment_col]
-        
+
         try:
             base_effect = self.linear_estimation(
                 data[model_columns],

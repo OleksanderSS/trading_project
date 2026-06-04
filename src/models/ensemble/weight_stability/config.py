@@ -1,16 +1,15 @@
-from typing import Dict, Any
 
 class WeightStabilityConfig:
     """Configuration and thresholds for the Weight Stability Monitor."""
-    
-    def __init__(self, 
+
+    def __init__(self,
                  stability_threshold: float = 0.1,
                  window_size: int = 10,
                  max_change_per_update: float = 0.15):
         self.stability_threshold = stability_threshold
         self.window_size = window_size
         self.max_change_per_update = max_change_per_update
-        
+
         self.STABILITY_METRICS = {
             'volatility': {
                 'description': 'Standard deviation of weight changes',

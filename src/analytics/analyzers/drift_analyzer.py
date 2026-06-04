@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from src.analytics.interfaces import IAnalyzer
 from src.monitoring.feature_drift_monitor import FeatureDriftMonitor
@@ -12,7 +12,7 @@ class DriftAnalyzer(IAnalyzer):
     def __init__(self, threshold: float = 0.05):
         self.monitor = FeatureDriftMonitor(threshold=threshold)
 
-    def analyze(self, data: Any, **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         """
         Executes drift analysis.
 

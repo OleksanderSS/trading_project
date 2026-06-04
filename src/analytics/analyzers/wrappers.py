@@ -1,18 +1,18 @@
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
-from src.analytics.interfaces import IAnalyzer
 from src.analytics.calculators.drawdown_calculator import DrawdownCalculator
 from src.analytics.calculators.fama_french_factors import FamaFrenchFactors
 from src.analytics.calculators.volatility_calculator import VolatilityCalculator
+from src.analytics.interfaces import IAnalyzer
 
 
 class DrawdownAnalyzer(IAnalyzer):
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         self.config = config or {}
 
-    def analyze(self, data: Any, **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         price_col = kwargs.get("price_col", self.config.get("price_col", "close"))
         high_col = kwargs.get("high_col", self.config.get("high_col", "high"))
         window = int(kwargs.get("window", self.config.get("window", 20)))
@@ -35,11 +35,11 @@ class DrawdownAnalyzer(IAnalyzer):
 
 
 class FamaFrenchAnalyzer(IAnalyzer):
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         self.config = config or {}
         self.calculator = FamaFrenchFactors()
 
-    def analyze(self, data: Any, **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         start_date = kwargs.get("start_date", self.config.get("start_date", "2020-01-01"))
         end_date = kwargs.get("end_date", self.config.get("end_date", "2020-12-31"))
         return {
@@ -50,10 +50,10 @@ class FamaFrenchAnalyzer(IAnalyzer):
 
 
 class VolatilityAnalyzer(IAnalyzer):
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         self.config = config or {}
 
-    def analyze(self, data: Any, **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         window = int(kwargs.get("window", self.config.get("window", 20)))
         periods_per_year = int(kwargs.get("periods_per_year", self.config.get("periods_per_year", 252)))
         returns = self._extract_returns(data, kwargs)
@@ -78,7 +78,7 @@ class VolatilityAnalyzer(IAnalyzer):
             "periods_per_year": periods_per_year,
         }
 
-    def _extract_returns(self, data: Any, kwargs: Dict[str, Any]) -> pd.Series:
+    def _extract_returns(self, data: Any, kwargs: dict[str, Any]) -> pd.Series:
         if isinstance(data, pd.Series):
             return data.astype(float)
         if not isinstance(data, pd.DataFrame):

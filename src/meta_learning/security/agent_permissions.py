@@ -4,16 +4,16 @@ Agent Permission System - Security Framework for Meta-Learning Agents
 Provides role-based access control and permission validation for all agent actions.
 Critical for safe deployment of self-improving trading agents.
 """
-import logging
-from typing import Dict, List, Any, Optional, Set
-from enum import Enum
+import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from threading import RLock
-import json
+from enum import Enum
 from pathlib import Path
+from threading import RLock
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import get_current_config
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -45,9 +45,9 @@ class Permission:
     """Individual permission definition."""
     action_type: ActionType
     allowed: bool
-    conditions: Optional[Dict[str, Any]] = None
-    time_restrictions: Optional[Dict[str, str]] = None
-    resource_limits: Optional[Dict[str, Any]] = None
+    conditions: dict[str, Any] | None = None
+    time_restrictions: dict[str, str] | None = None
+    resource_limits: dict[str, Any] | None = None
 
 
 @dataclass
@@ -58,13 +58,13 @@ class AgentIdentity:
     created_at: datetime
     last_active: datetime
     status: str = 'active'
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
 
 class AgentPermissionSystem:
     """
     Comprehensive permission system for meta-learning agents.
-    
+
     Features:
     - Role-based access control
     - Action validation
@@ -74,28 +74,28 @@ class AgentPermissionSystem:
     - Audit trail for all actions
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         """
         Initialize the Agent Permission System.
-        
+
         Args:
             config: Configuration dictionary for permissions
         """
         self.config = config or {}
         self.logger = logger
-        self._permissions: Dict[AgentRole, Set[Permission]] = {}
-        self._registered_agents: Dict[str, AgentIdentity] = {}
+        self._permissions: dict[AgentRole, set[Permission]] = {}
+        self._registered_agents: dict[str, AgentIdentity] = {}
         self.enabled = self.config.get('enabled', True)
         self.strict_mode = self.config.get('strict_mode', True)
         self.audit_all_actions = self.config.get('audit_all_actions', True)
-        self.action_counts: Dict[str, Dict[ActionType, List[datetime]]] = {}
+        self.action_counts: dict[str, dict[ActionType, list[datetime]]] = {}
         self.rate_limits = self.config.get('rate_limits', {ActionType.
             EXECUTE_TRADE: {'max_per_hour': 100, 'max_per_day': 1000},
             ActionType.MODIFY_STRATEGY: {'max_per_hour': 10, 'max_per_day':
             100}, ActionType.GENERATE_RULE: {'max_per_hour': 50,
             'max_per_day': 500}})
         self._lock = RLock()
-        self.audit_log: List[Dict[str, Any]] = []
+        self.audit_log: list[dict[str, Any]] = []
         self.max_audit_entries = self.config.get('max_audit_entries', 10000)
         self.storage_path = Path(self.config.get('storage_path',
             'data/agent_permissions'))
@@ -104,15 +104,15 @@ class AgentPermissionSystem:
         self.logger.info('✅ AgentPermissionSystem initialized')
 
     def register_agent(self, agent_id: str, role: AgentRole, metadata:
-        Optional[Dict[str, Any]]=None) ->bool:
+        dict[str, Any] | None=None) ->bool:
         """
         Register a new agent with the permission system.
-        
+
         Args:
             agent_id: Unique identifier for the agent
             role: Agent role
             metadata: Additional agent metadata
-            
+
         Returns:
             True if registration successful, False otherwise
         """
@@ -167,7 +167,7 @@ class AgentPermissionSystem:
         """Check permission conditions."""
         if not matching_permission.conditions:
             return {'passed': True}
-        
+
         condition_result = self._check_conditions(
             matching_permission.conditions, context, agent)
         return condition_result
@@ -176,7 +176,7 @@ class AgentPermissionSystem:
         """Check time restrictions."""
         if not matching_permission.time_restrictions:
             return {'passed': True}
-        
+
         time_result = self._check_time_restrictions(
             matching_permission.time_restrictions)
         return time_result
@@ -185,28 +185,28 @@ class AgentPermissionSystem:
         """Check resource limits."""
         if not matching_permission.resource_limits:
             return {'passed': True}
-        
+
         resource_result = self._check_resource_limits(
             matching_permission.resource_limits, context)
         return resource_result
 
     def check_permission(self, agent_id: str, action_type: ActionType,
-        context: Optional[Dict[str, Any]]=None) ->Dict[str, Any]:
+        context: dict[str, Any] | None=None) ->dict[str, Any]:
         """
         Check if an agent has permission to perform an action.
-        
+
         Args:
             agent_id: Agent identifier
             action_type: Type of action to perform
             context: Additional context for permission check
-            
+
         Returns:
             Dictionary with permission check result
         """
         if not self.enabled:
             return {'allowed': True, 'reason': 'Permission system disabled',
                 'strict_mode': False}
-        
+
         with self._lock:
             try:
                 # Check if agent is registered
@@ -216,9 +216,9 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 agent = agent_or_reason
-                
+
                 # Check if agent is active
                 is_active, reason = self._check_agent_active(agent)
                 if not is_active:
@@ -226,7 +226,7 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 # Find matching permission
                 matching_permission, reason = self._find_matching_permission(agent, action_type)
                 if matching_permission is None:
@@ -234,7 +234,7 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 # Check if permission is allowed
                 is_allowed, reason = self._check_permission_allowed(matching_permission, agent.role)
                 if not is_allowed:
@@ -242,7 +242,7 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 # Check conditions
                 condition_result = self._check_conditions(matching_permission, context, agent)
                 if not condition_result['passed']:
@@ -251,7 +251,7 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 # Check time restrictions
                 time_result = self._check_time_restrictions(matching_permission)
                 if not time_result['passed']:
@@ -260,7 +260,7 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 # Check rate limits
                 rate_result = self._check_rate_limits(agent_id, action_type)
                 if not rate_result['passed']:
@@ -269,7 +269,7 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 # Check resource limits
                 resource_result = self._check_resource_limits(matching_permission, context)
                 if not resource_result['passed']:
@@ -278,7 +278,7 @@ class AgentPermissionSystem:
                         'strict_mode': self.strict_mode}
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
-                
+
                 # Permission granted
                 self._record_action(agent_id, action_type)
                 self._log_audit_event(agent_id, action_type, 'allowed', 'Permission granted')
@@ -297,11 +297,11 @@ class AgentPermissionSystem:
     def revoke_agent_permissions(self, agent_id: str, reason: str) ->bool:
         """
         Revoke all permissions for an agent (emergency measure).
-        
+
         Args:
             agent_id: Agent identifier
             reason: Reason for revocation
-            
+
         Returns:
             True if revocation successful
         """
@@ -323,7 +323,7 @@ class AgentPermissionSystem:
                     f'Failed to revoke permissions for {agent_id}: {e}')
                 return False
 
-    def get_agent_status(self, agent_id: str) ->Optional[Dict[str, Any]]:
+    def get_agent_status(self, agent_id: str) ->dict[str, Any] | None:
         """Get current status and permissions for an agent."""
         with self._lock:
             if agent_id not in self._registered_agents:
@@ -348,7 +348,7 @@ class AgentPermissionSystem:
             Permission(ActionType.ACCESS_MEMORY, True), Permission(
             ActionType.MODIFY_PARAMETERS, True, {'max_change_pct': 0.1}),
             Permission(ActionType.WRITE_DATA, True), Permission(ActionType.
-            GENERATE_RULE, False), Permission(ActionType.MODIFY_STRATEGY, 
+            GENERATE_RULE, False), Permission(ActionType.MODIFY_STRATEGY,
             False), Permission(ActionType.TRIGGER_EMERGENCY_STOP, True),
             Permission(ActionType.ACCESS_EXTERNAL_API, False), Permission(
             ActionType.MODIFY_SYSTEM_CONFIG, False)}
@@ -357,7 +357,7 @@ class AgentPermissionSystem:
             'max_position_size': 0.05, 'max_risk_per_trade': 0.01,
             'simulation_only': True}), Permission(ActionType.ACCESS_MEMORY,
             True), Permission(ActionType.MODIFY_PARAMETERS, True, {
-            'max_change_pct': 0.05}), Permission(ActionType.WRITE_DATA, 
+            'max_change_pct': 0.05}), Permission(ActionType.WRITE_DATA,
             False), Permission(ActionType.GENERATE_RULE, False), Permission
             (ActionType.MODIFY_STRATEGY, False), Permission(ActionType.
             TRIGGER_EMERGENCY_STOP, True), Permission(ActionType.
@@ -396,8 +396,8 @@ class AgentPermissionSystem:
             ACCESS_EXTERNAL_API, False), Permission(ActionType.
             MODIFY_SYSTEM_CONFIG, False)}
 
-    def _check_conditions(self, conditions: Dict[str, Any], context:
-        Optional[Dict[str, Any]], agent: AgentIdentity) ->Dict[str, Any]:
+    def _check_conditions(self, conditions: dict[str, Any], context:
+        dict[str, Any] | None, agent: AgentIdentity) ->dict[str, Any]:
         """Check permission conditions against context."""
         try:
             for condition_name, condition_value in conditions.items():
@@ -430,8 +430,8 @@ class AgentPermissionSystem:
             return {'passed': False, 'reason':
                 f'Condition check error: {str(e)}'}
 
-    def _check_time_restrictions(self, time_restrictions: Dict[str, str]
-        ) ->Dict[str, Any]:
+    def _check_time_restrictions(self, time_restrictions: dict[str, str]
+        ) ->dict[str, Any]:
         """Check time-based restrictions."""
         try:
             now = datetime.now()
@@ -456,7 +456,7 @@ class AgentPermissionSystem:
                 f'Time restriction error: {str(e)}'}
 
     def _check_rate_limits(self, agent_id: str, action_type: ActionType
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Check if agent has exceeded rate limits."""
         try:
             if action_type not in self.rate_limits:
@@ -485,8 +485,8 @@ class AgentPermissionSystem:
             return {'passed': False, 'reason':
                 f'Rate limit check error: {str(e)}'}
 
-    def _check_resource_limits(self, resource_limits: Dict[str, Any],
-        context: Optional[Dict[str, Any]]) ->Dict[str, Any]:
+    def _check_resource_limits(self, resource_limits: dict[str, Any],
+        context: dict[str, Any] | None) ->dict[str, Any]:
         """Check resource usage limits."""
         try:
             return {'passed': True, 'reason': 'Resource limits satisfied'}
@@ -529,10 +529,10 @@ class AgentPermissionSystem:
             self.logger.error(f'Failed to save audit log: {e}')
 
 
-_agent_permission_system_instance: Optional[AgentPermissionSystem] = None
+_agent_permission_system_instance: AgentPermissionSystem | None = None
 
 
-def get_agent_permission_system(config: Optional[Dict[str, Any]]=None
+def get_agent_permission_system(config: dict[str, Any] | None=None
     ) ->AgentPermissionSystem:
     """Get or create singleton AgentPermissionSystem instance."""
     global _agent_permission_system_instance
@@ -542,15 +542,15 @@ def get_agent_permission_system(config: Optional[Dict[str, Any]]=None
 
 
 def check_agent_permission(agent_id: str, action_type: ActionType, context:
-    Optional[Dict[str, Any]]=None) ->Dict[str, Any]:
+    dict[str, Any] | None=None) ->dict[str, Any]:
     """
     Convenience function to check agent permissions.
-    
+
     Args:
         agent_id: Agent identifier
         action_type: Type of action to perform
         context: Additional context for permission check
-        
+
     Returns:
         Permission check result
     """

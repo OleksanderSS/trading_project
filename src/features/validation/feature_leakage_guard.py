@@ -13,10 +13,11 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-import numpy as np
+
 import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('FeatureLeakageGuard')
 _FORBIDDEN_PATTERNS = ['future_', 'next_close', 'next_open', 'next_high',
     'next_low', 'next_price', 'forward_', 'fwd_', 't+1', 't_plus',
@@ -27,8 +28,8 @@ class LeakageReport:
     """Data leakage check result."""
 
     def __init__(self):
-        self.forbidden_cols: List[str] = []
-        self.high_corr_cols: Dict[str, Dict[str, float]] = {}
+        self.forbidden_cols: list[str] = []
+        self.high_corr_cols: dict[str, dict[str, float]] = {}
         self.timestamp = datetime.now().isoformat()
         self.status: str = 'clean'
 
@@ -36,7 +37,7 @@ class LeakageReport:
     def has_issues(self) ->bool:
         return bool(self.forbidden_cols or self.high_corr_cols)
 
-    def to_dict(self) ->Dict:
+    def to_dict(self) ->dict:
         return {'status': self.status, 'timestamp': self.timestamp,
             'forbidden_columns': self.forbidden_cols,
             'high_correlation_columns': self.high_corr_cols, 'total_issues':
@@ -57,7 +58,7 @@ class FeatureLeakageGuard:
     """
 
     def __init__(self, corr_threshold: float=0.95, block_on_forbidden: bool
-        =True, report_dir: Optional[str]='reports/leakage'):
+        =True, report_dir: str | None='reports/leakage'):
         """
         Args:
             corr_threshold: Correlation threshold above which a feature is suspicious.
@@ -70,8 +71,8 @@ class FeatureLeakageGuard:
         if self.report_dir:
             self.report_dir.mkdir(parents=True, exist_ok=True)
 
-    def check(self, df: pd.DataFrame, feature_cols: Optional[List[str]]=
-        None, target_cols: Optional[List[str]]=None, ticker: str='unknown'
+    def check(self, df: pd.DataFrame, feature_cols: list[str] | None=
+        None, target_cols: list[str] | None=None, ticker: str='unknown'
         ) ->LeakageReport:
         """
         Perform full data leakage check.
@@ -123,8 +124,8 @@ class FeatureLeakageGuard:
         self._save_report(report, ticker)
         return report
 
-    def _check_forbidden_cols(self, feature_cols: List[str], ticker: str
-        ) ->List[str]:
+    def _check_forbidden_cols(self, feature_cols: list[str], ticker: str
+        ) ->list[str]:
         """Searches for forbidden column names (future patterns)."""
         forbidden = []
         for col in feature_cols:
@@ -135,13 +136,13 @@ class FeatureLeakageGuard:
                     f"[{ticker}] ⛔ Forbidden pattern found in column: '{col}'")
         return forbidden
 
-    def _check_correlation(self, df: pd.DataFrame, feature_cols: List[str],
-        target_cols: List[str], ticker: str) ->Dict[str, Dict[str, float]]:
+    def _check_correlation(self, df: pd.DataFrame, feature_cols: list[str],
+        target_cols: list[str], ticker: str) ->dict[str, dict[str, float]]:
         """
         Checks correlation between features and targets.
         Returns dict: {feature_col: {target_col: correlation}}.
         """
-        high_corr: Dict[str, Dict[str, float]] = {}
+        high_corr: dict[str, dict[str, float]] = {}
         numeric_features = [c for c in feature_cols if c in df.columns and
             pd.api.types.is_numeric_dtype(df[c])]
         numeric_targets = [c for c in target_cols if c in df.columns and pd
@@ -193,7 +194,7 @@ class FeatureLeakageGuard:
             raise
 
 
-_guard_instance: Optional[FeatureLeakageGuard] = None
+_guard_instance: FeatureLeakageGuard | None = None
 
 
 def get_leakage_guard(corr_threshold: float=0.95, block_on_forbidden: bool=

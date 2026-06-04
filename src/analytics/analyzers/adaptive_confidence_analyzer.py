@@ -1,8 +1,9 @@
-from typing import Dict, Any, List, Optional
+from typing import Any
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 
 from ..interfaces import IAnalyzer
-from src.core.logging.logger import ProjectLogger
-from src.core.exceptions import DataProcessingError
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -12,7 +13,7 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
     that evaluate market context provided by other analyzers.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initializes the analyzer with a base confidence and a list of adjustment rules.
 
@@ -26,7 +27,7 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
         self.rules = self.config.get('rules', [])
         logger.info(f"AdaptiveConfidenceAnalyzer initialized with base confidence: {self.base_confidence}")
 
-    def analyze(self, data: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    def analyze(self, data: dict[str, Any], **kwargs) -> dict[str, Any]:
         """
         Calculates the adaptive confidence by applying rules to the input context.
 
@@ -45,14 +46,14 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
                     confidence_threshold = self._apply_rule_action(rule.get('then', {}), confidence_threshold)
             except Exception as e:
                 raise DataProcessingError(f"Error processing rule '{rule.get('name', 'Unnamed')}': {e}") from e
-        
+
         # Cap the confidence threshold to a reasonable maximum
         final_threshold = min(confidence_threshold, self.config.get('max_confidence', 0.85))
 
         logger.info(f"Calculated adaptive confidence threshold: {final_threshold:.4f}")
         return {'adaptive_confidence_threshold': final_threshold}
 
-    def _evaluate_rule_conditions(self, conditions: Dict[str, Any], context: Dict[str, Any]) -> bool:
+    def _evaluate_rule_conditions(self, conditions: dict[str, Any], context: dict[str, Any]) -> bool:
         """
         Evaluates the 'if' block of a rule, supporting 'all' (AND) and 'any' (OR) logic.
         """
@@ -62,7 +63,7 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
             return any(self._check_condition(cond, context) for cond in conditions['any'])
         return False
 
-    def _check_condition(self, condition: Dict[str, Any], context: Dict[str, Any]) -> bool:
+    def _check_condition(self, condition: dict[str, Any], context: dict[str, Any]) -> bool:
         """
         Checks a single condition from a rule.
         """
@@ -80,10 +81,10 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
             return True
         if 'less_than' in condition and context_value < condition['less_than']:
             return True
-        
+
         return False
 
-    def _apply_rule_action(self, action: Dict[str, Any], current_threshold: float) -> float:
+    def _apply_rule_action(self, action: dict[str, Any], current_threshold: float) -> float:
         """
         Applies the action from a rule's 'then' block, modifying the threshold.
         """
@@ -93,5 +94,5 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
             return current_threshold - action.get('value', 0.0)
         if action.get('action') == 'set_threshold':
             return action.get('value', current_threshold)
-        
+
         return current_threshold

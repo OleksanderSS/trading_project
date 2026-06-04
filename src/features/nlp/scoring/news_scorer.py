@@ -2,7 +2,7 @@
 
 import logging
 import math
-from typing import Dict, Any, List, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +23,14 @@ DEFAULT_SCORING_CONFIG = {
 
 class NewsScorer:
     """
-    Calculates a sophisticated score for news articles by combining sentiment, 
+    Calculates a sophisticated score for news articles by combining sentiment,
     keyword relevance, and entity significance.
-    
-    The final score's direction is determined by sentiment, and its magnitude 
+
+    The final score's direction is determined by sentiment, and its magnitude
     is amplified by relevance (keywords) and significance (entities).
     """
 
-    def __init__(self, scorer_config: Optional[Dict[str, Any]] = None, primary_tickers: Optional[List[str]] = None):
+    def __init__(self, scorer_config: dict[str, Any] | None = None, primary_tickers: list[str] | None = None):
         """
         Initializes the NewsScorer.
 
@@ -42,27 +42,27 @@ class NewsScorer:
         config = scorer_config or DEFAULT_SCORING_CONFIG
         self.weights = config.get('weights', DEFAULT_SCORING_CONFIG['weights'])
         self.params = config.get('parameters', DEFAULT_SCORING_CONFIG['parameters'])
-        self.primary_tickers: Set[str] = {ticker.upper() for ticker in primary_tickers} if primary_tickers else set()
+        self.primary_tickers: set[str] = {ticker.upper() for ticker in primary_tickers} if primary_tickers else set()
 
         logger.info(f"NewsScorer initialized with primary tickers: {self.primary_tickers or 'None'}")
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Scorer weights: {self.weights}, parameters: {self.params}")
 
-    def _calculate_directional_sentiment(self, sentiment_details: Dict[str, float]) -> float:
+    def _calculate_directional_sentiment(self, sentiment_details: dict[str, float]) -> float:
         """
         Calculates a directional sentiment score from -1.0 (very negative) to +1.0 (very positive).
         This is based on the difference between positive and negative sentiment components.
         """
         if not sentiment_details:
             return 0.0
-        
+
         # Assumes details contain 'positive' and 'negative' scores.
         pos_score = sentiment_details.get('positive', 0.0)
         neg_score = sentiment_details.get('negative', 0.0)
-        
+
         return pos_score - neg_score
 
-    def _calculate_relevance_score(self, keywords: List[str]) -> float:
+    def _calculate_relevance_score(self, keywords: list[str]) -> float:
         """
         Calculates a relevance score based on the number of keywords found.
         Uses a logarithmic scale to give diminishing returns for additional keywords.
@@ -70,35 +70,35 @@ class NewsScorer:
         """
         if not keywords:
             return 0.0
-        
+
         cap = self.params.get('keyword_cap', 10)
         # Using log1p for a smooth curve where the first few keywords matter most.
         # log1p(x) is log(1+x), avoiding math errors for 0 keywords.
         normalized_score = math.log1p(len(keywords)) / math.log1p(cap)
-        
+
         return min(normalized_score, 1.0) # Ensure score does not exceed 1.0
 
-    def _calculate_significance_score(self, entities: List[str]) -> float:
+    def _calculate_significance_score(self, entities: list[str]) -> float:
         """
         Calculates a significance score based on whether primary tickers or other entities are found.
         Returns a score between 0.0 and 1.0.
         """
         if not entities:
             return 0.0
-        
+
         entity_set = {ent.upper() for ent in entities}
-        
+
         # Check for intersection with high-value primary tickers first.
         if self.primary_tickers and not entity_set.isdisjoint(self.primary_tickers):
             return self.params.get('primary_ticker_bonus', 1.0)
-        
+
         # If no primary tickers are found, grant a smaller bonus for any entity.
         if entity_set:
             return self.params.get('other_entity_bonus', 0.2)
-            
+
         return 0.0
 
-    def score(self, sentiment_details: Dict[str, float], keywords: List[str], entities: List[str]) -> float:
+    def score(self, sentiment_details: dict[str, float], keywords: list[str], entities: list[str]) -> float:
         """
         Computes the final, comprehensive score for a news item.
 
@@ -113,7 +113,7 @@ class NewsScorer:
         """
         # 1. Determine the direction and base magnitude of sentiment (-1 to +1)
         sentiment_direction = self._calculate_directional_sentiment(sentiment_details)
-        
+
         # 2. Calculate the non-directional magnitude of relevance and significance (0 to 1)
         relevance_magnitude = self._calculate_relevance_score(keywords)
         significance_magnitude = self._calculate_significance_score(entities)
@@ -121,7 +121,7 @@ class NewsScorer:
         # 3. Combine magnitudes using configured weights
         w_relevance = self.weights.get('relevance', 0.6)
         w_significance = self.weights.get('significance', 0.4)
-        
+
         # Weighted average of the two magnitude scores
         total_magnitude = (relevance_magnitude * w_relevance) + (significance_magnitude * w_significance)
 
@@ -130,7 +130,7 @@ class NewsScorer:
         # This means a highly relevant article (magnitude > 0) will have its sentiment amplified.
         # An article with zero relevance and significance will just have its base sentiment score.
         final_score = sentiment_direction * (1 + total_magnitude)
-        
+
         # Clamp the result to a standard [-1, 1] range for consistency.
         final_score = max(-1.0, min(final_score, 1.0))
 

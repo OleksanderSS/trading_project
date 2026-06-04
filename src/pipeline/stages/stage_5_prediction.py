@@ -9,36 +9,35 @@ Refactored: heavy logic moved to sub-package `prediction/`:
   - PredictionGenerator → ensemble/single prediction & denormalization
   - AnomalyEngine   → anomaly detection & confidence scoring
 """
-import logging
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
-import joblib
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from src.analytics.context.prediction_adjuster import PredictionAdjuster
+
 from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
-from src.analytics.signals.signal_analytics import analyze_signals
-from src.analytics.signals.significance_detector import detect_significant_events
+from src.analytics.context.prediction_adjuster import PredictionAdjuster
 from src.analytics.detectors.anomaly_detector import AnomalyDetector
 from src.analytics.detectors.critical_signal_detector import CriticalSignalDetector
+from src.analytics.signals.signal_analytics import analyze_signals
+from src.analytics.signals.significance_detector import detect_significant_events
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
-from src.core.exceptions import DataProcessingError
 from src.ensembling.stacked_ensemble import StackedEnsemble
-from src.features.utils.datetime_utils import normalize_metadata_columns
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.models.loader import ModelLoaderStrategy
-from src.models.model_selector.smart_selector import SmartModelSelector
-from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
 from src.models.model_pool import get_model_pool
+from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
+from src.models.model_selector.smart_selector import SmartModelSelector
 from src.pipeline.stages.base_stage import BaseStage
-from src.pipeline.stages.prediction.prediction_context_manager import PredictionContextManager
 from src.pipeline.stages.prediction import AnomalyEngine, ModelResolver, PredictionGenerator
 from src.pipeline.stages.prediction.data_preparation_service import DataPreparationService
 from src.pipeline.stages.prediction.model_selection_service import ModelSelectionService
+from src.pipeline.stages.prediction.prediction_context_manager import PredictionContextManager
 from src.pipeline.stages.prediction.scaler_service import ScalerService
 from src.predictions.caching import get_ensemble_cache
 
@@ -50,11 +49,11 @@ class PredictionResultRequest:
     ticker: str
     adjusted_prediction: float
     raw_prediction: float
-    model_contributions: Dict[str, float]
+    model_contributions: dict[str, float]
     best_model_name: str
     ticker_df_clean: pd.DataFrame
-    meta: Dict[str, Any]
-    models: Dict[str, Any] = None
+    meta: dict[str, Any]
+    models: dict[str, Any] = None
 
 
 class PredictionStage(BaseStage):
@@ -80,8 +79,7 @@ class PredictionStage(BaseStage):
         use_adaptive = self.config_manager.get(
             'prediction.use_adaptive_selector', False)
         if use_adaptive:
-            self.context_selector: Union[SmartModelSelector,
-                AdaptiveModelSelector] = AdaptiveModelSelector(fallback=
+            self.context_selector: SmartModelSelector | AdaptiveModelSelector = AdaptiveModelSelector(fallback=
                 'lightgbm', leaderboard_path='data/model_leaderboard.json',
                 learning_rate=0.1)
             self.logger.info(
@@ -101,12 +99,12 @@ class PredictionStage(BaseStage):
             config_manager, model_pool=self.model_pool, model_loader=self.
             model_loader)
         self.anomaly_engine = AnomalyEngine(diary=self.diary)
-        
+
         # Initialize extracted services to reduce coupling
         self.data_preparation_service = DataPreparationService()
         self.model_selection_service = ModelSelectionService(self.config_manager)
         self.scaler_service = ScalerService(self.config_manager)
-        
+
         self.prediction_generator = PredictionGenerator(ensemble_factory=
             self.ensemble_factory, ensemble_cache=self.ensemble_cache,
             adjuster=self.adjuster)
@@ -120,7 +118,7 @@ class PredictionStage(BaseStage):
             '✅ MarketContextAnalyzer, SignalAnalytics and SignificanceDetector functions initialized'
             )
 
-    async def run(self, **kwargs) ->Dict[str, Any]:
+    async def run(self, **kwargs) ->dict[str, Any]:
         """
         Generates adjusted predictions for tickers processed in earlier stages.
 
@@ -141,8 +139,7 @@ class PredictionStage(BaseStage):
         return self._prepare_final_results(prediction_results, models_meta,
             kwargs)
 
-    def _prepare_inputs(self, kwargs: Dict[str, Any]) ->tuple[Optional[pd.
-        DataFrame], Dict[str, Any], str]:
+    def _prepare_inputs(self, kwargs: dict[str, Any]) ->tuple[pd.DataFrame | None, dict[str, Any], str]:
         return self.data_preparation_service.prepare_inputs(kwargs, self.model_resolver)
 
     def _validate_inputs(self, features_df, models_meta) ->tuple[bool, str]:
@@ -159,8 +156,8 @@ class PredictionStage(BaseStage):
             return False, 'Invalid inputs'
         return True, 'Valid inputs'
 
-    def _ensure_local_models(self, models_meta: Dict[str, Any], kwargs:
-        Optional[Dict[str, Any]]=None) ->bool:
+    def _ensure_local_models(self, models_meta: dict[str, Any], kwargs:
+        dict[str, Any] | None=None) ->bool:
         has_local = self.model_resolver.check_local_models(models_meta)
         if not has_local:
             self.model_resolver.log_model_status(models_meta)
@@ -174,9 +171,9 @@ class PredictionStage(BaseStage):
                 return False
         return True
 
-    def _generate_predictions_for_contexts(self, models_meta: Dict[str, Any
-        ], features_df: pd.DataFrame, market_regime: str) ->Dict[str, Any]:
-        prediction_results: Dict[str, Any] = {}
+    def _generate_predictions_for_contexts(self, models_meta: dict[str, Any
+        ], features_df: pd.DataFrame, market_regime: str) ->dict[str, Any]:
+        prediction_results: dict[str, Any] = {}
         available_model_types = self._get_available_model_types()
         filtered_models_meta = {}
         for context_id, meta in models_meta.items():
@@ -209,9 +206,8 @@ class PredictionStage(BaseStage):
         """Get available model types by scanning model files in the database directory"""
         return self.model_selection_service.get_available_model_types()
 
-    def _process_single_context(self, context_id: str, meta: Dict[str, Any],
-        features_df: pd.DataFrame, market_regime: str) ->Optional[Dict[str,
-        Any]]:
+    def _process_single_context(self, context_id: str, meta: dict[str, Any],
+        features_df: pd.DataFrame, market_regime: str) ->dict[str, Any] | None:
         context_result = self._process_context_data(context_id, meta,
             features_df)
         if context_result is None:
@@ -221,19 +217,19 @@ class PredictionStage(BaseStage):
         if not ticker:
             self.logger.error(f'Ticker missing for context {context_id}')
             return None
-            
+
         # ✅ ELITE FIX: Визначаємо поточний патерн та стан Чемпіона
         current_pattern = ticker_df_clean['context_pattern_id'].iloc[-1] if 'context_pattern_id' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else 'normal'
         current_pattern_seq = ticker_df_clean['context_pattern_seq'].iloc[-1] if 'context_pattern_seq' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else None
         current_fingerprint = ticker_df_clean['context_fingerprint'].iloc[-1] if 'context_fingerprint' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else current_pattern
         champion_state = ticker_df_clean['state_champion'].iloc[-1] if 'state_champion' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else 0
         context_velocity = ticker_df_clean['context_velocity'].iloc[-1] if 'context_velocity' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else 0
-        
+
         # 1. Шукаємо ЕКСПЕРТНУ модель для цього патерна
         expert_context_id = f"{ticker}_{meta.get('target')}_{current_pattern}"
         models = self.model_resolver.load_available_models(expert_context_id, {
             expert_context_id: meta})
-            
+
         if not models:
             self.logger.info(f"ℹ️ No expert model for pattern {current_pattern}, using general champion")
             models = self.model_resolver.load_available_models(context_id, {
@@ -242,21 +238,21 @@ class PredictionStage(BaseStage):
         if not models:
             self.logger.warning(f'No models found for {context_id}, skipping')
             return None
-            
+
         target_scaler = self._load_target_scaler(meta)
         # If no scaler found, denormalize_prediction will return raw value
         # (scale_target=False by default, so no denormalization needed)
-            
+
         best_model_name = self._select_best_model_for_context(ticker_df_clean,
             meta, models, ticker, market_regime)
-            
+
         raw_prediction, model_contributions = (self.prediction_generator.
             generate_prediction(models, best_model_name, ticker_df_clean,
             filtered_features_list, market_regime, context_id))
-            
+
         if raw_prediction is None:
             return None
-            
+
         # 2. Champion-Bias Adjustment: Штрафуємо впевненість, якщо прогноз суперечить Чемпіону
         confidence_adjustment = 1.0
         if champion_state != 0:
@@ -271,13 +267,13 @@ class PredictionStage(BaseStage):
             market_regime, ticker))
         adjusted_prediction = self.prediction_generator.denormalize_prediction(
             adjusted_prediction, target_scaler)
-            
+
         request = PredictionResultRequest(context_id=context_id, ticker=
             ticker, adjusted_prediction=adjusted_prediction, raw_prediction
             =raw_prediction, model_contributions=model_contributions,
             best_model_name=best_model_name, ticker_df_clean=
             ticker_df_clean, meta=meta, models=models)
-            
+
         result = self._create_prediction_result(request)
         if result:
             result['confidence'] *= confidence_adjustment
@@ -288,15 +284,15 @@ class PredictionStage(BaseStage):
                 result['context_velocity'] = float(context_velocity)
             except (TypeError, ValueError):
                 result['context_velocity'] = 0.0
-            
+
         return result
 
-    def _process_context_data(self, context_id: str, meta: Dict[str, Any],
-        features_df: pd.DataFrame) ->Optional[tuple]:
+    def _process_context_data(self, context_id: str, meta: dict[str, Any],
+        features_df: pd.DataFrame) ->tuple | None:
         return self.data_preparation_service.prepare_context_data(context_id, meta, features_df)
 
     def _prepare_ticker_data(self, features_df: pd.DataFrame, ticker: str
-        ) ->Optional[pd.DataFrame]:
+        ) ->pd.DataFrame | None:
         return self.data_preparation_service.prepare_ticker_data(features_df, ticker)
 
     def _create_context_fingerprint(self, ticker_df: pd.DataFrame,
@@ -307,14 +303,14 @@ class PredictionStage(BaseStage):
         """
         return self.data_preparation_service.create_context_fingerprint(ticker_df, market_regime)
 
-    def _load_target_scaler(self, meta: Dict[str, Any]) ->Optional[Any]:
+    def _load_target_scaler(self, meta: dict[str, Any]) ->Any | None:
         return self.scaler_service.load_target_scaler(meta)
 
     # _create_fallback_scaler REMOVED: scale_target=False by default,
     # so denormalization is not needed when scaler is missing
 
     def _select_best_model_for_context(self, ticker_df_clean: pd.DataFrame,
-        meta: Dict[str, Any], models: Dict[str, Any], ticker: str,
+        meta: dict[str, Any], models: dict[str, Any], ticker: str,
         market_regime: str) ->str:
         if not hasattr(self, 'model_selection_service'):
             self.model_selection_service = ModelSelectionService(getattr(self, 'config_manager', None))
@@ -324,11 +320,11 @@ class PredictionStage(BaseStage):
         )
 
     # Helper methods removed - now in ModelSelectionService
-    # _prediction_model_candidates, _build_model_alias_map, 
+    # _prediction_model_candidates, _build_model_alias_map,
     # _resolve_model_selection, _model_type_alias
 
     def _create_prediction_result(self, request: PredictionResultRequest
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         anomaly_score = self.anomaly_engine.calculate_anomaly_score(request
             .ticker_df_clean)
         confidence_info = self.anomaly_engine.calculate_ensemble_confidence(
@@ -353,8 +349,7 @@ class PredictionStage(BaseStage):
             'timestamp': request.ticker_df_clean.index[-1] if isinstance(
             request.ticker_df_clean.index, pd.DatetimeIndex) else None}
 
-    def _get_last_price(self, ticker_df: pd.DataFrame, ticker: str) ->Optional[
-        float]:
+    def _get_last_price(self, ticker_df: pd.DataFrame, ticker: str) ->float | None:
         if ticker_df.empty:
             return None
         if 'close' in ticker_df.columns:
@@ -363,8 +358,8 @@ class PredictionStage(BaseStage):
             return float(ticker_df[f'{ticker}_1d_close'].iloc[-1])
         return None
 
-    def _prepare_final_results(self, prediction_results: Dict[str, Any],
-        models_meta: Dict[str, Any], kwargs: Dict[str, Any]) ->Dict[str, Any]:
+    def _prepare_final_results(self, prediction_results: dict[str, Any],
+        models_meta: dict[str, Any], kwargs: dict[str, Any]) ->dict[str, Any]:
         predictions_list = list(prediction_results.values())
         current_prices = {pred_data['ticker']: pred_data['last_price'] for
             pred_data in prediction_results.values() if pred_data.get(
@@ -388,11 +383,11 @@ class PredictionStage(BaseStage):
             light_models_count, 'heavy_models_count': heavy_models_count,
             'total_models': len(models_meta)}
 
-    def update_selector_feedback(self, prediction_results: Dict[str, Any],
-        actual_results: Dict[str, float]):
+    def update_selector_feedback(self, prediction_results: dict[str, Any],
+        actual_results: dict[str, float]):
         """
         Update AdaptiveModelSelector with feedback from actual results.
-        
+
         Args:
             prediction_results: Results from Stage 5 predictions
             actual_results: Dict of {ticker: actual_return}
@@ -420,9 +415,9 @@ class PredictionStage(BaseStage):
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Failed to update selector feedback: {e}')
 
-    def _save_stage_5_results(self, predictions_list: List[Dict],
-        current_prices: Dict, prediction_results: Dict, models_meta: Dict,
-        kwargs: Dict) ->None:
+    def _save_stage_5_results(self, predictions_list: list[dict],
+        current_prices: dict, prediction_results: dict, models_meta: dict,
+        kwargs: dict) ->None:
         try:
             batch_name = kwargs.get('batch_name') or self.brain.get(
                 'batch_name')

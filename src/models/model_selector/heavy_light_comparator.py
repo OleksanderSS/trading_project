@@ -1,11 +1,10 @@
-import time
-import logging
-import psutil
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import psutil
 
 # Updated import for ProjectLogger
 from src.core.logging.logger import ProjectLogger
@@ -28,45 +27,45 @@ class ModelPerformanceMetrics:
 class HeavyLightModelComparator:
     """
     Implements the Heavy vs. Light model comparison logic from ideas.md.
-    Analyzes model performance, latency, and resource consumption to 
+    Analyzes model performance, latency, and resource consumption to
     recommend the optimal architecture for the current market regime.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         self.config = config or {}
-        self.performance_history: List[ModelPerformanceMetrics] = []
-        
+        self.performance_history: list[ModelPerformanceMetrics] = []
+
         # Thresholds for classification
         self.heavy_models = self.config.get('heavy_models', ['cnn', 'transformer', 'tabnet', 'lstm', 'gru'])
         self.light_models = self.config.get('light_models', ['lightgbm', 'catboost', 'xgboost', 'random_forest', 'linear'])
-        
+
         # Resource constraints
         self.max_mem_pct = self.config.get('max_memory_percent', 85.0)
         self.max_cpu_pct = self.config.get('max_cpu_percent', 80.0)
-        
+
         logger.info("HeavyLightModelComparator initialized.")
 
-    def record_inference_stats(self, 
-                               model_name: str, 
+    def record_inference_stats(self,
+                               model_name: str,
                                model_type: str,
-                               y_true: np.ndarray, 
-                               y_pred: np.ndarray, 
-                               start_time: float, 
+                               y_true: np.ndarray,
+                               y_pred: np.ndarray,
+                               start_time: float,
                                end_time: float) -> ModelPerformanceMetrics:
         """
         Captures metrics during a live or backtest inference run.
         """
         process = psutil.Process()
-        
+
         # Calculate ML metrics
-        from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-        
+        from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+
         # Handle classification (assuming binary for simplicity in this logic)
         acc = accuracy_score(y_true, y_pred)
         prec = precision_score(y_true, y_pred, zero_division=0)
         rec = recall_score(y_true, y_pred, zero_division=0)
         f1 = f1_score(y_true, y_pred, zero_division=0)
-        
+
         latency = (end_time - start_time) * 1000 # ms
         mem_info = process.memory_info().rss / (1024 * 1024) # MB
         cpu_usage = psutil.cpu_percent(interval=None)
@@ -83,19 +82,19 @@ class HeavyLightModelComparator:
             cpu_usage_pct=cpu_usage,
             timestamp=datetime.now()
         )
-        
+
         self.performance_history.append(metrics)
         return metrics
 
-    def get_consensus_prediction(self, heavy_pred: float, light_pred: float, threshold: float = 0.01) -> Dict[str, Any]:
+    def get_consensus_prediction(self, heavy_pred: float, light_pred: float, threshold: float = 0.01) -> dict[str, Any]:
         """
         Compares predictions from Heavy and Light models to find consensus.
-        
+
         Args:
             heavy_pred: Percentage price change predicted by heavy model.
             light_pred: Percentage price change predicted by light model.
             threshold: Minimum change to consider as a directional signal.
-            
+
         Returns:
             A dictionary containing the consensus signal and confidence.
         """
@@ -117,13 +116,13 @@ class HeavyLightModelComparator:
         # Using normalized difference of predictions
         diff = abs(heavy_pred - light_pred)
         avg_mag = (abs(heavy_pred) + abs(light_pred)) / 2
-        
+
         if avg_mag == 0:
             confidence = 1.0
         else:
             # Scale difference relative to magnitude, capped at 1.0
             confidence = max(0.0, 1.0 - (diff / (avg_mag + 1e-6)))
-            
+
         # If directions are opposite, slash confidence
         if np.sign(heavy_pred) != np.sign(light_pred) and h_dir != 0 and l_dir != 0:
             confidence *= 0.2
@@ -136,7 +135,7 @@ class HeavyLightModelComparator:
             "action_recommendation": "REDUCE_SIZE" if signal == 'DIVERGENCE_WARNING' else "NORMAL"
         }
 
-    def get_recommendation(self, market_context: Dict[str, Any]) -> Dict[str, Any]:
+    def get_recommendation(self, market_context: dict[str, Any]) -> dict[str, Any]:
         """
         Determines whether to use a 'Heavy' or 'Light' model based on:
         1. System Load (Safety first)
@@ -145,10 +144,10 @@ class HeavyLightModelComparator:
         """
         current_mem = psutil.virtual_memory().percent
         current_cpu = psutil.cpu_percent(interval=0.1)
-        
+
         volatility = market_context.get('volatility_regime', 'normal')
         regime_change = market_context.get('regime_change_detected', False)
-        
+
         # 1. Hardware Constraint Check
         if current_mem > self.max_mem_pct or current_cpu > self.max_cpu_pct:
             logger.warning(f"High system load detected (CPU: {current_cpu}%, MEM: {current_mem}%). Falling back to LIGHT models.")
@@ -164,7 +163,7 @@ class HeavyLightModelComparator:
             # Check if Heavy models actually performed better historically in high vol
             heavy_perf = self._get_avg_f1_by_type('heavy')
             light_perf = self._get_avg_f1_by_type('light')
-            
+
             if heavy_perf >= (light_perf * 0.95): # Use heavy if it's at least competitive
                 return {
                     "recommended_type": "heavy",
@@ -194,10 +193,10 @@ class HeavyLightModelComparator:
         """Returns a formatted DataFrame comparing current model performances."""
         if not self.performance_history:
             return pd.DataFrame()
-            
+
         data = [m.__dict__ for m in self.performance_history]
         df = pd.DataFrame(data)
-        
+
         # Group by type to see the 'Heavy' vs 'Light' summary
         summary = df.groupby('model_type').agg({
             'accuracy': 'mean',
@@ -205,8 +204,8 @@ class HeavyLightModelComparator:
             'inference_latency_ms': 'mean',
             'memory_usage_mb': 'max'
         }).reset_index()
-        
+
         logger.info("\n--- Model Architecture Comparison Report ---")
         logger.info(summary.to_string())
-        
+
         return summary

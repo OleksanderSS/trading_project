@@ -2,13 +2,14 @@
 Web UI Mode for Trading System
 (ОНОВЛЕНО для використання UnifiedConfigManager)
 """
-import logging
 import http.server
-import socketserver
 import json
+import socketserver
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any
+
 from src.main.modes.base import BaseMode
+
 CONTENT_TYPE_HTML = 'text/html'
 
 
@@ -26,7 +27,7 @@ class WebUIMode(BaseMode):
                 'ModelPerformanceMonitor not available, using None')
         self.data_collector = None
 
-    def run(self, **kwargs) ->Dict[str, Any]:
+    def run(self, **kwargs) ->dict[str, Any]:
         """Запуск Web UI сервера"""
         host = kwargs.get('host', 'localhost')
         port = kwargs.get('port', 8080)
@@ -56,14 +57,14 @@ class WebUIMode(BaseMode):
         self.logger.info('[RESTART] Auto-refresh enabled (30 seconds)')
         self.logger.info('⏹️  Press Ctrl+C to stop server')
 
-    def _handle_server_shutdown(self, host: str, port: int) ->Dict[str, Any]:
+    def _handle_server_shutdown(self, host: str, port: int) ->dict[str, Any]:
         """Обробляє коректне завершення роботи сервера."""
         self.logger.info('\n🛑 Server stopped')
         return {'status': 'stopped', 'mode': 'web-ui', 'host': host, 'port':
             port}
 
     def _handle_startup_error(self, error: Exception, host: str, port: int
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Обробляє помилки запуску сервера."""
         self.logger.error('Web UI failed to start: %s', str(error))
         return {'status': 'failed', 'mode': 'web-ui', 'host': host, 'port':
@@ -167,7 +168,7 @@ class WebUIMode(BaseMode):
         TradingUIHandler.web_ui_mode = self
         return TradingUIHandler
 
-    def get_system_overview(self) ->Dict[str, Any]:
+    def get_system_overview(self) ->dict[str, Any]:
         """Отримання огляду системи"""
         tickers = self.config_manager.get('data.tickers', [])
         return {'status': 'idle', 'last_update': datetime.now().isoformat(),
@@ -177,15 +178,15 @@ class WebUIMode(BaseMode):
             self.config_manager.get('risk.initial_capital', 0)},
             'performance': self._get_performance_report()}
 
-    def get_portfolio_status(self) ->Dict[str, Any]:
+    def get_portfolio_status(self) ->dict[str, Any]:
         return {'total_value': 125000, 'cash_balance': 15000,
-            'positions_count': 8, 'daily_pnl': 2500, 'daily_pnl_percent': 
+            'positions_count': 8, 'daily_pnl': 2500, 'daily_pnl_percent':
             2.04, 'positions': [{'ticker': 'TSLA', 'quantity': 50, 'value':
             12500, 'pnl': 500}, {'ticker': 'NVDA', 'quantity': 30, 'value':
             18000, 'pnl': 800}, {'ticker': 'AAPL', 'quantity': 100, 'value':
             17500, 'pnl': -200}]}
 
-    def get_market_data(self) ->Dict[str, Any]:
+    def get_market_data(self) ->dict[str, Any]:
         market_data = {}
         tickers = self.config_manager.get('data.tickers', ['TSLA', 'NVDA',
             'AAPL', 'MSFT', 'GOOGL'])
@@ -197,7 +198,7 @@ class WebUIMode(BaseMode):
                 market_data[ticker] = {'ticker': ticker, 'price': round(
                     random.uniform(100, 500), 2), 'change': round(random.
                     uniform(-10, 10), 2), 'change_percent': round(random.
-                    uniform(-5, 5), 2), 'volume': random.randint(1000000, 
+                    uniform(-5, 5), 2), 'volume': random.randint(1000000,
                     10000000), 'timestamp': datetime.now().isoformat(),
                     'source': 'simulation'}
             except Exception as e:
@@ -208,18 +209,18 @@ class WebUIMode(BaseMode):
                 raise
         return market_data
 
-    def get_performance_metrics(self) ->Dict[str, Any]:
+    def get_performance_metrics(self) ->dict[str, Any]:
         """Get performance metrics for API endpoint"""
         return {'recent_activity': [{'time': datetime.now().strftime(
             '%H:%M'), 'action': 'BUY', 'ticker': 'TSLA', 'quantity': 10,
             'price': 245.5}, {'time': datetime.now().strftime('%H:%M'),
-            'action': 'SELL', 'ticker': 'AAPL', 'quantity': 5, 'price': 
+            'action': 'SELL', 'ticker': 'AAPL', 'quantity': 5, 'price':
             178.25}, {'time': datetime.now().strftime('%H:%M'), 'action':
             'BUY', 'ticker': 'NVDA', 'quantity': 8, 'price': 485.75}],
             'total_trades': 156, 'win_rate': 0.65, 'avg_return': 0.023,
             'sharpe_ratio': 1.45, 'max_drawdown': -0.08}
 
-    def _get_performance_report(self) ->Dict[str, Any]:
+    def _get_performance_report(self) ->dict[str, Any]:
         """Get performance report from monitor or fallback data"""
         if self.performance_monitor:
             try:

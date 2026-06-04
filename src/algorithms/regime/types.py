@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class MarketRegime(Enum):
     """Режими ринку з додатковими станами"""
     TRENDING_UP = 'TRENDING_UP'

@@ -4,13 +4,13 @@ and small helper extractors used by `stage_4_modeling.ModelingStage`.
 """
 
 import datetime
-from typing import Any, Dict, List
+from typing import Any
 
 import pandas as pd
 import psutil
 
 
-def get_context_fingerprint(ticker_result: Dict[str, Any]) -> str:
+def get_context_fingerprint(ticker_result: dict[str, Any]) -> str:
     return ticker_result.get("context_fingerprint", "unknown")
 
 
@@ -23,7 +23,7 @@ def log_training_debug_info(logger, debug_info) -> None:
     logger.info(f"   First 5 features: {debug_info.selected_features[:5]}")
 
 
-def create_champion_info(brain: Dict[str, Any], config) -> Dict[str, Any]:
+def create_champion_info(brain: dict[str, Any], config) -> dict[str, Any]:
     context_map = {
         "context_fingerprint": config.context_fingerprint,
         "market_regime": config.market_regime,
@@ -48,7 +48,7 @@ def create_champion_info(brain: Dict[str, Any], config) -> Dict[str, Any]:
     }
 
 
-def log_to_diary(diary_path, info: Dict[str, Any], tf: str) -> None:
+def log_to_diary(diary_path, info: dict[str, Any], tf: str) -> None:
     entry = {
         "timestamp": info["timestamp"],
         "ticker": info["ticker"],
@@ -63,7 +63,7 @@ def log_to_diary(diary_path, info: Dict[str, Any], tf: str) -> None:
     pd.DataFrame([entry]).to_csv(diary_path, mode="a", header=False, index=False)
 
 
-def get_light_model_training_data(prepared_data: Dict[str, Any]):
+def get_light_model_training_data(prepared_data: dict[str, Any]):
     X_train = prepared_data.get("light_models", {}).get("X_train")
     y_train = prepared_data.get("light_models", {}).get("y_train")
     X_test = prepared_data.get("light_models", {}).get("X_test")
@@ -79,5 +79,5 @@ def determine_task_type(target_name: str) -> str:
     return "regression" if "return" in target_name or "price" in target_name else "classification"
 
 
-def get_light_model_types() -> List[str]:
+def get_light_model_types() -> list[str]:
     return ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]

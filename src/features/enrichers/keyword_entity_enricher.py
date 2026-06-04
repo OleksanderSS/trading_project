@@ -1,10 +1,12 @@
+from typing import Any
+
 import pandas as pd
-import logging
-from typing import Dict, Any, Optional, List
-from src.features.enrichers.base import BaseEnricher
-from src.features.nlp.extractors.keyword_extractor import KeywordExtractor
-from src.features.nlp.extractors.entity_extractor import EntityExtractor
+
 from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
+from src.features.nlp.extractors.entity_extractor import EntityExtractor
+from src.features.nlp.extractors.keyword_extractor import KeywordExtractor
+
 logger = ProjectLogger.get_logger('KeywordEntityEnricher')
 DATETIME64_NS = 'datetime64[ns]'
 TEXT_COLUMNS = ['title', 'text', 'description', 'content']
@@ -18,7 +20,7 @@ class KeywordEntityEnricher(BaseEnricher):
     Extracts keywords and named entities, then aggregates them per timestamp.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         """Initialize with optional config from FeatureOrchestrator."""
         super().__init__()
         self.config = config or {}
@@ -27,7 +29,7 @@ class KeywordEntityEnricher(BaseEnricher):
         entity_config = self.config.get('entities', {'spacy_model':
             'en_core_web_sm', 'disable_components': ['parser', 'lemmatizer',
             'attribute_ruler']})
-        self.entity_extractor: Optional[EntityExtractor] = None
+        self.entity_extractor: EntityExtractor | None = None
         try:
             self.entity_extractor = EntityExtractor(entity_config)
         except Exception as e:
@@ -96,7 +98,7 @@ class KeywordEntityEnricher(BaseEnricher):
             return False
         return True
 
-    def _find_text_column(self, news_df: pd.DataFrame) ->Optional[str]:
+    def _find_text_column(self, news_df: pd.DataFrame) ->str | None:
         """Find text column in news DataFrame."""
         for col in TEXT_COLUMNS:
             if col in news_df.columns:
@@ -106,7 +108,7 @@ class KeywordEntityEnricher(BaseEnricher):
             )
         return None
 
-    def _find_time_column(self, news_df: pd.DataFrame) ->Optional[str]:
+    def _find_time_column(self, news_df: pd.DataFrame) ->str | None:
         """Find time column in news DataFrame."""
         for col in TIME_COLUMNS:
             if col in news_df.columns:
@@ -146,25 +148,25 @@ class KeywordEntityEnricher(BaseEnricher):
         """Extract keywords and entities from news."""
         # Пре-фільтрація: обробляємо лише заповнені тексти
         mask = news_copy[text_col].notna() & (news_copy[text_col] != '')
-        
+
         # Keywords: використовують lru_cache, apply все ще прийнятний, але зробимо чистішим
         news_copy['keywords'] = ''
         news_copy.loc[mask, 'keywords'] = news_copy.loc[mask, text_col].apply(
             lambda x: self.keyword_extractor.extract(x))
         news_copy['keyword_count'] = news_copy['keywords'].apply(len)
-        
+
         # Entities: використовуємо batch-обробку
         news_copy['entities'] = ''
         news_copy['entity_count'] = 0
-        
+
         if self.entity_extractor and mask.any():
             texts = news_copy.loc[mask, text_col].tolist()
             entities_batch = self.entity_extractor.extract_batch(texts, entity_types=['ORG', 'GPE', 'PERSON'])
-            
+
             # Виправлення: Присвоюємо список об'єктів як Series, щоб Pandas не сприймав це як 2D-масив
             news_copy.loc[mask, 'entities'] = pd.Series(entities_batch, index=news_copy.index[mask])
             news_copy.loc[mask, 'entity_count'] = [len(ent) for ent in entities_batch]
-            
+
         return news_copy
 
     def _aggregate_by_time(self, news_copy: pd.DataFrame, time_col: str

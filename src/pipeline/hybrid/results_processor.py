@@ -2,12 +2,12 @@
 Results Processor: Handles loading, converting, and processing results from Colab and local training.
 Extracted from HybridOrchestrator to improve code organization and testability.
 """
-import logging
 import json
+import logging
 import os
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
-from datetime import datetime
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -17,7 +17,7 @@ class ResultsProcessor:
     def __init__(self):
         self.logger = ProjectLogger.get_logger(__name__)
 
-    def load_colab_results(self, batch_name: str, output_dir: Path) ->Dict[
+    def load_colab_results(self, batch_name: str, output_dir: Path) ->dict[
         str, Any]:
         """Loads training results from Colab."""
         batch_dir = self._find_batch_directory(batch_name, output_dir)
@@ -35,7 +35,7 @@ class ResultsProcessor:
         return results
 
     def _find_batch_directory(self, batch_name: str, output_dir: Path
-        ) ->Optional[Path]:
+        ) ->Path | None:
         """Find the batch directory, trying similar names if exact match not found."""
         eff_batch_name = batch_name.replace('target_target_', 'target_')
         if self.logger.isEnabledFor(logging.DEBUG):
@@ -70,7 +70,7 @@ class ResultsProcessor:
             raise
         return None
 
-    def _find_results_file(self, batch_dir: Path) ->Optional[Path]:
+    def _find_results_file(self, batch_dir: Path) ->Path | None:
         """Find the results file, trying summary first then regular results."""
         files_to_try = [batch_dir / 'colab_results_summary.json', batch_dir /
             'colab_results.json', batch_dir / 'results.json']
@@ -79,10 +79,10 @@ class ResultsProcessor:
                 return file_path
         return None
 
-    def _load_results_json(self, results_path: Path) ->Dict[str, Any]:
+    def _load_results_json(self, results_path: Path) ->dict[str, Any]:
         """Load results from JSON file."""
         try:
-            with open(results_path, 'r', encoding='utf-8') as f:
+            with open(results_path, encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
             self.logger.error(
@@ -113,8 +113,8 @@ class ResultsProcessor:
                 return str(local_path)
         return str(batch_dir / fname)
 
-    def build_models_metadata(self, colab_results: Dict[str, Any],
-        light_results: Optional[Dict[str, Any]]) ->Dict[str, Any]:
+    def build_models_metadata(self, colab_results: dict[str, Any],
+        light_results: dict[str, Any] | None) ->dict[str, Any]:
         """Build models metadata from colab and light results."""
         models_metadata = {}
         if 'models_metadata' in colab_results:
@@ -127,13 +127,13 @@ class ResultsProcessor:
         return models_metadata
 
     def _update_selected_features_from_ticker_results(self, models_metadata:
-        Dict[str, Any], colab_results: Dict[str, Any]) ->None:
+        dict[str, Any], colab_results: dict[str, Any]) ->None:
         """Update selected features from ticker results in colab results."""
         if 'ticker_results' not in colab_results:
             return
         ticker_results = colab_results['ticker_results']
         for ticker, ticker_data in ticker_results.items():
-            for timeframe, timeframe_data in ticker_data.get('timeframes', {}
+            for _timeframe, timeframe_data in ticker_data.get('timeframes', {}
                 ).items():
                 for target, target_data in timeframe_data.get('results', {}
                     ).items():
@@ -142,8 +142,8 @@ class ResultsProcessor:
                         self._update_model_selected_features(models_metadata,
                             ticker, target, model, model_data)
 
-    def _update_model_selected_features(self, models_metadata: Dict[str,
-        Any], ticker: str, target: str, model: str, model_data: Dict[str, Any]
+    def _update_model_selected_features(self, models_metadata: dict[str,
+        Any], ticker: str, target: str, model: str, model_data: dict[str, Any]
         ) ->None:
         """Update selected features for a specific model."""
         key = f'{ticker}_{target}_{model}'
@@ -153,7 +153,7 @@ class ResultsProcessor:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'✅ Updated selected features for {key}')
 
-    def extract_batch_name_from_path(self, path_str: str) ->Optional[str]:
+    def extract_batch_name_from_path(self, path_str: str) ->str | None:
         """Extract batch name from path."""
         parts = Path(path_str.replace('/', os.sep)).parts
         if 'accumulated' in parts:

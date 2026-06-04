@@ -2,14 +2,15 @@
 Regime Winner Analyzer - Analyzes Model Winner Consistency Across Market Regimes
 Tracks and analyzes model performance patterns across different market regimes.
 """
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
-import logging
-from collections import defaultdict
 import json
+from collections import defaultdict
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger('RegimeWinnerAnalyzer')
@@ -20,7 +21,7 @@ class RegimeWinnerAnalyzer:
     Аналізує стабільність переможців серед моделей у різних режимах ринку.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Ініціалізує RegimeWinnerAnalyzer.
         """
@@ -71,7 +72,7 @@ class RegimeWinnerAnalyzer:
 
         self.regime_performance_history = []
         self.regime_switch_points = []
-        
+
         self.storage_path = Path(self.config.get('storage_path', 'data/analysis/regime_winners'))
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
@@ -81,9 +82,11 @@ class RegimeWinnerAnalyzer:
     def _init_components(self):
         """Ініціалізує модульні компоненти."""
         from .regime import (
-            MarketRegimeDetector, RegimeMetrics, 
-            RegimePatternAnalyzer, RegimeStabilityAnalyzer,
-            RegimeRecommendationEngine
+            MarketRegimeDetector,
+            RegimeMetrics,
+            RegimePatternAnalyzer,
+            RegimeRecommendationEngine,
+            RegimeStabilityAnalyzer,
         )
         self.detector = MarketRegimeDetector(self.REGIME_TYPES)
         self.metrics_calculator = RegimeMetrics()
@@ -91,10 +94,10 @@ class RegimeWinnerAnalyzer:
         self.stability_analyzer = RegimeStabilityAnalyzer()
         self.recommendation_engine = RegimeRecommendationEngine(self.REGIME_TYPES)
 
-    async def analyze_regime_consistency(self, 
-                                      model_results: Dict[str, Any], 
-                                      market_data: pd.DataFrame, 
-                                      current_time: Optional[datetime] = None) -> Dict[str, Any]:
+    async def analyze_regime_consistency(self,
+                                      model_results: dict[str, Any],
+                                      market_data: pd.DataFrame,
+                                      current_time: datetime | None = None) -> dict[str, Any]:
         """
         Аналізує консистентність переможців.
         """
@@ -103,23 +106,23 @@ class RegimeWinnerAnalyzer:
 
         try:
             current_regime = self.detector.detect_regime(market_data)
-            
+
             regime_winners = await self._analyze_winners_by_regime(
                 model_results, market_data, current_regime
             )
-            
+
             consistency_metrics = await self._calculate_consistency_metrics(
                 regime_winners, current_regime
             )
-            
+
             winner_patterns = self.pattern_analyzer.analyze_winner_patterns(
                 regime_winners, current_regime
             )
-            
+
             switching_analysis = await self._detect_regime_switching(
                 current_regime, current_time
             )
-            
+
             recommendations = self.recommendation_engine.generate_regime_recommendations(
                 current_regime, consistency_metrics, winner_patterns
             )
@@ -143,10 +146,10 @@ class RegimeWinnerAnalyzer:
             self.logger.error(f"Error in regime consistency analysis: {e}", exc_info=True)
             return {'status': 'error', 'error': str(e), 'timestamp': current_time}
 
-    async def _analyze_winners_by_regime(self, 
-                                      model_results: Dict[str, Any], 
-                                      market_data: pd.DataFrame, 
-                                      current_regime: str) -> Dict[str, Any]:
+    async def _analyze_winners_by_regime(self,
+                                      model_results: dict[str, Any],
+                                      market_data: pd.DataFrame,
+                                      current_regime: str) -> dict[str, Any]:
         """Аналізує лідерів для поточного режиму."""
         regime_analysis = {
             'current_regime': current_regime,
@@ -168,17 +171,17 @@ class RegimeWinnerAnalyzer:
                         }
 
             sorted_winners = sorted(
-                model_performance.items(), 
-                key=lambda x: x[1]['performance_score'], 
+                model_performance.items(),
+                key=lambda x: x[1]['performance_score'],
                 reverse=True
             )
 
             regime_analysis['model_performance'] = model_performance
             regime_analysis['winner_ranking'] = [
-                {'model_name': name, 'performance_score': info['performance_score']} 
+                {'model_name': name, 'performance_score': info['performance_score']}
                 for name, info in sorted_winners
             ]
-            
+
             regime_analysis['regime_specific_metrics'] = {
                 'score_gap': self.metrics_calculator.calculate_score_gap(sorted_winners)
             }
@@ -189,14 +192,14 @@ class RegimeWinnerAnalyzer:
             self.logger.error(f"Error analyzing winners: {e}")
             return {'current_regime': current_regime, 'model_performance': {}, 'winner_ranking': [], 'regime_specific_metrics': {}, 'error': str(e)}
 
-    async def _calculate_consistency_metrics(self, 
-                                          regime_winners: Dict[str, Any], 
-                                          current_regime: str) -> Dict[str, Any]:
+    async def _calculate_consistency_metrics(self,
+                                          regime_winners: dict[str, Any],
+                                          current_regime: str) -> dict[str, Any]:
         """Розраховує метрики стабільності результатів."""
         history = [r for r in self.regime_performance_history if r['regime'] == current_regime]
-        
+
         model_consistency = self.pattern_analyzer.calculate_model_consistency(history)
-        
+
         overall_consistency = np.mean(list(model_consistency.values())) if model_consistency else 1.0
 
         return {
@@ -206,7 +209,7 @@ class RegimeWinnerAnalyzer:
             'sample_count': len(history)
         }
 
-    async def _detect_regime_switching(self, current_regime: str, current_time: datetime) -> Dict[str, Any]:
+    async def _detect_regime_switching(self, current_regime: str, current_time: datetime) -> dict[str, Any]:
         """Аналізує зміни режимів ринку."""
         if self.regime_performance_history and self.regime_performance_history[-1]['regime'] != current_regime:
             switch = {
@@ -218,7 +221,7 @@ class RegimeWinnerAnalyzer:
             self.logger.info(f"🔄 Market regime switch detected: {switch['from_regime']} -> {switch['to_regime']}")
 
         recent_history = self.regime_performance_history[-50:]
-        
+
         return {
             'current_regime': current_regime,
             'stability_index': self.stability_analyzer.calculate_regime_stability(recent_history),
@@ -226,13 +229,13 @@ class RegimeWinnerAnalyzer:
             'avg_stable_period': self.stability_analyzer.calculate_average_stable_period(self.regime_switch_points)
         }
 
-    async def _generate_regime_recommendations(self, 
-                                            current_regime: str, 
-                                            consistency_metrics: Dict[str, Any], 
-                                            winner_patterns: Dict[str, Any]) -> List[str]:
+    async def _generate_regime_recommendations(self,
+                                            current_regime: str,
+                                            consistency_metrics: dict[str, Any],
+                                            winner_patterns: dict[str, Any]) -> list[str]:
         """Генерує рекомендації на основі аналізу режимів."""
         recommendations = []
-        
+
         consistency = consistency_metrics.get('overall_consistency', 0.0)
         if consistency < 0.5:
             recommendations.append(f"⚠️ Low model consistency ({consistency:.2f}). Consider ensemble methods.")
@@ -248,7 +251,7 @@ class RegimeWinnerAnalyzer:
 
         return recommendations
 
-    def _store_analysis_results(self, results: Dict[str, Any]) -> None:
+    def _store_analysis_results(self, results: dict[str, Any]) -> None:
         """Зберігає результати аналізу."""
         try:
             # Update history
@@ -262,17 +265,17 @@ class RegimeWinnerAnalyzer:
 
             timestamp = results['timestamp'].strftime('%Y%m%d_%H%M%S')
             filepath = self.storage_path / f"regime_analysis_{timestamp}.json"
-            
+
             with open(filepath, 'w') as f:
                 json.dump(results, f, indent=2, default=str)
         except Exception as e:
             self.logger.error(f"Error storing results: {e}")
 
-    def get_regime_summary(self, days: int = 30) -> Dict[str, Any]:
+    def get_regime_summary(self, days: int = 30) -> dict[str, Any]:
         """Повертає підсумок аналізу за останні дні."""
         cutoff = datetime.now() - timedelta(days=days)
         recent_history = [r for r in self.regime_performance_history if r['timestamp'] >= cutoff]
-        
+
         return {
             'days': days,
             'total_records': len(recent_history),
@@ -280,7 +283,7 @@ class RegimeWinnerAnalyzer:
             'regime_stability': self.stability_analyzer.calculate_regime_stability(recent_history)
         }
 
-    def _calculate_distribution(self, history: List[Dict[str, Any]]) -> Dict[str, float]:
+    def _calculate_distribution(self, history: list[dict[str, Any]]) -> dict[str, float]:
         if not history: return {}
         counts = defaultdict(int)
         for r in history:

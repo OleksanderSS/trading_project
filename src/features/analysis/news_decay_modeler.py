@@ -2,12 +2,13 @@
 News Decay Modeler - ML-Optimized News Impact Decay Modeling
 Optimizes news impact decay functions using machine learning techniques.
 """
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 from src.features.analysis.decay.decay_function_registry import DecayFunctionRegistry
@@ -20,27 +21,27 @@ logger = ProjectLogger.get_logger('NewsDecayModeler')
 class NewsDecayModeler:
     """
     ML-based news impact decay optimization and modeling.
-    
+
     This modeler optimizes news impact decay through:
     - Multiple decay function types (exponential, linear, logarithmic, step)
     - Hyperparameter optimization for decay rates
     - News-type specific decay modeling
     - Time-decay validation against actual market impact
     - Automatic model selection based on performance
-    
+
     Critical for accurate news impact assessment in trading systems.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize NewsDecayModeler.
-        
+
         Args:
             config: Configuration dictionary for decay modeling
         """
         self.logger = logger
         self.config = config or {}
-        
+
         # Initialize modular components
         self.decay_registry = DecayFunctionRegistry()
         self.model_fitter = DecayModelFitter(
@@ -49,89 +50,89 @@ class NewsDecayModeler:
         self.decay_predictor = DecayPredictor(
             self.decay_registry.get_all_decay_functions()
         )
-        
+
         # Configuration
         self.validation_window_hours = self.config.get('validation_window_hours', 72)
         self.storage_path = Path(self.config.get('storage_path', 'data/analysis/news_decay'))
         self.storage_path.mkdir(parents=True, exist_ok=True)
-        
+
         # State
-        self.trained_models: Dict[str, Any] = {}
-        self.decay_parameters: Dict[str, Any] = {}
-        
+        self.trained_models: dict[str, Any] = {}
+        self.decay_parameters: dict[str, Any] = {}
+
         self.logger.info('✅ NewsDecayModeler initialized with modular components')
 
-    async def fit_optimal_decay_model(self, 
+    async def fit_optimal_decay_model(self,
                                        news_data: pd.DataFrame,
-                                       market_returns: pd.DataFrame, 
-                                       news_type_column: str = 'news_type') -> Dict[str, Any]:
+                                       market_returns: pd.DataFrame,
+                                       news_type_column: str = 'news_type') -> dict[str, Any]:
         """
         Fit optimal decay model using machine learning optimization.
-        
+
         Args:
             news_data: DataFrame with news timestamps and impact scores
             market_returns: DataFrame with actual market returns
             news_type_column: Column name for news type classification
-            
+
         Returns:
             Dict with fitted decay models and performance metrics
         """
         self.logger.info(f'🧠 Fitting optimal decay model for {len(news_data)} news items')
-        
-        results: Dict[str, Any] = {
+
+        results: dict[str, Any] = {
             'fitted_models': {},
             'performance_metrics': {},
             'best_overall_model': None,
             'news_type_models': {},
             'optimization_summary': {}
         }
-        
+
         try:
             prepared_data = await self._prepare_modeling_data(news_data, market_returns, news_type_column)
             if prepared_data['error']:
                 return prepared_data
-            
+
             news_types = self.decay_registry.get_all_news_types()
-            
+
             for news_type in news_types.keys():
                 if news_type in prepared_data['news_by_type']:
                     type_results = await self._fit_news_type_model(
-                        prepared_data['news_by_type'][news_type], 
+                        prepared_data['news_by_type'][news_type],
                         news_type
                     )
                     results['news_type_models'][news_type] = type_results
                     if isinstance(results['fitted_models'], dict) and isinstance(type_results.get('models'), dict):
                         results['fitted_models'].update(type_results['models'])
-            
+
             best_model = self.model_fitter.select_best_overall_model(results['fitted_models'] or {})
             results['best_overall_model'] = best_model
             results['optimization_summary'] = await self._generate_optimization_summary(results)
-            
+
             if isinstance(results['fitted_models'], dict):
                 self.trained_models.update(results['fitted_models'])
-            
+
             self._store_trained_models(results)
-            
+
             self.logger.info(f"✅ Optimal decay model fitting complete. Best model: {best_model['model_name']}")
             return results
         except Exception as e:
             self.logger.error(f'Error fitting optimal decay model: {e}', exc_info=True)
             return {'status': 'error', 'error': str(e)}
 
-    async def _prepare_modeling_data(self, 
+    async def _prepare_modeling_data(self,
                                     news_data: pd.DataFrame,
-                                    market_returns: pd.DataFrame, 
-                                    news_type_column: str) -> Dict[str, Any]:
+                                    market_returns: pd.DataFrame,
+                                    news_type_column: str) -> dict[str, Any]:
         """Prepare data for decay modeling."""
         try:
             if 'timestamp' not in news_data.columns or 'impact_score' not in news_data.columns:
                 return {'error': 'Missing required columns in news_data'}
             if 'timestamp' not in market_returns.columns or 'returns' not in market_returns.columns:
                 return {'error': 'Missing required columns in market_returns'}
-            
+
             news_data['timestamp'] = pd.to_datetime(news_data['timestamp'])
             market_returns['timestamp'] = pd.to_datetime(market_returns['timestamp'])
-            
+
             news_by_type = {}
             if news_type_column in news_data.columns:
                 news_types = self.decay_registry.get_all_news_types()
@@ -139,7 +140,7 @@ class NewsDecayModeler:
                     type_news = news_data[news_data[news_type_column] == news_type].copy()
                     if not type_news.empty:
                         news_by_type[news_type] = type_news
-            
+
             aligned_data = []
             for _, news_row in news_data.iterrows():
                 news_time = news_row['timestamp']
@@ -148,67 +149,67 @@ class NewsDecayModeler:
                 start_time = news_time - time_window
                 end_time = news_time + time_window
                 relevant_returns = market_returns[
-                    (market_returns['timestamp'] >= start_time) & 
+                    (market_returns['timestamp'] >= start_time) &
                     (market_returns['timestamp'] <= end_time)
                 ].copy()
-                
+
                 if not relevant_returns.empty:
                     relevant_returns['hours_since_news'] = (relevant_returns['timestamp'] - news_time).dt.total_seconds() / 3600
                     relevant_returns['news_impact'] = news_impact
                     aligned_data.append(relevant_returns)
-            
+
             if not aligned_data:
                 return {'error': 'No aligned data found between news and market returns'}
-            
+
             combined_data = pd.concat(aligned_data, ignore_index=True)
             return {'combined_data': combined_data, 'news_by_type': news_by_type, 'error': None}
         except Exception as e:
             self.logger.error(f'Error preparing modeling data: {e}')
             return {'error': str(e)}
 
-    async def _fit_news_type_model(self, news_data: pd.DataFrame, news_type: str) -> Dict[str, Any]:
+    async def _fit_news_type_model(self, news_data: pd.DataFrame, news_type: str) -> dict[str, Any]:
         """Fit decay model for specific news type."""
         type_results = {'news_type': news_type, 'models': {}, 'best_model': None, 'performance_comparison': {}}
-        
+
         try:
             news_config = self.decay_registry.get_news_type_config(news_type)
-            typical_function = news_config['typical_function']
+            news_config['typical_function']
             typical_hours = float(news_config['typical_decay_hours'])
-            
+
             decay_functions = self.decay_registry.get_all_decay_functions()
-            
+
             for function_name, function_config in decay_functions.items():
                 model_result = self.model_fitter.fit_decay_function(
                     news_data, function_name, function_config, typical_hours
                 )
-                
+
                 if isinstance(type_results.get('models'), dict):
                     type_results['models'][function_name] = model_result
-                
+
                 if isinstance(type_results.get('performance_comparison'), dict):
                     type_results['performance_comparison'][function_name] = model_result.get('performance', {})
-            
+
             best_model = self.model_fitter.select_best_function_for_type(type_results.get('models', {}))
             type_results['best_model'] = best_model
-            
+
             models_count = len(type_results.get('models', {}))
             self.logger.info(f'📊 Fitted {models_count} decay models for {news_type}')
-            
+
             return type_results
         except Exception as e:
             self.logger.error(f'Error fitting news type model for {news_type}: {e}')
             return {'news_type': news_type, 'models': {}, 'best_model': None, 'performance_comparison': {}, 'error': str(e)}
 
-    async def _generate_optimization_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    async def _generate_optimization_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """Generate comprehensive optimization summary."""
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             'total_models_fitted': len(results.get('fitted_models', {})),
             'news_types_analyzed': len(results.get('news_type_models', {})),
             'best_overall_function': results.get('best_overall_model', {}).get('function_name'),
             'performance_ranking': {},
             'recommendations': []
         }
-        
+
         try:
             all_models = []
             for function_name, model_info in results['fitted_models'].items():
@@ -220,14 +221,14 @@ class NewsDecayModeler:
                         'mae': perf['mae'],
                         'r2': perf['r2']
                     })
-            
+
             all_models.sort(key=lambda x: x['r2'], reverse=True)
-            
+
             summary['performance_ranking'] = {
                 'top_models': all_models[:5],
                 'worst_models': all_models[-3:] if len(all_models) > 3 else []
             }
-            
+
             if all_models:
                 best_r2 = all_models[0]['r2']
                 if best_r2 > 0.7:
@@ -242,7 +243,7 @@ class NewsDecayModeler:
                     summary['recommendations'].append(
                         '❌ Poor model fit (R2 < 0.5). Consider alternative decay functions.'
                     )
-                
+
                 best_function = all_models[0]['function_name']
                 if best_function == 'exponential':
                     summary['recommendations'].append(
@@ -256,13 +257,13 @@ class NewsDecayModeler:
                     summary['recommendations'].append(
                         '❌ Poor model fit. Consider alternative decay functions.'
                     )
-            
+
             return summary
         except Exception as e:
             self.logger.error(f'Error generating optimization summary: {e}')
             return summary
 
-    def _store_trained_models(self, results: Dict[str, Any]) ->None:
+    def _store_trained_models(self, results: dict[str, Any]) ->None:
         """Store trained decay models for future use."""
         try:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -276,18 +277,18 @@ class NewsDecayModeler:
         except Exception as e:
             self.logger.error(f'Failed to store trained models: {e}')
 
-    async def predict_news_impact(self, 
+    async def predict_news_impact(self,
                                   news_data: pd.DataFrame,
-                                  model_name: Optional[str] = None,
-                                  news_type: Optional[str] = None) -> pd.DataFrame:
+                                  model_name: str | None = None,
+                                  news_type: str | None = None) -> pd.DataFrame:
         """
         Predict news impact using trained decay models.
-        
+
         Args:
             news_data: DataFrame with news timestamps
             model_name: Specific decay model to use (uses best if None)
             news_type: News type for model selection
-            
+
         Returns:
             DataFrame with predicted impact over time
         """
@@ -299,7 +300,7 @@ class NewsDecayModeler:
             self.decay_parameters
         )
 
-    def get_model_performance_summary(self, days: int=30) ->Dict[str, Any]:
+    def get_model_performance_summary(self, days: int=30) ->dict[str, Any]:
         """Get summary of model performance over time."""
         try:
             cutoff_time = datetime.now() - timedelta(days=days)
@@ -311,7 +312,7 @@ class NewsDecayModeler:
             performance_history = []
             for file_path in recent_files:
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(file_path) as f:
                         data = json.load(f)
                     if 'best_overall_model' in data and data[
                         'best_overall_model']:
@@ -334,7 +335,7 @@ class NewsDecayModeler:
                     p and p[metric] is not None]
                 if len(values) >= 2:
                     trend = np.polyfit(range(len(values)), values, 1)[0]
-                    performance_trends[metric] = {'trend': 'improving' if 
+                    performance_trends[metric] = {'trend': 'improving' if
                         trend < 0 else 'degrading', 'trend_slope': trend,
                         'latest_value': values[-1], 'average_value': np.
                         mean(values)}
@@ -346,8 +347,8 @@ class NewsDecayModeler:
             self.logger.error(f'Error getting model performance summary: {e}')
             return {'error': str(e)}
 
-    def _calculate_model_stability(self, performance_history: List[Dict[str,
-        Any]]) ->Dict[str, float]:
+    def _calculate_model_stability(self, performance_history: list[dict[str,
+        Any]]) ->dict[str, float]:
         """Calculate model stability metrics."""
         if len(performance_history) < 2:
             return {}
@@ -363,23 +364,23 @@ class NewsDecayModeler:
         return stability_metrics
 
 
-def get_news_decay_modeler(config: Optional[Dict[str, Any]]=None
+def get_news_decay_modeler(config: dict[str, Any] | None=None
     ) ->NewsDecayModeler:
     """Factory function to get NewsDecayModeler instance."""
     return NewsDecayModeler(config)
 
 
 async def fit_news_decay_model_quick(news_data: pd.DataFrame,
-    market_returns: pd.DataFrame, config: Optional[Dict[str, Any]]=None
-    ) ->Dict[str, Any]:
+    market_returns: pd.DataFrame, config: dict[str, Any] | None=None
+    ) ->dict[str, Any]:
     """
     Quick news decay model fitting.
-    
+
     Args:
         news_data: News data with timestamps and impact scores
         market_returns: Market returns data
         config: Configuration dictionary
-        
+
     Returns:
         Fitted decay model results
     """

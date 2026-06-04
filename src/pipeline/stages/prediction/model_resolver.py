@@ -2,11 +2,12 @@
 ModelResolver: handles all model-path resolution and loading logic
 extracted from PredictionStage to reduce file size.
 """
+import json
 import logging
 import os
-import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -22,7 +23,7 @@ class ModelResolver:
         self.ACCUMULATION_OUTPUT_DIR_CONFIG = 'system.accumulation.output_dir'
         self.DEFAULT_ACCUMULATION_DIR = 'data/colab/accumulated'
 
-    def check_local_models(self, models_meta: Dict[str, Any]) ->bool:
+    def check_local_models(self, models_meta: dict[str, Any]) ->bool:
         """Check if models are available locally."""
         for context_id, meta in models_meta.items():
             model_path = meta.get('model_path', '')
@@ -34,7 +35,7 @@ class ModelResolver:
                 return True
         return False
 
-    def log_model_status(self, models_meta: Dict[str, Any]) ->None:
+    def log_model_status(self, models_meta: dict[str, Any]) ->None:
         """Log model status information."""
         self.logger.warning(
             '⚠️ All models are from Colab (not available locally).')
@@ -46,8 +47,8 @@ class ModelResolver:
                 f"   - {context_id}: model_path='{model_path}', model_type='{model_type}'"
                 )
 
-    def resolve_batch_directory(self, models_meta: Dict[str, Any], kwargs:
-        Optional[Dict[str, Any]]=None) ->Optional[Path]:
+    def resolve_batch_directory(self, models_meta: dict[str, Any], kwargs:
+        dict[str, Any] | None=None) ->Path | None:
         """Resolve batch directory from kwargs batch_name or model paths."""
         base_dir = Path(self.config_manager.get(self.
             ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
@@ -58,8 +59,8 @@ class ModelResolver:
                 if batch_dir.exists():
                     self.logger.info(
                         f'✅ Resolved batch_dir from batch_name: {batch_dir}')
-                    return cast(Optional[Path], batch_dir)
-        for context_id, meta in models_meta.items():
+                    return cast(Path | None, batch_dir)
+        for _context_id, meta in models_meta.items():
             model_path = meta.get('model_path', '')
             if model_path:
                 model_path_str = model_path.replace('/', os.sep)
@@ -71,7 +72,7 @@ class ModelResolver:
                             self.logger.info(
                                 f'✅ Resolved batch_dir from model_path: {batch_dir}'
                                 )
-                            return cast(Optional[Path], batch_dir)
+                            return cast(Path | None, batch_dir)
         if base_dir.exists():
             subdirs = [d for d in base_dir.iterdir() if d.is_dir()]
             if subdirs:
@@ -80,7 +81,7 @@ class ModelResolver:
                 return chosen
         return None
 
-    def update_local_model_paths(self, models_meta: Dict[str, Any],
+    def update_local_model_paths(self, models_meta: dict[str, Any],
         batch_dir: Path) ->bool:
         """Update model paths to use local files found in batch_dir."""
         model_extensions = {'.keras', '.pkl', '.h5', '.pt', '.joblib'}
@@ -122,8 +123,7 @@ class ModelResolver:
         self.logger.info(f'📊 Mapped model paths: {mapped}/{len(models_meta)}')
         return has_local_models
 
-    def load_available_models(self, context_id: str, models_meta: Optional[
-        Dict[str, Any]]=None) ->Dict[str, Any]:
+    def load_available_models(self, context_id: str, models_meta: dict[str, Any] | None=None) ->dict[str, Any]:
         """Load all available models for a context."""
         models_meta = models_meta or {}
         direct_result = self._try_load_direct_model(context_id, models_meta)
@@ -135,18 +135,18 @@ class ModelResolver:
         return self._search_and_load_models(batch_dir, search_patterns,
             context_id, models_meta)
 
-    def load_models_metadata_from_disk(self, kwargs: Dict[str, Any]) ->Dict[
+    def load_models_metadata_from_disk(self, kwargs: dict[str, Any]) ->dict[
         str, Any]:
         """Load models_metadata from disk if not provided in pipeline kwargs."""
-        models_metadata: Dict[str, Any] = {}
+        models_metadata: dict[str, Any] = {}
         batch_dir = self._resolve_batch_directory_from_kwargs(kwargs)
         if batch_dir:
             self._load_light_models_from_disk(batch_dir, models_metadata)
             self._load_heavy_models_from_disk(batch_dir, models_metadata)
         return models_metadata
 
-    def _try_load_direct_model(self, context_id: str, models_meta: Dict[str,
-        Any]) ->Optional[Dict[str, Any]]:
+    def _try_load_direct_model(self, context_id: str, models_meta: dict[str,
+        Any]) ->dict[str, Any] | None:
         if context_id not in models_meta:
             return None
         model_path_str = models_meta[context_id].get('model_path', '')
@@ -171,7 +171,7 @@ class ModelResolver:
         return None
 
     def _resolve_batch_dir_from_context(self, context_id: str, models_meta:
-        Dict[str, Any]) ->Path:
+        dict[str, Any]) ->Path:
         if context_id in models_meta:
             model_path_str = models_meta[context_id].get('model_path', '')
             if model_path_str:
@@ -181,8 +181,7 @@ class ModelResolver:
         return Path(self.config_manager.get(self.
             ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
 
-    def _extract_batch_dir_from_path(self, model_path_str: str) ->Optional[Path
-        ]:
+    def _extract_batch_dir_from_path(self, model_path_str: str) ->Path | None:
         model_path_str = model_path_str.replace('/', '\\')
         parts = model_path_str.split('\\')
         if 'models' in parts:
@@ -195,7 +194,7 @@ class ModelResolver:
                 return base_dir / batch_name
         return None
 
-    def _get_model_search_patterns(self, context_id: str) ->List[str]:
+    def _get_model_search_patterns(self, context_id: str) ->list[str]:
         parts = context_id.split('_')
         if len(parts) >= 4:
             ticker = parts[0]
@@ -214,9 +213,9 @@ class ModelResolver:
         return [f'*{context_id}*.keras', f'*{context_id}*.pkl',
             f'*{context_id}*.pt', f'*{context_id}*.joblib']
 
-    def _search_and_load_models(self, batch_dir: Path, patterns: List[str],
-        context_id: str, models_meta: Dict[str, Any]) ->Dict[str, Any]:
-        loaded_models: Dict[str, Any] = {}
+    def _search_and_load_models(self, batch_dir: Path, patterns: list[str],
+        context_id: str, models_meta: dict[str, Any]) ->dict[str, Any]:
+        loaded_models: dict[str, Any] = {}
         self._read_runtime_params_if_exists(batch_dir)
         search_paths = self._get_models_search_paths(batch_dir)
         for search_path in search_paths:
@@ -226,23 +225,23 @@ class ModelResolver:
                 models_meta, loaded_models)
         return loaded_models
 
-    def _get_models_search_paths(self, batch_dir: Path) ->List[Path]:
+    def _get_models_search_paths(self, batch_dir: Path) ->list[Path]:
         models_root = Path(self.config_manager.get(self.
             ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
         system_models_path = self.config_manager.get_models_path()
         return [batch_dir / 'models', batch_dir, models_root / 'models',
             models_root, system_models_path]
 
-    def _search_patterns_in_path(self, search_path: Path, patterns: List[
-        str], context_id: str, models_meta: Dict[str, Any], loaded_models:
-        Dict[str, Any]) ->None:
+    def _search_patterns_in_path(self, search_path: Path, patterns: list[
+        str], context_id: str, models_meta: dict[str, Any], loaded_models:
+        dict[str, Any]) ->None:
         for pattern in patterns:
             for path in search_path.glob(pattern):
                 self._try_load_model_from_path(path, context_id,
                     models_meta, loaded_models)
 
     def _try_load_model_from_path(self, path: Path, context_id: str,
-        models_meta: Dict[str, Any], loaded_models: Dict[str, Any]) ->None:
+        models_meta: dict[str, Any], loaded_models: dict[str, Any]) ->None:
         try:
             cur_model_name = path.stem.replace(f'_{context_id}', '')
             model_meta = self._create_model_meta(context_id, models_meta,
@@ -256,8 +255,8 @@ class ModelResolver:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Failed to load model from {path}: {e}')
 
-    def _create_model_meta(self, context_id: str, models_meta: Dict[str,
-        Any], model_name: str, model_path: str) ->Dict[str, Any]:
+    def _create_model_meta(self, context_id: str, models_meta: dict[str,
+        Any], model_name: str, model_path: str) ->dict[str, Any]:
         return {'model_id': model_name, 'model_path': model_path,
             'model_type': models_meta.get(context_id, {}).get('model_type',
             model_name), 'ticker': models_meta.get(context_id, {}).get(
@@ -267,16 +266,16 @@ class ModelResolver:
         runtime_params_path = batch_dir / 'runtime_params.json'
         if runtime_params_path.exists():
             try:
-                with open(runtime_params_path, 'r') as f:
+                with open(runtime_params_path) as f:
                     runtime_params = json.load(f)
-                    _ = runtime_params.get('test_mode', {}).get('enabled', 
+                    _ = runtime_params.get('test_mode', {}).get('enabled',
                         False)
             except Exception as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Could not read runtime_params.json: {e}')
 
-    def _resolve_batch_directory_from_kwargs(self, kwargs: Dict[str, Any]
-        ) ->Optional[Path]:
+    def _resolve_batch_directory_from_kwargs(self, kwargs: dict[str, Any]
+        ) ->Path | None:
         batch_name = kwargs.get('batch_name')
         output_dir = Path(self.config_manager.get(
             'system.accumulation.output_dir', 'data/colab/accumulated'))
@@ -291,14 +290,14 @@ class ModelResolver:
         return None
 
     def _load_light_models_from_disk(self, batch_dir: Path, models_metadata:
-        Dict[str, Any]) ->None:
+        dict[str, Any]) ->None:
         light_results_files = list(batch_dir.glob(
             'light_models_results_*.json'))
         if light_results_files:
             latest_light = max(light_results_files, key=lambda p: p.stat().
                 st_mtime)
             try:
-                with open(latest_light, 'r') as f:
+                with open(latest_light) as f:
                     light_results = json.load(f)
                     light_meta = light_results.get('models_metadata', {})
                     models_metadata.update(light_meta)
@@ -310,11 +309,11 @@ class ModelResolver:
                 self.logger.warning(f'Error loading light models: {e}')
 
     def _load_heavy_models_from_disk(self, batch_dir: Path, models_metadata:
-        Dict[str, Any]) ->None:
+        dict[str, Any]) ->None:
         colab_summary_file = batch_dir / 'colab_results_summary.json'
         if colab_summary_file.exists():
             try:
-                with open(colab_summary_file, 'r') as f:
+                with open(colab_summary_file) as f:
                     colab_results = json.load(f)
                     if 'models_metadata' in colab_results:
                         heavy_meta = colab_results['models_metadata']
@@ -329,12 +328,12 @@ class ModelResolver:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Error loading colab models: {e}')
 
-    def _process_ticker_results_from_colab(self, colab_results: Dict[str,
-        Any], models_metadata: Dict[str, Any]) ->None:
+    def _process_ticker_results_from_colab(self, colab_results: dict[str,
+        Any], models_metadata: dict[str, Any]) ->None:
         ticker_results = colab_results.get('ticker_results', {})
         for ticker, ticker_data in ticker_results.items():
             timeframes = ticker_data.get('timeframes', {})
-            for tf, tf_data in timeframes.items():
+            for _tf, tf_data in timeframes.items():
                 results = tf_data.get('results', {})
                 for target, target_data in results.items():
                     models = target_data.get('models', {})

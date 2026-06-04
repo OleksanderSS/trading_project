@@ -13,32 +13,34 @@ Benefits:
 
 Usage:
     from src.utils.type_conversion import normalize_prediction, ensure_array
-    
+
     pred = normalize_prediction(model_output)  # Always returns float
     features = ensure_array(input_data)        # Always returns numpy array
 """
+import logging
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Any, Union, Optional
-import logging
+
 logger = logging.getLogger(__name__)
 
 
-def _handle_none_nan(pred: Any) ->Optional[float]:
+def _handle_none_nan(pred: Any) ->float | None:
     """Handle None and NaN values."""
     if pred is None or isinstance(pred, float) and np.isnan(pred):
         return 0.0
     return None
 
 
-def _convert_numeric_types(pred: Any) ->Optional[float]:
+def _convert_numeric_types(pred: Any) ->float | None:
     """Convert direct numeric types."""
     if isinstance(pred, (int, float)):
         return float(pred)
     return None
 
 
-def _convert_numpy_array(pred: Any) ->Optional[float]:
+def _convert_numpy_array(pred: Any) ->float | None:
     """Convert numpy arrays to float."""
     if isinstance(pred, np.ndarray):
         if pred.size == 0:
@@ -47,7 +49,7 @@ def _convert_numpy_array(pred: Any) ->Optional[float]:
     return None
 
 
-def _convert_list_tuple(pred: Any) ->Optional[float]:
+def _convert_list_tuple(pred: Any) ->float | None:
     """Convert lists and tuples to float."""
     if isinstance(pred, (list, tuple)):
         if not pred:
@@ -56,7 +58,7 @@ def _convert_list_tuple(pred: Any) ->Optional[float]:
     return None
 
 
-def _convert_pandas_series(pred: Any) ->Optional[float]:
+def _convert_pandas_series(pred: Any) ->float | None:
     """Convert pandas Series to float."""
     if isinstance(pred, pd.Series):
         if pred.empty:
@@ -65,7 +67,7 @@ def _convert_pandas_series(pred: Any) ->Optional[float]:
     return None
 
 
-def _convert_numpy_scalar(pred: Any) ->Optional[float]:
+def _convert_numpy_scalar(pred: Any) ->float | None:
     """Convert numpy scalars to float."""
     if hasattr(pred, 'item'):
         return float(pred.item())
@@ -99,24 +101,24 @@ def _handle_conversion_error(pred: Any, error: Exception, strict: bool
 def normalize_prediction(pred: Any, strict: bool=False) ->float:
     """
     Convert any prediction format to standardized float.
-    
+
     Handles common prediction formats from different models:
     - Single float/int values
     - Numpy arrays (takes last element)
     - Lists/tuples (takes last element)
     - Pandas Series (takes last element)
     - Numpy scalars
-    
+
     Args:
         pred: Prediction value in any supported format
         strict: If True, raise error for unknown types instead of returning 0.0
-    
+
     Returns:
         Prediction as float
-        
+
     Raises:
         TypeError: If strict=True and type cannot be converted
-        
+
     Examples:
         >>> normalize_prediction(0.75)
         0.75
@@ -149,22 +151,21 @@ def normalize_prediction(pred: Any, strict: bool=False) ->float:
         return _handle_conversion_error(pred, e, strict)
 
 
-def _convert_dataframe(data: Any) ->Optional[pd.DataFrame]:
+def _convert_dataframe(data: Any) ->pd.DataFrame | None:
     """Handle already DataFrame input."""
     if isinstance(data, pd.DataFrame):
         return data.copy()
     return None
 
 
-def _convert_dict_to_dataframe(data: Any) ->Optional[pd.DataFrame]:
+def _convert_dict_to_dataframe(data: Any) ->pd.DataFrame | None:
     """Convert dict of arrays/lists to DataFrame."""
     if isinstance(data, dict):
         return pd.DataFrame(data)
     return None
 
 
-def _convert_numpy_to_dataframe(data: Any, columns: Optional[list]) ->Optional[
-    pd.DataFrame]:
+def _convert_numpy_to_dataframe(data: Any, columns: list | None) ->pd.DataFrame | None:
     """Convert numpy array to DataFrame."""
     if isinstance(data, np.ndarray):
         df = pd.DataFrame(data)
@@ -174,8 +175,7 @@ def _convert_numpy_to_dataframe(data: Any, columns: Optional[list]) ->Optional[
     return None
 
 
-def _convert_list_to_dataframe(data: Any, columns: Optional[list]) ->Optional[
-    pd.DataFrame]:
+def _convert_list_to_dataframe(data: Any, columns: list | None) ->pd.DataFrame | None:
     """Convert list data to DataFrame."""
     if not isinstance(data, list):
         return None
@@ -189,34 +189,34 @@ def _convert_list_to_dataframe(data: Any, columns: Optional[list]) ->Optional[
         return pd.DataFrame(data, columns=columns or ['value'])
 
 
-def _convert_series_to_dataframe(data: Any) ->Optional[pd.DataFrame]:
+def _convert_series_to_dataframe(data: Any) ->pd.DataFrame | None:
     """Convert pandas Series to DataFrame."""
     if isinstance(data, pd.Series):
         return data.to_frame()
     return None
 
 
-def ensure_dataframe(data: Any, columns: Optional[list]=None) ->pd.DataFrame:
+def ensure_dataframe(data: Any, columns: list | None=None) ->pd.DataFrame:
     """
     Convert various data formats to pandas DataFrame.
-    
+
     Args:
         data: Input data in supported format
         columns: Optional column names for resulting DataFrame
-        
+
     Returns:
         DataFrame representation of input
-        
+
     Raises:
         ValueError: If data cannot be converted
-        
+
     Examples:
         >>> ensure_dataframe([1, 2, 3])
            0
         0  1
         1  2
         2  3
-        
+
         >>> ensure_dataframe({'a': [1, 2], 'b': [3, 4]})
            a  b
         0  1  3
@@ -246,21 +246,21 @@ def ensure_dataframe(data: Any, columns: Optional[list]=None) ->pd.DataFrame:
 def ensure_array(data: Any, dtype: np.dtype=np.float32) ->np.ndarray:
     """
     Convert various data formats to numpy array.
-    
+
     Args:
         data: Input data in supported format
         dtype: Desired numpy dtype for output
-        
+
     Returns:
         Numpy array representation
-        
+
     Raises:
         ValueError: If data cannot be converted
-        
+
     Examples:
         >>> ensure_array([1, 2, 3])
         array([1., 2., 3.], dtype=float32)
-        
+
         >>> ensure_array(pd.DataFrame({'a': [1, 2], 'b': [3, 4]}))
         array([[1., 3.],
                [2., 4.]], dtype=float32)
@@ -280,19 +280,19 @@ def ensure_array(data: Any, dtype: np.dtype=np.float32) ->np.ndarray:
         raise ValueError(f'Failed to convert data to numpy array: {e}') from e
 
 
-def safe_divide(a: Union[float, np.ndarray], b: Union[float, np.ndarray],
-    default: float=0.0) ->Union[float, np.ndarray]:
+def safe_divide(a: float | np.ndarray, b: float | np.ndarray,
+    default: float=0.0) ->float | np.ndarray:
     """
     Safe division that handles division by zero.
-    
+
     Args:
         a: Numerator
         b: Denominator
         default: Value to return when b == 0
-        
+
     Returns:
         a/b or default if b == 0
-        
+
     Examples:
         >>> safe_divide(10, 2)
         5.0
@@ -316,15 +316,15 @@ def clamp_value(value: float, min_val: float=-np.inf, max_val: float=np.inf
     ) ->float:
     """
     Clamp value to specified range.
-    
+
     Args:
         value: Input value
         min_val: Minimum allowed value
         max_val: Maximum allowed value
-        
+
     Returns:
         Clamped value
-        
+
     Examples:
         >>> clamp_value(10, 0, 5)
         5.0
@@ -337,14 +337,14 @@ def clamp_value(value: float, min_val: float=-np.inf, max_val: float=np.inf
 def normalize_array(arr: np.ndarray, method: str='zscore') ->np.ndarray:
     """
     Normalize array using specified method.
-    
+
     Args:
         arr: Input array
         method: Normalization method ('zscore', 'minmax', 'robust')
-        
+
     Returns:
         Normalized array
-        
+
     Raises:
         ValueError: For unknown normalization method
     """
@@ -365,17 +365,17 @@ def normalize_array(arr: np.ndarray, method: str='zscore') ->np.ndarray:
         raise ValueError(f'Unknown normalization method: {method}')
 
 
-def validate_numeric_range(value: float, min_val: Optional[float]=None,
-    max_val: Optional[float]=None, name: str='value') ->None:
+def validate_numeric_range(value: float, min_val: float | None=None,
+    max_val: float | None=None, name: str='value') ->None:
     """
     Validate that numeric value is within acceptable range.
-    
+
     Args:
         value: Value to validate
         min_val: Minimum allowed value (None = no minimum)
         max_val: Maximum allowed value (None = no maximum)
         name: Name of value for error messages
-        
+
     Raises:
         ValueError: If value is outside allowed range
     """
@@ -388,14 +388,14 @@ def validate_numeric_range(value: float, min_val: Optional[float]=None,
 def format_percentage(value: float, decimals: int=1) ->str:
     """
     Format float as percentage string.
-    
+
     Args:
         value: Value to format (0.5 = 50%)
         decimals: Number of decimal places
-        
+
     Returns:
         Formatted percentage string
-        
+
     Examples:
         >>> format_percentage(0.856)
         '85.6%'

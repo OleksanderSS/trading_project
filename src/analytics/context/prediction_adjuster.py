@@ -1,7 +1,8 @@
-import pandas as pd
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from ..interfaces import IAnalyzer
+
 logger = logging.getLogger(__name__)
 
 
@@ -11,14 +12,14 @@ class PredictionAdjuster(IAnalyzer):
     market context.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         """
         Initializes the PredictionAdjuster with a list of adjustment rules.
 
         Args:
             config (Dict[str, Any]): A dictionary containing a 'rules' list.
         """
-        self.rules: List[Dict[str, Any]] = (config or {}).get('rules', [])
+        self.rules: list[dict[str, Any]] = (config or {}).get('rules', [])
         if not self.rules:
             logger.warning(
                 'PredictionAdjuster initialized with no rules. No adjustments will be made.'
@@ -28,7 +29,7 @@ class PredictionAdjuster(IAnalyzer):
                 f'PredictionAdjuster initialized with {len(self.rules)} adjustment rules.'
                 )
 
-    def analyze(self, data: Dict[str, Any], **kwargs) ->Dict[str, Any]:
+    def analyze(self, data: dict[str, Any], **kwargs) ->dict[str, Any]:
         """
         Enhances model predictions by applying the configured rules to the context data.
 
@@ -51,17 +52,17 @@ class PredictionAdjuster(IAnalyzer):
             )
         return {'enhanced_predictions': enhanced_predictions}
 
-    def _create_empty_predictions_result(self) ->Dict[str, Any]:
+    def _create_empty_predictions_result(self) ->dict[str, Any]:
         """Create result for empty predictions."""
         logger.warning("No 'predictions' found in data to adjust.")
         return {'enhanced_predictions': {}}
 
-    def _extract_context_info(self, data: Dict[str, Any]) ->Dict[str, Any]:
+    def _extract_context_info(self, data: dict[str, Any]) ->dict[str, Any]:
         """Extract context information from data."""
         return {key: val for key, val in data.items() if key != 'predictions'}
 
-    def _process_all_predictions(self, model_predictions: Dict[str, float],
-        context_info: Dict[str, Any]) ->Dict[str, float]:
+    def _process_all_predictions(self, model_predictions: dict[str, float],
+        context_info: dict[str, Any]) ->dict[str, float]:
         """Process all model predictions with adjustments."""
         enhanced_predictions = {}
         for model_name, prediction_value in model_predictions.items():
@@ -71,7 +72,7 @@ class PredictionAdjuster(IAnalyzer):
         return enhanced_predictions
 
     def _adjust_single_prediction(self, model_name: str, prediction_value:
-        float, context_info: Dict[str, Any]) ->float:
+        float, context_info: dict[str, Any]) ->float:
         """Adjust a single prediction value."""
         adjustment_factor = self._calculate_adjustment_factor(context_info)
         enhanced_value = prediction_value * adjustment_factor
@@ -79,7 +80,7 @@ class PredictionAdjuster(IAnalyzer):
             adjustment_factor, enhanced_value)
         return enhanced_value
 
-    def _calculate_adjustment_factor(self, context_info: Dict[str, Any]
+    def _calculate_adjustment_factor(self, context_info: dict[str, Any]
         ) ->float:
         """Calculate adjustment factor based on rules."""
         adjustment_factor = 1.0
@@ -95,7 +96,7 @@ class PredictionAdjuster(IAnalyzer):
                 raise
         return adjustment_factor
 
-    def _log_rule_error(self, rule: Dict[str, Any], error: Exception):
+    def _log_rule_error(self, rule: dict[str, Any], error: Exception):
         """Log rule processing error."""
         logger.error(
             f"Error processing rule '{rule.get('name', 'Unnamed')}': {error}",
@@ -109,8 +110,8 @@ class PredictionAdjuster(IAnalyzer):
                 f"Adjusting '{model_name}': Original={original:.4f}, Factor={factor:.4f}, Enhanced={enhanced:.4f}"
                 )
 
-    def _evaluate_rule_conditions(self, conditions: Dict[str, Any], context:
-        Dict[str, Any]) ->bool:
+    def _evaluate_rule_conditions(self, conditions: dict[str, Any], context:
+        dict[str, Any]) ->bool:
         """
         Evaluates the 'if' block of a rule. Currently supports an 'all' (AND) block.
         """
@@ -119,12 +120,12 @@ class PredictionAdjuster(IAnalyzer):
         return all(self._evaluate_single_condition(condition, context) for
             condition in conditions['all'])
 
-    def _has_valid_conditions(self, conditions: Dict[str, Any]) ->bool:
+    def _has_valid_conditions(self, conditions: dict[str, Any]) ->bool:
         """Check if conditions are valid."""
         return 'all' in conditions and isinstance(conditions['all'], list)
 
-    def _evaluate_single_condition(self, condition: Dict[str, Any], context:
-        Dict[str, Any]) ->bool:
+    def _evaluate_single_condition(self, condition: dict[str, Any], context:
+        dict[str, Any]) ->bool:
         """Evaluate a single condition."""
         feature = condition.get('context_feature')
         if not self._is_feature_available(feature, context):
@@ -132,12 +133,12 @@ class PredictionAdjuster(IAnalyzer):
         context_value = context[feature]
         return self._evaluate_all_condition_types(condition, context_value)
 
-    def _is_feature_available(self, feature: str, context: Dict[str, Any]
+    def _is_feature_available(self, feature: str, context: dict[str, Any]
         ) ->bool:
         """Check if feature is available in context."""
         return feature in context
 
-    def _evaluate_all_condition_types(self, condition: Dict[str, Any],
+    def _evaluate_all_condition_types(self, condition: dict[str, Any],
         context_value: Any) ->bool:
         """Evaluate all condition types for a feature."""
         categorical_ok = self._check_categorical_condition(condition,
@@ -146,14 +147,14 @@ class PredictionAdjuster(IAnalyzer):
             context_value)
         return categorical_ok and numerical_ok
 
-    def _check_categorical_condition(self, condition: Dict[str, Any],
+    def _check_categorical_condition(self, condition: dict[str, Any],
         context_value: Any) ->bool:
         """Check categorical condition (e.g., market_phase == 'Growth')."""
         if 'is' in condition:
             return context_value == condition['is']
         return True
 
-    def _check_numerical_conditions(self, condition: Dict[str, Any],
+    def _check_numerical_conditions(self, condition: dict[str, Any],
         context_value: Any) ->bool:
         """Check numerical conditions (greater_than, less_than)."""
         if 'greater_than' in condition and context_value <= condition[
@@ -164,7 +165,7 @@ class PredictionAdjuster(IAnalyzer):
             return False
         return True
 
-    def _apply_rule_action(self, action: Dict[str, Any], current_factor: float
+    def _apply_rule_action(self, action: dict[str, Any], current_factor: float
         ) ->float:
         """
         Applies the action from a rule's 'then' block.
@@ -174,11 +175,11 @@ class PredictionAdjuster(IAnalyzer):
             return self._apply_multiplier_action(action, current_factor)
         return current_factor
 
-    def _is_multiplier_action(self, action: Dict[str, Any]) ->bool:
+    def _is_multiplier_action(self, action: dict[str, Any]) ->bool:
         """Check if action is a multiplier action."""
         return action.get('action') == 'apply_multiplier'
 
-    def _apply_multiplier_action(self, action: Dict[str, Any],
+    def _apply_multiplier_action(self, action: dict[str, Any],
         current_factor: float) ->float:
         """Apply multiplier action to current factor."""
         multiplier = action.get('multiplier', 1.0)

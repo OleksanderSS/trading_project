@@ -9,16 +9,10 @@ defined in the `adaptive_training_manager`.
 """
 
 import argparse
-import logging
-from typing import List
 
-from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import get_current_config
 from src.config.tickers import get_tickers
-from src.training.adaptive_training_manager import (
-    AdaptiveTrainingManager, 
-    TrainingMode
-)
+from src.core.logging.logger import ProjectLogger
+from src.training.adaptive_training_manager import AdaptiveTrainingManager, TrainingMode
 from src.training.base_trainer import TrainerConfig
 
 ProjectLogger.setup_logging()

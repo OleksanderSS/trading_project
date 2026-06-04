@@ -2,8 +2,10 @@
 News Global Enricher
 Handles adding macro, long-term MA, and context fingerprint features.
 """
+from typing import Any
+
 import pandas as pd
-from typing import List, Any, Dict
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
@@ -17,34 +19,34 @@ class NewsGlobalEnricher:
             'macro_unrate': {'low': 4.0, 'high': 6.0},
         }
 
-    def enrich_record(self, record: Dict[str, Any], macro_data: pd.DataFrame, 
-                      published_at: pd.Timestamp, tickers: List[str], 
-                      price_data: Dict[str, pd.DataFrame]) -> bool:
+    def enrich_record(self, record: dict[str, Any], macro_data: pd.DataFrame,
+                      published_at: pd.Timestamp, tickers: list[str],
+                      price_data: dict[str, pd.DataFrame]) -> bool:
         """Enriches the record with global features. Returns False if critical data is missing."""
         macro_features = self.get_macro_features(macro_data, published_at)
         if not macro_features:
             return False
-            
+
         record.update(macro_features)
         record.update(self.get_long_term_mas(tickers, price_data, published_at))
         record.update(self.calculate_context_map(record))
         return True
 
-    def get_macro_features(self, macro_data: pd.DataFrame, published_at: pd.Timestamp) -> Dict[str, Any]:
+    def get_macro_features(self, macro_data: pd.DataFrame, published_at: pd.Timestamp) -> dict[str, Any]:
         """Gets macro indicators at publication time."""
         if macro_data.empty:
             return {}
-            
+
         pub_at = self._normalize_timestamp(published_at)
         macro_before = self._filter_macro_data_before_date(macro_data, pub_at)
-        
+
         if macro_before.empty:
             return {}
-            
+
         latest_macro = macro_before.iloc[-1]
         features = {}
         excluded_cols = ['ticker', 'datetime', 'date', 'timestamp', 'hash', 'realtime_start', 'realtime_end', 'series_id']
-        
+
         for col in macro_data.columns:
             if col not in excluded_cols:
                 key = f'macro_{col.lower()}'
@@ -53,54 +55,54 @@ class NewsGlobalEnricher:
                     features[key] = value
         return features
 
-    def get_long_term_mas(self, tickers: List[str], price_data: Dict[str, pd.DataFrame], 
-                          published_at: pd.Timestamp) -> Dict[str, Any]:
+    def get_long_term_mas(self, tickers: list[str], price_data: dict[str, pd.DataFrame],
+                          published_at: pd.Timestamp) -> dict[str, Any]:
         """Calculates long-term MAs (SMA_200, EMA_200) for all tickers."""
         if '1d' not in price_data:
             return {}
-            
+
         daily_data = price_data['1d']
         pub_at = self._normalize_timestamp(published_at)
         features = {}
-        
+
         for ticker in tickers:
             if ticker not in daily_data.columns:
                 continue
-                
+
             ticker_data = daily_data[ticker].dropna()
             if ticker_data.empty:
                 continue
-                
+
             if ticker_data.index.tz is not None:
                 ticker_data = ticker_data.tz_localize(None)
-                
+
             data_before = ticker_data[ticker_data.index <= pub_at]
             if len(data_before) >= 200:
                 features[f'{ticker}_sma_200_1d'] = data_before.rolling(window=200).mean().iloc[-1]
                 features[f'{ticker}_ema_200_1d'] = data_before.ewm(span=200).mean().iloc[-1]
-                
+
         return features
 
-    def calculate_context_map(self, record: Dict[str, Any]) -> Dict[str, Any]:
+    def calculate_context_map(self, record: dict[str, Any]) -> dict[str, Any]:
         """Calculates context fingerprint and stability."""
         context_features = {}
         states = []
         key_indicators = ['macro_vixcls', 'macro_dgs10', 'macro_fedfunds', 'macro_cpiaucsl', 'macro_unrate']
-        
+
         for indicator in key_indicators:
             if indicator in record:
                 state = self._macro_indicator_state(indicator, record[indicator])
                 state_key = f"state_{indicator.replace('macro_', '')}"
                 context_features[state_key] = state
                 states.append(state)
-                
+
         if states:
             context_features['context_fingerprint'] = '|'.join(map(str, states))
             context_features['context_stability'] = states.count(0) / len(states)
         else:
             context_features['context_fingerprint'] = ''
             context_features['context_stability'] = 0.0
-            
+
         return context_features
 
     def _macro_indicator_state(self, indicator: str, value: Any) -> int:

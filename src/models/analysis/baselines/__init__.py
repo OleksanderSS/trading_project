@@ -1,6 +1,6 @@
 from .base import BaseBaseline
-from .strategies import BuyAndHoldBaseline, MovingAverageBaseline, MeanReversionBaseline
 from .models import LinearRegressionBaseline, SimpleRandomForestBaseline
+from .strategies import BuyAndHoldBaseline, MeanReversionBaseline, MovingAverageBaseline
 
 __all__ = [
     'BaseBaseline',

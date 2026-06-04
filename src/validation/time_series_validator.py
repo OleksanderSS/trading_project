@@ -6,15 +6,19 @@ Consolidated validation system combining:
 - ValidationProtocolsEngine (purged/embargo CV)
 - SmartCrossValidator (stratified splits)
 """
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import TimeSeriesSplit, cross_val_score
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from typing import Tuple, Dict, Any, List, Optional, Generator
+from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score
+
 from src.core.logging.logger import ProjectLogger
 from src.utils.trading_calendar import TradingCalendar
+
 logger = ProjectLogger.get_logger('TimeSeriesValidator')
 
 
@@ -34,17 +38,17 @@ class ValidationResult:
     validation_type: ValidationType
     is_valid: bool
     confidence: float
-    performance_metrics: Dict[str, float]
-    issues_found: List[str]
-    recommendations: List[str]
-    detailed_results: Dict[str, Any]
+    performance_metrics: dict[str, float]
+    issues_found: list[str]
+    recommendations: list[str]
+    detailed_results: dict[str, Any]
 
 
 class PurgedTimeSeriesSplit:
     """
     Advanced Time Series Cross-Validator with Purging and Embargo.
     Prevents data leakage by removing overlapping data points.
-    
+
     Integrated from ValidationProtocolsEngine.
     """
 
@@ -54,7 +58,7 @@ class PurgedTimeSeriesSplit:
         self.purge_window = purge_window
         self.embargo_period = embargo_period
 
-    def split(self, X: pd.DataFrame) ->Generator[Tuple[np.ndarray, np.
+    def split(self, X: pd.DataFrame) ->Generator[tuple[np.ndarray, np.
         ndarray], None, None]:
         n_samples = len(X)
         test_size = n_samples // (self.n_splits + 1)
@@ -78,7 +82,7 @@ class PurgedTimeSeriesSplit:
 class TimeSeriesValidator:
     """
     Provides robust validation protocols for financial time series models.
-    
+
     Consolidated features:
     - Basic time series validation (original)
     - Purged/Embargo CV (from ValidationProtocolsEngine)
@@ -91,7 +95,7 @@ class TimeSeriesValidator:
     def __init__(self, n_splits: int=5):
         """
         Initializes the validator.
-        
+
         Args:
             n_splits (int): Number of splits for cross-validation.
         """
@@ -104,16 +108,16 @@ class TimeSeriesValidator:
         self.fold_metrics = []
 
     def create_robust_split(self, X: pd.DataFrame, y: pd.Series,
-        validation_ratio: float=0.2) ->Tuple[pd.DataFrame, pd.DataFrame, pd
+        validation_ratio: float=0.2) ->tuple[pd.DataFrame, pd.DataFrame, pd
         .Series, pd.Series]:
         """
         Splits data chronologically to maintain the temporal order of observations.
-        
+
         Args:
             X: Features DataFrame.
             y: Target Series.
             validation_ratio: Proportion of data for validation.
-            
+
         Returns:
             Tuple of (X_train, X_val, y_train, y_val).
         """
@@ -131,7 +135,7 @@ class TimeSeriesValidator:
         return X_train, x_val, y_train, y_val
 
     def cross_validate_model(self, model, X: pd.DataFrame, y: pd.Series,
-        scoring: str='neg_mean_absolute_error') ->Dict[str, Any]:
+        scoring: str='neg_mean_absolute_error') ->dict[str, Any]:
         """
         Executes standard TimeSeries cross-validation using TimeSeriesSplit.
         """
@@ -142,17 +146,17 @@ class TimeSeriesValidator:
             n_splits, 'scoring': scoring}
 
     def walk_forward_validation(self, model, X: pd.DataFrame, y: pd.Series,
-        window_size: int=252, step_size: int=21) ->Dict[str, Any]:
+        window_size: int=252, step_size: int=21) ->dict[str, Any]:
         """
         Executes walk-forward validation (rolling window), mimicking live trading scenarios.
-        
+
         Args:
             model: Model object implementing fit/predict.
             X: Features DataFrame.
             y: Target Series.
             window_size: Size of the rolling training window.
             step_size: Step size for the validation jump.
-            
+
         Returns:
             Dict containing 'fold_metrics' and 'aggregate_metrics'.
         """
@@ -199,14 +203,14 @@ class TimeSeriesValidator:
         ) ->ValidationResult:
         """
         Purged walk-forward validation with embargo to prevent data leakage.
-        
+
         Args:
             model: Model object implementing fit/predict.
             X: Features DataFrame.
             y: Target Series.
             purge_window: Number of samples to purge before test set.
             embargo_period: Number of samples to embargo after train set.
-            
+
         Returns:
             ValidationResult with detailed metrics.
         """
@@ -226,27 +230,27 @@ class TimeSeriesValidator:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Fold failed in purged walk-forward: {e}')
                 raise
-        is_valid = len(fold_metrics) > 0
-        avg_mse = np.mean([m['mse'] for m in fold_metrics]) if is_valid else 1.0
+        is_valid = len(metrics) > 0
+        avg_mse = np.mean(metrics) if is_valid else 1.0
         return ValidationResult(validation_type=ValidationType.
             PURGED_WALK_FORWARD, is_valid=is_valid and avg_mse < 0.05,
             confidence=0.9 if is_valid else 0.0, performance_metrics={'mse':
-            avg_mse, 'folds': len(fold_metrics)}, issues_found=[
+            avg_mse, 'folds': len(metrics)}, issues_found=[
             'Low performance' if avg_mse > 0.05 else ''], recommendations=[
             'Check for remaining leakage' if avg_mse < 0.001 else 'Stable'],
-            detailed_results={'fold_errors': fold_metrics})
+            detailed_results={'fold_errors': metrics})
 
     def stratified_time_series_split(self, X: pd.DataFrame, y: pd.Series,
-        n_bins: int=5) ->Generator[Tuple[np.ndarray, np.ndarray], None, None]:
+        n_bins: int=5) ->Generator[tuple[np.ndarray, np.ndarray], None, None]:
         """
         Sequential splitting with target-based stratification using quartiles.
         Useful for imbalanced time-series where certain target values are rare.
-        
+
         Args:
             X: Input features.
             y: Target variable used for stratification.
             n_bins: Number of bins for stratification quantization.
-        
+
         Yields:
             Tuple (train_idx, test_idx) for each fold.
         """
@@ -271,17 +275,17 @@ class TimeSeriesValidator:
                 yield train_idx, test_idx
 
     def run_comprehensive_validation(self, data: pd.DataFrame, features:
-        List[str], target: str, model: Any, heavy_model: Optional[Any]=None,
-        light_model: Optional[Any]=None) ->Dict[str, ValidationResult]:
+        list[str], target: str, model: Any, heavy_model: Any | None=None,
+        light_model: Any | None=None) ->dict[str, ValidationResult]:
         """
         Main entry point for Pipeline stages to get a full quality report.
-        
+
         Runs multiple validation protocols:
         - Purged Walk-Forward
         - Purged CV
         - Embargo CV
         - Consensus Stability (if heavy/light models provided)
-        
+
         Args:
             data: Complete dataset with features and target.
             features: List of feature column names.
@@ -289,7 +293,7 @@ class TimeSeriesValidator:
             model: Primary model to validate.
             heavy_model: Optional heavy model for consensus validation.
             light_model: Optional light model for consensus validation.
-            
+
         Returns:
             Dictionary of ValidationResult objects by protocol name.
         """
@@ -306,7 +310,7 @@ class TimeSeriesValidator:
                 data, features, target, heavy_model, light_model)
         return results
 
-    def _run_purged_cv(self, data: pd.DataFrame, features: List[str],
+    def _run_purged_cv(self, data: pd.DataFrame, features: list[str],
         target: str, model: Any) ->ValidationResult:
         """Runs CV with purging."""
         ps = PurgedTimeSeriesSplit(n_splits=self.n_splits, purge_window=5,
@@ -328,7 +332,7 @@ class TimeSeriesValidator:
             {'mean_r2_or_acc': mean_score}, issues_found=[],
             recommendations=[], detailed_results={})
 
-    def _run_embargo_cv(self, data: pd.DataFrame, features: List[str],
+    def _run_embargo_cv(self, data: pd.DataFrame, features: list[str],
         target: str, model: Any) ->ValidationResult:
         """Runs CV with embargo."""
         ps = PurgedTimeSeriesSplit(n_splits=self.n_splits, purge_window=0,
@@ -350,13 +354,13 @@ class TimeSeriesValidator:
             {'mean_r2_or_acc': mean_score}, issues_found=[],
             recommendations=[], detailed_results={})
 
-    def _run_consensus_validation(self, data: pd.DataFrame, features: List[
+    def _run_consensus_validation(self, data: pd.DataFrame, features: list[
         str], target: str, heavy_model: Any, light_model: Any
         ) ->ValidationResult:
         """Validates consensus between heavy and light models."""
         min_test_size = 100
         if len(data) < min_test_size:
-            return ValidationResult(ValidationType.CONSENSUS_STABILITY, 
+            return ValidationResult(ValidationType.CONSENSUS_STABILITY,
                 False, 0.0, {}, ['Data too small'], [], {})
         split_idx = int(len(data) * 0.8)
         X_train, y_train = data.iloc[:split_idx][features], data.iloc[:
@@ -378,16 +382,16 @@ class TimeSeriesValidator:
                 'Low agreement'], recommendations=[], detailed_results={})
         except Exception as e:
             logger.error(f'Consensus validation error: {e}')
-            return ValidationResult(ValidationType.CONSENSUS_STABILITY, 
+            return ValidationResult(ValidationType.CONSENSUS_STABILITY,
                 False, 0.0, {}, [str(e)], [], {})
 
-    def validate_time_gaps(self, df: pd.DataFrame) ->Dict[str, Any]:
+    def validate_time_gaps(self, df: pd.DataFrame) ->dict[str, Any]:
         """
         Validates the continuity of the time series using the TradingCalendar.
-        
+
         Args:
             df: DataFrame with a DatetimeIndex.
-            
+
         Returns:
             Report on data integrity and detected gaps.
         """
@@ -412,14 +416,14 @@ class TimeSeriesValidator:
         return report
 
     def check_leakage(self, X_train: pd.DataFrame, X_test: pd.DataFrame
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """
         Analyzes train and test sets for potential index overlap or temporal violations.
-        
+
         Args:
             X_train: Training feature set.
             X_test: Test/Validation feature set.
-            
+
         Returns:
             Leakage detection summary.
         """
@@ -440,7 +444,7 @@ class TimeSeriesValidator:
 
 
 def create_robust_time_series_split(X: pd.DataFrame, y: pd.Series,
-    validation_ratio: float=0.2) ->Tuple[pd.DataFrame, pd.DataFrame, pd.
+    validation_ratio: float=0.2) ->tuple[pd.DataFrame, pd.DataFrame, pd.
     Series, pd.Series]:
     """Helper function for quick chronological data partitioning."""
     validator = TimeSeriesValidator()

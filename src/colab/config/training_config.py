@@ -7,7 +7,7 @@ from typing import Any
 
 class TrainingConfig:
     """Configuration for training parameters"""
-    def __init__(self, model_type, ticker, target_col, start_epoch, epochs, 
+    def __init__(self, model_type, ticker, target_col, start_epoch, epochs,
                  base_batch_size, patience, best_loss):
         self.model_type = model_type
         self.ticker = ticker

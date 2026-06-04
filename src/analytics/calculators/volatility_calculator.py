@@ -3,10 +3,10 @@ Calculates various volatility metrics for financial time series.
 This module provides a set of reusable static methods.
 """
 
-import pandas as pd
 import numpy as np
-from src.core.logging.logger import ProjectLogger
+import pandas as pd
 
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 

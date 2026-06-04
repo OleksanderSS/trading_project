@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any
 
 import pandas as pd
 
@@ -13,9 +13,9 @@ class FeatureEngineeringNewsManager:
         self.news_builder = NewsContextDatasetBuilder(config_manager)
         logger.info("✅ News manager initialized")
 
-    def process_news(self, news_df: pd.DataFrame, prices_dict: Dict[str, pd.DataFrame], 
-                     macro_df: Optional[pd.DataFrame], market_sentiment_df: Optional[pd.DataFrame], 
-                     output_dir: Any) -> Optional[pd.DataFrame]:
+    def process_news(self, news_df: pd.DataFrame, prices_dict: dict[str, pd.DataFrame],
+                     macro_df: pd.DataFrame | None, market_sentiment_df: pd.DataFrame | None,
+                     output_dir: Any) -> pd.DataFrame | None:
         if news_df is None or news_df.empty:
             logger.info("ℹ️ No news data available, skipping news-based dataset generation")
             return None
@@ -34,10 +34,10 @@ class FeatureEngineeringNewsManager:
             macro_df=macro_df,
             market_sentiment_df=market_sentiment_df,
         )
-        
+
         if news_features_df is not None and not news_features_df.empty:
             news_output_path = output_dir / "news_features.parquet"
             self.news_builder.save_dataset(news_features_df, news_output_path)
             logger.info(f"✅ News dataset built: {len(news_features_df)} rows")
-        
+
         return news_features_df

@@ -5,12 +5,14 @@ Validates temporal ordering and prevents lookahead bias in time-series features.
 Identifies and isolates features that may contain future information.
 """
 
-import pandas as pd
-import numpy as np
 import json
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("TemporalFeatureSeparator")
@@ -18,27 +20,27 @@ logger = ProjectLogger.get_logger("TemporalFeatureSeparator")
 class TemporalFeatureSeparator:
     """
     Separates features based on their temporal alignment to identify potential data leakage.
-    
+
     Financial time-series are susceptible to lookahead bias where features at time T
     accidentally contain information about targets at time T+n.
-    
+
     Capabilities:
     - Temporal correlation analysis: Checks feature alignment with future targets.
     - Pattern-based leakage detection: Identifies direct and delayed target leaks.
     - Dataset sanitization: Prunes suspicious features to ensure causal integrity.
     """
 
-    def __init__(self, project_path: Optional[str] = None):
+    def __init__(self, project_path: str | None = None):
         """
         Initializes the separator environment.
-        
+
         Args:
             project_path: Optional path for persisting analysis reports.
         """
         self.project_path = Path(project_path) if project_path else Path.cwd()
-        self.temporal_analysis: Dict[str, Any] = {}
-        self.suspicious_features: List[str] = []
-        self.safe_features: List[str] = []
+        self.temporal_analysis: dict[str, Any] = {}
+        self.suspicious_features: list[str] = []
+        self.safe_features: list[str] = []
 
     def _validate_feature_target_alignment(self, df_features: pd.DataFrame, target_series: pd.Series) -> bool:
         """Validates that features and target have matching lengths."""
@@ -47,10 +49,10 @@ class TemporalFeatureSeparator:
             return False
         return True
 
-    def _calculate_lookahead_correlations(self, feature_values: np.ndarray, target_series: pd.Series, max_lookahead: int) -> List[Dict[str, Any]]:
+    def _calculate_lookahead_correlations(self, feature_values: np.ndarray, target_series: pd.Series, max_lookahead: int) -> list[dict[str, Any]]:
         """Calculates correlations for different lookahead periods."""
         lookahead_correlations = []
-        
+
         for lag in range(1, max_lookahead + 1):
             if lag >= len(target_series):
                 break
@@ -69,10 +71,10 @@ class TemporalFeatureSeparator:
                         'lookahead_periods': lag,
                         'correlation': float(corr) if not np.isnan(corr) else 0.0
                     })
-        
+
         return lookahead_correlations
 
-    def _evaluate_feature_suspicion(self, max_corr: float) -> Tuple[bool, str]:
+    def _evaluate_feature_suspicion(self, max_corr: float) -> tuple[bool, str]:
         """Evaluates if a feature is suspicious based on correlation threshold."""
         if max_corr > 0.7:
             return True, f"Critical lookahead correlation detected ({max_corr:.3f})"
@@ -80,10 +82,10 @@ class TemporalFeatureSeparator:
             return True, f"Elevated lookahead correlation detected ({max_corr:.3f})"
         return False, ""
 
-    def _create_feature_analysis(self, col: str, max_corr: float, lookahead_correlations: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _create_feature_analysis(self, col: str, max_corr: float, lookahead_correlations: list[dict[str, Any]]) -> dict[str, Any]:
         """Creates analysis result for a single feature."""
         suspicious, reason = self._evaluate_feature_suspicion(max_corr)
-        
+
         return {
             'feature_name': col,
             'suspicious': suspicious,
@@ -101,20 +103,20 @@ class TemporalFeatureSeparator:
             self.safe_features.append(col)
 
     def analyze_temporal_correlation(
-        self, 
-        df_features: pd.DataFrame, 
-        target_series: pd.Series, 
+        self,
+        df_features: pd.DataFrame,
+        target_series: pd.Series,
         max_lookahead: int = 5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Analyzes the correlation of features at time T with target values at time T+n.
         High future correlation indicates potential leakage (causal violation).
-        
+
         Args:
             df_features: Feature matrix.
             target_series: Target vector.
             max_lookahead: Number of future periods to audit.
-        
+
         Returns:
             Dictionary containing granular analysis results for each audited feature.
         """
@@ -128,34 +130,34 @@ class TemporalFeatureSeparator:
             lookahead_correlations = self._calculate_lookahead_correlations(
                 feature_values, target_series, max_lookahead
             )
-            
+
             max_corr = max([abs(c['correlation']) for c in lookahead_correlations], default=0.0)
-            
+
             analysis_results[col] = self._create_feature_analysis(
                 col, max_corr, lookahead_correlations
             )
-            
+
             self._update_feature_lists(col, analysis_results[col]['suspicious'])
 
         self.temporal_analysis = analysis_results
         return analysis_results
 
-    def _calculate_correlation(self, feature: np.ndarray, target: np.ndarray) -> Optional[float]:
+    def _calculate_correlation(self, feature: np.ndarray, target: np.ndarray) -> float | None:
         """Safely calculates correlation between feature and target."""
         if len(feature) <= 1 or len(target) <= 1:
             return None
-            
+
         valid_idx = ~(np.isnan(feature) | np.isnan(target))
         if valid_idx.sum() <= 2:
             return None
-            
+
         corr = np.corrcoef(feature[valid_idx], target[valid_idx])[0, 1]
         return float(corr) if not np.isnan(corr) else 0.0
 
-    def _detect_direct_target_proxy(self, col: str, feature: np.ndarray, target: np.ndarray, threshold: float) -> Optional[Dict[str, Any]]:
+    def _detect_direct_target_proxy(self, col: str, feature: np.ndarray, target: np.ndarray, threshold: float) -> dict[str, Any] | None:
         """Detects direct correlation between feature and target."""
         direct_corr = self._calculate_correlation(feature, target)
-        
+
         if direct_corr is not None and abs(direct_corr) > threshold:
             return {
                 'feature': col,
@@ -165,16 +167,16 @@ class TemporalFeatureSeparator:
             }
         return None
 
-    def _detect_delayed_target_redundancy(self, col: str, feature: np.ndarray, target: np.ndarray, threshold: float) -> Optional[Dict[str, Any]]:
+    def _detect_delayed_target_redundancy(self, col: str, feature: np.ndarray, target: np.ndarray, threshold: float) -> dict[str, Any] | None:
         """Detects correlation between feature and delayed target."""
         if len(feature) <= 1 or len(target) <= 1:
             return None
-            
+
         delayed_target = np.roll(target, 1)[1:]
         trimmed_feature = feature[1:]
 
         delayed_corr = self._calculate_correlation(trimmed_feature, delayed_target)
-        
+
         if delayed_corr is not None and abs(delayed_corr) > threshold:
             return {
                 'feature': col,
@@ -185,14 +187,14 @@ class TemporalFeatureSeparator:
         return None
 
     def detect_leakage_pattern(
-        self, 
-        df_features: pd.DataFrame, 
-        target_series: pd.Series, 
+        self,
+        df_features: pd.DataFrame,
+        target_series: pd.Series,
         threshold: float = 0.6
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Detects specific archetypes of data leakage commonly found in trading signal pipelines.
-        
+
         Archetypes:
         - Direct Correlation: Feature is nearly identical to the ground truth target.
         - Delayed Target Leak: Feature at T is a simple transformation of target at T-1.
@@ -216,7 +218,7 @@ class TemporalFeatureSeparator:
 
         return leakage_patterns
 
-    def get_safe_features(self, threshold: float = 0.5) -> List[str]:
+    def get_safe_features(self, threshold: float = 0.5) -> list[str]:
         """Filters analysis results to return assets below the sensitivity threshold."""
         safe = []
         for col, analysis in self.temporal_analysis.items():
@@ -224,7 +226,7 @@ class TemporalFeatureSeparator:
                 safe.append(col)
         return safe
 
-    def get_suspicious_features(self, threshold: float = 0.5) -> List[str]:
+    def get_suspicious_features(self, threshold: float = 0.5) -> list[str]:
         """Identifies features exceeding the temporal sensitivity threshold."""
         suspicious = []
         for col, analysis in self.temporal_analysis.items():
@@ -233,19 +235,19 @@ class TemporalFeatureSeparator:
         return suspicious
 
     def create_clean_dataset(
-        self, 
-        df_features: pd.DataFrame, 
-        remove_suspicious: bool = True, 
+        self,
+        df_features: pd.DataFrame,
+        remove_suspicious: bool = True,
         threshold: float = 0.5
     ) -> pd.DataFrame:
         """
         Generates a sanitized dataset by excluding features identified as non-causal or leaky.
-        
+
         Args:
             df_features: Raw input features.
             remove_suspicious: If True, prunes suspicious features.
             threshold: Correlation ceiling for pruning decisions.
-        
+
         Returns:
             Sanitized DataFrame ready for training.
         """
@@ -262,7 +264,7 @@ class TemporalFeatureSeparator:
 
         return clean_df
 
-    def save_temporal_analysis(self, filepath: Optional[Path] = None) -> Path:
+    def save_temporal_analysis(self, filepath: Path | None = None) -> Path:
         """Persists the temporal audit results to a JSON report."""
         if filepath is None:
             filepath = self.project_path / "temporal_analysis_report.json"
@@ -316,7 +318,7 @@ if __name__ == "__main__":
 
     # Execution of the audit pipeline
     separator = TemporalFeatureSeparator()
-    
+
     logger.info("Simulating temporal correlation matrix analysis...")
     analysis = separator.analyze_temporal_correlation(X, pd.Series(target), max_lookahead=5)
 
@@ -330,15 +332,15 @@ if __name__ == "__main__":
 
     # Pattern recognition audit
     leakage = separator.detect_leakage_pattern(X, pd.Series(target), threshold=0.6)
-    
+
     if leakage:
         logger.info("\n--- Identified Leakage Archetypes ---")
         for pattern in leakage:
             logger.warning(f"  🚨 Detected: {pattern['feature']} -> {pattern['pattern']} (Correlation: {pattern['correlation']:.4f})")
-    
+
     # Dataset cleansing
     clean_X = separator.create_clean_dataset(X, remove_suspicious=True)
-    
+
     # Synchronization to disk
     separator.save_temporal_analysis()
     logger.info("\n✅ Demonstration sequence completed successfully.")

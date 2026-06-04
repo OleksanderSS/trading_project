@@ -1,23 +1,24 @@
-import inspect
-import pkgutil
 import importlib
+import inspect
 import os
-from typing import List, Dict, Type, Optional, Any
+import pkgutil
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.logging.logger import ProjectLogger
-from src.core.cache.cache_manager import CacheManager
-from .base_collector import BaseCollector
-from src.config.unified_config_manager import UnifiedConfigManager
 from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
 
 
 class CollectorFactory:
     """Dynamically finds and creates collector instances."""
 
-    def __init__(self, configs: Optional[Dict]=None, http_client_factory:
-        Optional[HttpClientFactory]=None, config_manager: Optional[
-        UnifiedConfigManager]=None, db_manager: Optional[DataManager]=None,
-        cache_manager: Optional[Any]=None):
+    def __init__(self, configs: dict | None=None, http_client_factory:
+        HttpClientFactory | None=None, config_manager: UnifiedConfigManager | None=None, db_manager: DataManager | None=None,
+        cache_manager: Any | None=None):
         self.logger = ProjectLogger.get_logger('CollectorFactory')
         self.collectors_config = configs or {}
         self.http_client_factory = http_client_factory or HttpClientFactory()
@@ -41,7 +42,7 @@ class CollectorFactory:
                 'CacheManager not initialized: db_manager is unavailable.')
         self._collector_classes = self._discover_collector_classes()
 
-    def _discover_collector_classes(self) ->Dict[str, Type[BaseCollector]]:
+    def _discover_collector_classes(self) ->dict[str, type[BaseCollector]]:
         """Динамічно знаходить всі класи колекторів."""
         class_map = {}
         package_path = os.path.dirname(__file__)
@@ -67,7 +68,7 @@ class CollectorFactory:
             )
         return class_map
 
-    def get_collector(self, name: str) ->Optional[BaseCollector]:
+    def get_collector(self, name: str) ->BaseCollector | None:
         """Створює екземпляр одного колектора за назвою конфігурації."""
         collector_params = self.collectors_config.get(name)
         if not collector_params or not collector_params.get('enabled', False):
@@ -88,7 +89,7 @@ class CollectorFactory:
             self.logger.error(f"Failed to instantiate '{name}' ({collector_type}): {e}", exc_info=True)
             raise RuntimeError(f"Failed to instantiate collector '{name}' ({collector_type})") from e
 
-    def get_all_collectors(self) ->List[BaseCollector]:
+    def get_all_collectors(self) ->list[BaseCollector]:
         """Створює всі увімкнені колектори."""
         collectors = []
         for name in self.collectors_config.keys():

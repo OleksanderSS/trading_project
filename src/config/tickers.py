@@ -3,9 +3,7 @@ Centralized Tickers Configuration Module
 Single source of truth for all tickers in the project.
 """
 
-from typing import Dict, List, Set
 import json
-from pathlib import Path
 
 # --- Basic Ticker Categories ---
 
@@ -199,22 +197,22 @@ ALL_TICKERS = (
 CORE_TICKERS = [
     # ETF - major market indices
     "SPY", "QQQ", "IWM", "DIA",
-    
+
     # Tech Giants
     "AAPL", "MSFT", "GOOGL", "AMZN", "META", "NVDA", "TSLA",
-    
+
     # Finance
     "JPM", "BAC", "WFC", "GS",
-    
+
     # Healthcare
     "JNJ", "PFE", "UNH", "ABBV",
-    
+
     # Consumer
     "PG", "KO", "HD", "MCD", "WMT", "COST",
-    
+
     # Energy
     "XOM", "CVX", "COP",
-    
+
     # Industrial
     "CAT", "DE", "BA", "GE"
 ]
@@ -241,7 +239,7 @@ ALL_TICKERS_DICT = {ticker: ticker for ticker in ALL_TICKERS}
 
 # --- Functions for Retrieving Lists ---
 
-def get_tickers(category: str = "core") -> List[str]:
+def get_tickers(category: str = "core") -> list[str]:
     """
     Get list of tickers by category.
     """
@@ -263,22 +261,22 @@ def get_tickers(category: str = "core") -> List[str]:
         "international": INTERNATIONAL_TICKERS,
         "crypto": CRYPTO_TICKERS,
     }
-    
+
     return category_map.get(category.lower(), CORE_TICKERS)
 
-def get_tickers_dict(category: str = "core") -> Dict[str, str]:
+def get_tickers_dict(category: str = "core") -> dict[str, str]:
     """
     Get dictionary of tickers by category.
     """
     tickers = get_tickers(category)
     return {ticker: ticker for ticker in tickers}
 
-def get_ticker_categories(ticker: str) -> List[str]:
+def get_ticker_categories(ticker: str) -> list[str]:
     """
     Get categories for a specific ticker.
     """
     categories = []
-    
+
     if ticker in CORE_TICKERS:
         categories.append("core")
     if ticker in ETF_TICKERS:
@@ -309,10 +307,10 @@ def get_ticker_categories(ticker: str) -> List[str]:
         categories.append("international")
     if ticker in CRYPTO_TICKERS:
         categories.append("crypto")
-    
+
     return categories
 
-def get_category_stats() -> Dict[str, int]:
+def get_category_stats() -> dict[str, int]:
     """
     Get stats on ticker count per category.
     """
@@ -335,14 +333,14 @@ def get_category_stats() -> Dict[str, int]:
         "crypto": len(CRYPTO_TICKERS),
     }
 
-def validate_tickers(tickers: List[str]) -> Dict[str, List[str]]:
+def validate_tickers(tickers: list[str]) -> dict[str, list[str]]:
     """
     Validate a list of tickers.
     """
     all_valid = set(ALL_TICKERS)
     valid = [t for t in tickers if t in all_valid]
     invalid = [t for t in tickers if t not in all_valid]
-    
+
     return {
         "valid": valid,
         "invalid": invalid
@@ -378,10 +376,10 @@ def export_tickers_to_json(filepath: str = "config/tickers_export.json"):
         },
         "stats": get_category_stats()
     }
-    
+
     with open(filepath, 'w') as f:
         json.dump(export_data, f, indent=2)
-    
+
     print(f"Tickers exported to {filepath}")
 
 if __name__ == "__main__":
@@ -391,15 +389,15 @@ if __name__ == "__main__":
     print(f"Core tickers: {len(CORE_TICKERS)}")
     print(f"Tech tickers: {len(TECH_TICKERS)}")
     print(f"ETF tickers: {len(ETF_TICKERS)}")
-    
+
     print("\n=== Category Stats ===")
     stats = get_category_stats()
     for category, count in stats.items():
         print(f"{category}: {count}")
-    
+
     print("\n=== Export Test ===")
     export_tickers_to_json()
-    
+
     print("\n=== Validation Test ===")
     test_tickers = ["SPY", "QQQ", "INVALID1", "INVALID2"]
     validation = validate_tickers(test_tickers)

@@ -1,19 +1,24 @@
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Any, Tuple, Optional
-from datetime import datetime
 import json
-import logging
 import os
+from datetime import datetime
+from typing import Any
+
 import joblib
+import numpy as np
+import pandas as pd
+
 rng = np.random.default_rng(42)
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+
 from sklearn.metrics import log_loss
+
 from src.core.logging.logger import ProjectLogger
 from src.utils.artifact_security import resolve_trusted_artifact_path
-from .battle_groups import BattleGroupManager, get_battle_group_manager
+
+from .battle_groups import get_battle_group_manager
+
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -53,11 +58,11 @@ class Battle:
     model2_name: str
     battle_group: str
     start_time: datetime
-    end_time: Optional[datetime] = None
-    result: Optional[BattleResult] = None
-    model1_metrics: Optional[BattleMetrics] = None
-    model2_metrics: Optional[BattleMetrics] = None
-    winner: Optional[str] = None
+    end_time: datetime | None = None
+    result: BattleResult | None = None
+    model1_metrics: BattleMetrics | None = None
+    model2_metrics: BattleMetrics | None = None
+    winner: str | None = None
     vote_count: int = 0
 
 
@@ -69,12 +74,12 @@ class TradingModelArena:
 
     def __init__(self, champion_dir: str='trained_models', safety_margin:
         float=0.05):
-        self.models: Dict[str, Any] = {}
-        self.battle_history: List[Battle] = []
-        self.leaderboard: Dict[str, float] = {}
+        self.models: dict[str, Any] = {}
+        self.battle_history: list[Battle] = []
+        self.leaderboard: dict[str, float] = {}
         self.battle_group_manager = get_battle_group_manager()
         self.performance_tracker = None
-        self.current_battles: List[Battle] = []
+        self.current_battles: list[Battle] = []
         self.champion_dir = Path(champion_dir)
         self.safety_margin = safety_margin
         logger.info(
@@ -103,7 +108,7 @@ class TradingModelArena:
             raise RuntimeError(f"Failed to register model {model_name}: {e}") from e
 
     def calculate_loss_metrics(self, predictions: np.ndarray, actuals: np.
-        ndarray, probs: Optional[np.ndarray]=None) ->Dict[str, float]:
+        ndarray, probs: np.ndarray | None=None) ->dict[str, float]:
         """Розрахунок розширених метрик втрат, включаючи фінансові втрати."""
         mse = np.mean((predictions - actuals) ** 2)
         l_loss = 0.0
@@ -119,15 +124,15 @@ class TradingModelArena:
         return {'mse': float(mse), 'log_loss': float(l_loss),
             'financial_loss': float(financial_loss)}
 
-    def compare_with_baseline(self, actual_targets: pd.Series) ->Dict[str,
+    def compare_with_baseline(self, actual_targets: pd.Series) ->dict[str,
         float]:
         """Порівняння з базовим орієнтиром (Moving Average / VAR)."""
         baseline_series = actual_targets.shift(1).rolling(window=5).mean().dropna()
         aligned_actuals = actual_targets.loc[baseline_series.index]
-        
+
         baseline_preds = baseline_series.values
         actuals = aligned_actuals.values
-        
+
         baseline_loss = self.calculate_loss_metrics(baseline_preds, actuals)
         logger.info(
             f"[ARENA] Baseline established (MA-5). MSE: {baseline_loss['mse']:.6f} | FinLoss: {baseline_loss['financial_loss']:.6f}"
@@ -135,7 +140,7 @@ class TradingModelArena:
         return baseline_loss
 
     def run_blind_challenge(self, model_name: str, context_data: pd.
-        DataFrame, real_outcome: pd.Series) ->Dict[str, Any]:
+        DataFrame, real_outcome: pd.Series) ->dict[str, Any]:
         """
         Фаза 'The Reveal' (Blinded Simulation): Оцінка причинно-наслідкового розуміння моделі.
         """
@@ -171,8 +176,7 @@ class TradingModelArena:
         return {'structural_alignment': float(structural_alignment),
             'realization_gap': float(realization_gap), 'sim_mean': sim_mean}
 
-    def _load_current_champion(self, ticker: str, target: str) ->Optional[Tuple
-        [str, Any]]:
+    def _load_current_champion(self, ticker: str, target: str) ->tuple[str, Any] | None:
         """Завантажує поточного чемпіона для конкретного тікера та таргету."""
         try:
             champ_files = list(self.champion_dir.glob(
@@ -192,7 +196,7 @@ class TradingModelArena:
             raise RuntimeError(f'[ARENA] Could not load champion for {ticker}_{target}: {e}') from e
 
     def conduct_battle(self, ticker: str, target: str, candidate_name: str,
-        test_data: pd.DataFrame, actual_targets: pd.Series) ->Dict[str, Any]:
+        test_data: pd.DataFrame, actual_targets: pd.Series) ->dict[str, Any]:
         """
         Головний метод проведення бою з фільтром строгості проти Baseline.
         """
@@ -226,7 +230,7 @@ class TradingModelArena:
 
     def run_champion_challenge(self, ticker: str, target: str,
         candidate_name: str, test_data: pd.DataFrame, actual_targets: pd.Series
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Бій претендента проти чинного чемпіона з використанням 'The Reveal'."""
         champ_name = f'CHAMP_{ticker}_{target}'
         cand_blind = self.run_blind_challenge(candidate_name, test_data,
@@ -328,7 +332,7 @@ class TradingModelArena:
             available_models)
 
     def run_battle(self, test_data: pd.DataFrame, actual_targets: pd.Series
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Виконання бою між моделями"""
         results = []
         for battle in self.current_battles:
@@ -446,11 +450,11 @@ class TradingModelArena:
             if battle.winner == 'model2':
                 self.models[battle.model2_name]['wins'] += 1
 
-    def get_leaderboard(self) ->Dict[str, Any]:
+    def get_leaderboard(self) ->dict[str, Any]:
         leaderboard = []
         for model_name, model_info in self.models.items():
             if model_info['battles_fought'] > 0:
-                leaderboard.append({'model_name': model_name, 'points': 
+                leaderboard.append({'model_name': model_name, 'points':
                     model_info['wins'] * 3 + model_info['draws']})
         leaderboard.sort(key=lambda x: x['points'], reverse=True)
         return {'leaderboard': leaderboard, 'last_updated': datetime.now().
@@ -470,7 +474,7 @@ class TradingModelArena:
 
     def load_arena_state(self, filepath: str) ->bool:
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath) as f:
                 state = json.load(f)
             self.models = state.get('models', {})
             return True
@@ -480,7 +484,7 @@ class TradingModelArena:
             return False
 
 
-_trading_arena: Optional[TradingModelArena] = None
+_trading_arena: TradingModelArena | None = None
 
 
 def get_trading_arena() ->TradingModelArena:

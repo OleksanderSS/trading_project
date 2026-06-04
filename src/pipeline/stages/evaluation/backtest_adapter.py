@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from functools import partial
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
@@ -39,7 +39,7 @@ def prepare_pivot(signals_df: pd.DataFrame):
     return price_pivot, signal_pivot
 
 
-async def run_backtest(backtester, signals_df) -> Dict[str, Any]:
+async def run_backtest(backtester, signals_df) -> dict[str, Any]:
     price_pivot, signal_pivot = prepare_pivot(signals_df)
     if price_pivot.empty or signal_pivot.empty:
         return {}

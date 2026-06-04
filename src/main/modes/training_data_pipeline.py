@@ -6,17 +6,16 @@ This script orchestrates the process of data collection, feature engineering,
 and target calculation using the new, modular components.
 """
 
-import pandas as pd
-from pathlib import Path
 import asyncio
+from pathlib import Path
 
-from src.pipeline.stages.stage_1_collection import CollectionStage
-from src.features.feature_orchestrator import FeatureOrchestrator
-from src.targets.target_orchestrator import TargetOrchestrator
-from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
+from src.features.feature_orchestrator import FeatureOrchestrator
+from src.pipeline.stages.stage_1_collection import CollectionStage
+from src.targets.target_orchestrator import TargetOrchestrator
 
 logger = ProjectLogger.get_logger("TrainingDataPipeline")
 
@@ -67,7 +66,7 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
         output_dir = Path(output_dir_str)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / output_filename
-        
+
         final_df.to_parquet(output_path, index=False)
         logger.info("--- Pipeline Finished Successfully ---")
         logger.info(f"Final dataset saved to: {output_path}")
@@ -77,8 +76,8 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
 
 if __name__ == "__main__":
     from src.config.unified_config_manager import get_current_config
-    
+
     config = get_current_config()
     db_manager = DataManager(config) # Create the DataManager
-    
+
     asyncio.run(run_pipeline(config, db_manager))

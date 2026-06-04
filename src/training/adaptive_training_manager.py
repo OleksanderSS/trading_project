@@ -2,19 +2,20 @@
 Adaptive Training Manager for Large Ticker Sets with Dynamic Targets.
 Orchestrates complex training cycles by analyzing ticker compatibility and target quality.
 """
-import os
 import json
 import logging
-import numpy as np
-from pathlib import Path
 from datetime import datetime
-from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Any, Optional, Set, Tuple
-from src.core.logging.logger import ProjectLogger
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
 from src.config.unified_config_manager import get_current_config
-from src.training.unified_training_manager import UnifiedTrainingManager, TrainingStrategy
+from src.core.logging.logger import ProjectLogger
 from src.training.base_trainer import TrainerConfig
+from src.training.unified_training_manager import TrainingStrategy, UnifiedTrainingManager
+
 try:
     from src.config.adaptive_targets import AdaptiveTargetsSystem, TimeframeType
 except ImportError:
@@ -55,7 +56,7 @@ class AdaptiveTrainingManager:
     Optimizes the selection of training architectures and target combinations based on market data availability.
     """
 
-    def __init__(self, config: Optional[TrainerConfig]=None):
+    def __init__(self, config: TrainerConfig | None=None):
         self.config_manager = get_current_config()
         self.config = config or TrainerConfig(mode='balanced', strategy=
             'hybrid', max_targets_per_ticker=10, target_diversity_threshold
@@ -74,18 +75,18 @@ class AdaptiveTrainingManager:
             ]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
-    def analyze_ticker_set_with_targets(self, tickers: List[str]) ->Dict[
+    def analyze_ticker_set_with_targets(self, tickers: list[str]) ->dict[
         str, Any]:
         """
         Conducts a comprehensive analysis of an asset set to determine optimal target mappings.
-        
+
         Args:
             tickers: List of asset symbols to analyze.
-            
+
         Returns:
             Granular analysis report including compatibility matrices and recommendations.
         """
-        analysis: Dict[str, Any] = {'ticker_analysis': {},
+        analysis: dict[str, Any] = {'ticker_analysis': {},
             'target_analysis': {}, 'compatibility_matrix': {},
             'recommendations': []}
         for ticker in tickers:
@@ -99,7 +100,7 @@ class AdaptiveTrainingManager:
             analysis)
         return analysis
 
-    def _analyze_single_ticker(self, ticker: str) ->Dict[str, Any]:
+    def _analyze_single_ticker(self, ticker: str) ->dict[str, Any]:
         """Performs deep-dive analysis on a single asset's temporal properties."""
         timeframe_analysis = {}
         for timeframe_type in [TimeframeType.INTRADAY_SHORT, TimeframeType.
@@ -127,7 +128,7 @@ class AdaptiveTrainingManager:
             keys(), key=lambda x: float(timeframe_analysis[x].get(
             'target_quality_score', 0)))}
 
-    def _calculate_target_quality_score(self, targets: List) ->float:
+    def _calculate_target_quality_score(self, targets: list) ->float:
         """Calculates a heuristic quality score for a set of targets based on volume and diversity."""
         if not targets:
             return 0.0
@@ -150,10 +151,10 @@ class AdaptiveTrainingManager:
         diversity_score = min(len(categories) / 6, 1.0)
         priority_score = sum(1.0 / target.priority for target in targets[:5]
             ) / 5 if targets else 0.0
-        return (quantity_score * 0.3 + diversity_score * 0.4 + 
+        return (quantity_score * 0.3 + diversity_score * 0.4 +
             priority_score * 0.3)
 
-    def _calculate_overall_ticker_score(self, timeframe_analysis: Dict[str,
+    def _calculate_overall_ticker_score(self, timeframe_analysis: dict[str,
         Any]) ->float:
         """Aggregates scores across timeframes to determine ticker suitability."""
         scores = [analysis['target_quality_score'] for analysis in
@@ -161,14 +162,14 @@ class AdaptiveTrainingManager:
             ]
         return sum(scores) / len(scores) if scores else 0.0
 
-    def _analyze_target_compatibility(self, tickers: List[str]) ->Dict[str, Any
+    def _analyze_target_compatibility(self, tickers: list[str]) ->dict[str, Any
         ]:
         """Identifies target overlap and uniqueness across the asset set."""
-        compatibility: Dict[str, Any] = {'common_targets': set(),
+        compatibility: dict[str, Any] = {'common_targets': set(),
             'unique_targets': {}, 'target_distribution': {},
             'quality_distribution': {}}
-        ticker_targets: Dict[str, Set[str]] = {}
-        all_targets: Set[str] = set()
+        ticker_targets: dict[str, set[str]] = {}
+        all_targets: set[str] = set()
         for ticker in tickers:
             ticker_target_set = {f'target_volatility_1h_{ticker}',
                 f'target_return_1h_{ticker}',
@@ -197,7 +198,7 @@ class AdaptiveTrainingManager:
             ticker, targets in ticker_targets.items()}}
         return compatibility
 
-    def _create_compatibility_matrix(self, tickers: List[str]) ->Dict[str, Any
+    def _create_compatibility_matrix(self, tickers: list[str]) ->dict[str, Any
         ]:
         """Constructs a compatibility matrix for determining grouped training batches."""
         matrix = {'tickers': tickers, 'compatibility_scores': {},
@@ -211,7 +212,7 @@ class AdaptiveTrainingManager:
         matrix['training_groups'] = self._create_training_groups(tickers)
         return matrix
 
-    def _create_training_groups(self, tickers: List[str]) ->List[List[str]]:
+    def _create_training_groups(self, tickers: list[str]) ->list[list[str]]:
         """Splits assets into logical groups based on compatibility scores."""
         groups = []
         batch_size = min(5, len(tickers))
@@ -219,8 +220,8 @@ class AdaptiveTrainingManager:
             groups.append(tickers[i:i + batch_size])
         return groups
 
-    def _generate_training_recommendations(self, analysis: Dict[str, Any]
-        ) ->List[str]:
+    def _generate_training_recommendations(self, analysis: dict[str, Any]
+        ) ->list[str]:
         """Generates strategic insights from the dataset analysis."""
         recommendations = []
         ticker_scores = [t['overall_score'] for t in analysis[
@@ -256,14 +257,14 @@ class AdaptiveTrainingManager:
             recommendations.append('Low Latency: Batch training allowed.')
         return recommendations
 
-    def create_adaptive_training_plan(self, tickers: List[str]) ->Dict[str, Any
+    def create_adaptive_training_plan(self, tickers: list[str]) ->dict[str, Any
         ]:
         """
         Generates a comprehensive executable training plan based on asset analysis.
-        
+
         Args:
             tickers: Set of assets for the training cycle.
-            
+
         Returns:
             Dictionary containing orchestration strategy, resource estimations, and phase breakdowns.
         """
@@ -286,7 +287,7 @@ class AdaptiveTrainingManager:
                 i == 0 else [f'phase_{i}']})
         return plan
 
-    def _select_optimal_strategy(self, analysis: Dict[str, Any]
+    def _select_optimal_strategy(self, analysis: dict[str, Any]
         ) ->TrainingStrategy:
         """Determines the most efficient training strategy based on dataset complexity."""
         ticker_count = len(analysis['ticker_analysis'])
@@ -296,8 +297,8 @@ class AdaptiveTrainingManager:
             return TrainingStrategy.HYBRID
         return TrainingStrategy.BATCH
 
-    def _create_group_target_config(self, group: List[str], analysis: Dict[
-        str, Any]) ->Dict[str, Any]:
+    def _create_group_target_config(self, group: list[str], analysis: dict[
+        str, Any]) ->dict[str, Any]:
         """Develops a customized target config for a specific ticker group."""
         ticker_targets = []
         for ticker in group:
@@ -311,7 +312,7 @@ class AdaptiveTrainingManager:
         return {'group': group, 'primary_targets': list(set(ticker_targets)
             ), 'quality_floor': 0.7}
 
-    def _estimate_training_resources(self, plan: Dict[str, Any]) ->Dict[str,
+    def _estimate_training_resources(self, plan: dict[str, Any]) ->dict[str,
         Any]:
         """Heuristic resource estimation for infrastructure planning."""
         total_tickers = len(plan['analysis']['ticker_analysis'])
@@ -319,7 +320,7 @@ class AdaptiveTrainingManager:
             'estimated_duration_hours': total_tickers * 0.25,
             'projected_checkpoints': max(1, total_tickers // 10)}
 
-    def _calculate_quality_metrics(self, analysis: Dict[str, Any]) ->Dict[
+    def _calculate_quality_metrics(self, analysis: dict[str, Any]) ->dict[
         str, Any]:
         """Calculates aggregate quality metrics for the entire analysis set."""
         scores = [t['overall_score'] for t in analysis['ticker_analysis'].
@@ -329,13 +330,13 @@ class AdaptiveTrainingManager:
             'target_diversity_index': len(analysis['target_analysis'][
             'common_targets'])}
 
-    def execute_adaptive_training(self, tickers: List[str]) ->Dict[str, Any]:
+    def execute_adaptive_training(self, tickers: list[str]) ->dict[str, Any]:
         """
         Executes the full adaptive training pipeline.
-        
+
         Args:
             tickers: Asset set to train.
-            
+
         Returns:
             Dict containing final execution summary and metrics.
         """
@@ -371,6 +372,7 @@ class AdaptiveTrainingManager:
 def main():
     """Diagnostic entry point for the Adaptive Training Manager."""
     import argparse
+
     from src.config.tickers import get_tickers
     parser = argparse.ArgumentParser(description=
         'Adaptive Training Manager Diagnostic Utility')

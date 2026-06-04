@@ -1,10 +1,11 @@
 """
 Provides tools for eXplainable AI (XAI) on machine learning models.
 """
-import pandas as pd
-import numpy as np
 import logging
-from typing import Dict, List, Any
+from typing import Any
+
+import numpy as np
+import pandas as pd
 
 # Create numpy random generator
 rng = np.random.default_rng(42)
@@ -15,7 +16,7 @@ class ExplainabilityCalculator:
     """A collection of static methods for model explainability."""
 
     @staticmethod
-    def analyze_feature_importance(model: Any, X: pd.DataFrame, feature_names: List[str]) -> Dict[str, float]:
+    def analyze_feature_importance(model: Any, X: pd.DataFrame, feature_names: list[str]) -> dict[str, float]:
         """
         Calculates feature importance using native methods or permutation if not available.
 
@@ -32,11 +33,11 @@ class ExplainabilityCalculator:
             if hasattr(model, 'feature_importances_'):
                 # Native support for Trees (LGBM, RF, XGB)
                 importances = model.feature_importances_
-                importance = dict(zip(feature_names, importances))
+                importance = dict(zip(feature_names, importances, strict=False))
             elif hasattr(model, 'coef_'):
                 # Linear models - use absolute coefficient values
                 importances = np.abs(model.coef_).flatten()
-                importance = dict(zip(feature_names, importances))
+                importance = dict(zip(feature_names, importances, strict=False))
             else:
                 # Fallback to Permutation Importance for black-box/heavy models
                 logger.info(f"Using permutation importance for model {type(model).__name__}")
@@ -56,7 +57,7 @@ class ExplainabilityCalculator:
             total_importance = sum(importance.values())
             if total_importance > 0:
                 importance = {k: v / total_importance for k, v in importance.items()}
-            
+
             # Sort by importance value in descending order
             return dict(sorted(importance.items(), key=lambda item: item[1], reverse=True))
 
@@ -65,7 +66,7 @@ class ExplainabilityCalculator:
             raise RuntimeError(f"Failed to analyze feature importance: {e}") from e
 
     @staticmethod
-    def explain_single_prediction(model: Any, data_row: pd.DataFrame) -> Dict[str, float]:
+    def explain_single_prediction(model: Any, data_row: pd.DataFrame) -> dict[str, float]:
         """
         Explains a single prediction by treating it as a batch of one.
         This is a convenience wrapper around analyze_feature_importance.

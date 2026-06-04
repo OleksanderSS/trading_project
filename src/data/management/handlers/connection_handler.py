@@ -1,16 +1,17 @@
 import logging
 import os
 import time
-import duckdb
-from typing import Dict, Optional
 from contextlib import contextmanager
+
+import duckdb
+
 logger = logging.getLogger(__name__)
 
 
 class ConnectionHandler:
     """Handles DuckDB connection lifecycle and shared connections."""
-    _connections: Dict[str, duckdb.DuckDBPyConnection] = {}
-    _connection_lock: Dict[str, bool] = {}
+    _connections: dict[str, duckdb.DuckDBPyConnection] = {}
+    _connection_lock: dict[str, bool] = {}
 
     def __init__(self, db_path: str):
         self.db_path = os.path.abspath(db_path
@@ -74,7 +75,7 @@ class ConnectionHandler:
                 cls._connections[db_path] = duckdb.connect(database=db_path,
                     read_only=False)
                 return cls._connections[db_path]
-            except Exception as fallback_error:
+            except Exception:
                 raise RuntimeError(
                     f"Cannot connect to database '{db_path}': {last_error}"
                     ) from last_error

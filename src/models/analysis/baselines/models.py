@@ -1,11 +1,14 @@
-from typing import Dict, Any, Optional
-import pandas as pd
+from typing import Any
+
 import numpy as np
-from sklearn.linear_model import LinearRegression
+import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from .base import BaseBaseline
-from src.core.logging.logger import ProjectLogger
+from sklearn.linear_model import LinearRegression
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+from .base import BaseBaseline
 
 logger = ProjectLogger.get_logger("BaselineModels")
 
@@ -18,8 +21,8 @@ class LinearRegressionBaseline(BaseBaseline):
         self.min_samples = min_samples
 
     def train_and_evaluate(self, market_data: pd.DataFrame, features_df:
-        Optional[pd.DataFrame]=None, target_series: Optional[pd.Series]=None
-        ) ->Dict[str, Any]:
+        pd.DataFrame | None=None, target_series: pd.Series | None=None
+        ) ->dict[str, Any]:
         try:
             if features_df is None or target_series is None or len(features_df
                 ) < self.min_samples:
@@ -37,7 +40,7 @@ class LinearRegressionBaseline(BaseBaseline):
                 predictions, 'metrics': self._calculate_metrics(target_series,
                 predictions), 'complexity_score': self.complexity_score,
                 'feature_count': len(X.columns), 'coefficients': dict(zip(X.
-                columns, model.coef_))}
+                columns, model.coef_, strict=False))}
         except Exception as e:
             logger.error(f"Error in LinearRegressionBaseline: {e}", exc_info=True)
             raise DataProcessingError(f"LinearRegressionBaseline training failed: {e}") from e
@@ -51,8 +54,8 @@ class SimpleRandomForestBaseline(BaseBaseline):
         self.min_samples = min_samples
 
     def train_and_evaluate(self, market_data: pd.DataFrame, features_df:
-        Optional[pd.DataFrame]=None, target_series: Optional[pd.Series]=None
-        ) ->Dict[str, Any]:
+        pd.DataFrame | None=None, target_series: pd.Series | None=None
+        ) ->dict[str, Any]:
         try:
             if features_df is None or target_series is None or len(features_df
                 ) < self.min_samples:
@@ -71,7 +74,7 @@ class SimpleRandomForestBaseline(BaseBaseline):
                 predictions, 'metrics': self._calculate_metrics(target_series,
                 predictions), 'complexity_score': self.complexity_score,
                 'feature_count': len(X.columns), 'feature_importance': dict(
-                zip(X.columns, model.feature_importances_))}
+                zip(X.columns, model.feature_importances_, strict=False))}
         except Exception as e:
             logger.error(f"Error in SimpleRandomForestBaseline: {e}", exc_info=True)
             raise DataProcessingError(f"SimpleRandomForestBaseline training failed: {e}") from e

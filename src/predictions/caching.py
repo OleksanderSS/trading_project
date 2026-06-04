@@ -1,7 +1,7 @@
 """
 Prediction Caching Layer (Phase 3 Optimization)
 
-Provides LRU cache for model predictions to avoid recomputing 
+Provides LRU cache for model predictions to avoid recomputing
 identical feature sets. Typical speedup: 40-70% for repeated predictions.
 
 Usage:
@@ -9,52 +9,56 @@ Usage:
     result = cache.get_or_compute(features, model_id, compute_fn)
 """
 import hashlib
+import logging
 import pickle
+from collections import OrderedDict
+from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Any, Callable, Optional, Dict, Tuple
-from pathlib import Path
-from datetime import datetime, timedelta
-from collections import OrderedDict
-import logging
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('PredictionCache')
 
 
 class PredictionCache:
     """
     LRU (Least Recently Used) cache for prediction results.
-    
+
     Caches predictions by hashing feature sets, enabling fast lookups
-    for identical inputs. Automatically evicts oldest entries when 
+    for identical inputs. Automatically evicts oldest entries when
     capacity is exceeded.
-    
+
     Features:
     - Automatic FIFO eviction when maxsize reached
     - Feature hashing for numpy arrays, pandas DataFrames, lists
     - Optional persistence to disk
     - Hit/miss statistics for debugging
-    
+
     Example:
         cache = PredictionCache(maxsize=5000)
-        
+
         # First call: computes prediction
         result1 = cache.get_or_compute(features, 'model_mlp',
                                        lambda: model.predict(features))
-        
+
         # Second call: returns cached result (instant)
         result2 = cache.get_or_compute(features, 'model_mlp',
                                        lambda: model.predict(features))
-        
+
         # Statistics
         stats = cache.get_statistics()
         print(f"Hit rate: {stats['hit_rate']:.1%}, Size: {stats['size']}/{stats['maxsize']}")
     """
 
-    def __init__(self, maxsize: int=10000, persist_dir: Optional[Path]=None):
+    def __init__(self, maxsize: int=10000, persist_dir: Path | None=None):
         """
         Initialize prediction cache.
-        
+
         Args:
             maxsize: Maximum number of cached predictions (default: 10000)
             persist_dir: Optional directory for disk persistence
@@ -68,7 +72,7 @@ class PredictionCache:
             self.persist_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f'Cache persistence enabled at {self.persist_dir}')
 
-    def _hash_features(self, features: Any, model_id: str) ->Optional[str]:
+    def _hash_features(self, features: Any, model_id: str) ->str | None:
         """
         Create stable hash from features and model_id.
         Handles: numpy arrays, pandas DataFrames, lists, tuples.
@@ -93,16 +97,16 @@ class PredictionCache:
             return None
 
     def get_or_compute(self, features: Any, model_id: str, compute_fn:
-        Callable[[], Any], ttl_seconds: Optional[int]=None) ->Any:
+        Callable[[], Any], ttl_seconds: int | None=None) ->Any:
         """
         Get prediction from cache or compute if missing.
-        
+
         Args:
             features: Input features (array, DataFrame, list, etc.)
             model_id: Model identifier for multi-model setups
             compute_fn: Function to call if cache miss
             ttl_seconds: Optional time-to-live (cache expires after this)
-        
+
         Returns:
             Cached result or newly computed result
         """
@@ -136,7 +140,7 @@ class PredictionCache:
         self.misses = 0
         logger.info('Prediction cache cleared')
 
-    def get_statistics(self) ->Dict[str, Any]:
+    def get_statistics(self) ->dict[str, Any]:
         """Get cache hit/miss statistics"""
         total = self.hits + self.misses
         hit_rate = self.hits / total if total > 0 else 0
@@ -156,7 +160,7 @@ class PredictionCache:
 class EnsembleResultCache:
     """
     Specialized cache for ensemble predictions (Stage 5).
-    
+
     Caches both individual model predictions and final ensemble results
     to maximize reuse across multiple ensemble runs.
     """
@@ -164,7 +168,7 @@ class EnsembleResultCache:
     def __init__(self, maxsize: int=5000):
         """
         Initialize ensemble cache.
-        
+
         Args:
             maxsize: Maximum ensemble results to cache
         """
@@ -178,7 +182,7 @@ class EnsembleResultCache:
         return self.model_cache.get_or_compute(features,
             f'model_{model_id}', model_fn)
 
-    def get_or_compute_ensemble(self, model_predictions: Dict[str, Any],
+    def get_or_compute_ensemble(self, model_predictions: dict[str, Any],
         ensemble_fn: Callable) ->Any:
         """Get cached ensemble result or compute"""
         key = '_'.join(sorted(model_predictions.keys()))
@@ -187,7 +191,7 @@ class EnsembleResultCache:
         return self.ensemble_cache.get_or_compute(predictions_tuple,
             f'ensemble_{key}', ensemble_fn)
 
-    def get_statistics(self) ->Dict[str, Dict[str, Any]]:
+    def get_statistics(self) ->dict[str, dict[str, Any]]:
         """Get statistics for both caches"""
         return {'model_cache': self.model_cache.get_statistics(),
             'ensemble_cache': self.ensemble_cache.get_statistics()}
@@ -205,8 +209,8 @@ class EnsembleResultCache:
             )
 
 
-_prediction_cache: Optional[PredictionCache] = None
-_ensemble_cache: Optional[EnsembleResultCache] = None
+_prediction_cache: PredictionCache | None = None
+_ensemble_cache: EnsembleResultCache | None = None
 
 
 def get_prediction_cache(maxsize: int=10000) ->PredictionCache:

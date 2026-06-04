@@ -1,7 +1,9 @@
-from typing import Any, cast
-import pandas as pd
-import numpy as np
 from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 from src.models.analysis.baseline_dominance_detector import BaselineDominanceDetector
 from src.models.analysis.overfitting_detector import OverfittingDetector
@@ -47,7 +49,7 @@ class ModelHealthAnalyzer:
             "action_required": False,
             "retraining_recommended": False,
         }
-        
+
         analysis_results = results["analysis_results"]
 
         # 1. Baseline dominance

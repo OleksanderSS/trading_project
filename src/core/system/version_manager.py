@@ -2,13 +2,11 @@
 System Version Management - Management of system operations,
 configurations and models
 """
-import logging
-
 import json
-from dataclasses import dataclass, asdict
+import logging
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
 
 from src.core.logging.logger import ProjectLogger
 
@@ -21,20 +19,20 @@ class ConfigVersion:
     version: str
     date: str
     description: str
-    changes: List[str]
+    changes: list[str]
     migration_required: bool = False
-    migration_script: Optional[str] = None
+    migration_script: str | None = None
 
 
 class ConfigVersionManager:
     """
     System version manager with support for models and pipeline runs
     """
-    def __init__(self, history_path: Optional[str] = None):
+    def __init__(self, history_path: str | None = None):
         self.history_path = Path(
             history_path or "src/config/version_history.json"
         )
-        self.versions: List[ConfigVersion] = []
+        self.versions: list[ConfigVersion] = []
         self.current_version = "1.3.0"
         self._load_versions()
 
@@ -50,7 +48,7 @@ class ConfigVersionManager:
             return
 
         try:
-            with open(self.history_path, 'r', encoding='utf-8') as f:
+            with open(self.history_path, encoding='utf-8') as f:
                 data = json.load(f)
                 self.versions = [
                     ConfigVersion(**v) for v in data.get("versions", [])
@@ -79,7 +77,7 @@ class ConfigVersionManager:
         except Exception as e:
             logger.error(f"Failed to save version history: {e}")
 
-    def _get_default_versions(self) -> List[ConfigVersion]:
+    def _get_default_versions(self) -> list[ConfigVersion]:
         """Initial versions if the file is missing"""
         return [
             ConfigVersion(
@@ -126,8 +124,8 @@ class ConfigVersionManager:
         return run_id
 
     def get_version_info(
-        self, version: Optional[str] = None
-    ) -> Optional[ConfigVersion]:
+        self, version: str | None = None
+    ) -> ConfigVersion | None:
         """Get version information"""
         target_version = version or self.current_version
         for v in self.versions:
@@ -135,13 +133,13 @@ class ConfigVersionManager:
                 return v
         return None
 
-    def get_all_versions(self) -> List[ConfigVersion]:
+    def get_all_versions(self) -> list[ConfigVersion]:
         """Get all versions"""
         return self.versions.copy()
 
     def get_migration_path(
-        self, from_version: str, to_version: Optional[str] = None
-    ) -> List[str]:
+        self, from_version: str, to_version: str | None = None
+    ) -> list[str]:
         """Get the migration path"""
         target_version = to_version or self.current_version
         from_idx = next(
@@ -171,9 +169,9 @@ class ConfigVersionManager:
         self,
         version: str,
         description: str,
-        changes: List[str],
+        changes: list[str],
         migration_required: bool = False,
-        migration_script: Optional[str] = None
+        migration_script: str | None = None
     ):
         """Add a new version to the history"""
         new_version = ConfigVersion(
@@ -219,12 +217,12 @@ def needs_migration(from_version: str) -> bool:
 
 
 def get_migration_path(
-    from_version: str, to_version: Optional[str] = None
-) -> List[str]:
+    from_version: str, to_version: str | None = None
+) -> list[str]:
     return get_version_manager().get_migration_path(from_version, to_version)
 
 
 def get_version_info(
-    version: Optional[str] = None
-) -> Optional[ConfigVersion]:
+    version: str | None = None
+) -> ConfigVersion | None:
     return get_version_manager().get_version_info(version)

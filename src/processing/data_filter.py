@@ -4,8 +4,8 @@ Intelligent Data Filter - Facade for Modular Data Filtering System.
 Maintains backward compatibility with the original IntelligentDataFilter.
 """
 
-from typing import Dict, Any, Optional
 from .filters.orchestrator import IntelligentDataFilter as ModularIntelligentDataFilter
+
 
 class IntelligentDataFilter(ModularIntelligentDataFilter):
     """
@@ -14,7 +14,7 @@ class IntelligentDataFilter(ModularIntelligentDataFilter):
     """
     pass
 
-def filter_data_for_model_training(raw_data: Dict, config: Optional[Dict] = None) -> Dict:
+def filter_data_for_model_training(raw_data: dict, config: dict | None = None) -> dict:
     """
     Convenience function for data filtering.
     """

@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import matplotlib
 
@@ -41,7 +41,7 @@ def plot_equity_curve(portfolio_history, financial_metrics=None) -> Path:
     return p
 
 
-def save_report(path: Path, summary: Dict[str, Any]) -> None:
+def save_report(path: Path, summary: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         import json

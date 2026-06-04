@@ -1,5 +1,5 @@
-import re
 import os
+import re
 
 
 def sanitize_path_input(path_input: str) -> str:

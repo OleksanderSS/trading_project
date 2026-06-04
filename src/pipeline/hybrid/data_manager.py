@@ -2,12 +2,13 @@
 Data management component for Hybrid Orchestrator.
 Handles data loading, saving, and processing operations.
 """
-import json
-import pandas as pd
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
-from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger(__name__)
 FEATURES_FILE = 'features.parquet'
 TARGETS_FILE = 'targets.parquet'
@@ -51,7 +52,7 @@ class HybridDataManager:
             return pd.DataFrame()
 
     def save_dataframes(self, features_df: pd.DataFrame, targets_df: pd.
-        DataFrame) ->Dict[str, Any]:
+        DataFrame) ->dict[str, Any]:
         """Save features and targets DataFrames."""
         batch_dir = self.output_dir
         batch_dir.mkdir(parents=True, exist_ok=True)
@@ -87,11 +88,10 @@ class HybridDataManager:
         """Check if new data exists compared to cache."""
         try:
             old_features = pd.read_parquet(features_path)
-            import numpy as np
             known = set(zip(pd.to_datetime(old_features['datetime']).dt.
-                tz_localize(None), old_features['ticker']))
+                tz_localize(None), old_features['ticker'], strict=False))
             current = set(zip(pd.to_datetime(new_features['datetime']).dt.
-                tz_localize(None), new_features['ticker']))
+                tz_localize(None), new_features['ticker'], strict=False))
             return len(current - known) > 0
         except Exception as e:
             self.logger.error(f'Error checking for new data: {e}', exc_info=True)

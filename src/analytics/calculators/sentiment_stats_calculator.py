@@ -1,7 +1,6 @@
-import pandas as pd
-import numpy as np
 import logging
-from typing import Dict
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +10,7 @@ class SentimentStatsCalculator:
     """
 
     @staticmethod
-    def calculate_sentiment_stats(news_data: pd.DataFrame, column: str = 'news_score') -> Dict[str, float]:
+    def calculate_sentiment_stats(news_data: pd.DataFrame, column: str = 'news_score') -> dict[str, float]:
         """
         Calculates mean, standard deviation, and dynamic thresholds for a sentiment score series.
 
@@ -20,19 +19,19 @@ class SentimentStatsCalculator:
             column (str): The name of the column with sentiment scores.
 
         Returns:
-            Dict[str, float]: A dictionary with statistics including 'mean', 'std', 
+            Dict[str, float]: A dictionary with statistics including 'mean', 'std',
                               'positive_threshold', and 'negative_threshold'.
         """
         # Validate input data and column
         is_data_invalid = news_data is None or (isinstance(news_data, pd.DataFrame) and news_data.empty)
         is_column_missing = news_data is not None and column not in news_data.columns
-        
+
         if is_data_invalid or is_column_missing:
             logger.warning(f"Cannot calculate sentiment stats. Input data is empty or column '{column}' is missing.")
             return {"mean": 0.0, "std": 0.0, "positive_threshold": 0.5, "negative_threshold": -0.5}
 
         scores = news_data[column].dropna()
-        
+
         if scores.empty:
             return {"mean": 0.0, "std": 0.0, "positive_threshold": 0.5, "negative_threshold": -0.5}
 

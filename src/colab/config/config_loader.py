@@ -133,7 +133,7 @@ class RuntimeConfigLoader:
             if not str(config_path).startswith(str(Path.cwd().resolve())):
                 raise ValueError(
                     'Config path outside working directory not allowed')
-            with open(config_path, 'r') as f:
+            with open(config_path) as f:
                 content = f.read().strip()
                 if content:
                     self._parse_config_data(json.loads(content))

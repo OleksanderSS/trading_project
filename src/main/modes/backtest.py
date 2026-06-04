@@ -2,21 +2,25 @@
 Backtest mode - повноцінний, ІНТЕГРОВАНИЙ бектестинг стратегій на основі ML.
 (ОНОВЛЕНО для використання нової архітектури PipelineOrchestrator)
 """
+from typing import Any
+
 import pandas as pd
-from typing import Dict, Any
-from .base import BaseMode
+
+from src.backtesting.advanced.advanced_engine import BiasDetector, WalkForwardOptimizer
+from src.core.logging.logger import ProjectLogger
+from src.metrics.calculator import MetricsCalculator
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
 from src.trading.virtual_portfolio import VirtualPortfolio
-from src.metrics.calculator import MetricsCalculator
-from src.core.logging.logger import ProjectLogger
-from src.backtesting.advanced.advanced_engine import WalkForwardOptimizer, BiasDetector
+
+from .base import BaseMode
+
 logger = ProjectLogger.get_logger(__name__)
 
 
 class BacktestMode(BaseMode):
     """Режим бектестингу, що використовує нову архітектуру пайплайну."""
 
-    def run(self) ->Dict[str, Any]:
+    def run(self) ->dict[str, Any]:
         """
         Запускає повний цикл бектестингу: від збору даних до аналізу прибутковості,
         використовуючи PipelineOrchestrator з walk-forward validation.
@@ -36,7 +40,7 @@ class BacktestMode(BaseMode):
             self.logger.exception(f'[Backtest] A critical error occurred: {e}')
             return {'status': 'failed', 'error': str(e)}
 
-    def _run_standard_backtest(self) ->Dict[str, Any]:
+    def _run_standard_backtest(self) ->dict[str, Any]:
         """Standard backtest execution."""
         orchestrator = PipelineOrchestrator(self.config_manager)
         final_data = self._execute_pipeline(orchestrator)
@@ -52,7 +56,7 @@ class BacktestMode(BaseMode):
         self._log_results(performance_metrics)
         return {'status': 'success', 'metrics': performance_metrics}
 
-    def _run_walk_forward_validation(self) ->Dict[str, Any]:
+    def _run_walk_forward_validation(self) ->dict[str, Any]:
         """Walk-forward validation execution."""
         self.logger.info('[Backtest] Running walk-forward validation...')
         backtest_config = self.config_manager.get_config(
@@ -76,7 +80,7 @@ class BacktestMode(BaseMode):
             'walk_forward_results': wf_results}
 
     def _detect_biases(self, signals_df: pd.DataFrame, price_data: pd.DataFrame
-        ) ->Dict[str, Any]:
+        ) ->dict[str, Any]:
         """Detect various biases in backtest data."""
         bias_detector = BiasDetector()
         bias_results = {'look_ahead_bias': None, 'survivorship_bias': None,
@@ -91,7 +95,7 @@ class BacktestMode(BaseMode):
                 if look_ahead_results.get('has_look_ahead_bias'):
                     bias_results['warnings'].append('Look-ahead bias detected!'
                         )
-            bias_results['survivorship_bias'] = {'has_survivorship_bias': 
+            bias_results['survivorship_bias'] = {'has_survivorship_bias':
                 False, 'message': 'Not enough data for analysis'}
         except Exception as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
@@ -131,8 +135,8 @@ class BacktestMode(BaseMode):
         price_data = final_data.get('processed_data')
         return price_data if price_data is not None else pd.DataFrame()
 
-    def _aggregate_walk_forward_results(self, wf_results: Dict[str, Any]
-        ) ->Dict[str, Any]:
+    def _aggregate_walk_forward_results(self, wf_results: dict[str, Any]
+        ) ->dict[str, Any]:
         """Aggregate results from walk-forward validation windows."""
         if not wf_results or 'windows' not in wf_results:
             return {'error': 'No walk-forward results to aggregate'}
@@ -155,8 +159,8 @@ class BacktestMode(BaseMode):
             len(windows), 'validation_type': 'walk_forward'}
         return aggregated_metrics
 
-    def _log_walk_forward_results(self, performance_metrics: Dict[str, Any],
-        wf_results: Dict[str, Any]):
+    def _log_walk_forward_results(self, performance_metrics: dict[str, Any],
+        wf_results: dict[str, Any]):
         """Log walk-forward validation results."""
         self.logger.info('--- Walk-Forward Validation Completed ---')
         self.logger.info(
@@ -171,14 +175,14 @@ class BacktestMode(BaseMode):
             f"Average max drawdown: {performance_metrics.get('walk_forward_avg_drawdown', 0):.2%}"
             )
 
-    def _execute_pipeline(self, orchestrator: PipelineOrchestrator) ->Dict[
+    def _execute_pipeline(self, orchestrator: PipelineOrchestrator) ->dict[
         str, Any]:
         """Виконує повний пайплайн для генерації прогнозів."""
         self.logger.info(
             '[Backtest] Running the full data and prediction pipeline...')
         return orchestrator.execute_full_pipeline()
 
-    def _extract_predictions_and_signals(self, final_data: Dict[str, Any]
+    def _extract_predictions_and_signals(self, final_data: dict[str, Any]
         ) ->tuple:
         """Витягує прогнози та сигнали з результатів пайплайну."""
         predictions = final_data.get('prediction_results') or final_data.get(
@@ -200,7 +204,7 @@ class BacktestMode(BaseMode):
                 'Pipeline did not generate any signal data for backtesting.')
         return predictions, signals_df
 
-    def _validate_price_data(self, final_data: Dict[str, Any]) ->pd.DataFrame:
+    def _validate_price_data(self, final_data: dict[str, Any]) ->pd.DataFrame:
         """Перевіряє наявність та коректність даних про ціни."""
         price_data = final_data.get('processed_data')
         if price_data is None or 'close' not in price_data.columns:
@@ -221,7 +225,7 @@ class BacktestMode(BaseMode):
         return aligned_prices, aligned_signals
 
     def _run_portfolio_simulation(self, aligned_prices: pd.Series,
-        aligned_signals: pd.Series) ->Dict[str, float]:
+        aligned_signals: pd.Series) ->dict[str, float]:
         """Запускає симуляцію портфеля та розраховує метрики."""
         self.logger.info(
             '[Backtest] Initializing and running the virtual portfolio...')
@@ -233,7 +237,7 @@ class BacktestMode(BaseMode):
         metrics_calculator = MetricsCalculator(portfolio.get_equity_curve())
         return metrics_calculator.calculate_all_metrics()
 
-    def _log_results(self, performance_metrics: Dict[str, float]) ->None:
+    def _log_results(self, performance_metrics: dict[str, float]) ->None:
         """Логує результати бектестингу."""
         self.logger.info('--- Backtest Completed Successfully ---')
         self.logger.info(

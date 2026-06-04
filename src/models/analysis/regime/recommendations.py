@@ -1,4 +1,5 @@
-from typing import Dict, List, Any
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger('RegimeRecommendations')
@@ -7,13 +8,13 @@ logger = ProjectLogger.get_logger('RegimeRecommendations')
 class RegimeRecommendationEngine:
     """Генерує рекомендації на основі аналізу режимів ринку."""
 
-    def __init__(self, regime_types: Dict[str, Any]):
+    def __init__(self, regime_types: dict[str, Any]):
         self.regime_types = regime_types
         self.logger = logger
 
     def generate_regime_recommendations(self, current_regime: str,
-        consistency_metrics: Dict[str, Any], winner_patterns: Dict[str, Any]
-        ) ->List[str]:
+        consistency_metrics: dict[str, Any], winner_patterns: dict[str, Any]
+        ) ->list[str]:
         """Генерує рекомендації на основі аналізу режимів."""
         recommendations = []
         try:

@@ -1,9 +1,10 @@
+from typing import Any
+
 import pandas as pd
-import asyncio
-from typing import Dict, List, Any, Optional
-from src.data.collectors.collector_factory import CollectorFactory
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+from src.data.collectors.collector_factory import CollectorFactory
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -15,7 +16,7 @@ class CollectionManager:
         self.collectors = self.factory.get_all_collectors()
         logger.info(f'Initialized CollectionManager with {len(self.collectors)} collectors.')
 
-    async def fetch_all(self, tickers: List[str], keywords: List[str]) -> Dict[str, pd.DataFrame]:
+    async def fetch_all(self, tickers: list[str], keywords: list[str]) -> dict[str, pd.DataFrame]:
         """Executes all collectors and aggregates results."""
         raw_data = {}
         for collector in self.collectors:
@@ -23,7 +24,7 @@ class CollectionManager:
                 result = await self._run_collector(collector, tickers, keywords)
                 if result is None:
                     continue
-                
+
                 df = self._convert_to_dataframe(result)
                 if df is not None and not df.empty:
                     table_name = f"{collector.__class__.__name__.lower().replace('collector', '')}_data"
@@ -37,22 +38,22 @@ class CollectionManager:
                 continue
         return raw_data
 
-    async def _run_collector(self, collector: Any, tickers: List[str], keywords: List[str]) -> Any:
+    async def _run_collector(self, collector: Any, tickers: list[str], keywords: list[str]) -> Any:
         """Runs a collector with appropriate arguments."""
         # This mirrors the logic previously in CollectionStage._run_collector
         # Ideally, collectors should have a unified interface to avoid this type checking
-        from src.data.collectors.yf_collector import YFCollector
-        from src.data.collectors.fred_collector import FredCollector
-        from src.data.collectors.google_news_collector import GoogleNewsCollector
-        from src.data.collectors.rss_collector import RSSCollector
-        from src.data.collectors.newsapi_collector import NewsAPICollector
-        from src.data.collectors.sec_filings_collector import SECFilingsCollector
-        from src.data.collectors.insider_collector import InsiderCollector
-        from src.data.collectors.free_google_trends_collector import FreeGoogleTrendsCollector
-        from src.data.collectors.huggingface_collector import HuggingfaceCollector
         from src.data.collectors.bigquery_collector import BigQueryCollector
         from src.data.collectors.economic_calendar_collector import EconomicCalendarCollector
-        
+        from src.data.collectors.fred_collector import FredCollector
+        from src.data.collectors.free_google_trends_collector import FreeGoogleTrendsCollector
+        from src.data.collectors.google_news_collector import GoogleNewsCollector
+        from src.data.collectors.huggingface_collector import HuggingfaceCollector
+        from src.data.collectors.insider_collector import InsiderCollector
+        from src.data.collectors.newsapi_collector import NewsAPICollector
+        from src.data.collectors.rss_collector import RSSCollector
+        from src.data.collectors.sec_filings_collector import SECFilingsCollector
+        from src.data.collectors.yf_collector import YFCollector
+
         name = collector.__class__.__name__
         try:
             if isinstance(collector, YFCollector):
@@ -75,7 +76,7 @@ class CollectionManager:
         except Exception as e:
             raise DataProcessingError(f"Collector {name} failed: {e}") from e
 
-    def _convert_to_dataframe(self, res: Any) -> Optional[pd.DataFrame]:
+    def _convert_to_dataframe(self, res: Any) -> pd.DataFrame | None:
         """Convert result to DataFrame if needed."""
         if isinstance(res, list) and len(res) > 0:
             return pd.DataFrame(res)

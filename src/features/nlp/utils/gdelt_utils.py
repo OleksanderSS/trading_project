@@ -1,7 +1,9 @@
 # src/feature_engineering/nlp/gdelt_utils.py
 
 import pandas as pd
+
 from .keyword_features import KeywordExtractor
+
 
 def normalize_gdelt_signals(df: pd.DataFrame, tickers: dict = None, keyword_dict: dict = None) -> pd.DataFrame:
     if df is None or df.empty:

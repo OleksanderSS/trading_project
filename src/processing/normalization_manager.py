@@ -1,10 +1,13 @@
 import logging
+import os
+from typing import Any
+
+import joblib
+
 # src/processing/normalization_manager.py
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from typing import Dict, List, Optional, Union, Any
-import joblib
-import os
+
 from src.core.logging.logger import ProjectLogger
 from src.utils.artifact_security import resolve_trusted_artifact_path
 
@@ -25,18 +28,18 @@ class NormalizationManager:
             scaler_dir (str): Directory to save or load scalers.
         """
         self.scaler_dir = scaler_dir
-        self.scalers: Dict[str, Union[MinMaxScaler, StandardScaler]] = {}
+        self.scalers: dict[str, MinMaxScaler | StandardScaler] = {}
         if not os.path.exists(self.scaler_dir):
             os.makedirs(self.scaler_dir)
             logger.info(f"Created scaler directory at: {self.scaler_dir}")
 
-    def fit_scalers(self, data: pd.DataFrame, features_to_normalize: List[Dict[str, Any]]):
+    def fit_scalers(self, data: pd.DataFrame, features_to_normalize: list[dict[str, Any]]):
         """
         Fits scalers for the specified features and saves them.
 
         Args:
             data (pd.DataFrame): The training dataframe.
-            features_to_normalize (List[Dict[str, Any]]): A list of dictionaries, 
+            features_to_normalize (List[Dict[str, Any]]): A list of dictionaries,
                 each specifying a 'feature' name and 'scaler_type' ('min_max' or 'standard').
         """
         if not features_to_normalize:
@@ -46,30 +49,30 @@ class NormalizationManager:
         logger.info(f"Fitting scalers for {len(features_to_normalize)} features...")
         for config in features_to_normalize:
             self._fit_single_scaler(data, config)
-        
+
         logger.info("Scaler fitting complete.")
-    
-    def _fit_single_scaler(self, data: pd.DataFrame, config: Dict[str, Any]):
+
+    def _fit_single_scaler(self, data: pd.DataFrame, config: dict[str, Any]):
         """Fit a single scaler for a feature."""
         feature = config['feature']
         scaler_type = config.get('scaler_type', 'min_max')
 
         if not self._validate_feature_exists(data, feature):
             return
-        
+
         if not self._validate_feature_data(data, feature):
             return
 
         scaler = self._create_scaler(scaler_type, feature)
         self._fit_and_save_scaler(data, scaler, feature, scaler_type)
-    
+
     def _validate_feature_exists(self, data: pd.DataFrame, feature: str) -> bool:
         """Validate that feature exists in DataFrame."""
         if feature not in data.columns:
             logger.warning(f"Feature '{feature}' not found in DataFrame. Skipping.")
             return False
         return True
-    
+
     def _validate_feature_data(self, data: pd.DataFrame, feature: str) -> bool:
         """Validate that feature has data after dropping NaNs."""
         feature_data = data[[feature]].dropna()
@@ -77,17 +80,17 @@ class NormalizationManager:
             logger.warning(f"No data for feature '{feature}' after dropping NaNs. Skipping.")
             return False
         return True
-    
+
     def _create_scaler(self, scaler_type: str, feature: str):
         """Create appropriate scaler instance."""
         if scaler_type == 'min_max':
             return MinMaxScaler()
         if scaler_type == 'standard':
             return StandardScaler()
-        
+
         logger.warning(f"Unknown scaler type '{scaler_type}' for feature '{feature}'. Defaulting to MinMaxScaler.")
         return MinMaxScaler()
-    
+
     def _fit_and_save_scaler(self, data: pd.DataFrame, scaler, feature: str, scaler_type: str):
         """Fit scaler and save it with error handling."""
         try:
@@ -143,7 +146,7 @@ class NormalizationManager:
                     logger.debug(f"Inverse transformed feature '{feature}'.")
         else:
             logger.warning(f"No scaler found for feature '{feature}'. Inverse transform skipped.")
-        
+
         return data_inv
 
     def _save_scaler(self, feature: str):
@@ -155,7 +158,7 @@ class NormalizationManager:
         except Exception as e:
             logger.error(f"Failed to save scaler for '{feature}': {e}")
 
-    def load_scalers(self, features: Optional[List[str]] = None):
+    def load_scalers(self, features: list[str] | None = None):
         """
         Loads scalers from disk. If features are specified, loads only those.
         Otherwise, loads all scalers found in the directory.

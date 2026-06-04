@@ -11,10 +11,8 @@ import numpy as np
 import pandas as pd
 
 from src.main.modes.base import BaseMode
-from src.metrics.calculator import MetricsCalculator
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
 from src.simulation.simulation_engine import SimulationEngine
-from src.trading.virtual_portfolio import VirtualPortfolio
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +38,8 @@ class MonsterTestMode(BaseMode):
             if not training_results or 'best_model' not in training_results:
                 raise RuntimeError("Training pipeline did not produce a model for stress testing.")
 
-            model = training_results['best_model']
-            feature_names = training_results['feature_names']
+            training_results['best_model']
+            training_results['feature_names']
             # Отримуємо дані, на яких проводився бектест, для симуляцій
             backtest_data = training_results['backtest_data']
 
@@ -55,9 +53,10 @@ class MonsterTestMode(BaseMode):
             self.logger.info(f"[MonsterTest] Generating {n_simulations} synthetic price scenarios...")
             # Симулятор генерує сценарії на основі історичних даних з backtest_data
             # Використовуємо run_monte_carlo_for_strategy з функцією-стратегією
-            from src.simulation.simulation_engine import SimulationContext, SimulationGranularity
             from datetime import datetime
-            
+
+            from src.simulation.simulation_engine import SimulationContext, SimulationGranularity
+
             # Створюємо контекст симуляції
             context = SimulationContext(
                 ticker='SPY',
@@ -65,14 +64,14 @@ class MonsterTestMode(BaseMode):
                 granularity=SimulationGranularity.MARKET_LEVEL,
                 historical_returns=backtest_data['close'].pct_change(fill_method=None).dropna()
             )
-            
+
             # Проста стратегія для тестування
             def simple_strategy(market_data: pd.DataFrame) -> pd.Series:
                 # Генеруємо прості сигнали на основі рухомих середніх
                 ma_short = market_data['close'].rolling(window=5, min_periods=1).mean()
                 ma_long = market_data['close'].rolling(window=20, min_periods=1).mean()
                 return pd.Series(np.where(ma_short > ma_long, 1, -1), index=market_data.index)
-            
+
             # Запускаємо симуляцію
             simulation_results = simulator.run_monte_carlo_for_strategy(
                 strategy_logic=simple_strategy,
@@ -83,7 +82,7 @@ class MonsterTestMode(BaseMode):
 
             # 4. АНАЛІЗ РЕЗУЛЬТАТІВ СТРЕС-ТЕСТУ
             self.logger.info("[MonsterTest] Analyzing simulation results...")
-            
+
             # Обробляємо результати симуляції Монте-Карло
             all_metrics = []
             if simulation_results:

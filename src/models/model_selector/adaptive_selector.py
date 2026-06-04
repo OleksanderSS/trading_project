@@ -20,10 +20,10 @@ Usage:
         arena=trading_arena,  # Optional: use Arena leaderboard
         learning_rate=0.1
     )
-    
+
     # Select model (uses Arena if available)
     model_id = selector.select_best_model_adaptive("1|0|-1|1|0")
-    
+
     # Provide feedback (updates Arena)
     selector.update_from_feedback(
         model_id, "1|0|-1|1|0",
@@ -31,14 +31,17 @@ Usage:
         predicted_return=0.04
     )
 """
-import logging
 import json
-import numpy as np
-from pathlib import Path
+import logging
 from datetime import datetime
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
-from src.models.model_selector.fingerprint_selector import SmartModelSelector as FingerprintModelSelector
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Optional
+
+import numpy as np
+
 from src.core.logging.logger import ProjectLogger
+from src.models.model_selector.fingerprint_selector import SmartModelSelector as FingerprintModelSelector
+
 if TYPE_CHECKING:
     from src.analytics.arena.arena_battle import TradingModelArena
 logger = ProjectLogger.get_logger(__name__)
@@ -47,16 +50,16 @@ logger = ProjectLogger.get_logger(__name__)
 class AdaptiveModelSelector(FingerprintModelSelector):
     """
     Adaptive selector with online learning, Arena integration, and persistence.
-    
+
     **Integration with Arena Battle System**:
     - If `arena` is provided, uses Arena leaderboard as source of truth
     - Falls back to local leaderboard if Arena not available
     - Syncs performance data with Arena battles
-    
+
     **Integration with SmartModelSelector**:
     - Uses SmartModelSelector for context analysis
     - Combines context scores with Arena battle results
-    
+
     New features:
     - Arena Battle System integration (optional)
     - Leaderboard persistence across runs
@@ -64,7 +67,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
     - Recent performance tracking
     - Alternative model selection
     - Exponential moving average for win rates
-    
+
     Attributes:
         arena: Optional TradingModelArena for champion selection
         leaderboard_path: Path to persist leaderboard (fallback)
@@ -79,7 +82,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         'data/leaderboard.json', learning_rate: float=0.1):
         """
         Initialize adaptive selector with optional Arena integration.
-        
+
         Args:
             fallback: Fallback model when no match found
             arena: Optional TradingModelArena for champion selection
@@ -94,23 +97,23 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         if self.arena:
             self.arena_leaderboard = self._get_arena_leaderboard()
             logger.info(
-                f'AdaptiveModelSelector initialized with Arena integration')
+                'AdaptiveModelSelector initialized with Arena integration')
         else:
             self.arena_leaderboard = self._load_leaderboard()
             logger.info(
                 f'AdaptiveModelSelector initialized: leaderboard={leaderboard_path}, lr={learning_rate}'
                 )
-        self.selection_history: List[Dict[str, Any]] = []
-        self.performance_tracker: Dict[str, List[float]] = {}
+        self.selection_history: list[dict[str, Any]] = []
+        self.performance_tracker: dict[str, list[float]] = {}
 
-    def _get_arena_leaderboard(self) ->Dict[str, Any]:
+    def _get_arena_leaderboard(self) ->dict[str, Any]:
         """Get leaderboard from Arena Battle System."""
         if not self.arena:
             return {}
         try:
             arena_data = self.arena.get_leaderboard()
             leaderboard = arena_data.get('leaderboard', [])
-            converted: Dict[str, Dict[str, Any]] = {}
+            converted: dict[str, dict[str, Any]] = {}
             for entry in leaderboard:
                 model_name = entry.get('model_name', '')
                 points = entry.get('points', 0)
@@ -136,14 +139,14 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         Any=None) ->str:
         """
         Adaptive selection with recent performance check.
-        
+
         Args:
             context_fingerprint: Context fingerprint string
             features: Optional features for context-aware selection
-        
+
         Returns:
             Selected model ID
-        
+
         Example:
             model_id = selector.select_best_model_adaptive("1|0|-1|1|0")
         """
@@ -167,16 +170,16 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         actual_return: float, predicted_return: float) ->None:
         """
         Update leaderboard from actual results (online learning).
-        
+
         **Arena Integration**: If Arena is available, updates Arena leaderboard.
         Otherwise updates local leaderboard.
-        
+
         Args:
             model_id: Model that made prediction
             context_fingerprint: Context fingerprint
             actual_return: Actual return
             predicted_return: Predicted return
-        
+
         Example:
             selector.update_from_feedback(
                 "catboost_v1", "1|0|-1|1|0",
@@ -230,11 +233,11 @@ class AdaptiveModelSelector(FingerprintModelSelector):
     def _get_recent_performance(self, model_id: str, window: int=10) ->float:
         """
         Get recent performance for model.
-        
+
         Args:
             model_id: Model identifier
             window: Number of recent predictions to consider
-        
+
         Returns:
             Average recent performance (0-1)
         """
@@ -243,13 +246,13 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         recent = self.performance_tracker[model_id][-window:]
         return np.mean(recent) if recent else 0.5
 
-    def _get_alternative_model(self, context_fingerprint: str) ->Optional[str]:
+    def _get_alternative_model(self, context_fingerprint: str) ->str | None:
         """
         Get alternative model for context.
-        
+
         Args:
             context_fingerprint: Context fingerprint
-        
+
         Returns:
             Alternative model ID or None
         """
@@ -264,7 +267,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
                 return second_best
         return None
 
-    def _load_leaderboard(self) ->Dict[str, Any]:
+    def _load_leaderboard(self) ->dict[str, Any]:
         """Load leaderboard from disk."""
         if not self.leaderboard_path.exists():
             logger.info('No existing leaderboard. Starting fresh.')
@@ -291,12 +294,12 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         except Exception as e:
             logger.error(f'Failed to save leaderboard: {e}')
 
-    def get_leaderboard_summary(self) ->Dict[str, Any]:
+    def get_leaderboard_summary(self) ->dict[str, Any]:
         """
         Get leaderboard summary.
-        
+
         **Arena Integration**: If Arena is available, includes Arena stats.
-        
+
         Returns:
             Dict with summary statistics
         """
@@ -324,7 +327,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
     def sync_with_arena(self) ->None:
         """
         Sync local leaderboard with Arena Battle System.
-        
+
         This method:
         1. Pulls latest Arena leaderboard
         2. Merges with local leaderboard
@@ -349,7 +352,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
     def export_history(self, filepath: str) ->None:
         """
         Export selection history.
-        
+
         Args:
             filepath: Path to save history
         """
@@ -361,13 +364,13 @@ class AdaptiveModelSelector(FingerprintModelSelector):
                 .isoformat()}, f, indent=2)
         logger.info(f'Exported history to {filepath}')
 
-    def get_model_performance(self, model_id: str) ->Dict[str, Any]:
+    def get_model_performance(self, model_id: str) ->dict[str, Any]:
         """
         Get performance statistics for model.
-        
+
         Args:
             model_id: Model identifier
-        
+
         Returns:
             Dict with performance stats
         """
@@ -375,7 +378,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
             return {'status': 'no_data'}
         history = self.performance_tracker[model_id]
         return {'model_id': model_id, 'total_predictions': len(history),
-            'avg_accuracy': float(np.mean(history)), 'recent_accuracy': 
+            'avg_accuracy': float(np.mean(history)), 'recent_accuracy':
             float(np.mean(history[-10:])) if len(history) >= 10 else float(
             np.mean(history)), 'std_accuracy': float(np.std(history)),
             'min_accuracy': float(np.min(history)), 'max_accuracy': float(

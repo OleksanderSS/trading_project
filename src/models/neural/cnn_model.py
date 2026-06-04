@@ -1,14 +1,16 @@
 # src/models/neural/cnn_model.py
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Input, Conv1D, MaxPooling1D, Flatten, Dense, Dropout
-from typing import Dict, Any, Optional
+from tensorflow.keras.layers import Conv1D, Dense, Dropout, Flatten, Input, MaxPooling1D
 
-from src.models.neural.base_neural import BaseNeuralModel
 from src.core.logging.logger import ProjectLogger
+from src.models.neural.base_neural import BaseNeuralModel
+
 
 class CNNModel(BaseNeuralModel):
     """
@@ -32,7 +34,7 @@ class CNNModel(BaseNeuralModel):
         Визначає архітектуру CNN для обробки послідовностей даних.
         """
         timesteps, n_features = input_shape
-        
+
         layers = [
             Input(shape=(timesteps, n_features)),
             Conv1D(filters=64, kernel_size=3, activation="relu"),
@@ -57,7 +59,7 @@ class CNNModel(BaseNeuralModel):
         model.compile(optimizer="adam", loss=loss, metrics=metrics)
         return model
 
-    def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> Dict[str, Any]:
+    def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> dict[str, Any]:
         """
         Навчає модель CNN на вхідних даних.
         """
@@ -70,36 +72,36 @@ class CNNModel(BaseNeuralModel):
             # Перетворення в numpy з правильними типами
             x_array = X.values if isinstance(X, pd.DataFrame) else np.asarray(X)
             y_array = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
-            
+
             # Перетворення в числові типи для Keras
             x_array = x_array.astype(np.float32)
             y_array = y_array.astype(np.float32)
-            
+
             x_norm = self._normalize_data(x_array, fit=True)
             # y не нормалізуємо, просто перетворюємо в float32
             y_norm = y_array
-            
+
             # Визначення вхідної форми
             if len(x_norm.shape) == 2:
                 # Якщо дані плоскі, перетворюємо в 3D (samples, timesteps=1, features)
                 x_norm = x_norm.reshape((x_norm.shape[0], 1, x_norm.shape[1]))
-            
+
             input_shape = (x_norm.shape[1], x_norm.shape[2])
             self.model = self._build_architecture(input_shape)
 
             # Навчання
             self.logger.info(f"Початок навчання CNN ({self.task_type}). Форма: {x_norm.shape}")
             self.model.fit(
-                x_norm, 
-                y_norm, 
-                epochs=kwargs.get('epochs', self.epochs), 
-                batch_size=kwargs.get('batch_size', self.batch_size), 
+                x_norm,
+                y_norm,
+                epochs=kwargs.get('epochs', self.epochs),
+                batch_size=kwargs.get('batch_size', self.batch_size),
                 verbose=0
             )
-            
+
             self.is_trained = True
             self.logger.info("[OK] CNN успішно натренований.")
-            
+
             return self.get_model_info()
 
         except Exception as e:
@@ -117,18 +119,18 @@ class CNNModel(BaseNeuralModel):
             # Перетворення в numpy з правильними типами
             x_array = X.values if isinstance(X, pd.DataFrame) else np.asarray(X)
             x_array = x_array.astype(np.float32)
-            
+
             x_norm = self._normalize_data(x_array, fit=False)
-            
+
             if len(x_norm.shape) == 2:
                 x_norm = x_norm.reshape((x_norm.shape[0], 1, x_norm.shape[1]))
 
             predictions = self.model.predict(x_norm, verbose=0)
-            
+
             if self.task_type == "classification":
                 # Повертаємо індекс classу з найвищою ймовірністю
                 return np.argmax(predictions, axis=1)
-            
+
             return predictions.flatten()
 
         except Exception as e:
@@ -141,16 +143,16 @@ class CNNModel(BaseNeuralModel):
         """
         if self.task_type != "classification":
             raise ValueError("Метод predict_proba доступний тільки для задач classифікації.")
-        
+
         if not self.is_trained or self.model is None:
             raise ValueError("Модель повинна бути навчена.")
 
         # Перетворення в numpy з правильними типами
         x_array = X.values if isinstance(X, pd.DataFrame) else np.asarray(X)
         x_array = x_array.astype(np.float32)
-        
+
         x_norm = self._normalize_data(x_array, fit=False)
         if len(x_norm.shape) == 2:
             x_norm = x_norm.reshape((x_norm.shape[0], 1, x_norm.shape[1]))
-            
+
         return self.model.predict(x_norm, verbose=0)

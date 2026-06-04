@@ -1,12 +1,15 @@
 # src/models/tree/lightgbm_model.py
 
+from typing import Any
+
+import joblib
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import joblib
-from typing import Dict, Any
-import lightgbm as lgb
-from src.models.interfaces import BaseModel
+
 from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel
+
 
 class LightGBMModel(BaseModel):
     """LightGBM model for classification and regression tasks."""
@@ -19,7 +22,7 @@ class LightGBMModel(BaseModel):
         self.num_leaves = num_leaves
         self.random_state = random_state
         self.logger = ProjectLogger.get_logger("LightGBMModel")
-        
+
         # ✅ INITIALIZE MODEL IN __INIT__ (for Ensemble)
         if self.task_type == "classification":
             self.model = lgb.LGBMClassifier(
@@ -42,17 +45,17 @@ class LightGBMModel(BaseModel):
     def name(self) -> str:
         return "lightgbm"
 
-    def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> Dict[str, Any]:
+    def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> dict[str, Any]:
         """Trains the LightGBM model."""
         try:
             # Update parameters if they are provided
             if kwargs:
                 self.model.set_params(**kwargs)
-                
+
             self.model.fit(X, y)
             self.is_trained = True
             self.logger.info(f"LightGBM model trained successfully (task: {self.task_type})")
-            
+
             return self.get_model_info()
 
         except Exception as e:
@@ -63,7 +66,7 @@ class LightGBMModel(BaseModel):
         """Makes predictions with the trained model."""
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction.")
-        
+
         return self.model.predict(X)
 
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
@@ -72,7 +75,7 @@ class LightGBMModel(BaseModel):
             raise ValueError("predict_proba is only available for classification tasks")
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction")
-        
+
         return self.model.predict_proba(X)
 
     def save_model(self, path: str) -> bool:
@@ -80,7 +83,7 @@ class LightGBMModel(BaseModel):
         if not self.is_trained:
             self.logger.error("Cannot save an untrained model.")
             return False
-        
+
         try:
             joblib.dump(self, path)
             self.logger.info(f"LightGBM model saved to {path}")
@@ -92,9 +95,10 @@ class LightGBMModel(BaseModel):
     def load_model(self, path: str) -> bool:
         """Loads a model from a file using joblib."""
         try:
+            from pathlib import Path
+
             from src.config.unified_config_manager import get_current_config
             from src.utils.artifact_security import resolve_trusted_artifact_path
-            from pathlib import Path
 
             # Security validation: Ensure path is within expected data or models directories
             trusted_path = resolve_trusted_artifact_path(
@@ -102,11 +106,11 @@ class LightGBMModel(BaseModel):
                 allowed_suffixes={'.joblib', '.pkl', '.pickle'},
                 must_exist=True,
             )
-            
+
             # Validate against configured model storage paths
             config = get_current_config()
             base_model_path = config.get('models.dual_model_manager.base_path', 'data/models')
-            
+
             if not trusted_path.resolve().is_relative_to(Path(base_model_path).resolve()):
                 self.logger.warning(f"🚫 Blocking unsafe LightGBM model load attempt from: {path}")
                 raise ValueError(f"Unsafe path for loading: {path}")

@@ -14,15 +14,19 @@ Methodologies Supported:
 - Principal Component Analysis (PCA) for Latent Factor Discovery
 - Marginal and Incremental Risk Attribution
 """
-import pandas as pd
+from datetime import datetime
+from typing import Any
+
 import numpy as np
-from typing import Dict, Any, List, Optional, Tuple
+import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
-from datetime import datetime
-from ..interfaces import IAnalyzer
-from src.core.logging.logger import ProjectLogger
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+from ..interfaces import IAnalyzer
+
 logger = ProjectLogger.get_logger('RiskDecompositionAnalyzer')
 
 
@@ -32,10 +36,10 @@ class RiskDecompositionAnalyzer(IAnalyzer):
     Translates raw return variance into actionable risk attribution layers.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         """
         Initializes the risk decomposition engine.
-        
+
         Args:
             config: Configuration parameters for PCA components, factor models, and thresholds.
         """
@@ -51,7 +55,7 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             f'RiskDecompositionAnalyzer initialized using {self.primary_factor_model} methodology.'
             )
 
-    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs) ->Dict[str, Any
+    def analyze(self, data: dict[str, pd.DataFrame], **kwargs) ->dict[str, Any
         ]:
         """
         Executes a holistic risk decomposition suite.
@@ -68,10 +72,10 @@ class RiskDecompositionAnalyzer(IAnalyzer):
         portfolio_returns = data.get('portfolio_returns')
         factor_returns = data.get('factor_returns')
         allocation_weights = data.get('weights', {})
-        
+
         if portfolio_returns is None or portfolio_returns.empty:
             raise DataProcessingError('portfolio_returns dataset required for risk analysis.')
-            
+
         aggregate_risk = self._calculate_aggregate_risk_profile(
             portfolio_returns, allocation_weights)
         systematic_vector, idiosyncratic_vector = (self.
@@ -102,14 +106,13 @@ class RiskDecompositionAnalyzer(IAnalyzer):
         return payload
 
     def _calculate_aggregate_risk_profile(self, returns: pd.DataFrame,
-        weights: Dict[str, float]) ->Dict[str, float]:
+        weights: dict[str, float]) ->dict[str, float]:
         """Calculates top-level realized risk metrics for the combined portfolio."""
         if not weights:
             asset_population = len(returns.columns)
-            weights = {ticker: (1.0 / asset_population) for ticker in
-                returns.columns}
-        
-        weighted_returns = returns.values @ np.array([weights.get(t, 
+            weights = dict.fromkeys(returns.columns, 1.0 / asset_population)
+
+        weighted_returns = returns.values @ np.array([weights.get(t,
             0.0) for t in returns.columns])
         weighted_returns = pd.Series(weighted_returns, dtype=float).replace(
             [np.inf, -np.inf], np.nan).dropna().to_numpy()
@@ -117,7 +120,7 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             raise DataProcessingError(
                 'Portfolio returns contain no finite observations for risk metrics.'
             )
-        
+
         weighted_std = float(np.std(weighted_returns))
         if not np.isfinite(weighted_std) or weighted_std <= 1e-12:
             raise DataProcessingError("Portfolio has zero variance, cannot calculate risk metrics.")
@@ -143,8 +146,8 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             float(realized_sharpe)}
 
     def _decompose_systematic_idiosyncratic(self, returns: pd.DataFrame,
-        factor_returns: Optional[pd.DataFrame]) ->Tuple[Dict[str, float],
-        Dict[str, float]]:
+        factor_returns: pd.DataFrame | None) ->tuple[dict[str, float],
+        dict[str, float]]:
         """Isolates systematic market exposure from individual asset variance."""
         systematic_map = {}
         idiosyncratic_map = {}
@@ -176,7 +179,7 @@ class RiskDecompositionAnalyzer(IAnalyzer):
         return systematic_map, idiosyncratic_map
 
     def _decompose_factor_risk(self, returns: pd.DataFrame, factor_returns:
-        Optional[pd.DataFrame]) ->Dict[str, Any]:
+        pd.DataFrame | None) ->dict[str, Any]:
         """Calculates portfolio sensitivity and risk contribution for each identified risk factor."""
         if factor_returns is None or factor_returns.empty:
             if self.enable_pca:
@@ -211,11 +214,11 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             tolist()}
 
     def _calculate_concentration_profile(self, returns: pd.DataFrame,
-        weights: Dict[str, float]) ->Dict[str, Any]:
+        weights: dict[str, float]) ->dict[str, Any]:
         """Evaluates asset and sector clustering to identify concentration risks."""
         if not weights:
             pop = len(returns.columns)
-            weights = {t: (1.0 / pop) for t in returns.columns}
+            weights = dict.fromkeys(returns.columns, 1.0 / pop)
         weight_vector = np.array([weights.get(t, 0.0) for t in returns.
             columns])
         realized_hhi = np.sum(weight_vector ** 2)
@@ -234,7 +237,7 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             'gini_coefficient': float(calculated_gini),
             'concentration_warning': bool(realized_hhi > 0.25)}
 
-    def _calculate_liquidity_risk_proxies(self, returns: pd.DataFrame) ->Dict[
+    def _calculate_liquidity_risk_proxies(self, returns: pd.DataFrame) ->dict[
         str, Any]:
         """Estimates market impact sensitivity as a proxy for liquidity risk."""
         asset_liquidity_map = {}
@@ -257,9 +260,9 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             entry in asset_liquidity_map.values() if entry[
             'illiquid_flag']))}
 
-    def _summarize_risk_contributions(self, systematic: Dict[str, float],
-        idiosyncratic: Dict[str, float], concentration: Dict[str, Any],
-        liquidity: Dict[str, Any]) ->Dict[str, Any]:
+    def _summarize_risk_contributions(self, systematic: dict[str, float],
+        idiosyncratic: dict[str, float], concentration: dict[str, Any],
+        liquidity: dict[str, Any]) ->dict[str, Any]:
         """Aggregates and normalizes risk layers into a high-level attribution report."""
         mean_systematic = np.mean(list(systematic.values())
             ) if systematic else 0.0
@@ -281,9 +284,9 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             'diversification_efficiency': float(1.0 - concentration.get
             ('herfindahl_hirschman_index', 1.0))}
 
-    def _generate_risk_mitigation_recommendations(self, systematic: Dict[
-        str, float], idiosyncratic: Dict[str, float], factors: Dict[str,
-        Any], concentration: Dict[str, Any], liquidity: Dict[str, Any]) ->List[
+    def _generate_risk_mitigation_recommendations(self, systematic: dict[
+        str, float], idiosyncratic: dict[str, float], factors: dict[str,
+        Any], concentration: dict[str, Any], liquidity: dict[str, Any]) ->list[
         str]:
         """Translates quantitative risk metrics into actionable portfolio mitigation strategies."""
         recommendations = []

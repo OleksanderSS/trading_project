@@ -88,11 +88,11 @@ class EnsembleModel(BaseModel):
                 allowed_suffixes={'.joblib', '.pkl', '.pickle'},
                 must_exist=True,
             )
-            
+
             # Validate against configured model storage paths
             config = get_current_config()
             base_model_path = config.get('models.dual_model_manager.base_path', 'data/models')
-            
+
             if not trusted_path.resolve().is_relative_to(Path(base_model_path).resolve()):
                 self.logger.warning(f"🚫 Blocking unsafe ensemble load attempt from: {path}")
                 raise ValueError(f"Unsafe path for loading: {path}")

@@ -20,8 +20,10 @@ import time
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any
+
 import numpy as np
 import psutil
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -178,7 +180,7 @@ class ModelPerformanceMonitor(BaseMonitor):
             metrics = {'total_models': len(self.model_metrics),
                 'active_models': sum(1 for m in self.model_metrics.values() if
                 m.get('is_active', True)), 'models_with_drift': sum(1 for m in
-                self.model_metrics.values() if m.get('drift_detected', 
+                self.model_metrics.values() if m.get('drift_detected',
                 False)), 'average_accuracy': np.mean([m.get('accuracy', 0) for
                 m in self.model_metrics.values()]) if self.model_metrics else
                 0.0, 'timestamp': datetime.now().isoformat()}
@@ -421,8 +423,8 @@ class MonitoringDashboard:
                 system_status = 'healthy'
             return {'system_status': system_status, 'total_monitors':
                 total_monitors, 'active_monitors': active_monitors,
-                'total_alerts': active_alerts_count, 'uptime_percent': 
-                active_monitors / total_monitors * 100 if total_monitors > 
+                'total_alerts': active_alerts_count, 'uptime_percent':
+                active_monitors / total_monitors * 100 if total_monitors >
                 0 else 0}
         except Exception as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)

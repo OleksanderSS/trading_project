@@ -1,8 +1,9 @@
 
-import pandas as pd
+
 import numpy as np
-from typing import List
+import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
@@ -16,16 +17,16 @@ class VolatilityDriverSelector:
     def __init__(self, top_n: int = 25):
         self.top_n = top_n
         self.model = RandomForestRegressor(
-            n_estimators=100, 
-            max_depth=7, 
+            n_estimators=100,
+            max_depth=7,
             min_samples_leaf=1,
             max_features='sqrt',
-            random_state=42, 
+            random_state=42,
             n_jobs=-1
         )
-        self.selected_features: List[str] = []
+        self.selected_features: list[str] = []
 
-    def select(self, df: pd.DataFrame, auxiliary_pool: List[str], target_col: str) -> List[str]:
+    def select(self, df: pd.DataFrame, auxiliary_pool: list[str], target_col: str) -> list[str]:
         """
         Ranks and selects features from the auxiliary pool based on their
         ability to explain the target's absolute returns (volatility).
@@ -53,11 +54,11 @@ class VolatilityDriverSelector:
 
         y_vol = training_data["_target_volatility"]
         x_sub = training_data[valid_aux]
-        
+
         # Remove low-variance/constant features
         selector_mask = x_sub.std() > 1e-6
         x_sub = x_sub.loc[:, selector_mask]
-        
+
         if x_sub.empty:
             logger.error("Auxiliary pool contains no valid non-constant features.")
             return []
@@ -67,7 +68,7 @@ class VolatilityDriverSelector:
             self.model.fit(x_sub, y_vol)
             importances = pd.Series(self.model.feature_importances_, index=x_sub.columns).sort_values(ascending=False)
             self.selected_features = importances.head(self.top_n).index.tolist()
-            
+
             logger.info(f"VolatilityDriverSelector selected {len(self.selected_features)} features: {self.selected_features}")
             return self.selected_features
 

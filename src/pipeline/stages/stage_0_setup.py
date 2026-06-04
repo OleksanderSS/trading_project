@@ -1,21 +1,22 @@
 """
 Stage 0: Environment Setup
 
-Responsible for system initialization, directory creation, and verification 
+Responsible for system initialization, directory creation, and verification
 of environment readiness before the pipeline execution.
 """
 import logging
 import os
-from typing import Optional, Any, Dict
-from src.pipeline.stages.base_stage import BaseStage
+from typing import Any
+
 from src.config.unified_config_manager import UnifiedConfigManager
-from src.core.logging.logger import ProjectLogger
 from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.stages.base_stage import BaseStage
 
 
 class Stage0Setup(BaseStage):
     """
-    Stage responsible for preparing the working environment by ensuring 
+    Stage responsible for preparing the working environment by ensuring
     necessary infrastructure and configurations are in place.
     """
 
@@ -24,7 +25,7 @@ class Stage0Setup(BaseStage):
         super().__init__(config_manager, error_handler, **kwargs)
         self.logger = ProjectLogger.get_logger('Stage0Setup')
 
-    async def run(self, **kwargs) ->Dict[str, Any]:
+    async def run(self, **kwargs) ->dict[str, Any]:
         """
         Executes environment setup by creating required system directories.
 
@@ -33,7 +34,7 @@ class Stage0Setup(BaseStage):
 
         Args:
             **kwargs: Arbitrary keyword arguments (not used in this stage).
-        
+
         Returns:
             An empty dictionary, as this stage does not produce output for subsequent stages.
 

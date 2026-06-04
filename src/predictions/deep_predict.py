@@ -1,6 +1,7 @@
 # src/predictions/deep_predict.py
 
 import numpy as np
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)

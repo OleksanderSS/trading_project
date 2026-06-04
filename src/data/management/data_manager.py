@@ -1,13 +1,15 @@
-import duckdb
-import pandas as pd
 import logging
+import os
 import re
 import time
-import os
-from typing import List, Optional, Dict, Any
 from contextlib import contextmanager
-from src.core.error_handling.error_handler import IErrorHandler, ErrorHandler
+from typing import Any
+
+import duckdb
+import pandas as pd
+
 from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
 from src.core.exceptions import DataLoadError
 
 logger = logging.getLogger(__name__)
@@ -16,25 +18,25 @@ logger = logging.getLogger(__name__)
 class IDatabaseManager:
     """Interface for database management."""
 
-    def execute_query(self, query: str, params: Optional[List[Any]] = None):
+    def execute_query(self, query: str, params: list[Any] | None = None):
         raise NotImplementedError
 
-    def fetch_all(self, query: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
+    def fetch_all(self, query: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
         raise NotImplementedError
 
-    def fetch_one(self, query: str, params: Optional[List[Any]] = None) -> Optional[Dict[str, Any]]:
+    def fetch_one(self, query: str, params: list[Any] | None = None) -> dict[str, Any] | None:
         raise NotImplementedError
 
     def fetch_data_from_table(self, table_name: str) -> pd.DataFrame:
         raise NotImplementedError
 
-    def fetch_df(self, query: str, params: Optional[List[Any]] = None) -> pd.DataFrame:
+    def fetch_df(self, query: str, params: list[Any] | None = None) -> pd.DataFrame:
         raise NotImplementedError
 
-    def load_data_for_tickers(self, tickers: List[str], interval: str = '1d') -> pd.DataFrame:
+    def load_data_for_tickers(self, tickers: list[str], interval: str = '1d') -> pd.DataFrame:
         raise NotImplementedError
 
-    def upsert(self, table_name: str, df: pd.DataFrame, unique_on: Optional[List[str]] = None):
+    def upsert(self, table_name: str, df: pd.DataFrame, unique_on: list[str] | None = None):
         raise NotImplementedError
 
     def table_exists(self, table_name: str) -> bool:
@@ -43,18 +45,18 @@ class IDatabaseManager:
     def filter_new_records(self, table_name: str, df: pd.DataFrame) -> pd.DataFrame:
         raise NotImplementedError
 
-    def get_all_table_names(self) -> List[str]:
+    def get_all_table_names(self) -> list[str]:
         raise NotImplementedError
 
-    def get_table_schema(self, table_name: str) -> Dict[str, str]:
+    def get_table_schema(self, table_name: str) -> dict[str, str]:
         raise NotImplementedError
 
 
 class DataManager(IDatabaseManager):
-    _connections: Dict[str, duckdb.DuckDBPyConnection] = {}
-    _connection_lock: Dict[str, bool] = {}
+    _connections: dict[str, duckdb.DuckDBPyConnection] = {}
+    _connection_lock: dict[str, bool] = {}
 
-    def __init__(self, config_manager: UnifiedConfigManager, error_handler: Optional[IErrorHandler] = None):
+    def __init__(self, config_manager: UnifiedConfigManager, error_handler: IErrorHandler | None = None):
         self.config_manager = config_manager
         raw_path = self.config_manager.get('paths.raw_db', ':memory:')
         self.db_path = os.path.abspath(raw_path) if raw_path != ':memory:' else raw_path
@@ -157,7 +159,7 @@ class DataManager(IDatabaseManager):
             logger.error(f'DataManager exiting with error: {exc_val}')
         return False
 
-    def execute_query(self, query: str, params: Optional[List[Any]] = None):
+    def execute_query(self, query: str, params: list[Any] | None = None):
         try:
             self.con.execute(query, params)
         except (duckdb.Error, Exception) as e:
@@ -165,7 +167,7 @@ class DataManager(IDatabaseManager):
             self.error_handler.handle_error(e, context={'query': query})
             raise DataLoadError(f"Database query execution failed: {e}") from e
 
-    def fetch_all(self, query: str, params: Optional[List[Any]] = None) -> List[Dict[str, Any]]:
+    def fetch_all(self, query: str, params: list[Any] | None = None) -> list[dict[str, Any]]:
         try:
             return self.con.execute(query, params).fetchdf().to_dict('records')
         except (duckdb.Error, Exception) as e:
@@ -173,7 +175,7 @@ class DataManager(IDatabaseManager):
             self.error_handler.handle_error(e, context={'query': query})
             raise DataLoadError(f"Failed to fetch all records: {e}") from e
 
-    def fetch_one(self, query: str, params: Optional[List[Any]] = None) -> Optional[Dict[str, Any]]:
+    def fetch_one(self, query: str, params: list[Any] | None = None) -> dict[str, Any] | None:
         try:
             result = self.con.execute(query, params).fetchdf().to_dict('records')
             return result[0] if result else None
@@ -196,7 +198,7 @@ class DataManager(IDatabaseManager):
             self.error_handler.handle_error(e, context={'table_name': table_name, 'operation': 'fetch_data_from_table'})
             raise DataLoadError(f"Failed to fetch data from table '{table_name}': {e}") from e
 
-    def fetch_df(self, query: str, params: Optional[List[Any]] = None) -> pd.DataFrame:
+    def fetch_df(self, query: str, params: list[Any] | None = None) -> pd.DataFrame:
         try:
             return self.con.execute(query, params).fetchdf()
         except Exception as e:
@@ -212,7 +214,7 @@ class DataManager(IDatabaseManager):
             raise ValueError(f'Invalid SQL identifier: {identifier!r}')
         return f'"{identifier}"'
 
-    def load_data_for_tickers(self, tickers: List[str], interval: str = '1d') -> pd.DataFrame:
+    def load_data_for_tickers(self, tickers: list[str], interval: str = '1d') -> pd.DataFrame:
         if not tickers:
             return pd.DataFrame()
         try:
@@ -238,7 +240,7 @@ class DataManager(IDatabaseManager):
             self.error_handler.handle_error(e, context={'tickers': tickers, 'operation': 'load_data_for_tickers'})
             raise DataLoadError(f"Failed to load data for tickers {tickers}: {e}") from e
 
-    def upsert(self, table_name: str, df: pd.DataFrame, unique_on: Optional[List[str]] = None):
+    def upsert(self, table_name: str, df: pd.DataFrame, unique_on: list[str] | None = None):
         if df.empty:
             return
 
@@ -265,14 +267,14 @@ class DataManager(IDatabaseManager):
             self.error_handler.handle_error(e, context={'table': table_name, 'dataframe_columns': list(df.columns)})
             raise DataLoadError(f"Failed to upsert data into '{table_name}': {e}") from e
 
-    def _detect_unique_columns(self, df: pd.DataFrame) -> List[str]:
+    def _detect_unique_columns(self, df: pd.DataFrame) -> list[str]:
         if 'hash' in df.columns:
             return ['hash']
         if 'key_hash' in df.columns:
             return ['key_hash']
         return []
 
-    def _handle_new_table(self, table_name: str, df: pd.DataFrame, unique_on: List[str]):
+    def _handle_new_table(self, table_name: str, df: pd.DataFrame, unique_on: list[str]):
         self.con.register('df_to_upsert', df)
         try:
             self.con.execute(
@@ -287,7 +289,7 @@ class DataManager(IDatabaseManager):
         finally:
             self.con.unregister('df_to_upsert')
 
-    def _handle_existing_table(self, table_name: str, df: pd.DataFrame, unique_on: List[str]):
+    def _handle_existing_table(self, table_name: str, df: pd.DataFrame, unique_on: list[str]):
         if unique_on:
             self._ensure_unique_index(table_name, unique_on)
 
@@ -302,7 +304,7 @@ class DataManager(IDatabaseManager):
 
         self._execute_upsert_insert(table_name, df_insert, existing_cols)
 
-    def _prepare_upsert_df(self, table_name: str, df: pd.DataFrame, unique_on: List[str], existing_cols: set) -> pd.DataFrame:
+    def _prepare_upsert_df(self, table_name: str, df: pd.DataFrame, unique_on: list[str], existing_cols: set) -> pd.DataFrame:
         df_insert = df.copy()
 
         if unique_on:
@@ -322,7 +324,7 @@ class DataManager(IDatabaseManager):
                     existing_keys_df = self.con.execute(
                         f'SELECT {self._quote_identifier(key_col)} FROM {self._quote_identifier(table_name)}'
                     ).fetchdf()
-                    existing_keys_set = set(str(k) for k in existing_keys_df[key_col].tolist())
+                    existing_keys_set = {str(k) for k in existing_keys_df[key_col].tolist()}
                 except (duckdb.Error, Exception) as e:
                     logger.error(f"Error fetching existing keys for deduplication in '{table_name}': {e}", exc_info=True)
                     self.error_handler.handle_error(e, context={'table_name': table_name, 'key_col': key_col})
@@ -374,7 +376,7 @@ class DataManager(IDatabaseManager):
             except Exception as e:
                 logger.error(f"Failed to unregister df_to_upsert: {e}", exc_info=True)
 
-    def _create_unique_index(self, table_name: str, unique_on: List[str]):
+    def _create_unique_index(self, table_name: str, unique_on: list[str]):
         cols = ', '.join([self._quote_identifier(c) for c in unique_on])
         index_name = f'idx_{table_name}_unique'
         try:
@@ -427,7 +429,7 @@ class DataManager(IDatabaseManager):
             logger.error(f'Помилка фільтрації нових записів для таблиці {table_name}: {e}', exc_info=True)
             raise DataLoadError(f"Failed to filter new records for '{table_name}': {e}") from e
 
-    def get_all_table_names(self) -> List[str]:
+    def get_all_table_names(self) -> list[str]:
         try:
             tables = self.con.execute('SELECT table_name FROM duckdb_tables()').fetchall()
             return [table[0] for table in tables]
@@ -435,7 +437,7 @@ class DataManager(IDatabaseManager):
             logger.error(f'Помилка при отриманні списку таблиць: {e}', exc_info=True)
             raise DataLoadError(f"Failed to get table names: {e}") from e
 
-    def get_table_schema(self, table_name: str) -> Dict[str, str]:
+    def get_table_schema(self, table_name: str) -> dict[str, str]:
         try:
             schema_info = self.con.execute(
                 f'PRAGMA table_info({self._quote_identifier(table_name)})'
@@ -477,7 +479,7 @@ class DataManager(IDatabaseManager):
         ])
         return table_name in critical_tables
 
-    def _ensure_unique_index(self, table_name: str, unique_on: List[str]) -> None:
+    def _ensure_unique_index(self, table_name: str, unique_on: list[str]) -> None:
         try:
             index_name = f'idx_{table_name}_unique'
             existing_indexes = self.con.execute(
@@ -497,7 +499,7 @@ class DataManager(IDatabaseManager):
                     f"Could not create/verify unique index for '{table_name}': {idx_e}",
                     exc_info=True)
 
-    def _clean_duplicates(self, table_name: str, unique_on: List[str]) -> None:
+    def _clean_duplicates(self, table_name: str, unique_on: list[str]) -> None:
         """Очищує дублікати у таблиці, залишаючи перший запис."""
         try:
             quoted_table = self._quote_identifier(table_name)
@@ -514,7 +516,7 @@ class DataManager(IDatabaseManager):
         except Exception as clean_e:
             logger.error(f"Failed to clean duplicates in '{table_name}': {clean_e}", exc_info=True)
 
-    def _verify_no_duplicates(self, table_name: str, unique_on: List[str]) -> None:
+    def _verify_no_duplicates(self, table_name: str, unique_on: list[str]) -> None:
         """Перевіряє відсутність дублікатів після додавання записів."""
         try:
             quoted_cols = ', '.join([self._quote_identifier(c) for c in unique_on])

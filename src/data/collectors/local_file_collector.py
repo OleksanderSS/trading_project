@@ -1,29 +1,31 @@
-import pandas as pd
-import logging
 import asyncio
+import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+
+import pandas as pd
+
+from src.core.security.path_validator import PathValidationError, validate_safe_path
 from src.data.collectors.base_collector import BaseCollector
-from src.core.security.path_validator import validate_safe_path, PathValidationError
 
 logger = logging.getLogger(__name__)
 
 
 class LocalFileCollector(BaseCollector):
     """
-    A collector that reads data from local files (CSV or Parquet) and 
+    A collector that reads data from local files (CSV or Parquet) and
     integrates it into the standard collection pipeline.
     """
     collector_type = 'local_file'
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory,
+    def __init__(self, configs: dict[str, Any], http_client_factory,
         db_manager, cache_manager=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
         raw_path = self.configs.get('file_path')
         self.file_type = self.configs.get('file_type', 'csv').lower()
         self.date_col = self.configs.get('date_col')
-        
+
         if not raw_path:
             self.logger.error(
                 f"Collector '{self.collector_type}' initialized without 'file_path' in config."
@@ -37,7 +39,7 @@ class LocalFileCollector(BaseCollector):
                 self.logger.error(f"Security violation: Invalid file path '{raw_path}': {e}")
                 self.file_path = None
 
-    async def fetch_raw_data(self, **kwargs) ->List[Dict[str, Any]]:
+    async def fetch_raw_data(self, **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously reads data from a local file and returns it as a list of dictionaries.
         """
@@ -72,7 +74,7 @@ class LocalFileCollector(BaseCollector):
     async def post_process_new_records(self, records: pd.DataFrame
         ) ->pd.DataFrame:
         """
-        Optional post-processing for local files. 
+        Optional post-processing for local files.
         Ensures consistent naming if required by the target table.
         """
         return records

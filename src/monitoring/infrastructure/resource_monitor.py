@@ -1,13 +1,14 @@
-import time
-import psutil
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Optional, Any, Callable
-from datetime import datetime, timedelta
 import queue
-from threading import Thread, Lock
+import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from functools import wraps
+from threading import Lock, Thread
+from typing import Any
+
+import psutil
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -17,24 +18,24 @@ class ResourceMonitor:
     Collects detailed CPU, memory, disk, and process metrics.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None, max_history:
+    def __init__(self, config: dict[str, Any] | None=None, max_history:
         int=1000):
         self.logger = ProjectLogger.get_logger('ResourceMonitor')
         self.thresholds = self._get_default_thresholds()
         if config and isinstance(config.get('thresholds'), dict):
             self.thresholds.update(config['thresholds'])
         self.monitoring_active = False
-        self.monitor_thread: Optional[Thread] = None
+        self.monitor_thread: Thread | None = None
         self.metrics_queue = queue.Queue()
         self.lock = Lock()
         self.executor = ThreadPoolExecutor(max_workers=4,
             thread_name_prefix='ResMonitor')
-        self.performance_history: List[Dict[str, Any]] = []
+        self.performance_history: list[dict[str, Any]] = []
         self.max_history_size = max_history
         self.logger.info(
             f'ResourceMonitor initialized with thresholds: {self.thresholds}')
 
-    def _get_default_thresholds(self) ->Dict[str, float]:
+    def _get_default_thresholds(self) ->dict[str, float]:
         return {'cpu_warning': 70.0, 'cpu_critical': 90.0, 'memory_warning':
             80.0, 'memory_critical': 95.0, 'disk_warning': 85.0,
             'disk_critical': 95.0}
@@ -72,7 +73,7 @@ class ResourceMonitor:
             except Exception as e:
                 self.logger.error(f'error in monitoring loop: {e}')
 
-    def collect_all_metrics(self) ->Dict[str, Any]:
+    def collect_all_metrics(self) ->dict[str, Any]:
         """Collects all system metrics in parallel."""
         futures = {'system': self.executor.submit(self.
             _collect_system_metrics), 'disk': self.executor.submit(self.
@@ -82,24 +83,24 @@ class ResourceMonitor:
             'system'].result(), 'disk': futures['disk'].result(),
             'processes': futures['processes'].result()}
 
-    def _collect_system_metrics(self) ->Dict[str, Any]:
+    def _collect_system_metrics(self) ->dict[str, Any]:
         memory = psutil.virtual_memory()
         swap = psutil.swap_memory()
         return {'cpu': {'percent': psutil.cpu_percent(interval=0.1),
             'load_avg': psutil.getloadavg()}, 'memory': {'percent': memory.
-            percent, 'used_gb': memory.used / 1024 ** 3, 'available_gb': 
+            percent, 'used_gb': memory.used / 1024 ** 3, 'available_gb':
             memory.available / 1024 ** 3, 'swap_percent': swap.percent}}
 
-    def _collect_disk_metrics(self) ->Dict[str, Any]:
+    def _collect_disk_metrics(self) ->dict[str, Any]:
         disk_io = psutil.disk_io_counters()
         disk_usage = psutil.disk_usage('/')
         return {'io': {'read_mb': disk_io.read_bytes / 1024 ** 2 if disk_io
              else 0, 'write_mb': disk_io.write_bytes / 1024 ** 2 if disk_io
-             else 0}, 'usage': {'percent': disk_usage.percent, 'free_gb': 
-            disk_usage.free / 1024 ** 3, 'total_gb': disk_usage.total / 
+             else 0}, 'usage': {'percent': disk_usage.percent, 'free_gb':
+            disk_usage.free / 1024 ** 3, 'total_gb': disk_usage.total /
             1024 ** 3}}
 
-    def _collect_process_metrics(self) ->Dict[str, Any]:
+    def _collect_process_metrics(self) ->dict[str, Any]:
         """Collect process metrics with timeout to prevent hanging on Windows."""
         try:
             processes = []
@@ -114,7 +115,7 @@ class ResourceMonitor:
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.
                     TimeoutExpired):
                     continue
-            top_cpu = sorted(processes, key=lambda p: p.get('cpu_percent', 
+            top_cpu = sorted(processes, key=lambda p: p.get('cpu_percent',
                 0) or 0, reverse=True)[:5]
             top_mem = sorted(processes, key=lambda p: p.get(
                 'memory_percent', 0) or 0, reverse=True)[:5]
@@ -125,7 +126,7 @@ class ResourceMonitor:
             return {'total': 0, 'top_cpu': [], 'top_memory': [], 'error':
                 str(e)}
 
-    def _check_thresholds(self, metrics: Dict[str, Any]):
+    def _check_thresholds(self, metrics: dict[str, Any]):
         """Checks metrics against thresholds and logs warnings."""
         cpu_percent = metrics.get('system', {}).get('cpu', {}).get('percent', 0
             )
@@ -148,36 +149,36 @@ class ResourceMonitor:
         elif disk_percent > self.thresholds['disk_warning']:
             self.logger.warning(f'WARNING: Disk usage at {disk_percent:.1f}%')
 
-    def get_health_status(self) ->Dict[str, Any]:
+    def get_health_status(self) ->dict[str, Any]:
         """Returns the latest comprehensive health metrics from the monitoring history."""
         latest_metrics = self._get_latest_metrics_or_collect()
         return self._format_health_response(latest_metrics)
 
-    def _format_health_response(self, metrics: Dict[str, Any]) ->Dict[str, Any
+    def _format_health_response(self, metrics: dict[str, Any]) ->dict[str, Any
         ]:
         """Format health response based on metrics status."""
         if self._is_error_status(metrics):
             return metrics
         return self._prepare_health_report(metrics)
 
-    def _is_error_status(self, metrics: Dict[str, Any]) ->bool:
+    def _is_error_status(self, metrics: dict[str, Any]) ->bool:
         """Check if metrics indicate an error status."""
         return metrics.get('status') == 'error'
 
-    def _prepare_health_report(self, metrics: Dict[str, Any]) ->Dict[str, Any]:
+    def _prepare_health_report(self, metrics: dict[str, Any]) ->dict[str, Any]:
         """Prepare final health report with overall status."""
         status = self._determine_overall_status(metrics)
         metrics['overall_status'] = status
         return metrics
 
-    def _get_latest_metrics_or_collect(self) ->Dict[str, Any]:
+    def _get_latest_metrics_or_collect(self) ->dict[str, Any]:
         """Gets latest metrics or collects on-demand if no history."""
         with self.lock:
             if not self.performance_history:
                 return self._collect_fallback_metrics()
             return self.performance_history[-1]
 
-    def _collect_fallback_metrics(self) ->Dict[str, Any]:
+    def _collect_fallback_metrics(self) ->dict[str, Any]:
         """Collects metrics synchronously when no history is available."""
         self.logger.warning(
             'No historical metrics found. Collecting current metrics on demand.'
@@ -188,7 +189,7 @@ class ResourceMonitor:
             self.logger.error(f'Failed to collect on-demand metrics: {e}')
             return {'status': 'error', 'message': 'Failed to collect metrics'}
 
-    def _determine_overall_status(self, metrics: Dict[str, Any]) ->str:
+    def _determine_overall_status(self, metrics: dict[str, Any]) ->str:
         """Determine overall system status based on metrics."""
         resource_levels = self._extract_resource_levels(metrics)
         if self._is_critical_level(**resource_levels):
@@ -197,27 +198,27 @@ class ResourceMonitor:
             return 'warning'
         return 'good'
 
-    def _extract_resource_levels(self, metrics: Dict[str, Any]) ->Dict[str,
+    def _extract_resource_levels(self, metrics: dict[str, Any]) ->dict[str,
         float]:
         """Extract CPU, memory, and disk percentages from metrics."""
         return {'cpu_percent': self._get_cpu_percent(metrics),
             'mem_percent': self._get_memory_percent(metrics),
             'disk_percent': self._get_disk_percent(metrics)}
 
-    def _get_cpu_percent(self, metrics: Dict[str, Any]) ->float:
+    def _get_cpu_percent(self, metrics: dict[str, Any]) ->float:
         """Extract CPU percentage from metrics."""
         return self._safe_nested_get(metrics, ['system', 'cpu', 'percent'], 0)
 
-    def _get_memory_percent(self, metrics: Dict[str, Any]) ->float:
+    def _get_memory_percent(self, metrics: dict[str, Any]) ->float:
         """Extract memory percentage from metrics."""
         return self._safe_nested_get(metrics, ['system', 'memory',
             'percent'], 0)
 
-    def _get_disk_percent(self, metrics: Dict[str, Any]) ->float:
+    def _get_disk_percent(self, metrics: dict[str, Any]) ->float:
         """Extract disk percentage from metrics."""
         return self._safe_nested_get(metrics, ['disk', 'usage', 'percent'], 0)
 
-    def _safe_nested_get(self, data: Dict[str, Any], keys: list, default: Any
+    def _safe_nested_get(self, data: dict[str, Any], keys: list, default: Any
         ) ->Any:
         """Safely get nested dictionary value with fallback."""
         current = data
@@ -243,10 +244,10 @@ class ResourceMonitor:
             ] or disk_percent > self.thresholds['disk_warning']
 
 
-_resource_monitor_instance: Optional[ResourceMonitor] = None
+_resource_monitor_instance: ResourceMonitor | None = None
 
 
-def get_resource_monitor(config: Optional[Dict[str, Any]]=None
+def get_resource_monitor(config: dict[str, Any] | None=None
     ) ->ResourceMonitor:
     """Get global instance ResourceMonitor."""
     global _resource_monitor_instance

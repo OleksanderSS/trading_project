@@ -1,12 +1,15 @@
-import pandas as pd
-import numpy as np
-import logging
-from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
-from ..interfaces import IAnalyzer
-from src.core.logging.logger import ProjectLogger
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
 from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
 from src.utils.math_safe import safe_div
+
+from ..interfaces import IAnalyzer
+
 logger = ProjectLogger.get_logger('PerformanceAttributionAnalyzer')
 
 
@@ -16,10 +19,10 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
     Deconstructs total returns into constituent layers to facilitate deep-dive performance audits.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]]=None):
+    def __init__(self, config: dict[str, Any] | None=None):
         """
         Initializes the attribution analyzer with institutional settings.
-        
+
         Args:
             config: Metadata for attribution models, benchmarks, and temporal resolution.
         """
@@ -35,7 +38,7 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             f'PerformanceAttributionAnalyzer initialized for {self.attribution_model} methodology.'
             )
 
-    def analyze(self, data: Dict[str, pd.DataFrame], **kwargs) ->Dict[str, Any
+    def analyze(self, data: dict[str, pd.DataFrame], **kwargs) ->dict[str, Any
         ]:
         """
         Executes a multi-layer attribution analysis.
@@ -45,12 +48,12 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
         sector_returns = data.get('sector_returns')
         currency_returns = data.get('currency_returns')
         weights_history = data.get('weights', {})
-        
+
         if portfolio_returns is None or portfolio_returns.empty:
             raise DataProcessingError('portfolio_returns dataset required for analysis.')
         if benchmark_returns is None or benchmark_returns.empty:
             raise DataProcessingError('benchmark_returns dataset required for analysis.')
-        
+
         performance_metrics = self._calculate_performance_metrics(
             portfolio_returns, benchmark_returns)
         brinson_attribution = self._brinson_attribution(portfolio_returns,
@@ -65,7 +68,7 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             portfolio_returns, benchmark_returns)
         temporal_analysis = self._temporal_attribution_analysis(
             portfolio_returns, benchmark_returns)
-            
+
         payload = {'performance_metrics': performance_metrics,
             'brinson_attribution': brinson_attribution,
             'security_selection': security_selection,
@@ -84,49 +87,49 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
         return payload
 
     def _calculate_performance_metrics(self, portfolio: pd.DataFrame,
-        benchmark: pd.DataFrame) ->Dict[str, Any]:
+        benchmark: pd.DataFrame) ->dict[str, Any]:
         """Calculates foundational performance and risk metrics relative to benchmarks."""
         shared_index = portfolio.index.intersection(benchmark.index)
         if len(shared_index) == 0:
             raise DataProcessingError("No overlapping dates for portfolio and benchmark.")
-            
+
         port_returns = portfolio.loc[shared_index]
         bench_returns = benchmark.loc[shared_index]
-        
+
         port_total = (1 + port_returns).prod() - 1
         bench_total = (1 + bench_returns).prod() - 1
         observation_days = len(shared_index)
-        
+
         port_annual = (1 + port_total) ** (252 / observation_days) - 1
         bench_annual = (1 + bench_total) ** (252 / observation_days) - 1
-            
+
         port_vol = port_returns.std() * np.sqrt(252)
         const_rf_daily = 0.02 / 252
-        
+
         # Avoid division by zero
         port_std = port_returns.std()
         port_sharpe = ((port_returns.mean() - const_rf_daily) / port_std * np.sqrt(252)) if port_std > 0 else 0.0
-        
+
         port_nav = (1 + port_returns).cumprod()
         port_ath = port_nav.expanding().max()
         port_max_dd = ((port_nav - port_ath) / port_ath).min()
-        
+
         # Beta calculation
         covar = np.cov(port_returns.values.flatten(), bench_returns.values.flatten())
         covariance = covar[0, 1]
         bench_variance = np.var(bench_returns.values.flatten())
         realized_beta = float(covariance / bench_variance) if bench_variance > 0 else 1.0
-        
+
         realized_alpha = port_annual - (0.02 + realized_beta * (bench_annual - 0.02))
-        
+
         tracking_diff = port_returns.values - bench_returns.values
         tracking_error = np.std(tracking_diff)
-        
+
         information_ratio = safe_div(
             (np.sum(port_returns.values) - np.sum(bench_returns.values)),
             (len(port_returns) * tracking_error)
         ) if tracking_error > 0 else 0.0
-        
+
         return {'total_return': float(port_total),
             'benchmark_total_return': float(bench_total),
             'active_return': float(port_total - bench_total),
@@ -137,17 +140,17 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             'tracking_error': float(tracking_error), 'information_ratio': float(information_ratio)}
 
     def _brinson_attribution(self, portfolio: pd.DataFrame, benchmark: pd.
-        DataFrame, weights_history: Dict[str, Any]) ->Dict[str, Any]:
+        DataFrame, weights_history: dict[str, Any]) ->dict[str, Any]:
         """Calculates asset allocation and security selection effects using standard Brinson logic."""
         if not weights_history:
             return {'methodology': 'brinson_restricted',
                 'allocation_effect': 0.0, 'selection_effect': 0.0,
                 'interaction_effect': 0.0, 'total_contribution': 0.0}
-        
+
         port_avg = (1 + portfolio.mean(axis=1)).prod() - 1
         bench_avg = (1 + benchmark.mean(axis=1)).prod() - 1
         active_spread = port_avg - bench_avg
-        
+
         return {'methodology': 'brinson_approximated',
             'allocation_effect': float(active_spread * 0.4),
             'selection_effect': float(active_spread * 0.4),
@@ -155,8 +158,8 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             'total_contribution': float(active_spread)}
 
     def _security_selection_attribution(self, portfolio: pd.DataFrame,
-        benchmark: pd.DataFrame, sector_returns: Optional[pd.DataFrame]
-        ) ->Dict[str, Any]:
+        benchmark: pd.DataFrame, sector_returns: pd.DataFrame | None
+        ) ->dict[str, Any]:
         """Decomposes the selection effect across specific sectors and asset triggers."""
         if sector_returns is None or sector_returns.empty:
             port_mean = portfolio.values.mean()
@@ -176,43 +179,43 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
                 if not np.isnan(sector_contribution):
                     selection_alpha += sector_contribution * 0.6
                     sector_alpha += sector_contribution * 0.4
-                    
+
         return {'security_selection_alpha': float(selection_alpha),
             'sector_allocation_alpha': float(sector_alpha),
             'net_selection_impact': float(selection_alpha + sector_alpha)}
 
     def _timing_attribution(self, portfolio: pd.DataFrame, benchmark: pd.
-        DataFrame) ->Dict[str, Any]:
+        DataFrame) ->dict[str, Any]:
         """Evaluates tactical market timing skill using adjusted Beta exposure paths."""
         port_path = portfolio.mean(axis=1)
         bench_path = benchmark.mean(axis=1)
-        
+
         covar = np.cov(port_path, bench_path)[0, 1]
         var_b = np.var(bench_path)
         dyn_beta = float(covar / var_b) if var_b > 0 else 1.0
-        
+
         timing_alpha = np.sum((dyn_beta - 1) * bench_path * (bench_path >
             0))
         vol_timing_alpha = (port_path.std() - bench_path.std()) * 0.1
-        
+
         return {'tactical_timing_alpha': float(timing_alpha),
             'volatility_timing_alpha': float(vol_timing_alpha),
             'net_timing_impact': float(timing_alpha + vol_timing_alpha),
             'realized_beta': dyn_beta}
 
     def _currency_attribution(self, portfolio: pd.DataFrame,
-        currency_returns: Optional[pd.DataFrame]) ->Dict[str, Any]:
+        currency_returns: pd.DataFrame | None) ->dict[str, Any]:
         """Isolates performance impact stemming from currency fluctuations (FX Carry)."""
         if currency_returns is None or currency_returns.empty:
             return {'currency_alpha': 0.0, 'is_supported': False}
-            
+
         fx_alpha = currency_returns.values.mean() * 0.1
         return {'currency_alpha': float(fx_alpha), 'is_supported': True,
             'fx_contribution_pct': float(safe_div(fx_alpha, portfolio.
             values.mean()) * 100)}
 
     def _risk_adjusted_attribution(self, portfolio: pd.DataFrame, benchmark:
-        pd.DataFrame) ->Dict[str, Any]:
+        pd.DataFrame) ->dict[str, Any]:
         """Calculates institutional risk-adjusted attribution metrics."""
         aligned = pd.concat(
             [
@@ -231,11 +234,11 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
         cvr = np.cov(p_ret, b_ret)[0, 1]
         vr_b = np.var(b_ret)
         bta = float(cvr / vr_b) if vr_b > 0 else 1.0
-        
+
         rf_baseline = 0.02 / 252
         expected_p = rf_baseline + bta * (b_ret - rf_baseline)
         j_alpha = float((p_ret - expected_p).mean())
-        
+
         p_vol = p_ret.std()
         b_vol = b_ret.std()
         portfolio_mean = float(p_ret.mean())
@@ -247,13 +250,13 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             if p_vol > 0
             else 0.0
         )
-        
+
         return {'jensen_alpha': float(j_alpha), 'm2_measure': float(
             m2_measure), 'realized_beta': bta,
             'annualized_risk_adjusted_alpha': float(j_alpha * 252)}
 
     def _temporal_attribution_analysis(self, portfolio: pd.DataFrame,
-        benchmark: pd.DataFrame) ->Dict[str, Any]:
+        benchmark: pd.DataFrame) ->dict[str, Any]:
         """Evaluates attribution stability across various rolling time horizons."""
         rolling_results = {}
         for window in self.intervals:
@@ -273,8 +276,8 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
                     ] = self._calculate_performance_metrics(p_win, b_win)
         return rolling_results
 
-    def _generate_executive_summary(self, brinson: Dict, selection: Dict,
-        timing: Dict, currency: Dict, risk_adj: Dict) ->Dict[str, Any]:
+    def _generate_executive_summary(self, brinson: dict, selection: dict,
+        timing: dict, currency: dict, risk_adj: dict) ->dict[str, Any]:
         """Aggregates discrete layers into an executive-level performance summary."""
         alloc_sum = brinson.get('allocation_effect', 0.0)
         select_sum = brinson.get('selection_effect', 0.0) + selection.get(
@@ -282,7 +285,7 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
         timing_sum = timing.get('net_timing_impact', 0.0)
         fx_sum = currency.get('currency_alpha', 0.0)
         total_attr_alpha = alloc_sum + select_sum + timing_sum + fx_sum
-        
+
         primary_drivers = []
         if abs(alloc_sum) > abs(total_attr_alpha) * 0.3:
             primary_drivers.append('asset_allocation')
@@ -292,7 +295,7 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             primary_drivers.append('market_timing')
         if abs(fx_sum) > abs(total_attr_alpha) * 0.1:
             primary_drivers.append('currency_fx')
-            
+
         return {'total_attribution_alpha': float(total_attr_alpha),
             'allocation_component': float(alloc_sum),
             'selection_component': float(select_sum),
@@ -301,8 +304,8 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
             'jensen_alpha_annualized': risk_adj.get(
             'annualized_risk_adjusted_alpha', 0.0)}
 
-    def _generate_qualitative_recommendations(self, brinson: Dict,
-        selection: Dict, timing: Dict) ->List[str]:
+    def _generate_qualitative_recommendations(self, brinson: dict,
+        selection: dict, timing: dict) ->list[str]:
         """Translates quantitative attribution results into actionable strategic recommendations."""
         recommendations = []
         alloc_val = brinson.get('allocation_effect', 0.0)

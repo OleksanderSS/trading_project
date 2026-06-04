@@ -1,13 +1,15 @@
-import pandas as pd
 from typing import Any
-from src.targets.target_orchestrator import TargetOrchestrator
+
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
+from src.targets.target_orchestrator import TargetOrchestrator
 
 logger = ProjectLogger.get_logger('TargetGenerator')
 
 class TargetGenerator:
     """Generates machine learning targets/labels."""
-    
+
     def __init__(self, config_manager: Any):
         self.logger = logger
         targets_list = config_manager.get('targets').as_dict() if hasattr(config_manager.get('targets'), 'as_dict') else config_manager.get('targets')

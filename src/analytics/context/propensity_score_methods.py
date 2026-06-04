@@ -5,10 +5,10 @@ Propensity Score Methods - Implementation of Propensity Score Matching
 This module contains the implementation of propensity score matching methods for causal analysis.
 """
 
-import pandas as pd
+from typing import Any
+
 import numpy as np
-from typing import Dict, Any, List
-from scipy import stats
+import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
@@ -16,61 +16,61 @@ from src.core.logging.logger import ProjectLogger
 class PropensityScoreMethods:
     """
     Implementation of propensity score matching methods.
-    
+
     This class encapsulates the logic for PSM, including data preparation,
     score estimation, matching, and balance checking.
     """
-    
-    def __init__(self, config: Dict[str, Any] = None, logger=None):
+
+    def __init__(self, config: dict[str, Any] = None, logger=None):
         """
         Initialize the propensity score methods.
-        
+
         Args:
             config: Configuration dictionary
             logger: Logger instance
         """
         self.config = config or {}
         self.logger = logger or ProjectLogger.get_logger(self.__class__.__name__)
-    
+
     def prepare_data(self, treatment_data, control_data, covariates, outcome_col):
         """Prepare data for propensity score matching."""
         treatment_data = treatment_data.copy()
         control_data = control_data.copy()
-        
+
         treatment_data['treatment'] = 1
         control_data['treatment'] = 0
-        
+
         combined = pd.concat([treatment_data, control_data], ignore_index=True)
         return combined[covariates + ['treatment', outcome_col]]
-    
+
     def estimate_propensity_scores(self, data, covariates):
         """Estimate propensity scores using logistic regression."""
         from sklearn.linear_model import LogisticRegression
-        
+
         X = data[covariates]
         y = data['treatment']
-        
+
         model = LogisticRegression(random_state=42)
         model.fit(X, y)
-        
+
         propensity_scores = model.predict_proba(X)[:, 1]
-        
+
         return {
             'model': model,
             'scores': propensity_scores,
             'features': covariates
         }
-    
+
     def perform_matching(self, data, propensity_scores, method):
         """Perform matching based on propensity scores."""
         data['propensity_score'] = propensity_scores['scores']
-        
+
         treatment_units = data[data['treatment'] == 1]
         control_units = data[data['treatment'] == 0]
-        
+
         matched_pairs = []
         distances_used = []
-        
+
         if treatment_units.empty or control_units.empty:
             return {
                 'pairs': matched_pairs,
@@ -79,7 +79,7 @@ class PropensityScoreMethods:
                 'treatment_units': len(treatment_units),
                 'control_units': len(control_units)
             }
-        
+
         if method == 'nearest':
             # Nearest neighbor matching
             for _, treatment_unit in treatment_units.iterrows():
@@ -99,7 +99,7 @@ class PropensityScoreMethods:
                     matched_pairs.append((treatment_unit.name, nearest_control_idx))
         else:
             raise ValueError(f"Unsupported matching method: {method}")
-        
+
         return {
             'pairs': matched_pairs,
             'distances': distances_used,
@@ -107,11 +107,11 @@ class PropensityScoreMethods:
             'treatment_units': len(treatment_units),
             'control_units': len(control_units)
         }
-    
+
     def calculate_ate(self, matched_pairs, outcome_col, data=None):
         """Calculate Average Treatment Effect."""
         treatment_effects = []
-        
+
         if data is None:
             return {'ate': 0.0, 'treatment_effects': [], 'standard_error': 0.0}
 
@@ -121,24 +121,24 @@ class PropensityScoreMethods:
             control_outcome = data.loc[control_idx, outcome_col]
             if pd.notna(treatment_outcome) and pd.notna(control_outcome):
                 treatment_effects.append(float(treatment_outcome - control_outcome))
-        
+
         if not treatment_effects:
             return {'ate': 0.0, 'treatment_effects': [], 'standard_error': 0.0}
 
         ate = float(np.mean(treatment_effects))
         standard_error = float(np.std(treatment_effects, ddof=1) / np.sqrt(len(treatment_effects))) if len(treatment_effects) > 1 else 0.0
-        
+
         return {
             'ate': ate,
             'treatment_effects': treatment_effects,
             'standard_error': standard_error
         }
-    
+
     def check_covariate_balance(self, matched_pairs, covariates, data=None):
         """Check covariate balance after matching."""
         balance_stats = {}
         pairs = matched_pairs.get('pairs', []) if isinstance(matched_pairs, dict) else matched_pairs
-        
+
         if data is None or not pairs:
             return {'covariate_balance': balance_stats, 'overall_balance': False}
 
@@ -146,7 +146,7 @@ class PropensityScoreMethods:
         control_indices = [pair[1] for pair in pairs]
         treatment_matched = data.loc[treatment_indices]
         control_matched = data.loc[control_indices]
-        
+
         for covariate in covariates:
             treatment_values = treatment_matched[covariate].astype(float).dropna()
             control_values = control_matched[covariate].astype(float).dropna()
@@ -172,23 +172,23 @@ class PropensityScoreMethods:
                 'variance_ratio': float(variance_ratio),
                 'is_balanced': abs(standardized_mean_diff) < 0.1 and 0.5 <= variance_ratio <= 2.0
             }
-        
+
         return {
             'covariate_balance': balance_stats,
             'overall_balance': all(item['is_balanced'] for item in balance_stats.values())
         }
-    
+
     def assess_matching_quality(self, balance_checks):
         """Assess overall matching quality."""
         balance_stats = balance_checks.get('covariate_balance', {})
         if not balance_stats:
             return {'quality_score': 0.0, 'is_good_quality': False}
-        
+
         avg_abs_smd = np.mean([
             abs(stats_['standardized_mean_diff'])
             for stats_ in balance_stats.values()
         ])
-        
+
         return {
             'quality_score': float(max(0.0, 1.0 - avg_abs_smd)),
             'is_good_quality': balance_checks.get('overall_balance', False)

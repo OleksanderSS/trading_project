@@ -1,7 +1,8 @@
-from enum import Enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from enum import Enum
+from typing import Any
+
 
 class EventType(Enum):
     """Event types"""
@@ -31,22 +32,22 @@ class MarketRegime(Enum):
 @dataclass
 class MarketEvent:
     """Market event data structure."""
-    id: Optional[int]
+    id: int | None
     timestamp: datetime
     event_type: EventType
     title: str
     description: str
     source: str
     impact_level: EventImpact
-    affected_tickers: List[str]
-    affected_sectors: List[str]
-    keywords: List[str]
+    affected_tickers: list[str]
+    affected_sectors: list[str]
+    keywords: list[str]
     sentiment_score: float
     confidence: float
     relevance_score: float
-    expiration_time: Optional[datetime]
+    expiration_time: datetime | None
     processed: bool
-    impact_assessment: Dict[str, Any]
+    impact_assessment: dict[str, Any]
 
 @dataclass
 class MarketContext:
@@ -55,11 +56,11 @@ class MarketContext:
     market_regime: MarketRegime
     volatility_regime: str
     sentiment_index: float
-    fear_greed_index: Optional[float]
-    vix_level: Optional[float]
-    major_events: List[MarketEvent]
-    sector_performance: Dict[str, float]
-    macro_indicators: Dict[str, float]
-    risk_factors: List[str]
-    opportunities: List[str]
-    pattern_memory_insight: Optional[str] = None
+    fear_greed_index: float | None
+    vix_level: float | None
+    major_events: list[MarketEvent]
+    sector_performance: dict[str, float]
+    macro_indicators: dict[str, float]
+    risk_factors: list[str]
+    opportunities: list[str]
+    pattern_memory_insight: str | None = None

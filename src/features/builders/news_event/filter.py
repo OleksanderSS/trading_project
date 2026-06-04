@@ -2,15 +2,15 @@
 News Event Data Filter
 Handles news items validation and filtering.
 """
-import logging
+
 import pandas as pd
-from typing import List, Optional, Any
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
 class NewsEventDataFilter:
-    def __init__(self, is_test_mode: bool = False, test_ticker: Optional[str] = None):
+    def __init__(self, is_test_mode: bool = False, test_ticker: str | None = None):
         self.is_test_mode = is_test_mode
         self.test_ticker = test_ticker
         self.stats = {
@@ -22,14 +22,14 @@ class NewsEventDataFilter:
             'valid_records': 0
         }
 
-    def filter_tickers(self, tickers: List[str]) -> List[str]:
+    def filter_tickers(self, tickers: list[str]) -> list[str]:
         """Filter tickers based on test mode."""
         if self.is_test_mode and self.test_ticker:
             logger.info(f'🧪 Тестовий режим: використовуємо тільки {self.test_ticker}')
             return [self.test_ticker]
         return tickers
 
-    def find_publication_column(self, news_df: pd.DataFrame) -> Optional[str]:
+    def find_publication_column(self, news_df: pd.DataFrame) -> str | None:
         """Find publication date column in news DataFrame."""
         for col in ['publishedAt', 'published_at', 'published_date', 'date', 'datetime']:
             if col in news_df.columns:

@@ -5,14 +5,13 @@ Live-Adaptive Ensemble Engine
 - Quarterly optimization with historical backtesting
 """
 import logging
-
-import numpy as np
-import pandas as pd
-from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
+import numpy as np
+
 from src.core.logging.logger import ProjectLogger
+
 
 @dataclass
 class ModelPerformanceMetric:
@@ -33,15 +32,15 @@ class EnsembleWeights:
     """Current weights for ensemble"""
     timestamp: datetime
     regime: str
-    weights: Dict[str, float] = field(default_factory=dict)
-    model_scores: Dict[str, float] = field(default_factory=dict)
+    weights: dict[str, float] = field(default_factory=dict)
+    model_scores: dict[str, float] = field(default_factory=dict)
     reasoning: str = ""
 
 class LiveAdaptiveEnsemble:
     """
     Adaptive ensemble that recalibrates weights based on live performance
     """
-    
+
     def __init__(self, logger=None, reweight_interval_days=7):
         """
         Args:
@@ -49,12 +48,12 @@ class LiveAdaptiveEnsemble:
         """
         self.logger = logger or ProjectLogger.get_logger(__name__)
         self.reweight_interval_days = reweight_interval_days
-        
+
         # Performance tracking
         self.model_metrics_history = []  # List[ModelPerformanceMetric]
         self.ensemble_weights_history = []  # List[EnsembleWeights]
         self.last_reweight_time = None
-        
+
         # Regime-based baseline weights (fallback)
         self.baseline_weights = {
             'trending_up': {
@@ -81,9 +80,9 @@ class LiveAdaptiveEnsemble:
                 'catboost': 0.14
             }
         }
-        
+
         self.current_weights = {}
-    
+
     def record_model_performance(self,
                                 model_id: str,
                                 model_type: str,
@@ -107,16 +106,16 @@ class LiveAdaptiveEnsemble:
             max_consecutive_losses=max_consecutive_losses,
             predictions_count=predictions_count
         )
-        
+
         self.model_metrics_history.append(metric)
-        
+
         # Keep only last 500 metrics
         if len(self.model_metrics_history) > 500:
             self.model_metrics_history = self.model_metrics_history[-500:]
-        
+
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"📊 Recorded {model_type} performance: Sharpe={sharpe_ratio:.2f}, Hit Rate={hit_rate:.1%}")
-    
+
     def _should_reweight(self) -> bool:
         """Check if reweighting is needed based on time interval."""
         return (
@@ -145,7 +144,7 @@ class LiveAdaptiveEnsemble:
         avg_precision = np.mean([m.precision for m in metrics])
         avg_recall = np.mean([m.recall for m in metrics])
         total_predictions = sum([m.predictions_count for m in metrics])
-        
+
         # Composite score: weighted average of metrics
         # Sharpe (40%) + Hit Rate (25%) + Precision (20%) + Recall (15%)
         score = (
@@ -154,9 +153,9 @@ class LiveAdaptiveEnsemble:
             0.20 * avg_precision +
             0.15 * avg_recall
         )
-        
+
         self.logger.info(f"📊 {model_type}: score={score:.3f}, Sharpe={avg_sharpe:.2f}, Hit Rate={avg_hit_rate:.1%}")
-        
+
         return {
             'score': score,
             'sharpe': avg_sharpe,
@@ -171,32 +170,32 @@ class LiveAdaptiveEnsemble:
         """Convert model scores to weights using softmax."""
         scores = np.array([s['score'] for s in model_scores.values()])
         scores = np.clip(scores, -5, 5)  # Avoid extreme values
-        
+
         # Softmax: e^score / sum(e^score)
         exp_scores = np.exp(scores - np.max(scores))  # Numerical stability
         raw_weights = exp_scores / exp_scores.sum()
-        
+
         # Create weights dict
         computed_weights = {}
-        for (model_type, score_data), weight in zip(model_scores.items(), raw_weights):
+        for (model_type, _score_data), weight in zip(model_scores.items(), raw_weights, strict=False):
             computed_weights[model_type] = float(weight)
-        
+
         return computed_weights
 
     def _smooth_weights_against_baseline(self, computed_weights: dict, regime: str) -> dict:
         """Smooth computed weights against baseline (70% live, 30% baseline)."""
         baseline = self.baseline_weights.get(regime, {})
         smoothed_weights = {}
-        
+
         all_models = set(computed_weights.keys()) | set(baseline.keys())
         for model_type in all_models:
             live_weight = computed_weights.get(model_type, 0.0)
             baseline_weight = baseline.get(model_type, 1.0 / len(baseline) if baseline else 0.0)
-            
+
             # 70% live, 30% baseline
             smoothed_weight = 0.7 * live_weight + 0.3 * baseline_weight
             smoothed_weights[model_type] = max(0.01, smoothed_weight)  # Min 1%
-        
+
         # Renormalize
         total = sum(smoothed_weights.values())
         return {k: v / total for k, v in smoothed_weights.items()}
@@ -212,10 +211,10 @@ class LiveAdaptiveEnsemble:
         )
         self.ensemble_weights_history.append(ew)
 
-    def compute_ensemble_weights(self, regime: str) -> Dict[str, float]:
+    def compute_ensemble_weights(self, regime: str) -> dict[str, float]:
         """
         Compute ensemble weights based on live performance
-        
+
         Algorithm:
         1. Extract latest metrics for each model (for the last week)
         2. Compute composite score for each model
@@ -225,46 +224,46 @@ class LiveAdaptiveEnsemble:
         # 1. Determine if reweighting is needed
         if not self._should_reweight() and self.current_weights:
             return self.current_weights
-        
+
         # 2. Collect recent metrics by model type
         recent_metrics = self._collect_recent_metrics(lookback_days=7)
-        
+
         if not recent_metrics:
             self.logger.warning(f"No recent metrics. Using baseline weights for {regime}")
             self.current_weights = self.baseline_weights.get(regime, {})
             return self.current_weights
-        
+
         # 3. Group by model type
         metrics_by_type = self._group_metrics_by_type(recent_metrics)
-        
+
         # 4. Compute composite score for each model type
         model_scores = {}
         for model_type, metrics in metrics_by_type.items():
             model_scores[model_type] = self._compute_model_score(model_type, metrics)
-        
+
         # 5. Convert scores to weights (softmax)
         computed_weights = self._scores_to_weights(model_scores)
-        
+
         # 6. Smooth against baseline (70% live, 30% baseline)
         smoothed_weights = self._smooth_weights_against_baseline(computed_weights, regime)
-        
+
         # 7. Record and return
         self.current_weights = smoothed_weights
         self.last_reweight_time = datetime.now()
-        
+
         # Store in history
         self._store_weights_history(regime, smoothed_weights, model_scores, recent_metrics)
-        
+
         self.logger.info(f"🔄 Ensemble weights recomputed for {regime}:")
         for model_type, weight in sorted(smoothed_weights.items(), key=lambda x: x[1], reverse=True):
             self.logger.info(f"  {model_type}: {weight:.1%}")
-        
+
         return smoothed_weights
-    
+
     def _normalize_sharpe(self, sharpe: float) -> float:
         """
         Normalize Sharpe ratio to [0, 1] range
-        
+
         Sharpe < 0 -> 0
         Sharpe = 0.5 -> 0.3
         Sharpe = 1.0 -> 0.6
@@ -274,21 +273,21 @@ class LiveAdaptiveEnsemble:
             return 0.0
         # Sigmoid-like transformation
         return min(1.0, sharpe / 2.0)
-    
+
     def get_weighted_ensemble_prediction(self,
-                                        predictions_dict: Dict[str, float],
-                                        regime: str) -> Tuple[float, Dict[str, float]]:
+                                        predictions_dict: dict[str, float],
+                                        regime: str) -> tuple[float, dict[str, float]]:
         """
         Generate weighted ensemble prediction
-        
+
         Returns:
             (ensemble_prediction, active_weights)
         """
         weights = self.compute_ensemble_weights(regime)
-        
+
         ensemble_pred = 0.0
         used_weights = {}
-        
+
         for model_type, prediction in predictions_dict.items():
             weight = weights.get(model_type, 0.0)
             if weight > 0.001:
@@ -298,21 +297,21 @@ class LiveAdaptiveEnsemble:
                     used_weights[model_type] = weight
                 except (TypeError, ValueError):
                     self.logger.warning(f"Invalid prediction for {model_type}: {prediction}")
-        
+
         # Renormalize active weights
         if used_weights:
             total = sum(used_weights.values())
             used_weights = {k: v / total for k, v in used_weights.items()}
-        
+
         return ensemble_pred, used_weights
-    
-    def get_ensemble_report(self) -> Dict:
+
+    def get_ensemble_report(self) -> dict:
         """Generate detailed ensemble report"""
         if not self.ensemble_weights_history:
             return {'status': 'no_data'}
-        
+
         last_ew = self.ensemble_weights_history[-1]
-        
+
         return {
             'current_regime': last_ew.regime,
             'last_reweight': last_ew.timestamp.isoformat(),

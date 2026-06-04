@@ -1,22 +1,26 @@
 import logging
-from typing import Dict, Any, Type, Optional, List
+from typing import Any
+
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
-from src.models.interfaces import BaseModel
+
 # Нові фабрики
 from src.factories.tree_model_factory import TreeModelFactory
+from src.models.ensemble.ensemble_model import EnsembleModel
+from src.models.interfaces import BaseModel
+from src.models.linear.knn_model import KNNModel
+
 # Моделі, що залишилися (поки що)
 from src.models.linear.linear_model import LinearModel
 from src.models.linear.svm_model import SVMModel
-from src.models.linear.knn_model import KNNModel
-from src.models.neural.lstm_model import LSTMModel
-from src.models.neural.gru_model import GRUModel
-from src.models.neural.cnn_model import CNNModel
-from src.models.neural.transformer_model import TransformerModel
-from src.models.neural.tabnet_model import TabNetModel
-from src.models.neural.mlp_model import MLPModel
 from src.models.neural.autoencoder_model import AutoencoderModel  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
-from src.models.ensemble.ensemble_model import EnsembleModel
+from src.models.neural.cnn_model import CNNModel
+from src.models.neural.gru_model import GRUModel
+from src.models.neural.lstm_model import LSTMModel
+from src.models.neural.mlp_model import MLPModel
+from src.models.neural.tabnet_model import TabNetModel
+from src.models.neural.transformer_model import TransformerModel
+
 logger = ProjectLogger.get_logger('ModelFactory')
 
 
@@ -25,14 +29,14 @@ class ModelFactory:
     A factory for creating machine learning models based on configuration.
     It maps model names from the config to their respective classes.
     """
-    _model_map: Dict[str, Any] = {
-        'Linear': LinearModel, 'SVM': SVMModel, 'KNN': KNNModel, 
-        'LSTM': LSTMModel, 'GRU': GRUModel, 'CNN': CNNModel, 
+    _model_map: dict[str, Any] = {
+        'Linear': LinearModel, 'SVM': SVMModel, 'KNN': KNNModel,
+        'LSTM': LSTMModel, 'GRU': GRUModel, 'CNN': CNNModel,
         'Transformer': TransformerModel, 'TabNet': TabNetModel, 'MLP':
         MLPModel, 'Autoencoder': AutoencoderModel, 'Ensemble': EnsembleModel  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
     }
-    _model_aliases: Dict[str, str] = {
-        'linear': 'Linear', 'svm': 'SVM', 'knn': 'KNN', 
+    _model_aliases: dict[str, str] = {
+        'linear': 'Linear', 'svm': 'SVM', 'knn': 'KNN',
         'mlp': 'MLP', 'cnn': 'CNN', 'lstm': 'LSTM', 'gru': 'GRU',
         'transformer': 'Transformer', 'tabnet': 'TabNet', 'autoencoder':  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
         'Autoencoder', 'ensemble': 'Ensemble', 'xgboost': 'XGBoost',
@@ -42,22 +46,22 @@ class ModelFactory:
     }
 
     @staticmethod
-    def create_model(model_name: str, config: Optional[Dict[str, Any]]=None,
+    def create_model(model_name: str, config: dict[str, Any] | None=None,
         **kwargs) ->BaseModel:
         """Creates an instance of a model."""
         canonical_name = ModelFactory._validate_and_normalize_name(model_name)
-        
+
         # Делегуємо деревні моделі
         if TreeModelFactory.is_tree_model(canonical_name):
             return TreeModelFactory.create_model(canonical_name, config=config, **kwargs)
-            
+
         # Інші моделі
         model_class = ModelFactory._get_model_class(canonical_name, model_name)
         logger.info(f'Creating instance of model: {canonical_name}')
-        
+
         if canonical_name == 'Ensemble':
             return ModelFactory._create_ensemble_model(config, kwargs)
-            
+
         return ModelFactory._create_regular_model(model_class,
             canonical_name, config, kwargs)
 
@@ -81,15 +85,15 @@ class ModelFactory:
         return model_class
 
     @staticmethod
-    def _create_ensemble_model(config: Optional[Dict[str, Any]], kwargs:
-        Dict[str, Any]) ->BaseModel:
+    def _create_ensemble_model(config: dict[str, Any] | None, kwargs:
+        dict[str, Any]) ->BaseModel:
         """Create ensemble model with base models"""
         base_models_names = config.get('models', []) if config else []
         if not base_models_names:
             base_models_names = ['XGBoost', 'LightGBM']
         resolved_models = []
         for m_name in base_models_names:
-            per_model_config: Dict[str, Any] = {}
+            per_model_config: dict[str, Any] = {}
             if config:
                 per_model_config = config.get('per_model', {}).get(m_name, {})
             m_instance = ModelFactory.create_model(m_name, config=
@@ -103,7 +107,7 @@ class ModelFactory:
 
     @staticmethod
     def _create_regular_model(model_class, canonical_name: str, config:
-        Optional[Dict[str, Any]], kwargs: Dict[str, Any]) ->BaseModel:
+        dict[str, Any] | None, kwargs: dict[str, Any]) ->BaseModel:
         """Create regular model with parameter processing"""
         model_params = ModelFactory._extract_model_params(canonical_name,
             config)
@@ -112,8 +116,7 @@ class ModelFactory:
             canonical_name, all_params)
 
     @staticmethod
-    def _extract_model_params(canonical_name: str, config: Optional[Dict[
-        str, Any]]) ->Dict[str, Any]:
+    def _extract_model_params(canonical_name: str, config: dict[str, Any] | None) ->dict[str, Any]:
         """Extract model-specific parameters from config"""
         model_params = {}
         if config and canonical_name == 'KNN' and 'n_neighbors' in config:
@@ -121,8 +124,8 @@ class ModelFactory:
         return model_params
 
     @staticmethod
-    def _create_model_with_filtered_params(model_class: Type[BaseModel],
-        canonical_name: str, all_params: Dict[str, Any]) ->BaseModel:
+    def _create_model_with_filtered_params(model_class: type[BaseModel],
+        canonical_name: str, all_params: dict[str, Any]) ->BaseModel:
         """Create model with parameter filtering and seed injection"""
         import inspect
         config_manager = get_current_config()
@@ -150,7 +153,7 @@ class ModelFactory:
             return model_instance_fallback
 
     @staticmethod
-    def _add_random_seed_if_supported(all_params: Dict[str, Any],
+    def _add_random_seed_if_supported(all_params: dict[str, Any],
         accepted_params: set, global_seed: int) ->None:
         """Add random seed to parameters if model supports it"""
         if ('random_state' in accepted_params and 'random_state' not in
@@ -160,30 +163,30 @@ class ModelFactory:
             all_params['seed'] = global_seed
 
     @staticmethod
-    def get_available_models() ->List[str]:
+    def get_available_models() ->list[str]:
         """
         Returns a list of all available model names.
         """
         return list(ModelFactory._model_map.keys())
 
     @staticmethod
-    def get_model(model_name: str, **kwargs) ->Optional[BaseModel]:
+    def get_model(model_name: str, **kwargs) ->BaseModel | None:
         """
         Legacy API: Get model instance with kwargs (backward compatible with src/models/factory.py).
-        
+
         This method provides backward compatibility for code that uses get_model() instead of create_model().
         It dynamically handles missing dependencies and returns None gracefully.
-        
+
         Args:
             model_name: The identifier of the model (e.g., 'catboost', 'cnn', 'xgboost').
             **kwargs: Configuration parameters for the model constructor.
-        
+
         Returns:
             An instance of a BaseModel subclass, or None if dependencies are missing.
-        
+
         Raises:
             ValueError: If the model_name is not found in the factory's map.
-        
+
         Example:
             model = ModelFactory.get_model('catboost', iterations=100)
             model = ModelFactory.get_model('lstm', hidden_size=128)

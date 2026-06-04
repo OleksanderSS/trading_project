@@ -1,8 +1,7 @@
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import minmax_scale
 import logging
-from typing import Dict, List
+
+import pandas as pd
+from sklearn.preprocessing import minmax_scale
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +11,7 @@ class MacroScoreCalculator:
     This score represents a single, normalized value for the overall macro environment.
     """
 
-    def __init__(self, indicators_config: Dict[str, Dict]):
+    def __init__(self, indicators_config: dict[str, dict]):
         """
         Initializes the calculator with configuration for macro indicators.
 
@@ -40,17 +39,17 @@ class MacroScoreCalculator:
             return pd.DataFrame()
 
         individual_scores = self._calculate_individual_scores(macro_data, rolling_window)
-        
+
         if not individual_scores:
             return self._create_empty_composite_score(macro_data)
 
         scores_df = pd.DataFrame(individual_scores, index=macro_data.index)
         composite_score = self._calculate_weighted_composite(scores_df)
         final_score = self._scale_final_score(composite_score)
-        
+
         scores_df['composite_macro_score'] = final_score
         logger.info("Successfully calculated the composite macro score.")
-        
+
         return scores_df
 
     def _validate_macro_data(self, macro_data: pd.DataFrame) -> bool:
@@ -60,10 +59,10 @@ class MacroScoreCalculator:
             return False
         return True
 
-    def _calculate_individual_scores(self, macro_data: pd.DataFrame, rolling_window: int) -> Dict[str, pd.Series]:
+    def _calculate_individual_scores(self, macro_data: pd.DataFrame, rolling_window: int) -> dict[str, pd.Series]:
         """Calculate individual indicator scores."""
         all_scores = {}
-        
+
         for indicator, config in self.indicators_config.items():
             if indicator not in macro_data.columns:
                 logger.warning(f"Indicator '{indicator}' not found in macro data. Skipping.")
@@ -75,14 +74,14 @@ class MacroScoreCalculator:
 
         return all_scores
 
-    def _process_indicator(self, series: pd.Series, config: Dict, rolling_window: int) -> pd.Series:
+    def _process_indicator(self, series: pd.Series, config: dict, rolling_window: int) -> pd.Series:
         """Process a single indicator to calculate its score."""
         clean_series = series.dropna()
-        
+
         transformed_series = self._transform_series(clean_series, rolling_window)
         normalized_series = self._normalize_series(transformed_series, rolling_window)
         aligned_series = self._apply_directional_alignment(normalized_series, config)
-        
+
         return aligned_series
 
     def _transform_series(self, series: pd.Series, rolling_window: int) -> pd.Series:
@@ -96,7 +95,7 @@ class MacroScoreCalculator:
         std = series.rolling(window=rolling_window, min_periods=min_periods).std()
         return (series - mean) / std.replace(0, 1)
 
-    def _apply_directional_alignment(self, series: pd.Series, config: Dict) -> pd.Series:
+    def _apply_directional_alignment(self, series: pd.Series, config: dict) -> pd.Series:
         """Apply directional alignment based on configuration."""
         if config.get('direction', 'positive') == 'negative':
             return -series
@@ -112,7 +111,7 @@ class MacroScoreCalculator:
         weighted_sum = pd.Series(0.0, index=scores_df.index)
         available_weight = pd.Series(0.0, index=scores_df.index)
         total_weight = sum(config['weight'] for config in self.indicators_config.values())
-        
+
         if total_weight == 0:
             logger.warning("Total weight of indicators is zero. Composite score will be zero.")
             return pd.Series(index=scores_df.index, dtype=float)

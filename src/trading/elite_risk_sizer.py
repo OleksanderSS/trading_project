@@ -4,9 +4,11 @@ Elite Risk Sizing Engine
 - Correlation-aware diversification factor
 - Dynamic adjustment за волатильністю
 """
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Optional, Tuple, Any
+
 from src.core.logging.logger import ProjectLogger
 
 
@@ -34,12 +36,12 @@ class EliteRiskSizer:
 
     def calculate_optimal_position_size(self, ticker: str, entry_price:
         float, win_rate: float, avg_win_loss_ratio: float,
-        current_positions: Dict[str, Dict], total_equity: float,
+        current_positions: dict[str, dict], total_equity: float,
         position_value_limit: float, portfolio_volatility: float,
         cash_available: float) ->int:
         """
         Calculate optimal position size
-        
+
         Args:
             ticker: Asset to buy
             entry_price: Entry price
@@ -50,7 +52,7 @@ class EliteRiskSizer:
             position_value_limit: Max % of portfolio in a single position (e.g., 0.10)
             portfolio_volatility: Current portfolio volatility (annualized)
             cash_available: Cash available
-        
+
         Returns:
             Optimal share quantity
         """
@@ -101,17 +103,17 @@ class EliteRiskSizer:
         shares = int(additional_capital / entry_price)
         return max(0, shares)
 
-    def _compute_correlation_factor(self, ticker: str, current_positions: Dict
+    def _compute_correlation_factor(self, ticker: str, current_positions: dict
         ) ->float:
         """
         Compute factor based on correlation with portfolio
-        
+
         If new ticker highly correlates with current positions:
         - factor = 0.5 (half size)
-        
+
         If independent:
         - factor = 1.0 (full size)
-        
+
         Якщо neg correlated:
         - factor = 1.2 (even more due to diversification)
         """
@@ -161,18 +163,18 @@ class EliteRiskSizer:
             self.logger.warning(f'Volatility estimation failed: {e}')
             return 0.2
 
-    def rebalance_portfolio(self, current_positions: Dict[str, Dict],
-        target_allocations: Dict[str, float], current_prices: Dict[str,
-        float], total_equity: float) ->Dict[str, int]:
+    def rebalance_portfolio(self, current_positions: dict[str, dict],
+        target_allocations: dict[str, float], current_prices: dict[str,
+        float], total_equity: float) ->dict[str, int]:
         """
         Calculate trades to reach target allocations
-        
+
         Args:
             current_positions: {ticker: {quantity, entry_price}}
             target_allocations: {ticker: 0.10}  (10% each)
             current_prices: {ticker: price}
             total_equity: Current portfolio value
-        
+
         Returns:
             {ticker: quantity_to_trade}  (+ = buy, - = sell)
         """
@@ -197,16 +199,16 @@ class EliteRiskSizer:
 
     def compute_optimal_position_size(self, ticker: str, confidence: float,
         prediction: float, total_capital: float, ticker_volatility: float,
-        portfolio_volatility: float, portfolio_positions: Dict[str, Any],
-        correlation_matrix: Optional[Dict[str, Any]]=None,
-        current_price: Optional[float]=None) ->Tuple[float, Dict[str, Any]]:
+        portfolio_volatility: float, portfolio_positions: dict[str, Any],
+        correlation_matrix: dict[str, Any] | None=None,
+        current_price: float | None=None) ->tuple[float, dict[str, Any]]:
         """
         Elite sizing interface expected by PortfolioManager.
-        
+
         Args:
             prediction: Expected return (%)
             total_capital: Current portfolio value
-        
+
         Returns:
             (position_fraction, metadata)
         """
@@ -219,7 +221,7 @@ class EliteRiskSizer:
             total_equity=total_capital, position_value_limit=0.15,
             portfolio_volatility=portfolio_volatility, cash_available=
             total_capital)
-        position_fraction = (shares * entry_price / total_capital if 
+        position_fraction = (shares * entry_price / total_capital if
             total_capital > 0 else 0)
         metadata = {'stages': {'kelly_size': position_fraction, 'vol_adj': 1.0}
             }

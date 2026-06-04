@@ -1,7 +1,9 @@
 # src/feature_engineering/nlp/keyword_features.py
 
+from typing import Any
+
 import pandas as pd
-from typing import List, Tuple, Dict, Any
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
@@ -17,24 +19,24 @@ class KeywordExtractor:
             self.keywords = [kw.lower() for kw in keyword_config]
         else:
             self.keywords = []
-        
+
         self.keyword_set = set(self.keywords)
 
-    def extract_keywords(self, text: str) -> List[str]:
+    def extract_keywords(self, text: str) -> list[str]:
         """
         Finds all unique keywords from the config that are present in the text.
         """
         if not isinstance(text, str) or not self.keywords:
             return []
-        
+
         text_lower = text.lower()
         found_keywords = {kw for kw in self.keyword_set if kw in text_lower}
         return list(found_keywords)
 
 def build_keyword_features(
     df_news: pd.DataFrame,
-    keyword_list: List[str]
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    keyword_list: list[str]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Creates features based on keyword matches in news:
     - match_count: number of matches in each row

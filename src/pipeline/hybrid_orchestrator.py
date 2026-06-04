@@ -4,15 +4,16 @@ Hybrid Pipeline Orchestrator:
 - Colab: Heavy models, heavy analyzers
 - State persistence for long-running sessions
 """
+from typing import Any
+
 import pandas as pd
-from typing import Dict, List, Any, Optional
 
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
-from src.pipeline.hybrid.orchestrator_config import OrchestratorConfigManager
 from src.pipeline.hybrid.component_factory import OrchestratorComponentFactory
 from src.pipeline.hybrid.contracts import HybridFinalStagesRequest, HybridPipelineRequest
-from src.pipeline.hybrid.pipeline_config import PipelineParams, FinalStagesParams
+from src.pipeline.hybrid.orchestrator_config import OrchestratorConfigManager
+from src.pipeline.hybrid.pipeline_config import FinalStagesParams, PipelineParams
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -28,19 +29,19 @@ class HybridOrchestrator:
         self.batch_name = batch_name
         self.orchestrator_config_manager = OrchestratorConfigManager(config_manager)
         self.config = self.orchestrator_config_manager.build_pipeline_config(batch_name)
-        
+
         # Initialize all sub-components via factory
         OrchestratorComponentFactory.initialize_components(self)
-        
+
         self.logger.info(f'✅ HybridOrchestrator initialized for batch: {self.batch_name}')
 
-    async def run_local_pipeline(self, tickers: Optional[List[str]] = None, 
-                               timeframes: Optional[List[str]] = None, 
-                               stages_to_run: Optional[List[int]] = None) -> Dict[str, Any]:
+    async def run_local_pipeline(self, tickers: list[str] | None = None,
+                               timeframes: list[str] | None = None,
+                               stages_to_run: list[int] | None = None) -> dict[str, Any]:
         """Execute local pipeline stages."""
         return await self.pipeline_runner.run_local_pipeline(tickers, timeframes, stages_to_run)
 
-    async def run_full_hybrid_pipeline(self, request: HybridPipelineRequest) -> Dict[str, Any]:
+    async def run_full_hybrid_pipeline(self, request: HybridPipelineRequest) -> dict[str, Any]:
         """Run full hybrid pipeline with all parameters."""
         params = PipelineParams(
             tickers=request.tickers,
@@ -52,7 +53,7 @@ class HybridOrchestrator:
         )
         return await self.pipeline_manager.run_full_hybrid_pipeline(params)
 
-    async def prepare_colab_data(self, tickers: List[str], timeframes: List[str], **kwargs) -> Dict[str, Any]:
+    async def prepare_colab_data(self, tickers: list[str], timeframes: list[str], **kwargs) -> dict[str, Any]:
         """Delegate data preparation to ColabManager."""
         # Assemble config
         from src.pipeline.hybrid.colab_manager import BatchPreparationConfig
@@ -74,15 +75,15 @@ class HybridOrchestrator:
 
     async def run_light_models(
         self,
-        tickers: Optional[List[str]] = None,
-        test_ticker: Optional[str] = None,
-        test_target: Optional[str] = None,
-        features_df: Optional[pd.DataFrame] = None,
-        targets_df: Optional[pd.DataFrame] = None,
-        timeframes: Optional[List[str]] = None,
-        batch_name: Optional[str] = None,
+        tickers: list[str] | None = None,
+        test_ticker: str | None = None,
+        test_target: str | None = None,
+        features_df: pd.DataFrame | None = None,
+        targets_df: pd.DataFrame | None = None,
+        timeframes: list[str] | None = None,
+        batch_name: str | None = None,
         **_: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run local light-model training on prepared feature/target data."""
         effective_tickers = [test_ticker] if test_ticker else tickers
 
@@ -106,7 +107,7 @@ class HybridOrchestrator:
             effective_tickers,
         )
 
-    async def run_final_stages(self, request: HybridFinalStagesRequest | Dict[str, Any]) -> Dict[str, Any]:
+    async def run_final_stages(self, request: HybridFinalStagesRequest | dict[str, Any]) -> dict[str, Any]:
         """Run final stages from a request object or CLI request dictionary."""
         if isinstance(request, dict):
             request = HybridFinalStagesRequest(**request)
@@ -123,11 +124,11 @@ class HybridOrchestrator:
 
         return await self.pipeline_manager.run_final_stages(params)
 
-    def load_colab_results(self, batch_name: str) -> Dict[str, Any]:
+    def load_colab_results(self, batch_name: str) -> dict[str, Any]:
         """Load training results from Colab batch."""
         return self.colab_manager.load_colab_results(batch_name)
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Get summary of pipeline state."""
         return {
             'batch_name': self.batch_name,

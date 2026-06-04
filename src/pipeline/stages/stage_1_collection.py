@@ -1,16 +1,16 @@
-import asyncio
-import pandas as pd
-from itertools import chain
-from typing import Dict, Optional, List, Any
 from functools import lru_cache
-from src.pipeline.stages.base_stage import BaseStage
+from typing import Any
+
+import pandas as pd
+
 from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
 from src.data.collectors.collector_factory import CollectorFactory
 from src.data.management.data_manager import DataManager
-from src.core.logging.logger import ProjectLogger
-from src.core.error_handling.error_handler import ErrorHandler
-from src.pipeline.stages.utils.data_schema_mapper import DataSchemaMapper
+from src.pipeline.stages.base_stage import BaseStage
 from src.pipeline.stages.utils.collection_manager import CollectionManager
+from src.pipeline.stages.utils.data_schema_mapper import DataSchemaMapper
 
 
 class CollectionStage(BaseStage):
@@ -29,7 +29,7 @@ class CollectionStage(BaseStage):
         self.collection_manager = CollectionManager(factory)
         self.logger.info('CollectionStage initialized.')
 
-    async def run(self, **kwargs) ->Dict:
+    async def run(self, **kwargs) ->dict:
         self.logger.info('Starting data collection stage...')
         tickers_from_kwargs = kwargs.get('tickers')
         if tickers_from_kwargs:
@@ -63,7 +63,7 @@ class CollectionStage(BaseStage):
                 'Cleared fetch_all_data_from_db cache to ensure fresh data')
         self.logger.info('Collection stage finished.')
 
-    def process_and_save_results(self, results: List, collectors: List):
+    def process_and_save_results(self, results: list, collectors: list):
         """Processes and saves results from collectors."""
         successful = 0
         for i, res in enumerate(results):
@@ -91,7 +91,7 @@ class CollectionStage(BaseStage):
             )
         return self._save_collector_data(df, collector_type)
 
-    def _convert_to_dataframe(self, res: Any) ->Optional[pd.DataFrame]:
+    def _convert_to_dataframe(self, res: Any) ->pd.DataFrame | None:
         """Convert result to DataFrame if needed."""
         if isinstance(res, list) and len(res) > 0:
             return pd.DataFrame(res)
@@ -121,7 +121,7 @@ class CollectionStage(BaseStage):
                 'coerce')
         return df
 
-    def _get_unique_keys(self, collector_type: str, df: pd.DataFrame) ->List[
+    def _get_unique_keys(self, collector_type: str, df: pd.DataFrame) ->list[
         str]:
         """Get unique keys for collector."""
         unique_on = list(self.config_manager.get_config('collectors', {}).
@@ -133,7 +133,7 @@ class CollectionStage(BaseStage):
         return unique_on
 
     def _upsert_dataframe(self, table_name: str, df: pd.DataFrame,
-        unique_on: List[str]) ->bool:
+        unique_on: list[str]) ->bool:
         """Upsert dataframe to database with filtering."""
         if not self.db_manager.table_exists(table_name):
             self.db_manager.upsert(table_name=table_name, df=df, unique_on=
@@ -151,7 +151,7 @@ class CollectionStage(BaseStage):
             return False
 
     @lru_cache(maxsize=1)
-    def fetch_all_data_from_db(self) ->Dict[str, pd.DataFrame]:
+    def fetch_all_data_from_db(self) ->dict[str, pd.DataFrame]:
         """Loads all data from the database for the next stage."""
         raw_data = {}
         all_news_dfs = []
@@ -225,7 +225,7 @@ class CollectionStage(BaseStage):
         self.logger.info(
             f'Total {total} records fetched from DB for next stage.')
 
-    def _find_date_column_in_df(self, df: pd.DataFrame) ->Optional[str]:
+    def _find_date_column_in_df(self, df: pd.DataFrame) ->str | None:
         for col in ['created_at', 'published_at', 'timestamp', 'date',
             'updated_at']:
             if col in df.columns:

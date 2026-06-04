@@ -1,16 +1,18 @@
-from google.cloud import storage
-from pathlib import Path
-from typing import Optional
 import time
+from pathlib import Path
+
+from google.cloud import storage
+
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
+
 logger = ProjectLogger.get_logger('GCSManager')
 
 
 class GCSManager:
     """A manager to handle all interactions with Google Cloud Storage."""
 
-    def __init__(self, config: Optional[dict]=None):
+    def __init__(self, config: dict | None=None):
         self.client = None
         self.bucket = None
         self.bucket_name = None
@@ -98,7 +100,7 @@ class GCSManager:
                 , exc_info=True)
             return False
 
-    def list_files(self, prefix: Optional[str]=None) ->list[str]:
+    def list_files(self, prefix: str | None=None) ->list[str]:
         """Lists all the files in the bucket with an optional prefix."""
         try:
             blobs = self.client.list_blobs(self.bucket_name, prefix=prefix)
@@ -122,8 +124,7 @@ class GCSManager:
                 exc_info=True)
             return False
 
-    def wait_for_blob(self, blob_name: str, timeout: int=300) ->Optional[
-        storage.Blob]:
+    def wait_for_blob(self, blob_name: str, timeout: int=300) ->storage.Blob | None:
         """Waits for a blob to exist in GCS, with a timeout."""
         if not self.client or not self.bucket:
             logger.warning('GCS not initialized. Cannot wait for blob.')

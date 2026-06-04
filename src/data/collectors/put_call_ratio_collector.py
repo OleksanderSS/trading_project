@@ -1,16 +1,18 @@
 # src/data/collectors/put_call_ratio_collector.py
 
-import asyncio
-import pandas as pd
 import hashlib
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
+from typing import Any
 
-from .base_collector import BaseCollector
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.core.cache.cache_manager import CacheManager
+
+from .base_collector import BaseCollector
+
 
 class PutCallRatioCollector(BaseCollector):
     """Collector for Put/Call Ratio from CBOE - FREE data!"""
@@ -18,8 +20,8 @@ class PutCallRatioCollector(BaseCollector):
     data_type = "alternative"
     collector_name = "put_call_ratio"
 
-    def __init__(self, configs: Dict[str, Any], http_client_factory: HttpClientFactory, 
-                 db_manager: DataManager, cache_manager: Optional[CacheManager] = None, **kwargs):
+    def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory,
+                 db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.enabled = self.configs.get('enabled', True)
         self.timeout = self.configs.get('timeout', 30)
@@ -34,7 +36,7 @@ class PutCallRatioCollector(BaseCollector):
         hash_string = "|".join(str(row.get(key, "")) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
 
-    async def run(self, **kwargs) -> Optional[pd.DataFrame]:
+    async def run(self, **kwargs) -> pd.DataFrame | None:
         """Fetches Put/Call Ratio data and returns DataFrame."""
         if not self.enabled:
             self.logger.warning("PutCallRatioCollector is disabled")
@@ -42,7 +44,7 @@ class PutCallRatioCollector(BaseCollector):
 
         try:
             self.logger.info("Fetching FREE Put/Call Ratio from CBOE")
-            
+
             # Fetch data
             data = await self._fetch_put_call_data()
             if not data:
@@ -50,14 +52,14 @@ class PutCallRatioCollector(BaseCollector):
 
             # Convert to DataFrame
             df = pd.DataFrame(data)
-            
+
             if df.empty:
                 self.logger.warning("No Put/Call Ratio data received")
                 return None
 
             # Standardize columns
             df = self._standardize_columns(df)
-            
+
             # Add metadata
             df['collector_type'] = self.collector_type
             df['collector_name'] = self.collector_name
@@ -74,14 +76,14 @@ class PutCallRatioCollector(BaseCollector):
             self.logger.error(f"Error in PutCallRatioCollector: {e}", exc_info=True)
             raise RuntimeError("Put/Call Ratio collection failed") from e
 
-    async def _fetch_put_call_data(self) -> List[Dict[str, Any]]:
+    async def _fetch_put_call_data(self) -> list[dict[str, Any]]:
         """Fetches Put/Call Ratio data from CBOE - FREE!"""
         try:
             # CBOE provides Put/Call Ratio data - FREE and no API key required!
             url = "https://www.cboe.org/us/options/market_statistics/exchange_volume/"
-            
+
             self.logger.info(f"Fetching FREE Put/Call Ratio from {url}")
-            
+
             async with self.http_client_factory.get_http_client(timeout=self.timeout) as http_client:
                 response = await http_client.get(url)
                 if response.status_code == 404:
@@ -101,26 +103,26 @@ class PutCallRatioCollector(BaseCollector):
             # Look for patterns like "Total Put/Call Ratio: 0.65"
             put_call_pattern = r'Total Put/Call Ratio[:\s]*([0-9.]+)'
             ratios = re.findall(put_call_pattern, content)
-            
+
             if not ratios:
                 self.logger.warning("No Put/Call Ratio found in content")
                 if self.allow_sample_fallback:
                     self.logger.warning("Using sample data fallback for Put/Call Ratio")
                     return self._create_sample_put_call_data()
                 raise RuntimeError("Put/Call Ratio missing and sample fallback disabled")
-            
+
             # Create historical data (since we only get latest ratio)
             latest_ratio = float(ratios[0])
             data = []
             base_date = datetime.now() - timedelta(days=60)
-            
+
             for i in range(60):  # 60 days of historical data
                 date_obj = base_date + timedelta(days=i)
-                
+
                 # Simulate realistic Put/Call variations
                 variation = (i % 14 - 7) * 0.1  # Bi-weekly variations
                 historical_ratio = max(0.3, min(2.0, latest_ratio + variation))
-                
+
                 # Classify sentiment based on ratio
                 if historical_ratio >= 1.2:
                     sentiment_signal = -1  # Bearish
@@ -137,7 +139,7 @@ class PutCallRatioCollector(BaseCollector):
                 else:
                     sentiment_signal = 1  # Bullish
                     sentiment_classification = "Very Bullish"
-                
+
                 data.append({
                     'date': date_obj.strftime('%Y-%m-%d'),
                     'put_call_ratio': historical_ratio,
@@ -147,7 +149,7 @@ class PutCallRatioCollector(BaseCollector):
                     'ratio_change': historical_ratio - (data[-1]['put_call_ratio'] if data else latest_ratio),
                     'timestamp': date_obj
                 })
-            
+
             # Add current reading as the most recent
             if data:
                 data[-1] = {
@@ -159,7 +161,7 @@ class PutCallRatioCollector(BaseCollector):
                     'ratio_change': latest_ratio - (data[-2]['put_call_ratio'] if len(data) > 1 else 0),
                     'timestamp': datetime.now()
                 }
-            
+
             return data
 
         except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
@@ -170,19 +172,19 @@ class PutCallRatioCollector(BaseCollector):
             raise RuntimeError(f"Put/Call Ratio collection failed and sample fallback disabled: {e}")
 
 
-    def _create_sample_put_call_data(self) -> List[Dict[str, Any]]:
+    def _create_sample_put_call_data(self) -> list[dict[str, Any]]:
         """Create sample Put/Call Ratio data for demonstration."""
         data = []
         base_date = datetime.now() - timedelta(days=60)
-        
+
         for i in range(60):  # 60 days of data
             date_obj = base_date + timedelta(days=i)
-            
+
             # Simulate realistic Put/Call Ratio
             base_ratio = 0.75
             variation = (i % 14 - 7) * 0.15  # Bi-weekly variations
             put_call_ratio = max(0.3, min(2.0, base_ratio + variation))
-            
+
             # Classify sentiment
             if put_call_ratio >= 1.2:
                 sentiment_signal = -1
@@ -199,7 +201,7 @@ class PutCallRatioCollector(BaseCollector):
             else:
                 sentiment_signal = 1
                 sentiment_classification = "Very Bullish"
-            
+
             data.append({
                 'date': date_obj.strftime('%Y-%m-%d'),
                 'put_call_ratio': put_call_ratio,
@@ -211,7 +213,7 @@ class PutCallRatioCollector(BaseCollector):
                 'is_synthetic': True,
                 'eligible_for_training': False
             })
-        
+
         return data
 
     def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -220,7 +222,7 @@ class PutCallRatioCollector(BaseCollector):
             # Ensure required columns exist
             if 'date' not in df.columns:
                 df['date'] = pd.to_datetime(df['timestamp']).dt.strftime('%Y-%m-%d')
-            
+
             required_cols = ['put_call_ratio', 'sentiment_signal', 'sentiment_classification']
             for col in required_cols:
                 if col not in df.columns:
@@ -229,27 +231,27 @@ class PutCallRatioCollector(BaseCollector):
 
             # Convert date column
             df['date'] = pd.to_datetime(df['date'])
-            
+
             # Ensure numeric types
             numeric_cols = ['put_call_ratio', 'sentiment_signal', 'extreme_reading', 'ratio_change']
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
-            
+
             # Sort by date
             df = df.sort_values('date').reset_index(drop=True)
-            
+
             # Add derived features
             df['put_call_sma'] = df['put_call_ratio'].rolling(window=10).mean().shift(1)
-            df['regime_change'] = ((df['sentiment_classification'] != df['sentiment_classification'].shift(1))).astype(int)
-            
+            df['regime_change'] = (df['sentiment_classification'] != df['sentiment_classification'].shift(1)).astype(int)
+
             return df
 
         except Exception as e:
             self.logger.error(f"Error standardizing Put/Call Ratio columns: {e}")
             return pd.DataFrame()
 
-    async def collect_data(self, **kwargs) -> Optional[List[Dict[str, Any]]]:
+    async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
         """
         UNIFIED data collection - retrieval only, without database storage.
         """

@@ -1,9 +1,9 @@
 
-from typing import Dict, List, Any, Optional
+import logging
 from dataclasses import dataclass
 from enum import Enum
+
 import pandas as pd
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -27,48 +27,48 @@ class MarketFocus(Enum):
 class TradingConfig:
     style: TradingStyle
     market_focus: MarketFocus
-    timeframes: List[str]
-    tickers: List[str]
+    timeframes: list[str]
+    tickers: list[str]
     max_tickers: int = 25
     risk_level: str = "medium"
 
 @dataclass
 class SectorConfig:
     name: str
-    tickers: List[str]
+    tickers: list[str]
     volatility_score: float
     profit_potential: float
     risk_level: str
     correlation_with_market: float
     recommended_position_size: float
-    optimal_timeframes: List[str]
+    optimal_timeframes: list[str]
 
 class AssetUniverseManager:
-    def __init__(self, config: Dict):
+    def __init__(self, config: dict):
         self.config = config.get('asset_universe', {})
         self.sectors = self._create_enhanced_sectors()
         self.volatility_ranking = self._create_volatility_ranking()
         self.profitability_ranking = self._create_profitability_ranking()
         self.presets = self._create_preset_configs()
 
-    def _create_enhanced_sectors(self) -> Dict[str, SectorConfig]:
+    def _create_enhanced_sectors(self) -> dict[str, SectorConfig]:
         sectors_data = self.config.get('sectors', {})
         return {
             sector_name: SectorConfig(**data)
             for sector_name, data in sectors_data.items()
         }
 
-    def _create_volatility_ranking(self) -> List[str]:
+    def _create_volatility_ranking(self) -> list[str]:
         return [s[0] for s in sorted(self.sectors.items(), key=lambda x: x[1].volatility_score, reverse=True)]
 
-    def _create_profitability_ranking(self) -> List[str]:
+    def _create_profitability_ranking(self) -> list[str]:
         return [s[0] for s in sorted(self.sectors.items(), key=lambda x: x[1].profit_potential, reverse=True)]
 
-    def _map_market_focus_to_sectors(self, market_focus: MarketFocus) -> List[str]:
+    def _map_market_focus_to_sectors(self, market_focus: MarketFocus) -> list[str]:
         mapping = self.config.get('market_focus_mapping', {})
         return mapping.get(market_focus.value, [])
 
-    def get_tickers_by_market_focus(self, market_focus: MarketFocus, max_tickers: Optional[int] = None) -> List[str]:
+    def get_tickers_by_market_focus(self, market_focus: MarketFocus, max_tickers: int | None = None) -> list[str]:
         sector_names = self._map_market_focus_to_sectors(market_focus)
         all_tickers = []
         for sector_name in sector_names:
@@ -80,10 +80,10 @@ class AssetUniverseManager:
              if etf_sector in self.sectors:
                 all_tickers.extend(self.sectors[etf_sector].tickers)
 
-        unique_tickers = sorted(list(set(all_tickers)))
+        unique_tickers = sorted(set(all_tickers))
         return unique_tickers[:max_tickers] if max_tickers else unique_tickers
 
-    def _create_preset_configs(self) -> Dict[str, TradingConfig]:
+    def _create_preset_configs(self) -> dict[str, TradingConfig]:
         presets_data = self.config.get('presets', {})
         return {
             preset_name: self.create_custom_config(
@@ -95,14 +95,14 @@ class AssetUniverseManager:
             for preset_name, preset_data in presets_data.items()
         }
 
-    def get_timeframes_for_style(self, style: TradingStyle) -> List[str]:
+    def get_timeframes_for_style(self, style: TradingStyle) -> list[str]:
         available_timeframes = self.config.get('available_timeframes', {})
         return [
             tf for tf, config in available_timeframes.items()
             if style.value in config.get('style', []) and config.get('recommended')
         ]
 
-    def create_custom_config(self, style: TradingStyle, market_focus: MarketFocus, custom_tickers: Optional[List[str]] = None, custom_timeframes: Optional[List[str]] = None, max_tickers: int = 25, risk_level: str = "medium") -> TradingConfig:
+    def create_custom_config(self, style: TradingStyle, market_focus: MarketFocus, custom_tickers: list[str] | None = None, custom_timeframes: list[str] | None = None, max_tickers: int = 25, risk_level: str = "medium") -> TradingConfig:
         timeframes = custom_timeframes if custom_timeframes else self.get_timeframes_for_style(style)
         tickers = custom_tickers if custom_tickers else self.get_tickers_by_market_focus(market_focus, max_tickers)
 
@@ -110,25 +110,25 @@ class AssetUniverseManager:
             style=style,
             market_focus=market_focus,
             timeframes=timeframes,
-            tickers=sorted(list(set(tickers))),
+            tickers=sorted(set(tickers)),
             max_tickers=max_tickers,
             risk_level=risk_level
         )
 
-    def get_preset(self, preset_name: str) -> Optional[TradingConfig]:
+    def get_preset(self, preset_name: str) -> TradingConfig | None:
         return self.presets.get(preset_name)
 
-    def list_presets(self) -> Dict[str, str]:
+    def list_presets(self) -> dict[str, str]:
         return self.config.get('preset_descriptions', {})
 
-    def get_tickers_by_strategy(self, strategy: str, limit: Optional[int] = None) -> List[str]:
+    def get_tickers_by_strategy(self, strategy: str, limit: int | None = None) -> list[str]:
         strategy_map = self.config.get('strategy_map', {})
         sector_names = strategy_map.get(strategy, [])
         tickers = []
         for name in sector_names:
             if name in self.sectors:
                 tickers.extend(self.sectors[name].tickers)
-        return sorted(list(set(tickers)))[:limit] if limit else sorted(list(set(tickers)))
+        return sorted(set(tickers))[:limit] if limit else sorted(set(tickers))
 
     def get_sector_analysis(self) -> pd.DataFrame:
         data = [

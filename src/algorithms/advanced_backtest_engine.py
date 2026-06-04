@@ -1,13 +1,16 @@
-from datetime import datetime
-from typing import Any, List, Dict, Optional
 import logging
+from datetime import datetime
+from typing import Any
+
 import numpy as np
 import pandas as pd
+
+from src.algorithms.bias_detector import BiasDetector
+from src.algorithms.transaction_cost_model import TransactionCostModel
+from src.algorithms.walk_forward_optimizer import WalkForwardOptimizer
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
-from src.algorithms.transaction_cost_model import TransactionCostModel
-from src.algorithms.bias_detector import BiasDetector
-from src.algorithms.walk_forward_optimizer import WalkForwardOptimizer
+
 logger = ProjectLogger.get_logger('AdvancedBacktesting')
 
 
@@ -22,7 +25,7 @@ class AdvancedBacktestEngine:
         self.wf_optimizer = WalkForwardOptimizer(self.config_manager)
 
     def run_comprehensive_backtest(self, price_data: pd.DataFrame, signals:
-        pd.DataFrame, initial_capital: float=100000.0) ->Dict[str, Any]:
+        pd.DataFrame, initial_capital: float=100000.0) ->dict[str, Any]:
         """Запускає повний цикл бектестингу з урахуванням усіх факторів."""
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
@@ -94,8 +97,8 @@ class AdvancedBacktestEngine:
         pos_returns = returns[returns > 0]
         return len(pos_returns) / len(returns) if len(returns) > 0 else 0.0
 
-    def optimize_parameters(self, data: pd.DataFrame, param_space: Dict[str,
-        Any], optimization_metric: str='sharpe', n_splits: int=5) ->Dict[
+    def optimize_parameters(self, data: pd.DataFrame, param_space: dict[str,
+        Any], optimization_metric: str='sharpe', n_splits: int=5) ->dict[
         str, Any]:
         """Оптимізація параметрів з використанням walk-forward analysis."""
         try:
@@ -127,7 +130,7 @@ class AdvancedBacktestEngine:
         except Exception as e:
             raise DataProcessingError('Parameter optimization failed') from e
 
-    def _calculate_stability_score(self, fold_results: List[Dict]) ->float:
+    def _calculate_stability_score(self, fold_results: list[dict]) ->float:
         """Розрахунок стабільності результатів across folds"""
         if not fold_results or len(fold_results) < 2:
             return 0.0
@@ -155,7 +158,7 @@ class AdvancedBacktestEngine:
                 exc_info=True)
             return 0.0
 
-    def _evaluate_parameters(self, data: Optional[pd.DataFrame]) ->Dict[str,
+    def _evaluate_parameters(self, data: pd.DataFrame | None) ->dict[str,
         float]:
         """Оцінка параметрів на OOS даних"""
         if data is None or len(data) < 10:
@@ -184,7 +187,7 @@ class AdvancedBacktestEngine:
                 exc_info=True)
             return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
 
-    def _calculate_average_performance(self, results: List[Dict]) ->Dict[
+    def _calculate_average_performance(self, results: list[dict]) ->dict[
         str, float]:
         """Розрахунок середніх метрик по фолдам"""
         if not results:

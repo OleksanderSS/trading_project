@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Iterable
 
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -16,7 +16,7 @@ class _BaseScalerTransformer:
     def __post_init__(self) -> None:
         self.scalers = {}
 
-    def fit(self, df: pd.DataFrame) -> "_BaseScalerTransformer":
+    def fit(self, df: pd.DataFrame) -> _BaseScalerTransformer:
         for col in self._available_columns(df):
             values = df[[col]].dropna()
             if values.empty:

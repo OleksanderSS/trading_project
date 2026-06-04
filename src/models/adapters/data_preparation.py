@@ -1,28 +1,29 @@
-from src.core.exceptions import DataProcessingError
 import logging
-# src/models/adapters/data_preparation.py - Уніфікована підготовка даних для ML моделей
+from typing import Any
 
+# src/models/adapters/data_preparation.py - Уніфікована підготовка даних для ML моделей
 import numpy as np
 import pandas as pd
-from typing import Tuple, Dict, Any, List, Union, Optional
+from scipy.stats import kurtosis, skew
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import StandardScaler, LabelEncoder
-from scipy.stats import skew, kurtosis
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+
+from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("DataPreparationAdapter")
 
 def prepare_data_for_models(
-    df: pd.DataFrame, 
-    ticker: str, 
+    df: pd.DataFrame,
+    ticker: str,
     timeframe: str,
-    target_cols: List[str],
+    target_cols: list[str],
     seq_len: int = 10,
     val_size: float = 0.1,
     test_size: float = 0.2,
     gap_size: int = 5,  # ✅ ELITE FIX: Gap to prevent leakage between sets
     scale_target: bool = False
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """
     Уніфікований ML адаптер з Purged Validation.
     Додає буферні зони між вибірками для чесного тестування на часових рядах.
@@ -37,7 +38,7 @@ def prepare_data_for_models(
         if filtered_df.empty:
             logger.warning(f"Немає даних для {ticker} {timeframe}")
             return None
-        
+
         # 2. Перевірка наявності таргетів
         for col in target_cols:
             if col not in filtered_df.columns:
@@ -46,28 +47,28 @@ def prepare_data_for_models(
 
         # 3. Обробка категоріальних фіч (включаючи нові патерни)
         df_processed, categorical_info = handle_categorical_features(filtered_df, target_cols)
-        
+
         # 4. Feature selection
         # Переконуємось, що context_pattern_id включено, якщо він є
-        feature_cols = [c for c in df_processed.select_dtypes(include=[np.number]).columns 
+        feature_cols = [c for c in df_processed.select_dtypes(include=[np.number]).columns
                         if c not in target_cols and c not in ['datetime', 'date']]
-        
+
         if len(feature_cols) < 1:
             logger.error("Відсутні ознаки для моделювання.")
             return None
-            
+
         X = df_processed[feature_cols].replace([np.inf, -np.inf], np.nan)
         y = df_processed[target_cols]
-        
+
         # 5. PURGED SPLIT (чесне ділення з розривами)
         total_len = len(X)
         test_start = int(total_len * (1 - test_size))
         val_start = int(test_start * (1 - val_size / (1 - test_size)))
-        
+
         # Визначаємо індекси з урахуванням розривів (gap)
         train_end = val_start - gap_size
         val_end = test_start - gap_size
-        
+
         if train_end <= 0 or val_end <= val_start:
              logger.warning("Занадто малий датасет для Purged Validation. Використовуємо стандартне ділення.")
              x_train, x_val, x_test = X.iloc[:val_start], X.iloc[val_start:test_start], X.iloc[test_start:]
@@ -77,23 +78,23 @@ def prepare_data_for_models(
              x_val, y_val = X.iloc[val_start:val_end], y.iloc[val_start:val_end]
              x_test, y_test = X.iloc[test_start:], y.iloc[test_start:]
              logger.info(f"✅ Purged Split: Train={len(x_train)}, Val={len(x_val)}, Test={len(x_test)} (Gap={gap_size})")
-        
+
         # 6. ML Трансформації
         imputer = SimpleImputer(strategy='median')
         scaler = StandardScaler()
-        
+
         x_train_imputed = imputer.fit_transform(x_train)
         x_val_imputed = imputer.transform(x_val)
         x_test_imputed = imputer.transform(x_test)
-        
+
         x_train_scaled_arr = scaler.fit_transform(x_train_imputed)
         x_val_scaled_arr = scaler.transform(x_val_imputed)
         x_test_scaled_arr = scaler.transform(x_test_imputed)
-        
+
         x_train_scaled_df = pd.DataFrame(x_train_scaled_arr, columns=feature_cols, index=x_train.index)
         x_val_scaled_df = pd.DataFrame(x_val_scaled_arr, columns=feature_cols, index=x_val.index)
         x_test_scaled_df = pd.DataFrame(x_test_scaled_arr, columns=feature_cols, index=x_test.index)
-        
+
         target_scaler = None
         if scale_target:
             target_scaler = StandardScaler()
@@ -102,7 +103,7 @@ def prepare_data_for_models(
             y_test_processed = target_scaler.transform(y_test)
         else:
             y_train_processed, y_val_processed, y_test_processed = y_train.values, y_val.values, y_test.values
-        
+
         light_data = {
             'X_train': x_train_scaled_df, 'X_val': x_val_scaled_df, 'X_test': x_test_scaled_df,
             'y_train': y_train_processed, 'y_val': y_val_processed, 'y_test': y_test_processed,
@@ -115,7 +116,7 @@ def prepare_data_for_models(
             y_train_processed, y_val_processed, y_test_processed,
             seq_len
         )
-        
+
         return {
             'ticker': ticker, 'timeframe': timeframe, 'target_cols': target_cols,
             'light_models': light_data, 'heavy_models': heavy_data,
@@ -125,12 +126,12 @@ def prepare_data_for_models(
         logger.error(f"Критична помилка підготовки даних: {e}", exc_info=True)
         raise DataProcessingError(f"Критична помилка підготовки даних: {e}") from e
 
-def handle_categorical_features(df: pd.DataFrame, exclude_cols: List[str]) -> Tuple[pd.DataFrame, Dict]:
+def handle_categorical_features(df: pd.DataFrame, exclude_cols: list[str]) -> tuple[pd.DataFrame, dict]:
     """Кодує категоріальні колонки."""
     df_out = df.copy()
-    cat_cols = [c for c in df_out.select_dtypes(include=['object', 'category']).columns 
+    cat_cols = [c for c in df_out.select_dtypes(include=['object', 'category']).columns
                 if c not in exclude_cols and 'ticker' not in c.lower() and 'timeframe' not in c.lower()]
-    
+
     info = {}
     for col in cat_cols:
         nunique = df_out[col].nunique()
@@ -158,7 +159,7 @@ def log_data_distribution(df: pd.DataFrame):
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(f"Feature distribution: {', '.join(stats)}")
 
-def prepare_sequence_data_optimized(x_tr, x_va, x_te, y_tr, y_va, y_te, seq_len) -> Dict[str, Any]:
+def prepare_sequence_data_optimized(x_tr, x_va, x_te, y_tr, y_va, y_te, seq_len) -> dict[str, Any]:
     """Створення 3D вікон для Neural Networks за допомогою numpy strides."""
     def strided_window(x, y, window):
         if len(x) <= window: return np.array([]), np.array([])
@@ -171,7 +172,7 @@ def prepare_sequence_data_optimized(x_tr, x_va, x_te, y_tr, y_va, y_te, seq_len)
     x_train_s, y_train_s = strided_window(x_tr, y_tr, seq_len)
     x_val_s, y_val_s = strided_window(x_va, y_va, seq_len)
     x_test_s, y_test_s = strided_window(x_te, y_te, seq_len)
-    
+
     return {
         'X_train': x_train_s, 'X_val': x_val_s, 'X_test': x_test_s,
         'y_train': y_train_s, 'y_val': y_val_s, 'y_test': y_test_s,
@@ -186,7 +187,7 @@ def filter_data_by_ticker_timeframe(df: pd.DataFrame, ticker: str, timeframe: st
         return df[(df[t_cols[0]] == ticker) & (df[tf_cols[0]] == timeframe)]
     return df
 
-def validate_data_shapes(data: Dict[str, Any]) -> bool:
+def validate_data_shapes(data: dict[str, Any]) -> bool:
     """Перевірка розмірностей вихідних даних."""
     if not data: return False
     for m_type in ['light_models', 'heavy_models']:

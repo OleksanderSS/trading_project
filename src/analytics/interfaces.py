@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Union
+from typing import Any
+
 
 class IAnalyzer(ABC):
     """
@@ -8,7 +9,7 @@ class IAnalyzer(ABC):
     """
 
     @abstractmethod
-    def analyze(self, data: Any, **kwargs) -> Union[Dict[str, Any], Any]:
+    def analyze(self, data: Any, **kwargs) -> dict[str, Any] | Any:
         """
         Executes the analysis logic on the provided data.
 

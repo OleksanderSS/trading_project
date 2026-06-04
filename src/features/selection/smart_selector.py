@@ -1,10 +1,11 @@
-import logging
-import pandas as pd
-import numpy as np
 import json
+import logging
 import os
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import Any
+
+import numpy as np
+import pandas as pd
 from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 
 from src.core.logging.logger import ProjectLogger
@@ -16,13 +17,13 @@ class SmartFeatureSelector:
     Selects features based on a voting ensemble of methods, now with regime-specific caching.
     """
 
-    def __init__(self, storage_path: Optional[str] = None, min_volatility: float = 0.0001):
+    def __init__(self, storage_path: str | None = None, min_volatility: float = 0.0001):
         self.logger = logger  # Initialize logger from module level
         if storage_path is None:
             storage_path = os.path.join('data', 'cache', 'selected_features.json')
         self.storage_path = storage_path
         self.min_volatility = min_volatility
-        
+
         # Feature selection hyperparameters
         self.correlation_method = 'spearman'
         self.mi_random_state = 42
@@ -41,19 +42,19 @@ class SmartFeatureSelector:
             'n_jobs': -1
         }
         self.variance_epsilon = 1e-10
-        
+
         os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
         self.cache = self._load_storage()
 
-    def _load_storage(self) -> Dict[str, Any]:
+    def _load_storage(self) -> dict[str, Any]:
         if os.path.exists(self.storage_path):
             try:
-                with open(self.storage_path, 'r') as f:
+                with open(self.storage_path) as f:
                     data = json.load(f)
                     if isinstance(data, dict):
                         return data
                     return {}
-            except (json.JSONDecodeError, IOError) as e:
+            except (OSError, json.JSONDecodeError) as e:
                 logger.error(f"Failed to load feature cache from {self.storage_path}: {e}")
         return {}
 
@@ -62,10 +63,10 @@ class SmartFeatureSelector:
             os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
             with open(self.storage_path, 'w') as f:
                 json.dump(self.cache, f, indent=4)
-        except IOError as e:
+        except OSError as e:
             logger.error(f"Failed to save feature cache to {self.storage_path}: {e}")
 
-    def _check_cache(self, regime_context_id: str, features_df: pd.DataFrame, force_recalculate: bool) -> Optional[List[str]]:
+    def _check_cache(self, regime_context_id: str, features_df: pd.DataFrame, force_recalculate: bool) -> list[str] | None:
         """Check cache and return cached features if valid."""
         if not force_recalculate and regime_context_id in self.cache:
             cached_data = self.cache[regime_context_id]
@@ -76,20 +77,20 @@ class SmartFeatureSelector:
                     return [str(f) for f in selected_features]
         return None
 
-    def _pre_filter_data(self, features_df: pd.DataFrame, target_series: pd.Series, regime_context_id: str) -> Optional[pd.DataFrame]:
+    def _pre_filter_data(self, features_df: pd.DataFrame, target_series: pd.Series, regime_context_id: str) -> pd.DataFrame | None:
         """Pre-filter and clean data."""
         if target_series.std() < self.min_volatility:
             logger.warning(f"Target volatility is below threshold for {regime_context_id}. Skipping.")
             return None
-        
+
         features_clean = self._clean_data(features_df)
         if features_clean.empty:
             logger.warning(f"No valid features after cleaning for {regime_context_id}.")
             return None
-        
+
         return features_clean
 
-    def _run_feature_selection_methods(self, features_clean: pd.DataFrame, target_series: pd.Series, 
+    def _run_feature_selection_methods(self, features_clean: pd.DataFrame, target_series: pd.Series,
                                        is_classification: bool, market_regime: str, regime_context_id: str) -> pd.Series:
         """Run feature selection methods and return scores."""
         methods = self._get_methods_for_regime(market_regime)
@@ -98,7 +99,7 @@ class SmartFeatureSelector:
         for method_func, weight in methods.items():
             try:
                 ranked_features = method_func(features_clean, target_series, is_classification)
-                if ranked_features is None: 
+                if ranked_features is None:
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f"Method {method_func.__name__} returned None, skipping")
                     continue
@@ -108,33 +109,33 @@ class SmartFeatureSelector:
                     logger.debug(f"Method {method_func.__name__} added weight {weight} to {top_n} features")
             except Exception as e:
                 logger.error(f"Feature selection method {method_func.__name__} failed for {regime_context_id}: {e}", exc_info=True)
-        
+
         return scores
 
     def _select_features_by_threshold(self, scores: pd.Series) -> tuple:
         """Select features with score above threshold."""
         if scores.sum() == 0:
             return [], 0.0
-        
+
         positive_scores = scores[scores > 0]
         selection_threshold = positive_scores.median()
         selected = positive_scores[positive_scores >= selection_threshold].index.tolist()
         return selected, selection_threshold
 
-    def _apply_max_features_limit(self, selected: list, scores: pd.Series, selection_threshold: float, 
-                                   max_features: Optional[int]) -> list:
+    def _apply_max_features_limit(self, selected: list, scores: pd.Series, selection_threshold: float,
+                                   max_features: int | None) -> list:
         """Apply max_features limit if specified."""
         if max_features is None or len(selected) <= max_features:
             return selected
-        
+
         positive_scores = scores[scores > 0]
         selected_with_scores = positive_scores[positive_scores >= selection_threshold].sort_values(ascending=False)
         selected = selected_with_scores.head(max_features).index.tolist()
         logger.info(f"Limited selected features to {max_features} (from {len(positive_scores[positive_scores >= selection_threshold])})")
         return selected
 
-    def _cache_results(self, regime_context_id: str, selected: list, scores: pd.Series, 
-                       features_df: pd.DataFrame, market_regime: str, max_features: Optional[int], 
+    def _cache_results(self, regime_context_id: str, selected: list, scores: pd.Series,
+                       features_df: pd.DataFrame, market_regime: str, max_features: int | None,
                        selection_threshold: float) -> None:
         """Cache selection results."""
         self.cache[regime_context_id] = {
@@ -150,10 +151,10 @@ class SmartFeatureSelector:
 
     def select(self, features_df: pd.DataFrame, target_series: pd.Series, context_id: str,
                is_classification: bool = True, market_regime: str = "normal",
-               force_recalculate: bool = False, max_features: Optional[int] = None) -> List[str]:
+               force_recalculate: bool = False, max_features: int | None = None) -> list[str]:
         """
         Selects features, caching them based on both context, market regime, and max_features.
-        
+
         Args:
             features_df: Feature dataframe
             target_series: Target series
@@ -183,7 +184,7 @@ class SmartFeatureSelector:
 
         # Select features with score above threshold
         selected, selection_threshold = self._select_features_by_threshold(scores)
-        
+
         if not selected:
             logger.warning(f"No features were selected for {regime_context_id}. Returning empty list.")
             return []
@@ -203,7 +204,7 @@ class SmartFeatureSelector:
         # Simple median imputation
         return features_clean.fillna(features_clean.median())
 
-    def _get_methods_for_regime(self, regime: str) -> Dict[Any, float]:
+    def _get_methods_for_regime(self, regime: str) -> dict[Any, float]:
         """ Returns a dictionary of {method: weight} for the given regime. """
         base_methods = {
             self._correlation_filter: 1.0,
@@ -211,7 +212,7 @@ class SmartFeatureSelector:
             self._variance_filter: 0.5,
             self._random_forest_filter: 1.0,
         }
-        
+
         if regime == 'volatile':
             base_methods[self._lgbm_filter] = 1.5  # Emphasize model-based features
             base_methods[self._random_forest_filter] = 1.5
@@ -219,7 +220,7 @@ class SmartFeatureSelector:
             base_methods[self._correlation_filter] = 1.5  # Emphasize correlation
         else:  # Normal regime
             base_methods[self._lgbm_filter] = 1.0
-        
+
         return base_methods
 
     # --- Filter Methods ---
@@ -233,34 +234,34 @@ class SmartFeatureSelector:
         mi = mi_func(features_df, target_series, random_state=self.mi_random_state)
         return pd.Series(mi, index=features_df.columns).sort_values(ascending=False)
 
-    def _lgbm_filter(self, features_df, target_series, is_classification) -> Optional[pd.Series]:
+    def _lgbm_filter(self, features_df, target_series, is_classification) -> pd.Series | None:
         """LightGBM feature importance - feature importance from gradient boosting."""
         try:
             import lightgbm as lgb
         except ImportError:
             logger.warning("Library 'lightgbm' not found. Skipping LGBM filter.")
             return None
-            
+
         try:
             params = self.lgbm_params.copy()
             params["objective"] = "binary" if is_classification else "regression"
-            
-            model = lgb.train(params, lgb.Dataset(features_df, label=target_series), 
+
+            model = lgb.train(params, lgb.Dataset(features_df, label=target_series),
                             num_boost_round=params.pop('num_boost_round', 50))
-            return pd.Series(model.feature_importance(importance_type='gain'), 
+            return pd.Series(model.feature_importance(importance_type='gain'),
                           index=features_df.columns).sort_values(ascending=False)
         except Exception as e:
             logger.error(f"LGBM filter failed: {e}")
             raise RuntimeError("LGBM feature importance filter failed") from e
 
-    def _random_forest_filter(self, features_df, target_series, is_classification) -> Optional[pd.Series]:
+    def _random_forest_filter(self, features_df, target_series, is_classification) -> pd.Series | None:
         """Random Forest feature importance - feature importance from random forest."""
         try:
             from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
         except ImportError:
             logger.warning("sklearn not found. Skipping Random Forest filter.")
             return None
-        
+
         try:
             params = self.rf_params.copy()
             # Ensure all required hyperparameters are explicitly set
@@ -271,7 +272,7 @@ class SmartFeatureSelector:
                 params['max_features'] = max_features_value
             else:
                 params['max_features'] = 'sqrt'
-            
+
             # Explicitly create models with all required parameters
             if is_classification:
                 model = RandomForestClassifier(
@@ -291,14 +292,14 @@ class SmartFeatureSelector:
                     max_features=params['max_features'],
                     n_jobs=params.get('n_jobs', -1)
                 )
-            
+
             model.fit(features_df, target_series)
             return pd.Series(model.feature_importances_, index=features_df.columns).sort_values(ascending=False)
         except Exception as e:
             logger.error(f"Random Forest filter failed: {e}")
             raise RuntimeError("Random Forest feature importance filter failed") from e
-    
-    def _variance_filter(self, features_df, target_series, is_classification) -> Optional[pd.Series]:
+
+    def _variance_filter(self, features_df, target_series, is_classification) -> pd.Series | None:
         """Variance threshold - filters out low-variance features."""
         try:
             variances = features_df.var()
