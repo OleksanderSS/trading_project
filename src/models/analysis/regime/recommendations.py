@@ -41,4 +41,4 @@ class RegimeRecommendationEngine:
             return recommendations
         except Exception as e:
             self.logger.error(f'Error generating recommendations: {e}')
-            return recommendations
+            return []

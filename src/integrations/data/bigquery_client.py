@@ -98,8 +98,7 @@ class BigQueryClient(BaseIntegration):
                 f'Query simulation successful. Returned {len(df)} rows.')
             return df
         try:
-            df = pd.read_gbq(query, project_id=self.project_id, location=
-                self.location, use_cache=use_cache)
+            df = pd.read_gbq(query, project_id=self.project_id, location=self.location)
             logger.info(
                 f'Query executed successfully. Returned {len(df)} rows.')
             return df

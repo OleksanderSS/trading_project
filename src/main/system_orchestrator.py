@@ -168,7 +168,7 @@ class SystemOrchestrator:
         result = instance.run(tickers=tickers or [], timeframes=timeframes or
             [], **kwargs)
         if inspect.isawaitable(result):
-            return result
+            return None  # Cannot await in sync context
         return result
 
     async def _run_single_instance(self, mode_class: Any, tickers: (list[

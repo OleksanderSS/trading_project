@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import asyncio
 from typing import Dict, Any
 from pathlib import Path
 
@@ -47,24 +48,24 @@ class EvaluationStage(BaseStage):
         
         self.logger.info("✅ EvaluationStage (Modular) initialized")
 
-    async def run(self, **kwargs) -> Dict[str, Any]:
+    def run(self, **kwargs) -> Dict[str, Any]:
         """Performs final performance evaluation and saves results."""
         self.logger.info('🚀 Starting modular evaluation stage...')
-        
-        signals_data = await self._load_signals_data(**kwargs)
+
+        signals_data = self._load_signals_data(**kwargs)
         if self._signals_empty(signals_data.get('signals')):
             return {}
-            
+
         signals_df = self._prepare_signals_df(signals_data['signals'])
-        
+
         # Check if backtest can be run
         if not self.backtest_analyzer.can_run_backtest(signals_df):
             self.logger.warning('⚠️ Insufficient numeric price data for backtest. Using basic evaluation.')
-            return await self._create_basic_evaluation(signals_df, signals_data)
-            
-        return await self._run_comprehensive_evaluation(signals_df, signals_data)
+            return self._create_basic_evaluation(signals_df, signals_data)
 
-    async def _load_signals_data(self, **kwargs) -> Dict[str, Any]:
+        return asyncio.run(self._run_comprehensive_evaluation(signals_df, signals_data))
+
+    def _load_signals_data(self, **kwargs) -> Dict[str, Any]:
         """Load signals, trading activity and portfolio summary."""
         signals = kwargs.get('signals')
         trading_activity = kwargs.get('trading_activity', [])
@@ -72,8 +73,6 @@ class EvaluationStage(BaseStage):
         
         if signals is None:
             self.logger.warning("⚠️ No 'signals' found in kwargs. Attempting to load from disk...")
-            # Note: _load_signals_from_disk logic could also be modularized
-            # For brevity, keeping a simplified version or delegating
             pass
             
         return {
@@ -119,7 +118,7 @@ class EvaluationStage(BaseStage):
             # 1. Run Backtest
             backtest_results = await self.backtest_analyzer.run_backtest(signals_df)
             if not backtest_results:
-                return await self._create_basic_evaluation(signals_df, signals_data)
+                return self._create_basic_evaluation(signals_df, signals_data)
                 
             portfolio_history = backtest_results['portfolio_history']
             
@@ -151,7 +150,7 @@ class EvaluationStage(BaseStage):
             
         except Exception as e:
             self.logger.error(f"Critical error in comprehensive evaluation: {e}", exc_info=True)
-            return await self._create_basic_evaluation(signals_df, signals_data)
+            return self._create_basic_evaluation(signals_df, signals_data)
 
     def _run_deep_analysis(self, signals_df: pd.DataFrame, portfolio_history: pd.DataFrame) -> Dict[str, Any]:
         """Delegates to analytics engine for complex analysis."""
@@ -163,7 +162,7 @@ class EvaluationStage(BaseStage):
         }
         return self.analytics_engine.run_full_analysis(data_map)
 
-    async def _create_basic_evaluation(self, signals_df: pd.DataFrame, signals_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_basic_evaluation(self, signals_df: pd.DataFrame, signals_data: Dict[str, Any]) -> Dict[str, Any]:
         """Fallback to basic metrics when backtest fails or is impossible."""
         summary = {
             'metrics': {

@@ -187,7 +187,7 @@ class RegimeWinnerAnalyzer:
 
         except Exception as e:
             self.logger.error(f"Error analyzing winners: {e}")
-            return regime_analysis
+            return {'current_regime': current_regime, 'model_performance': {}, 'winner_ranking': [], 'regime_specific_metrics': {}, 'error': str(e)}
 
     async def _calculate_consistency_metrics(self, 
                                           regime_winners: Dict[str, Any], 

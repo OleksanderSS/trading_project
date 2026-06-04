@@ -90,5 +90,5 @@ class KillSwitchConfig:
         }
         
         self.risk_limits = self.config.get('risk_limits', {})
-        self.emergency_triggers = self.config.get('emergency_triggers', {})
+        self.custom_emergency_triggers = self.config.get('emergency_triggers', {})
         self.storage_path = Path(self.config.get('storage_path', 'data/risk/kill_switch'))

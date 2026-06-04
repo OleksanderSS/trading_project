@@ -93,7 +93,7 @@ class RegimeAdapter:
             return recommendations
         except Exception as e:
             self.logger.error(f'Error generating recommendations: {e}')
-            return recommendations
+            return []
     
     def get_regime_specific_recommendations(self, regime: str) -> List[str]:
         """Get regime-specific feature selection recommendations."""

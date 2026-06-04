@@ -1,0 +1,279 @@
+{
+  "stats": {
+    "files": 617,
+    "lines": 92685,
+    "issues": 398,
+    "by_severity": {
+      "MEDIUM": 165,
+      "LOW": 229,
+      "INFO": 4
+    },
+    "by_category": {
+      "FEAT": 120,
+      "LOGIC": 183,
+      "STATE": 32,
+      "MATH": 39,
+      "ASYNC": 9,
+      "RES": 8,
+      "API": 7
+    }
+  },
+  "issues": [
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "analytics\\arena\\arena_battle.py",
+      "line": 487,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "analytics\\arena\\battle_groups.py",
+      "line": 171,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "analytics\\arena\\performance_tracker.py",
+      "line": 429,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "config\\unified_config_manager.py",
+      "line": 466,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "config\\unified_config_manager.py",
+      "line": 475,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 268,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "core\\monitoring\\memory_profiler.py",
+      "line": 217,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "core\\monitoring\\memory_profiler.py",
+      "line": 231,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "core\\system\\version_manager.py",
+      "line": 199,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\feature_cache.py",
+      "line": 290,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\feature_selection_cache.py",
+      "line": 225,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\nlp\\models\\finbert_pipeline.py",
+      "line": 21,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 205,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\security\\agent_permissions.py",
+      "line": 538,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\security\\constraint_engine.py",
+      "line": 553,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\adapters\\sentiment_integration.py",
+      "line": 260,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\dean\\dean_bootstrap_system.py",
+      "line": 325,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\model_pool.py",
+      "line": 255,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\model_pool.py",
+      "line": 267,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\persistent_pool.py",
+      "line": 315,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "LOW",
+      "file": "models\\prototypes\\registry.py",
+      "line": 239,
+      "message": " singleton       concurrent ",
+      "fix_hint": " threading.Lock()  thread-safe singleton"
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\prototypes\\registry.py",
+      "line": 249,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "models\\quality\\controller.py",
+      "line": 190,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\config.py",
+      "line": 145,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\example_usage.py",
+      "line": 327,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\feature_drift_monitor.py",
+      "line": 251,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 252,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "predictions\\caching.py",
+      "line": 214,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "predictions\\caching.py",
+      "line": 222,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "predictions\\caching.py",
+      "line": 230,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "sentiment\\sentiment_models.py",
+      "line": 20,
+      "message": "global      ",
+      "fix_hint": "       "
+    },
+    {
+      "category": "STATE",
+      "severity": "MEDIUM",
+      "file": "simulation\\simulation_engine.py",
+      "line": 200,
+      "message": "global      ",
+      "fix_hint": "       "
+    }
+  ]
+}

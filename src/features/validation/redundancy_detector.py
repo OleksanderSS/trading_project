@@ -316,7 +316,7 @@ class RedundancyDetector:
             
         except Exception as e:
             self.logger.error(f"Error in VIF analysis: {e}")
-            return results
+            return {'vif_scores': {}, 'high_vif_features': [], 'vif_threshold': self.thresholds['vif_threshold'], 'error': str(e)}
     
     def _select_representative_features(self, 
                                     features_df: pd.DataFrame,
@@ -393,7 +393,7 @@ class RedundancyDetector:
             
         except Exception as e:
             self.logger.error(f"Error in feature selection: {e}")
-            return results
+            return {'selected_features': features_df.copy(), 'selection_method': {}, 'removed_features': [], 'error': str(e)}
     
     def _select_best_feature_from_group(self, 
                                     group_features: pd.DataFrame,

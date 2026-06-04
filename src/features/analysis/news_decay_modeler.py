@@ -197,7 +197,7 @@ class NewsDecayModeler:
             return type_results
         except Exception as e:
             self.logger.error(f'Error fitting news type model for {news_type}: {e}')
-            return type_results
+            return {'news_type': news_type, 'models': {}, 'best_model': None, 'performance_comparison': {}, 'error': str(e)}
 
     async def _generate_optimization_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
         """Generate comprehensive optimization summary."""

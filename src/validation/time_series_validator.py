@@ -226,15 +226,15 @@ class TimeSeriesValidator:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Fold failed in purged walk-forward: {e}')
                 raise
-        is_valid = len(metrics) > 0
-        avg_mse = np.mean(metrics) if is_valid else 1.0
+        is_valid = len(fold_metrics) > 0
+        avg_mse = np.mean([m['mse'] for m in fold_metrics]) if is_valid else 1.0
         return ValidationResult(validation_type=ValidationType.
             PURGED_WALK_FORWARD, is_valid=is_valid and avg_mse < 0.05,
             confidence=0.9 if is_valid else 0.0, performance_metrics={'mse':
-            avg_mse, 'folds': len(metrics)}, issues_found=[
+            avg_mse, 'folds': len(fold_metrics)}, issues_found=[
             'Low performance' if avg_mse > 0.05 else ''], recommendations=[
             'Check for remaining leakage' if avg_mse < 0.001 else 'Stable'],
-            detailed_results={'fold_errors': metrics})
+            detailed_results={'fold_errors': fold_metrics})
 
     def stratified_time_series_split(self, X: pd.DataFrame, y: pd.Series,
         n_bins: int=5) ->Generator[Tuple[np.ndarray, np.ndarray], None, None]:

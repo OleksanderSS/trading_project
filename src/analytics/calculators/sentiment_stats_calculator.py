@@ -24,8 +24,8 @@ class SentimentStatsCalculator:
                               'positive_threshold', and 'negative_threshold'.
         """
         # Validate input data and column
-        is_data_invalid = news_data is None or news_data.empty
-        is_column_missing = column not in news_data.columns
+        is_data_invalid = news_data is None or (isinstance(news_data, pd.DataFrame) and news_data.empty)
+        is_column_missing = news_data is not None and column not in news_data.columns
         
         if is_data_invalid or is_column_missing:
             logger.warning(f"Cannot calculate sentiment stats. Input data is empty or column '{column}' is missing.")

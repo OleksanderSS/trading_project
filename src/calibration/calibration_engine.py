@@ -129,7 +129,7 @@ class CalibrationEngine:
             return scenarios
         except Exception as e:
             logger.error(f'❌ Failed to load synthetic scenarios: {e}')
-            return scenarios
+            return {'typical': [], 'shock': [], 'context': []}
 
     def define_hyperparameter_space(self, trial) ->dict[str, Any]:
         """

@@ -230,12 +230,12 @@ class PipelineExecutor:
             # Final reconstruction
             reconstructed_news = current_news
             if current_news is None and news_dfs:
-                reconstructed_news, _ = deduplicate_dataframe(pd.concat(news_dfs, ignore_index=True))
+                reconstructed_news, _ = deduplicate_dataframe(pd.concat(news_dfs, ignore_index=True), subset_cols=['timestamp'])
                 logger.info(f"✅ Reconstructed news data from DB: {reconstructed_news.shape}")
                 
             reconstructed_econ = current_econ
             if current_econ is None and macro_dfs:
-                reconstructed_econ, _ = deduplicate_dataframe(pd.concat(macro_dfs, ignore_index=True))
+                reconstructed_econ, _ = deduplicate_dataframe(pd.concat(macro_dfs, ignore_index=True), subset_cols=['timestamp'])
                 logger.info(f"✅ Reconstructed economic data from DB: {reconstructed_econ.shape}")
                 
             return reconstructed_news, reconstructed_econ

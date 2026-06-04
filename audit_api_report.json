@@ -1,0 +1,47 @@
+{
+  "stats": {
+    "files": 617,
+    "lines": 92692,
+    "issues": 397,
+    "by_severity": {
+      "MEDIUM": 164,
+      "LOW": 229,
+      "INFO": 4
+    },
+    "by_category": {
+      "FEAT": 120,
+      "LOGIC": 183,
+      "STATE": 32,
+      "MATH": 38,
+      "ASYNC": 9,
+      "RES": 8,
+      "API": 7
+    }
+  },
+  "issues": [
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "models\\ensemble\\correlation\\correlation_engine.py",
+      "line": 94,
+      "message": "np.random  seed   ",
+      "fix_hint": "rng = np.random.default_rng(42); rng.random(...)"
+    },
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 50,
+      "message": "     O(n)   list + join()",
+      "fix_hint": "parts = []; parts.append(s); result = ''.join(parts)"
+    },
+    {
+      "category": "API",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 94,
+      "message": "     O(n)   list + join()",
+      "fix_hint": "parts = []; parts.append(s); result = ''.join(parts)"
+    }
+  ]
+}
