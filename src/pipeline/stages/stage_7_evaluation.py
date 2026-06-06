@@ -189,7 +189,7 @@ class EvaluationStage(BaseStage):
             if 'total_return_pct' in financial_metrics:
                 stress_results['scenarios']['high_volatility'] = {
                     'description': 'Portfolio performance under high volatility conditions',
-                    'impact': financial_metrics['total_return_pct'] * 0.5  # Assume 50% reduction
+                    'impact': financial_metrics['total_return_pct'] * 0.5,  # Assume 50% reduction
                     'status': 'passed' if financial_metrics['total_return_pct'] > 0 else 'failed'
                 }
             
@@ -220,7 +220,7 @@ class EvaluationStage(BaseStage):
             
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in stress testing: {e}", exc_info=True)
-            stress_results['error'] = str(e)
+            stress_results['error'] = str(e)  # type: ignore
         
         return stress_results
 

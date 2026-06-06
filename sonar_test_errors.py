@@ -1,1086 +1,202 @@
-Run pytest --cov=src --cov-report=xml --cov-report=lcov
-============================= test session starts ==============================
-platform linux -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
-rootdir: /home/runner/work/trading_project/trading_project
-configfile: pytest.ini (WARNING: ignoring pytest config in pyproject.toml!)
-testpaths: tests
-plugins: dash-4.2.0, cov-7.1.0, anyio-4.13.0
-collected 246 items / 39 errors
+Run SonarSource/sonarqube-scan-action@7006c4492b2e0ee0f816d36501671557c97f5995
+Installing Sonar Scanner CLI 8.1.0.6389 for windows-x64...
+Downloading from: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-8.1.0.6389-windows-x64.zip
+Downloading signature from: https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-8.1.0.6389-windows-x64.zip.asc
+Importing SonarSource public key from hkps://keyserver.ubuntu.com...
+"C:\Program Files\Git\usr\bin\gpg.exe" --homedir /d/a/_temp/gpg-home-1780768943132-3784 --batch --keyserver hkps://keyserver.ubuntu.com --recv-keys 679F1EE92B19609DE816FDE81DB198F93525EC1A
+gpg: keybox '/d/a/_temp/gpg-home-1780768943132-3784/pubring.kbx' created
+gpg: /d/a/_temp/gpg-home-1780768943132-3784/trustdb.gpg: trustdb created
+gpg: key 1DB198F93525EC1A: public key "SonarSource S.A. <infra@sonarsource.com>" imported
+gpg: Total number processed: 1
+gpg:               imported: 1
+Successfully imported key from hkps://keyserver.ubuntu.com
+✓ SonarSource public key imported successfully
+Verifying GPG signature...
+"C:\Program Files\Git\usr\bin\gpg.exe" --homedir /d/a/_temp/gpg-home-1780768943132-3784 --batch --verify /d/a/_temp/7d38a20c-a20b-4378-92f4-8d8c0dbcddad /d/a/_temp/e4309cdc-d2c1-41be-8825-41ec29de8aa4
+gpg: Signature made Tue Apr 21 07:20:27 2026 CUT
+gpg:                using RSA key D1436C0DBACEA48702AF97C363F1DD7753B8B315
+gpg: Good signature from "SonarSource S.A. <infra@sonarsource.com>" [unknown]
+gpg: WARNING: This key is not certified with a trusted signature!
+gpg:          There is no indication that the signature belongs to the owner.
+Primary key fingerprint: 679F 1EE9 2B19 609D E816  FDE8 1DB1 98F9 3525 EC1A
+     Subkey fingerprint: D143 6C0D BACE A487 02AF  97C3 63F1 DD77 53B8 B315
+✓ GPG signature verification passed
+"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Unrestricted -Command "$ErrorActionPreference = 'Stop' ; try { Add-Type -AssemblyName System.IO.Compression.ZipFile } catch { } ; try { [System.IO.Compression.ZipFile]::ExtractToDirectory('D:\a\_temp\e4309cdc-d2c1-41be-8825-41ec29de8aa4', 'D:\a\_temp\9df0be46-f5e5-4281-a891-19e1d13d3771', $true) } catch { if (($_.Exception.GetType().FullName -eq 'System.Management.Automation.MethodException') -or ($_.Exception.GetType().FullName -eq 'System.Management.Automation.RuntimeException') ){ Expand-Archive -LiteralPath 'D:\a\_temp\e4309cdc-d2c1-41be-8825-41ec29de8aa4' -DestinationPath 'D:\a\_temp\9df0be46-f5e5-4281-a891-19e1d13d3771' -Force } else { throw $_ } } ;"
+Sonar Scanner CLI cached to: C:\hostedtoolcache\windows\sonar-scanner-cli\8.1.0.6389\windows-x64
+C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\sonar-scanner-cli\8.1.0.6389\windows-x64\bin\sonar-scanner.bat "-Dsonar.projectBaseDir=.""
+18:02:39.039 INFO  Scanner configuration file: C:\hostedtoolcache\windows\sonar-scanner-cli\8.1.0.6389\windows-x64\bin\..\conf\sonar-scanner.properties
+18:02:39.044 INFO  Project root configuration file: D:\a\trading_project\trading_project\sonar-project.properties
+18:02:39.063 INFO  SonarScanner CLI 8.1.0.6389
+18:02:39.075 INFO  Windows Server 2025 10.0 amd64
+18:02:48.267 INFO  Communicating with SonarQube Cloud
+18:02:48.267 INFO  JRE provisioning: os[windows], arch[amd64]
+18:02:54.768 INFO  Starting SonarScanner Engine...
+18:02:54.770 INFO  Java 21.0.9 Eclipse Adoptium (64-bit)
+18:02:59.300 INFO  Load global settings
+18:03:00.064 INFO  Load global settings (done) | time=752ms
+18:03:00.178 INFO  Server id: 1BD809FA-AWHW8ct9-T_TB3XqouNu
+18:03:01.023 INFO  Loading required plugins
+18:03:01.025 INFO  Load plugins index
+18:03:01.176 INFO  Load plugins index (done) | time=152ms
+18:03:01.178 INFO  Load/download plugins
+18:03:01.908 INFO  Load/download plugins (done) | time=731ms
+18:03:02.162 INFO  Loaded core extensions: architecture, a3s, sca
+18:03:02.571 INFO  Process project properties
+18:03:02.606 INFO  Project key: OleksanderSS_trading_project
+18:03:02.606 INFO  Base dir: D:\a\trading_project\trading_project
+18:03:02.607 INFO  Working dir: D:\a\trading_project\trading_project\.scannerwork
+18:03:02.619 INFO  Load project settings for component key: 'OleksanderSS_trading_project'
+18:03:02.988 INFO  Load project settings for component key: 'OleksanderSS_trading_project' (done) | time=368ms
+18:03:03.005 INFO  Found an active CI vendor: 'Github Actions'
+18:03:04.056 INFO  Check ALM binding of project 'OleksanderSS_trading_project'
+18:03:04.282 INFO  Detected project binding: BOUND
+18:03:04.283 INFO  Check ALM binding of project 'OleksanderSS_trading_project' (done) | time=225ms
+18:03:04.288 INFO  Load branch configuration
+18:03:04.289 INFO  Github event: push
+18:03:04.295 INFO  Auto-configuring branch production
+18:03:04.296 INFO  Load branch configuration (done) | time=7ms
+18:03:04.302 INFO  Create analysis
+18:03:04.671 INFO  Branch name: production, type: long
+18:03:04.671 INFO  Create analysis (done) | time=368ms
+18:03:04.937 INFO  Load quality profiles
+18:03:05.397 INFO  Load quality profiles (done) | time=459ms
+18:03:06.156 INFO  Load active rules
+18:03:07.474 INFO  Load active rules (done) | time=1319ms
+18:03:08.019 INFO  Organization key: oleksanderss
+18:03:08.067 INFO  Preprocessing files...
+18:03:09.956 INFO  3 languages detected in 653 preprocessed files (done) | time=1887ms
+18:03:09.956 INFO  23 files ignored because of inclusion/exclusion patterns
+18:03:09.956 INFO  0 files ignored because of scm ignore settings
+18:03:12.328 INFO  Loading plugins for detected languages
+18:03:12.329 INFO  Load/download plugins
+18:03:13.934 INFO  Load/download plugins (done) | time=1605ms
+18:03:14.262 INFO  Load project repositories
+18:03:15.703 INFO  Load project repositories (done) | time=1440ms
+18:03:15.728 INFO  Indexing files...
+18:03:15.729 INFO  Project configuration:
+18:03:15.729 INFO    Excluded sources: **/__pycache__/**, **/*.pyc, **/.ipynb_checkpoints/**, **/*.ipynb, **/.gemini/**, **/venv/**, **/.venv/**, src/colab/**, src/devtools/**, src/trained_models/**, **/build-wrapper-dump.json
+18:03:15.796 INFO  653 files indexed (done) | time=67ms
+18:03:15.799 INFO  Quality profile for json: Sonar way
+18:03:15.800 INFO  Quality profile for py: Sonar way
+18:03:15.800 INFO  Quality profile for yaml: Sonar way
+18:03:15.801 INFO  ------------- Run sensors on module OleksanderSS_trading_project
+18:03:15.896 INFO  Load metrics repository
+18:03:16.020 INFO  Load metrics repository (done) | time=123ms
+18:03:16.033 INFO  Sensor cache enabled
+18:03:16.040 INFO  Load sensor cache
+18:03:17.831 INFO  Load sensor cache (11 MB) | time=1791ms
+18:03:19.450 INFO  Sensor Python Sensor [python]
+18:03:21.006 WARN  Access to the multi-values/property set property 'sonar.test.inclusions' should be made using 'getStringArray' method. The SonarQube plugin using this property should be updated.
+18:03:21.006 WARN  Access to the multi-values/property set property 'sonar.test.exclusions' should be made using 'getStringArray' method. The SonarQube plugin using this property should be updated.
+18:03:21.015 WARN  Access to the multi-values/property set property 'sonar.test.inclusions' should be made using 'getStringArray' method. The SonarQube plugin using this property should be updated.
+18:03:21.016 WARN  Access to the multi-values/property set property 'sonar.test.exclusions' should be made using 'getStringArray' method. The SonarQube plugin using this property should be updated.
+18:03:21.053 INFO  Starting global symbols computation
+18:03:21.059 INFO  587 source files to be analyzed
+18:03:30.540 INFO  587/587 source files have been analyzed
+18:03:30.542 INFO  Finished step global symbols computation in 9483ms
+18:03:30.978 INFO  Starting rules execution
+18:03:30.980 INFO  587 source files to be analyzed
+18:03:37.231 INFO  No boundary descriptors defined
+18:03:40.998 INFO  23/587 files analyzed, current files: diary_engine.py, elite_risk_metrics.py, config.py, ...
+18:03:51.013 INFO  141/587 files analyzed, current files: constraint_engine.py, news_quality_enricher.py, heavy_light_comparator.py, ...
+18:03:57.399 WARN  SonarPython detected files that look like test code but 'sonar.tests' is not configured. Rules targeting production code were not executed on these files. Configure 'sonar.tests' in your project properties for a more accurate analysis.
+18:04:01.033 INFO  297/587 files analyzed, current files: loader.py, correlation_visualizer.py, local_file_collector.py, ...
+18:04:09.773 ERROR Unable to parse file: src/pipeline/stages/stage_7_evaluation.py
+18:04:09.785 ERROR Parse error at line 193 column 20:
 
-==================================== ERRORS ====================================
-________ ERROR collecting tests/models/ensemble/test_dynamic_weights.py ________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/models/ensemble/test_dynamic_weights.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/models/ensemble/test_dynamic_weights.py:8: in <module>
-    from src.models.ensemble.dynamic_weights import DynamicWeightCalculator
-src/models/__init__.py:12: in <module>
-    from .ensemble.confidence_calibrator import ConfidenceCalibrator, calibrate_confidence_quick, get_confidence_calibrator
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-------------------------------- Captured stdout --------------------------------
-2026-06-06 16:33:11,311 - matplotlib - DEBUG - matplotlib data path: /opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/matplotlib/mpl-data
-2026-06-06 16:33:11,333 - matplotlib - DEBUG - CONFIGDIR=/home/runner/.config/matplotlib
-2026-06-06 16:33:11,338 - matplotlib - DEBUG - interactive is False
-2026-06-06 16:33:11,338 - matplotlib - DEBUG - platform is linux
-2026-06-06 16:33:11,640 - matplotlib - DEBUG - CACHEDIR=/home/runner/.cache/matplotlib
-2026-06-06 16:33:11,641 - matplotlib.font_manager - DEBUG - font search path [PosixPath('/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/matplotlib/mpl-data/fonts/ttf'), PosixPath('/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/matplotlib/mpl-data/fonts/afm'), PosixPath('/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/site-packages/matplotlib/mpl-data/fonts/pdfcorefonts')]
-2026-06-06 16:33:12,048 - matplotlib.font_manager - INFO - Failed to extract font properties from /usr/share/fonts/truetype/noto/NotoColorEmoji.ttf: Can not load face (unknown file format; error code 0x2)
-2026-06-06 16:33:12,272 - matplotlib.font_manager - INFO - generated new fontManager
-2026-06-06 16:33:13,174 - src.core.security.secure_secrets_manager - DEBUG - Skipping config env paths while UnifiedConfigManager is loading.
-2026-06-06 16:33:13,174 - src.core.security.secure_secrets_manager - WARNING - No .env configuration file found in project local paths: ['.env']. Utilizing existing environment variables.
-____ ERROR collecting tests/models/model_selector/test_adaptive_selector.py ____
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/models/model_selector/test_adaptive_selector.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/models/model_selector/test_adaptive_selector.py:8: in <module>
-    from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-__________ ERROR collecting tests/models/prototypes/test_prototype.py __________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/models/prototypes/test_prototype.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/models/prototypes/test_prototype.py:10: in <module>
-    from src.models.prototypes.prototype import ModelPrototype
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-__________ ERROR collecting tests/models/prototypes/test_registry.py ___________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/models/prototypes/test_registry.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/models/prototypes/test_registry.py:12: in <module>
-    from src.models.prototypes.prototype import ModelPrototype
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-___________ ERROR collecting tests/models/quality/test_controller.py ___________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/models/quality/test_controller.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/models/quality/test_controller.py:6: in <module>
-    from src.models.quality.controller import ModelQualityController
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____________ ERROR collecting tests/models/test_persistent_pool.py _____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/models/test_persistent_pool.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/models/test_persistent_pool.py:8: in <module>
-    from src.models.persistent_pool import PersistentModelPool
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-__________ ERROR collecting tests/test_fix_p1_performance_tracker.py ___________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/test_fix_p1_performance_tracker.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/test_fix_p1_performance_tracker.py:2: in <module>
-    from src.analytics.arena.performance_tracker import get_performance_tracker
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-_____________ ERROR collecting tests/test_secure_model_loading.py ______________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/test_secure_model_loading.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/test_secure_model_loading.py:8: in <module>
-    from src.predictions.models_predict import predict_from_parquet
-src/predictions/models_predict.py:11: in <module>
-    from src.ensembling.stacked_ensemble import ensemble_forecast
-src/ensembling/stacked_ensemble.py:10: in <module>
-    from src.meta_learning.memory.diary_engine import DiaryEngine
-src/meta_learning/__init__.py:14: in <module>
-    from .evolution.dual_loops import LearningLoopsEngine, TradingRule
-src/meta_learning/evolution/dual_loops.py:29: in <module>
-    from src.analytics.arena.arena_battle import get_trading_arena
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-__ ERROR collecting tests/unit/models/analysis/test_model_health_analyzer.py ___
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/models/analysis/test_model_health_analyzer.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/models/analysis/test_model_health_analyzer.py:5: in <module>
-    from src.models.analysis.model_health_analyzer import ModelHealthAnalyzer
-src/models/analysis/model_health_analyzer.py:11: in <module>
-    from src.models.monitoring.prediction_drift_monitor import PredictionDriftMonitor
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____ ERROR collecting tests/unit/models/test_weight_stability_visualizer.py ____
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/models/test_weight_stability_visualizer.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/models/test_weight_stability_visualizer.py:5: in <module>
-    from src.models.ensemble.weight_stability.visualizer import WeightStabilityVisualizer
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____________ ERROR collecting tests/unit/test_artifact_security.py _____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_artifact_security.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_artifact_security.py:6: in <module>
-    from src.core.error_handling.error_handler import ModelLoadingError
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-________ ERROR collecting tests/unit/test_autoencoder_routing_policy.py ________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_autoencoder_routing_policy.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_autoencoder_routing_policy.py:9: in <module>
-    from src.pipeline.hybrid.final_stages_executor import FinalStagesExecutor
-src/pipeline/hybrid/__init__.py:19: in <module>
-    from .orchestrator_config import OrchestratorConfigManager, PipelineConfig
-src/pipeline/hybrid/orchestrator_config.py:16: in <module>
-    GDRIVE_AVAILABLE = all(
-src/pipeline/hybrid/orchestrator_config.py:17: in <genexpr>
-    find_spec(module_name) is not None
-    ^^^^^^^^^^^^^^^^^^^^^^
-E   ModuleNotFoundError: No module named 'googleapiclient'
-____________ ERROR collecting tests/unit/test_constraint_engine.py _____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_constraint_engine.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_constraint_engine.py:2: in <module>
-    from src.meta_learning.security.constraint_engine import SecurityConstraintEngine, ConstraintType, ConstraintSeverity
-src/meta_learning/__init__.py:14: in <module>
-    from .evolution.dual_loops import LearningLoopsEngine, TradingRule
-src/meta_learning/evolution/dual_loops.py:29: in <module>
-    from src.analytics.arena.arena_battle import get_trading_arena
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-_______ ERROR collecting tests/unit/test_context_pattern_sequence_knn.py _______
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_context_pattern_sequence_knn.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_context_pattern_sequence_knn.py:9: in <module>
-    from src.meta_learning.memory.diary_engine import DiaryEngine
-src/meta_learning/__init__.py:14: in <module>
-    from .evolution.dual_loops import LearningLoopsEngine, TradingRule
-src/meta_learning/evolution/dual_loops.py:29: in <module>
-    from src.analytics.arena.arena_battle import get_trading_arena
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-__________ ERROR collecting tests/unit/test_data_manager_security.py ___________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_data_manager_security.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_data_manager_security.py:8: in <module>
-    from src.data.management.data_manager import DataManager
-src/data/management/data_manager.py:12: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-______________ ERROR collecting tests/unit/test_drift_analyzer.py ______________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_drift_analyzer.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_drift_analyzer.py:4: in <module>
-    from src.models.monitoring.drift.analyzer import DriftAnalyzer
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-______________ ERROR collecting tests/unit/test_drift_history.py _______________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_drift_history.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_drift_history.py:4: in <module>
-    from src.models.monitoring.drift.history import HistoryManager
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____________ ERROR collecting tests/unit/test_exception_handling.py ____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_exception_handling.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_exception_handling.py:6: in <module>
-    from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
-src/analytics/unified_analytics_engine.py:14: in <module>
-    from src.analytics.data_managers.model_results_manager import ModelResultsManager
-src/analytics/data_managers/model_results_manager.py:13: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-_______ ERROR collecting tests/unit/test_feature_engineering_monitor.py ________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_feature_engineering_monitor.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_feature_engineering_monitor.py:3: in <module>
-    from src.pipeline.stages.monitoring.feature_monitoring import FeatureEngineeringMonitor
-src/pipeline/stages/monitoring/feature_monitoring.py:3: in <module>
-    from src.monitoring.data_freshness_monitor import get_data_freshness_monitor
-src/monitoring/__init__.py:47: in <module>
-    from .health_hub import HealthHub
-src/monitoring/health_hub.py:12: in <module>
-    from src.analytics.data_managers.model_results_manager import ModelResultsManager
-src/analytics/data_managers/model_results_manager.py:13: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-------------------------------- Captured stdout --------------------------------
-2026-06-06 16:33:18,784 - FeatureDriftMonitor - WARNING - ⚠️ Evidently AI not installed. Install with: pip install evidently
-_____________ ERROR collecting tests/unit/test_feature_leakage.py ______________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_feature_leakage.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_feature_leakage.py:4: in <module>
-    from src.models.feature_selector import ModelFeatureSelector
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____ ERROR collecting tests/unit/test_financial_ratio_denominator_policy.py ____
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_financial_ratio_denominator_policy.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_financial_ratio_denominator_policy.py:6: in <module>
-    from src.meta_learning.memory.diary_engine import DiaryEngine
-src/meta_learning/__init__.py:14: in <module>
-    from .evolution.dual_loops import LearningLoopsEngine, TradingRule
-src/meta_learning/evolution/dual_loops.py:29: in <module>
-    from src.analytics.arena.arena_battle import get_trading_arena
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-_________ ERROR collecting tests/unit/test_hybrid_pipeline_manager.py __________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_hybrid_pipeline_manager.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_hybrid_pipeline_manager.py:10: in <module>
-    from src.pipeline.hybrid.pipeline_config import FinalStagesParams, PipelineParams
-src/pipeline/hybrid/__init__.py:19: in <module>
-    from .orchestrator_config import OrchestratorConfigManager, PipelineConfig
-src/pipeline/hybrid/orchestrator_config.py:16: in <module>
-    GDRIVE_AVAILABLE = all(
-src/pipeline/hybrid/orchestrator_config.py:17: in <genexpr>
-    find_spec(module_name) is not None
-    ^^^^^^^^^^^^^^^^^^^^^^
-E   ModuleNotFoundError: No module named 'googleapiclient'
-_________ ERROR collecting tests/unit/test_hyperparameter_searcher.py __________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_hyperparameter_searcher.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_hyperparameter_searcher.py:3: in <module>
-    from src.optimization.hyperparameter_searcher import HyperparameterSearcher
-src/optimization/__init__.py:9: in <module>
-    from .factory import OptimizationFactory
-src/optimization/factory.py:6: in <module>
-    from src.optimization.portfolio.optimizer import PortfolioOptimizer
-src/optimization/portfolio/optimizer.py:13: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____________ ERROR collecting tests/unit/test_ml_analytics_drift.py ____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_ml_analytics_drift.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_ml_analytics_drift.py:5: in <module>
-    from src.monitoring.ml_analytics import MLAnalytics
-src/monitoring/__init__.py:47: in <module>
-    from .health_hub import HealthHub
-src/monitoring/health_hub.py:12: in <module>
-    from src.analytics.data_managers.model_results_manager import ModelResultsManager
-src/analytics/data_managers/model_results_manager.py:13: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-________ ERROR collecting tests/unit/test_pattern_and_synthetic_math.py ________
-tests/unit/test_pattern_and_synthetic_math.py:6: in <module>
-    from src.optimization.portfolio.optimizer import PortfolioOptimizer
-<frozen importlib._bootstrap>:1360: in _find_and_load
-    ???
-<frozen importlib._bootstrap>:1322: in _find_and_load_unlocked
-    ???
-<frozen importlib._bootstrap>:1262: in _find_spec
-    ???
-<frozen importlib._bootstrap_external>:1532: in find_spec
-    ???
-<frozen importlib._bootstrap_external>:1501: in _get_spec
-    ???
-<frozen importlib._bootstrap_external>:1372: in __iter__
-    ???
-<frozen importlib._bootstrap_external>:1359: in _recalculate
-    ???
-<frozen importlib._bootstrap_external>:1355: in _get_parent_path
-    ???
-E   KeyError: 'src.optimization'
-__________ ERROR collecting tests/unit/test_pct_change_fill_policy.py __________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_pct_change_fill_policy.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_pct_change_fill_policy.py:11: in <module>
-    from src.pipeline.stages.trading.recommendation_engine import TradingRecommendationEngine
-src/pipeline/stages/trading/__init__.py:1: in <module>
-    from src.pipeline.stages.trading.data_io import TradingDataIO
-src/pipeline/stages/trading/data_io.py:8: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-___________ ERROR collecting tests/unit/test_performance_tracker.py ____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_performance_tracker.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_performance_tracker.py:2: in <module>
-    from src.analytics.arena.performance_tracker import ModelPerformanceTracker
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____ ERROR collecting tests/unit/test_pipeline_orchestrator_execute_sync.py ____
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_pipeline_orchestrator_execute_sync.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_pipeline_orchestrator_execute_sync.py:5: in <module>
-    from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
-src/pipeline/pipeline_orchestrator.py:10: in <module>
-    from src.analytics.data_managers.model_results_manager import ModelResultsManager
-src/analytics/data_managers/model_results_manager.py:13: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____________ ERROR collecting tests/unit/test_portfolio_manager.py _____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_portfolio_manager.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_portfolio_manager.py:1: in <module>
-    from src.trading.portfolio_manager import PortfolioManager
-src/trading/__init__.py:6: in <module>
-    from .virtual_portfolio import VirtualPortfolio
-src/trading/virtual_portfolio.py:14: in <module>
-    from src.core.error_handling.error_handler import get_error_handler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-_____ ERROR collecting tests/unit/test_prediction_stage_model_selection.py _____
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_prediction_stage_model_selection.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_prediction_stage_model_selection.py:5: in <module>
-    from src.pipeline.stages.stage_5_prediction import PredictionStage
-src/pipeline/stages/stage_5_prediction.py:31: in <module>
-    from src.ensembling.stacked_ensemble import StackedEnsemble
-src/ensembling/stacked_ensemble.py:10: in <module>
-    from src.meta_learning.memory.diary_engine import DiaryEngine
-src/meta_learning/__init__.py:14: in <module>
-    from .evolution.dual_loops import LearningLoopsEngine, TradingRule
-src/meta_learning/evolution/dual_loops.py:29: in <module>
-    from src.analytics.arena.arena_battle import get_trading_arena
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-______ ERROR collecting tests/unit/test_progressive_trainer_resources.py _______
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_progressive_trainer_resources.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_progressive_trainer_resources.py:4: in <module>
-    from src.training.progressive_trainer import ProgressiveTrainer
-src/training/progressive_trainer.py:19: in <module>
-    from src.training.base_trainer import BaseTrainer, TrainerConfig
-src/training/base_trainer.py:22: in <module>
-    from src.factories.model_factory import ModelFactory
-src/factories/model_factory.py:8: in <module>
-    from src.factories.tree_model_factory import TreeModelFactory
-src/factories/tree_model_factory.py:5: in <module>
-    from src.models.interfaces import BaseModel
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-________ ERROR collecting tests/unit/test_real_time_learning_metrics.py ________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_real_time_learning_metrics.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_real_time_learning_metrics.py:3: in <module>
-    from src.meta_learning.real_time_learning import RealTimeLearning
-src/meta_learning/__init__.py:14: in <module>
-    from .evolution.dual_loops import LearningLoopsEngine, TradingRule
-src/meta_learning/evolution/dual_loops.py:29: in <module>
-    from src.analytics.arena.arena_battle import get_trading_arena
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-________ ERROR collecting tests/unit/test_reddit_sentiment_collector.py ________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_reddit_sentiment_collector.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_reddit_sentiment_collector.py:3: in <module>
-    from src.data.collectors.reddit_sentiment_collector import RedditSentimentCollector
-src/data/collectors/reddit_sentiment_collector.py:10: in <module>
-    from src.core.cache.cache_manager import CacheManager
-src/core/cache/__init__.py:1: in <module>
-    from .cache_manager import CacheManager
-src/core/cache/cache_manager.py:15: in <module>
-    from src.data.management.data_manager import DataManager
-src/data/management/data_manager.py:12: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-________ ERROR collecting tests/unit/test_sample_fallback_collectors.py ________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_sample_fallback_collectors.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_sample_fallback_collectors.py:5: in <module>
-    from src.data.collectors.cftc_collector import CFTCCollector
-src/data/collectors/cftc_collector.py:10: in <module>
-    from src.core.cache.cache_manager import CacheManager
-src/core/cache/__init__.py:1: in <module>
-    from .cache_manager import CacheManager
-src/core/cache/cache_manager.py:15: in <module>
-    from src.data.management.data_manager import DataManager
-src/data/management/data_manager.py:12: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-_____________ ERROR collecting tests/unit/test_signal_processor.py _____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_signal_processor.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_signal_processor.py:1: in <module>
-    from src.trading.signal_processor import SignalProcessor
-src/trading/__init__.py:6: in <module>
-    from .virtual_portfolio import VirtualPortfolio
-src/trading/virtual_portfolio.py:14: in <module>
-    from src.core.error_handling.error_handler import get_error_handler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-__________ ERROR collecting tests/unit/test_stage3_data_contracts.py ___________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_stage3_data_contracts.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_stage3_data_contracts.py:7: in <module>
-    from src.pipeline.stages.feature_engineering.orchestrator import FeatureEngineeringStage
-src/pipeline/stages/feature_engineering/__init__.py:3: in <module>
-    from .orchestrator import FeatureEngineeringStage
-src/pipeline/stages/feature_engineering/orchestrator.py:7: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-___________ ERROR collecting tests/unit/test_stage6_diary_logging.py ___________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_stage6_diary_logging.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_stage6_diary_logging.py:5: in <module>
-    from src.meta_learning.memory.diary_engine import DecisionOutcome, DecisionType
-src/meta_learning/__init__.py:14: in <module>
-    from .evolution.dual_loops import LearningLoopsEngine, TradingRule
-src/meta_learning/evolution/dual_loops.py:29: in <module>
-    from src.analytics.arena.arena_battle import get_trading_arena
-src/analytics/arena/__init__.py:5: in <module>
-    from .arena_battle import BattleMetrics, BattleResult, TradingModelArena, get_trading_arena
-src/analytics/arena/arena_battle.py:17: in <module>
-    from .battle_groups import get_battle_group_manager
-src/analytics/arena/battle_groups.py:4: in <module>
-    from src.models.registry.model_registry import ModelRegistry
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-______ ERROR collecting tests/unit/test_target_orchestrator_alignment.py _______
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_target_orchestrator_alignment.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_target_orchestrator_alignment.py:3: in <module>
-    from src.pipeline.stages.feature_engineering.targets import TargetGenerator
-src/pipeline/stages/feature_engineering/__init__.py:3: in <module>
-    from .orchestrator import FeatureEngineeringStage
-src/pipeline/stages/feature_engineering/orchestrator.py:7: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-____________ ERROR collecting tests/unit/test_tree_model_factory.py ____________
-ImportError while importing test module '/home/runner/work/trading_project/trading_project/tests/unit/test_tree_model_factory.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/hostedtoolcache/Python/3.12.13/x64/lib/python3.12/importlib/__init__.py:90: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-tests/unit/test_tree_model_factory.py:2: in <module>
-    from src.factories.tree_model_factory import TreeModelFactory
-src/factories/tree_model_factory.py:5: in <module>
-    from src.models.interfaces import BaseModel
-src/models/__init__.py:13: in <module>
-    from .ensemble.model_correlation_analyzer import (
-src/models/ensemble/__init__.py:18: in <module>
-    from .model_correlation_analyzer import (
-src/models/ensemble/model_correlation_analyzer.py:11: in <module>
-    from .correlation.correlation_engine import get_correlation_engine
-src/models/ensemble/correlation/__init__.py:7: in <module>
-    from .correlation_engine import CorrelationEngine, get_correlation_engine
-src/models/ensemble/correlation/correlation_engine.py:15: in <module>
-    from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-src/core/error_handling/error_handler.py:13: in <module>
-    from src.core.logging.notifier import UniversalNotifier
-src/core/logging/notifier.py:7: in <module>
-    import aiofiles
-E   ModuleNotFoundError: No module named 'aiofiles'
-=============================== warnings summary ===============================
-tests/test_async_timeout.py:9
-  /home/runner/work/trading_project/trading_project/tests/test_async_timeout.py:9: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
+  187: 
+  188: 
+  189:             if 'total_return_pct' in financial_metrics:
+  190:                 stress_results['scenarios']['high_volatility'] = {
+  191:                     'description': 'Portfolio performance under high volatility conditions',
+  192:                     'impact': financial_metrics['total_return_pct'] * 0.5
+  -->                      'status': 'passed' if financial_metrics['total_return_pct'] > 0 else 'failed'
+  194:                 }
+  195: 
+  196: 
+  197:             if 'max_drawdown_pct' in financial_metrics:
+  198:                 stress_results['scenarios']['market_crash'] =
 
-tests/unit/models/analysis/overfitting_detection/test_analyzer.py:21
-  /home/runner/work/trading_project/trading_project/tests/unit/models/analysis/overfitting_detection/test_analyzer.py:21: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
-tests/unit/models/analysis/overfitting_detection/test_analyzer.py:39
-  /home/runner/work/trading_project/trading_project/tests/unit/models/analysis/overfitting_detection/test_analyzer.py:39: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
-tests/unit/models/analysis/overfitting_detection/test_manager.py:12
-  /home/runner/work/trading_project/trading_project/tests/unit/models/analysis/overfitting_detection/test_manager.py:12: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
-tests/unit/models/analysis/overfitting_detection/test_manager.py:34
-  /home/runner/work/trading_project/trading_project/tests/unit/models/analysis/overfitting_detection/test_manager.py:34: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
-tests/unit/models/analysis/test_baseline_dominance_detector.py:20
-  /home/runner/work/trading_project/trading_project/tests/unit/models/analysis/test_baseline_dominance_detector.py:20: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
-tests/unit/models/analysis/test_baseline_dominance_detector.py:39
-  /home/runner/work/trading_project/trading_project/tests/unit/models/analysis/test_baseline_dominance_detector.py:39: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
-tests/unit/test_feature_engineering_stage_no_target_leakage.py:16
-  /home/runner/work/trading_project/trading_project/tests/unit/test_feature_engineering_stage_no_target_leakage.py:16: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
-tests/unit/test_overfitting_detector.py:7
-  /home/runner/work/trading_project/trading_project/tests/unit/test_overfitting_detector.py:7: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
-    @pytest.mark.asyncio
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-=========================== short test summary info ============================
-ERROR tests/models/ensemble/test_dynamic_weights.py
-ERROR tests/models/model_selector/test_adaptive_selector.py
-ERROR tests/models/prototypes/test_prototype.py
-ERROR tests/models/prototypes/test_registry.py
-ERROR tests/models/quality/test_controller.py
-ERROR tests/models/test_persistent_pool.py
-ERROR tests/test_fix_p1_performance_tracker.py
-ERROR tests/test_secure_model_loading.py
-ERROR tests/unit/models/analysis/test_model_health_analyzer.py
-ERROR tests/unit/models/test_weight_stability_visualizer.py
-ERROR tests/unit/test_artifact_security.py
-ERROR tests/unit/test_autoencoder_routing_policy.py
-ERROR tests/unit/test_constraint_engine.py
-ERROR tests/unit/test_context_pattern_sequence_knn.py
-ERROR tests/unit/test_data_manager_security.py
-ERROR tests/unit/test_drift_analyzer.py
-ERROR tests/unit/test_drift_history.py
-ERROR tests/unit/test_exception_handling.py
-ERROR tests/unit/test_feature_engineering_monitor.py
-ERROR tests/unit/test_feature_leakage.py
-ERROR tests/unit/test_financial_ratio_denominator_policy.py
-ERROR tests/unit/test_hybrid_pipeline_manager.py
-ERROR tests/unit/test_hyperparameter_searcher.py
-ERROR tests/unit/test_ml_analytics_drift.py
-ERROR tests/unit/test_pattern_and_synthetic_math.py - KeyError: 'src.optimization'
-ERROR tests/unit/test_pct_change_fill_policy.py
-ERROR tests/unit/test_performance_tracker.py
-ERROR tests/unit/test_pipeline_orchestrator_execute_sync.py
-ERROR tests/unit/test_portfolio_manager.py
-ERROR tests/unit/test_prediction_stage_model_selection.py
-ERROR tests/unit/test_progressive_trainer_resources.py
-ERROR tests/unit/test_real_time_learning_metrics.py
-ERROR tests/unit/test_reddit_sentiment_collector.py
-ERROR tests/unit/test_sample_fallback_collectors.py
-ERROR tests/unit/test_signal_processor.py
-ERROR tests/unit/test_stage3_data_contracts.py
-ERROR tests/unit/test_stage6_diary_logging.py
-ERROR tests/unit/test_target_orchestrator_alignment.py
-ERROR tests/unit/test_tree_model_factory.py
-!!!!!!!!!!!!!!!!!!! Interrupted: 39 errors during collection !!!!!!!!!!!!!!!!!!!
-======================= 9 warnings, 39 errors in 13.08s ========================
-Error: Process completed with exit code 2.
+18:04:09.844 ERROR Working directory is null, cannot save UDG
+18:04:11.076 INFO  490/587 files analyzed, current files: data_generator.py, data_manager.py, risk_decomposition_analyzer.py, ...
+18:04:14.542 INFO  587/587 source files have been analyzed
+18:04:14.543 INFO  Finished step rules execution in 43563ms
+18:04:14.543 INFO  The Python analyzer was able to leverage cached data from previous analyses for 0 out of 587 files. These files were not parsed.
+18:04:14.547 INFO  Sensor Python Sensor [python] (done) | time=55095ms
+18:04:14.549 INFO  Sensor Cobertura Sensor for Python coverage [python]
+18:04:15.369 INFO  Sensor Cobertura Sensor for Python coverage [python] (done) | time=820ms
+18:04:15.370 INFO  Sensor PythonXUnitSensor [python]
+18:04:16.054 INFO  Sensor PythonXUnitSensor [python] (done) | time=683ms
+18:04:16.055 INFO  Sensor Python Dependency Sensor [python]
+18:04:16.061 INFO  Sensor Python Dependency Sensor [python] (done) | time=6ms
+18:04:16.062 INFO  Sensor SecurityPythonTelemetrySensor [securitypythonfrontend]
+18:04:16.062 INFO  Sensor SecurityPythonTelemetrySensor [securitypythonfrontend] (done) | time=0ms
+18:04:16.062 INFO  Sensor Python HTML templates processing [securitypythonfrontend]
+18:04:16.086 INFO  HTML files are not indexed : you may want to add them in the scanned files of this project to detect Python XSS vulnerabilities
+18:04:16.086 INFO  Sensor Python HTML templates processing [securitypythonfrontend] (done) | time=23ms
+18:04:16.086 INFO  Sensor IaC CloudFormation Sensor [iac]
+18:04:16.121 INFO  There are no files to be analyzed for the CloudFormation language
+18:04:16.122 INFO  Sensor IaC CloudFormation Sensor [iac] (done) | time=34ms
+18:04:16.125 INFO  Sensor IaC cfn-lint report Sensor [iac]
+18:04:16.126 INFO  Sensor IaC cfn-lint report Sensor [iac] (done) | time=1ms
+18:04:16.127 INFO  Sensor IaC Kustomization Sensor [iac]
+18:04:16.131 INFO  Sensor IaC Kustomization Sensor [iac] (done) | time=3ms
+18:04:16.132 INFO  Sensor IaC hadolint report Sensor [iac]
+18:04:16.132 INFO  Sensor IaC hadolint report Sensor [iac] (done) | time=0ms
+18:04:16.136 INFO  Sensor IaC Azure Resource Manager Sensor [iac]
+18:04:16.145 INFO  There are no files to be analyzed for the Azure Resource Manager language
+18:04:16.145 INFO  Sensor IaC Azure Resource Manager Sensor [iac] (done) | time=8ms
+18:04:16.146 INFO  Sensor Java Config Sensor [iac]
+18:04:16.159 INFO  There are no files to be analyzed for the Java language
+18:04:16.159 INFO  Sensor Java Config Sensor [iac] (done) | time=13ms
+18:04:16.159 INFO  Sensor IaC Docker Sensor [iac]
+18:04:16.177 INFO  There are no files to be analyzed for the Docker language
+18:04:16.178 INFO  Sensor IaC Docker Sensor [iac] (done) | time=17ms
+18:04:16.178 INFO  Sensor IaC Ansible Sensor [iac]
+18:04:16.218 INFO  There are no files to be analyzed for the Ansible language
+18:04:16.218 INFO  Sensor IaC Ansible Sensor [iac] (done) | time=40ms
+18:04:16.218 INFO  Sensor IaC ansible-lint report Sensor [iac]
+18:04:16.218 INFO  Sensor IaC ansible-lint report Sensor [iac] (done) | time=1ms
+18:04:16.219 INFO  Sensor IaC spectral report Sensor [iac]
+18:04:16.220 INFO  Sensor IaC spectral report Sensor [iac] (done) | time=1ms
+18:04:16.221 INFO  Sensor IaC GitHub Actions Sensor [iac]
+18:04:16.222 INFO  There are no files to be analyzed for the GitHub Actions language
+18:04:16.222 INFO  Sensor IaC GitHub Actions Sensor [iac] (done) | time=0ms
+18:04:16.223 INFO  Sensor IaC actionlint report Sensor [iac]
+18:04:16.224 INFO  Sensor IaC actionlint report Sensor [iac] (done) | time=0ms
+18:04:16.225 INFO  Sensor IaC Azure Pipelines Sensor [iac]
+18:04:16.239 INFO  There are no files to be analyzed for the Azure Pipelines language
+18:04:16.239 INFO  Sensor IaC Azure Pipelines Sensor [iac] (done) | time=13ms
+18:04:16.243 INFO  Sensor IaC Shell Sensor [iac]
+18:04:16.245 INFO  There are no files to be analyzed for the Shell language
+18:04:16.249 INFO  Sensor IaC Shell Sensor [iac] (done) | time=1ms
+18:04:16.249 INFO  Sensor JavaScript/TypeScript/CSS analysis [javascript]
+18:04:16.290 INFO  No input files found for analysis
+18:04:16.293 INFO  Hit the cache for 0 out of 0
+18:04:16.295 INFO  Miss the cache for 0 out of 0
+18:04:16.295 INFO  Sensor JavaScript/TypeScript/CSS analysis [javascript] (done) | time=49ms
+18:04:16.296 INFO  Sensor IaC Kubernetes Sensor [iac]
+18:04:16.375 INFO  There are no files to be analyzed for the Kubernetes language
+18:04:16.375 INFO  Sensor IaC Kubernetes Sensor [iac] (done) | time=78ms
+18:04:16.375 INFO  Sensor IaC YAML Sensor [iac]
+18:04:16.376 INFO  Sensor for language "YAML" is enabled by a feature flag. You can disable it by setting "sonar.yaml.activate" to false.
+18:04:16.390 INFO  27 source files to be analyzed
+18:04:16.649 INFO  27/27 source files have been analyzed
+18:04:16.650 INFO  Sensor IaC YAML Sensor [iac] (done) | time=275ms
+18:04:16.651 INFO  Sensor IaC JSON Sensor [iac]
+18:04:16.651 INFO  Sensor for language "JSON" is enabled by a feature flag. You can disable it by setting "sonar.json.activate" to false.
+18:04:16.656 INFO  3 source files to be analyzed
+18:04:16.664 INFO  3/3 source files have been analyzed
+18:04:16.664 INFO  Sensor IaC JSON Sensor [iac] (done) | time=13ms
+18:04:16.665 INFO  Sensor Serverless configuration file sensor [security]
+18:04:16.666 INFO  0 Serverless function entries were found in the project
+18:04:16.674 INFO  0 Serverless function handlers were kept as entrypoints
+18:04:16.675 INFO  Sensor Serverless configuration file sensor [security] (done) | time=8ms
+18:04:16.676 INFO  Sensor AWS SAM template file sensor [security]
+18:04:16.690 INFO  Sensor AWS SAM template file sensor [security] (done) | time=16ms
+18:04:16.691 INFO  Sensor Generic Coverage Report
+18:04:16.692 INFO  Parsing D:\a\trading_project\trading_project\coverage.xml
+18:04:17.333 ERROR Error during parsing of the generic coverage report 'D:\a\trading_project\trading_project\coverage.xml'. Look at SonarQube documentation to know the expected XML format.
+18:04:17.742 INFO  EXECUTION FAILURE
+18:04:17.742 INFO  Total time: 1:38.706s
+Error: Action failed: The process 'C:\hostedtoolcache\windows\sonar-scanner-cli\8.1.0.6389\windows-x64\bin\sonar-scanner.bat' failed with exit code 1
