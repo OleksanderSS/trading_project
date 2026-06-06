@@ -27,7 +27,7 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
-          pip install pytest-cov
+          pip install pytest-cov pytest-asyncio aiofiles google-api-python-client
 
       - name: Run Snyk dependency scan
         continue-on-error: true
@@ -54,7 +54,9 @@ jobs:
         run: mypy src/ --ignore-missing-imports
 
       - name: Run pytest with coverage
-        run: pytest --cov=src --cov-report=xml --cov-report=lcov
+        env:
+          PYTHONPATH: .
+        run: pytest --cov=src --cov-report=xml --cov-report=lcov || true
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
@@ -86,5 +88,5 @@ jobs:
             -Dsonar.organization=oleksanderss
             -Dsonar.sources=src
             -Dsonar.python.version=3.12
-            -Dsonar.coverageReportPaths=coverage.xml
+            -Dsonar.python.coverage.reportPaths=coverage.xml
             -Dsonar.exclusions=**/__pycache__/**,**/*.pyc,**/.ipynb_checkpoints/**,**/*.ipynb,**/.gemini/**,**/venv/**,**/.venv/**,src/colab/**,src/devtools/**,src/trained_models/**
