@@ -68,7 +68,7 @@ class OverfittingDetector:
             self._store_results(results)
 
             return results
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in overfitting detection: {e}", exc_info=True)
             raise DataProcessingError(f"Overfitting detection failed: {e}") from e
 
@@ -92,7 +92,7 @@ class OverfittingDetector:
 
             with open(save_path, 'w') as f:
                 json.dump(save_data, f, indent=4, default=str)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to store results: {e}", exc_info=True)
             raise DataProcessingError(f"Failed to store results: {e}") from e
 

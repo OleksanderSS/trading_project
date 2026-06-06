@@ -24,7 +24,7 @@ def _configure_yfinance_cache() -> None:
         yf.set_tz_cache_location(str(cache_dir))
     except AttributeError as e:
         logger.debug(f"yfinance does not support set_tz_cache_location: {e}")
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Failed to set yfinance cache location: {e}", exc_info=True)
 
 class VIXCollector(BaseCollector):
@@ -90,7 +90,7 @@ class VIXCollector(BaseCollector):
             self.logger.info(f"Successfully fetched {len(df)} VIX records")
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in VIXCollector: {e}")
             raise RuntimeError("VIX collection failed") from e
 
@@ -159,7 +159,7 @@ class VIXCollector(BaseCollector):
 
             return data
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error fetching VIX data: {e}")
             raise RuntimeError("Failed to fetch VIX data") from e
 
@@ -196,7 +196,7 @@ class VIXCollector(BaseCollector):
 
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error standardizing VIX columns: {e}")
             return pd.DataFrame()
 

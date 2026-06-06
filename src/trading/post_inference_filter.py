@@ -79,7 +79,8 @@ class PostInferenceFilter:
         """
         Applies vectorized filters including Chaos and Pattern awareness.
         """
-        if config is None: config = {}
+        if config is None:
+            config = {}
 
         confidence_col = config.get('confidence_col', 'confidence')
         macro_col = config.get('macro_col', 'macro_decayed_strength')
@@ -97,23 +98,27 @@ class PostInferenceFilter:
         # Macro
         if macro_col in result_df.columns:
             multipliers['macro'] = self._get_macro_multiplier(result_df[macro_col])
-        else: multipliers['macro'] = 1.0
+        else:
+            multipliers['macro'] = 1.0
 
         # RSI
         if rsi_col in result_df.columns:
             multipliers['rsi'] = self._get_rsi_multiplier(result_df[rsi_col])
-        else: multipliers['rsi'] = 1.0
+        else:
+            multipliers['rsi'] = 1.0
 
         # Sentiment
         if sentiment_col in result_df.columns:
             multipliers['sentiment'] = self._get_sentiment_multiplier(result_df[sentiment_col])
-        else: multipliers['sentiment'] = 1.0
+        else:
+            multipliers['sentiment'] = 1.0
 
         # ✅ ELITE: Chaos (Velocity)
         if velocity_col in result_df.columns:
             multipliers['chaos'] = self._get_chaos_multiplier(result_df[velocity_col])
             self.logger.info(f"🛡️ Applied Chaos-Aware penalty using {velocity_col}")
-        else: multipliers['chaos'] = 1.0
+        else:
+            multipliers['chaos'] = 1.0
 
         # 2. Weighted Synthesis
         weights = self.params

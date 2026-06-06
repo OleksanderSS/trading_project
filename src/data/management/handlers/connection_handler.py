@@ -25,7 +25,7 @@ class ConnectionHandler:
             try:
                 conn.close()
                 logger.info(f"Closed connection to '{db_path}'")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f"Error closing connection to '{db_path}': {e}")
                 raise
@@ -42,7 +42,7 @@ class ConnectionHandler:
             if force_new and db_path in cls._connections:
                 try:
                     cls._connections[db_path].close()
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     logger.error(f'Виникла помилка: {e}', exc_info=True)
                     logger.warning(f'Error closing connection: {e}')
                     raise
@@ -63,7 +63,7 @@ class ConnectionHandler:
                         'enable_object_cache': True, 'checkpoint_threshold':
                         '1GB'})
                     return cls._connections[db_path]
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     last_error = e
                     if attempt < retry_count - 1:
                         time.sleep(2 ** attempt)
@@ -88,6 +88,6 @@ class ConnectionHandler:
             self.con.begin()
             yield self.con
             self.con.commit()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.con.rollback()
             raise e

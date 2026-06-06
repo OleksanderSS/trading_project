@@ -62,7 +62,7 @@ class MLAnalytics:
                     must_exist=True,
                 )
                 self.scalers['resource_scaler'] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to load monitoring ML models: {e}')
 
     def train_models(self, force_retrain: bool=False) ->dict[str, Any]:
@@ -87,7 +87,7 @@ class MLAnalytics:
                 ] = self.train_anomaly_detector(features_df, force_retrain)
             logger.info('Monitoring ML training session completed.')
             return results
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Training of monitoring models failed: {e}',
                 exc_info=True)
             return {'status': 'failed', 'error': str(e)}
@@ -120,7 +120,7 @@ class MLAnalytics:
                 anomaly, 'overall_risk': self.calculate_overall_risk(
                 predictions), 'recommendations': self.
                 generate_ml_recommendations(predictions, anomaly)}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Real-time issue prediction failed: {e}')
             return {'status': 'failed', 'error': str(e)}
 
@@ -136,7 +136,7 @@ class MLAnalytics:
                     'model_performance_logs',
                     model_id=model_name
                 )
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.warning(f"Failed to load data directly, attempting fallback: {e}", exc_info=True)
                 # Fallback to parameterized query via query_data
                 query = "SELECT accuracy, timestamp FROM model_performance_logs WHERE model_id = ?"
@@ -162,7 +162,7 @@ class MLAnalytics:
             return {'model': model_name, 'drift_detected': bool(z_score >
                 2.0), 'z_score': float(z_score), 'recent_avg': recent_avg,
                 'baseline_avg': baseline_avg}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Drift detection failed for {model_name}: {e}')
             return {'status': 'error', 'error': str(e)}
 
@@ -180,7 +180,7 @@ class MLAnalytics:
             while len(features) < 17:
                 features.append(0.0)
             return features
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Metric feature extraction failed: {e}')
             return [0.0] * 17
 
@@ -229,7 +229,7 @@ class MLAnalytics:
                 return self.results_manager.load_recent_results(days=days)
             if hasattr(self.results_manager, 'load_all_results'):
                 return self.results_manager.load_all_results()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Could not load historical monitoring data: {e}')
             raise
@@ -280,7 +280,7 @@ class MLAnalytics:
             self.scalers['resource_scaler'] = scaler
             return {'status': 'trained', 'accuracy': float(accuracy),
                 'model_path': str(model_path)}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Training failed for {problem_type} predictor: {e}',
                 exc_info=True)
             return {'status': 'failed', 'error': str(e)}
@@ -307,7 +307,7 @@ class MLAnalytics:
             joblib.dump(model, model_path)
             self.models['anomaly_detector'] = model
             return {'status': 'trained', 'model_path': str(model_path)}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Anomaly detector training failed: {e}', exc_info
                 =True)
             return {'status': 'failed', 'error': str(e)}

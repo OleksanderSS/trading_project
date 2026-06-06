@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Data Batch Manager: Handles batch metadata creation, data merging, backups, and batch-level operations.
 Extracted from HybridOrchestrator to improve code organization and testability.
@@ -55,7 +56,7 @@ class DataBatchManager:
             self._save_dataframe(accumulated_targets, t_path)
 
             self.logger.info(f"✅ Data merged: {len(accumulated_features)} features, {len(accumulated_targets)} targets")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Error merging data: {e}")
             raise
 

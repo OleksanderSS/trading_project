@@ -89,9 +89,11 @@ class NewsContextDatasetBuilder:
                 news_time = self.seeker.normalize_datetime(news_row['published_date'])
 
                 for ticker, timeframe in relevant_combinations:
-                    if timeframe not in prices_dict: continue
+                    if timeframe not in prices_dict:
+                        continue
                     ticker_prices = self._get_ticker_prices(prices_dict[timeframe], ticker)
-                    if isinstance(ticker_prices, pd.DataFrame) and ticker_prices.empty: continue
+                    if isinstance(ticker_prices, pd.DataFrame) and ticker_prices.empty:
+                        continue
 
                     # Quick check for at least 1 candle before and after
                     before = self.seeker.get_candles_before(ticker_prices, news_time, timeframe, n=1)
@@ -106,7 +108,7 @@ class NewsContextDatasetBuilder:
                 else:
                     removed_reasons['insufficient_candles'] += 1
 
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'❌ Error filtering news {idx}: {e}', exc_info=True)
                 removed_reasons['datetime_error'] += 1
                 raise RuntimeError(f"Error filtering news {idx}") from e
@@ -133,7 +135,7 @@ class NewsContextDatasetBuilder:
                     dataset_rows.append(row)
                 if (idx + 1) % 100 == 0:
                     logger.info(f'Processed {idx + 1}/{len(news_filtered)} news articles')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'Failed to process news {idx}: {e}', exc_info=True)
                 raise RuntimeError(f"Failed to process news {idx}") from e
 
@@ -175,10 +177,12 @@ class NewsContextDatasetBuilder:
             # 2. Ticker-specific context (Before and After)
             for ticker in self.tickers:
                 for tf in self.timeframes:
-                    if tf not in prices_dict: continue
+                    if tf not in prices_dict:
+                        continue
                     ticker_prices = self._get_ticker_prices(prices_dict[tf], ticker)
                     # Use .empty for DataFrame check
-                    if not isinstance(ticker_prices, pd.DataFrame) or ticker_prices.empty: continue
+                    if not isinstance(ticker_prices, pd.DataFrame) or ticker_prices.empty:
+                        continue
 
                     # Before context
                     candles_before = self.seeker.get_candles_before(ticker_prices, pub_at_norm, tf, n=self.n_candles_before)
@@ -191,7 +195,7 @@ class NewsContextDatasetBuilder:
                         self._add_candle_to_row(row, candle, f"{ticker}_{tf}_after_{i}")
 
             return row if len(row) > 20 else None
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error in _build_news_row: {e}", exc_info=True)
             raise RuntimeError("Error in _build_news_row") from e
 
@@ -221,12 +225,14 @@ class NewsContextDatasetBuilder:
         if date_col not in market_sentiment_df.columns:
             return {}
         relevant = market_sentiment_df[market_sentiment_df[date_col] <= timestamp].tail(1)
-        if not isinstance(relevant, pd.DataFrame) or relevant.empty: return {}
+        if not isinstance(relevant, pd.DataFrame) or relevant.empty:
+            return {}
 
         res = {}
         row = relevant.iloc[0]
         for f in ['vix', 'fear_greed_index', 'put_call_ratio']:
-            if f in row: res[f'sentiment_{f}'] = row[f]
+            if f in row:
+                res[f'sentiment_{f}'] = row[f]
         return res
 
     def _get_temporal_features(self, timestamp: datetime) -> dict[str, Any]:

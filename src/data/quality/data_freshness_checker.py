@@ -83,7 +83,7 @@ class DataFreshnessChecker:
             if latest_timestamp.tz is not None:
                 latest_timestamp = latest_timestamp.tz_localize(None)
             self.metrics['last_data_time'] = latest_timestamp
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error parsing timestamps: {e}")
             return {
                 'status': 'ERROR',

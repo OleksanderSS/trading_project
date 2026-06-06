@@ -122,7 +122,7 @@ class EnsembleSelector:
                 return self._create_simple_average_ensemble()
             self.logger.error(f"Unknown ensemble method: {method_name}")
             return None
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to create '{method_name}' instance: {e}", exc_info=True)
             raise RuntimeError(f"Failed to create '{method_name}' instance: {e}") from e
 

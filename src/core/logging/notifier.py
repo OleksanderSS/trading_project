@@ -81,7 +81,7 @@ class UniversalNotifier:
                     async with session.post(url, json=payload) as resp:
                         if resp.status != 200:
                             logger.error(f"Telegram message failed: {await resp.text()}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error sending to Telegram: {e}")
 
     async def _send_discord(self, message: str, image_path: str | None = None):
@@ -106,7 +106,7 @@ class UniversalNotifier:
                     async with session.post(webhook_url, json=payload) as resp:
                         if resp.status not in [200, 204]:
                             logger.error(f"Discord message failed: {await resp.text()}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error sending to Discord: {e}")
 
     def sync_send(self, message: str, level: str = "INFO"):

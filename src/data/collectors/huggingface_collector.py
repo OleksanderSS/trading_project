@@ -3,6 +3,7 @@ HuggingFace Data Collector
 Collects datasets from HuggingFace
 """
 import hashlib
+import os
 from typing import Any
 
 import pandas as pd
@@ -27,6 +28,12 @@ class HuggingfaceCollector(BaseCollector):
         self.subset_name = self.configs.get('subset_name')
         self.split = self.configs.get('split', 'train')
         self.hash_keys = self.configs.get('hash_keys', ['text', 'timestamp'])
+        # Get HF_KEY from environment
+        self.hf_key = os.getenv('HF_KEY')
+        if self.hf_key:
+            self.logger.info('[HuggingFace] HF_KEY found in environment')
+        else:
+            self.logger.warning('[HuggingFace] HF_KEY not found in environment')
 
     async def run(self, tickers: list[str] | None=None, **kwargs
         ) ->pd.DataFrame | None:
@@ -45,7 +52,7 @@ class HuggingfaceCollector(BaseCollector):
             f"[HuggingFace] Loading dataset '{self.dataset_name}'...")
         try:
             raw_data = await self._fetch_from_huggingface()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'[HuggingFace] Network error during dataloader: {e}')
             raise RuntimeError("HuggingFace dataset loading failed") from e
@@ -101,7 +108,7 @@ class HuggingfaceCollector(BaseCollector):
             try:
                 df = dataset.to_pandas()
                 records = df.to_dict('records')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка конвертації в pandas: {e}', exc_info=True)
                 self.logger.warning(
                     '[HuggingFace] to_pandas() native structure unavailable, using custom fallback mapping...'
@@ -110,7 +117,7 @@ class HuggingfaceCollector(BaseCollector):
             self.logger.info(
                 f'[HuggingFace] ✅ Loaded {len(records)} structural records.')
             return records
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(
                 f'[HuggingFace] Dataset load execution exception: {e}', exc_info=True)
 

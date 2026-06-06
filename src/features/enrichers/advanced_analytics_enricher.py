@@ -34,11 +34,10 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
             'weight': 0.15, 'direction': 'negative'}})
         try:
             self.macro_calculator = MacroScoreCalculator(macro_indicators)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Failed to initialize MacroScoreCalculator: {e}')
             self.macro_calculator = None
-            raise
         phase_config = self.config.get('market_phase', {'indicators': {
             'volatility': 'VOLATILITY_20', 'trend': 'SMA_50', 'regime':
             'MARKET_REGIME'}, 'rules': [{'condition':
@@ -50,11 +49,10 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
             'volatile_bear'}, {'condition': 'True', 'phase': 'neutral'}]})
         try:
             self.phase_analyzer = MarketPhaseAnalyzer(phase_config)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Failed to initialize MarketPhaseAnalyzer: {e}')
             self.phase_analyzer = None
-            raise
         logger.info('AdvancedAnalyticsEnricher initialized')
 
     @property
@@ -117,7 +115,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
             logger.info(
                 f"Added sentiment statistics: mean={stats['mean']:.3f}, std={stats['std']:.3f}"
                 )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error calculating sentiment stats: {e}',
                 exc_info=True)
 
@@ -144,7 +142,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
                 logger.info(
                     f"Added macro composite score (range: [{df_enriched['macro_composite_score'].min():.1f}, {df_enriched['macro_composite_score'].max():.1f}])"
                     )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error calculating macro composite score: {e}',
                 exc_info=True)
 
@@ -168,7 +166,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
             logger.info(
                 f"Detected market phase: {market_phase} (encoded as {df_enriched['market_phase'].iloc[0]})"
                 )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error detecting market phase: {e}', exc_info=True)
 
     def _get_phase_mapping(self) ->dict[str, int]:

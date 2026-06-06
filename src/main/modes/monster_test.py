@@ -105,7 +105,7 @@ class MonsterTestMode(BaseMode):
             self.logger.info("--- MONSTER TEST Completed Successfully ---")
             return {'status': 'success', 'report': final_report}
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.exception(f"[MonsterTest] A critical error occurred: {e}")
             return {'status': 'failed', 'error': str(e)}
 

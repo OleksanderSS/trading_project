@@ -1,0 +1,31 @@
+{
+  "components": 1005,
+  "python_files": 611,
+  "status_counts": {
+    "ACTIVE_WITH_TEST_REFERENCE": 243,
+    "ACTIVE_RISKY": 400,
+    "ORPHAN_LOW_SIGNAL": 111,
+    "ACTIVE_NEEDS_RUNTIME_CONFIRMATION": 192,
+    "UNUSED_POTENTIALLY_VALUABLE": 41,
+    "ACTIVE_OUTPUT_UNTESTED": 18
+  },
+  "category_counts": {
+    "utility_or_unknown": 370,
+    "algorithm": 26,
+    "factory_registry": 8,
+    "analyzer": 58,
+    "validator": 63,
+    "pipeline_stage": 110,
+    "model": 142,
+    "collector": 28,
+    "context_map": 42,
+    "selector": 25,
+    "enricher": 37,
+    "calculator": 48,
+    "risk": 17,
+    "trading": 22,
+    "detector": 9
+  },
+  "reachable_files": 130,
+  "import_edges": 1060
+}

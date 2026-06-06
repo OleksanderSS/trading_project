@@ -40,7 +40,7 @@ class AnomalyEngine:
                 historical_data, cache_key)
             final = z_score * 0.4 + iso_score * 0.4 + lof_score * 0.2
             return float(np.clip(final, 0, 1))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Anomaly detection failure: {e}')
             return 0.5
@@ -67,7 +67,7 @@ class AnomalyEngine:
             final = (consensus_score * 0.35 + dispersion_score * 0.25 +
                 accuracy_score * 0.25 + volatility_factor * 0.15)
             return {'score': float(np.clip(final, 0, 1))}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Confidence calculation failure: {e}')
             return {'score': 0.5}
@@ -85,7 +85,7 @@ class AnomalyEngine:
             std = np.std(historical_data, axis=0)
             z_scores = np.abs((current_row - mean) / (std + 1e-06))
             return float(np.clip(float(np.mean(z_scores)) / 3.0, 0, 1))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return 0.5
 
@@ -102,7 +102,7 @@ class AnomalyEngine:
                 self._estimators_cache[iso_key] = iso_forest
             pred = self._estimators_cache[iso_key].predict(current_row)
             return 1.0 if pred[0] == -1 else 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return 0.5
 
@@ -119,7 +119,7 @@ class AnomalyEngine:
                 self._estimators_cache[lof_key] = lof
             pred = self._estimators_cache[lof_key].predict(current_row)
             return 1.0 if pred[0] == -1 else 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return 0.5
 
@@ -157,7 +157,7 @@ class AnomalyEngine:
                     accuracy = (trades_df['prediction_sign'] == trades_df['actual_sign']).mean()
                     return float(accuracy)
             return 0.5
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Diary accuracy fetch failed for {context_id}: {e}', exc_info=True)
             return 0.5
 
@@ -167,6 +167,6 @@ class AnomalyEngine:
                 vol = np.std(X.iloc[-10:, 0].values)
                 return float(1.0 / (1.0 + vol * 20))
             return 1.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error calculating volatility factor: {e}', exc_info=True)
             raise DataProcessingError(f"Volatility factor calculation failed: {e}") from e

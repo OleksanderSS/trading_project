@@ -165,7 +165,7 @@ class TemporalAlignmentChecker:
                 'status': 'OK',
                 'message': 'Macro release timing properly configured'
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error parsing release_time: {e}")
             return {
                 'status': 'ERROR',

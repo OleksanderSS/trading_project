@@ -58,7 +58,7 @@ class ActionTrigger:
             if results['action_required']:
                 await self._send_critical_alert(results)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error triggering actions: {e}", exc_info=True)
             raise DataProcessingError(f"Action triggering failed: {e}") from e
 
@@ -88,7 +88,7 @@ class ActionTrigger:
             # - PagerDuty alerts
             # - SMS alerts
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error sending critical alert: {e}", exc_info=True)
             raise DataProcessingError(f"Critical alert sending failed: {e}") from e
 

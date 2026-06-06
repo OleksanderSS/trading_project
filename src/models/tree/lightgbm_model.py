@@ -58,7 +58,7 @@ class LightGBMModel(BaseModel):
 
             return self.get_model_info()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"LightGBM training failed: {e}")
             raise
 
@@ -88,7 +88,7 @@ class LightGBMModel(BaseModel):
             joblib.dump(self, path)
             self.logger.info(f"LightGBM model saved to {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to save model: {e}")
             return False
 
@@ -119,6 +119,6 @@ class LightGBMModel(BaseModel):
             self.__dict__.update(loaded_model.__dict__)
             self.logger.info(f"LightGBM model loaded from {trusted_path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to load model: {e}")
             return False

@@ -14,7 +14,6 @@ import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 from src.utils.data_safety import safe_rolling
-from src.utils.math_safe import safe_div
 
 logger = ProjectLogger.get_logger("RiskMetrics")
 
@@ -38,7 +37,7 @@ def calculate_portfolio_returns(portfolio_data: dict[str, Any], market_data: pd.
 
         return returns
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Error calculating portfolio returns: {e}", exc_info=True)
         raise RuntimeError("Failed to calculate portfolio returns") from e
 
@@ -83,7 +82,7 @@ def calculate_portfolio_metrics(portfolio_data: dict[str, Any], market_data: pd.
             "current_drawdown_pct": current_drawdown,
         }
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Error: {e}", exc_info=True)
         raise RuntimeError("Failed to calculate portfolio metrics") from e
 
@@ -141,9 +140,70 @@ def calculate_position_metrics(portfolio_data: dict[str, Any], market_data: pd.D
 
         return position_metrics
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Error: {e}", exc_info=True)
         raise RuntimeError("Failed to calculate position metrics") from e
+
+
+def _determine_volatility_regime(volatility: float) -> tuple[str, str]:
+    """Determine volatility regime and level from volatility value."""
+    if volatility < 0.01:
+        return "low", "low"
+    elif volatility < 0.02:
+        return "normal", "normal"
+    elif volatility < 0.04:
+        return "elevated", "elevated"
+    else:
+        return "high", "high"
+
+
+def _determine_trend_regime(prices: pd.DataFrame | pd.Series) -> tuple[str, float]:
+    """Determine trend regime and strength from price data."""
+    if isinstance(prices, pd.Series):
+        prices = prices.to_frame()
+
+    short_ma = safe_rolling(prices, window=20, agg="mean")
+    long_ma = safe_rolling(prices, window=50, agg="mean")
+
+    if len(prices) < 2:
+        return "sideways", 0.0
+
+    latest_short = short_ma.iloc[-1].mean()
+    latest_long = long_ma.iloc[-1].mean()
+
+    if latest_short > latest_long:
+        trend_regime = "uptrend"
+        trend_strength = float((latest_short - latest_long) / latest_long) if latest_long > 0 else 0.0
+    elif latest_short < latest_long:
+        trend_regime = "downtrend"
+        trend_strength = float((latest_long - latest_short) / latest_short) if latest_short > 0 else 0.0
+    else:
+        trend_regime = "sideways"
+        trend_strength = 0.0
+
+    return trend_regime, trend_strength
+
+
+def _calculate_market_stress(recent_volatility: pd.DataFrame, historical_volatility: pd.DataFrame) -> bool:
+    """Calculate market stress indicator."""
+    try:
+        stress_mask = recent_volatility > (historical_volatility * 2)
+        return bool(stress_mask.any().any())
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        logger.error(f"Error determining market stress: {e}", exc_info=True)
+        return False
+
+
+def _calculate_volatility_spike(recent_volatility: pd.DataFrame, historical_volatility: pd.DataFrame) -> float:
+    """Calculate volatility spike ratio."""
+    try:
+        ratio = (recent_volatility / historical_volatility).replace([float("inf"), -float("inf")], np.nan)
+        finite_values = ratio.to_numpy(dtype=float)
+        finite_values = finite_values[np.isfinite(finite_values)]
+        return float(finite_values.max()) if finite_values.size > 0 else 0.0
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        logger.error(f"Error calculating volatility spike: {e}", exc_info=True)
+        return 0.0
 
 
 def analyze_market_conditions(market_data: pd.DataFrame) -> dict[str, Any]:
@@ -164,66 +224,19 @@ def analyze_market_conditions(market_data: pd.DataFrame) -> dict[str, Any]:
 
         # returns.std() returns a Series for multiple assets; reduce to a scalar
         volatility_series = returns.std()
-        volatility = float(volatility_series.mean() * np.sqrt(252))
-
-        if volatility < 0.01:
-            volatility_regime = "low"
-            volatility_level = "low"
-        elif volatility < 0.02:
-            volatility_regime = "normal"
-            volatility_level = "normal"
-        elif volatility < 0.04:
-            volatility_regime = "elevated"
-            volatility_level = "elevated"
+        if isinstance(volatility_series, (pd.Series, pd.DataFrame)):
+            volatility = float(volatility_series.mean() * np.sqrt(252))
         else:
-            volatility_regime = "high"
-            volatility_level = "high"
+            volatility = float(volatility_series * np.sqrt(252))
 
-        prices = close_df
-        short_ma = safe_rolling(prices, window=20, agg="mean")
-        long_ma = safe_rolling(prices, window=50, agg="mean")
-
-        if (long_ma > short_ma).any().any():
-            trend_regime = "uptrend"
-            trend_strength = (long_ma - short_ma) / short_ma
-        elif (long_ma < short_ma).any().any():
-            trend_regime = "downtrend"
-            trend_strength = (short_ma - long_ma) / long_ma
-        else:
-            trend_regime = "sideways"
-            trend_strength = 0.0
+        volatility_regime, volatility_level = _determine_volatility_regime(volatility)
+        trend_regime, trend_strength = _determine_trend_regime(close_df)
 
         recent_volatility = safe_rolling(returns, window=5, agg="std")
         historical_volatility = safe_rolling(returns, window=20, agg="std")
 
-        # Determine market stress as a boolean (any asset showing a 2x spike)
-        try:
-            stress_mask = recent_volatility > (historical_volatility * 2)
-            market_stress = bool(stress_mask.any().any())
-        except Exception as e:
-            logger.error(f"Error determining market stress: {e}", exc_info=True)
-            market_stress = False
-
-        # Volatility spike: take the maximum ratio across assets as a scalar
-        try:
-            ratio = (recent_volatility / historical_volatility).replace([float("inf"), -float("inf")], np.nan)
-            finite_values = ratio.to_numpy(dtype=float)
-            finite_values = finite_values[np.isfinite(finite_values)]
-            volatility_spike = float(finite_values.max()) if finite_values.size > 0 else 0.0
-        except Exception as e:
-            logger.error(f"Error calculating volatility spike: {e}", exc_info=True)
-            volatility_spike = 0.0
-
-        # Trend strength: mean relative MA difference across assets
-        try:
-            ma_diff = long_ma - short_ma
-            if len(ma_diff) > 0:
-                trend_strength = float(safe_div(ma_diff.mean(axis=1).iloc[-1], short_ma.mean(axis=1).iloc[-1]))
-            else:
-                trend_strength = 0.0
-        except Exception as e:
-            logger.error(f"Error calculating trend strength: {e}", exc_info=True)
-            trend_strength = 0.0
+        market_stress = _calculate_market_stress(recent_volatility, historical_volatility)
+        volatility_spike = _calculate_volatility_spike(recent_volatility, historical_volatility)
 
         return {
             "volatility_regime": volatility_regime,
@@ -236,6 +249,6 @@ def analyze_market_conditions(market_data: pd.DataFrame) -> dict[str, Any]:
             "volatility_spike": volatility_spike,
         }
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Error analyzing market conditions: {e}", exc_info=True)
         raise RuntimeError("Failed to analyze market conditions") from e

@@ -56,7 +56,7 @@ class MarketContextAnalyzer(IAnalyzer):
                 try:
                     value = getattr(self, calc_method_name)(data, **kwargs)
                     context_vector[feature] = value
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     logger.warning(
                         f"Could not calculate feature '{feature}': {e}")

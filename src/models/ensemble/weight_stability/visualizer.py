@@ -75,5 +75,5 @@ class WeightStabilityVisualizer:
             else:
                 plt.show()
             plt.close()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting stability metrics: {e}")

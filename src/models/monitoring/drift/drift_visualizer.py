@@ -88,7 +88,7 @@ class DriftVisualizer:
         except ImportError:
             self.logger.warning("matplotlib/seaborn not available, skipping visualization")
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting distribution drift: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -156,7 +156,7 @@ class DriftVisualizer:
         except ImportError:
             self.logger.warning("matplotlib not available, skipping visualization")
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting performance trend: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -177,7 +177,6 @@ class DriftVisualizer:
         """
         try:
             import matplotlib.pyplot as plt
-            import seaborn as sns
 
             fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
@@ -218,7 +217,7 @@ class DriftVisualizer:
         except ImportError:
             self.logger.warning("matplotlib/seaborn not available, skipping visualization")
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting confidence drift: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -324,7 +323,7 @@ class DriftVisualizer:
         except ImportError:
             self.logger.warning("matplotlib not available, skipping visualization")
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting drift summary dashboard: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -388,7 +387,7 @@ class DriftVisualizer:
         except ImportError:
             self.logger.warning("matplotlib not available, skipping visualization")
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting drift timeline: {e}")
             return {'status': 'error', 'error': str(e)}
 

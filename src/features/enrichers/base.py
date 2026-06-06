@@ -87,7 +87,7 @@ class BaseEnricher(ABC):
             self.logger.warning(f"⚠️ {self.__class__.__name__} validation error: {e}")
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             # Unexpected error - log error and raise EnricherError
             self.logger.error(f"❌ {self.__class__.__name__} unexpected error: {e}", exc_info=True)
             raise EnricherError(f"Enricher {self.__class__.__name__} failed: {e}") from e

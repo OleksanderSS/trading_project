@@ -31,7 +31,7 @@ class HybridDataManager:
             features_df = pd.read_parquet(features_path)
             self.logger.info(f'Loaded features: {features_df.shape}')
             return features_df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'Error loading features from {features_path}: {e}', exc_info=True)
             return pd.DataFrame()
@@ -46,7 +46,7 @@ class HybridDataManager:
             targets_df = pd.read_parquet(targets_path)
             self.logger.info(f'Loaded targets: {targets_df.shape}')
             return targets_df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error loading targets from {targets_path}: {e}', exc_info=True
                 )
             return pd.DataFrame()
@@ -93,6 +93,6 @@ class HybridDataManager:
             current = set(zip(pd.to_datetime(new_features['datetime']).dt.
                 tz_localize(None), new_features['ticker'], strict=False))
             return len(current - known) > 0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error checking for new data: {e}', exc_info=True)
             return True

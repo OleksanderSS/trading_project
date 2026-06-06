@@ -111,14 +111,33 @@ class SignificanceFeaturesEnricher(BaseEnricher):
             df_out['ticker'] = 'default'
 
         # Rolling count of significant events
-        df_out['significant_events_7d'] = df_out.groupby('ticker')[self.significance_col].rolling(window=7, min_periods=1).sum().reset_index(level=0, drop=True)
-        df_out['significant_events_30d'] = df_out.groupby('ticker')[self.significance_col].rolling(window=30, min_periods=1).sum().reset_index(level=0, drop=True)
+        # ✅ FIX: use transform to avoid duplicate index issues with groupby+rolling+reset_index
+        df_out['significant_events_7d'] = (
+            df_out.groupby('ticker')[self.significance_col]
+            .transform(lambda s: s.rolling(window=7, min_periods=1).sum())
+        )
+        df_out['significant_events_30d'] = (
+            df_out.groupby('ticker')[self.significance_col]
+            .transform(lambda s: s.rolling(window=30, min_periods=1).sum())
+        )
 
         # Days since the last significant event
-        def _days_since_last_event(series):
-            return series.groupby((series != series.shift()).cumsum()).cumcount()
+        # ✅ FIX: simple cumcount without nested groupby to avoid duplicate index issues
+        def _days_since_last_event(series: pd.Series) -> pd.Series:
+            result = pd.Series(0, index=series.index, dtype=float)
+            counter = 0
+            for i, val in enumerate(series):
+                if val:
+                    counter = 0
+                else:
+                    counter += 1
+                result.iloc[i] = counter
+            return result
 
-        df_out['days_since_last_significant'] = df_out.groupby('ticker')[self.significance_col].transform(_days_since_last_event)
+        df_out['days_since_last_significant'] = (
+            df_out.groupby('ticker')[self.significance_col]
+            .transform(_days_since_last_event)
+        )
 
         # Significance intensity
         df_out['significance_intensity_7d'] = df_out['significant_events_7d'] / 7.0

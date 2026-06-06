@@ -33,7 +33,7 @@ class DataVersioning:
             try:
                 with open(self.metadata_file) as f:
                     return json.load(f)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Error loading metadata: {e}')
                 raise RuntimeError(
                     f"Failed to load data version metadata from {self.metadata_file}"
@@ -45,7 +45,7 @@ class DataVersioning:
         try:
             with open(self.metadata_file, 'w') as f:
                 json.dump(self.metadata, f, indent=2, default=str)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error saving metadata: {e}')
 
     def _get_file_hash(self, file_path: Path) ->str:
@@ -55,7 +55,7 @@ class DataVersioning:
         try:
             with open(file_path, 'rb') as f:
                 return hashlib.sha256(f.read()).hexdigest()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error calculating hash for {file_path}: {e}')
             return ''
 
@@ -215,7 +215,7 @@ class DataVersioning:
                             get('reason', 'unknown')})
                         if file_info['file_key'] in self.metadata:
                             del self.metadata[file_info['file_key']]
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     results['failed_deletions'].append({'file_path': str(
                         file_path), 'error': str(e)})

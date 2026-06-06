@@ -28,10 +28,10 @@ async def test_drift_analyzer_detection():
 @pytest.mark.asyncio
 async def test_drift_analyzer_error():
     calculator = MagicMock()
-    # Імітуємо помилку в калькуляторі
-    calculator.perform_ks_test.side_effect = Exception("KS test failed")
-    
+    # Імітуємо помилку в калькуляторі, яку обробляє DriftAnalyzer
+    calculator.perform_ks_test.side_effect = ValueError("KS test failed")
+
     analyzer = DriftAnalyzer(calculator, min_samples=2)
-    
+
     with pytest.raises(DataProcessingError, match="Prediction drift detection failed"):
         await analyzer.detect_prediction_drift(np.array([0.1]), np.array([0.1, 0.2]), None)

@@ -202,7 +202,8 @@ class StackedEnsemble:
             total = sum(inverse_mape)
             weights = np.array([w / total for w in inverse_mape])
 
-        else:  # equal weights
+        else:
+            # equal weights
             weights = np.ones(len(self.feature_names)) / len(self.feature_names)
 
         # Generate prediction
@@ -403,7 +404,7 @@ def _align_predictions_and_confidences(
     model_predictions: dict[str, list[float] | np.ndarray],
     model_confidences: dict[str, list[float] | np.ndarray] | None
 ) -> dict[str, Any]:
-    """Align predictions and confidences to same length."""
+    """Align predictions and confidences to same length and return as stacked 2D arrays."""
     max_len = max((len(v) for v in model_predictions.values()), default=0)
 
     aligned_preds = {}
@@ -422,9 +423,13 @@ def _align_predictions_and_confidences(
         aligned_conf[m] = c
         model_order.append(m)
 
+    # Convert dictionaries to stacked 2D numpy arrays of shape (n_models, n_samples)
+    preds_array = np.array([aligned_preds[m] for m in model_order])
+    conf_array = np.array([aligned_conf[m] for m in model_order])
+
     return {
-        'predictions': aligned_preds,
-        'confidences': aligned_conf,
+        'predictions': preds_array,
+        'confidences': conf_array,
         'model_order': model_order
     }
 
@@ -449,7 +454,8 @@ def _generate_ensemble_signal(stacked_preds: np.ndarray, effective_weights: np.n
         return np.nanmedian(stacked_preds, axis=0)
     elif method == "mean":
         return np.nanmean(stacked_preds, axis=0)
-    else:  # weighted
+    else:
+        # weighted
         return np.nansum(stacked_preds * effective_weights, axis=0)
 
 def _apply_divergence_penalty(signal: np.ndarray, divergence: np.ndarray, divergence_shrinkage: bool) -> np.ndarray:

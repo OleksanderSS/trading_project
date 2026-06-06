@@ -29,59 +29,57 @@ class ModelHealthEvaluator:
         self.logger = logger
         self.logger.info("✅ ModelHealthEvaluator initialized")
 
+    def _calculate_baseline_score(self, baseline_result: dict[str, Any]) -> float:
+        """Calculate health score from baseline analysis."""
+        if baseline_result.get('status') == 'completed':
+            if not baseline_result.get('baseline_dominance_detected', True):
+                return 0.8  # Good - no baseline dominance
+            return 0.3  # Poor - baseline dominates
+        return 0.0
+
+    def _calculate_regime_score(self, regime_result: dict[str, Any]) -> float:
+        """Calculate health score from regime analysis."""
+        if regime_result.get('status') == 'completed':
+            return regime_result.get('consistency_analysis', {}).get('overall_consistency', 0.5)
+        return 0.0
+
+    def _calculate_overfitting_score(self, overfitting_result: dict[str, Any]) -> float:
+        """Calculate health score from overfitting analysis."""
+        if overfitting_result.get('status') == 'completed':
+            signal_count = overfitting_result.get('overfitting_signals', {}).get('total_signals', 0)
+            return max(0.0, 1.0 - (signal_count * 0.2))
+        return 0.0
+
+    def _calculate_drift_score(self, drift_result: dict[str, Any]) -> float:
+        """Calculate health score from drift analysis."""
+        if drift_result.get('status') == 'completed':
+            drift_status = drift_result.get('drift_status', 'stable')
+            if drift_status == 'stable':
+                return 0.9
+            elif 'low' in drift_status:
+                return 0.7
+            elif 'medium' in drift_status:
+                return 0.5
+            elif 'high' in drift_status:
+                return 0.3
+            elif 'critical' in drift_status:
+                return 0.1
+            return 0.5
+        return 0.0
+
     def calculate_overall_health_score(self, analysis_results: dict[str, Any]) -> float:
         """Calculate overall model health score from all analysis results."""
-
         try:
             health_scores = []
+            health_scores.append(self._calculate_baseline_score(analysis_results.get('baseline', {})))
+            health_scores.append(self._calculate_regime_score(analysis_results.get('regime', {})))
+            health_scores.append(self._calculate_overfitting_score(analysis_results.get('overfitting', {})))
+            health_scores.append(self._calculate_drift_score(analysis_results.get('drift', {})))
 
-            # Baseline analysis score
-            baseline_result = analysis_results.get('baseline', {})
-            if baseline_result.get('status') == 'completed':
-                # Score based on whether complex model dominates baselines
-                if not baseline_result.get('baseline_dominance_detected', True):
-                    health_scores.append(0.8)  # Good - no baseline dominance
-                else:
-                    health_scores.append(0.3)  # Poor - baseline dominates
-
-            # Regime analysis score
-            regime_result = analysis_results.get('regime', {})
-            if regime_result.get('status') == 'completed':
-                consistency = regime_result.get('consistency_analysis', {}).get('overall_consistency', 0.5)
-                health_scores.append(consistency)
-
-            # Overfitting analysis score
-            overfitting_result = analysis_results.get('overfitting', {})
-            if overfitting_result.get('status') == 'completed':
-                signal_count = overfitting_result.get('overfitting_signals', {}).get('total_signals', 0)
-                # Inverse relationship - fewer signals = better health
-                overfitting_score = max(0.0, 1.0 - (signal_count * 0.2))
-                health_scores.append(overfitting_score)
-
-            # Drift analysis score
-            drift_result = analysis_results.get('drift', {})
-            if drift_result.get('status') == 'completed':
-                drift_status = drift_result.get('drift_status', 'stable')
-                if drift_status == 'stable':
-                    health_scores.append(0.9)
-                elif 'low' in drift_status:
-                    health_scores.append(0.7)
-                elif 'medium' in drift_status:
-                    health_scores.append(0.5)
-                elif 'high' in drift_status:
-                    health_scores.append(0.3)
-                elif 'critical' in drift_status:
-                    health_scores.append(0.1)
-                else:
-                    health_scores.append(0.5)
-
-            # Calculate overall score
             if health_scores:
                 return float(np.mean(health_scores))
-            else:
-                return 0.5  # Default score if no analysis completed
-
-        except Exception as e:
+            return 0.5  # Default score if no analysis completed
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating overall health score: {e}")
             return 0.5
 
@@ -143,7 +141,7 @@ class ModelHealthEvaluator:
 
             return recommendations
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating comprehensive recommendations: {e}")
             return recommendations
 
@@ -172,7 +170,7 @@ class ModelHealthEvaluator:
 
             return high_severity_count >= 2
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error determining action required: {e}")
             return False
 
@@ -190,6 +188,6 @@ class ModelHealthEvaluator:
                 for keyword in retraining_keywords
             )
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error determining retraining needed: {e}")
             return False

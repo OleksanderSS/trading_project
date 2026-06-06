@@ -31,7 +31,7 @@ class FeatureLoader:
                         content = await f.read()
                         data = json.loads(content)
                         return data.get("selected_features", [])
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f"Виникла помилка: {e}", exc_info=True)
                     self.logger.warning(f"Failed to load {candidate}: {e}", exc_info=True)
                     raise
@@ -46,7 +46,7 @@ class FeatureLoader:
                     with open(candidate, encoding="utf-8") as f:
                         data = json.load(f)
                         return data.get("selected_features", [])
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f"Виникла помилка: {e}", exc_info=True)
                     self.logger.warning(f"Failed to load {candidate}: {e}", exc_info=True)
                     raise

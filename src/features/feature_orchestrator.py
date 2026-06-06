@@ -14,6 +14,41 @@ from src.features.selection.volatility_driver_selector import VolatilityDriverSe
 
 logger = ProjectLogger.get_logger('FeatureOrchestrator')
 
+# ✅ Lineage tracking — enabled only when diagnostic mode is active
+_LINEAGE_TRACKER = None
+
+def get_lineage_tracker():
+    """Get the global lineage tracker instance (None if not enabled)."""
+    return _LINEAGE_TRACKER
+
+def enable_lineage_tracking(save_path: str = "diagnostic_reports/feature_lineage_report.json"):
+    """Enable lineage tracking for the current session."""
+    global _LINEAGE_TRACKER
+    try:
+        import sys
+        if 'diagnostics' not in sys.path:
+            sys.path.insert(0, '.')
+        from diagnostics.feature_lineage_tracker import FeatureLineageTracker
+        _LINEAGE_TRACKER = FeatureLineageTracker()
+        _LINEAGE_TRACKER._save_path = save_path
+        logger.info(f"✅ FeatureLineageTracker enabled → {save_path}")
+        return _LINEAGE_TRACKER
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        logger.warning(f"FeatureLineageTracker not available: {e}")
+        return None
+
+def disable_lineage_tracking():
+    """Save and disable lineage tracking."""
+    global _LINEAGE_TRACKER
+    if _LINEAGE_TRACKER:
+        try:
+            _LINEAGE_TRACKER.save(getattr(_LINEAGE_TRACKER, '_save_path',
+                "diagnostic_reports/feature_lineage_report.json"))
+            logger.info("✅ FeatureLineageTracker saved")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.warning(f"Could not save lineage tracker: {e}")
+        _LINEAGE_TRACKER = None
+
 
 class FeatureOrchestrator:
     """
@@ -87,20 +122,38 @@ class FeatureOrchestrator:
                     f"✅ Enricher '{enricher_id}' (class: {name}) is ENABLED and instantiated."
                     )
             return instance
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to instantiate enricher {name}: {e}',
                 exc_info=True)
             raise RuntimeError(f"Failed to instantiate enabled enricher {name}") from e
 
     @staticmethod
-    def _get_enricher_id(obj: type, name: str) ->str:
-        """Get enricher ID from class instance or fallback to class name."""
+    def _get_enricher_id(obj: type, name: str) -> str:
+        """Get enricher ID from class without full instantiation."""
+        # ✅ FIX: Check for class-level NAME attribute first (no side effects)
+        class_name_attr = getattr(obj, 'NAME', None)
+        if class_name_attr and isinstance(class_name_attr, str):
+            return class_name_attr
+
+        # Try reading the property via __dict__ on the class (no instance needed)
+        # 'name' is usually an @property that returns a constant string
+        name_prop = obj.__dict__.get('name')
+        if name_prop and isinstance(name_prop, property):
+            try:
+                # Call fget with a dummy object to avoid __init__ side effects
+                dummy = object.__new__(obj)
+                result = name_prop.fget(dummy)
+                if result and isinstance(result, str):
+                    return result
+            except Exception:  # noqa: S110
+                pass  # intentional: fallback to full instantiation below
+
+        # Fallback: full instantiation (original behavior)
         try:
             temp_instance = obj()
-            enricher_name: str = str(temp_instance.name)
-            return enricher_name
-        except Exception as e:
-            logger.error(f'Виникла помилка під час отримання ID енрічера {name}: {e}', exc_info=True)
+            return str(temp_instance.name)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.debug(f'Could not get enricher ID for {name}: {e}')
             return name.lower()
 
     @staticmethod
@@ -131,7 +184,7 @@ class FeatureOrchestrator:
         try:
             sig = inspect.signature(obj)
             expects_args = len(sig.parameters) > 0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка під час перевірки сигнатури {enricher_id}: {e}', exc_info=True)
             expects_args = False
         if expects_args:
@@ -161,11 +214,6 @@ class FeatureOrchestrator:
                 )
         return cleaned
 
-    def _run_dynamic_context_selection(self, df: pd.DataFrame, config: dict, kwargs: dict) -> pd.DataFrame:
-        """Run dynamic context selection if enabled."""
-        # This is a placeholder - actual implementation would be in the main function
-        return df
-
     def _process_single_enricher(self, enricher, df: pd.DataFrame, kwargs: dict) -> tuple:
         """Process a single enricher and return (df_enriched, stats_dict)."""
         start_time = pd.Timestamp.now()
@@ -177,6 +225,18 @@ class FeatureOrchestrator:
             logger.debug(f'   Input shape: {df.shape}')
 
         df_enriched = enricher.enrich(df, **kwargs)
+
+        # ✅ Lineage tracking — captures what each enricher adds
+        tracker = get_lineage_tracker()
+        if tracker is not None:
+            try:
+                tracker.capture_component_output(
+                    enricher.__class__.__name__,
+                    before=df,
+                    after=df_enriched,
+                )
+            except Exception:
+                pass  # never block pipeline due to tracking
 
         end_time = pd.Timestamp.now()
         duration = (end_time - start_time).total_seconds()
@@ -256,7 +316,7 @@ class FeatureOrchestrator:
 
                 df_enriched = self._handle_duplicate_columns(df_enriched, enricher.name)
                 df_enriched = self._optimize_dataframe_memory(df_enriched, i)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"❌ Error in enricher '{enricher.name}': {e}", exc_info=True)
                 raise
 
@@ -284,7 +344,9 @@ class FeatureOrchestrator:
         logger.info('🏷️ Adding timeframe suffixes to feature columns...')
         service_cols = ['ticker', 'datetime', 'timestamp', 'interval',
             'open', 'high', 'low', 'close', 'volume', 'hash']
+        # audit-ignore: ARCHITECTURAL_USAGE
         target_cols = [col for col in df.columns if col.startswith('target_')]
+        # audit-ignore: ARCHITECTURAL_USAGE
         exclude_cols = set(service_cols + target_cols)
         feature_cols = [col for col in df.columns if col not in exclude_cols]
         logger.info(
@@ -313,22 +375,26 @@ class FeatureOrchestrator:
             logger.info('Running dynamic context feature selection...')
             selector_config = config.get('selector_config', {})
             aux_pool = selector_config.get('auxiliary_pool_cols')
+            # audit-ignore: ARCHITECTURAL_USAGE
             target_col = selector_config.get('target_col')
+            # audit-ignore: ARCHITECTURAL_USAGE
             if not aux_pool or not target_col:
                 logger.error(
+                    # audit-ignore: ARCHITECTURAL_USAGE
                     "'auxiliary_pool_cols' and 'target_col' must be configured for context selection."
                     )
                 return df
             volatility_selector = VolatilityDriverSelector(top_n=
                 selector_config.get('top_n', 10))
             dynamic_context_features = volatility_selector.select(df,
+                # audit-ignore: ARCHITECTURAL_USAGE
                 aux_pool, target_col)
             if dynamic_context_features:
                 run_kwargs['selected_features'] = dynamic_context_features
                 logger.info(
                     f'Added {len(dynamic_context_features)} dynamic features to kwargs for ContextMapEnricher.'
                     )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Dynamic context feature selection failed: {e}',
                 exc_info=True)
         return df

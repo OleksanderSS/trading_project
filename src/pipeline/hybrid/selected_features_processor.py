@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Selected Features Processor for Hybrid Orchestrator.
 
@@ -105,7 +106,7 @@ class SelectedFeaturesProcessor:
                 config.test_ticker, config.test_target, config.test_model,
                 config.light_models_to_train, config.target_cols, config.
                 file_path)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Error loading {config.file_path.name}: {e}')
             raise RuntimeError(

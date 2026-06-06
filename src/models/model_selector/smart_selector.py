@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 
-warnings.filterwarnings('ignore')
 from src.core.logging.logger import ProjectLogger
 
+warnings.filterwarnings('ignore')
 logger = ProjectLogger.get_logger('SmartModelSelector')
 
 
@@ -33,7 +33,7 @@ class SmartModelSelector:
                 return json.load(f)
         except FileNotFoundError:
             return {}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.warning(f'Помилка завантаження історії: {e}')
             raise RuntimeError(
                 f"Failed to load model performance history from {self.results_file}"
@@ -43,7 +43,7 @@ class SmartModelSelector:
         try:
             with open(file_path) as f:
                 return json.load(f)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Не вдалося завантажити карту компетенцій: {e}')
             raise
 
@@ -51,7 +51,7 @@ class SmartModelSelector:
         try:
             with open(self.results_file, 'w') as f:
                 json.dump(self.performance_history, f, indent=2, default=str)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Помилка збереження історії: {e}')
 
     def train_error_meta_model(self, model_name: str, ticker: str):
@@ -161,7 +161,7 @@ class SmartModelSelector:
             context_for_pred = pd.get_dummies(pd.DataFrame([context]),
                 columns=context.keys()).to_numpy()
             return self.error_meta_model.predict(context_for_pred)[0]
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error predicting expected error: {e}', exc_info=True)
             return 0.5
 

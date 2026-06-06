@@ -139,7 +139,7 @@ class CorrelationEngine:
             try:
                 pred = model.predict(X)
                 predictions[model_name] = pred
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 # Keep behavior (skip model), but preserve stack trace for debugging.
                 self.logger.error(
                     f"Error getting predictions from {model_name}: {e}",
@@ -168,7 +168,7 @@ class CorrelationEngine:
                         correlation_matrix[model1][model2] = correlation
 
             return correlation_matrix
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             # Returning {} is a valid fallback for callers, but don't hide why.
             self.logger.error(
                 f"Error calculating correlation matrix: {e}", exc_info=True
@@ -216,7 +216,7 @@ class CorrelationEngine:
             metrics['overall_diversity'] = self.calculate_overall_diversity_score(metrics)
 
             return metrics
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f"Error calculating diversity metrics: {e}", exc_info=True
             )
@@ -232,7 +232,7 @@ class CorrelationEngine:
                 entropy = -np.sum(value_counts * np.log2(value_counts + 1e-10))
                 entropies.append(entropy)
             return np.mean(entropies) if entropies else 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating prediction entropy: {e}",
                 exc_info=True)
             return 0.0
@@ -251,7 +251,7 @@ class CorrelationEngine:
                         disagreements.append(disagreement)
 
             return np.mean(disagreements) if disagreements else 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating average disagreement: {e}",
                 exc_info=True)
             return 0.0
@@ -261,7 +261,7 @@ class CorrelationEngine:
         try:
             sample_variances = pred_df.var(axis=1)
             return np.mean(sample_variances)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating prediction variance: {e}",
                 exc_info=True)
             return 0.0
@@ -280,7 +280,7 @@ class CorrelationEngine:
 
             avg_correlation = np.mean(correlations) if correlations else 0.0
             return avg_correlation
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating correlation penalty: {e}",
                 exc_info=True)
             return 0.0
@@ -303,7 +303,7 @@ class CorrelationEngine:
                 overall_score = 0.0
 
             return overall_score
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating overall diversity score: {e}"
                 , exc_info=True)
             return 0.0
@@ -329,7 +329,7 @@ class CorrelationEngine:
                             })
 
             return redundant_pairs
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error finding redundant pairs: {e}")
             raise RuntimeError("Failed to find redundant model pairs") from e
 
@@ -349,7 +349,7 @@ class CorrelationEngine:
                     optimal_subsets[f'size_{subset_size}'] = best_subset
 
             return optimal_subsets
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error selecting optimal subsets: {e}")
             raise RuntimeError("Failed to select optimal model subsets") from e
 
@@ -410,7 +410,7 @@ class CorrelationEngine:
                 }
 
             return best_subset
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error finding best subset: {e}")
             raise RuntimeError("Failed to find best model subset") from e
 
@@ -420,7 +420,7 @@ class CorrelationEngine:
         try:
             subset_metrics = self.calculate_diversity_metrics(predictions, correlation_matrix)
             return subset_metrics.get('overall_diversity', 0.0)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating subset diversity score: {e}",
                 exc_info=True)
             return 0.0
@@ -440,7 +440,7 @@ class CorrelationEngine:
                 return optimal_subset['models']
 
             return list(models.keys())[:max_models]
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error selecting diverse subset: {e}")
             return list(models.keys())[:max_models]
 
@@ -468,7 +468,7 @@ class CorrelationEngine:
                 adjusted_weights = {name: weight / total_weight for name, weight in adjusted_weights.items()}
 
             return adjusted_weights
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error adjusting weights by correlation: {e}")
             return base_weights
 
@@ -497,7 +497,7 @@ class CorrelationEngine:
             }
 
             return summary
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error getting analysis summary: {e}")
             return {'error': str(e)}
 
@@ -514,7 +514,7 @@ class CorrelationEngine:
 
             sorted_pairs = sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)
             return [pair[0] for pair in sorted_pairs[:5]]
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error getting most common redundant pairs: {e}")
             raise RuntimeError("Failed to get most common redundant pairs") from e
 
@@ -543,7 +543,7 @@ class CorrelationEngine:
                 return {'status': 'analyzed', 'trend': trend, 'slope': float(slope)}
 
             return {'status': 'insufficient_data'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing correlation trends: {e}")
             return {'status': 'error', 'error': str(e)}
 

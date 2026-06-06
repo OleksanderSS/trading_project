@@ -33,7 +33,7 @@ class BuyAndHoldBaseline(BaseBaseline):
             return {'model_type': 'buy_and_hold', 'predictions':
                 predictions, 'metrics': self._calculate_metrics(actual,
                 predictions), 'complexity_score': self.complexity_score}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error in BuyAndHoldBaseline: {e}", exc_info=True)
             raise DataProcessingError(f"BuyAndHoldBaseline evaluation failed: {e}") from e
 
@@ -72,7 +72,7 @@ class MovingAverageBaseline(BaseBaseline):
                     actual, best_predictions), 'complexity_score': self.
                     complexity_score, 'best_window': best_window}
             return {'model_type': 'moving_average', 'status': 'no_data'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error in MovingAverageBaseline: {e}", exc_info=True)
             raise DataProcessingError(f"MovingAverageBaseline evaluation failed: {e}") from e
 
@@ -103,6 +103,6 @@ class MeanReversionBaseline(BaseBaseline):
                 predictions, 'metrics': self._calculate_metrics(actual,
                 predictions), 'complexity_score': self.complexity_score,
                 'lookback_window': self.lookback_window}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error in MeanReversionBaseline: {e}", exc_info=True)
             raise DataProcessingError(f"MeanReversionBaseline evaluation failed: {e}") from e

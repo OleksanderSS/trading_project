@@ -24,7 +24,7 @@ class FeatureEngineeringNewsManager:
         try:
             news_clustered = cluster_news_simple(news_df, similarity_threshold=0.85, text_column="title")
             logger.info(f"✅ Clustered {len(news_df)} → {len(news_clustered)} news")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"News clustering failed: {e}. Falling back to unclustered news.", exc_info=True)
             news_clustered = news_df
 

@@ -1,16 +1,15 @@
 import logging
 
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
 # src/utils/feature_preparation.py
 """
 Utility functions for feature preparation and model-feature alignment.
 Ensures consistency between raw datasets and architecture-specific input requirements.
 """
-
-
-import numpy as np
-import pandas as pd
-
-from src.core.logging.logger import ProjectLogger
 
 # Initialize standardized project logger
 logger = ProjectLogger.get_logger("FeaturePreparation")

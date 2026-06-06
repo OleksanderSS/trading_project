@@ -37,7 +37,7 @@ class HistoryManager:
             if len(self.reference_predictions) < self.reference_window_size:
                 for record in list(self.prediction_history)[-len(predictions):]:
                     self.reference_predictions.append(record)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error updating prediction history: {e}")
             raise DataProcessingError("Failed to update prediction history") from e
 

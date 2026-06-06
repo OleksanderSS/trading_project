@@ -107,7 +107,7 @@ class SmartFeatureSelector:
                 scores.loc[ranked_features.head(top_n).index] += weight
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"Method {method_func.__name__} added weight {weight} to {top_n} features")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Feature selection method {method_func.__name__} failed for {regime_context_id}: {e}", exc_info=True)
 
         return scores
@@ -218,7 +218,8 @@ class SmartFeatureSelector:
             base_methods[self._random_forest_filter] = 1.5
         elif regime == 'trending':
             base_methods[self._correlation_filter] = 1.5  # Emphasize correlation
-        else:  # Normal regime
+        else:
+            # Normal regime
             base_methods[self._lgbm_filter] = 1.0
 
         return base_methods
@@ -250,7 +251,7 @@ class SmartFeatureSelector:
                             num_boost_round=params.pop('num_boost_round', 50))
             return pd.Series(model.feature_importance(importance_type='gain'),
                           index=features_df.columns).sort_values(ascending=False)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"LGBM filter failed: {e}")
             raise RuntimeError("LGBM feature importance filter failed") from e
 
@@ -295,7 +296,7 @@ class SmartFeatureSelector:
 
             model.fit(features_df, target_series)
             return pd.Series(model.feature_importances_, index=features_df.columns).sort_values(ascending=False)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Random Forest filter failed: {e}")
             raise RuntimeError("Random Forest feature importance filter failed") from e
 
@@ -306,6 +307,6 @@ class SmartFeatureSelector:
             # Normalize variances for comparison
             normalized_var = (variances - variances.min()) / (variances.max() - variances.min() + self.variance_epsilon)
             return normalized_var.sort_values(ascending=False)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Variance filter failed: {e}")
             raise RuntimeError("Variance feature filter failed") from e

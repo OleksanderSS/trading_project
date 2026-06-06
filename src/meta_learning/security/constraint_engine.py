@@ -130,7 +130,7 @@ class SecurityConstraintEngine:
                     violations.append(violation)
                     self._record_violation(violation)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error validating constraint {constraint_name}: {e}")
             self.error_handler.handle_error(
                 e,
@@ -237,7 +237,7 @@ class SecurityConstraintEngine:
 
                 return result
 
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Error in constraint validation for {agent_id}: {e}")
                 return {
                     'allowed': False,
@@ -261,7 +261,7 @@ class SecurityConstraintEngine:
                 self._constraints[constraint.name] = constraint
                 self.logger.info(f"✅ Added constraint: {constraint.name}")
                 return True
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Failed to add constraint {constraint.name}: {e}")
                 return False
 
@@ -284,7 +284,7 @@ class SecurityConstraintEngine:
                 else:
                     self.logger.warning(f"Constraint not found: {constraint_name}")
                     return False
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Failed to remove constraint {constraint_name}: {e}")
                 return False
 
@@ -530,7 +530,7 @@ class SecurityConstraintEngine:
             # This would integrate with the emergency stop system
             # For now, just log the event
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error triggering emergency stop: {e}")
 
     def _violation_to_dict(self, violation: ConstraintViolation) -> dict[str, Any]:

@@ -133,7 +133,7 @@ class ModelPool:
                     self.logger.debug(f"✅ Loaded model {model_id} into pool (size: {len(self.models)}/{self.max_models})")
                 return model
 
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.stats['load_errors'] += 1
                 self.logger.error(f"❌ Failed to load model {model_id}: {e}")
                 raise RuntimeError(f"Failed to load model {model_id}") from e

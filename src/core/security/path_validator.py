@@ -42,4 +42,4 @@ def validate_safe_path(
         return target_path
 
     except (ValueError, RuntimeError) as e:
-        raise PathValidationError(f"Invalid path encountered: {e}")
+        raise PathValidationError(f"Invalid path encountered: {e}") from e

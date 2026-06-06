@@ -73,7 +73,7 @@ class RiskParityAllocator:
                 alloc_params, assets)
             return self._build_result_dict(assets, weights, vols,
                 correlations, alloc_params)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Помилка розподілу: {e}', exc_info=True)
             return self._fallback_equal_weight(assets, str(e))
 
@@ -172,8 +172,8 @@ class RiskParityAllocator:
         def objective(weights):
             risk_contrib = self.calculate_risk_contribution(weights, vols,
                 correlations)
-            target_contrib = 1.0 / n_assets
-            return np.sum((risk_contrib - target_contrib) ** 2)
+            target_vol_contrib = 1.0 / n_assets
+            return np.sum((risk_contrib - target_vol_contrib) ** 2)
         return objective
 
     def _create_optimization_bounds(self, constraints: dict[str, Any],
@@ -221,7 +221,7 @@ class RiskParityAllocator:
             weights = self._hrp_recursive_allocation(list(range(n_assets)),
                 clustering.children_, vols, correlations)
             return np.array(weights)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'HRP calculation failed: {e}', exc_info=True)
             if len(vols) == 0:
                 return np.array([])
@@ -331,7 +331,7 @@ class RiskParityAllocator:
             else:
                 return self._handle_optimization_failure(result,
                     init_weights, method_name)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'{method_name} calculation failed: {e}',
                 exc_info=True)
             return self._get_fallback_weights(vols)
@@ -364,7 +364,7 @@ class RiskParityAllocator:
             weights = inv_vols / np.sum(inv_vols)
             weights = self._apply_constraints(weights, constraints)
             return weights
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Risk Parity calculation failed: {e}', exc_info=True)
             if len(vols) == 0:
                 return np.array([])
@@ -392,7 +392,7 @@ class RiskParityAllocator:
             scaled_weights = weights * scale_factor
             scaled_weights = scaled_weights / np.sum(scaled_weights)
             return np.asarray(scaled_weights)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Scaling to target volatility failed: {e}',
                 exc_info=True)
@@ -411,7 +411,7 @@ class RiskParityAllocator:
             weights = np.minimum(weights, max_weights)
             weights = weights / np.sum(weights)
             return weights
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Applying constraints failed: {e}',
                 exc_info=True)
@@ -433,7 +433,7 @@ class RiskParityAllocator:
                 return np.ones_like(weights) / len(weights)
             risk_contributions = weights * marginal_risks / portfolio_vol
             return np.asarray(risk_contributions)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Risk contribution calculation failed: {e}',
                 exc_info=True)
@@ -474,7 +474,7 @@ class RiskParityAllocator:
                 else 0.0
             )
             return metrics
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Portfolio metrics calculation failed: {e}')
             return {'error': str(e)}
@@ -518,7 +518,7 @@ class RiskParityAllocator:
                 return self.allocate(assets, volatilities, correlations,
                     params={'method': AllocationMethod.RISK_PARITY,
                     'constraints': constraints})
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Portfolio optimization failed: {e}',
                 exc_info=True)
             return {'weights': {}, 'error': str(e)}

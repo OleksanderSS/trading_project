@@ -118,7 +118,7 @@ class NewsImpactEnricher(BaseEnricher):
             # Run analyzer and merge results
             return self._run_analyzer_and_merge(df_enriched, news_prepared, time_col, "event-centric")
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error during event-centric news impact enrichment: {e}", exc_info=True)
             return self._add_zero_scores(df)
 
@@ -282,7 +282,7 @@ class NewsImpactEnricher(BaseEnricher):
             # Run analyzer and merge results
             return self._run_analyzer_and_merge_traditional(df, news_prepared)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during news impact enrichment: {e}", exc_info=True)
             return df
 
@@ -324,7 +324,7 @@ class NewsImpactEnricher(BaseEnricher):
             logger.info(f"Analyzing news impact for {len(news_prepared)} news items...")
             return news_prepared
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error preparing traditional news data: {e}", exc_info=True)
             raise RuntimeError("Failed to prepare traditional news data") from e
 

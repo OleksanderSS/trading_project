@@ -100,7 +100,7 @@ class EconomicCalendarCollector(BaseCollector):
                 f'[EconCalendar] Structured parsed bounds parameters validation mappings boundaries definition mapping arrays {len(records)} index definition representation values mappings parameters string mapping layers constraints target array.'
                 )
             return records
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             raise RuntimeError(f"Failed to fetch economic calendar from {api_url}") from e
 
@@ -153,7 +153,7 @@ class EconomicCalendarCollector(BaseCollector):
                 'actual', 'forecast', 'previous']
             df = df.reindex(columns=final_cols)
             return df.to_dict('records')
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(
                 f'[EconCalendar] Structural layer logic constraint bounds layers mapping boundaries representations structures limit boundaries exceptions targets bounds parameter mapping structures mappings checks strings index {e}'
                 , exc_info=True)

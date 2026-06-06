@@ -3,11 +3,9 @@
 from typing import Any
 
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras import layers, models
 
 from src.core.logging.logger import ProjectLogger
-from src.models.neural.base_neural import BaseNeuralModel
+from src.models.neural.base_neural import BaseNeuralModel, _get_tf
 
 
 class LSTMModel(BaseNeuralModel):
@@ -27,11 +25,14 @@ class LSTMModel(BaseNeuralModel):
         """Returns the unique name of the model."""
         return "lstm_tf"
 
-    def _build_architecture(self, input_shape: tuple[int, ...]) -> tf.keras.Model:
+    def _build_architecture(self, input_shape: tuple[int, ...]) -> Any:
         """
         Defines the LSTM architecture using TensorFlow/Keras.
         The input_shape is expected to be (timesteps, n_features).
         """
+        tf = _get_tf()
+        layers = tf.keras.layers
+        models = tf.keras
         if len(input_shape) != 2:
             raise ValueError(f"Expected input_shape to be a tuple of length 2 (timesteps, n_features), but got {input_shape}")
 
@@ -51,7 +52,8 @@ class LSTMModel(BaseNeuralModel):
             # Binary classification assumed
             outputs = layers.Dense(1, activation='sigmoid')(x)
             loss = 'binary_crossentropy'
-        else:  # Regression task
+        else:
+            # Regression task
             outputs = layers.Dense(1, activation='linear')(x)
             loss = 'mse'
 

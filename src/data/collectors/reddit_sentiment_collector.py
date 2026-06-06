@@ -75,7 +75,7 @@ class RedditSentimentCollector(BaseCollector):
             self.logger.info(f"Successfully fetched {len(df)} Reddit Sentiment records")
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in RedditSentimentCollector: {e}")
             raise RuntimeError("Reddit sentiment collection failed") from e
 
@@ -96,6 +96,28 @@ class RedditSentimentCollector(BaseCollector):
         )
         return []
 
+    def _get_subreddit_params(self, subreddit: str) -> tuple[float, int, int]:
+        """Get base sentiment, viral posts, and mentions for a subreddit."""
+        if subreddit == "wallstreetbets":
+            return random.uniform(-0.3, 0.3), random.randint(5, 25), random.randint(500, 2000)
+        elif subreddit == "stocks":
+            return random.uniform(-0.1, 0.2), random.randint(2, 15), random.randint(200, 800)
+        elif subreddit == "investing":
+            return random.uniform(0.0, 0.3), random.randint(1, 8), random.randint(100, 400)
+        return 0.0, 0, 0
+
+    def _classify_sentiment(self, sentiment_score: float) -> str:
+        """Classify sentiment score into categories."""
+        if sentiment_score > 0.3:
+            return "Very Bullish"
+        elif sentiment_score > 0.1:
+            return "Bullish"
+        elif sentiment_score > -0.1:
+            return "Neutral"
+        elif sentiment_score > -0.3:
+            return "Bearish"
+        return "Very Bearish"
+
     async def _generate_synthetic_reddit_data(self) -> list[dict[str, Any]]:
         """Generates realistic-looking synthetic Reddit sentiment data for testing."""
         self.logger.info("Generating synthetic Reddit sentiment data")
@@ -109,40 +131,14 @@ class RedditSentimentCollector(BaseCollector):
                 for i in range(30):  # 30 days per subreddit
                     date_obj = base_date + timedelta(days=i)
 
-                    # Simulate realistic Reddit sentiment
-                    if subreddit == "wallstreetbets":
-                        # High volatility, extreme sentiments
-                        base_sentiment = random.uniform(-0.3, 0.3)
-                        viral_posts = random.randint(5, 25)
-                        mentions = random.randint(500, 2000)
-                    elif subreddit == "stocks":
-                        # Moderate sentiment, more balanced
-                        base_sentiment = random.uniform(-0.1, 0.2)
-                        viral_posts = random.randint(2, 15)
-                        mentions = random.randint(200, 800)
-                    elif subreddit == "investing":
-                        # Generally positive, lower volatility
-                        base_sentiment = random.uniform(0.0, 0.3)
-                        viral_posts = random.randint(1, 8)
-                        mentions = random.randint(100, 400)
-                    else:
+                    base_sentiment, viral_posts, mentions = self._get_subreddit_params(subreddit)
+                    if viral_posts == 0 and mentions == 0:
                         continue
 
                     # Add daily variation
                     daily_variation = random.uniform(-0.1, 0.1)
                     sentiment_score = max(-1.0, min(1.0, base_sentiment + daily_variation))
-
-                    # Classify sentiment
-                    if sentiment_score > 0.3:
-                        sentiment_classification = "Very Bullish"
-                    elif sentiment_score > 0.1:
-                        sentiment_classification = "Bullish"
-                    elif sentiment_score > -0.1:
-                        sentiment_classification = "Neutral"
-                    elif sentiment_score > -0.3:
-                        sentiment_classification = "Bearish"
-                    else:
-                        sentiment_classification = "Very Bearish"
+                    sentiment_classification = self._classify_sentiment(sentiment_score)
 
                     data.append({
                         'date': date_obj.strftime('%Y-%m-%d'),
@@ -160,7 +156,7 @@ class RedditSentimentCollector(BaseCollector):
 
             return data
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error fetching Reddit Sentiment data: {e}")
             raise RuntimeError("Failed to generate synthetic Reddit sentiment data") from e
 
@@ -195,7 +191,7 @@ class RedditSentimentCollector(BaseCollector):
             df['viral_spike'] = df.groupby('subreddit')['viral_posts'].transform(lambda x: (x > x.quantile(0.9)).astype(int))
 
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error standardizing Reddit Sentiment columns: {e}")
             return pd.DataFrame()
 

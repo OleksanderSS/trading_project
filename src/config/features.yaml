@@ -19,6 +19,8 @@ features:
     advanced_analytics: true        # Advanced analytics - sentiment stats, macro score, market phase (NEW) - FIXED NAME
     context_map: true               # Generates a dynamic context fingerprint for each data point
     market_context: true            # Adds macro/market indicators (yield curve, Fed Funds, breadth, etc.) (NEW)
+    volatility: true                # Volatility indicators (historical volatility, ATR, Garman-Klass, volatility regime) - NEW
+    volume: true                    # Volume indicators (volume MA, volume ROC, OBV, volume relative strength) - NEW
 
 # Detailed configuration for the Technical Analysis enricher.
 # This corresponds to the 'technical_analysis' key in enabled_enrichers.

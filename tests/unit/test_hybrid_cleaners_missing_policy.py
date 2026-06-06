@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -20,9 +21,11 @@ def test_data_utils_clean_dataframe_preserves_numeric_missing_values():
     assert cleaned["label"].tolist() == ["a", "unknown", "c", "d"]
 
 
-def test_hybrid_data_manager_clean_dataframe_preserves_numeric_missing_values(tmp_path: Path):
+def test_hybrid_data_manager_clean_dataframe_preserves_numeric_missing_values():
     df = pd.DataFrame({"price": [1.0, float("inf"), None, float("-inf")]})
 
-    cleaned = HybridDataManager(tmp_path).clean_dataframe(df)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        cleaned = HybridDataManager(tmp_path).clean_dataframe(df)
 
-    assert cleaned["price"].isna().tolist() == [False, True, True, True]
+        assert cleaned["price"].isna().tolist() == [False, True, True, True]

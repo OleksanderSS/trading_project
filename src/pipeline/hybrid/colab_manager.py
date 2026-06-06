@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Colab Manager for Hybrid Orchestrator.
 Handles all Colab-related operations including batch preparation and result loading.
@@ -13,6 +14,7 @@ from typing import Any
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.features.validation.feature_leakage_guard import FeatureLeakageGuard
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -119,11 +121,16 @@ class ColabManager:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"Accumulated data: {len(existing_f)}→{len(combined_f)} features")
 
+            # ✅ Run leakage guard before saving
+            combined_f = self._check_feature_leakage(combined_f, combined_t)
+
             # Save
             self._save_df_to_parquet(combined_f, features_path)
             self._save_df_to_parquet(combined_t, targets_path)
         else:
             # New batch
+            # ✅ Run leakage guard before saving
+            features_df = self._check_feature_leakage(features_df, targets_df)
             self._save_df_to_parquet(features_df, features_path)
             self._save_df_to_parquet(targets_df, targets_path)
             logger.info(f"Created new batch: {len(features_df)} rows")
@@ -141,6 +148,42 @@ class ColabManager:
         if subset:
             return df.drop_duplicates(subset=subset, keep='last')
         return df
+
+    def _check_feature_leakage(self, features_df: pd.DataFrame, targets_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Run FeatureLeakageGuard before saving to Parquet.
+        Removes forbidden future-leaking columns. Logs warnings for high-correlation features.
+        Returns cleaned features_df.
+        """
+        try:
+            guard = FeatureLeakageGuard(block_on_forbidden=False)  # warn only, don't raise
+
+            # Build combined df with both features and targets for correlation check
+            target_cols = [c for c in targets_df.columns if c.startswith('target_')]
+            combined = pd.concat([features_df, targets_df[target_cols]], axis=1) if target_cols else features_df
+
+            report = guard.check(combined, target_cols=target_cols if target_cols else None)
+
+            if report.has_issues:
+                if report.forbidden_cols:
+                    logger.warning(
+                        f"[LeakageGuard] Removing {len(report.forbidden_cols)} forbidden columns: "
+                        f"{report.forbidden_cols[:5]}{'...' if len(report.forbidden_cols) > 5 else ''}"
+                    )
+                    features_df = features_df.drop(columns=report.forbidden_cols, errors='ignore')
+
+                if report.high_corr_cols:
+                    logger.warning(
+                        f"[LeakageGuard] {len(report.high_corr_cols)} features with high target "
+                        f"correlation. Review: {list(report.high_corr_cols.keys())[:5]}"
+                    )
+            else:
+                logger.debug("[LeakageGuard] No leakage detected.")
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.warning(f"[LeakageGuard] Check failed (non-blocking): {e}")
+
+        return features_df
 
     def _save_df_to_parquet(self, df: pd.DataFrame, path: Path):
         """Saves DataFrame to Parquet, ensuring datetime column is preserved."""

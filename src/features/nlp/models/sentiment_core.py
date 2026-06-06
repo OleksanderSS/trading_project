@@ -2,11 +2,15 @@
 import hashlib
 import logging
 
-from transformers import AutoModelForSequenceClassification
-
 from src.config.sentiment_config import SENTIMENT_DEFAULTS
 from src.core.logging.logger import ProjectLogger
 from src.features.nlp.scoring.news_score import compute_news_score
+
+
+# ✅ Lazy import — transformers is heavy; loaded only when model is needed
+def _get_auto_model_class():
+    from transformers import AutoModelForSequenceClassification  # noqa: PLC0415
+    return AutoModelForSequenceClassification
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
@@ -24,7 +28,7 @@ def get_model():
     """
     model_name = SENTIMENT_DEFAULTS.get("model_name", "yiyanghkust/finbert-tone")
     logger.info(f"[sentiment_score] Loading model: {model_name}")
-    return AutoModelForSequenceClassification.from_pretrained(model_name)
+    return _get_auto_model_class().from_pretrained(model_name)
 
 def compute_score(label: str, score: float) -> dict:
     label = label.lower()

@@ -18,6 +18,7 @@ beautifulsoup4
 lxml
 feedparser
 yfinance
+curl-cffi>=0.15.0b6
 pytrends
 pandas-datareader
 holidays
@@ -50,3 +51,4 @@ email-validator
 mlflow
 mlflow-skinny
 optuna
+idna>=3.15

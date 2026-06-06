@@ -55,7 +55,7 @@ class FileManager:
                     f'Integrity check failed for temporary file: {temp_path}')
             os.replace(temp_path, file_path)
             self.logger.info(f'Successfully saved data to {file_path}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             if temp_path.exists():
                 temp_path.unlink()
             self.logger.error(f'Failed to save data to {file_path}: {e}',
@@ -77,7 +77,7 @@ class FileManager:
                 with open(p, encoding='utf-8') as f:
                     yaml.safe_load(f)
                 return True
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 return False
         if async_save:
@@ -97,7 +97,7 @@ class FileManager:
                 data: dict[str, Any] | None = yaml.safe_load(f)
             self.logger.info(f'Loaded YAML from {path}')
             return data if isinstance(data, dict) else None
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to load YAML from {path}: {e}',
                 exc_info=True)
             raise RuntimeError(f"Failed to load YAML from {path}") from e
@@ -117,7 +117,7 @@ class FileManager:
                 with open(p, encoding='utf-8') as f:
                     json.load(f)
                 return True
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 return False
         if async_save:
@@ -137,7 +137,7 @@ class FileManager:
                 data: dict[str, Any] | Any = json.load(f)
             self.logger.info(f'Loaded JSON from {path}')
             return data if isinstance(data, dict) else None
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to load JSON from {path}: {e}',
                 exc_info=True)
             raise RuntimeError(f"Failed to load JSON from {path}") from e
@@ -148,6 +148,31 @@ class FileManager:
             if pd.api.types.is_datetime64tz_dtype(df[col]):
                 df[col] = df[col].dt.tz_localize(None)
         return df
+
+    def _write_dataframe(self, df: pd.DataFrame, path: Path, format: str, **kwargs) -> None:
+        """Write DataFrame to file in specified format."""
+        if format == 'parquet':
+            df.to_parquet(path, **kwargs)
+        elif format == 'csv':
+            df.to_csv(path, index=False, **kwargs)
+        elif format == 'json':
+            df.to_json(path, orient='records', date_format='iso', **kwargs)
+        else:
+            raise ValueError(f'Unsupported format: {format}')
+
+    def _validate_dataframe(self, path: Path, format: str, df: pd.DataFrame) -> bool:
+        """Validate that the DataFrame was written correctly."""
+        try:
+            if format == 'parquet':
+                pd.read_parquet(path, columns=[df.columns[0]])
+            elif format == 'csv':
+                pd.read_csv(path, nrows=1)
+            elif format == 'json':
+                pd.read_json(path, nrows=1)
+            return True
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            return False
 
     def save_dataframe(self, df: pd.DataFrame, file_path: (str | Path),
         format: str='parquet', remove_tz: bool=False, async_save: bool=
@@ -166,28 +191,11 @@ class FileManager:
             ) if remove_tz else df.copy()
 
         def write_task(p: Path):
-            if format == 'parquet':
-                df_to_save.to_parquet(p, **kwargs)
-            elif format == 'csv':
-                df_to_save.to_csv(p, index=False, **kwargs)
-            elif format == 'json':
-                df_to_save.to_json(p, orient='records', date_format='iso',
-                    **kwargs)
-            else:
-                raise ValueError(f'Unsupported format: {format}')
+            self._write_dataframe(df_to_save, p, format, **kwargs)
 
         def validate_task(p: Path) ->bool:
-            try:
-                if format == 'parquet':
-                    pd.read_parquet(p, columns=[df_to_save.columns[0]])
-                elif format == 'csv':
-                    pd.read_csv(p, nrows=1)
-                elif format == 'json':
-                    pd.read_json(p, nrows=1)
-                return True
-            except Exception as e:
-                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-                return False
+            return self._validate_dataframe(p, format, df_to_save)
+
         if async_save:
             self._executor.submit(self._atomic_write, path, write_task,
                 validate_task)
@@ -214,7 +222,7 @@ class FileManager:
                 raise ValueError(f'Unsupported format: {format}')
             self.logger.info(f'Loaded {len(df)} rows from {path}')
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to load DataFrame from {path}: {e}',
                 exc_info=True)
             raise RuntimeError(f"Failed to load DataFrame from {path}") from e
@@ -237,7 +245,7 @@ class FileManager:
                 try:
                     f.unlink()
                     deleted_count += 1
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.logger.warning(f'Failed to delete {f}: {e}')
                     raise

@@ -106,7 +106,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
                     'model': row['model'],
                     'accuracy': float(row['accuracy']),
                 }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to calculate best models by type: {e}")
             raise DataProcessingError(f"Failed to calculate best models by type: {e}") from e
 

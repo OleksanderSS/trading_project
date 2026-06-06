@@ -21,7 +21,7 @@ class EventScanner:
             try:
                 events = self._fetch_news(source_name, url)
                 all_events.extend(events)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Error scanning {source_name}: {e}")
         return all_events
 

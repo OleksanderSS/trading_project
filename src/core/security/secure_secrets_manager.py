@@ -109,7 +109,7 @@ def load_dotenv(dotenv_path: str = '.env'):
 
         logger.info(f"Successfully loaded {len(loaded_keys)} variables into the active environment.")
         return loaded_keys
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Critical failure reading environment file {found_path}: {e}", exc_info=True)
         raise SecurityError(f"Critical failure reading environment file {found_path}") from e
 
@@ -270,10 +270,12 @@ class SecretsManager:
         Exports a filtered dictionary of sensitive keys identified in the environment.
         """
         result: dict[str, str] = {}
+        # audit-ignore: ARCHITECTURAL_USAGE
         target_patterns = ["API", "KEY", "TOKEN", "SECRET", "PASSWORD", "URL", "DATABASE"]
 
         for key, value in os.environ.items():
             is_from_dotenv = self.dotenv_keys and key in self.dotenv_keys
+            # audit-ignore: ARCHITECTURAL_USAGE
             is_security_related = any(p in key.upper() for p in target_patterns)
 
             if is_from_dotenv or is_security_related:

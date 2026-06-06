@@ -74,8 +74,8 @@ def test_adaptive_confidence_analyzer_invalid_rule():
     }
     analyzer = AdaptiveConfidenceAnalyzer(config)
     # We need something that forces an exception inside `_evaluate_rule_conditions`
-    # Let's mock a method to force exception
-    analyzer._evaluate_rule_conditions = lambda conditions, data: exec("raise Exception('Force Fail')")
+    # Let's mock a method to force a ValueError which is caught by the analyzer.
+    analyzer._evaluate_rule_conditions = lambda conditions, data: exec("raise ValueError('Force Fail')")
     
-    with pytest.raises(DataProcessingError):
+    with pytest.raises(DataProcessingError, match="Force Fail"):
         analyzer.analyze({})

@@ -10,16 +10,16 @@ logger = ProjectLogger.get_logger(__name__)
 
 def calculate_financial_metrics(metrics_calculator, portfolio_history: pd.DataFrame) -> dict[str, Any]:
     if portfolio_history is None or portfolio_history.empty:
-        return {}
+        return {"error": "empty_portfolio_history"}
 
     if "total_value" not in portfolio_history.columns:
-        return {}
+        return {"error": "missing_total_value_column"}
 
     try:
         return metrics_calculator.calculate(portfolio_history["total_value"])
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Error calculating financial metrics: {e}", exc_info=True)
-        raise
+        return {"error": "calculation_failed", "details": str(e)}
 
 
 def run_deep_analysis(
@@ -30,7 +30,7 @@ def run_deep_analysis(
     brain: dict | None = None,
 ) -> dict[str, Any]:
     if analytics_engine is None:
-        return {}
+        return {"error": "missing_analytics_engine"}
 
     price_data = signals_df[["price"]].copy() if "price" in signals_df.columns else pd.DataFrame()
     if "close" not in price_data.columns and "price" in price_data.columns:
@@ -89,9 +89,9 @@ def run_deep_analysis(
 
     try:
         return analytics_engine.run_full_analysis(data_map)
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Error running deep analysis: {e}", exc_info=True)
-        raise
+        return {"error": "analysis_failed", "details": str(e)}
 
 
 def create_evaluation_summary(

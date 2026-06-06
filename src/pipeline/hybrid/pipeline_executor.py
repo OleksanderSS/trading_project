@@ -141,7 +141,7 @@ class PipelineExecutor:
                     df.to_parquet(file_path)
                     self.logger.info(f"Saved {key} data to {file_path}")
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error saving data: {e}")
 
     def _flatten_data_dict(self, data: dict[str, Any], parent_key: str = "") -> dict[str, pd.DataFrame]:

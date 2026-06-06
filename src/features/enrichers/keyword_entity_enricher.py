@@ -32,13 +32,12 @@ class KeywordEntityEnricher(BaseEnricher):
         self.entity_extractor: EntityExtractor | None = None
         try:
             self.entity_extractor = EntityExtractor(entity_config)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(
                 f'Failed to initialize EntityExtractor: {e}. Entity features will be skipped.'
                 )
             self.entity_extractor = None
-            raise
         logger.info('KeywordEntityEnricher initialized')
 
     @property
@@ -74,7 +73,7 @@ class KeywordEntityEnricher(BaseEnricher):
             return df
         try:
             return self._process_enrichment(df, news_df, text_col, time_col)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error during keyword/entity enrichment: {e}',
                 exc_info=True)
             return df
@@ -196,7 +195,7 @@ class KeywordEntityEnricher(BaseEnricher):
         if isinstance(df_enriched.index, pd.DatetimeIndex):
             return True
         if 'datetime' in df_enriched.columns:
-            df_enriched = df_enriched.set_index('datetime')
+            df_enriched.set_index('datetime', inplace=True)
             return True
         logger.error(
             "Cannot merge: df has no DatetimeIndex or 'datetime' column")

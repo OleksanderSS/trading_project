@@ -115,7 +115,7 @@ class NewsDecayModeler:
 
             self.logger.info(f"✅ Optimal decay model fitting complete. Best model: {best_model['model_name']}")
             return results
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error fitting optimal decay model: {e}', exc_info=True)
             return {'status': 'error', 'error': str(e)}
 
@@ -163,7 +163,7 @@ class NewsDecayModeler:
 
             combined_data = pd.concat(aligned_data, ignore_index=True)
             return {'combined_data': combined_data, 'news_by_type': news_by_type, 'error': None}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error preparing modeling data: {e}')
             return {'error': str(e)}
 
@@ -196,7 +196,7 @@ class NewsDecayModeler:
             self.logger.info(f'📊 Fitted {models_count} decay models for {news_type}')
 
             return type_results
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error fitting news type model for {news_type}: {e}')
             return {'news_type': news_type, 'models': {}, 'best_model': None, 'performance_comparison': {}, 'error': str(e)}
 
@@ -259,7 +259,7 @@ class NewsDecayModeler:
                     )
 
             return summary
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error generating optimization summary: {e}')
             return summary
 
@@ -274,7 +274,7 @@ class NewsDecayModeler:
             files = list(self.storage_path.glob('decay_models_*.json'))
             for file_to_delete in files[50:]:
                 file_to_delete.unlink()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to store trained models: {e}')
 
     async def predict_news_impact(self,
@@ -324,7 +324,7 @@ class NewsDecayModeler:
                             'model_name': data['best_overall_model'].get(
                             'function_name'), 'mse': perf.get('mse'), 'mae':
                             perf.get('mae'), 'r2': perf.get('r2')})
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(
                         f'Error loading model file {file_path}: {e}')
             if not performance_history:
@@ -343,7 +343,7 @@ class NewsDecayModeler:
                 performance_history, 'performance_trends':
                 performance_trends, 'model_stability': self.
                 _calculate_model_stability(performance_history)}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error getting model performance summary: {e}')
             return {'error': str(e)}
 

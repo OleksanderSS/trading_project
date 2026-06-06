@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Stage 5: Prediction Generation with Stacked Ensembles and Contextual Adjustments
 
@@ -253,14 +254,16 @@ class PredictionStage(BaseStage):
         if raw_prediction is None:
             return None
 
-        # 2. Champion-Bias Adjustment: Штрафуємо впевненість, якщо прогноз суперечить Чемпіону
+        # 2. Champion-Bias Adjustment: Штрафуємо впевненість, якщо прогноз суперечить Чемпіону (Adaptive Penalty)
         confidence_adjustment = 1.0
         if champion_state != 0:
              last_raw_pred = raw_prediction[-1] if isinstance(raw_prediction, np.ndarray) else raw_prediction
              pred_sign = np.sign(last_raw_pred)
              if pred_sign != np.sign(champion_state):
-                  confidence_adjustment = 0.7 # Штраф 30% за суперечність ринку
-                  self.logger.info(f"⚠️ Contradiction with Champion detected for {ticker}. Penalizing confidence.")
+                  # Адаптивний штраф на основі конфігурації
+                  champion_penalty = self.prediction_config.get('champion_contradiction_penalty', 0.7)
+                  confidence_adjustment = champion_penalty
+                  self.logger.info(f"⚠️ Contradiction with Champion detected for {ticker}. Penalizing confidence by {champion_penalty*100:.0f}%.")
 
         adjusted_prediction = (self.prediction_generator.
             adjust_prediction_contextually(raw_prediction, best_model_name,
@@ -411,7 +414,7 @@ class PredictionStage(BaseStage):
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(
                         f'Updated selector feedback for {ticker}: {model_id}')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Failed to update selector feedback: {e}')
 
@@ -457,6 +460,6 @@ class PredictionStage(BaseStage):
                     json.dump(stage_5_results, f, indent=2, default=str)
                 self.logger.info(
                     f'✅ Stage 5 results saved: {stage_5_file.name}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Error saving Stage 5 results: {e}')

@@ -23,6 +23,6 @@ def recover_missing_data(config_manager, brain, logger):
                 brain["macro_data"] = macro_df
                 logger.info(f"✅ Recovered {len(macro_df)} macro records from DB")
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"❌ Adaptive data recovery failed: {e}", exc_info=True)
         raise

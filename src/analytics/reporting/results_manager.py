@@ -54,7 +54,7 @@ class ResultsManager:
             logger.info(f"Results saved to {filepath}")
             return str(filepath)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save results: {e}", exc_info=True)
             raise
 
@@ -86,7 +86,7 @@ class ResultsManager:
             logger.info(f"Results loaded from {filepath}")
             return cast(dict[str, Any], results)
 
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"Failed to load results: {e}", exc_info=True)
             return None
 
@@ -106,7 +106,7 @@ class ResultsManager:
             latest_file = max(result_files, key=lambda f: f.stat().st_mtime)
             return self.load_results(latest_file.name)
 
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"Failed to get latest results: {e}", exc_info=True)
             return None
 
@@ -119,7 +119,7 @@ class ResultsManager:
         """
         try:
             return [f.name for f in self.results_dir.glob("results_*.json")]
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"Failed to list results: {e}", exc_info=True)
             return []
 
@@ -145,7 +145,7 @@ class ResultsManager:
                 logger.warning(f"Results file not found: {filepath}")
                 return False
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to delete results: {e}", exc_info=True)
             return False
 
@@ -184,7 +184,7 @@ class ResultsManager:
 
             return summary
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to get results summary: {e}", exc_info=True)
             return {'error': str(e)}
 
@@ -215,7 +215,7 @@ class ResultsManager:
             logger.info(f"Results exported to CSV: {output_path}")
             return cast(str, str(output_path))
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to export results to CSV: {e}", exc_info=True)
             raise RuntimeError(f"Failed to export results {filename} to CSV") from e
 

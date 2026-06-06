@@ -60,7 +60,7 @@ class DashboardDataBridge:
                 self.logger.info("✅ DataManager initialized for dashboard")
             else:
                 self.logger.warning("No config manager provided - DataManager not initialized")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to initialize data sources: {e}")
             self.data_manager = None
 
@@ -94,7 +94,7 @@ class DashboardDataBridge:
 
             return data
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get dashboard data for {data_type}: {e}")
             return {'error': str(e)}
 
@@ -178,7 +178,7 @@ class DashboardDataBridge:
                 'last_updated': datetime.now().isoformat()
             })
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get model performance data: {e}")
             return {'error': str(e)}
 
@@ -213,7 +213,7 @@ class DashboardDataBridge:
                 'last_updated': datetime.now().isoformat()
             })
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get trading activity data: {e}")
             return {'error': str(e)}
 
@@ -248,7 +248,7 @@ class DashboardDataBridge:
                 'last_updated': datetime.now().isoformat()
             })
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get portfolio metrics data: {e}")
             return {'error': str(e)}
 
@@ -291,7 +291,7 @@ class DashboardDataBridge:
                 'last_updated': datetime.now().isoformat()
             })
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get market data: {e}")
             return {'error': str(e)}
 
@@ -330,7 +330,7 @@ class DashboardDataBridge:
                 'status': 'healthy',
                 'last_updated': datetime.now().isoformat()
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get system status: {e}")
             return {'error': str(e)}
 
@@ -348,7 +348,7 @@ class DashboardDataBridge:
                 'total_weight': 1.0
             })
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get ensemble weights: {e}")
             return {'error': str(e)}
 
@@ -383,7 +383,7 @@ class DashboardDataBridge:
                 'last_updated': datetime.now().isoformat()
             })
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get arena results: {e}")
             return {'error': str(e)}
 

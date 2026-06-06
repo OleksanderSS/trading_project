@@ -67,7 +67,7 @@ class MaxExposureMonitor:
 
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Exposure monitoring failed: {e}", exc_info=True)
             return {'status': 'error', 'message': str(e)}
 

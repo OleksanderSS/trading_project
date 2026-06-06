@@ -73,7 +73,7 @@ class ModelAnalyzer:
                 model_results, X_val if X_val is not None else X_train
             )
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in baseline analysis: {e}", exc_info=True)
             raise DataProcessingError(f"Baseline analysis failed: {e}") from e
 
@@ -100,7 +100,7 @@ class ModelAnalyzer:
                 model_results, market_data
             )
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in regime analysis: {e}", exc_info=True)
             raise DataProcessingError(f"Regime analysis failed: {e}") from e
 
@@ -118,7 +118,7 @@ class ModelAnalyzer:
                 model, X_train, y_train, X_val, y_val
             )
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in overfitting analysis: {e}", exc_info=True)
             raise DataProcessingError(f"Overfitting analysis failed: {e}") from e
 
@@ -134,7 +134,7 @@ class ModelAnalyzer:
                 predictions, actuals, confidences
             )
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in drift monitoring: {e}", exc_info=True)
             raise DataProcessingError(f"Drift monitoring failed: {e}") from e
 
@@ -154,6 +154,6 @@ class ModelAnalyzer:
                 'rmse': np.sqrt(mean_squared_error(y, predictions))
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating model metrics: {e}", exc_info=True)
             raise DataProcessingError(f"Model metrics calculation failed: {e}") from e

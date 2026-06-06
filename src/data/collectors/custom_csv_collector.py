@@ -41,8 +41,8 @@ class CustomCSVCollector(BaseCollector):
             err = FileNotFoundError(
                 f'Failed to identify extraction execution URL structural blocks constraints target index boundaries: {file_path}'
                 )
-            raise err
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            raise err from None
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             raise RuntimeError(f"Failed to read custom CSV file {file_path}") from e
 

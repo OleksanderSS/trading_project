@@ -80,7 +80,7 @@ class CFTCCollector(BaseCollector):
             self.logger.info(f"Successfully fetched {len(df)} CFTC records")
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in CFTCCollector: {e}")
             raise RuntimeError("CFTC collection failed") from e
 
@@ -142,9 +142,39 @@ class CFTCCollector(BaseCollector):
             self.logger.info(f"Successfully fetched {len(data)} CFTC records for {instrument}")
             return data
 
-        except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
             self.logger.error(f"Error fetching CFTC data for {instrument}: {e}")
             raise RuntimeError(f"Failed to fetch CFTC data for {instrument}") from e
+
+    def _find_data_start(self, lines: list[str]) -> int:
+        """Find the start of data in CFTC CSV."""
+        for i, line in enumerate(lines):
+            if 'Reportable Positions' in line or 'Nonreportable Positions' in line:
+                return i + 2  # Skip header and separator
+        return 0
+
+    def _parse_date(self, date_str: str) -> datetime | None:
+        """Parse date string with multiple format attempts."""
+        try:
+            return datetime.strptime(date_str, '%Y%m%d')
+        except ValueError:
+            try:
+                return datetime.strptime(date_str, '%m/%d/%Y')
+            except ValueError:
+                return None
+
+    def _extract_position_data(self, fields: list[str]) -> tuple[int, int, int]:
+        """Extract long, short, and net positions from fields."""
+        if len(fields) >= 12:
+            long_pos = int(fields[8].replace(',', '')) if fields[8] != '0' else 0
+            short_pos = int(fields[9].replace(',', '')) if fields[9] != '0' else 0
+            net_pos = long_pos - short_pos
+        else:
+            # Fallback to sample data if parsing fails
+            long_pos = 500000
+            short_pos = 350000
+            net_pos = 150000
+        return long_pos, short_pos, net_pos
 
     def _parse_cftc_csv(self, content: str, instrument: str, report_type: str) -> list[dict[str, Any]]:
         """Parse CFTC CSV content to extract positioning data."""
@@ -153,11 +183,7 @@ class CFTCCollector(BaseCollector):
             lines = content.strip().split('\n')
 
             # Skip header lines and find data start
-            data_start = 0
-            for i, line in enumerate(lines):
-                if 'Reportable Positions' in line or 'Nonreportable Positions' in line:
-                    data_start = i + 2  # Skip header and separator
-                    break
+            data_start = self._find_data_start(lines)
 
             # Parse data lines
             for line in lines[data_start:]:
@@ -169,28 +195,12 @@ class CFTCCollector(BaseCollector):
 
                 if len(fields) >= 10:  # Ensure we have enough fields
                     try:
-                        # CFTC CSV format: Date, Open, High, Low, Close, Volume, Open Interest, etc.
                         date_str = fields[0]
-                        # Convert date (format varies)
-                        try:
-                            date_obj = datetime.strptime(date_str, '%Y%m%d')
-                        except ValueError:
-                            try:
-                                date_obj = datetime.strptime(date_str, '%m/%d/%Y')
-                            except ValueError:
-                                continue
+                        date_obj = self._parse_date(date_str)
+                        if date_obj is None:
+                            continue
 
-                        # Extract positioning data (fields indices may vary)
-                        # This is a simplified parser - adjust based on actual CSV structure
-                        if len(fields) >= 12:
-                            long_pos = int(fields[8].replace(',', '')) if fields[8] != '0' else 0
-                            short_pos = int(fields[9].replace(',', '')) if fields[9] != '0' else 0
-                            net_pos = long_pos - short_pos
-                        else:
-                            # Fallback to sample data if parsing fails
-                            long_pos = 500000
-                            short_pos = 350000
-                            net_pos = 150000
+                        long_pos, short_pos, net_pos = self._extract_position_data(fields)
 
                         total_positions = long_pos + short_pos
                         long_short_ratio = long_pos / short_pos if short_pos > 0 else float('inf')
@@ -222,12 +232,12 @@ class CFTCCollector(BaseCollector):
 
             return data
 
-        except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
             self.logger.error(f"Error parsing CFTC CSV: {e}", exc_info=True)
             if self.allow_sample_fallback:
                 self.logger.warning(f"Using sample data fallback for {instrument} due to error: {e}")
                 return self._create_sample_cftc_data(instrument)
-            raise RuntimeError(f"CFTC data collection failed and sample fallback disabled: {e}")
+            raise RuntimeError(f"CFTC data collection failed and sample fallback disabled: {e}") from e
 
     def _create_sample_cftc_data(self, instrument: str) -> list[dict[str, Any]]:
         """Create sample CFTC data for demonstration."""
@@ -307,7 +317,7 @@ class CFTCCollector(BaseCollector):
 
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error standardizing CFTC columns: {e}")
             return pd.DataFrame()
 

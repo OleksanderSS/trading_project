@@ -12,7 +12,7 @@ class FakeConfigManager:
         return default
 
 
-def test_stage_loader_loads_enabled_stage(tmp_path):
+def test_stage_loader_loads_enabled_stage():
     # Prepare config with one enabled stage pointing to our test module
     stages = [
         {

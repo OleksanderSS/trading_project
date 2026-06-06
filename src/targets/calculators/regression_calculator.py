@@ -1,15 +1,15 @@
 import logging
 
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
 # src/targets/calculators/regression_calculator.py
 """
 Regression Calculator Module.
 Computes future percentage returns for asset labels.
 Supports transaction cost adjustments to ensure model training accounts for market friction.
 """
-
-import pandas as pd
-
-from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("RegressionCalculator")
 

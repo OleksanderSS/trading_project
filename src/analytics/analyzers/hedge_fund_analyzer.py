@@ -72,7 +72,7 @@ class HedgeFundAnalyzer(IAnalyzer):
                 factor_results, 'skill_assessment': skill_analysis,
                 'style_drift': drift_analysis, 'analysis_timestamp':
                 datetime.now().isoformat()}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise DataProcessingError(f'Execution failure in HedgeFundAnalyzer: {e}') from e
 
     def calculate_performance_metrics(self, returns: pd.Series, benchmark:

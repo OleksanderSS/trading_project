@@ -46,7 +46,7 @@ class BaselineComparisonEngine:
 
             comparison_results['dominant_baselines'].sort(key=lambda x: x['dominance_strength'], reverse=True)
             return comparison_results
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error comparing with baselines: {e}")
             raise
 

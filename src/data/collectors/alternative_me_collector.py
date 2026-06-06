@@ -66,7 +66,7 @@ class AlternativeMeCollector(BaseCollector):
             self.logger.info(f"Successfully fetched {len(df)} Fear & Greed records from Alternative.me")
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in AlternativeMeCollector: {e}", exc_info=True)
             raise RuntimeError("Alternative.me collection failed") from e
 
@@ -111,7 +111,7 @@ class AlternativeMeCollector(BaseCollector):
 
             return processed_data
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error fetching Alternative.me data: {e}", exc_info=True)
             raise RuntimeError("Failed to fetch Alternative.me data") from e
 
@@ -137,7 +137,7 @@ class AlternativeMeCollector(BaseCollector):
                 'classification': data_point.get('value_classification', 'Unknown'),
                 'source': 'alternative_me'
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error processing Alternative.me data point: {e}")
             raise RuntimeError("Failed to process Alternative.me data point") from e
 
@@ -163,7 +163,7 @@ class AlternativeMeCollector(BaseCollector):
             df = df.sort_values('date').reset_index(drop=True)
 
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error standardizing Alternative.me columns: {e}")
             return pd.DataFrame()
 

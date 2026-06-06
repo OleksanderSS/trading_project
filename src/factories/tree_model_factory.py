@@ -35,7 +35,7 @@ class TreeModelFactory:
             filtered_params = {k: v for k, v in all_params.items() if k in accepted_params}
 
             return model_class(**filtered_params)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Could not inspect {model_name} constructor: {e}", exc_info=True)
             raise RuntimeError(f"Could not inspect {model_name} constructor: {e}") from e
 

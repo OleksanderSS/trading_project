@@ -139,5 +139,12 @@ class MacroScoreCalculator:
             scaled_score.loc[valid_score.index] = 50.0
             return scaled_score
         scaled_values = minmax_scale(valid_score, feature_range=(0, 100))
-        scaled_score.loc[valid_score.index] = scaled_values
+        # ✅ FIX: deduplicate index before assignment to avoid length mismatch
+        if valid_score.index.duplicated().any():
+            valid_score_dedup = valid_score[~valid_score.index.duplicated(keep='last')]
+            scaled_values_dedup = minmax_scale(valid_score_dedup, feature_range=(0, 100))
+            scaled_score = pd.Series(index=composite_score.index, dtype=float)
+            scaled_score.loc[valid_score_dedup.index] = scaled_values_dedup
+        else:
+            scaled_score.loc[valid_score.index] = scaled_values
         return scaled_score

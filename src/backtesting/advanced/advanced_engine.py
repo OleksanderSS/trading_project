@@ -72,9 +72,17 @@ class BiasDetector:
         Підтримує DataFrame та Series.
         """
         try:
-            # Нормалізація вхідних даних
+            # Нормалізація вхідних даних та кодування сигналів у числові значення
             if isinstance(signals, pd.Series):
                 signals = signals.to_frame()
+
+            # Map categorical signals to numeric values
+            signals = signals.replace({
+                'BUY': 1.0, 'LONG': 1.0, 'SELL': -1.0, 'SHORT': -1.0,
+                'HOLD': 0.0, 'FLAT': 0.0, 'CLOSE': 0.0
+            })
+            signals = signals.apply(pd.to_numeric, errors='coerce').fillna(0.0)
+
             if isinstance(future_prices, pd.Series):
                 future_prices = future_prices.to_frame()
 
@@ -83,7 +91,7 @@ class BiasDetector:
                 return {'has_look_ahead_bias': False, 'suspicious_signals':
                     [], 'message': 'Немає спільних тікерів'}
             correlations = signals[common_cols].corrwith(future_prices[
-                common_cols].shift(-lag_periods))
+                common_cols].shift(-lag_periods))  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL
             n = len(signals)
             critical_corr = 1.96 / np.sqrt(n)
             suspicious_mask = correlations.abs() > critical_corr
@@ -98,7 +106,7 @@ class BiasDetector:
                 'has_look_ahead_bias': len(suspicious_results) > 0,
                 'suspicious_signals': suspicious_results,
                 'critical_threshold': float(critical_corr), 'sample_size': n}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Помилка виявлення look-ahead bias: {e}')
             return {'error': str(e), 'lookahead_bias_detected': False,
                 'has_look_ahead_bias': False}
@@ -123,7 +131,7 @@ class BiasDetector:
                 delisted), 'bias_impact': len(delisted) / len(
                 historical_universe) if len(historical_universe) > 0 else 0.0, 'delisted_warnings':
                 delisted_performance_warning}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Помилка виявлення survivorship bias: {e}')
             return {'error': str(e)}
 
@@ -180,7 +188,7 @@ class WalkForwardOptimizer:
                         'out_sample_performance': performance,
                         'in_sample_size': in_end - in_start,
                         'out_sample_size': out_end - out_start})
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.logger.warning(
                         f'Помилка оптимізації на вікні {window_idx}: {e}')
@@ -190,7 +198,7 @@ class WalkForwardOptimizer:
                 results, 'average_out_sample_performance': self.
                 _calculate_average_performance(results),
                 'optimization_completed': len(results) > 0}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Помилка Walk-Forward Optimization: {e}')
             return {'error': str(e)}
 
@@ -224,7 +232,7 @@ class WalkForwardOptimizer:
                 max_dd = max_dd.mean()
             return {'return': float(total_return), 'sharpe': float(sharpe),
                 'max_drawdown': float(max_dd)}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
 
@@ -305,7 +313,7 @@ class AdvancedBacktestEngine:
                         )
             self.logger.info('Комплексний бектест завершено')
             return report
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Помилка комплексного бектесту: {e}')
             return {'error': str(e)}
 
@@ -345,12 +353,16 @@ class AdvancedBacktestEngine:
             lagged_weights = positions.shift(1)
             lagged_weights = lagged_weights.mask(lagged_weights.isna(), 0.0)
             weighted_returns = lagged_weights * asset_returns
-            portfolio_returns = weighted_returns.sum(axis=1, min_count=1)
+
+            # Fill missing returns for active positions with 0.0 to prevent portfolio-level NaN propagation
+            missing_position_returns = asset_returns.isna() & lagged_weights.ne(0.0)
+            if missing_position_returns.any().any():
+                self.logger.warning("Missing return data detected for active positions. Treating missing returns as 0.0.")
+
+            weighted_returns = weighted_returns.fillna(0.0)
+            portfolio_returns = weighted_returns.sum(axis=1)
             no_position = lagged_weights.abs().sum(axis=1) == 0
             portfolio_returns = portfolio_returns.mask(no_position, 0.0)
-            missing_position_returns = asset_returns.isna() & lagged_weights.ne(0.0)
-            portfolio_returns = portfolio_returns.mask(
-                missing_position_returns.any(axis=1))
             if apply_costs:
                 turnover = lagged_weights.diff().abs().sum(axis=1,
                     min_count=1)

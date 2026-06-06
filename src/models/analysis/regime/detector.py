@@ -23,7 +23,7 @@ class RegimeDetector:
                     ] <= trend <= trend_range[1]:
                     return regime_name
             return 'normal'
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error detecting regime: {e}", exc_info=True)
             raise DataProcessingError(f"Regime detection failed: {e}") from e
 
@@ -39,7 +39,7 @@ class RegimeDetector:
                 returns = market_data[price_cols[0]].pct_change(fill_method=None).dropna()
                 return float(returns.std() * np.sqrt(252))
             return 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error calculating volatility: {e}", exc_info=True)
             raise DataProcessingError(f"Volatility calculation failed: {e}") from e
 
@@ -54,6 +54,6 @@ class RegimeDetector:
                     normalized_trend = slope / recent_prices.mean()
                     return float(normalized_trend)
             return 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error calculating trend: {e}", exc_info=True)
             raise DataProcessingError(f"Trend calculation failed: {e}") from e

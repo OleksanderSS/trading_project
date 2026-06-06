@@ -63,7 +63,7 @@ class ConsensusEngine:
                 self.logger.info(
                     f'Meta-model successfully synchronized from {meta_model_path}'
                     )
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(
                     f'Failed to load Meta-model at {meta_model_path}: {e}')
         else:
@@ -147,7 +147,7 @@ class ConsensusEngine:
         """Normalize a prediction with safe fallback."""
         try:
             return normalize_prediction(pred)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
                 f'Normalization failed for {model_id}: {e}. Defaulting to 0.0')
@@ -217,7 +217,7 @@ class ConsensusEngine:
                     )
                 final_signal = 'HOLD'
                 blocked_by_critic = True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             critic_score = 0.0
             raise
@@ -270,7 +270,7 @@ class EnhancedConsensusEngine(ConsensusEngine):
                 return 'trending_up' if trend > 0 else 'ranging'
             else:
                 return 'ranging'
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
                 f'Market regime determination failed: {e}. Defaulting to neutral state.'
@@ -292,7 +292,7 @@ class EnhancedConsensusEngine(ConsensusEngine):
                     score_val = float(arch_pred)
                     ensemble_score += weight * score_val
                     total_weight += weight
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     if self.logger.isEnabledFor(logging.DEBUG):
                         self.logger.debug(

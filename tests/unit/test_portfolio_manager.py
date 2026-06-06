@@ -12,7 +12,7 @@ class FakePortfolio:
 
 class FailingAdaptiveSizer:
     def calculate_position_size(self, params):
-        raise RuntimeError("adaptive sizing unavailable")
+        raise ValueError("adaptive sizing unavailable")
 
 
 class EliteSizer:

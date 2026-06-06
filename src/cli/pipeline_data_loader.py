@@ -19,7 +19,7 @@ class PipelineDataLoader:
                 df = pd.read_parquet(path)
                 logger.info(f"Loaded {label}: {df.shape}")
                 return df
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Error loading {label} from {path}: {e}")
         else:
             logger.error(f"{label.capitalize()} file not found: {path}")
@@ -44,6 +44,35 @@ class PipelineDataLoader:
         return news_data, econ_data
 
     @staticmethod
+    def _should_skip_table(table_name: str) -> bool:
+        """Check if table should be skipped during database fallback."""
+        return table_name in [
+            "cache_metadata",
+            "huggingface_data",
+            "enriched_features",
+            "experience_diary",
+            "market_data",
+        ]
+
+    @staticmethod
+    def _get_collector_info(table_name: str, collector_configs: dict[str, Any]) -> dict[str, Any]:
+        """Get collector configuration for a table."""
+        for config in collector_configs.values():
+            if config.get("table_name") == table_name:
+                return config
+        return collector_configs.get(table_name, {})
+
+    @staticmethod
+    def _categorize_dataframe(df: pd.DataFrame, table_name: str, collector_info: dict[str, Any]) -> str | None:
+        """Categorize dataframe as news or macro data."""
+        data_type = collector_info.get("data_type")
+        if data_type == "news":
+            return "news"
+        elif "fred" in table_name.lower() or "macro" in table_name.lower() or data_type == "macro_data":
+            return "macro"
+        return None
+
+    @staticmethod
     def load_from_db_fallback(
         orchestrator: Any, news_data: pd.DataFrame | None, economic_data: pd.DataFrame | None
     ):
@@ -57,35 +86,28 @@ class PipelineDataLoader:
             collector_configs = orchestrator.config_manager.get_config("collectors", {})
             all_news_dfs = []
             macro_dfs = []
+
             for table_name in table_names:
-                if table_name in [
-                    "cache_metadata",
-                    "huggingface_data",
-                    "enriched_features",
-                    "experience_diary",
-                    "market_data",
-                ]:
+                if PipelineDataLoader._should_skip_table(table_name):
                     continue
+
                 df = db_manager.fetch_data_from_table(table_name)
                 if df is None or df.empty:
                     continue
-                collector_info = {}
-                for config in collector_configs.values():
-                    if config.get("table_name") == table_name:
-                        collector_info = config
-                        break
-                if not collector_info:
-                    collector_info = collector_configs.get(table_name, {})
-                data_type = collector_info.get("data_type")
-                if data_type == "news":
+
+                collector_info = PipelineDataLoader._get_collector_info(table_name, collector_configs)
+                category = PipelineDataLoader._categorize_dataframe(df, table_name, collector_info)
+
+                if category == "news":
                     all_news_dfs.append(df)
-                elif "fred" in table_name.lower() or "macro" in table_name.lower() or data_type == "macro_data":
+                elif category == "macro":
                     macro_dfs.append(df)
+
             if news_data is None and all_news_dfs:
                 news_data = PipelineDataLoader.reconstruct_from_db(all_news_dfs, "news", deduplicate_dataframe)
             if economic_data is None and macro_dfs:
                 economic_data = PipelineDataLoader.reconstruct_from_db(macro_dfs, "economic", deduplicate_dataframe)
-        except Exception as ex:
+        except (ValueError, TypeError, KeyError, ImportError, pd.errors.EmptyDataError) as ex:
             logger.error(f"Виникла помилка: {ex}", exc_info=True)
             logger.warning(f"⚠️ Failed to load news/macro fallback from database: {ex}")
             raise

@@ -126,10 +126,14 @@ class EnrichedDataSchema(BaseModel):
         if not self.enriched_prices:
             raise ValueError("Enriched prices dictionary is empty")
 
-        # Check for target columns in enriched data
-        target_cols = [col for col in self.selected_features if col.startswith('target_')]
-        if not target_cols:
-            raise ValueError("No target columns found in selected features")
+        # Check for target columns — they may be in all_targets (prepare mode)
+        # or in selected_features (train mode). Both are valid.
+        target_cols_in_features = [col for col in self.selected_features if col.startswith('target_')]
+        target_cols_in_targets = bool(self.all_targets)
+
+        if not target_cols_in_features and not target_cols_in_targets:
+            # Only raise if there are genuinely no targets anywhere
+            raise ValueError("No target columns found in selected features or all_targets")
 
         # Validate feature importance scores
         if self.feature_importance:
@@ -205,7 +209,7 @@ def validate_stage_output(stage_name: str, output: dict[str, Any], schema_class:
         schema = schema_class(**output)
         schema.validate()
         return schema.dict()
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         raise ValueError(f"Stage {stage_name} output validation failed: {e}") from e
 
 
@@ -268,7 +272,7 @@ def validate_batch_dir(batch_dir: str) -> dict[str, Any]:
         try:
             with open(metadata_path, encoding='utf-8') as f:
                 manifest = json.load(f)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             errors.append(f"Failed to read batch_metadata.json: {e}")
 
     required_files = ['features.parquet', 'targets.parquet']

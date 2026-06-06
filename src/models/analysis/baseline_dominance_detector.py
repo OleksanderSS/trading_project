@@ -104,7 +104,7 @@ class BaselineDominanceDetector:
             self.logger.info("✅ Baseline dominance analysis complete")
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in baseline dominance analysis: {e}", exc_info=True)
             raise DataProcessingError(f"Baseline dominance analysis failed: {e}") from e
 
@@ -119,7 +119,7 @@ class BaselineDominanceDetector:
                 result = model.train_and_evaluate(market_data, features_df, target_series)
                 if result.get('status') != 'no_data':
                     baseline_results[name] = result
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Error training baseline {name}: {e}", exc_info=True)
 
         if not baseline_results:

@@ -62,7 +62,7 @@ class DataCleaner:
                     f'Removed {outlier_count} rows containing outliers in columns {columns} (Threshold: {threshold})'
                     )
             return df_out
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f'Error during outlier removal for columns {columns}: {e}')
             return df
@@ -163,7 +163,7 @@ def _sanitize_index_timezone(df: pd.DataFrame, label: str) ->pd.DataFrame:
         df.index = df.index.tz_localize(None)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'[{label}] Converted DatetimeIndex to timezone-naive.')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Виникла помилка: {e}', exc_info=True)
         logger.warning(f'[{label}] Failed to sanitize index timezone: {e}')
         raise
@@ -178,7 +178,7 @@ def _sanitize_column_timezone(df: pd.DataFrame, col: str, label: str) ->None:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(
                     f"[{label}] Converted column '{col}' to timezone-naive.")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(
                 f"[{label}] Failed to sanitize column '{col}' timezone: {e}")

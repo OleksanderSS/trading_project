@@ -33,7 +33,7 @@ class RegimeMetricsCalculator:
             di_minus = 100 * np.sum(down_move[-period:]) / tr_sum
             adx = abs(di_plus - di_minus)
             return float(adx)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             RegimeMetricsCalculator.logger.error(f'Помилка розрахунку ADX: {e}'
                 , exc_info=True)
             return 0.0

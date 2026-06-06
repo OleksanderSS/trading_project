@@ -39,7 +39,8 @@ class WeightStabilityMonitor:
                      new_weights: dict[str, float],
                      timestamp: datetime | None = None) -> dict[str, Any]:
         """Update weights and monitor stability."""
-        if timestamp is None: timestamp = datetime.now()
+        if timestamp is None:
+            timestamp = datetime.now()
 
         self.last_weights = self.current_weights.copy()
         weight_changes = self.calculator.calculate_weight_changes(new_weights, self.last_weights)
@@ -74,7 +75,8 @@ class WeightStabilityMonitor:
         return results
 
     def _run_analysis(self) -> dict[str, Any]:
-        if len(self.weight_history) < 2: return {}
+        if len(self.weight_history) < 2:
+            return {}
 
         models = list(self.current_weights.keys())
         metrics = {
@@ -95,10 +97,12 @@ class WeightStabilityMonitor:
             'weights': results['new_weights'].copy()
         }
         self.stability_events.append(event)
-        if len(self.stability_events) > 100: self.stability_events = self.stability_events[-100:]
+        if len(self.stability_events) > 100:
+            self.stability_events = self.stability_events[-100:]
 
     def stabilize_weights(self, proposed_weights: dict[str, float], method: str = "constrained") -> dict[str, float]:
-        if not self.last_weights: return proposed_weights
+        if not self.last_weights:
+            return proposed_weights
 
         if method == "constrained":
             return self.stabilizer.apply_constrained_stabilization(proposed_weights, self.last_weights)
@@ -112,7 +116,8 @@ class WeightStabilityMonitor:
     def get_stability_summary(self, days: int = 30) -> dict[str, Any]:
         cutoff = datetime.now() - timedelta(days=days)
         recent = [e for e in self.stability_events if e['timestamp'] >= cutoff]
-        if not recent: return {'error': 'No data'}
+        if not recent:
+            return {'error': 'No data'}
 
         scores = [e['stability_score'] for e in recent]
         return {

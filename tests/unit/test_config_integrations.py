@@ -1,4 +1,6 @@
 import importlib
+import tempfile
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -44,16 +46,17 @@ def test_yaml_config_paths_match_real_classes():
         assert hasattr(module, ref["class"])
 
 
-def test_local_file_data_source_loads_csv(tmp_path):
+def test_local_file_data_source_loads_csv():
     from src.data_sources.local_file_data_source import LocalFileDataSource
 
-    path = tmp_path / "prices.csv"
-    path.write_text("date,close\n2024-01-01,100\n", encoding="utf-8")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        path = Path(tmp_dir) / "prices.csv"
+        path.write_text("date,close\n2024-01-01,100\n", encoding="utf-8")
 
-    df = LocalFileDataSource(path, date_col="date").load()
+        df = LocalFileDataSource(path, date_col="date").load()
 
-    assert df.loc[0, "close"] == 100
-    assert pd.api.types.is_datetime64_any_dtype(df["date"])
+        assert df.loc[0, "close"] == 100
+        assert pd.api.types.is_datetime64_any_dtype(df["date"])
 
 
 def test_transformer_config_compatibility_class_scales_dataframe():
@@ -66,7 +69,7 @@ def test_transformer_config_compatibility_class_scales_dataframe():
     assert transformed["close"].round(6).tolist() == [-1.0, 1.0]
 
 
-def test_processing_handler_unwraps_filters_and_normalizes_nested_prices(tmp_path):
+def test_processing_handler_unwraps_filters_and_normalizes_nested_prices():
     from src.pipeline.stages.processing.data_handler import ProcessingDataHandler
     from src.processing.normalization_manager import NormalizationManager
 
@@ -85,21 +88,22 @@ def test_processing_handler_unwraps_filters_and_normalizes_nested_prices(tmp_pat
             }
 
     df = pd.DataFrame({"close": [100.0, 110.0], "volume": [10.0, 20.0]})
-    manager = NormalizationManager(scaler_dir=str(tmp_path))
-    handler = ProcessingDataHandler(manager, StubFilter())
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        manager = NormalizationManager(scaler_dir=str(tmp_dir))
+        handler = ProcessingDataHandler(manager, StubFilter())
 
-    filtered = handler.apply_intelligent_filtering({"prices": {"1d": df}})
-    handler.apply_normalization(
-        filtered,
-        features_to_normalize=[
-            {"feature": "close", "scaler_type": "standard"},
-            {"feature": "volume", "scaler_type": "min_max"},
-        ],
-    )
+        filtered = handler.apply_intelligent_filtering({"prices": {"1d": df}})
+        handler.apply_normalization(
+            filtered,
+            features_to_normalize=[
+                {"feature": "close", "scaler_type": "standard"},
+                {"feature": "volume", "scaler_type": "min_max"},
+            ],
+        )
 
-    normalized = filtered["prices"]["1d"]
-    assert normalized["close"].round(6).tolist() == [-1.0, 1.0]
-    assert normalized["volume"].tolist() == [0.0, 1.0]
+        normalized = filtered["prices"]["1d"]
+        assert normalized["close"].round(6).tolist() == [-1.0, 1.0]
+        assert normalized["volume"].tolist() == [0.0, 1.0]
 
 
 def test_legacy_ensemble_selector_import_uses_active_implementation():

@@ -41,7 +41,7 @@ class LinearRegressionBaseline(BaseBaseline):
                 predictions), 'complexity_score': self.complexity_score,
                 'feature_count': len(X.columns), 'coefficients': dict(zip(X.
                 columns, model.coef_, strict=False))}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error in LinearRegressionBaseline: {e}", exc_info=True)
             raise DataProcessingError(f"LinearRegressionBaseline training failed: {e}") from e
 
@@ -75,6 +75,6 @@ class SimpleRandomForestBaseline(BaseBaseline):
                 predictions), 'complexity_score': self.complexity_score,
                 'feature_count': len(X.columns), 'feature_importance': dict(
                 zip(X.columns, model.feature_importances_, strict=False))}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error in SimpleRandomForestBaseline: {e}", exc_info=True)
             raise DataProcessingError(f"SimpleRandomForestBaseline training failed: {e}") from e

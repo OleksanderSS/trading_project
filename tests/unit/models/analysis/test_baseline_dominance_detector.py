@@ -42,7 +42,7 @@ async def test_analyze_baseline_dominance_failure(detector):
     market_data = pd.DataFrame({'close': [1, 2, 3]})
     
     # Force exception
-    detector._train_baseline_models = AsyncMock(side_effect=Exception("Training failed"))
-    
-    with pytest.raises(DataProcessingError):
+    detector._train_baseline_models = AsyncMock(side_effect=ValueError("Training failed"))
+
+    with pytest.raises(DataProcessingError, match="Training failed"):
         await detector.analyze_baseline_dominance(complex_results, market_data)

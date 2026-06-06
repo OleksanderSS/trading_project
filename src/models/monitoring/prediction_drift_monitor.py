@@ -105,7 +105,7 @@ class PredictionDriftMonitor:
 
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in prediction monitoring: {e}", exc_info=True)
             raise DataProcessingError(f"Prediction monitoring failed: {e}") from e
 
@@ -160,7 +160,7 @@ class PredictionDriftMonitor:
 
             return drift_analysis
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error detecting prediction drift: {e}")
             drift_analysis['status'] = 'error'
             drift_analysis['error'] = str(e)
@@ -206,7 +206,7 @@ class PredictionDriftMonitor:
 
             return performance_analysis
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing performance degradation: {e}")
             performance_analysis['status'] = 'error'
             performance_analysis['error'] = str(e)
@@ -249,7 +249,7 @@ class PredictionDriftMonitor:
 
             return confidence_analysis
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing confidence drift: {e}")
             confidence_analysis['status'] = 'error'
             confidence_analysis['error'] = str(e)
@@ -278,7 +278,7 @@ class PredictionDriftMonitor:
             else:
                 self.current_drift_status = 'stable'
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error updating drift status: {e}")
 
     def _store_monitoring_results(self, results: dict[str, Any]) -> None:
@@ -300,12 +300,48 @@ class PredictionDriftMonitor:
             for file_to_delete in files[100:]:
                 file_to_delete.unlink()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to store monitoring results: {e}")
+
+    def _calculate_severity_distribution(self, recent_drift: list[dict[str, Any]]) -> dict[str, int]:
+        """Calculate distribution of drift severity levels."""
+        severity_counts = {}
+        for record in recent_drift:
+            severity = record.get('drift_severity', 'none')
+            severity_counts[severity] = severity_counts.get(severity, 0) + 1
+        return severity_counts
+
+    def _calculate_most_common_drift_method(self, recent_drift: list[dict[str, Any]]) -> str | None:
+        """Find the most common drift detection method."""
+        method_counts = {}
+        for record in recent_drift:
+            methods = record.get('methods', {})
+            for method_name, method_result in methods.items():
+                if method_result.get('drift_detected', False):
+                    method_counts[method_name] = method_counts.get(method_name, 0) + 1
+
+        if method_counts:
+            return max(method_counts.items(), key=lambda x: x[1])[0]
+        return None
+
+    def _analyze_drift_trend(self, recent_drift: list[dict[str, Any]]) -> str:
+        """Analyze the trend of drift scores over time."""
+        if len(recent_drift) < 5:
+            return 'stable'
+
+        recent_scores = [record.get('drift_score', 0) for record in recent_drift[-10:]]
+        if len(recent_scores) < 3:
+            return 'stable'
+
+        slope = np.polyfit(range(len(recent_scores)), recent_scores, 1)[0]
+        if slope > 0.01:
+            return 'increasing'
+        elif slope < -0.01:
+            return 'decreasing'
+        return 'stable'
 
     def get_drift_summary(self, days: int = 30) -> dict[str, Any]:
         """Get summary of drift monitoring over time period."""
-
         cutoff_time = datetime.now() - timedelta(days=days)
 
         # Filter recent drift history
@@ -321,46 +357,11 @@ class PredictionDriftMonitor:
         summary = {
             'period_days': days,
             'total_drift_events': len(recent_drift),
-            'drift_severity_distribution': {},
-            'drift_frequency': 0.0,
-            'most_common_drift_method': None,
-            'drift_trend': 'stable'
+            'drift_severity_distribution': self._calculate_severity_distribution(recent_drift),
+            'drift_frequency': len(recent_drift) / days if days > 0 else 0.0,
+            'most_common_drift_method': self._calculate_most_common_drift_method(recent_drift),
+            'drift_trend': self._analyze_drift_trend(recent_drift)
         }
-
-        # Calculate severity distribution
-        severity_counts = {}
-        for record in recent_drift:
-            severity = record.get('drift_severity', 'none')
-            severity_counts[severity] = severity_counts.get(severity, 0) + 1
-
-        summary['drift_severity_distribution'] = severity_counts
-
-        # Calculate drift frequency
-        if days > 0:
-            summary['drift_frequency'] = len(recent_drift) / days
-
-        # Get most common drift method
-        method_counts = {}
-        for record in recent_drift:
-            methods = record.get('methods', {})
-            for method_name, method_result in methods.items():
-                if method_result.get('drift_detected', False):
-                    method_counts[method_name] = method_counts.get(method_name, 0) + 1
-
-        if method_counts:
-            summary['most_common_drift_method'] = max(method_counts.items(), key=lambda x: x[1])[0]
-
-        # Analyze drift trend
-        if len(recent_drift) >= 5:
-            recent_scores = [record.get('drift_score', 0) for record in recent_drift[-10:]]
-            if len(recent_scores) >= 3:
-                slope = np.polyfit(range(len(recent_scores)), recent_scores, 1)[0]
-                if slope > 0.01:
-                    summary['drift_trend'] = 'increasing'
-                elif slope < -0.01:
-                    summary['drift_trend'] = 'decreasing'
-                else:
-                    summary['drift_trend'] = 'stable'
 
         return summary
 

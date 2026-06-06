@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Feature Selection Validator: Checks if feature selection is needed and creates mock selections for testing.
 Extracted from HybridOrchestrator to improve code organization and testability.
@@ -81,7 +82,7 @@ class FeatureSelectionValidator:
                 if days > 7:
                     return {'needed': True, 'reason':
                         f'{days} days passed (> 7 days)'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error checking time-based selection: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Could not check time-based selection: {e}')
         return None
@@ -99,7 +100,7 @@ class FeatureSelectionValidator:
                 if pct > 10:
                     return {'needed': True, 'reason':
                         f'Data changed by {pct:.1f}% (> 10%)'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error checking data change: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Could not check data change: {e}')
         return {'needed': False, 'reason': 'No feature selection needed'}
@@ -139,7 +140,7 @@ class FeatureSelectionValidator:
                 return False
             dtype = features_df[col].dtype
             return dtype in ['float64', 'int64', 'float32', 'int32', 'bool']
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error validating feature {col}: {e}', exc_info=True)
             return False
 

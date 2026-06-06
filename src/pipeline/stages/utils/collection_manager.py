@@ -11,8 +11,9 @@ logger = ProjectLogger.get_logger(__name__)
 class CollectionManager:
     """Manages execution and error handling of data collectors."""
 
-    def __init__(self, factory: CollectorFactory):
+    def __init__(self, factory: CollectorFactory, config_manager=None):
         self.factory = factory
+        self.config_manager = config_manager
         self.collectors = self.factory.get_all_collectors()
         logger.info(f'Initialized CollectionManager with {len(self.collectors)} collectors.')
 
@@ -30,7 +31,7 @@ class CollectionManager:
                     table_name = f"{collector.__class__.__name__.lower().replace('collector', '')}_data"
                     raw_data[table_name] = df
                     logger.info(f'✅ Collected {len(df)} rows from {collector.__class__.__name__}')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'❌ Collector {collector.__class__.__name__} failed: {e}', exc_info=True)
                 # Re-raising or handling depends on whether we want to fail the whole stage or just skip
                 # Given current requirement to fix "silent" errors, we should at least log properly or raise if critical.
@@ -63,8 +64,12 @@ class CollectionManager:
             elif isinstance(collector, (GoogleNewsCollector, NewsAPICollector)):
                 return await collector.run(tickers=tickers, keywords=keywords)
             elif isinstance(collector, RSSCollector):
-                # Assuming config_manager is accessible or passed
-                return await collector.run(tickers=tickers, keywords=keywords)
+                # ✅ FIX: pass config_manager so RSS can load feeds from knowledge_base
+                return await collector.run(
+                    tickers=tickers,
+                    keywords=keywords,
+                    config_manager=self.config_manager,
+                )
             elif isinstance(collector, FreeGoogleTrendsCollector):
                 return await collector.run(tickers=tickers, keywords=keywords)
             elif isinstance(collector, HuggingfaceCollector):
@@ -73,7 +78,7 @@ class CollectionManager:
                 return await collector.run()
             else:
                 return await collector.run(tickers=tickers, keywords=keywords)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise DataProcessingError(f"Collector {name} failed: {e}") from e
 
     def _convert_to_dataframe(self, res: Any) -> pd.DataFrame | None:

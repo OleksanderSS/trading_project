@@ -28,3 +28,26 @@ from .model_selector import SmartModelSelector
 # Model monitoring
 from .monitoring.prediction_drift_monitor import PredictionDriftMonitor, get_prediction_drift_monitor
 from .quality.controller import ModelQualityController
+
+__all__ = [
+    'BaselineDominanceDetector',
+    'OverfittingDetector',
+    'detect_overfitting_quick',
+    'get_overfitting_detector',
+    'RegimeWinnerAnalyzer',
+    'ConfidenceCalibrator',
+    'calibrate_confidence_quick',
+    'get_confidence_calibrator',
+    'ModelCorrelationAnalyzer',
+    'analyze_model_correlation_quick',
+    'get_model_correlation_analyzer',
+    'WeightStabilityMonitor',
+    'get_weight_stability_monitor',
+    'monitor_weight_stability_quick',
+    'IntegratedModelManager',
+    'get_integrated_model_manager',
+    'SmartModelSelector',
+    'PredictionDriftMonitor',
+    'get_prediction_drift_monitor',
+    'ModelQualityController',
+]

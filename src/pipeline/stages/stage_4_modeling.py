@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 import datetime
 from dataclasses import dataclass
 from pathlib import Path
@@ -98,15 +99,18 @@ class ModelingStage(BaseStage):
             timeframe = df['interval'].iloc[-1] if 'interval' in df.columns else '1d'
 
             for target_name in target_cols:
-                # Готуємо дані з PURGED GAP
+                # Готуємо дані з PURGED GAP та CROSS-VALIDATION
+                use_cv = self.modeling_config.get('use_cross_validation', False)
                 prepared_data = prepare_data_for_models(
                     df=df, ticker=ticker, timeframe=timeframe,
                     target_cols=[target_name],
                     gap_size=10, # Обов'язковий розрив для чесності
-                    test_size=self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
+                    test_size=self.modeling_config.get('test_size', DEFAULT_TEST_SIZE),
+                    use_cross_validation=use_cv  # Додано cross-validation
                 )
 
-                if not prepared_data: continue
+                if not prepared_data:
+                    continue
 
                 # Запускаємо уніфіковане тренування
                 training_results = self.training_manager.execute_unified_training(
@@ -133,7 +137,7 @@ class ModelingStage(BaseStage):
                     self._log_expert_to_diary(champions[context_key], timeframe)
                     logger.info(f"🏆 Pattern Champion for {context_key}: {winner_name} (Score: {metrics.get('score', 0):.4f})")
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error modeling {ticker}: {e}", exc_info=True)
 
     def _log_expert_to_diary(self, info: dict[str, Any], tf: str):

@@ -64,7 +64,7 @@ class SmartModelSelector:  # Keep name for backward compatibility
             self.logger.warning(f"No reliable match for '{context_fingerprint}'. Fallback: {self.fallback}")
             return self.fallback
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Selection error: {e}", exc_info=True)
             return self.fallback
 
@@ -100,7 +100,7 @@ class SmartModelSelector:  # Keep name for backward compatibility
                 "suggestion": "Reduce position or skip trade"
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Consensus calculation failed: {e}")
             return {"status": "ERROR", "action": "SKIP"}
 

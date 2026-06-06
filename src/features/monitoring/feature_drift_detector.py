@@ -159,7 +159,7 @@ class FeatureDriftDetector:
                 'details': drift_results
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Drift detection failed: {e}", exc_info=True)
             return {
                 'status': 'ERROR',
@@ -199,7 +199,7 @@ class FeatureDriftDetector:
                 'total_features': len(metrics)
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error parsing drift results: {e}")
             return {
                 'drift_detected': False,

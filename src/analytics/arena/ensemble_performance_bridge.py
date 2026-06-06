@@ -58,7 +58,7 @@ class EnsemblePerformanceBridge:
             self._last_result = result
             self.logger.info(f"Ensemble sync: {updated} records updated")
             return result
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Ensemble sync failed: {e}", exc_info=True)
             return {"success": False, "error": str(e)}
 
@@ -88,7 +88,7 @@ class EnsemblePerformanceBridge:
                 "total_unique_models": len(unified),
                 "last_updated": datetime.now().isoformat(),
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to get unified performance view: {e}", exc_info=True)
             return {"success": False, "error": str(e)}
 
@@ -111,7 +111,7 @@ class EnsemblePerformanceBridge:
                         "source": "live_ensemble",
                     }
                 )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Виникла помилка: {e}", exc_info=True)
             self.logger.warning(f"Could not extract ensemble metrics: {e}", exc_info=True)
             raise

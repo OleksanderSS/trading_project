@@ -9,10 +9,8 @@ Handles model selection logic including:
 Extracted from stage_5_prediction.py to reduce coupling.
 """
 import logging
-from pathlib import Path
 from typing import Any
 
-from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 
 
@@ -36,51 +34,25 @@ class ModelSelectionService:
 
     def get_available_model_types(self) -> set:
         """
-        Get available model types by scanning model files in the database directory.
+        Get available model types from ModelRegistry.
 
         Returns:
             Set of available model type strings
         """
-        try:
-            base_dir = Path(self.config_manager.get(
-                self.ACCUMULATION_OUTPUT_DIR_CONFIG,
-                self.DEFAULT_ACCUMULATION_DIR
-            ))
-            batch_dir = base_dir / 'main_database'
+        from src.models.registry.model_registry import ModelRegistry
 
-            if not batch_dir.exists():
-                self.logger.warning(f'Model directory not found: {batch_dir}')
-                return {'mlp', 'tabnet'}
+        # Get all registered models from the single source of truth
+        available_models = ModelRegistry.get_all_model_names()
 
-            model_types = set()
+        # Map them to their types
+        model_types = set()
+        for name in available_models:
+            config = ModelRegistry.get_model_config(name)
+            if config:
+                model_types.add(config.get('type', 'light'))
 
-            # Check for pickle files (MLP)
-            pkl_files = list(batch_dir.glob('*.pkl'))
-            if pkl_files:
-                model_types.add('mlp')
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'Found {len(pkl_files)} MLP models')
-
-            # Check for zip files (TabNet)
-            zip_files = list(batch_dir.glob('*.zip'))
-            if zip_files:
-                model_types.add('tabnet')
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'Found {len(zip_files)} TabNet models')
-
-            # Check for Keras files (CNN, LSTM, GRU, Transformer, Autoencoder)
-            keras_files = list(batch_dir.glob('*.keras'))
-            if keras_files:
-                model_types.update(['cnn', 'lstm', 'gru', 'transformer', 'autoencoder'])  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'Found {len(keras_files)} Keras models')
-
-            self.logger.info(f'Available model types: {sorted(model_types)}')
-            return model_types if model_types else {'mlp', 'tabnet'}
-
-        except Exception as e:
-            self.logger.error(f'Error scanning model types: {e}', exc_info=True)
-            raise DataProcessingError(f"Failed to scan available model types: {e}") from e
+        self.logger.info(f'Available model types: {sorted(model_types)}')
+        return model_types if model_types else {'mlp', 'tabnet'}
 
     def filter_models_by_type(
         self,
@@ -97,9 +69,15 @@ class ModelSelectionService:
         Returns:
             Filtered models metadata
         """
+        from src.models.registry.model_registry import ModelRegistry
+
         filtered_models_meta = {}
         for context_id, meta in models_meta.items():
-            model_type = meta.get('model_type', '')
+            # Resolve model type using the registry
+            model_name = meta.get('model_type', '')
+            config = ModelRegistry.get_model_config(model_name.lower())
+            model_type = config.get('type', 'light') if config else 'light'
+
             if model_type in available_model_types:
                 filtered_models_meta[context_id] = meta
             else:
@@ -175,7 +153,7 @@ class ModelSelectionService:
                             f"DiarySelector chose '{best}' for {ticker} in {market_regime} regime (fp={context_fingerprint})."
                         )
                         return best
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
                 f"Diary-based selection failed for {ticker}: {e}", exc_info=True
             )
@@ -213,20 +191,28 @@ class ModelSelectionService:
         return prediction_models
 
     def _build_model_alias_map(self, models_list: list[str]) -> dict[str, str]:
-        """Build mapping from model type aliases to actual model names."""
+        """Build mapping from model type aliases to actual model names using ModelRegistry."""
+        from src.models.registry.model_registry import ModelRegistry
+
         aliases: dict[str, str] = {}
         for model_name in models_list:
-            aliases.setdefault(self._model_type_alias(model_name), model_name)
+            # Simplification: use the registry-defined class or name
+            config = ModelRegistry.get_model_config(model_name.lower())
+            alias = config.get('class', model_name).lower() if config else model_name
+            aliases.setdefault(alias, model_name)
         return aliases
 
     def _resolve_model_selection(self, selected_name: str, models_list: list[str]) -> str | None:
-        """Resolve selected model name to actual model name from list."""
+        """Resolve selected model name to actual model name from list using ModelRegistry."""
+        from src.models.registry.model_registry import ModelRegistry
+
         if selected_name in models_list:
             return selected_name
 
-        selected_alias = self._model_type_alias(selected_name)
+        # Resolve alias
         for model_name in models_list:
-            if self._model_type_alias(model_name) == selected_alias:
+            config = ModelRegistry.get_model_config(model_name.lower())
+            if config and config.get('class', '').lower() == selected_name.lower():
                 return model_name
         return None
 
@@ -234,39 +220,23 @@ class ModelSelectionService:
         self, model_name: str, weights: dict[str, float]
     ) -> float:
         """Score a model using direct model ids or model-type aliases."""
+        from src.models.registry.model_registry import ModelRegistry
+
         if model_name in weights:
             return float(weights[model_name])
-        model_alias = self._model_type_alias(model_name)
+
+        config = ModelRegistry.get_model_config(model_name.lower())
+        model_alias = config.get('class', model_name).lower() if config else model_name
+
         score = 0.0
         for weighted_name, value in weights.items():
-            if self._model_type_alias(str(weighted_name)) == model_alias:
+            w_config = ModelRegistry.get_model_config(str(weighted_name).lower())
+            w_alias = w_config.get('class', weighted_name).lower() if w_config else weighted_name
+
+            if w_alias == model_alias:
                 score += float(value)
         return score
 
-    def _model_type_alias(self, model_name: str) -> str:
-        """Get canonical alias for a model name."""
-        normalized = model_name.lower().replace('-', '_')
-        known_aliases = {
-            'random_forest': ('random_forest', 'randomforest'),
-            'lightgbm': ('lightgbm', 'lgbm'),
-            'catboost': ('catboost',),
-            'xgboost': ('xgboost', 'xgb'),
-            'elasticnet': ('elasticnet', 'elastic_net'),
-            'linear': ('linear', 'linear_regression'),
-            'ridge': ('ridge',),
-            'lstm': ('lstm',),
-            'transformer': ('transformer',),
-            'mlp': ('mlp',),
-            'svm': ('svm',),
-            'knn': ('knn',),
-        }
-
-        for canonical, aliases in known_aliases.items():
-            if any(alias in normalized for alias in aliases):
-                return canonical
-
-        parts = [part for part in normalized.split('_') if part]
-        return parts[-1] if parts else normalized
 
     def _create_context_fingerprint(self, ticker_df, market_regime: str) -> str:
         """Create context fingerprint using context_pattern_id."""
@@ -278,7 +248,7 @@ class ModelSelectionService:
             regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
             regime_val = regime_map.get(market_regime.lower(), 0)
             return f"legacy_{regime_val}"
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error creating context fingerprint: {e}", exc_info=True)
             return 'unknown_context'
 

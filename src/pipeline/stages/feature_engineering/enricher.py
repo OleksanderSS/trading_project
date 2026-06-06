@@ -17,10 +17,11 @@ class FeatureEnricher:
         cache_dir = config_manager.get('performance.feature_cache_dir', 'data/cache/features')
         self.feature_cache = get_feature_cache(cache_dir=cache_dir)
 
-    def enrich_features(self, df: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+    def enrich_features(self, df: pd.DataFrame, timeframe: str, **kwargs) -> pd.DataFrame:
         """Enrich data with technical and statistical features."""
         self.logger.info(f"Enriching features for timeframe: {timeframe}")
-        return self.orchestrator.run(df, add_timeframe_suffix=True, timeframe=timeframe)
+        # ✅ FIX: pass kwargs (macro_data, news) to orchestrator.run so enrichers receive them
+        return self.orchestrator.run(df, add_timeframe_suffix=True, timeframe=timeframe, **kwargs)
 
     def add_macro_features(self, df: pd.DataFrame, macro_data: pd.DataFrame) -> pd.DataFrame:
         """Add macro-economic indicators."""

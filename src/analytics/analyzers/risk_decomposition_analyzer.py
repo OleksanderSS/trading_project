@@ -284,20 +284,23 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             'diversification_efficiency': float(1.0 - concentration.get
             ('herfindahl_hirschman_index', 1.0))}
 
-    def _generate_risk_mitigation_recommendations(self, systematic: dict[
-        str, float], idiosyncratic: dict[str, float], factors: dict[str,
-        Any], concentration: dict[str, Any], liquidity: dict[str, Any]) ->list[
-        str]:
-        """Translates quantitative risk metrics into actionable portfolio mitigation strategies."""
+    def _check_concentration_risk(self, concentration: dict[str, Any]) -> list[str]:
+        """Check for concentration-related risks."""
         recommendations = []
         if concentration.get('herfindahl_hirschman_index', 0.0) > 0.25:
             recommendations.append(
                 'High portfolio clustering detected. Diversify asset allocation to reduce structural fragility.'
-                )
+            )
         if concentration.get('effective_asset_count', 10) < 5:
             recommendations.append(
                 'Low effective asset count identified. Increase positional diversity across non-correlated sectors.'
-                )
+            )
+        return recommendations
+
+    def _check_systematic_idiosyncratic_balance(self, systematic: dict[str, float],
+                                                 idiosyncratic: dict[str, float]) -> list[str]:
+        """Check balance between systematic and idiosyncratic risk."""
+        recommendations = []
         s_val = np.mean(list(systematic.values())) if systematic else 0.0
         i_val = np.mean(list(idiosyncratic.values())) if idiosyncratic else 0.0
         total_v = s_val + i_val
@@ -305,28 +308,51 @@ class RiskDecompositionAnalyzer(IAnalyzer):
             if s_val / total_v > 0.8:
                 recommendations.append(
                     'Market (Systematic) risk predominates. Implement index-based hedging or reduce Beta exposure.'
-                    )
+                )
             elif i_val / total_v > 0.8:
                 recommendations.append(
                     'Specific (Idiosyncratic) risk predominates. This can be mitigated through increased asset-level diversification.'
-                    )
+                )
+        return recommendations
+
+    def _check_liquidity_risk(self, liquidity: dict[str, Any]) -> list[str]:
+        """Check for liquidity-related risks."""
+        recommendations = []
         if liquidity.get('portfolio_liquidity_risk_index', 0.0) > 1.0:
             recommendations.append(
                 'Elevated liquidity risk index. Review positions in low-volume tickers or reduce individual position sizes.'
-                )
+            )
         illiquid_c = liquidity.get('illiquid_asset_count', 0)
         if illiquid_c > 0:
             recommendations.append(
                 f'Action required: {illiquid_c} assets flagged for insufficient liquidity. Monitor slippage and exit availability.'
-                )
+            )
+        return recommendations
+
+    def _check_factor_explainability(self, factors: dict[str, Any]) -> list[str]:
+        """Check factor model explainability."""
+        recommendations = []
         if factors.get('methodology') == 'pca_latent_discovery':
             explained_v = sum(factors.get('variance_explained_ratio', []))
             if explained_v < 0.5:
                 recommendations.append(
                     'Low factor explainability observed. Latent PCA factors capture < 50% of variance; consider alternative risk models.'
-                    )
+                )
+        return recommendations
+
+    def _generate_risk_mitigation_recommendations(self, systematic: dict[
+        str, float], idiosyncratic: dict[str, float], factors: dict[str,
+        Any], concentration: dict[str, Any], liquidity: dict[str, Any]) ->list[
+        str]:
+        """Translates quantitative risk metrics into actionable portfolio mitigation strategies."""
+        recommendations = []
+        recommendations.extend(self._check_concentration_risk(concentration))
+        recommendations.extend(self._check_systematic_idiosyncratic_balance(systematic, idiosyncratic))
+        recommendations.extend(self._check_liquidity_risk(liquidity))
+        recommendations.extend(self._check_factor_explainability(factors))
+
         if not recommendations:
             recommendations.append(
                 'Risk profile appears balanced and structurally sound. Maintain current monitoring routines.'
-                )
+            )
         return recommendations

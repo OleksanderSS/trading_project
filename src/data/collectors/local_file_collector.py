@@ -67,7 +67,7 @@ class LocalFileCollector(BaseCollector):
         except FileNotFoundError:
             self.logger.error(f'Local file not found: {self.file_path}')
             return []
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             raise RuntimeError(f"Failed to read local file {self.file_path}") from e
 

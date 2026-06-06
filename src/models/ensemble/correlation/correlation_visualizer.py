@@ -80,7 +80,7 @@ class CorrelationVisualizer:
             plt.close()
             return save_path
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting correlation matrix: {e}")
             return ""
 
@@ -124,7 +124,7 @@ class CorrelationVisualizer:
             plt.close()
             return save_path
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting diversity metrics: {e}")
             return ""
 
@@ -171,7 +171,7 @@ class CorrelationVisualizer:
             plt.close()
             return save_path
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting redundant pairs: {e}")
             return ""
 
@@ -221,7 +221,7 @@ class CorrelationVisualizer:
             plt.close()
             return save_path
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting diversity trend: {e}")
             return ""
 
@@ -264,7 +264,7 @@ class CorrelationVisualizer:
             self.logger.info(f"Analysis report created with {len(report_paths)} visualizations")
             return str(report_paths) if report_paths else ""
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error creating analysis report: {e}")
             return ""
 

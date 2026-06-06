@@ -77,7 +77,7 @@ class ContextualWeightCalculator:
 
         try:
             result_df = self.data_manager.con.execute(
-                query, ['profitable', context_fingerprint]
+                query, [context_fingerprint]
             ).fetchdf()
 
             if result_df.empty:
@@ -90,7 +90,7 @@ class ContextualWeightCalculator:
 
             return self._calculate_weights_from_dataframe(result_df)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f"Error getting contextual model weights: {e}",
                 exc_info=True
@@ -136,10 +136,10 @@ class ContextualWeightCalculator:
 
         try:
             result_df = self.data_manager.con.execute(
-                query, ['profitable', context_pattern_seq]
+                query, [context_pattern_seq]
             ).fetchdf()
             return self._calculate_weights_from_dataframe(result_df)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f"Error getting pattern-sequence model weights: {e}",
                 exc_info=True

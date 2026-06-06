@@ -3,7 +3,6 @@
 
 import logging
 from collections.abc import Iterable
-from functools import lru_cache
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -49,7 +48,6 @@ class EntityExtractor:
             # Return None to indicate failure, allowing graceful degradation
             return None
 
-    @lru_cache(maxsize=1024)
     def extract(self, text: str, entity_types: list[str] | None = None) -> list[str]:
         """
         Extracts named entities from a given text.
@@ -62,6 +60,12 @@ class EntityExtractor:
         Returns:
             List[str]: A list of unique, stripped entity texts.
         """
+        # ✅ FIX: Use instance-level dict cache instead of lru_cache (avoids memory leak via self ref)
+        cache_key = (text, tuple(entity_types) if entity_types else None)
+        if not hasattr(self, '_extract_cache'):
+            self._extract_cache: dict = {}
+        if cache_key in self._extract_cache:
+            return self._extract_cache[cache_key]
         if not self.nlp or not text or not isinstance(text, str) or not text.strip():
             return []
 
@@ -71,8 +75,12 @@ class EntityExtractor:
             entities = {ent.text.strip() for ent in doc.ents if not entity_types or ent.label_ in entity_types}
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"Extracted {len(entities)} entities from text.")
-            return sorted(entities)
-        except Exception as e:
+            result = sorted(entities)
+            # Store in instance cache (limit size to avoid unbounded growth)
+            if len(self._extract_cache) < 1024:
+                self._extract_cache[cache_key] = result
+            return result
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"An unexpected error occurred during entity extraction: {e}", exc_info=True)
             raise RuntimeError("Entity extraction failed") from e
 
@@ -89,7 +97,7 @@ class EntityExtractor:
             for doc in self.nlp.pipe(texts):
                 entities = {ent.text.strip() for ent in doc.ents if not entity_types or ent.label_ in entity_types}
                 results.append(sorted(entities))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"An error occurred during batch entity extraction: {e}", exc_info=True)
             return [[] for _ in texts]
         return results

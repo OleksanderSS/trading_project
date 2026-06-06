@@ -72,7 +72,7 @@ class VolatilityDriverSelector:
             logger.info(f"VolatilityDriverSelector selected {len(self.selected_features)} features: {self.selected_features}")
             return self.selected_features
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Volatility driver discovery failed: {e}", exc_info=True)
             raise RuntimeError("Volatility driver discovery failed") from e
 

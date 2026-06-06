@@ -81,7 +81,7 @@ class WeightStabilityCalculator:
                 'max_volatility': max_volatility,
                 'model_volatilities': model_volatilities
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating weight volatility: {e}")
             return {'average_volatility': 0.0, 'max_volatility': 0.0}
 
@@ -110,7 +110,7 @@ class WeightStabilityCalculator:
                 'drift_rate': drift_rate,
                 'model_drifts': model_drifts
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating weight drift: {e}")
             return {'total_drift': 0.0, 'drift_rate': 0.0}
 
@@ -134,7 +134,7 @@ class WeightStabilityCalculator:
                     model_consistencies.append(consistency)
 
             return np.mean(model_consistencies) if model_consistencies else 1.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating weight consistency: {e}")
             return 1.0
 
@@ -160,7 +160,7 @@ class WeightStabilityCalculator:
                     model_reversals.append(reversals / (len(model_changes) - 1))
 
             return np.mean(model_reversals) if model_reversals else 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating reversal frequency: {e}")
             return 0.0
 
@@ -187,6 +187,6 @@ class WeightStabilityCalculator:
                 normalized_scores['reversal_frequency'] = max(0.0, 1.0 - (rev / threshold))
 
             return np.mean(list(normalized_scores.values())) if normalized_scores else 1.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating overall stability score: {e}")
             return 1.0

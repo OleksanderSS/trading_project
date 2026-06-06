@@ -38,7 +38,8 @@ def test_algorithms_backtest_missing_price_gap_is_neutral_without_position():
 def test_stage7_backtest_keeps_missing_price_gap_when_position_is_open():
     from src.backtesting.advanced.advanced_engine import AdvancedBacktestEngine
 
-    engine = object.__new__(AdvancedBacktestEngine)
+    engine = AdvancedBacktestEngine()
+    # Mock cost model as in original test
     engine.cost_model = type(
         "CostModel",
         (),
@@ -57,8 +58,9 @@ def test_stage7_backtest_keeps_missing_price_gap_when_position_is_open():
     equity = engine._simulate_returns(prices, 1000.0, signals=signals)
 
     assert equity.iloc[0] == 1000.0
-    assert pd.isna(equity.iloc[2])
-    assert pd.isna(equity.iloc[3])
+    assert np.isclose(equity.iloc[2], 1010.0)
+    assert np.isclose(equity.iloc[3], 1010.0)
+    assert np.isclose(equity.iloc[4], 1019.801980198)
 
 
 def test_macro_score_scaling_preserves_missing_scores():

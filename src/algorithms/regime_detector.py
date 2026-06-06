@@ -76,6 +76,6 @@ class MarketRegimeDetector:
 
             return rule_regime
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
             self.logger.error(f"Error in regime detection: {e}", exc_info=True)
-            raise DataProcessingError("Regime detection failed") from e
+            raise DataProcessingError(f"Regime detection failed due to {type(e).__name__}: {e}") from e

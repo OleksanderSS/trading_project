@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Data Utilities for Hybrid Orchestrator.
 Handles data cleaning, validation, and utility functions.

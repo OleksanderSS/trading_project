@@ -1,4 +1,10 @@
 import logging
+from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
 
 # src/analytics/calculators/fama_french_factors.py
 """
@@ -6,13 +12,6 @@ Fama-French Factor Provider
 Provides accessibility to systematic risk factors including Market, Size, Value, and Momentum.
 Uses Yahoo Finance as the primary data source for benchmark ETF proxies.
 """
-
-from datetime import datetime, timedelta
-
-import numpy as np
-import pandas as pd
-
-from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -92,7 +91,7 @@ class FamaFrenchFactors:
             logger.info(f"Fama-French factor calculation successful ({len(factors_df)} points).")
             return factors_df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Systematic factor computation failed: {e}", exc_info=True)
             raise RuntimeError(f"Systematic factor computation failed: {e}") from e
 
@@ -166,7 +165,7 @@ class FamaFrenchFactors:
             if not result.empty:
                 self._update_cache(cache_key, result)
             return result
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Remote benchmark ingestion failed (yfinance): {e}")
             return self._get_fallback_cache(cache_key)
 
@@ -179,7 +178,7 @@ class FamaFrenchFactors:
                 logger.info(f"Temporal range too narrow for factor analysis: {start_date} to {end_date}")
                 return False
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Temporal parameters malformed: {e}")
             return False
 

@@ -45,7 +45,7 @@ class ProcessingStage(BaseStage):
 
         try:
             self.gcs_manager = GCSManager()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f'GCS Manager initialization failed: {e}. Continuing without cloud storage.')
             self.gcs_manager = None
 
@@ -104,7 +104,19 @@ class ProcessingStage(BaseStage):
             df_m = self.data_handler.clean_and_normalize_market_data(raw_data['market_data'])
             cleaned_data_map['prices'] = self.data_handler.group_by_timeframes(df_m)
 
-        # Add other types as needed (news, macro, etc.)
+        # ✅ Pass macro_data from Stage 1 (FredCollector) to Feature Engineering with cleaning
+        if 'macro_data' in raw_data and isinstance(raw_data['macro_data'], __import__('pandas').DataFrame):
+            macro_df = self.data_handler.clean_and_normalize_market_data(raw_data['macro_data'])
+            cleaned_data_map['macro_data'] = macro_df
+
+        # Pass news data with cleaning
+        if 'news' in raw_data and isinstance(raw_data['news'], __import__('pandas').DataFrame):
+            news_df = raw_data['news'].copy()
+            # Basic cleaning for news: remove duplicates, handle missing values
+            if 'title' in news_df.columns:
+                news_df = news_df.drop_duplicates(subset=['title'])
+            news_df = __import__('pandas').DataFrame(news_df).fillna('')
+            cleaned_data_map['news'] = news_df
 
     def _finalize_results(self, cleaned_data: dict[str, Any], storage_paths: dict[str, Any]) -> dict[str, Any]:
         return {

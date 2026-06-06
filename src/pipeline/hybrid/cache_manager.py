@@ -61,7 +61,7 @@ class CacheManager:
                 if days > 7:
                     return {'needed': True, 'reason':
                         f'{days} days passed (> 7 days)'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error checking time-based selection: {e}', exc_info=True)
         return None
 
@@ -78,7 +78,7 @@ class CacheManager:
                 if pct > 10:
                     return {'needed': True, 'reason':
                         f'Data changed by {pct:.1f}% (> 10%)'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error checking data change percentage: {e}', exc_info=True)
         return {'needed': False, 'reason': 'No significant changes detected'}
 
@@ -94,6 +94,6 @@ class CacheManager:
             current = set(zip(pd.to_datetime(new_features['datetime']).dt.
                 tz_localize(None), new_features['ticker'], strict=False))
             return len(current - known) > 0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Cache integrity check failed: {e}', exc_info=True)
             return True

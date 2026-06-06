@@ -67,7 +67,7 @@ class InsiderCollector(BaseCollector):
 
                 # Rate limiting: delay between requests
                 await asyncio.sleep(1)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Network interface initialization failed: {e}")
             raise RuntimeError("Failed to initialize insider collector network interface") from e
 
@@ -89,7 +89,7 @@ class InsiderCollector(BaseCollector):
 
             return self._parse_html(response.text, url)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error handling DOM layout state from {url}: {e}")
             raise e
 
@@ -109,7 +109,7 @@ class InsiderCollector(BaseCollector):
                 response = sync_client.get(url, headers=headers)
                 response.raise_for_status()
                 return self._parse_html(response.text, url)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Synchronous execution block error {url}: {e}")
             raise e
 
@@ -151,6 +151,37 @@ class InsiderCollector(BaseCollector):
 
         return parsed_trades
 
+    def _check_cache(self, cache_key: str, cache_params: dict, table_name: str) -> pd.DataFrame | None:
+        """Check cache for existing data and filter new records."""
+        if not self.cache_manager:
+            return None
+        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+        if cached is not None:
+            df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
+            if "hash" in df_cached.columns:
+                new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
+                if new_from_cache.empty:
+                    self.logger.info("[Insider] Logical boundary limits active record propagation. Cache hit verified.")
+                    return None
+                return new_from_cache
+        return None
+
+    def _filter_by_cache_manager(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Filter DataFrame by cache manager if available."""
+        if self.cache_manager:
+            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
+            df = df[is_new].copy()
+            if df.empty:
+                self.logger.info("[Insider] Primary logical index boundary satisfied in memory store.")
+                return df
+        return df
+
+    def _update_cache(self, df: pd.DataFrame) -> None:
+        """Update cache with hashes from DataFrame."""
+        if self.cache_manager:
+            for h in df["hash"]:
+                self.cache_manager.set(h, True, ttl=86400)
+
     async def run(
         self,
         tickers: list[str] | None = None,
@@ -169,22 +200,15 @@ class InsiderCollector(BaseCollector):
         cache_params = {"urls": sorted(urls) if isinstance(urls, list) else [urls]}
 
         # 1. Cache Verification
-        if self.cache_manager:
-            cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
-            if cached is not None:
-                df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
-                if "hash" in df_cached.columns:
-                    new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
-                    if new_from_cache.empty:
-                        self.logger.info("[Insider] Logical boundary limits active record propagation. Cache hit verified.")
-                        return None
-                    return new_from_cache
+        cached_result = self._check_cache(cache_key, cache_params, table_name)
+        if cached_result is not None:
+            return cached_result
 
         # 2. Data Acquisition Target Resolution
         self.logger.info("[Insider] Fetching insider trades...")
         try:
             raw_data = await self.fetch_raw_data(**kwargs)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"[Insider] Contextual data parse process aborted: {e}")
             raise RuntimeError("Insider collection failed") from e
 
@@ -203,31 +227,20 @@ class InsiderCollector(BaseCollector):
         )
 
         # 4. Filter validation constraint layer
-        if self.cache_manager:
-            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
-            df = df[is_new].copy()
-            if df.empty:
-                self.logger.info("[Insider] Primary logical index boundary satisfied in memory store.")
-                return None
+        df = self._filter_by_cache_manager(df)
+        if df.empty:
+            return None
 
         # 5. Database logic mapping integration
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             self.logger.info("[Insider] Verification check identified duplicate historical matrix representations.")
-            if self.cache_manager:
-                for h in df["hash"]:
-                    self.cache_manager.set(h, True, ttl=86400)
+            self._update_cache(df)
             return None
 
         # 6. Saving integration parameters bounds
         self.db_manager.upsert(table_name, new_df, unique_on=["hash"])
-
-        if self.cache_manager:
-            for h in new_df["hash"]:
-                self.cache_manager.set(h, True, ttl=86400)
-            self.cache_manager.set(
-                cache_key, df.to_dict("records"), cache_params, namespace="collectors"
-            )
+        self._update_cache(new_df)
 
         self.logger.info(f"[Insider] Committed bounded record list limits constraint size of {len(new_df)}.")
         return new_df

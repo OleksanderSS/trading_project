@@ -62,7 +62,7 @@ class ParallelProcessor:
                 try:
                     result = future.result()
                     results.append(result)
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f"Error processing item #{future_to_item[future]}: {e}", exc_info=True)
                     results.append(None) # Append None to maintain order
 

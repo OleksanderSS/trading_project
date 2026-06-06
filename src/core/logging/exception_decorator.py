@@ -14,7 +14,7 @@ def log_and_raise(logger: logging.Logger):
         def wrapper(*args, **kwargs):
             try:
                 return func(*args, **kwargs)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"❌ Exception in {func.__name__}: {e}", exc_info=True)
                 raise
 

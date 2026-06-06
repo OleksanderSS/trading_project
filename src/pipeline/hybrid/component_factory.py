@@ -98,6 +98,6 @@ class OrchestratorComponentFactory:
             logger.info("✅ All orchestrator components initialized via factory")
             return components
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to initialize orchestrator components: {e}", exc_info=True)
             raise DataProcessingError(f"Component initialization failed: {e}") from e

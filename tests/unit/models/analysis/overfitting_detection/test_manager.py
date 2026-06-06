@@ -38,9 +38,9 @@ async def test_detect_overfitting_failure(detector):
     y = pd.Series(np.random.rand(10))
     
     # Force exception in analyzer
-    detector.analyzer.generate_learning_curve = AsyncMock(side_effect=Exception("Analysis failed"))
+    detector.analyzer.generate_learning_curve = AsyncMock(side_effect=ValueError("Analysis failed"))
     
-    with pytest.raises(DataProcessingError):
+    with pytest.raises(DataProcessingError, match="Analysis failed"):
         await detector.detect_overfitting(model, X, y)
 
 def test_get_overfitting_summary(detector):

@@ -51,7 +51,7 @@ class ModelStatistics:
             else:
                 return 'stable'
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating health trend: {e}")
             return 'unknown'
 
@@ -82,7 +82,7 @@ class ModelStatistics:
             sorted_issues = sorted(issue_counts.items(), key=lambda x: x[1], reverse=True)
             return [issue[0] for issue in sorted_issues[:5]]
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error getting common issues: {e}")
             raise RuntimeError("Failed to get common model issues") from e
 
@@ -112,7 +112,7 @@ class ModelStatistics:
 
             return len(recent_retrainings) / 30.0  # Retrainings per day
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating retraining frequency: {e}")
             return 0.0
 
@@ -148,6 +148,6 @@ class ModelStatistics:
 
             return summary
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error getting model health summary: {e}")
             return {'error': str(e)}

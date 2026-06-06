@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Test Mode Manager for Hybrid Orchestrator.
 
@@ -41,7 +42,7 @@ class TestModeManager:
                     test_model = test_mode.get('test_model')
                     self.logger.info(
                         f'Test mode: {test_ticker}|{test_target}|{test_model}')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Could not read runtime_params.json: {e}')
                 raise

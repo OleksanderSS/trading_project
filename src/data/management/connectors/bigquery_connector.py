@@ -30,7 +30,7 @@ class BigQueryConnector:
             logger.info(
                 f'BigQueryConnector successfully initialized. Simulator mode: {self.client.use_simulator}. Project: {self.client.project_id}'
                 )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f'Failed to initialize BigQueryClient in connector: {e}',
                 exc_info=True)
@@ -50,7 +50,7 @@ class BigQueryConnector:
         logger.info('Delegating query to BigQueryClient...')
         try:
             return self.client.execute_query(query, use_cache=use_cache)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Помилка під час делегування запиту: {e}',
                 exc_info=True)
             raise RuntimeError("BigQuery query execution failed") from e
@@ -99,7 +99,7 @@ if __name__ == '__main__':
                     logger.info(results_df.head())
                 else:
                     logger.warning('Не вдалося отримати результати.')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Виникла помилка: {e}', exc_info=True)
         raise
     logger.info('\n--- Тестування завершено ---')

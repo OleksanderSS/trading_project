@@ -34,7 +34,7 @@ class Visualizer:
             plt.close(fig)
             logger.info(f"Successfully saved plot: {full_path}")
             return full_path
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save plot {filename}: {e}", exc_info=True)
             plt.close(fig)
             raise RuntimeError(f"Failed to save plot {filename}") from e

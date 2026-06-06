@@ -41,7 +41,11 @@ def test_context_model_selection_excludes_autoencoder_and_resolves_model_key():
     )
 
     assert selected == "model_AAPL_target_return_1d_lightgbm"
-    assert selector.available_models == ["lightgbm", "catboost"]
+    # The selector receives the filtered list of actual model names.
+    assert sorted(selector.available_models) == [
+        "model_AAPL_target_return_1d_catboost",
+        "model_AAPL_target_return_1d_lightgbm",
+    ]
 
 
 def test_context_model_selection_returns_empty_when_only_autoencoder_available():

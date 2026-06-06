@@ -1,11 +1,9 @@
 # src/models/neural/mlp_model.py
 
-
-import tensorflow as tf
-from tensorflow.keras import layers, models
+from typing import Any
 
 from src.core.logging.logger import ProjectLogger
-from src.models.neural.base_neural import BaseNeuralModel
+from src.models.neural.base_neural import BaseNeuralModel, _get_tf
 
 
 class MLPModel(BaseNeuralModel):
@@ -24,11 +22,14 @@ class MLPModel(BaseNeuralModel):
     def name(self) -> str:
         return "mlp_tf"
 
-    def _build_architecture(self, input_shape: tuple[int, ...]) -> tf.keras.Model:
+    def _build_architecture(self, input_shape: tuple[int, ...]) -> Any:
         """
         Defines the MLP architecture.
         The input_shape is expected to be a tuple with a single element (n_features,).
         """
+        tf = _get_tf()
+        layers = tf.keras.layers
+        models = tf.keras
         if len(input_shape) != 1:
             raise ValueError(f"Expected input_shape to be a tuple of length 1, but got {input_shape}")
 
@@ -46,7 +47,8 @@ class MLPModel(BaseNeuralModel):
             # Binary classification is assumed
             outputs = layers.Dense(1, activation='sigmoid')(x)
             loss = 'binary_crossentropy'
-        else:  # Regression
+        else:
+            # Regression
             outputs = layers.Dense(1, activation='linear')(x)
             loss = 'mse'
 

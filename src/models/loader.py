@@ -48,6 +48,38 @@ class ModelLoaderStrategy:
             _load_colab_model, self._load_consensus_model, self.
             _load_stacked_ensemble]
 
+    def _try_direct_load(self, model_path: str, model_meta: dict[str, Any], model_id: str) -> Any | None:
+        """Try loading model directly from path."""
+        if not model_path:
+            return None
+        try:
+            model = self.load_path(model_path, model_meta)
+            if model is not None:
+                self.logger.info(f'✅ Loaded model {model_id} directly from path')
+                return model
+        except ModelLoadingError as e:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'Direct load failed for {model_path}: {e}')
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.warning(f'Direct load error for model {model_id} at {model_path}: {e}. Trying fallbacks.')
+        return None
+
+    def _try_loader(self, loader, model_path: str, model_meta: dict[str, Any], model_id: str) -> Any | None:
+        """Try loading model with a specific loader."""
+        try:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'Trying loader: {loader.__name__}')
+            model = loader(model_path, model_meta)
+            if model is not None:
+                self.logger.info(f'✅ Loaded model {model_id} using {loader.__name__}')
+                return model
+        except ModelLoadingError as e:
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f'Loader {loader.__name__} failed: {e}')
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f'Помилка завантажувача {loader.__name__} для моделі {model_id}: {e}', exc_info=True)
+        return None
+
     def load_model(self, model_meta: dict[str, Any]) ->Any | None:
         """
         Try loading model using multiple strategies.
@@ -64,40 +96,20 @@ class ModelLoaderStrategy:
         model_path = model_meta.get('model_path', '')
         model_id = model_meta.get('model_id', 'unknown')
         if self.logger.isEnabledFor(logging.DEBUG):
-            self.logger.debug(
-                f'Attempting to load model {model_id} from {model_path}')
-        if model_path:
-            try:
-                model = self.load_path(model_path, model_meta)
-                if model is not None:
-                    self.logger.info(
-                        f'✅ Loaded model {model_id} directly from path')
-                    return model
-            except ModelLoadingError as e:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'Direct load failed for {model_path}: {e}')
-            except (ValueError, TypeError, Exception) as e:
-                self.logger.error(f'Помилка при прямому завантаженні моделі {model_id} з {model_path}: {e}', exc_info=True)
-                raise RuntimeError(f"Direct load failed for model {model_id} at {model_path}: {e}") from e
+            self.logger.debug(f'Attempting to load model {model_id} from {model_path}')
+
+        # Try direct load first
+        model = self._try_direct_load(model_path, model_meta, model_id)
+        if model is not None:
+            return model
+
+        # Try fallback loaders
         for loader in self.loaders:
-            try:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'Trying loader: {loader.__name__}')
-                model = loader(model_path, model_meta)
-                if model is not None:
-                    self.logger.info(
-                        f'✅ Loaded model {model_id} using {loader.__name__}')
-                    return model
-            except ModelLoadingError as e:
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'Loader {loader.__name__} failed: {e}')
-                continue
-            except (ValueError, TypeError, Exception) as e:
-                self.logger.error(f'Помилка завантажувача {loader.__name__} для моделі {model_id}: {e}', exc_info=True)
-                # We continue to the next loader as per fallback strategy, but log the error
-                continue
-        self.logger.warning(
-            f'❌ All loaders failed for model {model_id} (path: {model_path})')
+            model = self._try_loader(loader, model_path, model_meta, model_id)
+            if model is not None:
+                return model
+
+        self.logger.warning(f'❌ All loaders failed for model {model_id} (path: {model_path})')
         return None
 
     def load_path(self, model_path: str, meta: dict[str, Any]) ->Any | None:
@@ -122,7 +134,7 @@ class ModelLoaderStrategy:
         except (FileNotFoundError, ValueError) as e:
             raise ModelLoadingError(
                 f'Unsafe or missing model artifact path {model_path}: {e}') from e
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise ModelLoadingError(
                 f'Failed to load model from path {model_path}: {e}') from e
         raise ModelLoadingError(f'Unsupported model file suffix: {path.suffix}'
@@ -142,7 +154,7 @@ class ModelLoaderStrategy:
             resolve_trusted_artifact_path(model_path, must_exist=True)
         except FileNotFoundError:
             raise FileNotFoundError(
-                f'Model not found at local path: {model_path}')
+                f'Model not found at local path: {model_path}') from None
         except ValueError as e:
             raise ModelLoadingError(f'Unsafe local model path {model_path}: {e}'
                 ) from e
@@ -207,7 +219,7 @@ class ModelLoaderStrategy:
             trusted_path = resolve_trusted_artifact_path(path,
                 allowed_suffixes={'.joblib'}, must_exist=True)
             return joblib.load(str(trusted_path))  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise ModelLoadingError(
                 f'Failed to load joblib model at {path}: {e}') from e
 
@@ -246,7 +258,7 @@ class ModelLoaderStrategy:
                 self.logger.debug(f'✅ Keras model loaded directly: {path.name}')
             return self._wrap_keras_model(model, meta.get('model_type',
                 path.stem))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
                 f'⚠️ Keras model deserialization failed for {path.name}: {str(e)[:100]}...'
                 )
@@ -344,7 +356,8 @@ class ModelLoaderStrategy:
                     trusted_path, map_location='cpu', weights_only=True)
             except TypeError:
                 loaded_obj = torch.load(trusted_path, map_location='cpu')  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
-            except Exception:
+            except Exception as e:
+                self.logger.warning(f'Initial torch.load failed: {e}')
                 if not meta.get('allow_full_torch_object_load', False):
                     raise
                 loaded_obj = torch.load(  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
@@ -372,7 +385,7 @@ class ModelLoaderStrategy:
             else:
                 return self._wrap_pytorch_model(loaded_obj, meta.get(
                     'model_type', path.stem))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise ModelLoadingError(
                 f'Failed to load PyTorch model from {path}: {e}') from e
 
@@ -388,103 +401,138 @@ class ModelLoaderStrategy:
             )
         return 47
 
-    def _create_pytorch_model(self, model_type: str, input_size: int):
+    def _create_light_model(self, input_size: int):
+        """Create a light PyTorch model."""
+        import torch.nn as nn
+        return nn.Sequential(
+            nn.Linear(input_size, 128), nn.ReLU(), nn.Dropout(0.5),
+            nn.Linear(128, 64), nn.ReLU(), nn.Dropout(0.5),
+            nn.Linear(64, 1)
+        )
+
+    def _create_mlp_model(self, input_size: int):
+        """Create an MLP PyTorch model."""
+        import torch.nn as nn
+        return nn.Sequential(
+            nn.Linear(input_size, 128), nn.ReLU(), nn.Dropout(0.5),
+            nn.Linear(128, 64), nn.ReLU(), nn.Dropout(0.5),
+            nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1)
+        )
+
+    def _create_lstm_model(self, input_size: int):
+        """Create an LSTM PyTorch model."""
+        import torch.nn as nn
+
+        class LSTMModel(nn.Module):
+            def __init__(self, input_sz):
+                super().__init__()
+                self.lstm = nn.LSTM(input_sz, 64, 2, batch_first=True)
+                self.fc = nn.Linear(64, 1)
+
+            def forward(self, x):
+                out, _ = self.lstm(x.unsqueeze(1))
+                return self.fc(out[:, -1, :])
+        return LSTMModel(input_size)
+
+    def _create_gru_model(self, input_size: int):
+        """Create a GRU PyTorch model."""
+        import torch.nn as nn
+
+        class GRUModel(nn.Module):
+            def __init__(self, input_sz):
+                super().__init__()
+                self.gru = nn.GRU(input_sz, 64, 2, batch_first=True)
+                self.fc = nn.Linear(64, 1)
+
+            def forward(self, x):
+                out, _ = self.gru(x.unsqueeze(1))
+                return self.fc(out[:, -1, :])
+        return GRUModel(input_size)
+
+    def _create_cnn_model(self, input_size: int):
+        """Create a CNN PyTorch model."""
         import torch
         import torch.nn as nn
-        light_models = ['catboost', 'lightgbm', 'xgboost', 'random_forest',
-            'linear', 'svm', 'knn']
-        if model_type in light_models or model_type == 'tabnet':
-            return nn.Sequential(nn.Linear(input_size, 128), nn.ReLU(), nn.
-                Dropout(0.5), nn.Linear(128, 64), nn.ReLU(), nn.Dropout(0.5
-                ), nn.Linear(64, 1))
+
+        class CNNModel(nn.Module):
+            def __init__(self, input_sz):
+                super().__init__()
+                self.conv1 = nn.Conv1d(1, 32, kernel_size=3, padding=1)
+                self.conv2 = nn.Conv1d(32, 64, kernel_size=3, padding=1)
+                self.pool = nn.AdaptiveAvgPool1d(1)
+                self.fc = nn.Linear(64, 1)
+
+            def forward(self, x):
+                x = x.unsqueeze(1)
+                x = torch.relu(self.conv1(x))
+                x = torch.relu(self.conv2(x))
+                return self.fc(self.pool(x).squeeze(-1))
+        return CNNModel(input_size)
+
+    def _create_transformer_model(self, input_size: int):
+        """Create a Transformer PyTorch model."""
+        import torch.nn as nn
+
+        class TransformerModel(nn.Module):
+            def __init__(self, input_sz):
+                super().__init__()
+                self.embedding = nn.Linear(input_sz, 64)
+                encoder_layer = nn.TransformerEncoderLayer(64, 4, dim_feedforward=128, batch_first=True)
+                self.transformer = nn.TransformerEncoder(encoder_layer, 2)
+                self.fc = nn.Linear(64, 1)
+
+            def forward(self, x):
+                x = self.embedding(x.unsqueeze(1))
+                x = self.transformer(x)
+                return self.fc(x[:, -1, :])
+        return TransformerModel(input_size)
+
+    def _create_autoencoder_model(self, input_size: int):
+        """Create an Autoencoder PyTorch model."""
+        import torch.nn as nn
+
+        class AutoencoderModel(nn.Module):  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+            def __init__(self, input_sz):
+                super().__init__()
+                self.encoder = nn.Sequential(nn.Linear(input_sz, 64), nn.ReLU(), nn.Linear(64, 32))
+                self.decoder = nn.Sequential(nn.Linear(32, 16), nn.ReLU(), nn.Linear(16, 1))
+
+            def forward(self, x):
+                encoded = self.encoder(x)
+                return self.decoder(encoded)
+        return AutoencoderModel(input_size)  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+
+    def _create_default_model(self, input_size: int):
+        """Create a default PyTorch model."""
+        import torch.nn as nn
+        return nn.Sequential(
+            nn.Linear(input_size, 128), nn.ReLU(), nn.Linear(128, 64),
+            nn.ReLU(), nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1)
+        )
+
+    def _create_pytorch_model(self, model_type: str, input_size: int):
+        from src.models.registry.model_registry import ModelRegistry
+
+        # Determine model group dynamically from registry
+        model_config = ModelRegistry.get_model_config(model_type.lower())
+        model_group = model_config.get('type', 'light') if model_config else 'light'
+
+        if model_group == 'light' or model_type == 'tabnet':
+            return self._create_light_model(input_size)
         elif model_type == 'mlp':
-            return nn.Sequential(nn.Linear(input_size, 128), nn.ReLU(), nn.
-                Dropout(0.5), nn.Linear(128, 64), nn.ReLU(), nn.Dropout(0.5
-                ), nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1))
+            return self._create_mlp_model(input_size)
         elif model_type == 'lstm':
-
-
-            class LSTMModel(nn.Module):
-
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.lstm = nn.LSTM(input_sz, 64, 2, batch_first=True)
-                    self.fc = nn.Linear(64, 1)
-
-                def forward(self, x):
-                    out, _ = self.lstm(x.unsqueeze(1))
-                    return self.fc(out[:, -1, :])
-            return LSTMModel(input_size)
+            return self._create_lstm_model(input_size)
         elif model_type == 'gru':
-
-
-            class GRUModel(nn.Module):
-
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.gru = nn.GRU(input_sz, 64, 2, batch_first=True)
-                    self.fc = nn.Linear(64, 1)
-
-                def forward(self, x):
-                    out, _ = self.gru(x.unsqueeze(1))
-                    return self.fc(out[:, -1, :])
-            return GRUModel(input_size)
+            return self._create_gru_model(input_size)
         elif model_type == 'cnn':
-
-
-            class CNNModel(nn.Module):
-
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.conv1 = nn.Conv1d(1, 32, kernel_size=3, padding=1)
-                    self.conv2 = nn.Conv1d(32, 64, kernel_size=3, padding=1)
-                    self.pool = nn.AdaptiveAvgPool1d(1)
-                    self.fc = nn.Linear(64, 1)
-
-                def forward(self, x):
-                    x = x.unsqueeze(1)
-                    x = torch.relu(self.conv1(x))
-                    x = torch.relu(self.conv2(x))
-                    return self.fc(self.pool(x).squeeze(-1))
-            return CNNModel(input_size)
+            return self._create_cnn_model(input_size)
         elif model_type == 'transformer':
-
-
-            class TransformerModel(nn.Module):
-
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.embedding = nn.Linear(input_sz, 64)
-                    encoder_layer = nn.TransformerEncoderLayer(64, 4,
-                        dim_feedforward=128, batch_first=True)
-                    self.transformer = nn.TransformerEncoder(encoder_layer, 2)
-                    self.fc = nn.Linear(64, 1)
-
-                def forward(self, x):
-                    x = self.embedding(x.unsqueeze(1))
-                    x = self.transformer(x)
-                    return self.fc(x[:, -1, :])
-            return TransformerModel(input_size)
+            return self._create_transformer_model(input_size)
         elif model_type == 'autoencoder':
-
-
-            class AutoencoderModel(nn.Module):  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
-
-                def __init__(self, input_sz):
-                    super().__init__()
-                    self.encoder = nn.Sequential(nn.Linear(input_sz, 64),
-                        nn.ReLU(), nn.Linear(64, 32))
-                    self.decoder = nn.Sequential(nn.Linear(32, 16), nn.ReLU
-                        (), nn.Linear(16, 1))
-
-                def forward(self, x):
-                    encoded = self.encoder(x)
-                    return self.decoder(encoded)
-            return AutoencoderModel(input_size)  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+            return self._create_autoencoder_model(input_size)
         else:
-            return nn.Sequential(nn.Linear(input_size, 128), nn.ReLU(), nn.
-                Linear(128, 64), nn.ReLU(), nn.Linear(64, 32), nn.ReLU(),
-                nn.Linear(32, 1))
+            return self._create_default_model(input_size)
 
     def _wrap_pytorch_model(self, model, model_type: str, scaler=None):
         import torch

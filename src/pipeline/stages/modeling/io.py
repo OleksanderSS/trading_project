@@ -52,7 +52,7 @@ async def try_load_features_file_async(stage, candidate: Path, model_type: str, 
                     log_msg += ' (glob fallback)'
                 logger.info(log_msg)
                 return selected_features
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'❌ Error loading features from {candidate}: {e}', exc_info=True)
         context = f'LoadFeaturesGlob-{candidate.name}' if is_glob else f'LoadFeatures-{candidate.name}'
         stage.handle_stage_error(e, context=context, severity='warning')
@@ -96,7 +96,7 @@ def try_load_features_file_sync(stage, candidate: Path, model_type: str, is_glob
                     log_msg += ' (glob fallback)'
                 logger.info(log_msg)
                 return selected_features
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'❌ Exception loading features from {candidate}: {e}', exc_info=True)
         logger.warning(f'⚠️ Failed to load selected features file {candidate}: {e}')
     return []
@@ -137,7 +137,7 @@ def save_light_models_results(stage, ticker: str, target_name: str, light_models
         with open(results_file, 'w', encoding='utf-8') as f:
             json.dump(existing, f, indent=2, default=str)
         logger.info(f'✅ Saved light model results for {ticker}/{target_name} ({len(target_data)} models) -> {results_file.name}')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'❌ Failed to save light_models_results.json: {e}', exc_info=True)
 
 
@@ -167,7 +167,7 @@ def try_get_batch_name_from_runtime_params(runtime_params_path: Path) -> str | N
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'✅ Resolved batch_name from {runtime_params_path}: {batch_name}')
                 return batch_name
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'⚠️ Failed to load batch_name from {runtime_params_path}: {e}', exc_info=True)
     return None
 
@@ -182,7 +182,7 @@ def search_nested_runtime_params(accumulated_dir: Path) -> str | None:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f'✅ Resolved batch_name from nested runtime_params: {runtime_file} -> {batch_name}')
                 return batch_name
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'⚠️ Failed to search nested accumulated runtime_params files: {e}', exc_info=True)
     return None
 
@@ -192,6 +192,6 @@ def try_get_batch_name_from_file(runtime_file: Path) -> str | None:
         with open(runtime_file) as f:
             runtime_params = json.load(f)
             return runtime_params.get('batch', {}).get('batch_name')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Could not read batch_name from runtime file {runtime_file}: {e}', exc_info=True)
     return None

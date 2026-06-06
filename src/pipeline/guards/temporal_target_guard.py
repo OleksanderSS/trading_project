@@ -96,7 +96,7 @@ class TemporalTargetGuard:
             result = calc.calculate(df_enriched, **params)
             return name, result
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Error in target {name}: {e}")
             return name, None
 

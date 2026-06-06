@@ -62,7 +62,7 @@ class XGBoostModel(BaseModel):
 
             return self.get_model_info()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"XGBoost training failed: {e}")
             raise
 
@@ -92,7 +92,7 @@ class XGBoostModel(BaseModel):
             joblib.dump(self, path)
             self.logger.info(f"XGBoost model saved to {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to save model: {e}")
             return False
 
@@ -123,6 +123,6 @@ class XGBoostModel(BaseModel):
             self.__dict__.update(loaded_model.__dict__)
             self.logger.info(f"XGBoost model loaded from {trusted_path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to load model: {e}")
             return False

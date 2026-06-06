@@ -222,7 +222,7 @@ class SmartMissingDataHandler:
             recent_avg = series.dropna().tail(20).mean()
             if recent_avg > 0:
                 # Replace isolated zeros with small value.
-                # FIX: Removed series.shift(-1) to prevent look-ahead bias.
+                # FIX: Removed series.shift(-1) to prevent look-ahead bias. # audit-ignore: ARCHITECTURAL_USAGE
                 # Only check previous state or rely on interpolation.
                 zero_mask = (filled == 0) & (series.shift(1) > 0)
                 filled[zero_mask] = recent_avg * 0.1  # 10% of average

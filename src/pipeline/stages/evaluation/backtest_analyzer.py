@@ -83,7 +83,7 @@ class BacktestAnalyzer:
 
             return price_pivot, signal_pivot
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error preparing pivot tables: {e}")
             return pd.DataFrame(), pd.DataFrame()
 
@@ -140,12 +140,89 @@ class BacktestAnalyzer:
             self.logger.info(f'Created simulation data: {price_df.shape[0]} days, {len(tickers)} tickers')
             return price_df, signal_df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to create simulation data: {e}")
             dates = pd.date_range(end=datetime.now(), periods=2, freq='D')
             price_df = pd.DataFrame({'SPY': [100.0, 101.0]}, index=dates)
             signal_df = pd.DataFrame({'SPY': [0, 1]}, index=dates)
             return price_df, signal_df
+
+    def _validate_signals_df(self, signals_df: pd.DataFrame) -> bool:
+        """Validate signals DataFrame for backtest."""
+        if signals_df.empty:
+            self.logger.warning('⚠️ Empty signals DataFrame - cannot run backtest')
+            return False
+
+        required_cols = ['price', 'signal']
+        missing_cols = [col for col in required_cols if col not in signals_df.columns]
+        if missing_cols:
+            self.logger.warning(f'⚠️ Missing required columns for backtest: {missing_cols}')
+            return False
+
+        if signals_df['price'].isna().all():
+            self.logger.warning('⚠️ All price values are NaN - cannot run backtest')
+            return False
+
+        return True
+
+    def _prepare_pivot_data(self, signals_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+        """Prepare pivot tables for backtest."""
+        price_pivot, signal_pivot = self.prepare_pivot(signals_df)
+
+        if price_pivot.empty or signal_pivot.empty:
+            self.logger.warning('⚠️ Empty pivoted data - cannot run backtest')
+            return None
+
+        if not price_pivot.select_dtypes(include=[np.number]).columns.any():
+            self.logger.warning('⚠️ No numeric price data - cannot run backtest')
+            return None
+
+        if len(price_pivot) < 2:
+            self.logger.warning('⚠️ Insufficient data points for backtest - creating simulation')
+            price_pivot, signal_pivot = self.create_simulation_data(signals_df)
+
+        return price_pivot, signal_pivot
+
+    async def _run_comprehensive_backtest(self, price_pivot: pd.DataFrame, signal_pivot: pd.DataFrame) -> dict[str, Any] | None:
+        """Run comprehensive backtest using backtester."""
+        if not self.backtester:
+            self.logger.warning('⚠️ No backtester available')
+            return None
+
+        loop = asyncio.get_event_loop()
+        results = await loop.run_in_executor(
+            None, self.backtester.run_comprehensive_backtest, price_pivot, signal_pivot
+        )
+
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f'Backtest results keys: {list(results.keys())}')
+
+        if not results or not isinstance(results, dict):
+            self.logger.warning('⚠️ Backtest returned invalid results')
+            return None
+
+        if 'error' in results:
+            self.logger.error(f"❌ Backtest error: {results['error']}")
+            return None
+
+        return results
+
+    def _normalize_backtest_results(self, results: dict[str, Any], price_pivot: pd.DataFrame) -> dict[str, Any]:
+        """Normalize backtest results to standard format."""
+        # Normalize performance metrics key
+        if 'performance_metrics' in results:
+            results['performance'] = results['performance_metrics']
+            self.logger.info('✅ Backtest completed with performance metrics')
+        elif 'performance' in results:
+            self.logger.info('✅ Backtest completed with legacy performance format')
+        else:
+            self.logger.warning('⚠️ No performance metrics found in backtest results')
+
+        # Create portfolio_history if missing
+        if 'portfolio_history' not in results and 'performance_metrics' in results:
+            results['portfolio_history'] = self._create_portfolio_history(results, price_pivot)
+
+        return results
 
     async def run_backtest(self, signals_df: pd.DataFrame) -> dict[str, Any]:
         """
@@ -162,80 +239,32 @@ class BacktestAnalyzer:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Columns: {signals_df.columns.tolist()}')
 
-            if signals_df.empty:
-                self.logger.warning('⚠️ Empty signals DataFrame - cannot run backtest')
-                return {}
-
-            required_cols = ['price', 'signal']
-            missing_cols = [col for col in required_cols if col not in signals_df.columns]
-            if missing_cols:
-                self.logger.warning(f'⚠️ Missing required columns for backtest: {missing_cols}')
-                return {}
-
-            if signals_df['price'].isna().all():
-                self.logger.warning('⚠️ All price values are NaN - cannot run backtest')
+            if not self._validate_signals_df(signals_df):
                 return {}
 
             # Prepare pivot tables
-            price_pivot, signal_pivot = self.prepare_pivot(signals_df)
-
-            if price_pivot.empty or signal_pivot.empty:
-                self.logger.warning('⚠️ Empty pivoted data - cannot run backtest')
+            pivot_data = self._prepare_pivot_data(signals_df)
+            if not pivot_data:
                 return {}
 
-            if not price_pivot.select_dtypes(include=[np.number]).columns.any():
-                self.logger.warning('⚠️ No numeric price data - cannot run backtest')
-                return {}
-
-            if len(price_pivot) < 2:
-                self.logger.warning('⚠️ Insufficient data points for backtest - creating simulation')
-                price_pivot, signal_pivot = self.create_simulation_data(signals_df)
+            price_pivot, signal_pivot = pivot_data
 
             self.logger.info(f'Pivoted data shape: {price_pivot.shape}')
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Price data columns: {price_pivot.columns.tolist()}')
-            if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Signal data columns: {signal_pivot.columns.tolist()}')
 
             # Run backtest
-            if self.backtester:
-                loop = asyncio.get_event_loop()
-                results = await loop.run_in_executor(
-                    None, self.backtester.run_comprehensive_backtest, price_pivot, signal_pivot
-                )
-
-                if self.logger.isEnabledFor(logging.DEBUG):
-                    self.logger.debug(f'Backtest results keys: {list(results.keys())}')
-
-                if not results or not isinstance(results, dict):
-                    self.logger.warning('⚠️ Backtest returned invalid results')
-                    return {}
-
-                if 'error' in results:
-                    self.logger.error(f"❌ Backtest error: {results['error']}")
-                    return {}
-
-                # Normalize performance metrics key
-                if 'performance_metrics' in results:
-                    results['performance'] = results['performance_metrics']
-                    self.logger.info('✅ Backtest completed with performance metrics')
-                elif 'performance' in results:
-                    self.logger.info('✅ Backtest completed with legacy performance format')
-                else:
-                    self.logger.warning('⚠️ No performance metrics found in backtest results')
-
-                # Create portfolio_history if missing
-                if 'portfolio_history' not in results and 'performance_metrics' in results:
-                    results['portfolio_history'] = self._create_portfolio_history(
-                        results, price_pivot
-                    )
-
-                return results
-            else:
-                self.logger.warning('⚠️ No backtester available')
+            results = await self._run_comprehensive_backtest(price_pivot, signal_pivot)
+            if not results:
                 return {}
 
-        except Exception as e:
+            # Normalize results
+            results = self._normalize_backtest_results(results, price_pivot)
+
+            return results
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'❌ Backtest execution failed: {e}')
             return {'success': False, 'status': 'error', 'error': str(e)}
 
@@ -263,7 +292,7 @@ class BacktestAnalyzer:
             results['portfolio_history'] = portfolio_history
             self.logger.info(f'✅ Created portfolio_history with {len(portfolio_history)} data points')
             return portfolio_history
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to create portfolio_history: {e}')
             dates = pd.date_range(end=pd.Timestamp.now(), periods=2, freq='D')
             portfolio_history = pd.DataFrame({'total_value': [100000.0, 100000.0], 'date': dates})

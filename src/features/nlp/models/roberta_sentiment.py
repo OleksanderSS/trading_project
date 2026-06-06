@@ -1,8 +1,23 @@
 import logging
 from typing import Any
 
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+# ✅ Lazy imports — transformers/torch are heavy; loaded only when model is instantiated
+_torch = None
+_transformers = None
+
+def _get_torch():
+    global _torch
+    if _torch is None:
+        import torch
+        _torch = torch
+    return _torch
+
+def _get_transformers():
+    global _transformers
+    if _transformers is None:
+        import transformers
+        _transformers = transformers
+    return _transformers
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +46,9 @@ class RobertaSentimentAnalyzer:
             0.6)
         self.device = model_config.get('device')
         if not self.device:
-            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        self.tokenizer: AutoTokenizer | None = None
-        self.model: AutoModelForSequenceClassification | None = None
+            self.device = 'cuda' if _get_torch().cuda.is_available() else 'cpu'
+        self.tokenizer: Any = None  # AutoTokenizer — lazy loaded
+        self.model: Any = None  # AutoModelForSequenceClassification — lazy loaded
         logger.info(
             f"RobertaSentimentAnalyzer initialized for model '{self.model_name}' on device '{self.device}'."
             )
@@ -47,15 +62,16 @@ class RobertaSentimentAnalyzer:
             return
         logger.info(f"Lazy loading sentiment model '{self.model_name}'...")
         try:
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-            self.model = AutoModelForSequenceClassification.from_pretrained(
+            tf_mod = _get_transformers()
+            self.tokenizer = tf_mod.AutoTokenizer.from_pretrained(self.model_name)
+            self.model = tf_mod.AutoModelForSequenceClassification.from_pretrained(
                 self.model_name)
             self.model.to(self.device)
             self.model.eval()
             logger.info(
                 f"Model '{self.model_name}' loaded successfully on '{self.device}'."
                 )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.critical(
                 f"Fatal error: Failed to load sentiment model '{self.model_name}'. Reason: {e}"
                 , exc_info=True)
@@ -80,7 +96,7 @@ class RobertaSentimentAnalyzer:
         if self.model is None or self.tokenizer is None:
             try:
                 self._load_model()
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'Виникла помилка при завантаженні моделі: {e}', exc_info=True)
                 return default_result
         if self.model is None or self.tokenizer is None:
@@ -89,9 +105,9 @@ class RobertaSentimentAnalyzer:
             inputs = self.tokenizer(text, return_tensors='pt', truncation=
                 True, max_length=512, padding=True)
             inputs = {key: val.to(self.device) for key, val in inputs.items()}
-            with torch.no_grad():
+            with _get_torch().no_grad():
                 outputs = self.model(**inputs)
-                scores = torch.nn.functional.softmax(outputs.logits, dim=-1)[0]
+                scores = _get_torch().nn.functional.softmax(outputs.logits, dim=-1)[0]
             id2label = self.model.config.id2label
             score_map = {id2label[i]: scores[i].item() for i in range(
                 scores.shape[0])}
@@ -101,7 +117,7 @@ class RobertaSentimentAnalyzer:
                 confidence_threshold else 'neutral')
             return {'label': final_label, 'score': max_score_value,
                 'details': {k: round(v, 4) for k, v in score_map.items()}}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Error during sentiment analysis for text snippet: '{text[:80]}...'. Error: {e}"
                 , exc_info=True)

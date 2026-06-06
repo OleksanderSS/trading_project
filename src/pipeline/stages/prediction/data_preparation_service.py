@@ -274,6 +274,6 @@ class DataPreparationService:
             regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
             regime_val = regime_map.get(market_regime.lower(), 0)
             return f"legacy_{regime_val}"
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error creating context fingerprint: {e}", exc_info=True)
             return 'unknown_context'

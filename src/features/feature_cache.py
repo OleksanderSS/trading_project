@@ -170,7 +170,7 @@ class FeatureCache:
             if removed_count > 0:
                 self.logger.info(
                     f'🗑️ Invalidated {removed_count} cache files for {ticker}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'❌ Error invalidating cache for {ticker}: {e}')
         return removed_count
 
@@ -188,7 +188,7 @@ class FeatureCache:
                 removed_count += 1
             self.logger.info(
                 f'🗑️ Cleared feature cache: {removed_count} files removed')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'❌ Error clearing cache: {e}')
         return removed_count
 
@@ -206,7 +206,7 @@ class FeatureCache:
         try:
             for cache_file in self.cache_dir.glob(PARQUET_EXT):
                 cache_size_mb += cache_file.stat().st_size / 1024 / 1024
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка при розрахунку розміру кешу: {e}', exc_info=True)
             raise RuntimeError(f'Could not calculate cache size: {e}') from e
         return {'hits': self.stats['hits'], 'misses': self.stats['misses'],
@@ -247,7 +247,7 @@ class FeatureCache:
                 ) > 0 else None
             return (actual_ticker == expected_ticker and actual_date ==
                 expected_date and len(features) > 0)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error validating cache integrity: {e}', exc_info=True)
             return False
 
@@ -269,7 +269,7 @@ class FeatureCache:
                 self.logger.info(
                     f'🧹 Cleaned {removed_count} old cache files (> {self.max_cache_age_days} days)'
                     )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Error during cache cleanup: {e}')
             raise

@@ -276,37 +276,27 @@ def get_ticker_categories(ticker: str) -> list[str]:
     Get categories for a specific ticker.
     """
     categories = []
+    ticker_categories = [
+        (CORE_TICKERS, "core"),
+        (ETF_TICKERS, "etf"),
+        (TECH_TICKERS, "tech"),
+        (SP500_TICKERS, "sp500"),
+        (FINANCE_TICKERS, "finance"),
+        (HEALTHCARE_TICKERS, "healthcare"),
+        (ENERGY_TICKERS, "energy"),
+        (CONSUMER_TICKERS, "consumer"),
+        (INDUSTRIAL_TICKERS, "industrial"),
+        (MATERIALS_TICKERS, "materials"),
+        (UTILITIES_TICKERS, "utilities"),
+        (REAL_ESTATE_TICKERS, "realestate"),
+        (COMMUNICATION_TICKERS, "communication"),
+        (INTERNATIONAL_TICKERS, "international"),
+        (CRYPTO_TICKERS, "crypto"),
+    ]
 
-    if ticker in CORE_TICKERS:
-        categories.append("core")
-    if ticker in ETF_TICKERS:
-        categories.append("etf")
-    if ticker in TECH_TICKERS:
-        categories.append("tech")
-    if ticker in SP500_TICKERS:
-        categories.append("sp500")
-    if ticker in FINANCE_TICKERS:
-        categories.append("finance")
-    if ticker in HEALTHCARE_TICKERS:
-        categories.append("healthcare")
-    if ticker in ENERGY_TICKERS:
-        categories.append("energy")
-    if ticker in CONSUMER_TICKERS:
-        categories.append("consumer")
-    if ticker in INDUSTRIAL_TICKERS:
-        categories.append("industrial")
-    if ticker in MATERIALS_TICKERS:
-        categories.append("materials")
-    if ticker in UTILITIES_TICKERS:
-        categories.append("utilities")
-    if ticker in REAL_ESTATE_TICKERS:
-        categories.append("realestate")
-    if ticker in COMMUNICATION_TICKERS:
-        categories.append("communication")
-    if ticker in INTERNATIONAL_TICKERS:
-        categories.append("international")
-    if ticker in CRYPTO_TICKERS:
-        categories.append("crypto")
+    for ticker_list, category_name in ticker_categories:
+        if ticker in ticker_list:
+            categories.append(category_name)
 
     return categories
 

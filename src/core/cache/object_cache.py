@@ -71,7 +71,7 @@ class ObjectCache:
             with open(cache_file, "wb") as f:
                 pickle.dump(obj, f)
             logger.debug(f"Saved object to cache for key: '{key}'")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save object to cache file {cache_file}: {e}", exc_info=True)
 
     def clear(self, key: str | None = None):

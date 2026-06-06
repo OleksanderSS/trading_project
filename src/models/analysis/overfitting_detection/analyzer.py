@@ -40,7 +40,7 @@ class OverfittingAnalyzer:
                 'test_scores_mean': np.mean(test_scores, axis=1).tolist(),
                 'test_scores_std': np.std(test_scores, axis=1).tolist()
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating learning curve: {e}", exc_info=True)
             raise DataProcessingError(f"Learning curve generation failed: {e}") from e
 
@@ -59,7 +59,7 @@ class OverfittingAnalyzer:
                 'std': float(np.std(scores)),
                 'cv_folds': self.config.cv_folds
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in CV analysis: {e}", exc_info=True)
             raise DataProcessingError(f"CV analysis failed: {e}") from e
 
@@ -85,7 +85,7 @@ class OverfittingAnalyzer:
                 'gap': float(gap),
                 'status': 'high_gap' if gap > self.config.thresholds['train_val_gap']['threshold'] else 'normal'
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing train-val gap: {e}", exc_info=True)
             raise DataProcessingError(f"Train-val gap analysis failed: {e}") from e
 

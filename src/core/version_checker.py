@@ -1,17 +1,16 @@
-import logging
-
-# src/core/version_checker.py
-"""
-Version Checker - Ensures runtime compatibility between Python environment and required dependencies.
-"""
-
 import importlib.metadata
+import logging
 import sys
 from typing import Any
 
 from packaging import version
 
 from src.core.logging.logger import ProjectLogger
+
+# src/core/version_checker.py
+"""
+Version Checker - Ensures runtime compatibility between Python environment and required dependencies.
+"""
 
 logger = ProjectLogger.get_logger("VersionChecker")
 

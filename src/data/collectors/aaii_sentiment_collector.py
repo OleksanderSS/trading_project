@@ -59,7 +59,7 @@ class AIISentimentCollector(BaseCollector):
             self.logger.info(
                 f'Successfully fetched {len(df)} AAII Sentiment records')
             return df
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Error in AIISentimentCollector: {e}')
             return None
 
@@ -91,7 +91,7 @@ class AIISentimentCollector(BaseCollector):
                 self.logger.warning('No data parsed from AAII HTML')
                 return []
             return data
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Error fetching AAII data: {e}')
             return []
 
@@ -105,7 +105,7 @@ class AIISentimentCollector(BaseCollector):
                     )
                 return []
             return data
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Error parsing AAII HTML: {e}', exc_info=True)
             return []
 
@@ -134,7 +134,7 @@ class AIISentimentCollector(BaseCollector):
                             'neutral': neutral, 'spread': bullish - bearish,
                             'total_responses': bullish + bearish + neutral,
                             'timestamp': date_obj})
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.logger.warning(f'Error parsing AAII record {i}: {e}')
                     continue
@@ -162,7 +162,7 @@ class AIISentimentCollector(BaseCollector):
             df['bearish_pct'] = df['bearish'] / df['total_responses'] * 100
             df['neutral_pct'] = df['neutral'] / df['total_responses'] * 100
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error standardizing AAII columns: {e}')
             return pd.DataFrame()
 

@@ -133,7 +133,7 @@ class AgentPermissionSystem:
                 self.logger.info(
                     f'✅ Agent {agent_id} registered with role: {role.value}')
                 return True
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Failed to register agent {agent_id}: {e}')
                 return False
 
@@ -163,32 +163,70 @@ class AgentPermissionSystem:
             return False, f'Action {matching_permission.action_type.value} not allowed for role {agent_role.value}'
         return True, None
 
-    def _check_conditions(self, matching_permission, context, agent) -> dict:
-        """Check permission conditions."""
-        if not matching_permission.conditions:
-            return {'passed': True}
+    def _check_conditions(self, conditions_or_permission, context, agent) -> dict:
+        """Check permission conditions — delegates to real implementation below."""
+        # ✅ FIX: was recursively calling itself (stub bug). Now delegates to real method.
+        if hasattr(conditions_or_permission, 'conditions'):
+            # Called with a Permission object
+            if not conditions_or_permission.conditions:
+                return {'passed': True}
+            return self._check_conditions(conditions_or_permission.conditions, context, agent)
+        # Called with a conditions dict — handled by the real implementation further down
+        return self._evaluate_conditions_dict(conditions_or_permission, context, agent)
 
-        condition_result = self._check_conditions(
-            matching_permission.conditions, context, agent)
-        return condition_result
+    def _check_time_restrictions(self, restrictions_or_permission) -> dict:
+        """Check time restrictions — delegates to real implementation below."""
+        # ✅ FIX: was recursively calling itself (stub bug). Now delegates to real method.
+        if hasattr(restrictions_or_permission, 'time_restrictions'):
+            # Called with a Permission object
+            if not restrictions_or_permission.time_restrictions:
+                return {'passed': True}
+            return self._check_time_restrictions(restrictions_or_permission.time_restrictions)
+        # Called with a time_restrictions dict
+        return self._evaluate_time_restrictions_dict(restrictions_or_permission)
 
-    def _check_time_restrictions(self, matching_permission) -> dict:
-        """Check time restrictions."""
-        if not matching_permission.time_restrictions:
-            return {'passed': True}
+    def _check_resource_limits(self, limits_or_permission, context=None) -> dict:
+        """Check resource limits — delegates to real implementation below."""
+        # ✅ FIX: was recursively calling itself (stub bug). Now delegates to real method.
+        if hasattr(limits_or_permission, 'resource_limits'):
+            if not limits_or_permission.resource_limits:
+                return {'passed': True}
+            return self._check_resource_limits(limits_or_permission.resource_limits, context)
+        return self._evaluate_resource_limits_dict(limits_or_permission, context)
 
-        time_result = self._check_time_restrictions(
-            matching_permission.time_restrictions)
-        return time_result
+    def _create_denied_result(self, reason: str) -> dict[str, Any]:
+        """Create a standard denied result."""
+        return {'allowed': False, 'reason': reason, 'strict_mode': self.strict_mode}
 
-    def _check_resource_limits(self, matching_permission, context) -> dict:
-        """Check resource limits."""
-        if not matching_permission.resource_limits:
-            return {'passed': True}
+    def _validate_permission_checks(self, agent_id: str, agent: AgentIdentity, action_type: ActionType,
+                                     matching_permission: Any, context: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Perform all permission validation checks."""
+        # Check if permission is allowed
+        is_allowed, reason = self._check_permission_allowed(matching_permission, agent.role)
+        if not is_allowed:
+            return self._create_denied_result(reason)
 
-        resource_result = self._check_resource_limits(
-            matching_permission.resource_limits, context)
-        return resource_result
+        # Check conditions
+        condition_result = self._check_conditions(matching_permission, context, agent)
+        if not condition_result['passed']:
+            return self._create_denied_result(f"Condition check failed: {condition_result['reason']}")
+
+        # Check time restrictions
+        time_result = self._check_time_restrictions(matching_permission)
+        if not time_result['passed']:
+            return self._create_denied_result(f"Time restriction: {time_result['reason']}")
+
+        # Check rate limits
+        rate_result = self._check_rate_limits(agent_id, action_type)
+        if not rate_result['passed']:
+            return self._create_denied_result(f"Rate limit exceeded: {rate_result['reason']}")
+
+        # Check resource limits
+        resource_result = self._check_resource_limits(matching_permission, context)
+        if not resource_result['passed']:
+            return self._create_denied_result(f"Resource limit exceeded: {resource_result['reason']}")
+
+        return None
 
     def check_permission(self, agent_id: str, action_type: ActionType,
         context: dict[str, Any] | None=None) ->dict[str, Any]:
@@ -212,8 +250,7 @@ class AgentPermissionSystem:
                 # Check if agent is registered
                 is_registered, agent_or_reason = self._check_agent_registered(agent_id)
                 if not is_registered:
-                    result = {'allowed': False, 'reason': agent_or_reason,
-                        'strict_mode': self.strict_mode}
+                    result = self._create_denied_result(agent_or_reason)
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
 
@@ -222,8 +259,7 @@ class AgentPermissionSystem:
                 # Check if agent is active
                 is_active, reason = self._check_agent_active(agent)
                 if not is_active:
-                    result = {'allowed': False, 'reason': reason,
-                        'strict_mode': self.strict_mode}
+                    result = self._create_denied_result(reason)
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
 
@@ -235,56 +271,18 @@ class AgentPermissionSystem:
                     self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
                     return result
 
-                # Check if permission is allowed
-                is_allowed, reason = self._check_permission_allowed(matching_permission, agent.role)
-                if not is_allowed:
-                    result = {'allowed': False, 'reason': reason,
-                        'strict_mode': self.strict_mode}
-                    self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
-                    return result
-
-                # Check conditions
-                condition_result = self._check_conditions(matching_permission, context, agent)
-                if not condition_result['passed']:
-                    result = {'allowed': False,
-                        'reason': f"Condition check failed: {condition_result['reason']}",
-                        'strict_mode': self.strict_mode}
-                    self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
-                    return result
-
-                # Check time restrictions
-                time_result = self._check_time_restrictions(matching_permission)
-                if not time_result['passed']:
-                    result = {'allowed': False,
-                        'reason': f"Time restriction: {time_result['reason']}",
-                        'strict_mode': self.strict_mode}
-                    self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
-                    return result
-
-                # Check rate limits
-                rate_result = self._check_rate_limits(agent_id, action_type)
-                if not rate_result['passed']:
-                    result = {'allowed': False,
-                        'reason': f"Rate limit exceeded: {rate_result['reason']}",
-                        'strict_mode': self.strict_mode}
-                    self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
-                    return result
-
-                # Check resource limits
-                resource_result = self._check_resource_limits(matching_permission, context)
-                if not resource_result['passed']:
-                    result = {'allowed': False,
-                        'reason': f"Resource limit exceeded: {resource_result['reason']}",
-                        'strict_mode': self.strict_mode}
-                    self._log_audit_event(agent_id, action_type, 'denied', result['reason'])
-                    return result
+                # Validate all permission checks
+                denied_result = self._validate_permission_checks(agent_id, agent, action_type, matching_permission, context)
+                if denied_result:
+                    self._log_audit_event(agent_id, action_type, 'denied', denied_result['reason'])
+                    return denied_result
 
                 # Permission granted
                 self._record_action(agent_id, action_type)
                 self._log_audit_event(agent_id, action_type, 'allowed', 'Permission granted')
                 return {'allowed': True, 'reason': 'Permission granted',
                     'strict_mode': self.strict_mode}
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(
                     f'Error checking permission for {agent_id}: {e}')
                 result = {'allowed': False, 'reason':
@@ -318,7 +316,7 @@ class AgentPermissionSystem:
                 self.logger.warning(
                     f'⚠️ Agent {agent_id} permissions revoked: {reason}')
                 return True
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(
                     f'Failed to revoke permissions for {agent_id}: {e}')
                 return False
@@ -396,42 +394,62 @@ class AgentPermissionSystem:
             ACCESS_EXTERNAL_API, False), Permission(ActionType.
             MODIFY_SYSTEM_CONFIG, False)}
 
-    def _check_conditions(self, conditions: dict[str, Any], context:
-        dict[str, Any] | None, agent: AgentIdentity) ->dict[str, Any]:
+    def _check_max_position_size(self, condition_value: Any, context: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Check max position size condition."""
+        if context and 'position_size' in context:
+            if context['position_size'] > condition_value:
+                return {'passed': False, 'reason':
+                    f"Position size {context['position_size']} exceeds limit {condition_value}"}
+        return None
+
+    def _check_max_risk_per_trade(self, condition_value: Any, context: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Check max risk per trade condition."""
+        if context and 'risk_per_trade' in context:
+            if context['risk_per_trade'] > condition_value:
+                return {'passed': False, 'reason':
+                    f"Risk per trade {context['risk_per_trade']} exceeds limit {condition_value}"}
+        return None
+
+    def _check_simulation_only(self, condition_value: Any, context: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Check simulation only condition."""
+        if context and 'live_trading' in context:
+            if context['live_trading']:
+                return {'passed': False, 'reason': 'Agent only allowed in simulation mode'}
+        return None
+
+    def _check_max_change_pct(self, condition_value: Any, context: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Check max change percentage condition."""
+        if context and 'parameter_change_pct' in context:
+            if context['parameter_change_pct'] > condition_value:
+                return {'passed': False, 'reason':
+                    f"Parameter change {context['parameter_change_pct']}% exceeds limit {condition_value}%"}
+        return None
+
+    def _evaluate_conditions_dict(self, conditions: dict[str, Any], context:
+        dict[str, Any] | None, agent: AgentIdentity) -> dict[str, Any]:
         """Check permission conditions against context."""
         try:
             for condition_name, condition_value in conditions.items():
+                result = None
                 if condition_name == 'max_position_size':
-                    if context and 'position_size' in context:
-                        if context['position_size'] > condition_value:
-                            return {'passed': False, 'reason':
-                                f"Position size {context['position_size']} exceeds limit {condition_value}"
-                                }
+                    result = self._check_max_position_size(condition_value, context)
                 elif condition_name == 'max_risk_per_trade':
-                    if context and 'risk_per_trade' in context:
-                        if context['risk_per_trade'] > condition_value:
-                            return {'passed': False, 'reason':
-                                f"Risk per trade {context['risk_per_trade']} exceeds limit {condition_value}"
-                                }
+                    result = self._check_max_risk_per_trade(condition_value, context)
                 elif condition_name == 'simulation_only':
-                    if context and 'live_trading' in context:
-                        if context['live_trading']:
-                            return {'passed': False, 'reason':
-                                'Agent only allowed in simulation mode'}
+                    result = self._check_simulation_only(condition_value, context)
                 elif condition_name == 'max_change_pct':
-                    if context and 'parameter_change_pct' in context:
-                        if context['parameter_change_pct'] > condition_value:
-                            return {'passed': False, 'reason':
-                                f"Parameter change {context['parameter_change_pct']}% exceeds limit {condition_value}%"
-                                }
-            return {'passed': True, 'reason': 'All conditions satisfied'}
-        except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            return {'passed': False, 'reason':
-                f'Condition check error: {str(e)}'}
+                    result = self._check_max_change_pct(condition_value, context)
 
-    def _check_time_restrictions(self, time_restrictions: dict[str, str]
-        ) ->dict[str, Any]:
+                if result:
+                    return result
+
+            return {'passed': True, 'reason': 'All conditions satisfied'}
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            return {'passed': False, 'reason': f'Condition check error: {str(e)}'}
+
+    def _evaluate_time_restrictions_dict(self, time_restrictions: dict[str, str]
+        ) -> dict[str, Any]:
         """Check time-based restrictions."""
         try:
             now = datetime.now()
@@ -450,7 +468,7 @@ class AgentPermissionSystem:
                         f'Current day {now.weekday()} not in allowed days {allowed_days}'
                         }
             return {'passed': True, 'reason': 'Time restrictions satisfied'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return {'passed': False, 'reason':
                 f'Time restriction error: {str(e)}'}
@@ -480,17 +498,17 @@ class AgentPermissionSystem:
                     f"Daily limit exceeded: {len(recent_actions)}/{limits['max_per_day']}"
                     }
             return {'passed': True, 'reason': 'Rate limits satisfied'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return {'passed': False, 'reason':
                 f'Rate limit check error: {str(e)}'}
 
-    def _check_resource_limits(self, resource_limits: dict[str, Any],
-        context: dict[str, Any] | None) ->dict[str, Any]:
+    def _evaluate_resource_limits_dict(self, resource_limits: dict[str, Any],
+        context: dict[str, Any] | None) -> dict[str, Any]:
         """Check resource usage limits."""
         try:
             return {'passed': True, 'reason': 'Resource limits satisfied'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return {'passed': False, 'reason':
                 f'Resource limit check error: {str(e)}'}
@@ -525,7 +543,7 @@ class AgentPermissionSystem:
                 f"agent_audit_{datetime.now().strftime('%Y%m%d')}.json")
             with open(audit_file, 'w') as f:
                 json.dump(self.audit_log, f, indent=2)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to save audit log: {e}')
 
 

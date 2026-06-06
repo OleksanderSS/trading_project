@@ -16,5 +16,5 @@ async def test_overfitting_detector_exception():
     detector = OverfittingDetector(config)
     
     # Викликаємо аналіз з некоректними даними, щоб викликати помилку
-    with pytest.raises(DataProcessingError, match="Overfitting detection failed"):
+    with pytest.raises(DataProcessingError, match="Learning curve generation failed"):
         await detector.detect_overfitting(model, pd.DataFrame(), pd.Series())

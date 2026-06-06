@@ -34,6 +34,6 @@ class ShapAnalyzer(IAnalyzer):
             self.explainer = shap.TreeExplainer(model)
             shap_values = self.explainer.shap_values(features)
             return {"shap_values": shap_values, "status": "success"}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"SHAP analysis failed: {e}", exc_info=True)
             raise DataProcessingError(f"SHAP analysis failed: {e}") from e

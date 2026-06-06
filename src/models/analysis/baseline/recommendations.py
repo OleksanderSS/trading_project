@@ -36,7 +36,7 @@ class BaselineRecommendationEngine:
                 cost_benefit['recommendation'] = 'consider_simplification'
 
             return cost_benefit
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in cost-benefit analysis: {e}")
             raise
 
@@ -67,6 +67,6 @@ class BaselineRecommendationEngine:
                 recommendations.append("📈 Continue with current model.")
 
             return recommendations
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating recommendations: {e}")
             raise

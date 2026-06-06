@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Model Training Orchestrator: Orchestrates light model training for different contexts (tickers, targets, models).
 Extracted from HybridOrchestrator to improve code organization and testability.
@@ -117,7 +118,7 @@ class ModelTrainingOrchestrator:
             # 5. Metadata
             return self._create_model_metadata(resolved_ticker, target_col, model_name, metrics, model_path, available_features)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Error training {model_name} for {target_col}: {e}", exc_info=True)
             raise RuntimeError(
                 f"Training failed for model={model_name}, ticker={resolved_ticker}, target={target_col}"

@@ -98,7 +98,7 @@ class CounterfactualGenerator:
                 'is_valid': self.synthetic_control.validate_synthetic_control(treatment_data, synthetic_control)
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Synthetic control generation failed: {e}", exc_info=True)
             raise RuntimeError(f"Synthetic control generation failed: {e}") from e
 
@@ -160,7 +160,7 @@ class CounterfactualGenerator:
                 'effect_size': abs(treatment_effect) / abs(control_pre_mean) if control_pre_mean != 0 else 0
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"DiD analysis failed: {e}", exc_info=True)
             raise RuntimeError(f"DiD analysis failed: {e}") from e
 
@@ -212,7 +212,7 @@ class CounterfactualGenerator:
                 'is_valid': balance_checks.get('overall_balance', False)
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Propensity score matching failed: {e}", exc_info=True)
             raise RuntimeError(f"Propensity score matching failed: {e}") from e
 
@@ -264,6 +264,6 @@ class CounterfactualGenerator:
                 'effect_size': results.get('effect_size', 0)
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Causal effect estimation failed: {e}", exc_info=True)
             raise RuntimeError(f"Causal effect estimation failed: {e}") from e

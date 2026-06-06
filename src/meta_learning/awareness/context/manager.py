@@ -42,7 +42,7 @@ class ContextAwarenessEngine(BaseMetaComponent):
             self.analyze_market_context(pattern_id)
 
             self.logger.info('Context awareness update completed.')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to update context awareness: {e}', exc_info=True)
 
     def analyze_market_context(self, current_pattern_id: str | None = None) -> MarketContext:

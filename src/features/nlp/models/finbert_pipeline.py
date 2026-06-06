@@ -49,7 +49,7 @@ def get_finbert_pipeline(device_preference: str = "auto") -> Any | None:
                 device=_DEVICE
             )
             logger.info(f"[OK] FinBERT loaded ({'cuda' if _DEVICE == 0 else 'cpu'})")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"[ERROR] Error loading FinBERT: {e}")
             _FINBERT_PIPELINE = None
             raise RuntimeError("FinBERT pipeline loading failed") from e

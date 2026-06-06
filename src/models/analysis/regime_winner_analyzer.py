@@ -142,7 +142,7 @@ class RegimeWinnerAnalyzer:
 
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in regime consistency analysis: {e}", exc_info=True)
             return {'status': 'error', 'error': str(e), 'timestamp': current_time}
 
@@ -188,7 +188,7 @@ class RegimeWinnerAnalyzer:
 
             return regime_analysis
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing winners: {e}")
             return {'current_regime': current_regime, 'model_performance': {}, 'winner_ranking': [], 'regime_specific_metrics': {}, 'error': str(e)}
 
@@ -268,7 +268,7 @@ class RegimeWinnerAnalyzer:
 
             with open(filepath, 'w') as f:
                 json.dump(results, f, indent=2, default=str)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error storing results: {e}")
 
     def get_regime_summary(self, days: int = 30) -> dict[str, Any]:
@@ -284,7 +284,8 @@ class RegimeWinnerAnalyzer:
         }
 
     def _calculate_distribution(self, history: list[dict[str, Any]]) -> dict[str, float]:
-        if not history: return {}
+        if not history:
+            return {}
         counts = defaultdict(int)
         for r in history:
             counts[r['regime']] += 1

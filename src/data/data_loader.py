@@ -47,7 +47,7 @@ class ColabDataLoader:
             return self.features_df, self.targets_df
         except PathValidationError as e:
             logger.error(f"Security violation: {e}")
-            raise FileNotFoundError(f"Access denied to data files in {self.config.batch_dir}")
+            raise FileNotFoundError(f"Access denied to data files in {self.config.batch_dir}") from e
 
     def _normalize_timezones(self) ->None:
         """Нормалізувати часові зони"""
@@ -68,7 +68,7 @@ class ColabDataLoader:
                 cached = json.load(f)
             current_sig = self._compute_signature()
             return cached.get('signature') == current_sig
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка при перевірці кешу: {e}',
                 exc_info=True)
             return False
@@ -81,7 +81,7 @@ class ColabDataLoader:
                 'timestamp': datetime.now().isoformat()}
             with open(cache_file, 'w') as f:
                 json.dump(signature_data, f, indent=2)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка при збереженні кешу: {e}',
                 exc_info=True)
             raise

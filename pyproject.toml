@@ -19,6 +19,14 @@ select = [
 ]
 ignore = ["E501"] # Ignore long lines (handled by formatter)
 
+[tool.ruff.lint.per-file-ignores]
+# data_manager uses _quote_identifier() for all table names — S608 are false positives
+"src/data/management/data_manager.py" = ["S608"]
+# cache_manager — table names from config, pickle for internal use only
+"src/core/cache/cache_manager.py" = ["S608", "S301"]
+"src/core/cache/object_cache.py" = ["S301"]
+"src/models/loader.py" = ["S301"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["src"]
 

@@ -151,7 +151,7 @@ class ModelAnalyzer:
                 json.dump(self.summary, f, indent=4, ensure_ascii=False)
             logger.info(f"Training report saved successfully to {file_path}")
             return str(file_path)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save training report: {e}")
             return ""
 

@@ -54,7 +54,7 @@ class TrainMode(BaseMode):
                 'results': final_results
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.exception(f"A critical error occurred during the training process: {e}")
             return {'status': 'failed', 'error': str(e)}
 

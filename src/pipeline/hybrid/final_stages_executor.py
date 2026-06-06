@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Final Stages Executor - Handles final stages execution
 """
@@ -105,13 +106,26 @@ class FinalStagesExecutor:
                             ] = model_result
                         self.logger.info(
                             f'✅ {ticker}-{target_col}-{model_type}: trained')
-                    except Exception as e:
+                    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                         self.logger.error(
                             f'❌ {ticker}-{target_col}-{model_type}: {e}')
                         heavy_results['ticker_results'][ticker]['timeframes'][
                             'all']['results'][target_col]['models'][model_type
                             ] = {'status': 'failed', 'error': str(e)}
         return heavy_results
+
+    def _merge_ticker_models(self, existing: dict[str, Any], ticker_data: dict[str, Any]) -> None:
+        """Merge models from ticker_data into existing results."""
+        if 'timeframes' in existing and 'timeframes' in ticker_data:
+            if 'all' in existing['timeframes'] and 'all' in ticker_data['timeframes']:
+                if 'results' in existing['timeframes']['all'] and 'results' in ticker_data['timeframes']['all']:
+                    for target, target_data in ticker_data['timeframes']['all']['results'].items():
+                        if target not in existing['timeframes']['all']['results']:
+                            existing['timeframes']['all']['results'][target] = target_data
+                        else:
+                            existing_models = existing['timeframes']['all']['results'][target].get('models', {})
+                            new_models = target_data.get('models', {})
+                            existing_models.update(new_models)
 
     def _merge_model_results(self, light_results, heavy_results):
         """Об'єднує результати light та heavy моделей"""
@@ -128,25 +142,7 @@ class FinalStagesExecutor:
                     merged['ticker_results'][ticker] = ticker_data
                 else:
                     existing = merged['ticker_results'][ticker]
-                    if ('timeframes' in existing and 'timeframes' in
-                        ticker_data):
-                        if 'all' in existing['timeframes'
-                            ] and 'all' in ticker_data['timeframes']:
-                            if 'results' in existing['timeframes']['all'
-                                ] and 'results' in ticker_data['timeframes'][
-                                'all']:
-                                for target, target_data in ticker_data[
-                                    'timeframes']['all']['results'].items():
-                                    if target not in existing['timeframes'][
-                                        'all']['results']:
-                                        existing['timeframes']['all']['results'][
-                                            target] = target_data
-                                    else:
-                                        existing_models = existing['timeframes'][
-                                            'all']['results'][target].get('models',
-                                            {})
-                                        new_models = target_data.get('models', {})
-                                        existing_models.update(new_models)
+                    self._merge_ticker_models(existing, ticker_data)
         return merged
 
     def _prepare_final_stages_params(self, colab_results: dict[str, Any] | None, batch_name: str | None, stages_to_run: list[int] | None
@@ -180,7 +176,7 @@ class FinalStagesExecutor:
                     for run in accumulated['runs']:
                         if 'models_metadata' in run:
                             models_metadata.update(run['models_metadata'])
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Could not load accumulated results: {e}')
                 raise

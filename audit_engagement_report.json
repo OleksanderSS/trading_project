@@ -1,0 +1,4388 @@
+{
+  "stats": {
+    "files": 611,
+    "lines": 92869,
+    "issues": 4720,
+    "by_severity": {
+      "INFO": 4174,
+      "LOW": 546
+    },
+    "by_category": {
+      "EXP": 1504,
+      "MON": 2476,
+      "TEST": 53,
+      "DOC": 546,
+      "ENG": 141
+    }
+  },
+  "issues": [
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 172,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 299,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 342,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 299,
+      "message": "Missing return type annotation: objective()",
+      "fix_hint": "def objective(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "algorithms\\walk_forward_optimizer.py",
+      "line": 190,
+      "message": "Missing docstring: run_walk_forward()",
+      "fix_hint": "\"\"\"Description of run_walk_forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\news_impact_analyzer.py",
+      "line": 129,
+      "message": "Missing docstring: get_significance()",
+      "fix_hint": "\"\"\"Description of get_significance.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\wrappers.py",
+      "line": 11,
+      "message": "Missing docstring: DrawdownAnalyzer",
+      "fix_hint": "\"\"\"Description of DrawdownAnalyzer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\wrappers.py",
+      "line": 37,
+      "message": "Missing docstring: FamaFrenchAnalyzer",
+      "fix_hint": "\"\"\"Description of FamaFrenchAnalyzer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\wrappers.py",
+      "line": 52,
+      "message": "Missing docstring: VolatilityAnalyzer",
+      "fix_hint": "\"\"\"Description of VolatilityAnalyzer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\wrappers.py",
+      "line": 15,
+      "message": "Missing docstring: analyze()",
+      "fix_hint": "\"\"\"Description of analyze.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\wrappers.py",
+      "line": 42,
+      "message": "Missing docstring: analyze()",
+      "fix_hint": "\"\"\"Description of analyze.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\wrappers.py",
+      "line": 56,
+      "message": "Missing docstring: analyze()",
+      "fix_hint": "\"\"\"Description of analyze.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\arena_battle.py",
+      "line": 488,
+      "message": "Missing docstring: get_trading_arena()",
+      "fix_hint": "\"\"\"Description of get_trading_arena.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\arena_battle.py",
+      "line": 451,
+      "message": "Missing docstring: get_leaderboard()",
+      "fix_hint": "\"\"\"Description of get_leaderboard.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\arena_battle.py",
+      "line": 461,
+      "message": "Missing docstring: save_arena_state()",
+      "fix_hint": "\"\"\"Description of save_arena_state.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\arena_battle.py",
+      "line": 473,
+      "message": "Missing docstring: load_arena_state()",
+      "fix_hint": "\"\"\"Description of load_arena_state.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\performance_tracker.py",
+      "line": 357,
+      "message": "Missing docstring: convert_datetime()",
+      "fix_hint": "\"\"\"Description of convert_datetime.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\causal_effect_methods.py",
+      "line": 36,
+      "message": "Missing return type annotation: linear_estimation()",
+      "fix_hint": "def linear_estimation(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\causal_effect_methods.py",
+      "line": 73,
+      "message": "Missing return type annotation: rf_estimation()",
+      "fix_hint": "def rf_estimation(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\causal_effect_methods.py",
+      "line": 106,
+      "message": "Missing return type annotation: double_ml_estimation()",
+      "fix_hint": "def double_ml_estimation(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\causal_effect_methods.py",
+      "line": 158,
+      "message": "Missing return type annotation: robustness_checks()",
+      "fix_hint": "def robustness_checks(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\difference_in_differences_methods.py",
+      "line": 35,
+      "message": "Missing return type annotation: test_significance()",
+      "fix_hint": "def test_significance(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\difference_in_differences_methods.py",
+      "line": 79,
+      "message": "Missing return type annotation: test_parallel_trends()",
+      "fix_hint": "def test_parallel_trends(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\ensemble_selector.py",
+      "line": 211,
+      "message": "Missing docstring: simple_average()",
+      "fix_hint": "\"\"\"Description of simple_average.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\ensemble_selector.py",
+      "line": 223,
+      "message": "Missing docstring: weighted_average()",
+      "fix_hint": "\"\"\"Description of weighted_average.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\macro_context_analyzer.py",
+      "line": 76,
+      "message": "Missing docstring: classify()",
+      "fix_hint": "\"\"\"Description of classify.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\propensity_score_methods.py",
+      "line": 35,
+      "message": "Missing return type annotation: prepare_data()",
+      "fix_hint": "def prepare_data(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\propensity_score_methods.py",
+      "line": 46,
+      "message": "Missing return type annotation: estimate_propensity_scores()",
+      "fix_hint": "def estimate_propensity_scores(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\propensity_score_methods.py",
+      "line": 64,
+      "message": "Missing return type annotation: perform_matching()",
+      "fix_hint": "def perform_matching(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\propensity_score_methods.py",
+      "line": 111,
+      "message": "Missing return type annotation: calculate_ate()",
+      "fix_hint": "def calculate_ate(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\propensity_score_methods.py",
+      "line": 137,
+      "message": "Missing return type annotation: check_covariate_balance()",
+      "fix_hint": "def check_covariate_balance(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\context\\propensity_score_methods.py",
+      "line": 181,
+      "message": "Missing return type annotation: assess_matching_quality()",
+      "fix_hint": "def assess_matching_quality(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\data_managers\\model_results_manager.py",
+      "line": 40,
+      "message": "Missing return type annotation: save_results()",
+      "fix_hint": "def save_results(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\detectors\\anomaly_detector.py",
+      "line": 33,
+      "message": "Missing return type annotation: fit()",
+      "fix_hint": "def fit(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\engines\\causal_engine.py",
+      "line": 52,
+      "message": "Missing return type annotation: identify_effect()",
+      "fix_hint": "def identify_effect(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\reporting\\model_analyzer.py",
+      "line": 89,
+      "message": "Missing docstring: sort_key()",
+      "fix_hint": "\"\"\"Description of sort_key.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\signals\\significance_detector.py",
+      "line": 154,
+      "message": "Missing docstring: check_significance()",
+      "fix_hint": "\"\"\"Description of check_significance.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\signals\\significance_detector.py",
+      "line": 170,
+      "message": "Missing docstring: check_macro_significance()",
+      "fix_hint": "\"\"\"Description of check_macro_significance.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\unified_analytics_engine.py",
+      "line": 79,
+      "message": "Missing return type annotation: register_analyzer()",
+      "fix_hint": "def register_analyzer(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "analytics\\utils\\knn_model_wrapper.py",
+      "line": 24,
+      "message": "Missing return type annotation: fit()",
+      "fix_hint": "def fit(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "calibration\\adaptive_confidence_calibrator.py",
+      "line": 72,
+      "message": "Missing return type annotation: calibrate()",
+      "fix_hint": "def calibrate(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "calibration\\calibration_engine.py",
+      "line": 327,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "cli\\argument_validator.py",
+      "line": 16,
+      "message": "Missing return type annotation: validate_arguments()",
+      "fix_hint": "def validate_arguments(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\config\\config_loader.py",
+      "line": 27,
+      "message": "Missing return type annotation: load_runtime_params()",
+      "fix_hint": "def load_runtime_params(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\environment\\colab_environment.py",
+      "line": 60,
+      "message": "Missing docstring: timeout_handler()",
+      "fix_hint": "\"\"\"Description of timeout_handler.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\environment\\colab_environment.py",
+      "line": 45,
+      "message": "Missing return type annotation: setup_paths()",
+      "fix_hint": "def setup_paths(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\environment\\setup.py",
+      "line": 63,
+      "message": "Missing docstring: timeout_handler()",
+      "fix_hint": "\"\"\"Description of timeout_handler.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\environment\\setup.py",
+      "line": 48,
+      "message": "Missing return type annotation: setup_paths()",
+      "fix_hint": "def setup_paths(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\memory\\memory_monitor.py",
+      "line": 20,
+      "message": "Missing return type annotation: get_memory_info()",
+      "fix_hint": "def get_memory_info(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\memory\\memory_monitor.py",
+      "line": 36,
+      "message": "Missing return type annotation: check_memory()",
+      "fix_hint": "def check_memory(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\memory\\memory_monitor.py",
+      "line": 68,
+      "message": "Missing return type annotation: cleanup()",
+      "fix_hint": "def cleanup(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 5,
+      "message": "Missing docstring: LSTMModel",
+      "fix_hint": "\"\"\"Description of LSTMModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 15,
+      "message": "Missing docstring: GRUModel",
+      "fix_hint": "\"\"\"Description of GRUModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 25,
+      "message": "Missing docstring: CNNModel",
+      "fix_hint": "\"\"\"Description of CNNModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 39,
+      "message": "Missing docstring: TransformerModel",
+      "fix_hint": "\"\"\"Description of TransformerModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 52,
+      "message": "Missing docstring: AutoencoderModel",
+      "fix_hint": "\"\"\"Description of AutoencoderModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 11,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 21,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 33,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 47,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 58,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\architectures.py",
+      "line": 33,
+      "message": "Missing return type annotation: forward()",
+      "fix_hint": "def forward(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 30,
+      "message": "Missing docstring: SklearnModelWrapper",
+      "fix_hint": "\"\"\"Description of SklearnModelWrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 74,
+      "message": "Missing docstring: FakeTensor",
+      "fix_hint": "\"\"\"Description of FakeTensor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 170,
+      "message": "Missing docstring: RandomForestWrapper",
+      "fix_hint": "\"\"\"Description of RandomForestWrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 211,
+      "message": "Missing docstring: AutoencoderModel",
+      "fix_hint": "\"\"\"Description of AutoencoderModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 47,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 55,
+      "message": "Missing docstring: parameters()",
+      "fix_hint": "\"\"\"Description of parameters.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 58,
+      "message": "Missing docstring: train()",
+      "fix_hint": "\"\"\"Description of train.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 62,
+      "message": "Missing docstring: eval()",
+      "fix_hint": "\"\"\"Description of eval.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 66,
+      "message": "Missing docstring: state_dict()",
+      "fix_hint": "\"\"\"Description of state_dict.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 77,
+      "message": "Missing docstring: numpy()",
+      "fix_hint": "\"\"\"Description of numpy.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 79,
+      "message": "Missing docstring: flatten()",
+      "fix_hint": "\"\"\"Description of flatten.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 185,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 193,
+      "message": "Missing docstring: parameters()",
+      "fix_hint": "\"\"\"Description of parameters.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 196,
+      "message": "Missing docstring: train()",
+      "fix_hint": "\"\"\"Description of train.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 200,
+      "message": "Missing docstring: eval()",
+      "fix_hint": "\"\"\"Description of eval.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\model_factory.py",
+      "line": 223,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 16,
+      "message": "Missing docstring: SklearnModelWrapper",
+      "fix_hint": "\"\"\"Description of SklearnModelWrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 60,
+      "message": "Missing docstring: FakeTensor",
+      "fix_hint": "\"\"\"Description of FakeTensor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 33,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 41,
+      "message": "Missing docstring: parameters()",
+      "fix_hint": "\"\"\"Description of parameters.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 44,
+      "message": "Missing docstring: train()",
+      "fix_hint": "\"\"\"Description of train.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 48,
+      "message": "Missing docstring: eval()",
+      "fix_hint": "\"\"\"Description of eval.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 52,
+      "message": "Missing docstring: state_dict()",
+      "fix_hint": "\"\"\"Description of state_dict.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 63,
+      "message": "Missing docstring: numpy()",
+      "fix_hint": "\"\"\"Description of numpy.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 65,
+      "message": "Missing docstring: flatten()",
+      "fix_hint": "\"\"\"Description of flatten.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\sklearn_fallback.py",
+      "line": 9,
+      "message": "Missing return type annotation: create_sklearn_fallback_model()",
+      "fix_hint": "def create_sklearn_fallback_model(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\torch_models.py",
+      "line": 101,
+      "message": "Missing docstring: RandomForestWrapper",
+      "fix_hint": "\"\"\"Description of RandomForestWrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\torch_models.py",
+      "line": 116,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\torch_models.py",
+      "line": 124,
+      "message": "Missing docstring: parameters()",
+      "fix_hint": "\"\"\"Description of parameters.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\torch_models.py",
+      "line": 127,
+      "message": "Missing docstring: train()",
+      "fix_hint": "\"\"\"Description of train.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\torch_models.py",
+      "line": 130,
+      "message": "Missing docstring: eval()",
+      "fix_hint": "\"\"\"Description of eval.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\torch_models.py",
+      "line": 4,
+      "message": "Missing return type annotation: create_torch_model()",
+      "fix_hint": "def create_torch_model(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\models\\torch_models.py",
+      "line": 97,
+      "message": "Missing return type annotation: create_random_forest_wrapper()",
+      "fix_hint": "def create_random_forest_wrapper(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\data_signature.py",
+      "line": 6,
+      "message": "Missing return type annotation: compute_data_signature()",
+      "fix_hint": "def compute_data_signature(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\metrics.py",
+      "line": 4,
+      "message": "Missing return type annotation: compute_metrics()",
+      "fix_hint": "def compute_metrics(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\retry.py",
+      "line": 13,
+      "message": "Missing docstring: decorator()",
+      "fix_hint": "\"\"\"Description of decorator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\retry.py",
+      "line": 15,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\utils.py",
+      "line": 40,
+      "message": "Missing return type annotation: save_checkpoint()",
+      "fix_hint": "def save_checkpoint(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\utils.py",
+      "line": 58,
+      "message": "Missing return type annotation: load_checkpoint()",
+      "fix_hint": "def load_checkpoint(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\utils.py",
+      "line": 80,
+      "message": "Missing return type annotation: find_latest_checkpoint()",
+      "fix_hint": "def find_latest_checkpoint(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\utils.py",
+      "line": 93,
+      "message": "Missing return type annotation: compute_data_signature()",
+      "fix_hint": "def compute_data_signature(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "colab\\utils\\utils.py",
+      "line": 108,
+      "message": "Missing return type annotation: compute_metrics()",
+      "fix_hint": "def compute_metrics(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "config\\tickers.py",
+      "line": 339,
+      "message": "Missing return type annotation: export_tickers_to_json()",
+      "fix_hint": "def export_tickers_to_json(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "config\\unified_config_manager.py",
+      "line": 22,
+      "message": "Missing docstring: Environment",
+      "fix_hint": "\"\"\"Description of Environment.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "config\\unified_config_manager.py",
+      "line": 120,
+      "message": "Missing return type annotation: reload()",
+      "fix_hint": "def reload(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "config\\unified_config_manager.py",
+      "line": 264,
+      "message": "Missing return type annotation: validate_configuration()",
+      "fix_hint": "def validate_configuration(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\cache\\cache_manager.py",
+      "line": 252,
+      "message": "Missing docstring: decorator()",
+      "fix_hint": "\"\"\"Description of decorator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\cache\\cache_manager.py",
+      "line": 254,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\cache\\cache_manager.py",
+      "line": 268,
+      "message": "Missing return type annotation: auto_cleanup()",
+      "fix_hint": "def auto_cleanup(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\cache\\cache_manager.py",
+      "line": 254,
+      "message": "Missing return type annotation: wrapper()",
+      "fix_hint": "def wrapper(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\cache\\query_cache.py",
+      "line": 58,
+      "message": "Missing return type annotation: set()",
+      "fix_hint": "def set(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 197,
+      "message": "Missing docstring: decorator()",
+      "fix_hint": "\"\"\"Description of decorator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 227,
+      "message": "Missing docstring: decorator()",
+      "fix_hint": "\"\"\"Description of decorator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 249,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 200,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 230,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\file_management\\file_manager.py",
+      "line": 71,
+      "message": "Missing docstring: write_task()",
+      "fix_hint": "\"\"\"Description of write_task.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\file_management\\file_manager.py",
+      "line": 75,
+      "message": "Missing docstring: validate_task()",
+      "fix_hint": "\"\"\"Description of validate_task.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\file_management\\file_manager.py",
+      "line": 111,
+      "message": "Missing docstring: write_task()",
+      "fix_hint": "\"\"\"Description of write_task.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\file_management\\file_manager.py",
+      "line": 115,
+      "message": "Missing docstring: validate_task()",
+      "fix_hint": "\"\"\"Description of validate_task.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\file_management\\file_manager.py",
+      "line": 193,
+      "message": "Missing docstring: write_task()",
+      "fix_hint": "\"\"\"Description of write_task.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\file_management\\file_manager.py",
+      "line": 196,
+      "message": "Missing docstring: validate_task()",
+      "fix_hint": "\"\"\"Description of validate_task.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\logging\\exception_decorator.py",
+      "line": 12,
+      "message": "Missing docstring: decorator()",
+      "fix_hint": "\"\"\"Description of decorator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\logging\\exception_decorator.py",
+      "line": 14,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\logging\\logger.py",
+      "line": 18,
+      "message": "Missing docstring: process()",
+      "fix_hint": "\"\"\"Description of process.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\logging\\logger.py",
+      "line": 72,
+      "message": "Missing docstring: csv_writer()",
+      "fix_hint": "\"\"\"Description of csv_writer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\monitoring\\memory_profiler.py",
+      "line": 135,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\security\\secure_secrets_manager.py",
+      "line": 51,
+      "message": "Missing return type annotation: load_dotenv()",
+      "fix_hint": "def load_dotenv(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\security\\secure_secrets_manager.py",
+      "line": 184,
+      "message": "Missing return type annotation: encrypt_secrets()",
+      "fix_hint": "def encrypt_secrets(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\security\\secure_secrets_manager.py",
+      "line": 303,
+      "message": "Missing return type annotation: log_secrets_status()",
+      "fix_hint": "def log_secrets_status(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\system\\version_manager.py",
+      "line": 207,
+      "message": "Missing docstring: get_current_version()",
+      "fix_hint": "\"\"\"Description of get_current_version.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\system\\version_manager.py",
+      "line": 211,
+      "message": "Missing docstring: get_model_version()",
+      "fix_hint": "\"\"\"Description of get_model_version.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\system\\version_manager.py",
+      "line": 215,
+      "message": "Missing docstring: tag_pipeline_run()",
+      "fix_hint": "\"\"\"Description of tag_pipeline_run.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\system\\version_manager.py",
+      "line": 219,
+      "message": "Missing docstring: needs_migration()",
+      "fix_hint": "\"\"\"Description of needs_migration.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\system\\version_manager.py",
+      "line": 223,
+      "message": "Missing docstring: get_migration_path()",
+      "fix_hint": "\"\"\"Description of get_migration_path.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\system\\version_manager.py",
+      "line": 229,
+      "message": "Missing docstring: get_version_info()",
+      "fix_hint": "\"\"\"Description of get_version_info.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\system\\version_manager.py",
+      "line": 172,
+      "message": "Missing return type annotation: add_version()",
+      "fix_hint": "def add_version(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 63,
+      "message": "Missing docstring: validate_ticker_format()",
+      "fix_hint": "\"\"\"Description of validate_ticker_format.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 82,
+      "message": "Missing docstring: validate_ohlc_logic()",
+      "fix_hint": "\"\"\"Description of validate_ohlc_logic.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 115,
+      "message": "Missing docstring: validate_ticker()",
+      "fix_hint": "\"\"\"Description of validate_ticker.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 131,
+      "message": "Missing docstring: validate_ticker()",
+      "fix_hint": "\"\"\"Description of validate_ticker.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 136,
+      "message": "Missing docstring: validate_price()",
+      "fix_hint": "\"\"\"Description of validate_price.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 156,
+      "message": "Missing docstring: validate_tickers()",
+      "fix_hint": "\"\"\"Description of validate_tickers.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 164,
+      "message": "Missing docstring: validate_date_range()",
+      "fix_hint": "\"\"\"Description of validate_date_range.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "core\\validation\\validators.py",
+      "line": 82,
+      "message": "Missing return type annotation: validate_ohlc_logic()",
+      "fix_hint": "def validate_ohlc_logic(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\collectors\\synthetic_generator.py",
+      "line": 12,
+      "message": "Missing docstring: generate_flash_crash()",
+      "fix_hint": "\"\"\"Description of generate_flash_crash.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\collectors\\synthetic_generator.py",
+      "line": 23,
+      "message": "Missing docstring: generate_high_volatility()",
+      "fix_hint": "\"\"\"Description of generate_high_volatility.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\collectors\\synthetic_generator.py",
+      "line": 12,
+      "message": "Missing return type annotation: generate_flash_crash()",
+      "fix_hint": "def generate_flash_crash(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\collectors\\synthetic_generator.py",
+      "line": 23,
+      "message": "Missing return type annotation: generate_high_volatility()",
+      "fix_hint": "def generate_high_volatility(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 10,
+      "message": "Missing docstring: TradingStyle",
+      "fix_hint": "\"\"\"Description of TradingStyle.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 17,
+      "message": "Missing docstring: MarketFocus",
+      "fix_hint": "\"\"\"Description of MarketFocus.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 27,
+      "message": "Missing docstring: TradingConfig",
+      "fix_hint": "\"\"\"Description of TradingConfig.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 36,
+      "message": "Missing docstring: SectorConfig",
+      "fix_hint": "\"\"\"Description of SectorConfig.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 46,
+      "message": "Missing docstring: AssetUniverseManager",
+      "fix_hint": "\"\"\"Description of AssetUniverseManager.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 71,
+      "message": "Missing docstring: get_tickers_by_market_focus()",
+      "fix_hint": "\"\"\"Description of get_tickers_by_market_focus.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 98,
+      "message": "Missing docstring: get_timeframes_for_style()",
+      "fix_hint": "\"\"\"Description of get_timeframes_for_style.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 105,
+      "message": "Missing docstring: create_custom_config()",
+      "fix_hint": "\"\"\"Description of create_custom_config.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 118,
+      "message": "Missing docstring: get_preset()",
+      "fix_hint": "\"\"\"Description of get_preset.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 121,
+      "message": "Missing docstring: list_presets()",
+      "fix_hint": "\"\"\"Description of list_presets.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 124,
+      "message": "Missing docstring: get_tickers_by_strategy()",
+      "fix_hint": "\"\"\"Description of get_tickers_by_strategy.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 133,
+      "message": "Missing docstring: get_sector_analysis()",
+      "fix_hint": "\"\"\"Description of get_sector_analysis.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_cleaner.py",
+      "line": 5,
+      "message": "Missing docstring: DataCleaner",
+      "fix_hint": "\"\"\"Description of DataCleaner.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 55,
+      "message": "Missing docstring: DataManager",
+      "fix_hint": "\"\"\"Description of DataManager.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 21,
+      "message": "Missing docstring: execute_query()",
+      "fix_hint": "\"\"\"Description of execute_query.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 24,
+      "message": "Missing docstring: fetch_all()",
+      "fix_hint": "\"\"\"Description of fetch_all.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 27,
+      "message": "Missing docstring: fetch_one()",
+      "fix_hint": "\"\"\"Description of fetch_one.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 30,
+      "message": "Missing docstring: fetch_data_from_table()",
+      "fix_hint": "\"\"\"Description of fetch_data_from_table.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 33,
+      "message": "Missing docstring: fetch_df()",
+      "fix_hint": "\"\"\"Description of fetch_df.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 36,
+      "message": "Missing docstring: load_data_for_tickers()",
+      "fix_hint": "\"\"\"Description of load_data_for_tickers.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 39,
+      "message": "Missing docstring: upsert()",
+      "fix_hint": "\"\"\"Description of upsert.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 42,
+      "message": "Missing docstring: table_exists()",
+      "fix_hint": "\"\"\"Description of table_exists.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 45,
+      "message": "Missing docstring: filter_new_records()",
+      "fix_hint": "\"\"\"Description of filter_new_records.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 48,
+      "message": "Missing docstring: get_all_table_names()",
+      "fix_hint": "\"\"\"Description of get_all_table_names.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 51,
+      "message": "Missing docstring: get_table_schema()",
+      "fix_hint": "\"\"\"Description of get_table_schema.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 162,
+      "message": "Missing docstring: execute_query()",
+      "fix_hint": "\"\"\"Description of execute_query.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 170,
+      "message": "Missing docstring: fetch_all()",
+      "fix_hint": "\"\"\"Description of fetch_all.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 178,
+      "message": "Missing docstring: fetch_one()",
+      "fix_hint": "\"\"\"Description of fetch_one.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 187,
+      "message": "Missing docstring: fetch_data_from_table()",
+      "fix_hint": "\"\"\"Description of fetch_data_from_table.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 201,
+      "message": "Missing docstring: fetch_df()",
+      "fix_hint": "\"\"\"Description of fetch_df.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 217,
+      "message": "Missing docstring: load_data_for_tickers()",
+      "fix_hint": "\"\"\"Description of load_data_for_tickers.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 243,
+      "message": "Missing docstring: upsert()",
+      "fix_hint": "\"\"\"Description of upsert.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 391,
+      "message": "Missing docstring: table_exists()",
+      "fix_hint": "\"\"\"Description of table_exists.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 402,
+      "message": "Missing docstring: filter_new_records()",
+      "fix_hint": "\"\"\"Description of filter_new_records.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 432,
+      "message": "Missing docstring: get_all_table_names()",
+      "fix_hint": "\"\"\"Description of get_all_table_names.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 440,
+      "message": "Missing docstring: get_table_schema()",
+      "fix_hint": "\"\"\"Description of get_table_schema.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 69,
+      "message": "Missing return type annotation: close_all_connections()",
+      "fix_hint": "def close_all_connections(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\data_manager.py",
+      "line": 243,
+      "message": "Missing return type annotation: upsert()",
+      "fix_hint": "def upsert(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "data\\management\\handlers\\connection_handler.py",
+      "line": 22,
+      "message": "Missing return type annotation: close_all_connections()",
+      "fix_hint": "def close_all_connections(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 15,
+      "message": "Missing docstring: EnsembleResult",
+      "fix_hint": "\"\"\"Description of EnsembleResult.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 52,
+      "message": "Missing return type annotation: train()",
+      "fix_hint": "def train(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 288,
+      "message": "Missing return type annotation: save()",
+      "fix_hint": "def save(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 304,
+      "message": "Missing return type annotation: load()",
+      "fix_hint": "def load(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "factories\\tree_model_factory.py",
+      "line": 24,
+      "message": "Missing docstring: create_model()",
+      "fix_hint": "\"\"\"Description of create_model.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "factories\\tree_model_factory.py",
+      "line": 43,
+      "message": "Missing docstring: is_tree_model()",
+      "fix_hint": "\"\"\"Description of is_tree_model.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "feature_engineering\\transformers\\transformers.py",
+      "line": 11,
+      "message": "Missing docstring: _BaseScalerTransformer",
+      "fix_hint": "\"\"\"Description of _BaseScalerTransformer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "feature_engineering\\transformers\\transformers.py",
+      "line": 49,
+      "message": "Missing docstring: StandardScalerTransformer",
+      "fix_hint": "\"\"\"Description of StandardScalerTransformer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "feature_engineering\\transformers\\transformers.py",
+      "line": 53,
+      "message": "Missing docstring: MinMaxScalerTransformer",
+      "fix_hint": "\"\"\"Description of MinMaxScalerTransformer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "feature_engineering\\transformers\\transformers.py",
+      "line": 19,
+      "message": "Missing docstring: fit()",
+      "fix_hint": "\"\"\"Description of fit.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "feature_engineering\\transformers\\transformers.py",
+      "line": 29,
+      "message": "Missing docstring: transform()",
+      "fix_hint": "\"\"\"Description of transform.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "feature_engineering\\transformers\\transformers.py",
+      "line": 40,
+      "message": "Missing docstring: fit_transform()",
+      "fix_hint": "\"\"\"Description of fit_transform.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\analysis\\decay\\decay_model_fitter.py",
+      "line": 140,
+      "message": "Missing docstring: combined_score()",
+      "fix_hint": "\"\"\"Description of combined_score.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\analysis\\decay\\decay_model_fitter.py",
+      "line": 51,
+      "message": "Missing docstring: decay_function_with_params()",
+      "fix_hint": "\"\"\"Description of decay_function_with_params.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\analysis\\decay\\decay_model_fitter.py",
+      "line": 56,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\analysis\\decay\\decay_model_fitter.py",
+      "line": 140,
+      "message": "Missing return type annotation: combined_score()",
+      "fix_hint": "def combined_score(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\builders\\news_event\\candle_seeker.py",
+      "line": 17,
+      "message": "Missing docstring: NewsCandleSeeker",
+      "fix_hint": "\"\"\"Description of NewsCandleSeeker.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\builders\\news_event\\enricher.py",
+      "line": 13,
+      "message": "Missing docstring: NewsGlobalEnricher",
+      "fix_hint": "\"\"\"Description of NewsGlobalEnricher.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\builders\\news_event\\filter.py",
+      "line": 12,
+      "message": "Missing docstring: NewsEventDataFilter",
+      "fix_hint": "\"\"\"Description of NewsEventDataFilter.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\builders\\news_event\\filter.py",
+      "line": 48,
+      "message": "Missing return type annotation: log_stats()",
+      "fix_hint": "def log_stats(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\context_aware_feature_selector.py",
+      "line": 229,
+      "message": "Missing docstring: avg_importance()",
+      "fix_hint": "\"\"\"Description of avg_importance.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\advanced_analytics_enricher.py",
+      "line": 59,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\context_map_enricher.py",
+      "line": 24,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\context_map_enricher.py",
+      "line": 28,
+      "message": "Missing docstring: priority()",
+      "fix_hint": "\"\"\"Description of priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\decay_features_enricher.py",
+      "line": 27,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\keyword_entity_enricher.py",
+      "line": 44,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\macro_features_enricher.py",
+      "line": 23,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\market_context_enricher.py",
+      "line": 32,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\market_context_enricher.py",
+      "line": 36,
+      "message": "Missing docstring: priority()",
+      "fix_hint": "\"\"\"Description of priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\news_impact_enricher.py",
+      "line": 31,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\news_quality_enricher.py",
+      "line": 28,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\nlp_features_enricher.py",
+      "line": 32,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\sentiment_features_enricher.py",
+      "line": 21,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\sentiment_features_enricher.py",
+      "line": 379,
+      "message": "Missing docstring: apply_decay()",
+      "fix_hint": "\"\"\"Description of apply_decay.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\significance_features_enricher.py",
+      "line": 19,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\significance_features_enricher.py",
+      "line": 23,
+      "message": "Missing docstring: priority()",
+      "fix_hint": "\"\"\"Description of priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\technical_analysis_enricher.py",
+      "line": 60,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\technical_analysis_enricher.py",
+      "line": 64,
+      "message": "Missing docstring: priority()",
+      "fix_hint": "\"\"\"Description of priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\time_features_enricher.py",
+      "line": 35,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\time_features_enricher.py",
+      "line": 39,
+      "message": "Missing docstring: priority()",
+      "fix_hint": "\"\"\"Description of priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 20,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\volatility_enricher.py",
+      "line": 24,
+      "message": "Missing docstring: priority()",
+      "fix_hint": "\"\"\"Description of priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\volume_enricher.py",
+      "line": 20,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\volume_enricher.py",
+      "line": 24,
+      "message": "Missing docstring: priority()",
+      "fix_hint": "\"\"\"Description of priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\feature_selection_cache.py",
+      "line": 103,
+      "message": "Missing return type annotation: save_selection()",
+      "fix_hint": "def save_selection(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\feature_selection_cache.py",
+      "line": 143,
+      "message": "Missing return type annotation: invalidate()",
+      "fix_hint": "def invalidate(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\feature_selection_cache.py",
+      "line": 196,
+      "message": "Missing return type annotation: print_statistics()",
+      "fix_hint": "def print_statistics(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\feature_selector.py",
+      "line": 146,
+      "message": "Missing docstring: get_model_max_features()",
+      "fix_hint": "\"\"\"Description of get_model_max_features.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\news_clusterer.py",
+      "line": 178,
+      "message": "Missing return type annotation: save_cluster_mapping()",
+      "fix_hint": "def save_cluster_mapping(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\news_dataset_builder.py",
+      "line": 269,
+      "message": "Missing return type annotation: save_dataset()",
+      "fix_hint": "def save_dataset(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\news_impact_classifier.py",
+      "line": 269,
+      "message": "Missing return type annotation: log_impact_analysis()",
+      "fix_hint": "def log_impact_analysis(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\extractors\\keyword_extractor.py",
+      "line": 45,
+      "message": "Missing return type annotation: update_keywords()",
+      "fix_hint": "def update_keywords(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\sentiment_core.py",
+      "line": 17,
+      "message": "Missing docstring: make_sentiment_key()",
+      "fix_hint": "\"\"\"Description of make_sentiment_key.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\sentiment_core.py",
+      "line": 33,
+      "message": "Missing docstring: compute_score()",
+      "fix_hint": "\"\"\"Description of compute_score.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\sentiment_core.py",
+      "line": 46,
+      "message": "Missing docstring: compute_news_score_safe()",
+      "fix_hint": "\"\"\"Description of compute_news_score_safe.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\sentiment_core.py",
+      "line": 24,
+      "message": "Missing return type annotation: get_model()",
+      "fix_hint": "def get_model(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_analyzer.py",
+      "line": 34,
+      "message": "Missing docstring: cluster_and_analyze()",
+      "fix_hint": "\"\"\"Description of cluster_and_analyze.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_analyzer.py",
+      "line": 85,
+      "message": "Missing docstring: average_sentiment()",
+      "fix_hint": "\"\"\"Description of average_sentiment.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_analyzer.py",
+      "line": 109,
+      "message": "Missing docstring: cluster_news()",
+      "fix_hint": "\"\"\"Description of cluster_news.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_analyzer.py",
+      "line": 150,
+      "message": "Missing docstring: get_latest_news_sentiment()",
+      "fix_hint": "\"\"\"Description of get_latest_news_sentiment.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_harmonizer.py",
+      "line": 23,
+      "message": "Missing docstring: detect_news_format()",
+      "fix_hint": "\"\"\"Description of detect_news_format.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_harmonizer.py",
+      "line": 39,
+      "message": "Missing docstring: harmonize_entry()",
+      "fix_hint": "\"\"\"Description of harmonize_entry.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_harmonizer.py",
+      "line": 71,
+      "message": "Missing docstring: harmonize_batch()",
+      "fix_hint": "\"\"\"Description of harmonize_batch.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\scoring\\keyword_features.py",
+      "line": 62,
+      "message": "Missing docstring: count_matches()",
+      "fix_hint": "\"\"\"Description of count_matches.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\utils\\gdelt_utils.py",
+      "line": 57,
+      "message": "Missing docstring: normalize_gdelt_signals()",
+      "fix_hint": "\"\"\"Description of normalize_gdelt_signals.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\nlp\\utils\\mention_utils.py",
+      "line": 55,
+      "message": "Missing return type annotation: safe_get_nested()",
+      "fix_hint": "def safe_get_nested(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\selection\\enhanced_smart_selector.py",
+      "line": 147,
+      "message": "Missing docstring: get_enhanced_smart_selector()",
+      "fix_hint": "\"\"\"Description of get_enhanced_smart_selector.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 37,
+      "message": "Missing docstring: has_issues()",
+      "fix_hint": "\"\"\"Description of has_issues.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 40,
+      "message": "Missing docstring: to_dict()",
+      "fix_hint": "\"\"\"Description of to_dict.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "integration\\dashboard_data_bridge.py",
+      "line": 390,
+      "message": "Missing return type annotation: clear_cache()",
+      "fix_hint": "def clear_cache(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\monster_test.py",
+      "line": 69,
+      "message": "Missing docstring: simple_strategy()",
+      "fix_hint": "\"\"\"Description of simple_strategy.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 213,
+      "message": "Missing docstring: get_portfolio_status()",
+      "fix_hint": "\"\"\"Description of get_portfolio_status.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 221,
+      "message": "Missing docstring: get_market_data()",
+      "fix_hint": "\"\"\"Description of get_market_data.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 268,
+      "message": "Missing docstring: get_index_html()",
+      "fix_hint": "\"\"\"Description of get_index_html.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 366,
+      "message": "Missing docstring: get_dashboard_html()",
+      "fix_hint": "\"\"\"Description of get_dashboard_html.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 369,
+      "message": "Missing docstring: get_trading_html()",
+      "fix_hint": "\"\"\"Description of get_trading_html.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 107,
+      "message": "Missing docstring: handle_api_request()",
+      "fix_hint": "\"\"\"Description of handle_api_request.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 135,
+      "message": "Missing docstring: send_json_response()",
+      "fix_hint": "\"\"\"Description of send_json_response.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 147,
+      "message": "Missing docstring: get_html_content()",
+      "fix_hint": "\"\"\"Description of get_html_content.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 161,
+      "message": "Missing docstring: serve_file()",
+      "fix_hint": "\"\"\"Description of serve_file.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 178,
+      "message": "Missing docstring: TradingUIHandler",
+      "fix_hint": "\"\"\"Description of TradingUIHandler.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 184,
+      "message": "Missing docstring: do_GET()",
+      "fix_hint": "\"\"\"Description of do_GET.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "main\\modes\\web_ui.py",
+      "line": 135,
+      "message": "Missing return type annotation: send_json_response()",
+      "fix_hint": "def send_json_response(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\manager.py",
+      "line": 28,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\manager.py",
+      "line": 101,
+      "message": "Missing docstring: close()",
+      "fix_hint": "\"\"\"Description of close.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\storage.py",
+      "line": 71,
+      "message": "Missing docstring: save_market_event()",
+      "fix_hint": "\"\"\"Description of save_market_event.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\storage.py",
+      "line": 91,
+      "message": "Missing docstring: save_market_context()",
+      "fix_hint": "\"\"\"Description of save_market_context.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\storage.py",
+      "line": 113,
+      "message": "Missing docstring: get_recent_events()",
+      "fix_hint": "\"\"\"Description of get_recent_events.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\storage.py",
+      "line": 140,
+      "message": "Missing docstring: close()",
+      "fix_hint": "\"\"\"Description of close.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\storage.py",
+      "line": 71,
+      "message": "Missing return type annotation: save_market_event()",
+      "fix_hint": "def save_market_event(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\storage.py",
+      "line": 91,
+      "message": "Missing return type annotation: save_market_context()",
+      "fix_hint": "def save_market_context(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 69,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 72,
+      "message": "Missing docstring: update()",
+      "fix_hint": "\"\"\"Description of update.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 79,
+      "message": "Missing docstring: get_state()",
+      "fix_hint": "\"\"\"Description of get_state.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 107,
+      "message": "Missing docstring: run_hypothesis_generation()",
+      "fix_hint": "\"\"\"Description of run_hypothesis_generation.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 160,
+      "message": "Missing docstring: run_performance_review()",
+      "fix_hint": "\"\"\"Description of run_performance_review.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 202,
+      "message": "Missing docstring: get_rules_for_agent()",
+      "fix_hint": "\"\"\"Description of get_rules_for_agent.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 222,
+      "message": "Missing docstring: close()",
+      "fix_hint": "\"\"\"Description of close.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\memory\\diary_engine.py",
+      "line": 35,
+      "message": "Missing docstring: DecisionType",
+      "fix_hint": "\"\"\"Description of DecisionType.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\memory\\diary_engine.py",
+      "line": 42,
+      "message": "Missing docstring: DecisionOutcome",
+      "fix_hint": "\"\"\"Description of DecisionOutcome.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "meta_learning\\memory\\diary_engine.py",
+      "line": 202,
+      "message": "Missing return type annotation: record_decision()",
+      "fix_hint": "def record_decision(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "metrics\\financial\\portfolio_metrics.py",
+      "line": 57,
+      "message": "Missing docstring: calculate_pnl()",
+      "fix_hint": "\"\"\"Description of calculate_pnl.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "metrics\\financial\\portfolio_metrics.py",
+      "line": 76,
+      "message": "Missing docstring: calculate_risk_metrics()",
+      "fix_hint": "\"\"\"Description of calculate_risk_metrics.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "metrics\\financial\\portfolio_metrics.py",
+      "line": 99,
+      "message": "Missing docstring: calculate_drawdown()",
+      "fix_hint": "\"\"\"Description of calculate_drawdown.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "metrics\\financial\\portfolio_metrics.py",
+      "line": 119,
+      "message": "Missing docstring: validate_input()",
+      "fix_hint": "\"\"\"Description of validate_input.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\adapters\\data_preparation.py",
+      "line": 165,
+      "message": "Missing docstring: strided_window()",
+      "fix_hint": "\"\"\"Description of strided_window.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\adapters\\data_preparation.py",
+      "line": 151,
+      "message": "Missing return type annotation: log_data_distribution()",
+      "fix_hint": "def log_data_distribution(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\adapters\\data_preparation.py",
+      "line": 165,
+      "message": "Missing return type annotation: strided_window()",
+      "fix_hint": "def strided_window(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\analysis\\baselines\\models.py",
+      "line": 23,
+      "message": "Missing docstring: train_and_evaluate()",
+      "fix_hint": "\"\"\"Description of train_and_evaluate.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\analysis\\baselines\\models.py",
+      "line": 56,
+      "message": "Missing docstring: train_and_evaluate()",
+      "fix_hint": "\"\"\"Description of train_and_evaluate.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\analysis\\baselines\\strategies.py",
+      "line": 19,
+      "message": "Missing docstring: train_and_evaluate()",
+      "fix_hint": "\"\"\"Description of train_and_evaluate.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\analysis\\baselines\\strategies.py",
+      "line": 48,
+      "message": "Missing docstring: train_and_evaluate()",
+      "fix_hint": "\"\"\"Description of train_and_evaluate.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\analysis\\baselines\\strategies.py",
+      "line": 87,
+      "message": "Missing docstring: train_and_evaluate()",
+      "fix_hint": "\"\"\"Description of train_and_evaluate.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\analysis\\regime\\detector.py",
+      "line": 10,
+      "message": "Missing docstring: RegimeDetector",
+      "fix_hint": "\"\"\"Description of RegimeDetector.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\dean\\dean_bootstrap_system.py",
+      "line": 126,
+      "message": "Missing return type annotation: calculate_reward()",
+      "fix_hint": "def calculate_reward(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\calibration\\base.py",
+      "line": 22,
+      "message": "Missing docstring: handle_error()",
+      "fix_hint": "\"\"\"Description of handle_error.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\calibration\\strategies.py",
+      "line": 16,
+      "message": "Missing docstring: fit()",
+      "fix_hint": "\"\"\"Description of fit.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\calibration\\strategies.py",
+      "line": 24,
+      "message": "Missing docstring: transform()",
+      "fix_hint": "\"\"\"Description of transform.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\calibration\\strategies.py",
+      "line": 35,
+      "message": "Missing docstring: fit()",
+      "fix_hint": "\"\"\"Description of fit.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\calibration\\strategies.py",
+      "line": 43,
+      "message": "Missing docstring: transform()",
+      "fix_hint": "\"\"\"Description of transform.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\enhanced_ensemble.py",
+      "line": 110,
+      "message": "Missing docstring: is_safe_path()",
+      "fix_hint": "\"\"\"Description of is_safe_path.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\ensemble_model.py",
+      "line": 26,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\weight_stability\\manager.py",
+      "line": 103,
+      "message": "Missing docstring: stabilize_weights()",
+      "fix_hint": "\"\"\"Description of stabilize_weights.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\weight_stability\\manager.py",
+      "line": 116,
+      "message": "Missing docstring: get_stability_summary()",
+      "fix_hint": "\"\"\"Description of get_stability_summary.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\weight_stability\\manager.py",
+      "line": 130,
+      "message": "Missing docstring: plot_stability_metrics()",
+      "fix_hint": "\"\"\"Description of plot_stability_metrics.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\linear\\knn_model.py",
+      "line": 25,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\linear\\linear_model.py",
+      "line": 23,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\linear\\svm_model.py",
+      "line": 26,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 323,
+      "message": "Missing docstring: KerasPredictor",
+      "fix_hint": "\"\"\"Description of KerasPredictor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 426,
+      "message": "Missing docstring: LSTMModel",
+      "fix_hint": "\"\"\"Description of LSTMModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 441,
+      "message": "Missing docstring: GRUModel",
+      "fix_hint": "\"\"\"Description of GRUModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 457,
+      "message": "Missing docstring: CNNModel",
+      "fix_hint": "\"\"\"Description of CNNModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 476,
+      "message": "Missing docstring: TransformerModel",
+      "fix_hint": "\"\"\"Description of TransformerModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 494,
+      "message": "Missing docstring: AutoencoderModel",
+      "fix_hint": "\"\"\"Description of AutoencoderModel.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 541,
+      "message": "Missing docstring: PyTorchPredictor",
+      "fix_hint": "\"\"\"Description of PyTorchPredictor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 329,
+      "message": "Missing docstring: predict()",
+      "fix_hint": "\"\"\"Description of predict.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 432,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 447,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 465,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 484,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 500,
+      "message": "Missing docstring: forward()",
+      "fix_hint": "\"\"\"Description of forward.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 549,
+      "message": "Missing docstring: predict()",
+      "fix_hint": "\"\"\"Description of predict.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 329,
+      "message": "Missing return type annotation: predict()",
+      "fix_hint": "def predict(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 465,
+      "message": "Missing return type annotation: forward()",
+      "fix_hint": "def forward(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\heavy_light_comparator.py",
+      "line": 15,
+      "message": "Missing docstring: ModelPerformanceMetrics",
+      "fix_hint": "\"\"\"Description of ModelPerformanceMetrics.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 80,
+      "message": "Missing docstring: analyze_context()",
+      "fix_hint": "\"\"\"Description of analyze_context.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 274,
+      "message": "Missing docstring: select_best_model()",
+      "fix_hint": "\"\"\"Description of select_best_model.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 288,
+      "message": "Missing docstring: update_performance()",
+      "fix_hint": "\"\"\"Description of update_performance.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 57,
+      "message": "Missing return type annotation: train_error_meta_model()",
+      "fix_hint": "def train_error_meta_model(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 288,
+      "message": "Missing return type annotation: update_performance()",
+      "fix_hint": "def update_performance(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\drift\\history.py",
+      "line": 44,
+      "message": "Missing docstring: add_performance_record()",
+      "fix_hint": "\"\"\"Description of add_performance_record.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\drift\\history.py",
+      "line": 51,
+      "message": "Missing docstring: add_drift_record()",
+      "fix_hint": "\"\"\"Description of add_drift_record.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 24,
+      "message": "Missing docstring: PredictionDriftMonitor",
+      "fix_hint": "\"\"\"Description of PredictionDriftMonitor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\neural\\base_neural.py",
+      "line": 193,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\neural\\mlp_model.py",
+      "line": 22,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\neural\\transformer_model.py",
+      "line": 269,
+      "message": "Missing return type annotation: predict_proba()",
+      "fix_hint": "def predict_proba(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\prototypes\\registry.py",
+      "line": 80,
+      "message": "Missing return type annotation: clone()",
+      "fix_hint": "def clone(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\quality\\controller.py",
+      "line": 188,
+      "message": "Missing docstring: get_quality_controller()",
+      "fix_hint": "\"\"\"Description of get_quality_controller.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\quality\\controller.py",
+      "line": 32,
+      "message": "Missing docstring: validate_predictions()",
+      "fix_hint": "\"\"\"Description of validate_predictions.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\quality\\controller.py",
+      "line": 83,
+      "message": "Missing docstring: get_quality_score()",
+      "fix_hint": "\"\"\"Description of get_quality_score.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\quality\\controller.py",
+      "line": 167,
+      "message": "Missing docstring: generate_report()",
+      "fix_hint": "\"\"\"Description of generate_report.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\registry\\model_registry.py",
+      "line": 59,
+      "message": "Missing docstring: get_model_config()",
+      "fix_hint": "\"\"\"Description of get_model_config.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\registry\\model_registry.py",
+      "line": 66,
+      "message": "Missing docstring: get_models_by_type()",
+      "fix_hint": "\"\"\"Description of get_models_by_type.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\registry\\model_registry.py",
+      "line": 70,
+      "message": "Missing docstring: get_all_model_names()",
+      "fix_hint": "\"\"\"Description of get_all_model_names.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\tree\\lightgbm_model.py",
+      "line": 45,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\tree\\random_forest_model.py",
+      "line": 26,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "models\\tree\\xgboost_model.py",
+      "line": 46,
+      "message": "Missing docstring: name()",
+      "fix_hint": "\"\"\"Description of name.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\config.py",
+      "line": 144,
+      "message": "Missing docstring: get_monitoring_config()",
+      "fix_hint": "\"\"\"Description of get_monitoring_config.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\config.py",
+      "line": 151,
+      "message": "Missing docstring: create_config_file()",
+      "fix_hint": "\"\"\"Description of create_config_file.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\config.py",
+      "line": 128,
+      "message": "Missing docstring: get_config_for_environment()",
+      "fix_hint": "\"\"\"Description of get_config_for_environment.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\config.py",
+      "line": 151,
+      "message": "Missing return type annotation: create_config_file()",
+      "fix_hint": "def create_config_file(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\config.py",
+      "line": 26,
+      "message": "Missing return type annotation: load_config()",
+      "fix_hint": "def load_config(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 434,
+      "message": "Missing docstring: MonitoringDashboardApp",
+      "fix_hint": "\"\"\"Description of MonitoringDashboardApp.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 448,
+      "message": "Missing docstring: generate_report()",
+      "fix_hint": "\"\"\"Description of generate_report.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 493,
+      "message": "Missing docstring: print_report()",
+      "fix_hint": "\"\"\"Description of print_report.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 497,
+      "message": "Missing docstring: save_report()",
+      "fix_hint": "\"\"\"Description of save_report.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 541,
+      "message": "Missing docstring: start_auto_save()",
+      "fix_hint": "\"\"\"Description of start_auto_save.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 551,
+      "message": "Missing docstring: stop_auto_save()",
+      "fix_hint": "\"\"\"Description of stop_auto_save.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 568,
+      "message": "Missing docstring: run_web_dashboard()",
+      "fix_hint": "\"\"\"Description of run_web_dashboard.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 417,
+      "message": "Missing docstring: run_server()",
+      "fix_hint": "\"\"\"Description of run_server.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 541,
+      "message": "Missing return type annotation: start_auto_save()",
+      "fix_hint": "def start_auto_save(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 262,
+      "message": "Missing docstring: decorator()",
+      "fix_hint": "\"\"\"Description of decorator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 265,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 53,
+      "message": "Missing return type annotation: stop_monitoring()",
+      "fix_hint": "def stop_monitoring(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 187,
+      "message": "Missing docstring: calculate_risk_level()",
+      "fix_hint": "\"\"\"Description of calculate_risk_level.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 196,
+      "message": "Missing docstring: calculate_overall_risk()",
+      "fix_hint": "\"\"\"Description of calculate_overall_risk.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 200,
+      "message": "Missing docstring: detect_anomalies()",
+      "fix_hint": "\"\"\"Description of detect_anomalies.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 209,
+      "message": "Missing docstring: generate_ml_recommendations()",
+      "fix_hint": "\"\"\"Description of generate_ml_recommendations.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 135,
+      "message": "Missing return type annotation: check_thresholds()",
+      "fix_hint": "def check_thresholds(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 193,
+      "message": "Missing return type annotation: update_model_metrics()",
+      "fix_hint": "def update_model_metrics(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 249,
+      "message": "Missing return type annotation: update_data_quality()",
+      "fix_hint": "def update_data_quality(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 282,
+      "message": "Missing return type annotation: process_alert()",
+      "fix_hint": "def process_alert(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 312,
+      "message": "Missing return type annotation: cleanup_old_alerts()",
+      "fix_hint": "def cleanup_old_alerts(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 456,
+      "message": "Missing return type annotation: start()",
+      "fix_hint": "def start(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 469,
+      "message": "Missing return type annotation: stop()",
+      "fix_hint": "def stop(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "monitoring\\run_dashboard.py",
+      "line": 8,
+      "message": "Missing docstring: main()",
+      "fix_hint": "\"\"\"Description of main.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\dynamic_config_updater.py",
+      "line": 35,
+      "message": "Missing return type annotation: update_batch_size_for_memory()",
+      "fix_hint": "def update_batch_size_for_memory(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\dynamic_config_updater.py",
+      "line": 64,
+      "message": "Missing return type annotation: update_epochs_for_convergence()",
+      "fix_hint": "def update_epochs_for_convergence(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\dynamic_config_updater.py",
+      "line": 84,
+      "message": "Missing return type annotation: update_learning_rate_for_loss()",
+      "fix_hint": "def update_learning_rate_for_loss(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\dynamic_config_updater.py",
+      "line": 115,
+      "message": "Missing return type annotation: update_max_features_for_memory()",
+      "fix_hint": "def update_max_features_for_memory(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\dynamic_config_updater.py",
+      "line": 163,
+      "message": "Missing return type annotation: save_adjustment_log()",
+      "fix_hint": "def save_adjustment_log(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 84,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 132,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 303,
+      "message": "Missing return type annotation: save_results()",
+      "fix_hint": "def save_results(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 84,
+      "message": "Missing return type annotation: objective()",
+      "fix_hint": "def objective(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 132,
+      "message": "Missing return type annotation: objective()",
+      "fix_hint": "def objective(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameters\\bayesian.py",
+      "line": 63,
+      "message": "Missing docstring: optimizer_type()",
+      "fix_hint": "\"\"\"Description of optimizer_type.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 54,
+      "message": "Missing docstring: optimizer_type()",
+      "fix_hint": "\"\"\"Description of optimizer_type.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 508,
+      "message": "Missing docstring: allocate_cluster()",
+      "fix_hint": "\"\"\"Description of allocate_cluster.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 181,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 188,
+      "message": "Missing docstring: portfolio_return()",
+      "fix_hint": "\"\"\"Description of portfolio_return.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 226,
+      "message": "Missing docstring: objective()",
+      "fix_hint": "\"\"\"Description of objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 347,
+      "message": "Missing docstring: risk_budget_objective()",
+      "fix_hint": "\"\"\"Description of risk_budget_objective.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 226,
+      "message": "Missing return type annotation: objective()",
+      "fix_hint": "def objective(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "optimization\\portfolio\\optimizer.py",
+      "line": 347,
+      "message": "Missing return type annotation: risk_budget_objective()",
+      "fix_hint": "def risk_budget_objective(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 31,
+      "message": "Missing return type annotation: start_analysis()",
+      "fix_hint": "def start_analysis(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 43,
+      "message": "Missing return type annotation: log()",
+      "fix_hint": "def log(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 62,
+      "message": "Missing return type annotation: track_step()",
+      "fix_hint": "def track_step(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 73,
+      "message": "Missing return type annotation: log_data_info()",
+      "fix_hint": "def log_data_info(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 107,
+      "message": "Missing return type annotation: log_bias_calculation()",
+      "fix_hint": "def log_bias_calculation(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 138,
+      "message": "Missing return type annotation: save_debug_session()",
+      "fix_hint": "def save_debug_session(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "patterns\\pattern_analyzer.py",
+      "line": 153,
+      "message": "Missing return type annotation: end_analysis()",
+      "fix_hint": "def end_analysis(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\component_factory.py",
+      "line": 42,
+      "message": "Missing return type annotation: initialize_components()",
+      "fix_hint": "def initialize_components(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\data_manager.py",
+      "line": 68,
+      "message": "Missing return type annotation: save_dataframe()",
+      "fix_hint": "def save_dataframe(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\orchestrator_context.py",
+      "line": 100,
+      "message": "Missing return type annotation: light_models_trainer()",
+      "fix_hint": "def light_models_trainer(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\selected_features_processor.py",
+      "line": 21,
+      "message": "Missing docstring: DiscoverSelectedFeaturesFilesConfig",
+      "fix_hint": "\"\"\"Description of DiscoverSelectedFeaturesFilesConfig.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\selected_features_processor.py",
+      "line": 30,
+      "message": "Missing docstring: ProcessSelectedFeaturesFileConfig",
+      "fix_hint": "\"\"\"Description of ProcessSelectedFeaturesFileConfig.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\selected_features_processor.py",
+      "line": 40,
+      "message": "Missing docstring: ProcessFilesToContextsConfig",
+      "fix_hint": "\"\"\"Description of ProcessFilesToContextsConfig.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_factory.py",
+      "line": 15,
+      "message": "Missing docstring: create_dependencies()",
+      "fix_hint": "\"\"\"Description of create_dependencies.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_factory.py",
+      "line": 15,
+      "message": "Missing return type annotation: create_dependencies()",
+      "fix_hint": "def create_dependencies(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 152,
+      "message": "Missing docstring: execute_full_pipeline()",
+      "fix_hint": "\"\"\"Description of execute_full_pipeline.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 157,
+      "message": "Missing docstring: execute_training_pipeline()",
+      "fix_hint": "\"\"\"Description of execute_training_pipeline.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stage_loader.py",
+      "line": 13,
+      "message": "Missing docstring: StageLoader",
+      "fix_hint": "\"\"\"Description of StageLoader.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\cache\\feature_cache_manager.py",
+      "line": 11,
+      "message": "Missing docstring: FeatureEngineeringCacheManager",
+      "fix_hint": "\"\"\"Description of FeatureEngineeringCacheManager.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\cache\\feature_cache_manager.py",
+      "line": 16,
+      "message": "Missing docstring: get_cached_features()",
+      "fix_hint": "\"\"\"Description of get_cached_features.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\cache\\feature_cache_manager.py",
+      "line": 21,
+      "message": "Missing docstring: save_features()",
+      "fix_hint": "\"\"\"Description of save_features.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\cache\\feature_cache_manager.py",
+      "line": 21,
+      "message": "Missing return type annotation: save_features()",
+      "fix_hint": "def save_features(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\analytics.py",
+      "line": 11,
+      "message": "Missing docstring: calculate_financial_metrics()",
+      "fix_hint": "\"\"\"Description of calculate_financial_metrics.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\analytics.py",
+      "line": 25,
+      "message": "Missing docstring: run_deep_analysis()",
+      "fix_hint": "\"\"\"Description of run_deep_analysis.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\analytics.py",
+      "line": 97,
+      "message": "Missing docstring: create_evaluation_summary()",
+      "fix_hint": "\"\"\"Description of create_evaluation_summary.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\backtest_adapter.py",
+      "line": 11,
+      "message": "Missing docstring: prepare_pivot()",
+      "fix_hint": "\"\"\"Description of prepare_pivot.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\io.py",
+      "line": 30,
+      "message": "Missing docstring: save_evaluation_summary()",
+      "fix_hint": "\"\"\"Description of save_evaluation_summary.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\reporting.py",
+      "line": 13,
+      "message": "Missing docstring: plot_equity_curve()",
+      "fix_hint": "\"\"\"Description of plot_equity_curve.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\reporting.py",
+      "line": 44,
+      "message": "Missing docstring: save_report()",
+      "fix_hint": "\"\"\"Description of save_report.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\features\\orchestrator_manager.py",
+      "line": 10,
+      "message": "Missing docstring: FeatureEngineeringOrchestratorManager",
+      "fix_hint": "\"\"\"Description of FeatureEngineeringOrchestratorManager.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\features\\orchestrator_manager.py",
+      "line": 15,
+      "message": "Missing docstring: run_enrichment()",
+      "fix_hint": "\"\"\"Description of run_enrichment.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\features\\orchestrator_manager.py",
+      "line": 19,
+      "message": "Missing docstring: get_config_hash()",
+      "fix_hint": "\"\"\"Description of get_config_hash.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 63,
+      "message": "Missing docstring: load_selected_features_sync()",
+      "fix_hint": "\"\"\"Description of load_selected_features_sync.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 88,
+      "message": "Missing docstring: try_load_features_file_sync()",
+      "fix_hint": "\"\"\"Description of try_load_features_file_sync.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 105,
+      "message": "Missing docstring: save_light_models_results()",
+      "fix_hint": "\"\"\"Description of save_light_models_results.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 144,
+      "message": "Missing docstring: resolve_selected_features_batch_dir()",
+      "fix_hint": "\"\"\"Description of resolve_selected_features_batch_dir.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 159,
+      "message": "Missing docstring: try_get_batch_name_from_runtime_params()",
+      "fix_hint": "\"\"\"Description of try_get_batch_name_from_runtime_params.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 175,
+      "message": "Missing docstring: search_nested_runtime_params()",
+      "fix_hint": "\"\"\"Description of search_nested_runtime_params.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\io.py",
+      "line": 190,
+      "message": "Missing docstring: try_get_batch_name_from_file()",
+      "fix_hint": "\"\"\"Description of try_get_batch_name_from_file.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\metrics.py",
+      "line": 5,
+      "message": "Missing docstring: calculate_model_metrics()",
+      "fix_hint": "\"\"\"Description of calculate_model_metrics.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\metrics.py",
+      "line": 18,
+      "message": "Missing docstring: create_light_model_champion_info()",
+      "fix_hint": "\"\"\"Description of create_light_model_champion_info.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\training.py",
+      "line": 12,
+      "message": "Missing docstring: train_light_models_locally()",
+      "fix_hint": "\"\"\"Description of train_light_models_locally.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\training.py",
+      "line": 66,
+      "message": "Missing docstring: train_single_light_model()",
+      "fix_hint": "\"\"\"Description of train_single_light_model.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\training.py",
+      "line": 66,
+      "message": "Missing return type annotation: train_single_light_model()",
+      "fix_hint": "def train_single_light_model(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 13,
+      "message": "Missing docstring: get_context_fingerprint()",
+      "fix_hint": "\"\"\"Description of get_context_fingerprint.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 17,
+      "message": "Missing docstring: log_training_debug_info()",
+      "fix_hint": "\"\"\"Description of log_training_debug_info.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 26,
+      "message": "Missing docstring: create_champion_info()",
+      "fix_hint": "\"\"\"Description of create_champion_info.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 51,
+      "message": "Missing docstring: log_to_diary()",
+      "fix_hint": "\"\"\"Description of log_to_diary.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 66,
+      "message": "Missing docstring: get_light_model_training_data()",
+      "fix_hint": "\"\"\"Description of get_light_model_training_data.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 78,
+      "message": "Missing docstring: determine_task_type()",
+      "fix_hint": "\"\"\"Description of determine_task_type.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 82,
+      "message": "Missing docstring: get_light_model_types()",
+      "fix_hint": "\"\"\"Description of get_light_model_types.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\utils.py",
+      "line": 66,
+      "message": "Missing return type annotation: get_light_model_training_data()",
+      "fix_hint": "def get_light_model_training_data(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\monitoring\\feature_monitoring.py",
+      "line": 8,
+      "message": "Missing docstring: FeatureEngineeringMonitor",
+      "fix_hint": "\"\"\"Description of FeatureEngineeringMonitor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\monitoring\\feature_monitoring.py",
+      "line": 15,
+      "message": "Missing docstring: run_pre_checks()",
+      "fix_hint": "\"\"\"Description of run_pre_checks.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\monitoring\\feature_monitoring.py",
+      "line": 31,
+      "message": "Missing docstring: run_post_checks()",
+      "fix_hint": "\"\"\"Description of run_post_checks.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\monitoring\\feature_monitoring.py",
+      "line": 15,
+      "message": "Missing return type annotation: run_pre_checks()",
+      "fix_hint": "def run_pre_checks(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\monitoring\\feature_monitoring.py",
+      "line": 31,
+      "message": "Missing return type annotation: run_post_checks()",
+      "fix_hint": "def run_post_checks(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\news\\news_manager.py",
+      "line": 11,
+      "message": "Missing docstring: FeatureEngineeringNewsManager",
+      "fix_hint": "\"\"\"Description of FeatureEngineeringNewsManager.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\news\\news_manager.py",
+      "line": 16,
+      "message": "Missing docstring: process_news()",
+      "fix_hint": "\"\"\"Description of process_news.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 25,
+      "message": "Missing docstring: prepare_inputs()",
+      "fix_hint": "\"\"\"Description of prepare_inputs.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 47,
+      "message": "Missing docstring: validate_inputs()",
+      "fix_hint": "\"\"\"Description of validate_inputs.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 63,
+      "message": "Missing docstring: get_available_model_types()",
+      "fix_hint": "\"\"\"Description of get_available_model_types.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 130,
+      "message": "Missing docstring: prepare_context_data()",
+      "fix_hint": "\"\"\"Description of prepare_context_data.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 217,
+      "message": "Missing docstring: adaptive_re_enrichment()",
+      "fix_hint": "\"\"\"Description of adaptive_re_enrichment.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 296,
+      "message": "Missing docstring: prepare_ticker_data()",
+      "fix_hint": "\"\"\"Description of prepare_ticker_data.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparer.py",
+      "line": 378,
+      "message": "Missing docstring: load_target_scaler()",
+      "fix_hint": "\"\"\"Description of load_target_scaler.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\result_builder.py",
+      "line": 129,
+      "message": "Missing docstring: build_result()",
+      "fix_hint": "\"\"\"Description of build_result.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\result_builder.py",
+      "line": 175,
+      "message": "Missing docstring: prepare_final_results()",
+      "fix_hint": "\"\"\"Description of prepare_final_results.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\processing\\data_handler.py",
+      "line": 43,
+      "message": "Missing return type annotation: apply_normalization()",
+      "fix_hint": "def apply_normalization(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_1_collection.py",
+      "line": 61,
+      "message": "Missing return type annotation: process_and_save_results()",
+      "fix_hint": "def process_and_save_results(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\trading\\data_io.py",
+      "line": 14,
+      "message": "Missing docstring: TradingDataIO",
+      "fix_hint": "\"\"\"Description of TradingDataIO.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\trading\\data_io.py",
+      "line": 88,
+      "message": "Missing docstring: save_stage_6_results()",
+      "fix_hint": "\"\"\"Description of save_stage_6_results.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 17,
+      "message": "Missing docstring: TradingRecommendationEngine",
+      "fix_hint": "\"\"\"Description of TradingRecommendationEngine.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 30,
+      "message": "Missing docstring: generate_recommendations()",
+      "fix_hint": "\"\"\"Description of generate_recommendations.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 486,
+      "message": "Missing docstring: build_record()",
+      "fix_hint": "\"\"\"Description of build_record.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "predictions\\caching.py",
+      "line": 232,
+      "message": "Missing return type annotation: clear_all_caches()",
+      "fix_hint": "def clear_all_caches(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "predictions\\caching.py",
+      "line": 136,
+      "message": "Missing return type annotation: clear()",
+      "fix_hint": "def clear(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "predictions\\caching.py",
+      "line": 199,
+      "message": "Missing return type annotation: print_statistics()",
+      "fix_hint": "def print_statistics(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "predictions\\deep_predict.py",
+      "line": 12,
+      "message": "Missing return type annotation: predict_lstm()",
+      "fix_hint": "def predict_lstm(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "predictions\\deep_predict.py",
+      "line": 49,
+      "message": "Missing return type annotation: predict_cnn()",
+      "fix_hint": "def predict_cnn(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "predictions\\deep_predict.py",
+      "line": 61,
+      "message": "Missing return type annotation: predict_transformer()",
+      "fix_hint": "def predict_transformer(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "predictions\\deep_predict.py",
+      "line": 73,
+      "message": "Missing return type annotation: predict_autoencoder()",
+      "fix_hint": "def predict_autoencoder(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "processing\\normalization_manager.py",
+      "line": 36,
+      "message": "Missing return type annotation: fit_scalers()",
+      "fix_hint": "def fit_scalers(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "processing\\normalization_manager.py",
+      "line": 161,
+      "message": "Missing return type annotation: load_scalers()",
+      "fix_hint": "def load_scalers(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "processing\\parallel_processor.py",
+      "line": 143,
+      "message": "Missing docstring: task_wrapper()",
+      "fix_hint": "\"\"\"Description of task_wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "processing\\price_preprocessor.py",
+      "line": 13,
+      "message": "Missing docstring: PricePreprocessor",
+      "fix_hint": "\"\"\"Description of PricePreprocessor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "processing\\price_preprocessor.py",
+      "line": 124,
+      "message": "Missing docstring: split_metric_ticker()",
+      "fix_hint": "\"\"\"Description of split_metric_ticker.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "processing\\price_preprocessor.py",
+      "line": 124,
+      "message": "Missing return type annotation: split_metric_ticker()",
+      "fix_hint": "def split_metric_ticker(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\analyzers\\concentration_analyzer.py",
+      "line": 15,
+      "message": "Missing docstring: ConcentrationAnalyzer",
+      "fix_hint": "\"\"\"Description of ConcentrationAnalyzer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\analyzers\\correlation_analyzer.py",
+      "line": 16,
+      "message": "Missing docstring: CorrelationAnalyzer",
+      "fix_hint": "\"\"\"Description of CorrelationAnalyzer.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\exposure_calculator.py",
+      "line": 11,
+      "message": "Missing docstring: ExposureCalculator",
+      "fix_hint": "\"\"\"Description of ExposureCalculator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\exposure_calculator.py",
+      "line": 24,
+      "message": "Missing docstring: calculate_position_exposure()",
+      "fix_hint": "\"\"\"Description of calculate_position_exposure.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\exposure_calculator.py",
+      "line": 27,
+      "message": "Missing docstring: check_position_exposure()",
+      "fix_hint": "\"\"\"Description of check_position_exposure.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\exposure_calculator.py",
+      "line": 36,
+      "message": "Missing docstring: check_sector_exposure()",
+      "fix_hint": "\"\"\"Description of check_sector_exposure.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\exposure_calculator.py",
+      "line": 50,
+      "message": "Missing docstring: check_total_exposure()",
+      "fix_hint": "\"\"\"Description of check_total_exposure.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\kill_switch\\alerts.py",
+      "line": 13,
+      "message": "Missing return type annotation: send_alert()",
+      "fix_hint": "def send_alert(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\max_exposure_monitor.py",
+      "line": 17,
+      "message": "Missing docstring: MaxExposureMonitor",
+      "fix_hint": "\"\"\"Description of MaxExposureMonitor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk\\risk_manager.py",
+      "line": 339,
+      "message": "Missing return type annotation: reset_kill_switch()",
+      "fix_hint": "def reset_kill_switch(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk_management\\var_calculator.py",
+      "line": 4,
+      "message": "Missing docstring: VaRCalculator",
+      "fix_hint": "\"\"\"Description of VaRCalculator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk_management\\var_calculator.py",
+      "line": 8,
+      "message": "Missing docstring: calculate()",
+      "fix_hint": "\"\"\"Description of calculate.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "risk_management\\var_calculator.py",
+      "line": 11,
+      "message": "Missing return type annotation: calculate_var_historical()",
+      "fix_hint": "def calculate_var_historical(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "sentiment\\sentiment_models.py",
+      "line": 19,
+      "message": "Missing return type annotation: get_finbert_pipeline()",
+      "fix_hint": "def get_finbert_pipeline(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "simulation\\simulation_engine.py",
+      "line": 29,
+      "message": "Missing docstring: SimulationGranularity",
+      "fix_hint": "\"\"\"Description of SimulationGranularity.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "simulation\\simulation_engine.py",
+      "line": 35,
+      "message": "Missing docstring: SimulationContext",
+      "fix_hint": "\"\"\"Description of SimulationContext.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "simulation\\simulation_engine.py",
+      "line": 44,
+      "message": "Missing docstring: SimulationRiskReport",
+      "fix_hint": "\"\"\"Description of SimulationRiskReport.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "simulation\\simulation_engine.py",
+      "line": 53,
+      "message": "Missing docstring: SimulationEngine",
+      "fix_hint": "\"\"\"Description of SimulationEngine.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "simulation\\simulation_engine.py",
+      "line": 199,
+      "message": "Missing docstring: get_simulation_engine()",
+      "fix_hint": "\"\"\"Description of get_simulation_engine.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "simulation\\simulation_engine.py",
+      "line": 62,
+      "message": "Missing docstring: run_monte_carlo_for_strategy()",
+      "fix_hint": "\"\"\"Description of run_monte_carlo_for_strategy.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "targets\\calculators\\base_news_target_calculator.py",
+      "line": 8,
+      "message": "Missing docstring: BaseNewsTargetCalculator",
+      "fix_hint": "\"\"\"Description of BaseNewsTargetCalculator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "targets\\calculators\\base_news_target_calculator.py",
+      "line": 34,
+      "message": "Missing docstring: calculate()",
+      "fix_hint": "\"\"\"Description of calculate.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "trading\\adaptive_parameter_manager.py",
+      "line": 16,
+      "message": "Missing docstring: MarketRegime",
+      "fix_hint": "\"\"\"Description of MarketRegime.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "trading\\adaptive_parameter_manager.py",
+      "line": 23,
+      "message": "Missing docstring: AssetClass",
+      "fix_hint": "\"\"\"Description of AssetClass.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "trading\\live_adaptive_ensemble.py",
+      "line": 86,
+      "message": "Missing return type annotation: record_model_performance()",
+      "fix_hint": "def record_model_performance(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "trading\\signal_processor.py",
+      "line": 11,
+      "message": "Missing docstring: SignalProcessor",
+      "fix_hint": "\"\"\"Description of SignalProcessor.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "trading\\trading_orchestrator.py",
+      "line": 53,
+      "message": "Missing return type annotation: process_signals()",
+      "fix_hint": "def process_signals(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "trading\\virtual_portfolio.py",
+      "line": 277,
+      "message": "Missing return type annotation: update_performance()",
+      "fix_hint": "def update_performance(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "trading\\virtual_portfolio.py",
+      "line": 288,
+      "message": "Missing return type annotation: reset_portfolio()",
+      "fix_hint": "def reset_portfolio(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 24,
+      "message": "Missing docstring: TimeframeType",
+      "fix_hint": "\"\"\"Description of TimeframeType.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 30,
+      "message": "Missing docstring: AdaptiveTargetsSystem",
+      "fix_hint": "\"\"\"Description of AdaptiveTargetsSystem.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 42,
+      "message": "Missing docstring: AdaptiveTargetGenerator",
+      "fix_hint": "\"\"\"Description of AdaptiveTargetGenerator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 361,
+      "message": "Missing docstring: converter()",
+      "fix_hint": "\"\"\"Description of converter.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 32,
+      "message": "Missing docstring: get_suitable_targets()",
+      "fix_hint": "\"\"\"Description of get_suitable_targets.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 35,
+      "message": "Missing docstring: get_targets_by_category()",
+      "fix_hint": "\"\"\"Description of get_targets_by_category.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 372,
+      "message": "Missing return type annotation: main()",
+      "fix_hint": "def main(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\batch\\batch_processor.py",
+      "line": 121,
+      "message": "Missing docstring: get_ticker_priority()",
+      "fix_hint": "\"\"\"Description of get_ticker_priority.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\portfolio_optimizer.py",
+      "line": 130,
+      "message": "Missing docstring: portfolio_variance()",
+      "fix_hint": "\"\"\"Description of portfolio_variance.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\run_training.py",
+      "line": 21,
+      "message": "Missing return type annotation: main()",
+      "fix_hint": "def main(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\unified_training_manager.py",
+      "line": 27,
+      "message": "Missing docstring: TrainingStrategy",
+      "fix_hint": "\"\"\"Description of TrainingStrategy.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\unified_training_manager.py",
+      "line": 203,
+      "message": "Missing docstring: save_unified_plan()",
+      "fix_hint": "\"\"\"Description of save_unified_plan.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "training\\unified_training_manager.py",
+      "line": 210,
+      "message": "Missing docstring: save_unified_results()",
+      "fix_hint": "\"\"\"Description of save_unified_results.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "utils\\async_timeout.py",
+      "line": 14,
+      "message": "Missing docstring: decorator()",
+      "fix_hint": "\"\"\"Description of decorator.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "utils\\data_safety.py",
+      "line": 3,
+      "message": "Missing return type annotation: safe_rolling()",
+      "fix_hint": "def safe_rolling(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "utils\\data_safety.py",
+      "line": 27,
+      "message": "Missing return type annotation: safe_expanding()",
+      "fix_hint": "def safe_expanding(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "utils\\dynamic_module_loader.py",
+      "line": 46,
+      "message": "Missing return type annotation: load_instance()",
+      "fix_hint": "def load_instance(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "utils\\resource_limiter.py",
+      "line": 15,
+      "message": "Missing docstring: release()",
+      "fix_hint": "\"\"\"Description of release.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "utils\\trading_calendar.py",
+      "line": 101,
+      "message": "Missing return type annotation: fetch_and_set_earnings_dates()",
+      "fix_hint": "def fetch_and_set_earnings_dates(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "validation\\data_leakage_detector.py",
+      "line": 179,
+      "message": "Missing return type annotation: main()",
+      "fix_hint": "def main(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "validation\\pipeline_schemas.py",
+      "line": 226,
+      "message": "Missing docstring: validate_stage()",
+      "fix_hint": "\"\"\"Description of validate_stage.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "validation\\pipeline_schemas.py",
+      "line": 227,
+      "message": "Missing docstring: wrapper()",
+      "fix_hint": "\"\"\"Description of wrapper.\"\"\""
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "validation\\pipeline_schemas.py",
+      "line": 227,
+      "message": "Missing return type annotation: wrapper()",
+      "fix_hint": "def wrapper(...) -> ReturnType:"
+    },
+    {
+      "category": "DOC",
+      "severity": "LOW",
+      "file": "validation\\time_series_validator.py",
+      "line": 61,
+      "message": "Missing docstring: split()",
+      "fix_hint": "\"\"\"Description of split.\"\"\""
+    }
+  ]
+}

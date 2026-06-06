@@ -108,7 +108,7 @@ class UnifiedTrainingManager:
             elif strategy == TrainingStrategy.HYBRID:
                 results.update(self._execute_hybrid_training(plan,
                     data_context))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'❌ Training execution failed: {e}', exc_info
                 =True)
             results['status'] = 'failed'
@@ -117,8 +117,7 @@ class UnifiedTrainingManager:
         if results.get('tickers_results') and 'y_test' in data_context:
             self.logger.info('⚔️ Initiating Arena Battle for benchmarking...')
             try:
-                battle_results = self.arena.run_battle(results[
-                    'tickers_results'], actual_targets=data_context['y_test'])
+                battle_results = self.arena.run_battle(results['tickers_results'], actual_targets=data_context['y_test'])
                 results['arena_rankings'] = battle_results
                 self.logger.info('✅ Arena Battle completed.')
             except Exception as e:
@@ -140,7 +139,7 @@ class UnifiedTrainingManager:
                 recommended = select_models(ticker, context_fingerprint, data=data)
                 if recommended:
                     return recommended
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
                 f'Contextual model selection failed for {ticker}: {e}. Falling back to configured models.'
                 )

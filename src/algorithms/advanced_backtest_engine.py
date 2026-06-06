@@ -127,7 +127,7 @@ class AdvancedBacktestEngine:
                 f"Оптимізацію завершено: {optimization_metric}={out_sample_perf.get('sharpe', 0):.2f}"
                 )
             return optimization_report
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise DataProcessingError('Parameter optimization failed') from e
 
     def _calculate_stability_score(self, fold_results: list[dict]) ->float:
@@ -152,9 +152,9 @@ class AdvancedBacktestEngine:
                 cv = abs(std_sharpe / mean_sharpe)
                 return float(max(0, 1 - cv))
             return 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, ZeroDivisionError) as e:
             self.logger.error(
-                f'Виникла помилка при розрахунку стабільності: {e}',
+                f'Помилка розрахунку стабільності: {e}',
                 exc_info=True)
             return 0.0
 
@@ -182,8 +182,8 @@ class AdvancedBacktestEngine:
             max_dd = drawdown.min()
             return {'return': float(total_return), 'sharpe': float(sharpe),
                 'max_drawdown': float(max_dd)}
-        except Exception as e:
-            self.logger.error(f'Виникла помилка при оцінці параметрів: {e}',
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
+            self.logger.error(f'Помилка при оцінці параметрів: {e}',
                 exc_info=True)
             return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
 

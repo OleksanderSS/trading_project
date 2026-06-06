@@ -128,7 +128,7 @@ class BaseTrainer(ABC):
             self.output_dir = Path(models_path)
             self.output_dir.mkdir(parents=True, exist_ok=True)
             self.logger.info(f"Output directory: {self.output_dir}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to initialize output directory: {e}")
             raise TrainingConfigException(f"Cannot initialize output directory: {e}") from e
 
@@ -293,7 +293,7 @@ class BaseTrainer(ABC):
                 if score_val > best_score:
                     best_score = score_val
                     winner_name = m_type
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Failed to train {m_type} for {ticker}: {e}")
                 continue
 

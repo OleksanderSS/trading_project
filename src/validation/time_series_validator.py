@@ -183,7 +183,7 @@ class TimeSeriesValidator:
                     'mae': float(mean_absolute_error(y_val, y_pred)), 'mse':
                     float(mean_squared_error(y_val, y_pred)), 'r2': float(
                     r2_score(y_val, y_pred))})
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(
                     f'Error in walk-forward fold at {y_val.index[0]}: {e}')
         if not predictions:
@@ -226,7 +226,7 @@ class TimeSeriesValidator:
                 metrics.append(mean_squared_error(y_test, y_pred))
                 predictions.extend(y_pred)
                 actuals.extend(y_test)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Fold failed in purged walk-forward: {e}')
                 raise
@@ -322,7 +322,7 @@ class TimeSeriesValidator:
                     train_idx][target])
                 scores.append(model.score(data.iloc[test_idx][features],
                     data.iloc[test_idx][target]))
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'CV Fold failed for purged_cv: {e}')
                 continue
@@ -344,7 +344,7 @@ class TimeSeriesValidator:
                     train_idx][target])
                 scores.append(model.score(data.iloc[test_idx][features],
                     data.iloc[test_idx][target]))
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'CV Fold failed for embargo_cv: {e}')
                 continue
@@ -380,7 +380,7 @@ class TimeSeriesValidator:
                 performance_metrics={'agreement_rate': agreement},
                 issues_found=[] if agreement >= agreement_threshold else [
                 'Low agreement'], recommendations=[], detailed_results={})
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Consensus validation error: {e}')
             return ValidationResult(ValidationType.CONSENSUS_STABILITY,
                 False, 0.0, {}, [str(e)], [], {})

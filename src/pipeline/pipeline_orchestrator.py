@@ -183,8 +183,8 @@ class PipelineOrchestrator:
         # When stages are filtered at load time, enumerate starts from 0
         # but the logical index corresponds to the original config position.
         # We use the stage's position in self.stages (already filtered).
-        for stage in self.stages:
-            stage_result = await self._execute_stage(stage, stage_outputs)
+        for idx, stage in enumerate(self.stages):
+            stage_result = await self._execute_stage(stage, stage_outputs, stage_index=idx)
             if stage_result['status'] == 'failed':
                 return stage_outputs
             stage_outputs.update(stage_result['outputs'])
@@ -285,7 +285,7 @@ class PipelineOrchestrator:
 
         try:
             return validate_stage_output(stage_name, stage_output, schema)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Помилка валідації виходу стадії {stage_name}: {e}', exc_info=True)
             raise DataProcessingError(f"Stage {stage_name} output validation failed: {e}") from e
 
@@ -298,9 +298,10 @@ class PipelineOrchestrator:
         Any]) ->None:
         """Log models metadata presence after stage execution."""
         self.logger.info('Updated stage_outputs with keys')
-        if 'models_metadata' in stage_outputs:
+        metadata = stage_outputs.get('models_metadata')
+        if metadata is not None:
             self.logger.info(
-                f"📊 models_metadata still present: {len(stage_outputs['models_metadata'])} models"
+                f"📊 models_metadata still present: {len(metadata)} models"
                 )
         else:
             self.logger.warning(

@@ -29,7 +29,7 @@ class AutomatedReporting:
 
             logger.info(f"[AutomatedReporting] Generated daily report: {filename}")
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"[AutomatedReporting] Failed to generate daily report: {e}",
                 exc_info=True,
@@ -64,7 +64,7 @@ class HistoricalAnalytics:
             logger.info(f"[HistoricalAnalytics] Analyzed trends for {days} days")
             return trends
 
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             logger.error(f"[HistoricalAnalytics] Failed to analyze trends: {e}", exc_info=True)
             return {}
 

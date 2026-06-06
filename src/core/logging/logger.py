@@ -59,7 +59,7 @@ class ProjectLogger:
             logging.getLogger('ProjectLogger').debug(
                 f"Could not read logging path from config, using default '{default_path}': {e}"
             )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logging.getLogger('ProjectLogger').warning(
                 f"Could not read logging path from config, using default '{default_path}': {e}"
             )

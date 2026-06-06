@@ -65,7 +65,11 @@ def test_execute_unified_training_keeps_training_results_when_arena_fails():
     manager.save_unified_results = lambda results: None
     manager._select_models_for_ticker = lambda ticker, data_context: ["lightgbm"]
 
+    # Since arena.run_battle raises RuntimeError, results['arena_error'] should contain that message.
+    # The try/except block in UnifiedTrainingManager.execute_unified_training handles the battle
+    
     result = manager.execute_unified_training(["AAPL"], {"y_test": [1]})
 
     assert result["tickers_results"] == {"AAPL": {"status": "trained"}}
+    assert "arena_error" in result
     assert result["arena_error"] == "arena offline"

@@ -27,7 +27,7 @@ class CollectorFixes:
                     await asyncio.sleep(5)  # Wait before retry
                 continue
 
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Collector {collector.__class__.__name__} failed (attempt {attempt + 1}): {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2)  # Wait before retry

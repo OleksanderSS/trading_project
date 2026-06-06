@@ -26,7 +26,7 @@ class SentimentModelIntegrator:
             self.is_initialized = True
             logger.info("[SENTIMENT] Sentiment pipeline successfully initialized")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"[SENTIMENT] Initialization error: {e}", exc_info=True)
             raise DataProcessingError(f"[SENTIMENT] Initialization error: {e}") from e
 
@@ -46,7 +46,7 @@ class SentimentModelIntegrator:
 
             return sentiment_df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"[SENTIMENT] Sentiment analysis error: {e}", exc_info=True)
             raise DataProcessingError(f"[SENTIMENT] Sentiment analysis error: {e}") from e
 
@@ -79,7 +79,7 @@ class SentimentModelIntegrator:
 
             return features
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"[SENTIMENT] Feature extraction error: {e}", exc_info=True)
             raise DataProcessingError(f"[SENTIMENT] Feature extraction error: {e}") from e
 
@@ -197,7 +197,7 @@ class SentimentModelIntegrator:
 
             return enhanced_df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"[SENTIMENT] Помилка збагачення фіч: {e}", exc_info=True)
             raise DataProcessingError(f"[SENTIMENT] Помилка збагачення фіч: {e}") from e
 
@@ -250,7 +250,7 @@ class SentimentModelIntegrator:
                 'model_type': 'sentiment'
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"[SENTIMENT] Помилка генерації сигналу: {e}", exc_info=True)
             raise DataProcessingError(f"[SENTIMENT] Помилка генерації сигналу: {e}") from e
 

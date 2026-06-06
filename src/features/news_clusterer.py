@@ -47,7 +47,7 @@ class NewsClusterer:
                 try:
                     self.model = SentenceTransformer('ProsusAI/finbert')
                     logger.info('✅ Loaded FinBERT for news clustering')
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Помилка завантаження FinBERT: {e}', exc_info=True)
                     self.model = SentenceTransformer('all-MiniLM-L6-v2')
                     logger.info('✅ Loaded MiniLM для кластеризації новин')

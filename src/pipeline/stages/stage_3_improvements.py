@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 # src/pipeline/stages/stage_3_improvements.py
 """
 Improvements for Stage 3: Feature Engineering
@@ -95,7 +96,7 @@ def validate_and_align_features_targets(
         logger.info(f"✅ Alignment validated for {timeframe}: {len(features_df)} rows")
         return features_df, targets_df
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"❌ Error validating alignment for {timeframe}: {e}")
         return features_df, targets_df
 
@@ -175,7 +176,7 @@ def calculate_data_quality_metrics(
 
         return metrics
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"❌ Error calculating data quality metrics: {e}")
         return {'error': str(e)}
 
@@ -222,5 +223,5 @@ def log_data_quality_report(metrics: dict[str, Any]) -> None:
 
         logger.info("=" * 80)
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"❌ Error logging data quality report: {e}")

@@ -250,7 +250,7 @@ class PatternAnalyzer(IAnalyzer):
                 for col in cdl_df.columns:
                     if latest[col] != 0:
                         patterns[col] = int(latest[col])
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Failed to detect candle patterns: {e}')
                 raise

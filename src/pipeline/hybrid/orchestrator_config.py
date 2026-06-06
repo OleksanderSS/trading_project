@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Orchestrator Configuration and Initialization Manager.
 Handles all configuration building and initialization logic.

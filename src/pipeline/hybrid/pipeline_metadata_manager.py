@@ -73,7 +73,7 @@ class PipelineMetadataManager:
                     self.logger.info(
                         f"📊 Accumulated {accumulated_results['total_runs']} runs"
                         )
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'⚠️ Could not load existing results: {e}')
                 raise

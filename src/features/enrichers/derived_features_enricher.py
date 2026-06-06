@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import pandas as pd
 
@@ -9,9 +8,10 @@ from src.features.enrichers.base import BaseEnricher
 
 logger = logging.getLogger(__name__)
 
-class DerivedFeaturesEnricher(BaseEnricher):
+class DerivedFeaturesEnricher(BaseEnricher): # audit-ignore: ARCHITECTURAL_USAGE
     """
-    Enriches the DataFrame with derived features (lags, velocity, rolling stats, and forward-looking targets).
+    Enriches the DataFrame with derived features (lags, velocity, rolling stats).
+    Targets are handled by the Stage 3 Target Orchestrator.
     """
 
     def __init__(self, target_column: str = 'close', returns_column: str = 'returns'):
@@ -25,12 +25,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
                 'acceleration': [5, 10],
                 'rolling_skew': [10, 20],
                 'rolling_kurtosis': [10, 20],
-                'rolling_volatility': [10, 20],
-                'forward_targets': {
-                    'periods': [1, 5, 10],
-                    'include_returns': True,
-                    'include_direction': True
-                }
+                'rolling_volatility': [10, 20]
             }
             logger.info("Using default configuration for derived features.")
         self.target_column = target_column # Used for price-based features
@@ -51,7 +46,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
 
     def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
-        Adds derived features and target labels to the DataFrame.
+        Adds derived features to the DataFrame.
 
         Args:
             df: DataFrame with data. Must contain the target_column or returns_column.
@@ -112,8 +107,6 @@ class DerivedFeaturesEnricher(BaseEnricher):
 
         if 'rolling_volatility' in self.config:
             self._add_rolling_stat(df_enriched, returns_col, 'rolling_volatility', self.config['rolling_volatility'])
-        if 'forward_targets' in self.config:
-            self._add_forward_targets(df_enriched, returns_col, self.config['forward_targets'])
 
     def _add_lags(self, df: pd.DataFrame, target_col: str, lags: list[int]):
         for lag in lags:
@@ -135,21 +128,3 @@ class DerivedFeaturesEnricher(BaseEnricher):
                 df[f'ROLLING_SKEW_{window}'] = df[col].rolling(window=window, min_periods=1).skew()
             elif stat_name == 'rolling_kurtosis':
                 df[f'ROLLING_KURT_{window}'] = df[col].rolling(window=window, min_periods=1).kurt()
-
-    def _add_forward_targets(self, df: pd.DataFrame, returns_col: str, config: dict[str, Any]):
-        """Adds forward-looking returns and direction as target labels."""
-        periods = config.get('periods', [])
-        if not periods: return
-
-        price = (1 + df[returns_col]).cumprod()
-        for p in periods:
-            if p <= 0: continue
-            forward_price = price.shift(-p)
-            forward_returns = (forward_price - price) / price
-            if config.get('include_returns', True):
-                df[f'target_forward_return_{p}P'] = forward_returns
-            if config.get('include_direction', True):
-                direction = pd.Series(pd.NA, index=df.index, dtype="Int64")
-                valid_returns = forward_returns.notna()
-                direction.loc[valid_returns] = (forward_returns.loc[valid_returns] > 0).astype(int)
-                df[f'target_forward_direction_{p}P'] = direction

@@ -70,7 +70,7 @@ class ResourceMonitor:
                     if len(self.performance_history) > self.max_history_size:
                         self.performance_history.pop(0)
                 time.sleep(interval)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'error in monitoring loop: {e}')
 
     def collect_all_metrics(self) ->dict[str, Any]:
@@ -121,7 +121,7 @@ class ResourceMonitor:
                 'memory_percent', 0) or 0, reverse=True)[:5]
             return {'total': len(processes), 'top_cpu': top_cpu,
                 'top_memory': top_mem}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return {'total': 0, 'top_cpu': [], 'top_memory': [], 'error':
                 str(e)}
@@ -185,7 +185,7 @@ class ResourceMonitor:
             )
         try:
             return self.collect_all_metrics()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to collect on-demand metrics: {e}')
             return {'status': 'error', 'message': 'Failed to collect metrics'}
 

@@ -13,12 +13,13 @@ def test_path_security_validator_does_not_truncate_long_safe_paths():
     assert sanitized.endswith("checkpoint.json")
 
 
-def test_path_security_validator_rejects_traversal_after_full_normalization(tmp_path):
+def test_path_security_validator_rejects_traversal_after_full_normalization():
     validator = PathSecurityValidator()
     malicious_path = f"safe/{'a' * 90}/../../../escape.txt"
+    base_dir = "/tmp/safe_dir"
 
     with pytest.raises(ValueError, match="traversal|outside"):
-        validator.sanitize_path_input(malicious_path, base_dir=str(tmp_path))
+        validator.sanitize_path_input(malicious_path, base_dir=base_dir)
 
 
 def test_path_security_validator_allows_names_containing_two_dots():

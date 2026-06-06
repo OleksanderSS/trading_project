@@ -43,6 +43,8 @@ class RSSCollector(BaseCollector):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
         self.logger = ProjectLogger.get_logger(__name__)
+        # ✅ Store config_manager so _get_rss_feeds can load feeds from knowledge_base
+        self.config_manager = kwargs.get('config_manager')
         self.period_days: int = self._parse_period_to_days()
         filter_cfg = self.configs.get('filter', {})
         self.min_source_quality: float = filter_cfg.get('min_source_quality',
@@ -65,73 +67,101 @@ class RSSCollector(BaseCollector):
         period_str = self.configs.get('params', {}).get('period', '7d')
         return int(period_str.replace('d', '')) if 'd' in period_str else 7
 
-    async def _run_internal(self, tickers: list[str] | None=None,
-        keywords: list[str] | None=None, **kwargs) ->pd.DataFrame | None:
-        table_name = self.configs.get('table_name', 'rss_news')
-        cache_key = f'{self.__class__.__name__}_run'
-        cache_params = {'period_days': self.period_days}
-        if self.cache_manager:
-            cached = self.cache_manager.get(cache_key, cache_params,
-                namespace='collectors')
-            if cached is not None:
-                df_cached = pd.DataFrame(cached) if isinstance(cached, list
-                    ) else cached
-                if 'hash' in df_cached.columns:
-                    new_from_cache = self.db_manager.filter_new_records(
-                        table_name, df_cached)
-                    if new_from_cache.empty:
-                        self.logger.info('[RSS] Cache hit – no new articles.')
-                        return None
-                    return new_from_cache
-        feeds: list[dict] = kwargs.get('rss_feeds') or self.configs.get('feeds'
-            , [])
+    def _check_rss_cache(self, cache_key: str, cache_params: dict, table_name: str) -> pd.DataFrame | None:
+        """Check cache for existing RSS data and filter new records."""
+        if not self.cache_manager:
+            return None
+        cached = self.cache_manager.get(cache_key, cache_params, namespace='collectors')
+        if cached is not None:
+            df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
+            if 'hash' in df_cached.columns:
+                new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
+                if new_from_cache.empty:
+                    self.logger.info('[RSS] Cache hit – no new articles.')
+                    return None
+                return new_from_cache
+        return None
+
+    def _get_rss_feeds(self, **kwargs) -> list[dict] | None:
+        """Get RSS feeds from configuration or kwargs."""
+        feeds = kwargs.get('rss_feeds') or self.configs.get('feeds', [])
         if not feeds:
-            config_manager = kwargs.get('config_manager') or getattr(self,
-                'config_manager', None)
+            config_manager = kwargs.get('config_manager') or getattr(self, 'config_manager', None)
             if config_manager:
                 kb = config_manager.get_config('knowledge_base')
                 feeds = (kb or {}).get('rss_feeds', [])
         if not feeds:
             self.logger.warning('[RSS] No feeds configured. Skipping.')
             return None
-        self.logger.info(
-            f'[RSS] Fetching {len(feeds)} feeds (semaphore=5, feed_timeout={_FEED_TIMEOUT}s)…'
-            )
-        tasks = [asyncio.wait_for(self._fetch_feed(feed['name'], feed['url'
-            ]), timeout=_FEED_TIMEOUT) for feed in feeds]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return feeds
+
+    def _process_feed_results(self, results: list, feeds: list[dict]) -> list[dict]:
+        """Process feed fetch results and extract articles."""
         flat_articles: list[dict] = []
         for i, res in enumerate(results):
             feed_name = feeds[i]['name'] if i < len(feeds) else 'unknown'
             if isinstance(res, asyncio.TimeoutError):
-                self.logger.warning(
-                    f"[RSS] Feed '{feed_name}' timed out after {_FEED_TIMEOUT}s – skipped."
-                    )
+                self.logger.warning(f"[RSS] Feed '{feed_name}' timed out after {_FEED_TIMEOUT}s – skipped.")
             elif isinstance(res, Exception):
-                self.logger.error(
-                    f"[RSS] Feed '{feed_name}' raised {type(res).__name__}: {res}"
-                    )
+                self.logger.error(f"[RSS] Feed '{feed_name}' raised {type(res).__name__}: {res}")
             elif isinstance(res, list):
                 flat_articles.extend(res)
-        if not flat_articles:
-            self.logger.info('[RSS] No new articles from any feed.')
-            return None
-        self.logger.info(
-            f'[RSS] Collected {len(flat_articles)} raw articles total.')
-        df = pd.DataFrame(flat_articles)
-        df['hash'] = df['link'].apply(lambda url: hashlib.sha256(str(url).
-            encode()).hexdigest())
+        return flat_articles
+
+    def _filter_rss_articles(self, df: pd.DataFrame, table_name: str, cache_key: str, cache_params: dict) -> pd.DataFrame | None:
+        """Filter RSS articles by cache and database."""
+        df['hash'] = df['link'].apply(lambda url: hashlib.sha256(str(url).encode()).hexdigest())
+
         if self.cache_manager:
-            df = df[df['hash'].apply(lambda h: self.cache_manager.get(h) is
-                None)].copy()
+            df = df[df['hash'].apply(lambda h: self.cache_manager.get(h) is None)].copy()
             if df.empty:
                 self.logger.info('[RSS] All articles already in active cache.')
                 return None
+
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             self.logger.info('[RSS] No novel articles vs. historical DB.')
             self._update_cache(cache_key, cache_params, df)
             return None
+
+        return new_df
+
+    async def _run_internal(self, tickers: list[str] | None=None,
+        keywords: list[str] | None=None, **kwargs) ->pd.DataFrame | None:
+        table_name = self.configs.get('table_name', 'rss_news')
+        cache_key = f'{self.__class__.__name__}_run'
+        cache_params = {'period_days': self.period_days}
+
+        # Check cache first
+        cached_result = self._check_rss_cache(cache_key, cache_params, table_name)
+        if cached_result is not None:
+            return cached_result
+
+        # Get RSS feeds
+        feeds = self._get_rss_feeds(**kwargs)
+        if not feeds:
+            return None
+
+        # Fetch feeds
+        self.logger.info(f'[RSS] Fetching {len(feeds)} feeds (semaphore=5, feed_timeout={_FEED_TIMEOUT}s)…')
+        tasks = [asyncio.wait_for(self._fetch_feed(feed['name'], feed['url']), timeout=_FEED_TIMEOUT) for feed in feeds]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Process results
+        flat_articles = self._process_feed_results(results, feeds)
+        if not flat_articles:
+            self.logger.info('[RSS] No new articles from any feed.')
+            return None
+
+        self.logger.info(f'[RSS] Collected {len(flat_articles)} raw articles total.')
+        df = pd.DataFrame(flat_articles)
+
+        # Filter articles
+        new_df = self._filter_rss_articles(df, table_name, cache_key, cache_params)
+        if new_df is None:
+            return None
+
+        # Persist new articles
         self.db_manager.upsert(table_name, new_df, unique_on=['hash'])
         self._update_cache(cache_key, cache_params, df, new_df)
         self.logger.info(f'[RSS] Persisted {len(new_df)} new articles.')

@@ -55,7 +55,7 @@ class SystemOrchestrator:
             config = ExecutionConfig(mode=mode, tickers=tickers, timeframes
                 =timeframes, parallel=parallel)
             return await self._execute_mode(config, **kwargs)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return self._handle_mode_error(mode, e)
         finally:
@@ -147,7 +147,7 @@ class SystemOrchestrator:
                     results['tickers_processed'].append(ticker)
                     self.logger.info(f'Ticker {ticker} processed successfully.'
                         )
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Error processing ticker {ticker}: {e}')
         return results
 
@@ -203,7 +203,7 @@ class SystemOrchestrator:
         try:
             subprocess.run(['streamlit', 'run', dashboard_path], check=True)
             return {'status': 'success', 'message': 'Dashboard launched'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to launch Web-UI: {e}')
             return {'status': 'error', 'message': str(e)}
 
@@ -221,7 +221,7 @@ class SystemOrchestrator:
                 mode_type = TrainMode
                 self.logger.info(
                     '🧠 ExperienceDiary recommends retraining models.')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
                 f'Could not get advice from ExperienceDiary: {e}')

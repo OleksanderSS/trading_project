@@ -66,7 +66,7 @@ class MetricsCalculator:
             # Fallback to manual calculation
             return self._calculate_basic_metrics(portfolio_history)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating financial metrics: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -108,7 +108,7 @@ class MetricsCalculator:
                 'cagr': cagr
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating basic metrics: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -142,7 +142,7 @@ class MetricsCalculator:
                     }
             return scorecard
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating pattern-specific metrics: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -174,7 +174,7 @@ class MetricsCalculator:
                 'protection_factor': float(1 - (actual_exposure / potential_exposure)) if potential_exposure > 0 else 0.0
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing chaos efficiency: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -203,7 +203,7 @@ class MetricsCalculator:
                     }
             return expertise
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating expertise map: {e}")
             return {'status': 'error', 'error': str(e)}
 

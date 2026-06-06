@@ -111,7 +111,7 @@ class ProgressiveTrainer(BaseTrainer):
                     self.state_manager.state.successful_tickers.add(ticker)
                 else:
                     self.state_manager.state.failed_tickers.add(ticker)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Inference Failure for {ticker}: {e}")
                 results[ticker] = {"status": "failed", "reason": str(e)}
         return results
@@ -179,7 +179,7 @@ class ProgressiveTrainer(BaseTrainer):
             self.logger.info(f"Batch {batch_id} deployment successful.")
             return batch_result
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Critical failure in Batch {batch_id}: {e}")
             return {"batch_id": batch_id, "status": "failed", "tickers": filtered_batch, "error": str(e)}
 
@@ -195,7 +195,7 @@ class ProgressiveTrainer(BaseTrainer):
             group_results = self._train_ticker_group(batch, data_context)
             batch_info = {"id": batch_id, "tickers": batch, "diff": difficulty}
             return cast(dict[str, Any], self.batch_processor.aggregate_batch_metrics(batch_info, group_results, start_time))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Training Protocol Error in Batch {batch_id}: {e}")
             raise ModelTrainingError(f"Training Protocol Error in Batch {batch_id}: {e}") from e
 
@@ -341,7 +341,7 @@ class ProgressiveTrainer(BaseTrainer):
                 json.dump(dict(self.analytics), f, indent=2)
 
             self.logger.info(f"Cycle intelligence saved to {results_file}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Sync error during cycle conclusion: {e}")
 
     def load_checkpoint(self, checkpoint_file: str) -> bool:

@@ -122,7 +122,7 @@ def prepare_data_for_models(
             'light_models': light_data, 'heavy_models': heavy_data,
             'metadata': {'feature_count': len(feature_cols), 'samples': total_len, 'purged_validation': True}
         }
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Критична помилка підготовки даних: {e}", exc_info=True)
         raise DataProcessingError(f"Критична помилка підготовки даних: {e}") from e
 
@@ -150,7 +150,8 @@ def handle_categorical_features(df: pd.DataFrame, exclude_cols: list[str]) -> tu
 
 def log_data_distribution(df: pd.DataFrame):
     """Логує статистичні показники розподілу ознак."""
-    if df.empty: return
+    if df.empty:
+        return
     stats = []
     for col in df.columns[:5]:
         vals = df[col].dropna()
@@ -162,7 +163,8 @@ def log_data_distribution(df: pd.DataFrame):
 def prepare_sequence_data_optimized(x_tr, x_va, x_te, y_tr, y_va, y_te, seq_len) -> dict[str, Any]:
     """Створення 3D вікон для Neural Networks за допомогою numpy strides."""
     def strided_window(x, y, window):
-        if len(x) <= window: return np.array([]), np.array([])
+        if len(x) <= window:
+            return np.array([]), np.array([])
         shape = (x.shape[0] - window, window, x.shape[1])
         strides = (x.strides[0], x.strides[0], x.strides[1])
         x_win = np.lib.stride_tricks.as_strided(x, shape=shape, strides=strides)
@@ -189,10 +191,12 @@ def filter_data_by_ticker_timeframe(df: pd.DataFrame, ticker: str, timeframe: st
 
 def validate_data_shapes(data: dict[str, Any]) -> bool:
     """Перевірка розмірностей вихідних даних."""
-    if not data: return False
+    if not data:
+        return False
     for m_type in ['light_models', 'heavy_models']:
         d = data.get(m_type, {})
-        if not d: continue
+        if not d:
+            continue
         for subset in ['train', 'val', 'test']:
             x, y = d.get(f'X_{subset}'), d.get(f'y_{subset}')
             if x is not None and y is not None and len(x) != len(y):

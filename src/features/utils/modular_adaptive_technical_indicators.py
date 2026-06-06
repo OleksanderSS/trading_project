@@ -77,7 +77,7 @@ class RSICalculator:
             rsi = 100 - 100 / (1 + rs_ultimate)
             rsi = rsi.clip(0, 100)
             return rsi.where(rsi.notna(), 50.0)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in RSI calculation: {e}")
             return pd.Series([50.0] * len(prices), index=prices.index)
 
@@ -127,7 +127,7 @@ class MACDCalculator:
             if isinstance(histogram_composite, pd.Series):
                 histogram_composite = histogram_composite.astype(float)
             return macd_composite, signal_composite, histogram_composite
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in MACD calculation: {e}")
             empty_series = pd.Series([0.0] * len(prices), index=prices.index)
             return empty_series, empty_series, empty_series
@@ -171,7 +171,7 @@ class BollingerBandsCalculator:
             if isinstance(rolling_mean, pd.Series):
                 rolling_mean = rolling_mean.astype(float)
             return upper_band.fillna(rolling_mean), rolling_mean.fillna(rolling_mean), lower_band.fillna(rolling_mean)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in Bollinger Bands calculation: {e}")
             mean_price = prices.mean()
             empty_series = pd.Series([mean_price] * len(prices), index=prices.index)
@@ -189,7 +189,7 @@ class BollingerBandsCalculator:
             mean_filled = rolling_mean.fillna(series.mean())
             std_filled = rolling_std.fillna(series.std())
             return mean_filled, std_filled
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in rolling stats: {e}")
             mean_val = series.mean()
             empty_series = pd.Series([mean_val] * len(series), index=series.index)
@@ -243,7 +243,7 @@ class ModularAdaptiveTechnicalIndicators:
             results["adaptive_macd"] = self.adaptive_macd(close)
             results["adaptive_bollinger_bands"] = self.adaptive_bollinger_bands(close)
             return results
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             print(f"Error calculating modular adaptive indicators: {e}")
             raise RuntimeError("Failed to calculate modular adaptive indicators") from e
 
@@ -269,6 +269,6 @@ class ModularAdaptiveTechnicalIndicators:
                 if float(abs(trend_returns).iloc[-1]) > float(abs(trend_returns).quantile(0.75))
                 else "ranging",
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             print(f"Error getting adaptive parameters: {e}")
             raise RuntimeError("Failed to get adaptive indicator parameters") from e

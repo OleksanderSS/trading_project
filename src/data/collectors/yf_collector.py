@@ -24,7 +24,7 @@ def _configure_yfinance_cache() -> None:
     except AttributeError:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("Installed yfinance version does not support cache location override.")
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.warning(f"Could not configure yfinance cache directory '{cache_dir}': {e}", exc_info=True)
         raise RuntimeError(f"Could not configure yfinance cache directory '{cache_dir}'") from e
 
@@ -40,6 +40,54 @@ class YFCollector(BaseCollector):
         self.timeframes = self.configs.get('timeframes', {})
         if not self.timeframes:
             self.logger.warning("'timeframes' not configured. Collector will not be able to gather data.")
+
+    def _check_cache(self, cache_key: str, cache_params: dict[str, Any], table_name: str, tickers: list[str]) -> list[dict[str, Any]] | None:
+        """Check cache for existing data."""
+        if self.cache_manager and self.db_manager:
+            cached_data = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+            if cached_data is not None:
+                self.logger.info(f"Checking cached data for {len(tickers)} tickers against database.")
+                df_cached = pd.DataFrame(cached_data) if isinstance(cached_data, list) else cached_data
+                new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
+
+                if new_from_cache.empty:
+                    self.logger.info("Cache hit, but all records are already in the database.")
+                    return []
+
+                self.logger.info(f"Returning {len(new_from_cache)} new records found in cache.")
+                return new_from_cache.to_dict('records')
+        return None
+
+    def _adjust_intraday_dates(self, interval: str, start_date: datetime, end_date: datetime, reference_now: datetime) -> tuple[datetime, datetime]:
+        """Adjust dates for intraday intervals."""
+        limit_date = reference_now - timedelta(days=58)
+        if start_date < limit_date:
+            self.logger.warning(f"Interval '{interval}' is intraday and start_date {start_date} is too old. Adjusting to {limit_date}")
+            start_date = limit_date
+
+        # Ensure start is before end after adjustment
+        if start_date >= end_date:
+            self.logger.warning(f"Adjusted start_date for {interval} is after end_date. Setting end_date to now.")
+            end_date = reference_now
+
+        return start_date, end_date
+
+    def _create_download_tasks(self, tickers: list[str], end_date: datetime, reference_now: datetime) -> list:
+        """Create async download tasks for all timeframes."""
+        tasks = []
+        for interval, params in self.timeframes.items():
+            period = params.get('period')
+            start_date = self._calculate_start_date(end_date, period)
+
+            if not start_date:
+                continue
+
+            if (interval.endswith('m') or interval.endswith('h')):
+                start_date, end_date = self._adjust_intraday_dates(interval, start_date, end_date, reference_now)
+
+            task = asyncio.to_thread(self._blocking_download, tickers, interval, start_date, end_date)
+            tasks.append(task)
+        return tasks
 
     async def run(self, tickers: list[str], end_date: datetime | None = None, **kwargs) -> list[dict[str, Any]]:
         """
@@ -61,53 +109,24 @@ class YFCollector(BaseCollector):
             "end_date": end_date.isoformat()
         }
 
-        if self.cache_manager and self.db_manager:
-            cached_data = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
-            if cached_data is not None:
-                self.logger.info(f"Checking cached data for {len(tickers)} tickers against database.")
-                df_cached = pd.DataFrame(cached_data) if isinstance(cached_data, list) else cached_data
-                new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
-
-                if new_from_cache.empty:
-                    self.logger.info("Cache hit, but all records are already in the database.")
-                    return []
-
-                self.logger.info(f"Returning {len(new_from_cache)} new records found in cache.")
-                return new_from_cache.to_dict('records')
+        cached_result = self._check_cache(cache_key, cache_params, table_name, tickers)
+        if cached_result is not None:
+            return cached_result
 
         # Use reference_now from kwargs if provided for stable testing, otherwise datetime.now()
         reference_now = kwargs.get('reference_now', datetime.now())
 
         self.logger.info(f"Starting collection for {len(tickers)} tickers. End date: {end_date.isoformat()}")
 
-        tasks = []
-        for interval, params in self.timeframes.items():
-            period = params.get('period')
-            start_date = self._calculate_start_date(end_date, period)
-
-            if not start_date:
-                continue
-
-            if (interval.endswith('m') or interval.endswith('h')):
-                # Yahoo Finance limit for intraday: roughly 60 days from reference point
-                limit_date = reference_now - timedelta(days=58)
-                if start_date < limit_date:
-                    self.logger.warning(f"Interval '{interval}' is intraday and start_date {start_date} is too old. Adjusting to {limit_date}")
-                    start_date = limit_date
-
-                # Ensure start is before end after adjustment
-                if start_date >= end_date:
-                    self.logger.warning(f"Adjusted start_date for {interval} is after end_date. Setting end_date to now.")
-                    end_date = reference_now
-
-            task = asyncio.to_thread(self._blocking_download, tickers, interval, start_date, end_date)
-            tasks.append(task)
+        tasks = self._create_download_tasks(tickers, end_date, reference_now)
 
         all_price_data = []
         results_from_threads = await asyncio.gather(*tasks, return_exceptions=True)
 
         for _i, result in enumerate(results_from_threads):
-            if isinstance(result, list) and result:
+            if isinstance(result, Exception):
+                self.logger.error(f"[YF] Download task failed: {result}")
+            elif isinstance(result, list) and result:
                 all_price_data.extend(result)
 
         if not all_price_data:
@@ -182,16 +201,17 @@ class YFCollector(BaseCollector):
         self.logger.error(f"Failed to download data for {ticker}/{interval} after {retries} attempts.")
         raise RuntimeError(f"Data download failed for {ticker}/{interval} after {retries} attempts: {last_error}") from last_error
 
-    def _process_single_ticker_dataframe(self, df: pd.DataFrame, ticker: str, interval: str) -> list[dict[str, Any]]:
-        if df.empty:
-            return []
-
-        # Flatten MultiIndex PROPERLY
+    def _flatten_multiindex_columns(self, df: pd.DataFrame, ticker: str, interval: str) -> pd.DataFrame:
+        """Flatten MultiIndex columns if present."""
         if isinstance(df.columns, pd.MultiIndex):
-            # Get the first level (Price names: Close, High, Low, Open, Volume)
             df.columns = df.columns.get_level_values(0)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f"Flattened MultiIndex columns for {ticker}/{interval}")
+        return df
+
+    def _prepare_dataframe_columns(self, df: pd.DataFrame, ticker: str, interval: str) -> pd.DataFrame:
+        """Prepare dataframe columns for processing."""
+        df = self._flatten_multiindex_columns(df, ticker, interval)
 
         # Ensure index name is set before reset for clear column naming
         if df.index.name is None:
@@ -205,7 +225,10 @@ class YFCollector(BaseCollector):
         # Lowercase column names AFTER flattening
         df.rename(columns={col: str(col).lower() for col in df.columns}, inplace=True)
 
-        # Identify date column
+        return df
+
+    def _identify_and_rename_date_column(self, df: pd.DataFrame, ticker: str, interval: str) -> pd.DataFrame:
+        """Identify and rename the date column."""
         date_candidates = ['datetime', 'date', 'timestamp']
         date_col = next((c for c in date_candidates if c in df.columns), None)
 
@@ -214,7 +237,10 @@ class YFCollector(BaseCollector):
         else:
             raise RuntimeError(f"Could not find date/datetime column for {ticker}/{interval}. Available: {df.columns.tolist()}")
 
-        # Parse datetime with error handling
+        return df
+
+    def _parse_datetime_column(self, df: pd.DataFrame, ticker: str, interval: str) -> pd.DataFrame:
+        """Parse datetime column with error handling."""
         try:
             df['datetime'] = pd.to_datetime(df['datetime'], utc=True)
             nat_count = df['datetime'].isna().sum()
@@ -227,6 +253,16 @@ class YFCollector(BaseCollector):
         except (ValueError, TypeError, Exception) as e:
             self.logger.error(f"Failed to parse datetime for {ticker}/{interval}: {e}", exc_info=True)
             raise RuntimeError(f"Datetime parsing failed for {ticker}/{interval}: {e}") from e
+
+        return df
+
+    def _process_single_ticker_dataframe(self, df: pd.DataFrame, ticker: str, interval: str) -> list[dict[str, Any]]:
+        if df.empty:
+            return []
+
+        df = self._prepare_dataframe_columns(df, ticker, interval)
+        df = self._identify_and_rename_date_column(df, ticker, interval)
+        df = self._parse_datetime_column(df, ticker, interval)
 
         df['ticker'] = ticker
         df['interval'] = interval

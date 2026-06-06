@@ -185,7 +185,7 @@ class AlertSystem:
 
             return recommendations
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating retraining recommendations: {e}")
             return [f"❌ Error generating recommendations: {str(e)}"]
 
@@ -244,7 +244,7 @@ class AlertSystem:
 
             return False
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error checking retraining trigger: {e}")
             return False
 
@@ -370,7 +370,7 @@ class AlertSystem:
 
             return "\n".join(message_parts)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating alert message: {e}")
             return f"❌ Error generating alert message: {str(e)}"
 

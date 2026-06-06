@@ -61,7 +61,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
                 f'A required indicator column was not found in the market data: {e}'
                 , exc_info=True)
             return {'market_phase': 'error'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error evaluating market phase: {e}',
                 exc_info=True)
             return {'market_phase': 'error'}
@@ -149,7 +149,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
             return False
         try:
             return self._safe_eval_condition(condition_str, values)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self._log_evaluation_error(condition_str, values, e)
             return False
@@ -160,6 +160,31 @@ class MarketPhaseAnalyzer(IAnalyzer):
             return False
         return bool(self._CONDITION_ALLOWED.match(condition_str))
 
+    def _eval_factor(self, factor: str, values: dict[str, float]) -> bool:
+        """Evaluate a single factor in the condition."""
+        factor = factor.strip()
+        if factor.lower() == 'true':
+            return True
+        if factor.lower() == 'false':
+            return False
+        for op_str, op_fn in self._OPS.items():
+            if op_str not in factor:
+                continue
+            parts = factor.split(op_str)
+            if len(parts) != 2:
+                continue
+            lhs, rhs = parts[0].strip(), parts[1].strip()
+            lhs_val = values.get(lhs)
+            if lhs_val is None:
+                return False
+            try:
+                rhs_val = float(rhs)
+            except ValueError:
+                return False
+            return bool(op_fn(lhs_val, rhs_val))
+        self.logger.warning(f"Unrecognized sub-condition: '{factor}'")
+        return False
+
     def _safe_eval_condition(self, condition_str: str, values: dict[str, float]
         ) ->bool:
         """
@@ -167,37 +192,11 @@ class MarketPhaseAnalyzer(IAnalyzer):
         Supports: 'key op value' and 'key op value and/or key op value' patterns.
         SEC-1: pd.eval() replaced by explicit operator dispatch to prevent code injection.
         """
-        # We support a minimal boolean grammar:
-        #   expr := term ('or' term)*
-        #   term := factor ('and' factor)*
-        #   factor := <identifier> <op> <number>
-        # No parentheses support here by design (keep it simple and safe).
-
-        def eval_factor(factor: str) ->bool:
-            factor = factor.strip()
-            for op_str, op_fn in self._OPS.items():
-                if op_str not in factor:
-                    continue
-                parts = factor.split(op_str)
-                if len(parts) != 2:
-                    continue
-                lhs, rhs = parts[0].strip(), parts[1].strip()
-                lhs_val = values.get(lhs)
-                if lhs_val is None:
-                    return False
-                try:
-                    rhs_val = float(rhs)
-                except ValueError:
-                    return False
-                return bool(op_fn(lhs_val, rhs_val))
-            self.logger.warning(f"Unrecognized sub-condition: '{factor}'")
-            return False
-
         # Split by OR first (lower precedence), then AND.
         or_terms = re.split('\\bor\\b', condition_str, flags=re.IGNORECASE)
         for term in or_terms:
             and_factors = re.split('\\band\\b', term, flags=re.IGNORECASE)
-            if all(eval_factor(f) for f in and_factors if f.strip()):
+            if all(self._eval_factor(f, values) for f in and_factors if f.strip()):
                 return True
         return False
 

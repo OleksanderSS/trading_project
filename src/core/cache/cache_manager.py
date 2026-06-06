@@ -18,7 +18,7 @@ from src.data.management.data_manager import DataManager
 class CacheManager:
     """Централізоване кешування з підтримкою DuckDB метаданих, стиснення та просторів імен."""
 
-    def __init__(self, cache_dir: str | Path = None, data_manager: DataManager | None = None):
+    def __init__(self, cache_dir: str | Path = None, data_manager: DataManager | None = None, config_manager=None):
         self.config = get_current_config()
         self.logger = ProjectLogger.get_logger("CacheManager")
 
@@ -51,18 +51,19 @@ class CacheManager:
 
             for table_name in tracked_tables:
                 if self.db.table_exists(table_name):
-                    # Отримуємо кількість записів та останню дату оновлення
-                    count_query = f"SELECT COUNT(*) as count FROM {table_name}"
+                    # ✅ Use quote_identifier for table names to prevent SQL injection
+                    quoted = f'"{table_name.replace(chr(34), "")}"'
+                    count_query = f"SELECT COUNT(*) as count FROM {quoted}"
                     count_result = self.db.fetch_one(count_query)
                     count = count_result['count'] if count_result else 0
 
-                    # Спробуємо знайти колонку з датою/часом
                     schema = self.db.get_table_schema(table_name)
                     date_col = next((col for col in ['created_at', 'timestamp', 'date'] if col in schema), None)
 
                     max_date = 'no_date_col'
                     if date_col:
-                        date_query = f"SELECT MAX(\"{date_col}\") as max_date FROM {table_name}"
+                        quoted_col = f'"{date_col.replace(chr(34), "")}"'
+                        date_query = f"SELECT MAX({quoted_col}) as max_date FROM {quoted}"
                         date_result = self.db.fetch_one(date_query)
                         max_date = str(date_result['max_date']) if date_result and date_result['max_date'] is not None else 'null'
 
@@ -74,7 +75,7 @@ class CacheManager:
             self.logger.info(f"Generated DB salt based on table states: {state_string}")
             return hashlib.sha256(state_string.encode()).hexdigest()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f"Could not generate DB salt from table states, falling back to static salt: {e}")
             return "static_fallback_salt"
 
@@ -117,8 +118,8 @@ class CacheManager:
                     del self.memory_cache[cache_key]
 
         # 2. Перевірка через DuckDB метадані
-        query = f"SELECT timestamp, ttl FROM cache_metadata WHERE key_hash = '{cache_key}'"
-        results = self.db.fetch_all(query)
+        query = "SELECT timestamp, ttl FROM cache_metadata WHERE key_hash = ?"
+        results = self.db.fetch_all(query, params=[cache_key])
         meta_df = pd.DataFrame(results, columns=['timestamp', 'ttl'])
 
         if meta_df.empty:
@@ -146,7 +147,7 @@ class CacheManager:
                     self.memory_cache[cache_key] = {'value': value, 'timestamp': meta['timestamp'], 'ttl': meta['ttl']}
                 return value
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f"Failed to load cache file for {key}: {e}")
 
         return None
@@ -189,7 +190,7 @@ class CacheManager:
             }])
             self.db.upsert('cache_metadata', meta_df, unique_on=['key_hash'])
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to save cache for {key}: {e}")
 
     def get_stats(self) -> dict[str, Any]:
@@ -209,14 +210,14 @@ class CacheManager:
                 "cache_dir": str(self.cache_dir),
                 "db_salt": self.db_salt
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to get cache stats: {e}")
             return {"error": str(e)}
 
     def invalidate_namespace(self, namespace: str) -> None:
         """Видалення всіх записів у конкретному просторі імен."""
-        query = f"SELECT key_hash FROM cache_metadata WHERE namespace = '{namespace}'"
-        results = self.db.fetch_all(query)
+        query = "SELECT key_hash FROM cache_metadata WHERE namespace = ?"
+        results = self.db.fetch_all(query, params=[namespace])
         hashes_df = pd.DataFrame(results, columns=['key_hash'])
         if not hashes_df.empty:
             for h in hashes_df['key_hash']:
@@ -233,7 +234,14 @@ class CacheManager:
             self.memory_cache.pop(cache_key, None)
         self._remove_file_if_exists(self.cache_dir / f"{cache_key}.parquet")
         self._remove_file_if_exists(self.cache_dir / f"{cache_key}.pkl")
-        self.db.execute_query(f"DELETE FROM cache_metadata WHERE key_hash = '{cache_key}'")
+        # ✅ FIX: DuckDB FATAL bug with DELETE on PRIMARY KEY index — use UPDATE instead
+        try:
+            self.db.execute_query(
+                "UPDATE cache_metadata SET ttl = 0, timestamp = 0 WHERE key_hash = ?",
+                params=[cache_key]
+            )
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.debug(f"Could not mark cache entry as expired: {e}")
 
     def _remove_file_if_exists(self, path: Path):
         if path.exists():
@@ -271,7 +279,7 @@ class CacheManager:
             total_count = pd.DataFrame(total_count_list, columns=['total']).iloc[0]['total']
             limit = max(1, int(total_count * 0.1))
 
-            old_hashes_query = f"SELECT key_hash FROM cache_metadata ORDER BY timestamp ASC LIMIT {limit}"
+            old_hashes_query = f"SELECT key_hash FROM cache_metadata ORDER BY timestamp ASC LIMIT {limit}"  # noqa: S608 — limit is a computed int, not user input
             old_hashes_list = self.db.fetch_all(old_hashes_query)
             old_hashes = pd.DataFrame(old_hashes_list, columns=['key_hash'])
 
@@ -287,6 +295,10 @@ class CacheManager:
             if f.suffix in ['.pkl', '.parquet']:
                 try:
                     f.unlink()
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.warning(f"Failed to delete {f}: {e}")
-        self.db.execute_query("DELETE FROM cache_metadata")
+        # ✅ FIX: Use UPDATE instead of DELETE to avoid DuckDB FATAL error on PRIMARY KEY index
+        try:
+            self.db.execute_query("UPDATE cache_metadata SET ttl = 0, timestamp = 0")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.warning(f"Could not clear cache_metadata: {e}")

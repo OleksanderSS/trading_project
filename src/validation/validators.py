@@ -199,6 +199,6 @@ class UnifiedValidator:
             # Basic health check: verify file manager can access paths
             logger.info("System health check passed")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"System health check failed: {e}")
             return False

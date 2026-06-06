@@ -83,7 +83,7 @@ class EnsemblePerformanceBridge:
             self.logger.info(f"✅ Synced {updated_count} performance records to tracker")
             return sync_result
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to sync ensemble performance: {e}")
             return {'success': False, 'error': str(e)}
 
@@ -112,7 +112,7 @@ class EnsemblePerformanceBridge:
                 'last_updated': datetime.now()
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get unified performance view: {e}")
             return {'success': False, 'error': str(e)}
 
@@ -152,7 +152,7 @@ class EnsemblePerformanceBridge:
 
             return metrics
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to extract ensemble metrics: {e}")
             raise RuntimeError("Failed to extract ensemble metrics") from e
 
@@ -183,7 +183,7 @@ class EnsemblePerformanceBridge:
 
             return tracker_records
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to convert to tracker format: {e}")
             raise RuntimeError("Failed to convert ensemble metrics to tracker format") from e
 
@@ -215,7 +215,7 @@ class EnsemblePerformanceBridge:
 
             return unified
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to merge performance data: {e}")
             raise RuntimeError("Failed to merge ensemble performance data") from e
 
@@ -236,7 +236,7 @@ class EnsemblePerformanceBridge:
                     return {}
             return {}
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to get ensemble weights: {e}")
             raise RuntimeError("Failed to get ensemble weights") from e
 
@@ -266,6 +266,6 @@ class EnsemblePerformanceBridge:
 
             return False
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Failed to update ensemble from tracker: {e}")
             return False

@@ -147,7 +147,7 @@ class UnifiedConfigManager:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"Configuration state synchronized. Keys: {list(self.merged_config.keys())}")
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Critical synchronization failure in UnifiedConfigManager: {e}")
             raise
 

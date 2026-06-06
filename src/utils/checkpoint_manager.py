@@ -71,7 +71,7 @@ class CheckpointManager:
                 'epoch': checkpoint.get('epoch', 0),
                 'best_loss': checkpoint.get('best_loss', float('inf'))
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             _logger.error(f"Помилка при завантаженні контрольної точки: {e}")
             return {'epoch': 0, 'best_loss': float('inf')}
 

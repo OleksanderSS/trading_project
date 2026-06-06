@@ -88,7 +88,7 @@ def safe_execute(func: Callable, *args, **kwargs):
         return func(*args, **kwargs)
     except TradingSystemError:
         raise
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Unexpected error in {func.__name__}: {e}', exc_info=True
             )
         raise TradingSystemError(
@@ -230,7 +230,7 @@ class ErrorHandler(IErrorHandler):
             def wrapper(*args, **kwargs):
                 try:
                     return func(*args, **kwargs)
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.handle_error(e, f'{func.__name__} in {context}',
                         'warning')
@@ -253,7 +253,7 @@ class ErrorHandler(IErrorHandler):
                 duration = datetime.now() - start_time
                 self.logger.info(f'{func.__name__} completed in {duration}')
                 return result
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 duration = datetime.now() - start_time
                 self.logger.error(
                     f'{func.__name__} failed after {duration}: {str(e)}')

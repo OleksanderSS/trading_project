@@ -50,7 +50,7 @@ class QueryCache:
             df = pd.read_parquet(cache_file)
             logger.debug(f"Loaded DataFrame from cache for query hash: {cache_key}")
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.warning(f"Failed to read cache file {cache_file}: {e}. Removing corrupt file.")
             cache_file.unlink()
             return None
@@ -72,7 +72,7 @@ class QueryCache:
         try:
             data.to_parquet(cache_file, compression='snappy', index=False)
             logger.debug(f"Saved DataFrame to cache for query hash: {cache_key}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save data to cache file {cache_file}: {e}", exc_info=True)
 
     def clear(self):

@@ -101,7 +101,7 @@ class ImportanceStabilityAnalyzer:
             )
 
             return stability_analysis
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error analyzing importance stability: {e}', exc_info=True)
             return stability_analysis
 
@@ -152,9 +152,50 @@ class ImportanceStabilityAnalyzer:
                 )
 
             return switch_detection
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error detecting regime switch: {e}', exc_info=True)
             return switch_detection
+
+    def _calculate_feature_change(self, feature_name: str, current_imp: float, last_imp: float) -> dict[str, Any]:
+        """Calculate change metrics for a single feature."""
+        if last_imp != 0:
+            relative_change = abs(current_imp - last_imp) / last_imp
+        else:
+            relative_change = 1.0 if current_imp != 0 else 0.0
+
+        return {
+            'last_importance': last_imp,
+            'current_importance': current_imp,
+            'absolute_change': abs(current_imp - last_imp),
+            'relative_change': relative_change,
+            'significant_change': relative_change > self.stability_threshold
+        }
+
+    def _calculate_regime_comparison(self, importance_history: list[dict[str, Any]], current_regime: str) -> dict[str, dict[str, float]]:
+        """Compare current regime with other regimes."""
+        other_regimes = {record['regime'] for record in importance_history} - {current_regime}
+        regime_comparison = {}
+
+        for other_regime in other_regimes:
+            other_regime_importance = [
+                record['importance'] for record in importance_history
+                if record['regime'] == other_regime
+            ]
+
+            if other_regime_importance:
+                other_avg_importance: dict[str, Any] = {}
+                for record in other_regime_importance:
+                    for feature_name, importance in record['importance'].items():
+                        if feature_name not in other_avg_importance:
+                            other_avg_importance[feature_name] = []
+                        other_avg_importance[feature_name].append(importance)
+
+                for feature_name in other_avg_importance:
+                    other_avg_importance[feature_name] = np.mean(other_avg_importance[feature_name])
+
+                regime_comparison[other_regime] = other_avg_importance
+
+        return regime_comparison
 
     def calculate_importance_changes(self,
                                    importance_history: list[dict[str, Any]],
@@ -181,51 +222,21 @@ class ImportanceStabilityAnalyzer:
             for feature_name, current_imp in current_importance.items():
                 if feature_name in last_importance:
                     last_imp = last_importance[feature_name]
+                    change_metrics = self._calculate_feature_change(feature_name, current_imp, last_imp)
+                    changes_analysis['change_summary'][feature_name] = change_metrics
 
-                    if last_imp != 0:
-                        relative_change = abs(current_imp - last_imp) / last_imp
-                    else:
-                        relative_change = 1.0 if current_imp != 0 else 0.0
-
-                    changes_analysis['change_summary'][feature_name] = {
-                        'last_importance': last_imp,
-                        'current_importance': current_imp,
-                        'absolute_change': abs(current_imp - last_imp),
-                        'relative_change': relative_change,
-                        'significant_change': relative_change > self.stability_threshold
-                    }
-
-                    if relative_change > self.stability_threshold:
+                    if change_metrics['significant_change']:
                         changes_analysis['significant_changes'].append({
                             'feature': feature_name,
                             'change_type': 'importance_drift',
-                            'relative_change': relative_change,
+                            'relative_change': change_metrics['relative_change'],
                             'last_value': last_imp,
                             'current_value': current_imp
                         })
 
-            # Compare with other regimes
-            other_regimes = {record['regime'] for record in importance_history} - {current_regime}
-            for other_regime in other_regimes:
-                other_regime_importance = [
-                    record['importance'] for record in importance_history
-                    if record['regime'] == other_regime
-                ]
-
-                if other_regime_importance:
-                    other_avg_importance: dict[str, Any] = {}
-                    for record in other_regime_importance:
-                        for feature_name, importance in record['importance'].items():
-                            if feature_name not in other_avg_importance:
-                                other_avg_importance[feature_name] = []
-                            other_avg_importance[feature_name].append(importance)
-
-                    for feature_name in other_avg_importance:
-                        other_avg_importance[feature_name] = np.mean(other_avg_importance[feature_name])
-
-                    changes_analysis['regime_comparison'][other_regime] = other_avg_importance
+            changes_analysis['regime_comparison'] = self._calculate_regime_comparison(importance_history, current_regime)
 
             return changes_analysis
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error calculating importance changes: {e}', exc_info=True)
             return changes_analysis

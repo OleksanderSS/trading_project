@@ -40,7 +40,7 @@ class DriftAnalyzer:
             drift_analysis['drift_severity'] = self.drift_calculator.determine_drift_severity(drift_analysis['overall_drift_score'])
 
             return drift_analysis
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error detecting prediction drift: {e}")
             raise DataProcessingError("Prediction drift detection failed") from e
 
@@ -64,7 +64,7 @@ class DriftAnalyzer:
                 performance_analysis['degradation_score'] = degradation_score
 
             return performance_analysis
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing performance degradation: {e}")
             raise DataProcessingError("Performance degradation analysis failed") from e
 
@@ -84,6 +84,6 @@ class DriftAnalyzer:
                 confidence_analysis['reference_stats'] = drift_result['reference_stats']
 
             return confidence_analysis
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing confidence drift: {e}")
             raise DataProcessingError("Confidence drift analysis failed") from e

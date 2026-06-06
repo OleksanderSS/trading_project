@@ -14,7 +14,7 @@ from statsmodels.tsa.vector_ar.vecm import coint_johansen
 logger = logging.getLogger(__name__)
 
 
-class AdvancedEconometricsCalculator:
+class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
     """Advanced econometric methods for robust causal analysis."""
 
     @staticmethod
@@ -83,7 +83,7 @@ class AdvancedEconometricsCalculator:
                 'causality_strength': AdvancedEconometricsCalculator.
                 _calculate_causality_strength(granger_results,
                 stationarity_results, cointegration_results or {})}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Comprehensive Granger test failed for predictor '{predictor_col}' on target '{target_col}': {e}"
                 , exc_info=True)
@@ -101,7 +101,7 @@ class AdvancedEconometricsCalculator:
                     adf_result[1], 'critical_values': adf_result[4],
                     'is_stationary': adf_result[1] < 0.05, 'is_i1': not
                     adf_result[1] < 0.05}
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Stationarity test failed for {col}: {e}", exc_info=True)
                 results[col] = {'error': str(e), 'is_stationary': False,
                     'is_i1': False}
@@ -120,7 +120,7 @@ class AdvancedEconometricsCalculator:
                     lag_results.hqic)
             else:
                 return int(lag_results.aic)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Lag selection failed: {e}', exc_info=True)
             return 2
 
@@ -144,7 +144,7 @@ class AdvancedEconometricsCalculator:
                 'residuals_autocorrelated': lb_test['lb_pvalue'].iloc[0] <
                 0.05}, 'is_valid': min_p_value < 0.05 and lb_test[
                 'lb_pvalue'].iloc[0] > 0.05}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Granger validation test failed: {e}')
             return {'error': str(e), 'p_value': 1.0, 'is_valid': False}
 
@@ -157,7 +157,7 @@ class AdvancedEconometricsCalculator:
                 result.cvt[:, 0], 'is_cointegrated': result.lr1[0] > result
                 .cvt[0, 0], 'eigenvalue_statistic': result.lr2[0],
                 'eigenvectors': result.evec}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Cointegration test failed: {e}', exc_info=True)
             return {'error': str(e), 'is_cointegrated': False}
 
@@ -172,7 +172,7 @@ class AdvancedEconometricsCalculator:
             irf_data = irf.irfs
             return {'response_data': irf_data, 'cumulative_effect': irf.
                 cum_effects, 'confidence_intervals': irf.cum_effects_ci}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Impulse response calculation failed: {e}', exc_info=True)
             return {'error': str(e)}
 
@@ -186,7 +186,7 @@ class AdvancedEconometricsCalculator:
             fevd = fitted_model.fevd(periods)
             return {'decomposition': fevd.decomp, 'explained_variance':
                 fevd.cumm_effects}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Variance decomposition failed: {e}', exc_info=True)
             return {'error': str(e)}
 

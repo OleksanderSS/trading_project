@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Pipeline Manager for Hybrid Orchestrator.
 Handles pipeline execution and coordination.

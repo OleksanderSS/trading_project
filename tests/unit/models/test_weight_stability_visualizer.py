@@ -1,9 +1,11 @@
+import tempfile
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from src.models.ensemble.weight_stability.visualizer import WeightStabilityVisualizer
 
 
-def test_weight_stability_visualizer_writes_nonempty_plot(tmp_path):
+def test_weight_stability_visualizer_writes_nonempty_plot():
     visualizer = WeightStabilityVisualizer(config={})
     start = datetime(2026, 1, 1)
     weight_history = [
@@ -15,9 +17,11 @@ def test_weight_stability_visualizer_writes_nonempty_plot(tmp_path):
         {"m1": -0.05, "m2": 0.05},
         {"m1": -0.05, "m2": 0.05},
     ]
-    output = tmp_path / "stability.png"
+    
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        output = Path(tmp_dir) / "stability.png"
 
-    visualizer.plot_stability_metrics(weight_history, weight_changes, ["m1", "m2"], str(output))
+        visualizer.plot_stability_metrics(weight_history, weight_changes, ["m1", "m2"], str(output))
 
-    assert output.exists()
-    assert output.stat().st_size > 0
+        assert output.exists()
+        assert output.stat().st_size > 0

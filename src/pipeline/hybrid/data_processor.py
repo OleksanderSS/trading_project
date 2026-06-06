@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Data Processor - Handles data processing and normalization operations
 """

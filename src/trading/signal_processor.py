@@ -67,7 +67,7 @@ class SignalProcessor:
                 }
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f"Consensus for {ticker} resulted in HOLD. Skipping execution.")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Consensus synthesis failed for {ticker}: {e}", exc_info=True)
             raise
         return None
@@ -84,7 +84,7 @@ class SignalProcessor:
                 {"historical_features": historical_features, "target_features": target_features}
             )
             return analysis.get("similarities", {}).get(target_features.index[-1], [])
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Виникла помилка: {e}", exc_info=True)
             self.logger.warning(f"KNN analysis failed for {ticker}: {e}")
             raise RuntimeError(f"KNN analysis failed for {ticker}") from e

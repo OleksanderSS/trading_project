@@ -214,11 +214,11 @@ class AdaptivePositionSizer:
                 var_pct = abs(var_result['var'])
                 if var_pct > 0:
                     return min(target_risk_pct / var_pct, 2.0)
-        except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+        except (ValueError, TypeError, KeyError) as e:
+            self.logger.error(f'Помилка розрахунку VaR: {e}', exc_info=True)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'VaR calculation failed: {e}')
-            raise Exception(f'VaR calculation failed: {e}') from e
+            raise ValueError(f'VaR calculation failed: {e}') from e
         return 1.0
 
     def _calculate_kelly_adjustment(self, confidence: float) ->float:
@@ -309,7 +309,7 @@ class AdaptivePositionSizer:
                 return 0.0
             kelly = self._compute_kelly_fraction(avg_win, avg_loss, win_rate)
             return float(np.clip(kelly, 0, 0.25))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error computing Kelly fraction: {e}',
                 exc_info=True)
             return 0.0
@@ -326,7 +326,6 @@ class AdaptivePositionSizer:
             p = win_rate
             q = 1 - p
             return (b * p - q) / b
-        except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.logger.warning(f'Помилка розрахунку Kelly fraction: {e}')
+        except (ZeroDivisionError, TypeError, ValueError) as e:
+            self.logger.error(f'Помилка розрахунку Kelly fraction: {e}', exc_info=True)
             return 0.0

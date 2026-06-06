@@ -74,7 +74,7 @@ class KillSwitchManager:
 
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in kill-switch cycle: {e}", exc_info=True)
             results['error'] = str(e)
             return results
@@ -91,7 +91,7 @@ class KillSwitchManager:
 
             with open(save_path, 'w') as f:
                 json.dump(event_to_save, f, indent=4, default=str)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to save risk event: {e}")
 
     def get_risk_summary(self) -> dict[str, Any]:

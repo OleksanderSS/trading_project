@@ -59,7 +59,7 @@ class FearGreedCollector(BaseCollector):
             self.logger.info(
                 f'Successfully fetched {len(df)} Fear & Greed records')
             return df
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Error in FearGreedCollector: {e}')
             return None
 
@@ -100,13 +100,13 @@ class FearGreedCollector(BaseCollector):
                             timestamp, unit='ms').strftime('%Y-%m-%d'),
                             'value': float(value), 'timestamp': pd.
                             to_datetime(timestamp, unit='ms')})
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.logger.warning(
                         f'Error processing Fear & Greed item: {e}')
                     continue
             return processed_data
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Error fetching Fear & Greed data: {e}',
                 exc_info=True)
             return []
@@ -134,7 +134,7 @@ class FearGreedCollector(BaseCollector):
                 _categorize_fear_greed)
             df['fear_greed_signal'] = df['value'].apply(self._get_signal)
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error standardizing Fear & Greed columns: {e}')
             return pd.DataFrame()
 

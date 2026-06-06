@@ -145,8 +145,10 @@ class DataLeakageDetector:
 
         leakage_detected = len(corr_leakage) > 0 or len(lookahead_leakage) > 0
         leakage_types = []
-        if corr_leakage: leakage_types.append(LeakageType.TARGET_LEAKAGE)
-        if lookahead_leakage: leakage_types.append(LeakageType.LOOKAHEAD_BIAS)
+        if corr_leakage:
+            leakage_types.append(LeakageType.TARGET_LEAKAGE)
+        if lookahead_leakage:
+            leakage_types.append(LeakageType.LOOKAHEAD_BIAS)
 
         affected_features = list(set(list(corr_leakage.keys()) + list(lookahead_leakage.keys())))
 
@@ -156,8 +158,10 @@ class DataLeakageDetector:
             recommendations.append("Ensure target calculation does not overlap with feature windows.")
 
         severity = "low"
-        if len(lookahead_leakage) > 0: severity = "critical"
-        elif len(corr_leakage) > 0: severity = "high"
+        if len(lookahead_leakage) > 0:
+            severity = "critical"
+        elif len(corr_leakage) > 0:
+            severity = "high"
 
         return LeakageReport(
             leakage_detected=leakage_detected,

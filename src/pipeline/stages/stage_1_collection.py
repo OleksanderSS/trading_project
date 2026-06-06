@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import Any
 
 import pandas as pd
@@ -26,7 +25,7 @@ class CollectionStage(BaseStage):
         factory = CollectorFactory(configs=collector_configs,
             http_client_factory=self.http_client_factory, config_manager=
             self.config_manager, db_manager=self.db_manager)
-        self.collection_manager = CollectionManager(factory)
+        self.collection_manager = CollectionManager(factory, config_manager=self.config_manager)
         self.logger.info('CollectionStage initialized.')
 
     async def run(self, **kwargs) ->dict:
@@ -55,12 +54,6 @@ class CollectionStage(BaseStage):
 
     def _prepare_collection(self):
         """Prepare for data collection."""
-        self.logger.info(
-            '🔄 FORCING data collection for all tickers (temporary fix)')
-        if hasattr(self.fetch_all_data_from_db, 'cache_clear'):
-            self.fetch_all_data_from_db.cache_clear()
-            self.logger.info(
-                'Cleared fetch_all_data_from_db cache to ensure fresh data')
         self.logger.info('Collection stage finished.')
 
     def process_and_save_results(self, results: list, collectors: list):
@@ -145,12 +138,12 @@ class CollectionStage(BaseStage):
                 unique_on=unique_on)
             self.logger.info(
                 f"Saved {len(new_df)} new records to '{table_name}'.")
+            return True
         else:
             self.logger.info(
                 f"No new records for '{table_name}' after filtering.")
             return False
 
-    @lru_cache(maxsize=1)
     def fetch_all_data_from_db(self) ->dict[str, pd.DataFrame]:
         """Loads all data from the database for the next stage."""
         raw_data = {}
@@ -201,10 +194,47 @@ class CollectionStage(BaseStage):
             return
         news_df = pd.concat(all_news_dfs, ignore_index=True)
         news_df = self._remove_news_duplicates(news_df)
+
+        # ✅ Integrated: temporal alignment check to prevent news leakage
+        news_df = self._check_news_temporal_alignment(news_df, raw_data)
+
         raw_data['news'] = news_df
         self.logger.info(
             f"Combined {len(all_news_dfs)} news sources → {len(raw_data['news'])} records."
             )
+
+    def _check_news_temporal_alignment(self, news_df: pd.DataFrame, raw_data: dict) -> pd.DataFrame:
+        """Run TemporalAlignmentChecker to filter future-dated news."""
+        try:
+            from src.data.quality.temporal_alignment_checker import TemporalAlignmentChecker
+            market_df = raw_data.get('market_data', raw_data.get('prices'))
+            if market_df is None or not isinstance(market_df, pd.DataFrame) or market_df.empty:
+                return news_df
+            checker = TemporalAlignmentChecker()
+            # Find the right timestamp columns
+            news_ts_col = next(
+                (c for c in ['published_date', 'published_at', 'publishedAt', 'datetime', 'timestamp']
+                 if c in news_df.columns), None
+            )
+            market_ts_col = next(
+                (c for c in ['datetime', 'timestamp', 'date'] if c in market_df.columns), None
+            )
+            if news_ts_col and market_ts_col:
+                result = checker.check_news_alignment(
+                    market_df, news_df,
+                    market_timestamp_col=market_ts_col,
+                    news_timestamp_col=news_ts_col
+                )
+                if result.get('future_news_count', 0) > 0:
+                    self.logger.warning(
+                        f"[TemporalAlignment] {result['future_news_count']} future-dated news records filtered"
+                    )
+                    # Filter out future news
+                    if 'future_indices' in result:
+                        news_df = news_df.drop(index=result['future_indices'], errors='ignore').reset_index(drop=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.debug(f"[TemporalAlignment] Check skipped: {e}")
+        return news_df
 
     def _remove_news_duplicates(self, news_df: pd.DataFrame) ->pd.DataFrame:
         """Remove duplicates from news data."""

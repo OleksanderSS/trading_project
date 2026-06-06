@@ -33,7 +33,7 @@ class GCSManager:
             self.bucket = self.client.get_bucket(self.bucket_name)
             logger.info(
                 f"Successfully connected to GCS bucket: '{self.bucket_name}'")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f'Failed to initialize GCS: {e}. Continuing without cloud storage.',
                 exc_info=True
@@ -55,7 +55,7 @@ class GCSManager:
             blob.upload_from_filename(source_file_path)
             logger.info('Upload successful.')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Failed to upload file '{source_file_path}' to '{destination_blob_name}': {e}"
                 , exc_info=True)
@@ -75,7 +75,7 @@ class GCSManager:
             blob.upload_from_file(file_obj)
             logger.info('Upload successful.')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Failed to upload from memory to '{destination_blob_name}': {e}"
                 , exc_info=True)
@@ -94,7 +94,7 @@ class GCSManager:
             blob.download_to_filename(destination_file_path)
             logger.info('Download successful.')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Failed to download file '{source_blob_name}' to '{destination_file_path}': {e}"
                 , exc_info=True)
@@ -105,7 +105,7 @@ class GCSManager:
         try:
             blobs = self.client.list_blobs(self.bucket_name, prefix=prefix)
             return [blob.name for blob in blobs]
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to list files with prefix '{prefix}': {e}",
                 exc_info=True)
             raise RuntimeError(f"Failed to list GCS files with prefix '{prefix}'") from e
@@ -118,7 +118,7 @@ class GCSManager:
         try:
             blob = self.bucket.blob(blob_name)
             return blob.exists()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Error checking for existence of blob '{blob_name}': {e}",
                 exc_info=True)

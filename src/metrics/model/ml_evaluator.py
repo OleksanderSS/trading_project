@@ -96,7 +96,7 @@ class MLEvaluator(BaseMetricCalculator):
             try:
                 metrics['ROC_AUC'] = float(roc_auc_score(y_true, y_prob))
                 metrics['Log_Loss'] = float(log_loss(y_true, y_prob))
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(
                     f'Не вдалося розрахувати імовірнісні метрики: {e}')
@@ -110,7 +110,7 @@ class MLEvaluator(BaseMetricCalculator):
         try:
             return {'ROC_AUC': float(roc_auc_score(y_true, probs)),
                 'Log_Loss': float(log_loss(y_true, probs))}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Помилка розрахунку імовірнісних метрик: {e}')
             raise RuntimeError("Failed to calculate probabilistic metrics") from e
 

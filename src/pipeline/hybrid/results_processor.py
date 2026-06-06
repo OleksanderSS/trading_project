@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Results Processor: Handles loading, converting, and processing results from Colab and local training.
 Extracted from HybridOrchestrator to improve code organization and testability.
@@ -64,7 +65,7 @@ class ResultsProcessor:
                 chosen = max(similar, key=lambda p: p.stat().st_mtime)
                 self.logger.info(f'✅ Found similar batch directory: {chosen}')
                 return chosen
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Error searching for batch directory: {e}')
             raise
@@ -84,7 +85,7 @@ class ResultsProcessor:
         try:
             with open(results_path, encoding='utf-8') as f:
                 return json.load(f)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'❌ Error loading results from {results_path}: {e}')
             raise

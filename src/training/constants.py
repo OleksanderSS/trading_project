@@ -4,6 +4,8 @@ This module contains all magic numbers and constants used across the training sy
 Centralization ensures ease of modification and consistency.
 """
 
+from src.factories.model_factory import ModelFactory
+
 # ============================================================================
 # Batch Training Constants
 # ============================================================================
@@ -119,8 +121,6 @@ DEFAULT_N_JOBS_SEQUENTIAL = 1
 # ============================================================================
 
 # Default enabled model types - use ModelFactory for canonical source
-from src.factories.model_factory import ModelFactory
-
 DEFAULT_ENABLED_MODEL_TYPES = ModelFactory.get_available_models()
 """Default list of model types to train"""
 

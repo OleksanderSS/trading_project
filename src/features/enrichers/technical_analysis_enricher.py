@@ -45,7 +45,13 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             self.DrawdownCalculator = DrawdownCalculator()
             self.EconometricsCalculator = EconometricsCalculator()
             self.RiskRewardCalculator = RiskRewardCalculator()
-            self.MacroScoreCalculator = MacroScoreCalculator()
+            self.MacroScoreCalculator = MacroScoreCalculator(indicators_config={
+                'FRED_FEDFUNDS': {'weight': 0.3, 'direction': 'negative'},
+                'FRED_UNRATE':   {'weight': 0.2, 'direction': 'negative'},
+                'FRED_VIXCLS':   {'weight': 0.2, 'direction': 'negative'},
+                'FRED_DGS10':    {'weight': 0.15, 'direction': 'positive'},
+                'FRED_CPIAUCSL': {'weight': 0.15, 'direction': 'negative'},
+            })
             self.SentimentStatsCalculator = SentimentStatsCalculator()
             self.ExplainabilityCalculator = ExplainabilityCalculator()
             self._calculators_loaded = True
@@ -79,12 +85,23 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             if not self._is_indicator_enabled(indicator, settings):
                 continue
             if indicator not in indicator_map:
-                logger.warning(
-                    f"Unknown indicator '{indicator}' in config. Skipping.")
+                if indicator != 'market_regime':
+                    logger.warning(
+                        f"Unknown indicator '{indicator}' in config. Skipping."
+                        )
                 continue
             self._process_indicator(df_enriched, indicator, settings,
                 indicator_map)
-        self._add_advanced_features(df_enriched)
+        # Market regime is now handled as an advanced feature in _add_advanced_features
+        # which is already called below.
+
+        # Calculate returns once - canonical source
+        returns = (
+            df_enriched['close']
+            .pct_change(fill_method=None)
+            .replace([float('inf'), float('inf')], float('nan'))
+        )
+        self._add_advanced_features(df_enriched, returns)
         logger.info('Technical analysis enrichment complete.')
         return df_enriched
 
@@ -155,7 +172,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 df_enriched[f'{indicator.upper()}_{window}'] = result
                 logger.info(
                     f'Successfully calculated {indicator.upper()}_{window}.')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(
                     f'Error calculating {indicator.upper()}_{window}: {e}',
                     exc_info=True)
@@ -181,20 +198,15 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             else:
                 df_enriched[output_cols[0]] = results
             logger.info(f'Successfully calculated {indicator}.')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error calculating {indicator}: {e}', exc_info=True)
 
-    def _add_advanced_features(self, df_enriched: pd.DataFrame):
+    def _add_advanced_features(self, df_enriched: pd.DataFrame, returns: pd.Series):
         """Add advanced calculator features to the DataFrame."""
         logger.info('Adding advanced calculator features...')
         try:
             self._load_calculators()
-            # Calculate returns once - canonical source
-            returns = (
-                df_enriched['close']
-                .pct_change(fill_method=None)
-                .replace([float('inf'), float('-inf')], float('nan'))
-            )
+            # No need to recalculate returns here - it's passed in
 
             # --- NEW: Short-term Volatility (5d) ---
             df_enriched['VOLATILITY_5'] = returns.rolling(5, min_periods=2).std()
@@ -209,13 +221,31 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             if 'RSI_14' in df_enriched.columns:
                 df_enriched['RSI_VELOCITY'] = df_enriched['RSI_14'].diff(3)
 
-            self._add_volatility_features(df_enriched, returns)
-            self._add_market_regime_features(df_enriched, returns)
-            self._add_drawdown_features(df_enriched, returns)
-            self._add_risk_reward_features(df_enriched, returns)
-            self._add_econometrics_features(df_enriched, returns)
-            self._add_fama_french_features(df_enriched, returns)
-        except Exception as e:
+            try:
+                self._add_volatility_features(df_enriched, returns)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.error(f'Error adding volatility features: {e}')
+            try:
+                self._add_market_regime_features(df_enriched, returns)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.error(f'Error adding market regime features: {e}')
+            try:
+                self._add_drawdown_features(df_enriched, returns)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.error(f'Error adding drawdown features: {e}')
+            try:
+                self._add_risk_reward_features(df_enriched, returns)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.error(f'Error adding risk-reward features: {e}')
+            try:
+                self._add_econometrics_features(df_enriched, returns)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.error(f'Error adding econometrics features: {e}')
+            try:
+                self._add_fama_french_features(df_enriched, returns)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.error(f'Error adding Fama-French features: {e}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error adding advanced calculator features: {e}',
                 exc_info=True)
 
@@ -272,40 +302,70 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                     ] = self.DrawdownCalculator.calculate_max_drawdown_from_prices(
                     df_enriched)
                 logger.info('Added drawdown features')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Could not add drawdown features: {e}')
                 raise
 
     def _add_risk_reward_features(self, df_enriched: pd.DataFrame, returns: pd.Series = None):
-        """Add risk-reward features."""
+        """Add risk-reward features on a rolling basis to avoid look-ahead bias."""
         if 'close' in df_enriched.columns:
             try:
+                import numpy as np
                 if returns is None:
                     returns = df_enriched['close'].pct_change(fill_method=None)
-                df_enriched['SHARPE_RATIO'] = self.RiskRewardCalculator.calculate_sharpe_ratio(
-                    returns)
-                df_enriched['SORTINO_RATIO'] = self.RiskRewardCalculator.calculate_sortino_ratio(
-                    returns)
-                logger.info('Added risk-reward features')
-            except Exception as e:
+
+                window = 252
+                min_periods = 30
+
+                rolling_mean = returns.rolling(window=window, min_periods=min_periods).mean()
+                rolling_std = returns.rolling(window=window, min_periods=min_periods).std()
+
+                # Sharpe Ratio
+                sharpe = (rolling_mean / rolling_std).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
+                df_enriched['SHARPE_RATIO'] = sharpe.fillna(0.0)
+
+                # Sortino Ratio
+                downside_returns = returns.copy()
+                downside_returns[downside_returns > 0] = 0.0
+                rolling_downside_var = downside_returns.pow(2).rolling(window=window, min_periods=min_periods).mean()
+                rolling_downside_std = np.sqrt(rolling_downside_var)
+
+                sortino = (rolling_mean / rolling_downside_std).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
+                df_enriched['SORTINO_RATIO'] = sortino.fillna(0.0)
+
+                logger.info('Added rolling risk-reward features')
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Could not add risk-reward features: {e}')
                 raise
 
     def _add_econometrics_features(self, df_enriched: pd.DataFrame, returns: pd.Series = None):
-        """Add econometrics features."""
+        """Add econometrics features on a rolling basis to avoid look-ahead bias."""
         if 'close' in df_enriched.columns:
             try:
                 if returns is None:
                     returns = df_enriched['close'].pct_change(fill_method=None)
-                df_enriched['AUTOCORR'] = returns.autocorr(lag=1)
-                df_enriched['HURST_EXPONENT'] = self._calculate_hurst_exponent(
-                    returns)
-                df_enriched['SKEWNESS'] = returns.skew()
-                df_enriched['KURTOSIS'] = returns.kurtosis()
-                logger.info('Added econometrics features')
-            except Exception as e:
+
+                window = 252
+                min_periods = 30
+
+                # Rolling autocorrelation (correlation of returns with returns.shift(1))
+                df_enriched['AUTOCORR'] = returns.rolling(window=window, min_periods=min_periods).corr(returns.shift(1)).fillna(0.0)
+
+                # Rolling Hurst Exponent
+                df_enriched['HURST_EXPONENT'] = returns.rolling(window=window, min_periods=100).apply(
+                    self._calculate_hurst_exponent, raw=True
+                ).fillna(0.5)
+
+                # Rolling Skewness
+                df_enriched['SKEWNESS'] = returns.rolling(window=window, min_periods=min_periods).skew().fillna(0.0)
+
+                # Rolling Kurtosis
+                df_enriched['KURTOSIS'] = returns.rolling(window=window, min_periods=min_periods).kurt().fillna(0.0)
+
+                logger.info('Added rolling econometrics features')
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Could not add econometrics features: {e}')
                 raise
@@ -321,22 +381,25 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 df_enriched['MARKET_PREMIUM'
                     ] = market_return - market_return.rolling(252, min_periods=1).mean()
                 logger.info('Added Fama-French factors')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Could not add Fama-French factors: {e}')
             raise
 
     def _calculate_hurst_exponent(self, ts):
-        """Calculate the Hurst exponent of a time series."""
+        """Calculate the Hurst exponent of a time series safely and efficiently."""
         try:
             import numpy as np
-            lags = range(2, min(100, len(ts) // 2))
-            tau = [np.sqrt(np.std(np.subtract(ts[lag:], ts[:-lag]))) for
-                lag in lags]
+            ts_clean = ts[~np.isnan(ts)]
+            if len(ts_clean) < 30:
+                return 0.5
+            lags = range(2, min(20, len(ts_clean) // 2))
+            tau = []
+            for lag in lags:
+                diffs = ts_clean[lag:] - ts_clean[:-lag]
+                std = np.std(diffs)
+                tau.append(std if std > 0 else 1e-9)
             poly = np.polyfit(np.log(lags), np.log(tau), 1)
-            hurst = poly[0] * 2.0
-            return hurst
-        except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            logger.warning(f'Could not calculate Hurst exponent: {e}')
+            return float(poly[0] * 2.0)
+        except Exception:
             return 0.5

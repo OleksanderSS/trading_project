@@ -13,6 +13,12 @@ from statsmodels.tsa.stattools import adfuller, grangercausalitytests
 
 from src.core.logging.logger import ProjectLogger
 
+# ✅ Re-export calculation tools so callers can use a single import
+from src.metrics.utils.calculation_tools import (  # noqa: F401
+    adjust_for_risk_free_rate,
+    annualize_returns,
+)
+
 logger = ProjectLogger.get_logger("FinancialMetricsLibrary")
 
 
@@ -130,7 +136,7 @@ class FinancialMetricsLibrary:
                 "predictor_stationary": predictor_stationary,
                 "is_spurious": abs(correlation) > 0.7 and min_p >= 0.05,
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Виникла помилка: {e}", exc_info=True)
             return {"error": str(e)}
 
@@ -149,7 +155,7 @@ class FinancialMetricsLibrary:
                 columns=columns,
                 index=pd.date_range(start=data.index[-1] + pd.Timedelta(days=1), periods=steps),
             )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"VAR forecast failed: {e}")
             return pd.DataFrame()
 

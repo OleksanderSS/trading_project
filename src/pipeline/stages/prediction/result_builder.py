@@ -25,107 +25,142 @@ class PredictionResultBuilder:
         self.prediction_generator = prediction_generator
         self.brain = brain
 
-    def build_result(self, request: PredictionResultRequest) ->dict[str, Any]:
-        anomaly_score = self.anomaly_engine.calculate_anomaly_score(request
-            .ticker_df_clean)
-        ae_normalcy = None
+    def _load_autoencoder_model(self, batch_dir: Path, ticker: str, target_col: str) -> tuple[Any, list[str]] | None:
+        """Load autoencoder model and features."""
+        ae_key = f'{ticker}_{target_col}_autoencoder'
+        ae_models = None
+
+        for ext in ['.keras', '.pkl', '.h5', '.pt', '.joblib']:
+            ae_model_path = batch_dir / f'model_{ticker}_{target_col}_autoencoder{ext}'
+            if ae_model_path.exists():
+                ae_meta = {'ticker': ticker, 'target': target_col, 'model_type': 'autoencoder', 'model_path': str(ae_model_path)}
+                ae_models = self.model_resolver.load_available_models(ae_key, {ae_key: ae_meta})
+                break
+
+        if not ae_models:
+            return None
+
+        ae_model_name = list(ae_models.keys())[0]
+        ae_model = ae_models[ae_model_name]
+        ae_features = self._load_autoencoder_features(batch_dir, ticker, target_col)
+
+        if not ae_features:
+            ae_features = []
+
+        return ae_model, ae_features
+
+    def _load_autoencoder_features(self, batch_dir: Path, ticker: str, target_col: str) -> list[str] | None:
+        """Load autoencoder selected features from file."""
+        features_path = batch_dir / f'selected_features_{ticker}_{target_col}_autoencoder.json'
+        if features_path.exists():
+            try:
+                with open(features_path) as f:
+                    data = json.load(f)
+                    return data.get('selected_features', [])
+            except Exception as fe:
+                self.logger.error(f'Виникла помилка: {fe}', exc_info=True)
+                self.logger.warning(f'⚠️ Failed to read autoencoder features file: {fe}')
+                raise
+        return None
+
+    def _calculate_autoencoder_normalcy(self, ae_model: Any, X_ae: pd.DataFrame, ticker: str, target_col: str) -> float:
+        """Calculate autoencoder normalcy score."""
+        raw_reconstruction = ae_model.predict(X_ae)
+        x_input_flat = X_ae.iloc[-1:].values.flatten()
+        reconstruction_flat = raw_reconstruction.flatten()
+        min_len = min(len(x_input_flat), len(reconstruction_flat))
+
+        if min_len > 0:
+            mse = float(np.mean((x_input_flat[:min_len] - reconstruction_flat[:min_len]) ** 2))
+            ae_normalcy = float(np.exp(-mse * 2.0))
+            self.logger.info(f'🔒 Autoencoder anomaly integration for {ticker} ({target_col}): MSE={mse:.4f}, normalcy={ae_normalcy:.2%}')
+            return ae_normalcy
+
+        return 0.5
+
+    def _integrate_autoencoder_anomaly(self, request: PredictionResultRequest, anomaly_score: float) -> float:
+        """Integrate autoencoder anomaly detection into anomaly score."""
         ticker = request.ticker
         target_col = request.meta.get('target', '')
-        ae_key = f'{ticker}_{target_col}_autoencoder'
-        try:
-            batch_dir = self.model_resolver.resolve_batch_directory({
-                request.context_id: request.meta})
-            if batch_dir:
-                ae_models = None
-                for ext in ['.keras', '.pkl', '.h5', '.pt', '.joblib']:
-                    ae_model_path = (batch_dir /
-                        f'model_{ticker}_{target_col}_autoencoder{ext}')
-                    if ae_model_path.exists():
-                        ae_meta = {'ticker': ticker, 'target': target_col,
-                            'model_type': 'autoencoder', 'model_path': str(
-                            ae_model_path)}
-                        ae_models = self.model_resolver.load_available_models(
-                            ae_key, {ae_key: ae_meta})
-                        break
-                if ae_models:
-                    ae_model_name = list(ae_models.keys())[0]
-                    ae_model = ae_models[ae_model_name]
-                    ae_features = []
-                    features_path = (batch_dir /
-                        f'selected_features_{ticker}_{target_col}_autoencoder.json'
-                        )
-                    if features_path.exists():
-                        try:
-                            with open(features_path) as f:
-                                data = json.load(f)
-                                ae_features = data.get('selected_features', [])
-                        except Exception as fe:
-                            self.logger.error(f'Виникла помилка: {fe}',
-                                exc_info=True)
-                            self.logger.warning(
-                                f'⚠️ Failed to read autoencoder features file: {fe}'
-                                )
-                            raise
-                    if not ae_features:
-                        ae_features = request.meta.get('selected_features', [])
-                    X_ae = self.prediction_generator._align_features(ae_model,
-                        request.ticker_df_clean, ae_features)
-                    raw_reconstruction = ae_model.predict(X_ae)
-                    x_input_flat = X_ae.iloc[-1:].values.flatten()
-                    reconstruction_flat = raw_reconstruction.flatten()
-                    min_len = min(len(x_input_flat), len(reconstruction_flat))
-                    if min_len > 0:
-                        mse = float(np.mean((x_input_flat[:min_len] -
-                            reconstruction_flat[:min_len]) ** 2))
-                        ae_normalcy = float(np.exp(-mse * 2.0))
-                        anomaly_score = 0.5 * anomaly_score + 0.5 * ae_normalcy
-                        self.logger.info(
-                            f'🔒 Autoencoder anomaly integration for {ticker} ({target_col}): MSE={mse:.4f}, normalcy={ae_normalcy:.2%}, blended_normalcy={anomaly_score:.2%}'
-                            )
-        except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.logger.warning(
-                f'⚠️ Failed to integrate autoencoder anomaly detection: {e}')
-            raise
-        confidence_info = self.anomaly_engine.calculate_ensemble_confidence(
-            models={}, X=request.ticker_df_clean, prediction=request.
-            adjusted_prediction, context_id=request.context_id,
-            predictions_by_model=request.model_contributions)
-        final_confidence = confidence_info.get('score', 0.5) * anomaly_score
-        if anomaly_score < 0.4:
-            self.logger.warning(
-                f'Low normalcy score ({anomaly_score:.2f}) - potential data anomaly!'
-                )
-        pred_value = self.prediction_generator.extract_prediction_value(request
-            .adjusted_prediction)
-        self.logger.info(
-            f"Ensemble forecast for {request.ticker}: {pred_value:.4f} | Conf: {confidence_info.get('score'):.2%}"
-            )
 
-        def to_serializable(val: Any) ->Any:
-            if isinstance(val, np.ndarray):
-                return val.tolist()
-            if isinstance(val, (np.float32, np.float64)):
-                return float(val)
-            if isinstance(val, (np.int32, np.int64)):
-                return int(val)
-            return val
-        ts_val = None
-        if len(request.ticker_df_clean) > 0:
-            last_ts = request.ticker_df_clean.index[-1]
+        try:
+            batch_dir = self.model_resolver.resolve_batch_directory({request.context_id: request.meta})
+            if not batch_dir:
+                return anomaly_score
+
+            ae_result = self._load_autoencoder_model(batch_dir, ticker, target_col)
+            if not ae_result:
+                return anomaly_score
+
+            ae_model, ae_features = ae_result
+            if not ae_features:
+                ae_features = request.meta.get('selected_features', [])
+
+            X_ae = self.prediction_generator._align_features(ae_model, request.ticker_df_clean, ae_features)
+            ae_normalcy = self._calculate_autoencoder_normalcy(ae_model, X_ae, ticker, target_col)
+
+            blended_normalcy = 0.5 * anomaly_score + 0.5 * ae_normalcy
+            self.logger.info(f'Blended normalcy for {ticker} ({target_col}): {blended_normalcy:.2%}')
+            return blended_normalcy
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            self.logger.warning(f'⚠️ Failed to integrate autoencoder anomaly detection: {e}')
+            raise
+
+    def _to_serializable(self, val: Any) -> Any:
+        """Convert numpy types to serializable Python types."""
+        if isinstance(val, np.ndarray):
+            return val.tolist()
+        if isinstance(val, (np.float32, np.float64)):
+            return float(val)
+        if isinstance(val, (np.int32, np.int64)):
+            return int(val)
+        return val
+
+    def _get_timestamp(self, ticker_df_clean: pd.DataFrame) -> str:
+        """Get timestamp from DataFrame or current time."""
+        if len(ticker_df_clean) > 0:
+            last_ts = ticker_df_clean.index[-1]
             if pd.notnull(last_ts):
-                ts_val = str(last_ts)
-        if ts_val is None:
-            ts_val = datetime.now().isoformat()
-        return {'ticker': request.ticker, 'predictions': to_serializable(
-            request.adjusted_prediction), 'raw_forecast': to_serializable(
-            request.raw_prediction), 'predictions_by_model': {k:
-            to_serializable(v) for k, v in request.model_contributions.
-            items()}, 'selected_primary_model': request.best_model_name,
-            'confidence': float(final_confidence), 'anomaly_score': float(
-            anomaly_score), 'last_price': self._get_last_price(request.
-            ticker_df_clean, request.ticker) or 0.0, 'shap_explanations':
-            request.shap_explanations, 'timestamp': ts_val}
+                return str(last_ts)
+        return datetime.now().isoformat()
+
+    def build_result(self, request: PredictionResultRequest) ->dict[str, Any]:
+        anomaly_score = self.anomaly_engine.calculate_anomaly_score(request.ticker_df_clean)
+
+        # Integrate autoencoder anomaly detection
+        try:
+            anomaly_score = self._integrate_autoencoder_anomaly(request, anomaly_score)
+        except Exception:
+            pass  # Fall back to original anomaly score
+
+        # Calculate ensemble confidence
+        confidence_info = self.anomaly_engine.calculate_ensemble_confidence(
+            models={}, X=request.ticker_df_clean, prediction=request.adjusted_prediction,
+            context_id=request.context_id, predictions_by_model=request.model_contributions)
+        final_confidence = confidence_info.get('score', 0.5) * anomaly_score
+
+        if anomaly_score < 0.4:
+            self.logger.warning(f'Low normalcy score ({anomaly_score:.2f}) - potential data anomaly!')
+
+        pred_value = self.prediction_generator.extract_prediction_value(request.adjusted_prediction)
+        self.logger.info(f"Ensemble forecast for {request.ticker}: {pred_value:.4f} | Conf: {confidence_info.get('score'):.2%}")
+
+        ts_val = self._get_timestamp(request.ticker_df_clean)
+
+        return {
+            'ticker': request.ticker,
+            'predictions': self._to_serializable(request.adjusted_prediction),
+            'raw_forecast': self._to_serializable(request.raw_prediction),
+            'predictions_by_model': {k: self._to_serializable(v) for k, v in request.model_contributions.items()},
+            'selected_primary_model': request.best_model_name,
+            'confidence': float(final_confidence),
+            'anomaly_score': float(anomaly_score),
+            'last_price': self._get_last_price(request.ticker_df_clean, request.ticker) or 0.0,
+            'shap_explanations': request.shap_explanations,
+            'timestamp': ts_val
+        }
 
     def _get_last_price(self, ticker_df: pd.DataFrame, ticker: str) ->(float |
         None):
@@ -204,7 +239,7 @@ class PredictionResultBuilder:
                     json.dump(stage_5_results, f, indent=2, default=str)
                 self.logger.info(
                     f'✅ Stage 5 results saved: {stage_5_file.name}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Error saving Stage 5 results: {e}')
             raise

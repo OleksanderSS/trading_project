@@ -47,15 +47,21 @@ class FeatureEngineeringStage(BaseStage):
 
         # 1. Enrichment for each timeframe
         for tf, df in market_data_dict.items():
-            enriched_df = self.enricher.enrich_features(df, timeframe=tf)
+            # ✅ FIX: pass macro_data and news from cleaned_data to enrichers via kwargs
+            enrich_kwargs = {}
+            if 'macro_data' in cleaned_data:
+                enrich_kwargs['macro_data'] = cleaned_data['macro_data']
+            if 'news' in cleaned_data:
+                enrich_kwargs['news'] = cleaned_data['news']
 
-            # 2. Target Generation (usually on 1d)
-            if tf == '1d':
-                targets_df = self.target_gen.generate_targets(enriched_df)
-                all_targets[tf] = targets_df
-                target_cols = [col for col in targets_df.columns if col.startswith('target_')]
-                for col in target_cols:
-                    enriched_df[col] = targets_df[col].reindex(enriched_df.index)
+            enriched_df = self.enricher.enrich_features(df, timeframe=tf, **enrich_kwargs)
+
+            # 2. Target Generation (for all timeframes, not just 1d)
+            targets_df = self.target_gen.generate_targets(enriched_df)
+            all_targets[tf] = targets_df
+            target_cols = [col for col in targets_df.columns if col.startswith('target_')]
+            for col in target_cols:
+                enriched_df[col] = targets_df[col].reindex(enriched_df.index)
 
             # 3. Apply Safety Guards
             enriched_df = self.guards.apply_guards(enriched_df)
@@ -137,7 +143,7 @@ class FeatureEngineeringStage(BaseStage):
                 for rank, feature in enumerate(selected)
             }
             return selected, importance
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Feature selection failed critically: {e}', exc_info=True)
             fallback = list(candidate_features.columns)
             return fallback, dict.fromkeys(fallback, 1.0)

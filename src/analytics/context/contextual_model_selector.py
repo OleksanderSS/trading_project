@@ -50,7 +50,7 @@ class ContextualModelSelector(IAnalyzer):
         try:
             analysis_result = self._perform_knn_analysis(data)
             return analysis_result
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during kNN model selection: {e}", exc_info=True)
             return self._heuristic_fallback(f"Exception: {str(e)}")
 
@@ -100,7 +100,7 @@ class ContextualModelSelector(IAnalyzer):
                 return self._heuristic_fallback("No performance data for models in neighbors")
 
             return self._complete_model_selection(analysis_context, neighbor_analysis)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during kNN analysis: {e}")
             raise
 

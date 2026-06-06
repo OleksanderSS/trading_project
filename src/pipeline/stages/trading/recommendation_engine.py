@@ -9,6 +9,7 @@ import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 from src.core.utils.prediction_utils import normalize_prediction
+from src.models.registry.model_registry import ModelRegistry
 from src.risk.elite_risk_metrics import EliteRiskMetrics
 from src.trading.adaptive_parameter_manager import AdaptiveParameterManager, AssetClass, MarketRegime
 
@@ -51,7 +52,7 @@ class TradingRecommendationEngine:
                 ] = self._create_consolidated_table(recommendations[
                 'buy_recommendations'], recommendations[
                 'sell_recommendations'], models_metadata, predictions)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'❌ Failed to generate recommendations: {e}',
                 exc_info=True)
             return self._fallback_recommendations(predictions, current_prices)
@@ -68,8 +69,7 @@ class TradingRecommendationEngine:
 
     def _categorize_models(self, models_metadata: dict[str, Any]) ->tuple[
         dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
-        HEAVY_MODELS = {'gru', 'tabnet', 'transformer', 'cnn', 'lstm',
-            'autoencoder'}
+        heavy_model_types = set(ModelRegistry.get_models_by_type('heavy'))
         heavy_models: dict[str, list[dict[str, Any]]] = {}
         light_models: dict[str, list[dict[str, Any]]] = {}
         for context_id, meta in models_metadata.items():
@@ -87,7 +87,7 @@ class TradingRecommendationEngine:
                 model_type, 'ticker': ticker, 'target': target, 'accuracy':
                 accuracy, 'metrics': metrics}
             key = f'{ticker}_{target}'
-            if any(heavy in model_type for heavy in HEAVY_MODELS):
+            if any(heavy in model_type for heavy in heavy_model_types):
                 heavy_models.setdefault(key, []).append(model_info)
             else:
                 light_models.setdefault(key, []).append(model_info)
@@ -146,7 +146,7 @@ class TradingRecommendationEngine:
                         )
                     if news_analysis and 'news_impact_scores' in news_analysis:
                         return dict(news_analysis['news_impact_scores'])
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.logger.warning(f'News impact analysis error: {e}')
                     raise
@@ -190,7 +190,7 @@ class TradingRecommendationEngine:
                     global_regime = 'ranging'
 
                 self.logger.info(f'📊 Dynamically detected global regime: {global_regime} (from {detected})')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f'⚠️ Failed to detect dynamic regime: {e}')
             raise
 
@@ -361,7 +361,7 @@ class TradingRecommendationEngine:
                     confidence)
                 return max(0.01, min(1.0, calibrated_confidence))
             return max(0.01, min(1.0, confidence))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f'Error calculating robust confidence: {e}')
             raise
 
@@ -450,7 +450,7 @@ class TradingRecommendationEngine:
                         f'⚠️ Stress test shows {stress_impact:.1%} loss for {ticker}, factor reduced to {position_size_factor:.1%}'
                         )
             return 0.5 * position_size_factor, var_95, position_size_factor
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
                 f'⚠️ Elite risk validation failed for {ticker}: {e}')
             raise

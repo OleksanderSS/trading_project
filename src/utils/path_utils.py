@@ -64,7 +64,7 @@ def validate_path_within_directory(file_path: str | Path, base_dir: str | Path) 
         file_path.relative_to(base_dir)
         return file_path
     except ValueError:
-        raise ValueError(f"Path traversal detected: {file_path} is not within {base_dir}")
+        raise ValueError(f"Path traversal detected: {file_path} is not within {base_dir}") from None
 
 
 def safe_file_operation(base_dir: str | Path, filename: str, operation: str = "create") -> Path:

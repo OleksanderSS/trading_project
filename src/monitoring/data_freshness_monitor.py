@@ -146,7 +146,7 @@ class DataFreshnessMonitor:
                 elif source_result['status'] == 'warning' and overall_status == 'fresh':
                     overall_status = 'warning'
 
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Error checking {source_name}: {e}")
                 results[source_name] = {
                     'status': 'error',
@@ -220,9 +220,31 @@ class DataFreshnessMonitor:
 
         return result
 
+    def _get_latest_timestamp_from_parquet(self, path_obj: Path) -> pd.Timestamp | None:
+        """Get latest timestamp from parquet files in a directory."""
+        parquet_files = list(path_obj.glob('*.parquet'))
+        if not parquet_files:
+            return None
+
+        latest_file = max(parquet_files, key=lambda x: x.stat().st_mtime)
+        df = pd.read_parquet(latest_file)
+
+        datetime_col = self._find_datetime_column(df)
+        if datetime_col:
+            return pd.to_datetime(df[datetime_col].max())
+        return None
+
+    def _get_latest_timestamp_from_models(self, path_obj: Path) -> pd.Timestamp | None:
+        """Get latest timestamp from model files."""
+        model_files = list(path_obj.rglob('*.pkl'))
+        if not model_files:
+            return None
+
+        latest_file = max(model_files, key=lambda x: x.stat().st_mtime)
+        return pd.Timestamp.fromtimestamp(latest_file.stat().st_mtime)
+
     async def _get_latest_timestamp(self, source_name: str) -> pd.Timestamp | None:
         """Get the latest timestamp for a data source."""
-
         data_path = self.data_paths.get(source_name)
         if data_path is None:
             return None
@@ -233,59 +255,12 @@ class DataFreshnessMonitor:
             return None
 
         try:
-            if source_name.startswith('prices'):
-                # Price data - look for parquet files
-                parquet_files = list(path_obj.glob('*.parquet'))
-                if parquet_files:
-                    latest_file = max(parquet_files, key=lambda x: x.stat().st_mtime)
-                    df = pd.read_parquet(latest_file)
-
-                    # Find datetime column
-                    datetime_col = self._find_datetime_column(df)
-                    if datetime_col:
-                        return pd.to_datetime(df[datetime_col].max())
-
-            elif source_name == 'news':
-                # News data - look for latest news file
-                news_files = list(path_obj.glob('*.parquet'))
-                if news_files:
-                    latest_file = max(news_files, key=lambda x: x.stat().st_mtime)
-                    df = pd.read_parquet(latest_file)
-
-                    datetime_col = self._find_datetime_column(df)
-                    if datetime_col:
-                        return pd.to_datetime(df[datetime_col].max())
-
-            elif source_name == 'macro':
-                # Macro data - look for latest macro file
-                macro_files = list(path_obj.glob('*.parquet'))
-                if macro_files:
-                    latest_file = max(macro_files, key=lambda x: x.stat().st_mtime)
-                    df = pd.read_parquet(latest_file)
-
-                    datetime_col = self._find_datetime_column(df)
-                    if datetime_col:
-                        return pd.to_datetime(df[datetime_col].max())
-
-            elif source_name == 'features':
-                # Features - look for latest features file
-                feature_files = list(path_obj.glob('*.parquet'))
-                if feature_files:
-                    latest_file = max(feature_files, key=lambda x: x.stat().st_mtime)
-                    df = pd.read_parquet(latest_file)
-
-                    datetime_col = self._find_datetime_column(df)
-                    if datetime_col:
-                        return pd.to_datetime(df[datetime_col].max())
-
+            if source_name.startswith('prices') or source_name in ['news', 'macro', 'features']:
+                return self._get_latest_timestamp_from_parquet(path_obj)
             elif source_name == 'models':
-                # Models - look at model file modification times
-                model_files = list(path_obj.rglob('*.pkl'))
-                if model_files:
-                    latest_file = max(model_files, key=lambda x: x.stat().st_mtime)
-                    return pd.Timestamp.fromtimestamp(latest_file.stat().st_mtime)
+                return self._get_latest_timestamp_from_models(path_obj)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error getting latest timestamp for {source_name}: {e}")
 
         return None
@@ -405,7 +380,7 @@ class DataFreshnessMonitor:
             notifier = UniversalNotifier()
             await notifier.send_message(message)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to send Telegram alert: {e}")
 
     async def _send_email_alert(self, message: str) -> None:
@@ -415,7 +390,7 @@ class DataFreshnessMonitor:
             # For now, just log
             self.logger.info(f"Email alert (not implemented): {message}")
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to send email alert: {e}")
 
     def _log_freshness_summary(self, summary: dict[str, Any]) -> None:
@@ -531,7 +506,7 @@ class DataFreshnessMonitor:
                 await self.check_all_data_sources()
                 await asyncio.sleep(check_interval_minutes * 60)
 
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Error in monitoring loop: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute on error
 

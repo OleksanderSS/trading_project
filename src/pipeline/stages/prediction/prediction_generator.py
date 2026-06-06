@@ -126,7 +126,7 @@ class PredictionGenerator:
             result = float(denormalized.flatten()[-1])
             self.logger.info(f'✅ Denormalized prediction: {result:.6f}')
             return result
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Failed to denormalize prediction: {e}')
             return float(adjusted_prediction)

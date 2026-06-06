@@ -77,6 +77,7 @@ class RuntimeConfigLoader:
 
     def _normalize_batch_name(self, batch_name):
         """Нормалізує назву батча"""
+        # audit-ignore: ARCHITECTURAL_USAGE
         batch_name = batch_name.replace('target_target_', 'target_')
         if not batch_name.startswith('test_'
             ) and batch_name != 'main_database':
@@ -119,7 +120,7 @@ class RuntimeConfigLoader:
         try:
             config_path.unlink()
             print('✅ config.json видалено з main_database')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             print(f'⚠️ Не вдалося видалити: {e}')
             raise

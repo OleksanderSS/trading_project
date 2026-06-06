@@ -132,7 +132,7 @@ class DiaryEngine(BaseMetaComponent):
                 "total_trades_recorded": total_trades,
                 "table_name": self.table_name
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to retrieve diary state: {e}",
                 exc_info=True)
             return {"error": str(e)}
@@ -172,7 +172,7 @@ class DiaryEngine(BaseMetaComponent):
                     'ALTER TABLE experience_diary ADD COLUMN context_pattern_seq VARCHAR'
                 )
                 self.logger.info("Added context_pattern_seq column to experience_diary.")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
                 f"Could not ensure context_pattern_seq column: {e}", exc_info=True
             )
@@ -249,7 +249,7 @@ class DiaryEngine(BaseMetaComponent):
             self.data_manager.upsert(self.table_name, df, unique_on=["agent_id", "decision_timestamp", "ticker"])
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug("Recorded consensus metadata")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to record decision metadata: {e}",
                 exc_info=True)
 
@@ -290,7 +290,7 @@ class DiaryEngine(BaseMetaComponent):
             if df.empty:
                 self.logger.warning("No historical trades found for calibration")
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to retrieve recent trades: {e}")
             return pd.DataFrame()
 
@@ -491,7 +491,8 @@ class DiaryEngine(BaseMetaComponent):
     def suggest_threshold_adjustments(self, agent_id: str) -> dict[str, Any]:
         """Suggests adjustments for AdaptiveThresholds based on recent performance."""
         df = self.get_history_by_agent(agent_id).tail(20)
-        if len(df) < 5: return {"adjustment": 0.0, "reason": "Insufficient data"}
+        if len(df) < 5:
+            return {"adjustment": 0.0, "reason": "Insufficient data"}
 
         win_rate = (df['outcome'] == DecisionOutcome.PROFITABLE.value).mean()
 

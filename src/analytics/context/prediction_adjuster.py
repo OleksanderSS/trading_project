@@ -90,7 +90,7 @@ class PredictionAdjuster(IAnalyzer):
                     context_info):
                     adjustment_factor = self._apply_rule_action(rule.get(
                         'then', {}), adjustment_factor)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self._log_rule_error(rule, e)
                 raise

@@ -100,7 +100,7 @@ class NormalizationManager:
             self._save_scaler(feature)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"Fitted and saved '{scaler_type}' scaler for feature '{feature}'.")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error fitting scaler for feature '{feature}': {e}")
 
     def transform_data(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -155,7 +155,7 @@ class NormalizationManager:
         try:
             joblib.dump(self.scalers[feature], scaler_path)
             logger.info(f"Scaler for '{feature}' saved to {scaler_path}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save scaler for '{feature}': {e}")
 
     def load_scalers(self, features: list[str] | None = None):
@@ -184,5 +184,5 @@ class NormalizationManager:
                 logger.info(f"Successfully loaded scaler for '{feature_name}'.")
             except FileNotFoundError:
                 logger.warning(f"Scaler file not found for feature '{feature_name}' at {scaler_path}.")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Failed to load scaler for '{feature_name}': {e}")

@@ -73,7 +73,7 @@ class EconometricsCalculator:
         try:
             p_value = EconometricsCalculator._calculate_granger_p_value(test_data, maxlag)
             return EconometricsCalculator._build_causality_result(predictor_col, target_col, correlation, p_value)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Granger causality test failed for predictor '{predictor_col}' on target '{target_col}': {e}", exc_info=True)
             return {"error": str(e)}
 
@@ -160,7 +160,7 @@ class EconometricsCalculator:
 
             return pd.DataFrame()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"VAR baseline forecast failed: {e}", exc_info=True)
             return pd.DataFrame()
 

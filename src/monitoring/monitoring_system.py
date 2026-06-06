@@ -128,7 +128,7 @@ class SystemHealthMonitor(BaseMonitor):
                 self.metrics_history.pop(0)
             self.metrics.update(metrics)
             return metrics
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error collecting system metrics: {e}')
             raise RuntimeError("Failed to collect system metrics") from e
 
@@ -186,7 +186,7 @@ class ModelPerformanceMonitor(BaseMonitor):
                 0.0, 'timestamp': datetime.now().isoformat()}
             self.metrics.update(metrics)
             return metrics
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error collecting model metrics: {e}')
             raise RuntimeError("Failed to collect model metrics") from e
 
@@ -242,7 +242,7 @@ class DataQualityMonitor(BaseMonitor):
                 ().isoformat()}
             self.metrics.update(metrics)
             return metrics
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error collecting data quality metrics: {e}')
             raise RuntimeError("Failed to collect data quality metrics") from e
 
@@ -330,7 +330,7 @@ class AlertManager:
                     self._send_email_notification(alert)
                 elif channel == 'slack':
                     self._send_slack_notification(alert)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Error sending {channel} notification: {e}')
 
     def _send_log_notification(self, alert: dict[str, Any]):
@@ -384,7 +384,7 @@ class MonitoringDashboard:
                     'critical'] for a in monitor.alerts[-5:]):
                     dashboard_data['system_status'] = 'unhealthy'
             return dashboard_data
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error generating dashboard data: {e}')
             return {'error': str(e)}
 
@@ -426,7 +426,7 @@ class MonitoringDashboard:
                 'total_alerts': active_alerts_count, 'uptime_percent':
                 active_monitors / total_monitors * 100 if total_monitors >
                 0 else 0}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Error generating summary: {e}')
             raise RuntimeError("Failed to generate monitoring summary") from e
@@ -489,7 +489,7 @@ class MonitoringSystem:
                             self.alert_manager.process_alert(alert)
                 self.alert_manager.cleanup_old_alerts()
                 time.sleep(self.collection_interval)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Error in monitoring loop: {e}')
                 time.sleep(5)
 

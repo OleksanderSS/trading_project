@@ -1,17 +1,14 @@
 import json
 import os
+from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
+from pathlib import Path
 from typing import Any
 
 import joblib
 import numpy as np
 import pandas as pd
-
-rng = np.random.default_rng(42)
-from dataclasses import dataclass
-from enum import Enum
-from pathlib import Path
-
 from sklearn.metrics import log_loss
 
 from src.core.logging.logger import ProjectLogger
@@ -19,6 +16,7 @@ from src.utils.artifact_security import resolve_trusted_artifact_path
 
 from .battle_groups import get_battle_group_manager
 
+rng = np.random.default_rng(42)
 logger = ProjectLogger.get_logger(__name__)
 
 
@@ -116,7 +114,7 @@ class TradingModelArena:
             try:
                 binary_actuals = (actuals > 0).astype(int)
                 l_loss = log_loss(binary_actuals, probs)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 l_loss = 1.0
         financial_loss = np.mean(np.abs(predictions - actuals) * np.abs(
@@ -192,7 +190,7 @@ class TradingModelArena:
             )
             model = joblib.load(trusted_champ)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             return latest_champ.name, model
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise RuntimeError(f'[ARENA] Could not load champion for {ticker}_{target}: {e}') from e
 
     def conduct_battle(self, ticker: str, target: str, candidate_name: str,
@@ -357,7 +355,7 @@ class TradingModelArena:
                 results.append({'battle_id': len(self.battle_history),
                     'winner': winner, 'timestamp': battle.end_time.isoformat()}
                     )
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'[ARENA] Battle failed: {e}')
         self.current_battles.clear()
         return {'battles_completed': len(results), 'results': results,
@@ -370,7 +368,7 @@ class TradingModelArena:
             model_info = self.models[model_name]
             return self._get_instance_predictions(model_info['instance'],
                 test_data)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f'[ARENA] Failed to get predictions from {model_name}: {e}')
             return np.zeros(len(test_data))
@@ -411,7 +409,7 @@ class TradingModelArena:
                 recall=accuracy, f1_score=accuracy, sharpe_ratio=
                 sharpe_ratio, max_drawdown=0.0, win_rate=accuracy,
                 execution_time=0.1, confidence_score=0.7, mse=mse)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'[ARENA] Failed to calculate metrics: {e}')
             return BattleMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0)
 
@@ -467,7 +465,7 @@ class TradingModelArena:
             with open(filepath, 'w') as f:
                 json.dump({'models': serializable}, f, indent=2, default=str)
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'[ARENA] Failed to save arena state: {e}')
             return False
@@ -478,7 +476,7 @@ class TradingModelArena:
                 state = json.load(f)
             self.models = state.get('models', {})
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'[ARENA] Failed to load arena state: {e}')
             return False

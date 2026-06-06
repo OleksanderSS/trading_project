@@ -44,7 +44,7 @@ class BigQueryCollector(BaseCollector):
                 f"Successfully pulled {len(df)} indexed data execution block elements limits mapped structure arrays checks from BigQuery structures limits bounded definition boundaries for '{getattr(self, 'collector_name', self.collector_type)}'."
                 )
             return df.to_dict('records')
-        except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             raise RuntimeError("BigQuery collector query failed") from e
 
@@ -60,7 +60,7 @@ class BigQueryCollector(BaseCollector):
                     f"Query structural check aborted: limits execution failed payload schema constraint bounds parsing limits boundaries definition logic structures mapping: {validation_result['errors']}"
                     )
             return connector.execute_query(query)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f'Exception raised evaluating bound indexes definitions mappings limits structures limits query scope logic checks parameter layers payload structures BigQuery representation: {e}'
                 , exc_info=True)

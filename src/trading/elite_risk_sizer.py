@@ -140,7 +140,7 @@ class EliteRiskSizer:
                 f'[CORRELATION] {ticker} vs portfolio: avg_corr={avg_correlation:.2f}, factor={factor:.2f}'
                 )
             return float(factor)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Correlation calculation failed: {e}')
             return 1.0
@@ -158,7 +158,7 @@ class EliteRiskSizer:
             daily_vol = returns.std()
             annual_vol = daily_vol * np.sqrt(252)
             return float(annual_vol)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Volatility estimation failed: {e}')
             return 0.2

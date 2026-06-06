@@ -89,7 +89,7 @@ class AdaptiveConfidenceCalibrator:
             else:
                 isotonic_pred = platt_pred
             return np.clip(isotonic_pred, 0.01, 0.99)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
                 f'Calibration failed: {e}. Returning raw confidence.')
@@ -129,7 +129,7 @@ class AdaptiveConfidenceCalibrator:
                 if self.distribution_shift_detected or len(self.
                     calibration_history) % 200 == 0:
                     self._retrain_models()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Update failed: {e}')
             raise
@@ -194,7 +194,7 @@ class AdaptiveConfidenceCalibrator:
             self.logger.info(
                 f'📊 Calibration metrics - MAE: {self.mae:.4f}, ECE: {self.expected_calibration_error:.4f}'
                 )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Retraining process failed: {e}')
 
     def _prepare_calibration_data(self) ->(tuple | None):
@@ -217,7 +217,7 @@ class AdaptiveConfidenceCalibrator:
             self.platt_model.fit(x_platt, outcomes, sample_weight=weights)
             self.is_platt_calibrated = True
             self.logger.info('Platt scaling retrained')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Platt training failed: {e}')
             raise
@@ -232,7 +232,7 @@ class AdaptiveConfidenceCalibrator:
                 sample_indices])
             self.is_isotonic_calibrated = True
             self.logger.info('✅ Isotonic regression retrained')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Isotonic training failed: {e}')
             raise
@@ -263,7 +263,7 @@ class AdaptiveConfidenceCalibrator:
                         len(calibrated)) if len(calibrated) > 0 else 0.0
             self.expected_calibration_error = ece
             self.current_accuracy = outcomes.mean()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Metric computation failed: {e}')
             raise
@@ -283,7 +283,7 @@ class AdaptiveConfidenceCalibrator:
             import joblib
             joblib.dump(data, filepath)
             self.logger.info(f'✅ Calibrator saved to {filepath}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Save failed: {e}')
 
     def load(self, filepath):
@@ -307,7 +307,7 @@ class AdaptiveConfidenceCalibrator:
             self.last_retrain_time = data.get('last_retrain_time')
             self.logger.info(f'✅ Calibrator loaded from {filepath}')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Load failed: {e}')
             return False
@@ -336,7 +336,7 @@ class AdaptiveConfidenceCalibrator:
                         weights[mask])
                     self.simple_calibration_map[bin_idx] = bin_accuracy
             self.logger.info('✅ Simple binning calibration trained')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Simple training failed: {e}')
             raise

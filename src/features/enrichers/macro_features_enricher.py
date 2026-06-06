@@ -1,9 +1,9 @@
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-import pandas_datareader.data as web
 
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
@@ -79,38 +79,65 @@ class MacroFeaturesEnricher(BaseEnricher):
                         f'MacroFeaturesEnricher: filtering for ticker {test_ticker}'
                         )
                     df = df[df['ticker'] == test_ticker]
-            except Exception as e:
-                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(
                         f'Could not load runtime params for test ticker filtering: {e}'
                         )
-                raise
+                return df
         return df
 
-    def _prepare_macro_data(self, **kwargs) ->pd.DataFrame:
+    def _prepare_macro_data(self, df: pd.DataFrame, **kwargs) ->pd.DataFrame:
         """Prepare macro data from Stage 1 or load from FRED API."""
         macro_data = kwargs.get('macro_data')
-        if macro_data is not None and isinstance(macro_data, pd.DataFrame
-            ) and not macro_data.empty:
-            logger.info(
-                f'Using macro_data from Stage 1 ({len(macro_data)} rows)')
-            return self._pivot_macro_data(macro_data)
+        if macro_data is not None and isinstance(macro_data, pd.DataFrame) and not macro_data.empty:
+            logger.info(f'Using macro_data from Stage 1 ({len(macro_data)} rows in long format)')
+            # ✅ FIX: Stage 1 gives only NEW records (delta), so pivot and return as-is for merging
+            # But we also need to rebuild cache from full DB history
+            pivoted = self._pivot_macro_data(macro_data)
+            if not pivoted.empty:
+                # Try to load full history from cache and merge with new data
+                full_cache = self._load_full_macro_from_cache()
+                if not full_cache.empty:
+                    merged = pd.concat([full_cache, pivoted]).sort_index()
+                    merged = merged[~merged.index.duplicated(keep='last')]
+                    # Save updated cache
+                    try:
+                        merged.to_parquet(self.cache_path)
+                        logger.info(f'Updated macro cache with {len(pivoted)} new rows → {len(merged)} total')
+                    except Exception as e:
+                        logger.error(f'Failed to save macro cache: {e}')
+                    return merged
+                return pivoted
+        # Fallback to FRED API or cache
+        logger.info('No macro_data in kwargs, loading from FRED API or cache...')
+        if isinstance(df.index, pd.DatetimeIndex):
+            start_date = df.index.min()
+            end_date = df.index.max()
+        elif 'datetime' in df.columns:
+            start_date = pd.to_datetime(df['datetime']).min()
+            end_date = pd.to_datetime(df['datetime']).max()
         else:
-            logger.info('No macro_data in kwargs, loading from FRED API...')
-            if isinstance(self.df.index, pd.DatetimeIndex):
-                start_date = self.df.index.min()
-                end_date = self.df.index.max()
-            elif 'datetime' in self.df.columns:
-                start_date = pd.to_datetime(self.df['datetime']).min()
-                end_date = pd.to_datetime(self.df['datetime']).max()
-            else:
-                logger.warning(
-                    'No datetime index or column found, using default date range'
-                    )
-                start_date = pd.Timestamp('2020-01-01')
-                end_date = pd.Timestamp.now()
-            return self._load_macro_data(start_date, end_date)
+            logger.warning('No datetime index or column found, using default date range')
+            start_date = pd.Timestamp('2020-01-01')
+            end_date = pd.Timestamp.now()
+        # ✅ Strip timezone
+        if hasattr(start_date, 'tzinfo') and start_date.tzinfo is not None:
+            start_date = start_date.tz_localize(None)
+        if hasattr(end_date, 'tzinfo') and end_date.tzinfo is not None:
+            end_date = end_date.tz_localize(None)
+        return self._load_macro_data(start_date, end_date)
+
+    def _load_full_macro_from_cache(self) -> pd.DataFrame:
+        """Load all macro data from cache regardless of date range."""
+        if self.cache_path.exists():
+            try:
+                cached = pd.read_parquet(self.cache_path)
+                if not cached.empty:
+                    return cached
+            except Exception as e:
+                logger.warning(f'Failed to load macro cache: {e}')
+        return pd.DataFrame()
 
     def _pivot_macro_data(self, macro_data: pd.DataFrame) ->pd.DataFrame:
         """Pivot macro data from long to wide format."""
@@ -161,12 +188,11 @@ class MacroFeaturesEnricher(BaseEnricher):
         logger.info(
             f'MacroFeaturesEnricher processing {len(df)} records ({unique_dates} unique dates) from {start_date} to {end_date}'
             )
-        macro_data = self._prepare_macro_data(**kwargs)
+        macro_data = self._prepare_macro_data(df, **kwargs)
         if macro_data.empty:
             logger.warning('Could not load macro data. Skipping enrichment.')
             return df
         return self._merge_macro_data(df, macro_data)
-
     def _prepare_macro_index(self, macro_data: pd.DataFrame) ->pd.DataFrame:
         """Prepare macro data index for merging."""
         if not isinstance(macro_data.index, pd.DatetimeIndex):
@@ -283,48 +309,178 @@ class MacroFeaturesEnricher(BaseEnricher):
             f'Macro features successfully added. Final shape: {df.shape}')
         return df
 
-    def _load_macro_data(self, start_date: datetime, end_date: datetime
-        ) ->pd.DataFrame:
+    def _create_fred_session(self):
+        """Create FRED API session with retry logic and timeout."""
+        import requests
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+
+        session = requests.Session()
+        retry = Retry(total=1, backoff_factor=0.5,
+                      status_forcelist=[429, 500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount('https://', adapter)
+        session.mount('http://', adapter)
+
+        # Override request() to enforce 45s timeout per series
+        _orig_request = session.request
+        def _request_with_timeout(method, url, **kwargs):
+            kwargs.setdefault('timeout', 45)
+            return _orig_request(method, url, **kwargs)
+        session.request = _request_with_timeout
+
+        return session
+
+    def _load_fred_series(self, series_ids, series_names, start_date_str, end_date_str, session):
+        """Load FRED series using fast JSON API endpoint (much faster than CSV/DataReader)."""
+        api_key = os.getenv('FRED_API_KEY')
+        collected = {}
+        for sid, sname in zip(series_ids, series_names, strict=True):
+            url = (f'https://api.stlouisfed.org/fred/series/observations'
+                   f'?series_id={sid}&api_key={api_key}&file_type=json'
+                   f'&observation_start={start_date_str}&observation_end={end_date_str}')
+            try:
+                resp = session.get(url)
+                resp.raise_for_status()
+                obs = resp.json().get('observations', [])
+                valid = [(o['date'], float(o['value'])) for o in obs if o['value'] != '.']
+                if valid:
+                    dates, values = zip(*valid, strict=True)
+                    collected[sname] = pd.Series(values, index=pd.to_datetime(dates), name=sname)
+                    logger.debug(f'FRED: {sname} ({sid}): {len(valid)} rows')
+                else:
+                    logger.debug(f'FRED: {sname} ({sid}): no valid data')
+            except Exception as series_err:
+                logger.warning(f'FRED: failed {sname} ({sid}): {series_err}')
+        return collected
+
+    def _try_load_cache_fallback(self):
+        """Try to load cached data as fallback."""
+        if self.cache_path.exists():
+            try:
+                cached = pd.read_parquet(self.cache_path)
+                if not cached.empty:
+                    logger.info(f'Using cached macro data as fallback ({len(cached)} rows).')
+                    return cached
+            except Exception as e:
+                logger.warning(f'Failed to load macro cache: {e}')
+        return pd.DataFrame()
+
+    def _normalize_date_range(self, start_date, end_date):
+        """Normalize date range to strings."""
+        start_date_str = start_date.strftime('%Y-%m-%d') if hasattr(start_date, 'strftime') else str(start_date)
+        end_date_str = end_date.strftime('%Y-%m-%d') if hasattr(end_date, 'strftime') else str(end_date)
+        return start_date_str, end_date_str
+
+    def _strip_timezone_from_index(self, df):
+        """Strip timezone from DataFrame index."""
+        if hasattr(df.index, 'tz') and df.index.tz is not None:
+            df.index = df.index.tz_localize(None)
+        return df
+
+    def _load_macro_data(self, start_date: datetime, end_date: datetime) ->pd.DataFrame:
         if self._is_cache_valid(start_date, end_date):
             logger.info(f'Loading macro data from cache: {self.cache_path}')
             return pd.read_parquet(self.cache_path)
+
         logger.info('Cache not found or outdated. Loading data from FRED...')
         series_ids = list(self.config.values())
         series_names = list(self.config.keys())
-        try:
-            start_date_str = start_date.strftime('%Y-%m-%d') if hasattr(
-                start_date, 'strftime') else str(start_date)
-            end_date_str = end_date.strftime('%Y-%m-%d') if hasattr(end_date,
-                'strftime') else str(end_date)
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(
-                    f'Loading FRED data from {start_date_str} to {end_date_str}')
-            fred_data = web.DataReader(series_ids, 'fred', start_date_str,
-                end_date_str)
-            fred_data.columns = series_names
-            fred_data.to_parquet(self.cache_path)
-            logger.info(f'Macro data saved to cache: {self.cache_path}')
-            return fred_data
-        except Exception as e:
-            logger.error(f'Error loading data from FRED: {e}', exc_info=True)
-            return pd.DataFrame()
 
-    def _is_cache_valid(self, start_date: datetime, end_date: datetime) ->bool:
+        try:
+            start_date_str, end_date_str = self._normalize_date_range(start_date, end_date)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'Loading FRED data from {start_date_str} to {end_date_str}')
+
+            session = self._create_fred_session()
+            collected = self._load_fred_series(series_ids, series_names, start_date_str, end_date_str, session)
+
+            if not collected:
+                logger.warning('FRED API: no series loaded.')
+                if self.cache_path.exists():
+                    cached = pd.read_parquet(self.cache_path)
+                    if not cached.empty:
+                        logger.info('Using stale cache as fallback.')
+                        return cached
+                return pd.DataFrame()
+
+            fred_data = pd.DataFrame(collected)
+            fred_data = self._strip_timezone_from_index(fred_data)
+            fred_data.to_parquet(self.cache_path)
+            logger.info(f'Macro data saved to cache: {self.cache_path} ({len(fred_data)} rows, {len(fred_data.columns)} cols)')
+            return fred_data
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.error(f'Error loading data from FRED: {e}')
+            return self._try_load_cache_fallback()
+
+    def _strip_timezone_from_date(self, date):
+        """Strip timezone from date if present."""
+        if hasattr(date, 'tzinfo') and date.tzinfo is not None:
+            return date.replace(tzinfo=None)
+        return date
+
+    def _check_cache_full_coverage(self, cache_min, cache_max, start_date, end_date):
+        """Check if cache fully covers the required date range."""
+        cache_min = pd.Timestamp(cache_min)
+        cache_max = pd.Timestamp(cache_max)
+        start_date = pd.Timestamp(start_date)
+        end_date = pd.Timestamp(end_date)
+
+        if cache_min <= start_date and cache_max >= end_date:
+            logger.info('Cache fully covers the required date range.')
+            return True
+        return False
+
+    def _check_cache_partial_coverage(self, cache_max, end_date, cache_min, start_date):
+        """Check if cache partially covers the date range with age constraints."""
+        cache_age_days = (pd.Timestamp.now() - cache_max).days
+        same_month = (cache_max.year == end_date.year and cache_max.month == end_date.month)
+        recent_enough = cache_age_days <= 8  # 7 days + 1 buffer
+
+        if same_month and recent_enough and cache_min <= start_date:
+            logger.info(f'Cache covers same month (age={cache_age_days}d). Using cached FRED data.')
+            return True
+
+        # Also valid if cache covers previous month and current month has no new FRED releases yet
+        prev_month_ok = (cache_age_days <= 35 and cache_min <= start_date)
+        if prev_month_ok:
+            logger.info(f'Using FRED cache (age={cache_age_days}d, max={cache_max.date()}) as valid fallback.')
+            return True
+
+        return False
+
+    def _is_cache_valid(self, start_date: datetime, end_date: datetime) -> bool:
         if not self.cache_path.exists():
             return False
         try:
             cached_df = pd.read_parquet(self.cache_path)
-            if cached_df.index.min() <= start_date and cached_df.index.max(
-                ) >= end_date:
-                logger.info('Cache fully covers the required date range.')
-                return True
-            else:
-                logger.info(
-                    'Date range in cache is insufficient. Refresh required.')
+
+            if cached_df.empty:
+                logger.warning("Cache exists but is empty. Refresh required.")
                 return False
-        except Exception as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            logger.info(
-                f'Error reading cache file {self.cache_path}: {e}. A reload will be performed.'
-                )
+
+            cache_min = cached_df.index.min()
+            cache_max = cached_df.index.max()
+
+            # Strip timezone from cache index if present
+            cache_min = self._strip_timezone_from_date(cache_min)
+            cache_max = self._strip_timezone_from_date(cache_max)
+
+            # Strip timezone from comparison dates if present
+            start_date = self._strip_timezone_from_date(start_date)
+            end_date = self._strip_timezone_from_date(end_date)
+
+            # Check full coverage first
+            if self._check_cache_full_coverage(cache_min, cache_max, start_date, end_date):
+                return True
+
+            # Check partial coverage with age constraints
+            if self._check_cache_partial_coverage(cache_max, end_date, cache_min, start_date):
+                return True
+
+            logger.info(f'Cache stale (age={(pd.Timestamp.now() - cache_max).days}d, max={cache_max.date()}). Refresh required.')
+            return False
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.info(f'Error reading cache file {self.cache_path}: {e}. A reload will be performed.')
             return False

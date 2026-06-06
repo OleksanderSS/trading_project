@@ -32,7 +32,7 @@ class TradingCalendar:
         try:
             return set(holidays.CountryHoliday(self.country, years=range(
                 self.start_year, self.end_year + 1), observed=True))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Could not fetch holidays for country '{self.country}'. Defaulting to empty set. Error: {e}"
                 , exc_info=True)
@@ -51,7 +51,7 @@ class TradingCalendar:
         try:
             dt = pd.to_datetime(day).normalize()
             return dt in self.trading_days
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Could not parse date {day}: {e}')
             return False
 
@@ -76,7 +76,7 @@ class TradingCalendar:
                 logger.warning(
                     f'Date {dt} is before the start of the calendar.')
                 return []
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error finding location for {dt}: {e}')
             raise RuntimeError(f"Failed to find previous trading days for {dt}") from e
         if loc >= 0 and self.trading_days[loc] >= dt:
@@ -110,7 +110,7 @@ class TradingCalendar:
                 if earnings is not None and not earnings.empty:
                     dates = pd.to_datetime(earnings.index).normalize().date
                     all_earnings.update(dates)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(
                     f"Failed to fetch earnings for ticker '{ticker_str}': {e}")
         self.earnings_dates.update(all_earnings)
@@ -123,6 +123,6 @@ class TradingCalendar:
         try:
             dt = pd.to_datetime(day).normalize().date()
             return dt in self.earnings_dates
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Помилка перевірки дати звітності {day}: {e}', exc_info=True)
             return False

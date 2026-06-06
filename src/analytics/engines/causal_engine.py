@@ -45,7 +45,7 @@ class CausalEngine:
             )
             logger.info("Causal model created successfully.")
             return model
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error creating CausalModel: {e}", exc_info=True)
             raise DataProcessingError(f"Error creating CausalModel: {e}") from e
 
@@ -83,7 +83,7 @@ class CausalEngine:
             effect_value = estimate.value
             logger.info(f"Causal effect estimated using {method_name}: {effect_value}")
             return float(effect_value) if not np.isnan(effect_value) else 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during causal effect estimation: {e}", exc_info=True)
             raise DataProcessingError(f"Error during causal effect estimation: {e}") from e
 
@@ -104,7 +104,7 @@ class CausalEngine:
             res_random = self._model.refute_estimate(self.identified_estimand, self._model.latest_estimate, method_name="random_common_cause")
             refutation_results['random_common_cause'] = str(res_random)
             logger.info(f"Refutation (Random Common Cause): {res_random.new_effect} (p-value: {res_random.p_value})")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Could not run random_common_cause refutation: {e}", exc_info=True)
             raise DataProcessingError(f"Could not run random_common_cause refutation: {e}") from e
 
@@ -113,7 +113,7 @@ class CausalEngine:
             res_subset = self._model.refute_estimate(self.identified_estimand, self._model.latest_estimate, method_name="data_subset_refuter", subset_fraction=0.8)
             refutation_results['data_subset_refuter'] = str(res_subset)
             logger.info(f"Refutation (Data Subset): {res_subset.new_effect} (p-value: {res_subset.p_value})")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Could not run data_subset_refuter refutation: {e}", exc_info=True)
             raise DataProcessingError(f"Could not run data_subset_refuter refutation: {e}") from e
 

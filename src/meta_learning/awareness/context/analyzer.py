@@ -16,28 +16,35 @@ class ContextAnalyzer:
 
     def detect_market_regime(self, events: list[MarketEvent]) -> MarketRegime:
         """Detect current market regime based on event sentiment and type."""
-        if not events: return MarketRegime.SIDEWAYS
+        if not events:
+            return MarketRegime.SIDEWAYS
 
         avg_sentiment = np.mean([e.sentiment_score for e in events])
-        if avg_sentiment > 0.4: return MarketRegime.BULL_MARKET
-        if avg_sentiment < -0.4: return MarketRegime.BEAR_MARKET
+        if avg_sentiment > 0.4:
+            return MarketRegime.BULL_MARKET
+        if avg_sentiment < -0.4:
+            return MarketRegime.BEAR_MARKET
 
         # Check for volatility
         high_impact_count = sum(1 for e in events if e.impact_level in [EventImpact.HIGH, EventImpact.CRITICAL])
-        if high_impact_count > 3: return MarketRegime.VOLATILE
+        if high_impact_count > 3:
+            return MarketRegime.VOLATILE
 
         return MarketRegime.SIDEWAYS
 
     def detect_volatility_regime(self, events: list[MarketEvent]) -> str:
         """Simple volatility regime detection."""
         high_impact = [e for e in events if e.impact_level in [EventImpact.HIGH, EventImpact.CRITICAL]]
-        if len(high_impact) > 5: return 'extreme'
-        if len(high_impact) > 2: return 'elevated'
+        if len(high_impact) > 5:
+            return 'extreme'
+        if len(high_impact) > 2:
+            return 'elevated'
         return 'normal'
 
     def calculate_sentiment_index(self, events: list[MarketEvent]) -> float:
         """Aggregate sentiment from multiple events."""
-        if not events: return 0.5 # Neutral
+        if not events:
+            return 0.5 # Neutral
         return float(np.mean([e.sentiment_score for e in events]))
 
     def get_memory_insight(self, current_pattern_id: str | None) -> str:

@@ -58,7 +58,7 @@ class DecayModelFitter:
                     predicted_impact = decay_function_with_params(params, X.flatten())
                     mse = mean_squared_error(y, predicted_impact)
                     return mse
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Error in objective function: {e}', exc_info=True)
                     return float('inf')
 
@@ -90,7 +90,7 @@ class DecayModelFitter:
             }
 
             return model_info
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error fitting decay function {function_name}: {e}', exc_info=True)
             return {'function_name': function_name, 'error': str(e)}
 

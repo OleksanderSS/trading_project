@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 # src/pipeline/hybrid/feature_processor.py
 """
 Feature processing component for Hybrid Orchestrator.

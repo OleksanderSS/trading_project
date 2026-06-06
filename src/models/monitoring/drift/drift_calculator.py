@@ -196,7 +196,7 @@ class DriftCalculator:
 
             return metrics
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating performance metrics: {e}")
             raise RuntimeError("Failed to calculate performance metrics") from e
 
@@ -258,7 +258,7 @@ class DriftCalculator:
 
             return trend_analysis
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing performance trend: {e}")
             return {'status': 'error', 'error': str(e)}
 
@@ -283,7 +283,7 @@ class DriftCalculator:
 
             return stats_dict
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating confidence stats: {e}")
             raise RuntimeError("Failed to calculate confidence statistics") from e
 
@@ -333,7 +333,7 @@ class DriftCalculator:
 
             return result
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating confidence drift: {e}")
             return {
                 'status': 'error',
@@ -360,7 +360,7 @@ class DriftCalculator:
                 return np.mean(drift_scores)
             return 0.0
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating overall drift score: {e}")
             return 0.0
 

@@ -19,6 +19,10 @@ class ClassificationCalculator:
             logger.error(f"Base column '{base_col}' not found.")
             raise ValueError(f"Base column '{base_col}' not found.")
 
+        if shift >= 0:
+            logger.error(f"Shift must be negative for future targets. Got shift={shift}.")
+            raise ValueError(f"Shift must be negative for future targets. Got shift={shift}.")
+
         future_price = df[base_col].shift(shift)
         returns = (future_price - df[base_col]) / df[base_col]
 
@@ -36,6 +40,10 @@ class ClassificationCalculator:
         if base_col not in df.columns:
             logger.error(f"Base column '{base_col}' not found.")
             raise ValueError(f"Base column '{base_col}' not found.")
+
+        if shift >= 0:
+            logger.error(f"Shift must be negative for future targets. Got shift={shift}.")
+            raise ValueError(f"Shift must be negative for future targets. Got shift={shift}.")
 
         future_price = df[base_col].shift(shift)
         returns = (future_price - df[base_col]) / df[base_col]

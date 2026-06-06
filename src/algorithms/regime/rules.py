@@ -40,7 +40,7 @@ class RegimeRulesEngine:
                 return brk
             return self._detect_standard_regimes(metrics.adx, metrics.
                 volatility, metrics.mean_return)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             if not hasattr(self, 'logger'):
                 self.logger = ProjectLogger.get_logger('RegimeRulesEngine')
             self.logger.error('Rule-based detection failed', exc_info=True)
@@ -105,7 +105,7 @@ class RegimeRulesEngine:
             prices = np.cumprod(1 + returns)
             p_value = adfuller(prices, maxlag=10)[1]
             return bool(p_value < 0.05)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             if not hasattr(self, 'logger'):
                 self.logger = ProjectLogger.get_logger('RegimeRulesEngine')
             self.logger.error(f'Error calculating mean reversion stats: {e}',

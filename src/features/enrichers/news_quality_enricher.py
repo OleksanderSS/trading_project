@@ -60,9 +60,11 @@ class NewsQualityEnricher(BaseEnricher):
         try:
             news_copy = self._prepare_news_data(news_df, time_col)
             aggregated = self._calculate_quality_metrics(news_copy)
-            return self._merge_with_main_dataframe(df, aggregated, news_copy.index.to_series())
+            # ✅ FIX: pass the actual time column, not index (which may be RangeIndex)
+            news_timestamps = pd.to_datetime(news_copy[time_col], errors='coerce')
+            return self._merge_with_main_dataframe(df, aggregated, news_timestamps)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during news quality enrichment: {e}", exc_info=True)
             return df
 
@@ -84,7 +86,8 @@ class NewsQualityEnricher(BaseEnricher):
         # Normalize timezone and convert to datetime64[ns]
         news_copy[time_col] = pd.to_datetime(news_copy[time_col], errors='coerce', utc=True)
         if news_copy[time_col].dt.tz is not None:
-            news_copy[time_col] = news_copy[time_col].dt.tz_localize(None)
+            # ✅ FIX: use tz_convert(None) instead of tz_localize(None) to strip UTC tz
+            news_copy[time_col] = news_copy[time_col].dt.tz_convert(None)
         news_copy[time_col] = news_copy[time_col].astype(DATETIME64_NS)
         news_copy = news_copy.dropna(subset=[time_col])
 
@@ -112,8 +115,14 @@ class NewsQualityEnricher(BaseEnricher):
         logger.info(f"Calculating news quality metrics for {len(news_copy)} news items...")
 
         # Set time column as index and aggregate by hour
-        time_col = news_copy.index.name or news_copy.index.names[0]
-        news_copy = news_copy.set_index(time_col)
+        # ✅ FIX: index.name is None for RangeIndex — use the time column directly
+        if not isinstance(news_copy.index, pd.DatetimeIndex):
+            # Find a datetime column and set it as index
+            for col in ['published_date', 'published_at', 'datetime', 'timestamp', 'date']:
+                if col in news_copy.columns:
+                    news_copy = news_copy.set_index(col)
+                    break
+        # If already DatetimeIndex, use it directly; otherwise resample will fail gracefully
 
         aggregated = news_copy.resample('1h').agg({
             'text_completeness': 'mean',
@@ -139,15 +148,22 @@ class NewsQualityEnricher(BaseEnricher):
                 logger.error("Cannot merge: df has no DatetimeIndex or 'datetime' column")
                 return df
 
-        # Normalize timezones
+        # Normalize timezones — use tz_convert(None) for tz-aware, not tz_localize
         if df_enriched.index.tz is not None:
-            df_enriched.index = df_enriched.index.tz_localize(None)
+            df_enriched.index = df_enriched.index.tz_convert(None)
         if aggregated.index.tz is not None:
-            aggregated.index = aggregated.index.tz_localize(None)
+            aggregated.index = aggregated.index.tz_convert(None)
 
         # Prepare dataframes for merge_asof
         df_reset = self._normalize_datetime_column(df_enriched.reset_index())
-        aggregated_reset = self._normalize_datetime_column(aggregated.reset_index(), 'index')
+        
+        # ✅ FIX: after reset_index(), the index column may be named differently
+        agg_reset = aggregated.reset_index()
+        # Rename the first column (which was the index) to 'datetime' if needed
+        if 'datetime' not in agg_reset.columns:
+            first_col = agg_reset.columns[0]
+            agg_reset = agg_reset.rename(columns={first_col: 'datetime'})
+        aggregated_reset = self._normalize_datetime_column(agg_reset)
 
         # Merge using merge_asof
         df_merged = pd.merge_asof(
@@ -185,7 +201,8 @@ class NewsQualityEnricher(BaseEnricher):
 
             if pd.api.types.is_datetime64_any_dtype(df['datetime']):
                 if hasattr(df['datetime'].dtype, 'tz') and df['datetime'].dt.tz is not None:
-                    df['datetime'] = df['datetime'].dt.tz_localize(None)
+                    # ✅ FIX: tz_convert strips existing tz, tz_localize would raise if already tz-aware
+                    df['datetime'] = df['datetime'].dt.tz_convert(None)
                 # Convert to ns precision
                 if df['datetime'].dtype != DATETIME64_NS:
                     df['datetime'] = df['datetime'].astype(DATETIME64_NS)
@@ -196,15 +213,21 @@ class NewsQualityEnricher(BaseEnricher):
         """Розраховує freshness (години з останньої новини) для кожного рядка."""
         freshness = []
 
-        # Normalize timezone для news_timestamps
-        if news_timestamps.dt.tz is not None:
-            news_timestamps = news_timestamps.dt.tz_localize(None)
+        # ✅ FIX: ensure news_timestamps is datetime dtype before using .dt accessor
+        try:
+            if not pd.api.types.is_datetime64_any_dtype(news_timestamps):
+                news_timestamps = pd.to_datetime(news_timestamps, errors='coerce')
+            # Normalize timezone
+            if hasattr(news_timestamps, 'dt') and hasattr(news_timestamps.dt, 'tz') and news_timestamps.dt.tz is not None:
+                news_timestamps = news_timestamps.dt.tz_convert(None)
+        except Exception:
+            news_timestamps = pd.to_datetime(news_timestamps, errors='coerce')
 
         for idx in df_index:
             # Normalize timezone для idx якщо потрібно
             idx_normalized = idx
             if hasattr(idx, 'tz') and idx.tz is not None:
-                idx_normalized = idx.tz_localize(None)
+                idx_normalized = idx.tz_convert(None)
 
             # Find most recent news before this timestamp
             recent_news = news_timestamps[news_timestamps <= idx_normalized]

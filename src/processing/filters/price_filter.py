@@ -66,7 +66,8 @@ class PriceFilter:
     def assess_price_quality(self, price_data: pd.DataFrame) -> dict[str, float]:
         """Assess quality of price data based on completeness and consistency."""
         total_rows = len(price_data)
-        if total_rows == 0: return {'overall_score': 0.0}
+        if total_rows == 0:
+            return {'overall_score': 0.0}
 
         # Completeness (non-null values)
         null_counts = price_data.isnull().sum().sum()
@@ -105,13 +106,15 @@ class PriceFilter:
 
     def detect_and_classify_anomalies(self, price_data: pd.DataFrame) -> list[dict]:
         """Detect and classify price anomalies."""
-        if 'close' not in price_data.columns: return []
+        if 'close' not in price_data.columns:
+            return []
 
         prices = price_data['close']
         mean = prices.mean()
         std = prices.std()
 
-        if std == 0: return []
+        if std == 0:
+            return []
 
         anomalies = []
         z_scores = (prices - mean) / std

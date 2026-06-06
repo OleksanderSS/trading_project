@@ -12,6 +12,8 @@ class BaseIntegration(ABC):
     """
 
     def __init__(self):
+        from src.core.logging.logger import ProjectLogger
+        self.logger = ProjectLogger.get_logger(self.__class__.__name__)
         self.error_handler = get_error_handler()
 
     def fetch_with_retry(self, func, *args, **kwargs):
@@ -33,7 +35,7 @@ class BaseIntegration(ABC):
         error = None
         try:
             is_alive = self.ping()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Виникла помилка: {e}", exc_info=True)
             error = str(e)
             raise

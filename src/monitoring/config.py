@@ -33,7 +33,7 @@ class MonitoringConfig:
             else:
                 self.config = self._get_default_config()
                 self.save_config()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
                 f'Could not load config file {self.config_file}: {e}')
@@ -50,7 +50,7 @@ class MonitoringConfig:
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(self.config, f, default_flow_style=False,
                     allow_unicode=True)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error saving config: {e}')
 
     def _apply_environment_variables(self):

@@ -61,7 +61,7 @@ class TransformerModel(BaseModel):
             logger.info("OK Created fallback RandomForest model")
             return True
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to create fallback model: {e}")
             return False
 
@@ -112,7 +112,7 @@ class TransformerModel(BaseModel):
                     f"OK Transformer model trained "
                     f"(classification: {self.classification})"
                 )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Transformer training failed: {e}")
             # Fallback to simple model
             try:
@@ -236,7 +236,7 @@ class TransformerModel(BaseModel):
             else:
                 return self._predict_fallback(X)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Transformer prediction failed: {e}")
             # Fallback
             try:
@@ -345,7 +345,7 @@ def train_transformer_model(
         logger.info(f"OK Transformer trained for {ticker} {timeframe}")
         return model
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Error training Transformer {ticker} {timeframe}: {e}")
         raise RuntimeError(
             f"Failed to train Transformer model for {ticker} {timeframe}"

@@ -139,7 +139,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 f'Returns calculated: {len(returns)} observations, {len(returns.columns)} assets'
                 )
             return returns
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             # Preserve fallback behavior but avoid silent failures.
             self.logger.error(f'Error calculating returns: {e}', exc_info=True)
             return pd.DataFrame()
@@ -163,7 +163,7 @@ class PortfolioOptimizer(BaseOptimizer):
             cov_matrix = self._ensure_positive_definite(cov_matrix)
             self.logger.info(f'Covariance matrix calculated: method={method}')
             return cov_matrix
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'Error calculating covariance matrix: {e}', exc_info=True)
             return returns.cov()
@@ -277,7 +277,7 @@ class PortfolioOptimizer(BaseOptimizer):
             weights = pd.Series(kelly_f / n_assets, index=tickers)
             return {'weights': weights, 'kelly_fraction': kelly_f, 'method':
                 'kelly', 'success': True}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error in Kelly optimization: {e}',
                 exc_info=True)
             return {'success': False, 'error': str(e)}
@@ -326,7 +326,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 res['posterior_returns'] = pd.Series(posterior_returns,
                     index=mu.index)
             return res
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'Error in Black-Litterman optimization: {e}', exc_info=True)
             return {'success': False, 'error': str(e)}
@@ -370,7 +370,7 @@ class PortfolioOptimizer(BaseOptimizer):
                     'sharpe_ratio': sharpe_ratio,
                     'method': 'risk_parity', 'success': True}
             return {'success': False, 'error': result.message}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error in Risk Parity optimization: {e}',
                 exc_info=True)
             return {'success': False, 'error': str(e)}
@@ -394,7 +394,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 portfolio_return, 'volatility': portfolio_volatility,
                 'sharpe_ratio': sharpe_ratio,
                 'method': 'hrp', 'success': True}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error in HRP optimization: {e}', exc_info=True)
             return {'success': False, 'error': str(e)}
 
@@ -415,7 +415,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 portfolio_volatility, 'sharpe_ratio': sharpe_ratio,
                 'method': 'equal_weight', 'success': True
                 }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error in equal weight portfolio: {e}',
                 exc_info=True)
             return {'success': False, 'error': str(e)}
@@ -445,7 +445,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 portfolio_volatility, 'sharpe_ratio': sharpe_ratio,
                 'method': 'inverse_volatility',
                 'success': True}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'Error in inverse volatility portfolio: {e}', exc_info=True)
             return {'success': False, 'error': str(e)}
@@ -462,7 +462,7 @@ class PortfolioOptimizer(BaseOptimizer):
                 results[method] = result
             comparison = self._create_comparison_table(results)
             return {'results': results, 'comparison': comparison}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error comparing optimization methods: {e}',
                 exc_info=True)
             return {'success': False, 'error': str(e), 'results': {},
@@ -479,7 +479,7 @@ class PortfolioOptimizer(BaseOptimizer):
             np.fill_diagonal(cov_matrix_fixed.values, np.diag(
                 cov_matrix_fixed.values) + noise)
             return cov_matrix_fixed
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error ensuring positive definiteness: {e}')
             return cov_matrix
 

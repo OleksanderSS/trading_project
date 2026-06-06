@@ -66,6 +66,34 @@ class IntegratedModelManager:
 
         self.logger.info("✅ IntegratedModelManager initialized with modular components")
 
+    async def _perform_baseline_analysis(self, model: Any, X_train: pd.DataFrame, y_train: pd.Series,
+                                        X_val: pd.DataFrame | None, y_val: pd.Series | None) -> dict[str, Any]:
+        """Perform baseline dominance analysis."""
+        self.logger.info("📊 Performing baseline dominance analysis...")
+        return await self.model_analyzer.perform_baseline_analysis(model, X_train, y_train, X_val, y_val)
+
+    async def _perform_regime_analysis(self, model: Any, market_data: pd.DataFrame | None,
+                                       X_train: pd.DataFrame, y_train: pd.Series) -> dict[str, Any]:
+        """Perform regime consistency analysis if market data available."""
+        if market_data is not None:
+            self.logger.info("📈 Performing regime consistency analysis...")
+            return await self.model_analyzer.perform_regime_analysis(model, market_data, X_train, y_train)
+        return {'status': 'no_market_data'}
+
+    async def _perform_overfitting_analysis(self, model: Any, X_train: pd.DataFrame, y_train: pd.Series,
+                                            X_val: pd.DataFrame | None, y_val: pd.Series | None) -> dict[str, Any]:
+        """Perform overfitting detection."""
+        self.logger.info("🔍 Performing overfitting detection...")
+        return await self.model_analyzer.perform_overfitting_analysis(model, X_train, y_train, X_val, y_val)
+
+    async def _perform_drift_monitoring(self, predictions: np.ndarray | None, actuals: np.ndarray | None,
+                                        confidences: np.ndarray | None) -> dict[str, Any]:
+        """Perform prediction drift monitoring if predictions available."""
+        if predictions is not None:
+            self.logger.info("📊 Performing prediction drift monitoring...")
+            return await self.model_analyzer.perform_drift_monitoring(predictions, actuals, confidences)
+        return {'status': 'no_predictions'}
+
     async def comprehensive_model_analysis(self,
                                        model: Any,
                                        model_name: str,
@@ -112,69 +140,29 @@ class IntegratedModelManager:
             # Register model
             self.model_registry.register_model(model, model_name)
 
-            # 1. Baseline dominance analysis
-            self.logger.info("📊 Performing baseline dominance analysis...")
-            baseline_results = await self.model_analyzer.perform_baseline_analysis(
-                model, X_train, y_train, X_val, y_val
-            )
-            if isinstance(results.get('analysis_results'), dict):
-                results['analysis_results']['baseline'] = baseline_results
+            # Perform analyses
+            results['analysis_results']['baseline'] = await self._perform_baseline_analysis(model, X_train, y_train, X_val, y_val)
+            results['analysis_results']['regime'] = await self._perform_regime_analysis(model, market_data, X_train, y_train)
+            results['analysis_results']['overfitting'] = await self._perform_overfitting_analysis(model, X_train, y_train, X_val, y_val)
+            results['analysis_results']['drift'] = await self._perform_drift_monitoring(predictions, actuals, confidences)
 
-            # 2. Regime consistency analysis (if market data available)
-            if market_data is not None:
-                self.logger.info("📈 Performing regime consistency analysis...")
-                regime_results = await self.model_analyzer.perform_regime_analysis(
-                    model, market_data, X_train, y_train
-                )
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['regime'] = regime_results
-            else:
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['regime'] = {'status': 'no_market_data'}
-
-            # 3. Overfitting detection
-            self.logger.info("🔍 Performing overfitting detection...")
-            overfitting_results = await self.model_analyzer.perform_overfitting_analysis(
-                model, X_train, y_train, X_val, y_val
-            )
-            if isinstance(results.get('analysis_results'), dict):
-                results['analysis_results']['overfitting'] = overfitting_results
-
-            # 4. Prediction drift monitoring (if predictions available)
-            if predictions is not None:
-                self.logger.info("📊 Performing prediction drift monitoring...")
-                drift_results = await self.model_analyzer.perform_drift_monitoring(
-                    predictions, actuals, confidences
-                )
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['drift'] = drift_results
-            else:
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['drift'] = {'status': 'no_predictions'}
-
-            # 5. Calculate overall health score
+            # Calculate overall health score
             analysis_results = results.get('analysis_results', {})
-            if isinstance(analysis_results, dict):
-                overall_score = self.health_evaluator.calculate_overall_health_score(analysis_results)
-            else:
-                overall_score = 0.5
+            overall_score = self.health_evaluator.calculate_overall_health_score(analysis_results) if isinstance(analysis_results, dict) else 0.5
             results['overall_health_score'] = overall_score
 
-            # 6. Generate comprehensive recommendations
-            if isinstance(analysis_results, dict):
-                recommendations = self.health_evaluator.generate_comprehensive_recommendations(analysis_results, overall_score)
-            else:
-                recommendations = []
+            # Generate comprehensive recommendations
+            recommendations = self.health_evaluator.generate_comprehensive_recommendations(analysis_results, overall_score) if isinstance(analysis_results, dict) else []
             results['recommendations'] = recommendations
 
-            # 7. Determine action requirements
+            # Determine action requirements
             results['action_required'] = self.health_evaluator.determine_action_required(recommendations)
             results['retraining_recommended'] = self.health_evaluator.determine_retraining_needed(recommendations)
 
-            # 8. Store analysis results
+            # Store analysis results
             self._store_analysis_results(results)
 
-            # 9. Trigger actions if needed
+            # Trigger actions if needed
             if results['action_required']:
                 await self.action_trigger.trigger_actions(results)
 
@@ -182,7 +170,7 @@ class IntegratedModelManager:
 
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in comprehensive model analysis: {e}", exc_info=True)
             results['error'] = str(e)
             return results
@@ -221,7 +209,7 @@ class IntegratedModelManager:
             for file_to_delete in model_files[100:]:
                 file_to_delete.unlink()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to store analysis results: {e}")
 
     def get_model_health_summary(self, model_name: str | None = None) -> dict[str, Any]:

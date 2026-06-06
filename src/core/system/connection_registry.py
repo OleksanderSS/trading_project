@@ -1,3 +1,4 @@
+import atexit
 import logging
 import sqlite3
 
@@ -39,12 +40,10 @@ class ConnectionRegistry:
                 conn.close()
                 if _logging_streams_open():
                     logger.info(f"Closed connection: {name}")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 if _logging_streams_open():
                     logger.error(f"Error closing connection {name}: {e}", exc_info=True)
         cls._connections.clear()
 
 # Global cleanup hook
-import atexit
-
 atexit.register(ConnectionRegistry.close_all)

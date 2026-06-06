@@ -171,7 +171,7 @@ class EliteRiskMetrics:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'GARCH VaR for {ticker}: {var_value:.3%}')
             return float(max(0.001, var_value))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
                 f'GARCH failed for {ticker}: {e}. Using historical VaR.')
@@ -273,10 +273,16 @@ class EliteRiskMetrics:
                 ) * stats.norm.pdf(z_score) / alpha
         elif distribution == 't':
             from scipy.stats import t as t_dist
-            df, loc, scale = t_dist.fit(returns)
-            t_score = t_dist.ppf(1 - confidence_level, df)
+            df_param, loc, scale = t_dist.fit(returns)
+            t_score = t_dist.ppf(1 - confidence_level, df_param)
             var = loc * time_horizon + scale * np.sqrt(time_horizon) * t_score
-            cvar = var
+            alpha = 1 - confidence_level
+            density = t_dist.pdf(t_score, df_param)
+            if df_param > 1:
+                es_factor = (df_param + t_score**2) / (df_param - 1) * (density / alpha)
+                cvar = loc * time_horizon - scale * np.sqrt(time_horizon) * es_factor
+            else:
+                cvar = var
         else:
             raise ValueError(f'Unsupported distribution: {distribution}')
         var_loss_positive = max(0.0, float(-var))

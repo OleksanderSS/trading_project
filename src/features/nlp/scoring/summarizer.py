@@ -4,8 +4,11 @@
 import logging
 from typing import Any
 
-import torch
-from transformers import Pipeline, pipeline
+
+# ✅ Lazy imports — transformers/torch are heavy
+def _get_pipeline():
+    from transformers import pipeline  # noqa: PLC0415
+    return pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +44,15 @@ class Summarizer:
         device_override = model_config.get('device')
         if device_override:
             self.device = device_override
-            device_index = -1 if device_override == 'cpu' else 0 # pipeline expects index
+            device_index = -1 if device_override == 'cpu' else 0
         else:
+            import torch  # noqa: PLC0415 — lazy check for CUDA
             is_cuda = torch.cuda.is_available()
             self.device = 'cuda' if is_cuda else 'cpu'
             device_index = 0 if is_cuda else -1
         self.pipeline_device_index = device_index
 
-        self.summarization_pipeline: Pipeline | None = None
+        self.summarization_pipeline: Any = None  # transformers.Pipeline — lazy loaded
         logger.info(f"Summarizer initialized for model '{self.model_name}' on device '{self.device}'.")
 
     def _load_model(self):
@@ -61,14 +65,14 @@ class Summarizer:
 
         logger.info(f"Lazy loading summarization model '{self.model_name}'...")
         try:
-            self.summarization_pipeline = pipeline(
+            self.summarization_pipeline = _get_pipeline()(
                 "summarization",
                 model=self.model_name,
                 device=self.pipeline_device_index,
                 framework="pt"
             )
             logger.info(f"Summarization model '{self.model_name}' loaded successfully.")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.critical(
                 f"Fatal error: Failed to load summarization model '{self.model_name}'. "
                 f"Summarization will be unavailable. Reason: {e}", exc_info=True
@@ -125,7 +129,7 @@ class Summarizer:
 
             return summary
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during summarization pipeline: {e}", exc_info=True)
             # Final fallback in case of runtime error
             return truncated_text[:self.max_length]

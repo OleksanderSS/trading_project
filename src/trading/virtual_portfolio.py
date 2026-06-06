@@ -66,7 +66,7 @@ class VirtualPortfolio:
         except (json.JSONDecodeError, ValueError) as e:
             logger.warning(f"⚠️ Portfolio file {self.portfolio_file} is corrupted. Resetting. Error: {e}")
             self.reset_portfolio()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка: {e}', exc_info=True)
             error_handler.handle_error(e, 'Loading Virtual Portfolio')
             raise
@@ -101,7 +101,7 @@ class VirtualPortfolio:
                 json.dump(data, f, indent=2)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'Portfolio saved to {self.portfolio_file}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка: {e}', exc_info=True)
             error_handler.handle_error(e, 'Saving Virtual Portfolio')
             raise
@@ -173,7 +173,7 @@ class VirtualPortfolio:
                 f"BOUGHT {quantity} {ticker} at ${price:.2f} (Costs: ${cost_breakdown['total']:.2f})"
                 )
             return {'success': True, 'transaction': transaction}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             error_handler.handle_error(e,
                 f"Buy Stock {order_params.get('ticker', 'unknown')}")
@@ -241,7 +241,7 @@ class VirtualPortfolio:
                 f"SOLD {quantity} {ticker} at ${price:.2f} (Net: ${net_revenue:.2f}, Costs: ${cost_breakdown['total']:.2f}, PnL: ${pnl:.2f})"
                 )
             return {'success': True, 'transaction': transaction}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             error_handler.handle_error(e, f'Sell Stock {ticker}')
             return {'success': False, 'error': str(e)}

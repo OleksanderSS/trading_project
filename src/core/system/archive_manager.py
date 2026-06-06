@@ -55,7 +55,7 @@ def archive_directory(source_dir: str, output_dir: str = "archives", archive_pre
         logger.info(f" Archived: {files_added} files, skipped: {files_skipped}")
         return {"files_added": files_added, "files_skipped": files_skipped}
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"[ERROR] Error archiving: {e}")
         if os.path.exists(archive_path):
             os.remove(archive_path)

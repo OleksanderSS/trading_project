@@ -26,7 +26,7 @@ class RegimeStabilityAnalyzer:
             from_regime, to_regime = most_frequent[0].split('->')
             return {'from_regime': from_regime, 'to_regime': to_regime,
                 'count': most_frequent[1]}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error determining most frequent switch: {e}", exc_info=True)
             raise DataProcessingError("Could not determine most frequent switch") from e
 
@@ -45,7 +45,7 @@ class RegimeStabilityAnalyzer:
                 stable_periods.append(stable_period)
             return float(np.mean(stable_periods)) if stable_periods else float(
                 'inf')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error calculating average stable period: {e}", exc_info=True)
             raise DataProcessingError("Could not calculate average stable period") from e
 

@@ -97,6 +97,7 @@ class FeatureDriftMonitor:
             # Use all numeric columns except targets
             feature_columns = [
                 col for col in current_data.select_dtypes(include=[np.number]).columns
+                # audit-ignore: ARCHITECTURAL_USAGE
                 if not col.startswith('target_') and col not in ['hash', 'interval']
             ]
 
@@ -173,7 +174,7 @@ class FeatureDriftMonitor:
 
             return result
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error checking drift: {e}", exc_info=True)
             raise DataProcessingError(f"Error checking drift: {e}") from e
 

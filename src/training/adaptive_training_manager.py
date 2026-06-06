@@ -387,7 +387,7 @@ def main():
         '%(asctime)s - %(levelname)s - %(message)s')
     try:
         tickers = get_tickers(args.tickers)
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logging.error(f'Виникла помилка: {e}', exc_info=True)
         tickers = ['NVDA', 'AMD', 'MSFT', 'TSLA']
     config = TrainerConfig(mode=TrainingMode(args.mode).value)

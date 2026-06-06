@@ -96,7 +96,7 @@ class PricePreprocessor:
             tidy = self._melt_dataframe(df, metrics)
             processed_df = self._pivot_to_format(tidy)
             return processed_df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to normalize price DataFrame structure: {e}")
             # Instead of returning empty DataFrame, try to preserve what we have
             logger.warning("Returning original DataFrame with warning")

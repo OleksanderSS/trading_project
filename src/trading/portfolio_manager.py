@@ -188,7 +188,7 @@ class PortfolioManager:
                 f'💰 ADAPTIVE [{ticker}]: cap={capital_allocated:.2f}, shares={shares}, conf={confidence:.2f}'
                 )
             return max(0, shares)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(
@@ -210,7 +210,7 @@ class PortfolioManager:
                     f"💰 ELITE [{ticker}]: pct={position_pct:.2%}, shares={shares}, Kelly={sizing_details.get('stages', {}).get('kelly_size', 0):.2%}"
                     )
                 return max(0, shares)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(
@@ -273,7 +273,7 @@ class PortfolioManager:
                 f'📊 Portfolio rebalanced: {len(orders)} optimization orders generated.'
                 )
             return orders
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'❌ Critical failure during portfolio rebalancing: {e}')
             raise RuntimeError("Critical failure during portfolio rebalancing") from e

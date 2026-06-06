@@ -178,7 +178,7 @@ class BatchProcessor:
                     self.logger.info(
                         f"Progress: {progress:.1f}% - Batch {self.processing_stats['batches_processed']}/{len(batches)}"
                         )
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Batch processing failed: {e}')
                     results.append({'batch': batch, 'status': 'failed',
                         'error': str(e), 'processed_count': 0,
@@ -202,7 +202,7 @@ class BatchProcessor:
                 self.logger.info(
                     f'Progress: {progress:.1f}% - Batch {i + 1}/{len(batches)}'
                     )
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Batch {i + 1} processing failed: {e}')
                 results.append({'batch': batch, 'status': 'failed', 'error':
                     str(e), 'processed_count': 0, 'failed_count': len(batch)})
@@ -220,7 +220,7 @@ class BatchProcessor:
                 'failed_count': 0, 'processing_time': processing_time,
                 'tickers_per_second': len(batch) / processing_time if
                 processing_time > 0 else 0}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             processing_time = time.time() - start_time
             return {'batch': batch, 'status': 'failed', 'error': str(e),

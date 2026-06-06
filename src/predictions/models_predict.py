@@ -22,7 +22,7 @@ def safe_inverse_transform(scaler, y_pred: np.ndarray) ->np.ndarray:
     y_pred = np.nan_to_num(y_pred, nan=0.0, posinf=0.0, neginf=0.0)
     try:
         return scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.warning(f'Failed to inverse_transform: {e}, returning original values.')
         return y_pred
 
@@ -53,7 +53,7 @@ def predict_any(model: Any, X: np.ndarray, model_type: str) ->np.ndarray:
             )
         else:
             return predict_ml(model, X)
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Error predicting for {model_type}: {e}', exc_info=True)
         raise DataProcessingError(f'Error predicting for {model_type}: {e}') from e
 
@@ -99,7 +99,7 @@ def predict_from_parquet(parquet_path: str, models_path: str=
     if not parquet_file.exists():
         raise FileNotFoundError(f'File not found: {parquet_path}')
     df = pd.read_parquet(parquet_file)
-    df = df.drop(columns=['date', 'ticker', 'scope', 'target'], errors='ignore'
+    df = df.drop(columns=['date', 'datetime', 'timestamp', 'ticker', 'scope', 'target'], errors='ignore'
         )
     models_dir = Path(models_path)
     if not models_dir.exists():
@@ -141,7 +141,7 @@ def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame
             f"[SENTIMENT] Signal: {signal_result['signal_type']} (confidence: {signal_result['confidence']:.2f})"
             )
         return signal_result
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'[SENTIMENT] Prediction error: {e}', exc_info=True)
         raise DataProcessingError(f'[SENTIMENT] Prediction error: {e}') from e
 

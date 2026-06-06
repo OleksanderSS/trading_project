@@ -18,7 +18,7 @@ class PlattScalingStrategy(CalibrationStrategy):
             scores = predictions[:, 1].reshape(-1, 1) if predictions.ndim == 2 else predictions.reshape(-1, 1)
             self.calibrator.fit(scores, targets)
             return {'calibrator_type': 'platt_scaling', 'coefficients': self.calibrator.coef_.tolist()}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.handle_error(e, "Platt scaling")
 
     def transform(self, predictions: np.ndarray) -> np.ndarray:
@@ -37,7 +37,7 @@ class IsotonicRegressionStrategy(CalibrationStrategy):
             self.calibrator = IsotonicRegression(out_of_bounds='clip')
             self.calibrator.fit(predictions, targets)
             return {'calibrator_type': 'isotonic_regression'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.handle_error(e, "Isotonic regression")
 
     def transform(self, predictions: np.ndarray) -> np.ndarray:

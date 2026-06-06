@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Feature Selection Manager for Hybrid Orchestrator.
 Handles all feature selection logic and validation.

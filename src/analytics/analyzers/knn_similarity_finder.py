@@ -93,7 +93,7 @@ class KnnSimilarityFinder(IAnalyzer):
             results = self._format_results(distances, indices, X_target.index, X_hist.index)
             return {"similarities": results, "regime_used": pattern_id if working_historical is not historical_df else "global"}
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise DataProcessingError(f"KNN analysis failed: {e}") from e
 
     def _prepare_feature_matrices(
@@ -148,7 +148,8 @@ class KnnSimilarityFinder(IAnalyzer):
         results = {}
         for i, target_id in enumerate(target_index):
             similar_items = []
-            if i >= len(indices): continue
+            if i >= len(indices):
+                continue
             for j, neighbor_idx in enumerate(indices[i]):
                 neighbor_id = historical_index[neighbor_idx]
                 similarity_score = 1 / (1 + distances[i][j])

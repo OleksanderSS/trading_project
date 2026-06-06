@@ -169,7 +169,7 @@ if PLOTLY_AVAILABLE:
                         alerts_table,
                     )
 
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f"Error updating dashboard: {e}")
                     return "Error loading dashboard", {}, {}, {}, {}, "Error loading alerts"
 
@@ -425,7 +425,7 @@ if PLOTLY_AVAILABLE:
                     port=self.port,
                     debug=debug,
                 )
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(
                     f"Error running dashboard server: {e}"
                 )
@@ -486,7 +486,7 @@ class TextBasedDashboard:
                 ])
 
             return "\n".join(report_lines)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating text report: {e}")
             return f"Error: {e}"
 
@@ -500,7 +500,7 @@ class TextBasedDashboard:
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(report)
             self.logger.info(f"Report saved to {filepath}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error saving report: {e}")
 
 class MonitoringDashboardGenerator:
@@ -561,7 +561,7 @@ class MonitoringDashboardGenerator:
                 filepath = os.path.join(self.save_path, f"monitoring_report_{timestamp}.txt")
                 self.text_dashboard.save_report(filepath)
                 time.sleep(self.save_interval)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Error in auto-save: {e}")
                 time.sleep(60)
 

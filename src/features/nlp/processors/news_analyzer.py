@@ -78,7 +78,7 @@ class QuickNewsAnalyzer:
             logger.info(f"[QuickNewsAnalyzer] [OK] Clustering complete: {len(texts_nonempty)} news in {n_clusters} clusters")
             return df_copy
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"[QuickNewsAnalyzer] [ERROR] Error in clustering: {e}", exc_info=True)
             return self._add_empty_cols(df_copy)
 

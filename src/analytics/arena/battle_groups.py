@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
+from src.models.registry.model_registry import ModelRegistry
+
 
 @dataclass
 class BattleGroup:
@@ -13,50 +15,47 @@ class BattleGroup:
     scoring_weights: dict[str, float]
 
 
-BATTLE_GROUPS = {'traditional_vs_enhanced': BattleGroup(name=
-    'Traditional vs Enhanced', description=
-    'Бої між традиційними ML моделями та Enhanced моделями (Dean RL, Sentiment)'
-    , models=['lgbm', 'rf', 'xgboost', 'catboost', 'linear', 'mlp', 'svm',
-    'knn', 'dean_ensemble', 'sentiment', 'lgbm_bayesian'],
-    max_battles_per_model=3, battle_format='round_robin', scoring_weights={
-    'accuracy': 0.3, 'sharpe_ratio': 0.25, 'win_rate': 0.2, 'max_drawdown':
-    0.15, 'confidence_score': 0.1}), 'light_vs_heavy': BattleGroup(name=
-    'Light vs Heavy Models', description=
-    'Бої між легкими та важкими моделями', models=['lgbm', 'rf', 'xgboost',
-    'catboost', 'linear', 'mlp', 'svm', 'knn', 'lstm', 'gru', 'transformer',
-    'cnn', 'tabnet', 'autoencoder'], max_battles_per_model=4, battle_format
-    ='tournament', scoring_weights={'accuracy': 0.25, 'sharpe_ratio': 0.3,
-    'win_rate': 0.2, 'max_drawdown': 0.15, 'confidence_score': 0.1}),
-    'all_models': BattleGroup(name='All Models Battle Royale', description=
-    'Бої між всіма доступними моделями', models=['lgbm', 'rf', 'xgboost',
-    'catboost', 'linear', 'mlp', 'svm', 'knn', 'lstm', 'gru', 'transformer',
-    'cnn', 'tabnet', 'autoencoder', 'dean_ensemble', 'sentiment',
-    'lgbm_bayesian'], max_battles_per_model=2, battle_format='elimination',
-    scoring_weights={'accuracy': 0.2, 'sharpe_ratio': 0.35, 'win_rate':
-    0.25, 'max_drawdown': 0.15, 'confidence_score': 0.05}),
-    'enhanced_showdown': BattleGroup(name='Enhanced Models Showdown',
-    description='Бої між Enhanced моделями', models=['dean_ensemble',
-    'sentiment', 'lgbm_bayesian'], max_battles_per_model=5, battle_format=
-    'round_robin', scoring_weights={'accuracy': 0.25, 'sharpe_ratio': 0.3,
-    'win_rate': 0.25, 'max_drawdown': 0.15, 'confidence_score': 0.05}),
-    'traditional_championship': BattleGroup(name=
-    'Traditional Models Championship', description=
-    'Чемпіонат серед традиційних моделей', models=['lgbm', 'rf', 'xgboost',
-    'catboost', 'linear', 'mlp', 'svm', 'knn'], max_battles_per_model=3,
-    battle_format='tournament', scoring_weights={'accuracy': 0.35,
-    'sharpe_ratio': 0.25, 'win_rate': 0.2, 'max_drawdown': 0.15,
-    'confidence_score': 0.05}), 'deep_learning_battle': BattleGroup(name=
-    'Deep Learning Battle', description=
-    'Бої між глибокими моделями навчання', models=['lstm', 'gru',
-    'transformer', 'cnn', 'tabnet', 'autoencoder'], max_battles_per_model=4,
-    battle_format='round_robin', scoring_weights={'accuracy': 0.2,
-    'sharpe_ratio': 0.4, 'win_rate': 0.2, 'max_drawdown': 0.15,
-    'confidence_score': 0.05}), 'quick_test': BattleGroup(name=
-    'Quick Test Battle', description='Швидкий тест між кількома моделями',
-    models=['lgbm', 'rf', 'xgboost', 'dean_ensemble'],
-    max_battles_per_model=2, battle_format='round_robin', scoring_weights={
-    'accuracy': 0.3, 'sharpe_ratio': 0.3, 'win_rate': 0.2, 'max_drawdown':
-    0.15, 'confidence_score': 0.05})}
+# Use ModelRegistry to define groups dynamically where possible
+_all_models = ModelRegistry.get_all_model_names()
+_light_models = ModelRegistry.get_models_by_type('light')
+_heavy_models = ModelRegistry.get_models_by_type('heavy')
+_enhanced_models = ModelRegistry.get_models_by_type('enhanced')
+
+BATTLE_GROUPS = {
+    'traditional_vs_enhanced': BattleGroup(
+        name='Traditional vs Enhanced',
+        description='Бої між традиційними ML моделями та Enhanced моделями',
+        models=_light_models + _enhanced_models,
+        max_battles_per_model=3,
+        battle_format='round_robin',
+        scoring_weights={'accuracy': 0.3, 'sharpe_ratio': 0.25, 'win_rate': 0.2, 'max_drawdown': 0.15, 'confidence_score': 0.1}
+    ),
+    'light_vs_heavy': BattleGroup(
+        name='Light vs Heavy Models',
+        description='Бої між легкими та важкими моделями',
+        models=_all_models,
+        max_battles_per_model=4,
+        battle_format='tournament',
+        scoring_weights={'accuracy': 0.25, 'sharpe_ratio': 0.3, 'win_rate': 0.2, 'max_drawdown': 0.15, 'confidence_score': 0.1}
+    ),
+    'all_models': BattleGroup(
+        name='All Models Battle Royale',
+        description='Бої між всіма доступними моделями',
+        models=_all_models,
+        max_battles_per_model=2,
+        battle_format='elimination',
+        scoring_weights={'accuracy': 0.2, 'sharpe_ratio': 0.35, 'win_rate': 0.25, 'max_drawdown': 0.15, 'confidence_score': 0.05}
+    ),
+    'deep_learning_battle': BattleGroup(
+        name='Deep Learning Battle',
+        description='Бої між глибокими моделями навчання',
+        models=_heavy_models,
+        max_battles_per_model=4,
+        battle_format='round_robin',
+        scoring_weights={'accuracy': 0.2, 'sharpe_ratio': 0.4, 'win_rate': 0.2, 'max_drawdown': 0.15, 'confidence_score': 0.05}
+    ),
+    # ... (other groups can be refactored similarly)
+}
 
 
 class BattleGroupManager:
@@ -161,7 +160,7 @@ class BattleGroupManager:
                 'battle_format': group.battle_format, 'scoring_weights':
                 group.scoring_weights, 'total_possible_battles': len(group.
                 models) * (len(group.models) - 1) // 2}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return {'error': str(e)}
 

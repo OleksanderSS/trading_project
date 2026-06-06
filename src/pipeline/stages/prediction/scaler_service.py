@@ -95,6 +95,6 @@ class ScalerService:
 
             return None
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error loading target scaler: {e}", exc_info=True)
             raise DataProcessingError("Failed to load target scaler") from e

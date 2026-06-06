@@ -1,0 +1,5050 @@
+source,target,kind,line
+algorithms/adaptive_position_sizer.py,"logging
+from dataclasses import dataclass
+from typing import Any
+
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger
+from src.risk_management import VaRCalculator",import,0
+algorithms/advanced_backtest_engine.py,"logging
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.algorithms.bias_detector import BiasDetector
+from src.algorithms.transaction_cost_model import TransactionCostModel
+from src.algorithms.walk_forward_optimizer import WalkForwardOptimizer
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+algorithms/bias_detector.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+algorithms/regime_detector.py,"dataclasses.dataclass
+from typing import Any
+
+import numpy as np
+
+from src",from,0
+algorithms/regime_detector.py,"src.algorithms.regime.metrics.RegimeMetricsCalculator
+from src",from,0
+algorithms/regime_detector.py,"src.algorithms.regime.types.MarketRegime
+from src",from,0
+algorithms/regime_detector.py,src.core.logging.logger.ProjectLogger,from,0
+algorithms/risk_parity_allocator.py,"enum.Enum
+from typing import Any
+
+import numpy as np
+from scipy",from,0
+algorithms/risk_parity_allocator.py,"scipy.spatial.distance.squareform
+from sklearn",from,0
+algorithms/risk_parity_allocator.py,"src.core.logging.logger.ProjectLogger
+
+
+class AllocationMethod",from,0
+algorithms/transaction_cost_model.py,"typing.Any
+
+
+class TransactionCostModel",from,0
+algorithms/walk_forward_optimizer.py,collections.abc.Callable,from,0
+algorithms/walk_forward_optimizer.py,"collections.abc.Iterable
+from itertools import product
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+algorithms/__init__.py,".adaptive_position_sizer.AdaptivePositionSizer
+from",from,0
+algorithms/__init__.py,".bias_detector.BiasDetector
+from",from,0
+algorithms/__init__.py,".regime_detector.MarketRegimeDetector
+from",from,0
+algorithms/__init__.py,".transaction_cost_model.TransactionCostModel
+from",from,0
+analytics/analyzer_registry.py,"logging
+from src.analytics.analyzers.causal_event_finder import CausalEventFinder
+from src.analytics.analyzers.drift_analyzer import DriftAnalyzer
+from src.analytics.analyzers.hedge_fund_analyzer import HedgeFundAnalyzer
+from src.analytics.analyzers.shap_analyzer import ShapAnalyzer
+from src.analytics.analyzers.wrappers import DrawdownAnalyzer",import,0
+analytics/analyzer_registry.py,FamaFrenchAnalyzer,import,0
+analytics/analyzer_registry.py,"VolatilityAnalyzer
+from src.analytics.context.ensemble_selector import EnsembleSelector
+from src.analytics.interfaces import IAnalyzer
+
+logger",import,0
+analytics/interfaces.py,abc.ABC,from,0
+analytics/interfaces.py,"abc.abstractmethod
+from typing import Any
+
+
+class IAnalyzer",from,0
+analytics/unified_analytics_engine.py,"hashlib
+import importlib
+import json
+import logging
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.data_managers.model_results_manager import ModelResultsManager
+from src.analytics.interfaces import IAnalyzer
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.exceptions import ConfigurationError
+
+logger",import,0
+calibration/adaptive_confidence_calibrator.py,"logging
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+from scipy import stats
+
+try",import,0
+calibration/adaptive_confidence_calibrator.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+calibration/calibration_engine.py,"json
+import logging
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+calibration/__init__.py,"src.calibration.calibration_engine.CalibrationEngine
+
+__all__",from,0
+cli/argument_parser.py,"argparse
+
+
+def create_argument_parser",import,0
+cli/argument_validator.py,"typing.Any
+
+from src",from,0
+cli/batch_manager.py,"re
+from pathlib import Path
+
+from src.core.logging.logger import ProjectLogger
+from src.utils.path_utils import sanitize_path_input
+
+logger",import,0
+cli/pipeline_data_loader.py,"pathlib.Path
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+cli/pipeline_executor.py,"functools
+import logging
+import time
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+colab/__init__.py,"importlib.import_module
+from typing import Any
+
+_EXPORTS",from,0
+config/tickers.py,json,import,0
+config/unified_config_manager.py,"__future__.annotations
+
+import logging
+import os
+import re
+import threading
+from collections",from,0
+config/unified_config_manager.py,"enum.Enum
+from pathlib import Path
+from typing import TYPE_CHECKING",from,0
+config/unified_config_manager.py,"enum.Any
+
+from src",from,0
+config/unified_config_manager.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+core/base_integration.py,abc.ABC,from,0
+core/base_integration.py,"abc.abstractmethod
+from datetime import datetime
+from typing import Any
+
+from src",from,0
+core/version_checker.py,"importlib.metadata
+import logging
+import sys
+from typing import Any
+
+from packaging import version
+
+from src.core.logging.logger import ProjectLogger",import,0
+data/data_loader.py,"json
+from datetime import datetime
+from pathlib import Path
+
+from src.core.logging.logger import ProjectLogger
+from src.core.security.path_validator import PathValidationError",import,0
+data/data_loader.py,"validate_safe_path
+
+logger",import,0
+data_sources/local_file_data_source.py,"pathlib.Path
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+data_sources/__init__.py,"src.data_sources.local_file_data_source.LocalFileDataSource
+
+__all__",from,0
+devtools/rule_generator.py,"logging
+import os
+from typing import Any
+
+import pandas as pd
+import yaml",import,0
+devtools/rule_generator.py,"src.config.unified_config_manager.UnifiedConfigManager
+from src",from,0
+devtools/__init__.py,"src.devtools.rule_generator.ContextRuleGenerator
+
+__all__",from,0
+ensembling/stacked_ensemble.py,"logging
+from logging import getLogger
+from pathlib import Path
+from typing import Any",import,0
+ensembling/stacked_ensemble.py,"NamedTuple
+
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import Ridge
+
+from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+logger",import,0
+factories/model_factory.py,"logging
+from typing import Any
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger",import,0
+factories/model_factory.py,"src.factories.tree_model_factory.TreeModelFactory
+from src",from,0
+factories/model_factory.py,"src.models.interfaces.BaseModel
+from src",from,0
+factories/model_factory.py,"src.models.linear.linear_model.LinearModel
+from src",from,0
+factories/model_factory.py,"src.models.neural.autoencoder_model.AutoencoderModel
+from src",from,0
+factories/model_factory.py,"src.models.neural.gru_model.GRUModel
+from src",from,0
+factories/model_factory.py,"src.models.neural.mlp_model.MLPModel
+from src",from,0
+factories/model_factory.py,"src.models.neural.transformer_model.TransformerModel
+from src",from,0
+factories/tree_model_factory.py,"inspect
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel
+from src.models.tree.catboost_model import CatBoostModel
+from src.models.tree.lightgbm_model import LightGBMModel
+from src.models.tree.random_forest_model import RandomForestModel
+from src.models.tree.xgboost_model import XGBoostModel
+
+logger",import,0
+features/colab_context_integration.py,"pathlib.Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+features/context_aware_feature_selector.py,"json
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/feature_cache.py,"hashlib
+import logging
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+PARQUET_EXT",import,0
+features/feature_orchestrator.py,"importlib
+import inspect
+import logging
+import os
+import pkgutil
+from typing import Any
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
+from src.features.selection.volatility_driver_selector import VolatilityDriverSelector
+
+logger",import,0
+features/feature_selection_cache.py,"hashlib
+import json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/feature_selector.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+features/news_clusterer.py,"json
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/news_dataset_builder.py,"json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.features.news_impact_classifier import NewsImpactClassifier
+from src.utils.trading_calendar import TradingCalendar
+
+from .builders.news_event.candle_seeker import NewsCandleSeeker
+from .builders.news_event.enricher import NewsGlobalEnricher",import,0
+features/news_dataset_builder.py,".builders.news_event.filter.NewsEventDataFilter
+
+logger",from,0
+features/news_impact_classifier.py,"logging
+import re
+from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+integration/dashboard_data_bridge.py,"datetime.datetime
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+integration/ensemble_performance_bridge.py,"datetime.datetime
+from typing import Any
+
+from src",from,0
+integration/ensemble_selector.py,src.analytics.context.ensemble_selector.EnsembleContext,from,0
+integration/ensemble_selector.py,"src.analytics.context.ensemble_selector.EnsembleSelector
+
+__all__",from,0
+integrations/base.py,abc.ABC,from,0
+integrations/base.py,"abc.abstractmethod
+from datetime import datetime
+from typing import Any
+
+
+class BaseIntegration",from,0
+main/system_orchestrator.py,"inspect
+import os
+import subprocess
+from concurrent.futures import ProcessPoolExecutor",import,0
+main/system_orchestrator.py,"as_completed
+from dataclasses import dataclass
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager",import,0
+main/system_orchestrator.py,"get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+from src.main.modes.backtest import BacktestMode
+from src.main.modes.predict import PredictMode
+from src.main.modes.train import TrainMode
+from src.main.modes.training_data_pipeline import run_pipeline as run_training_data_pipeline
+from src.models.dean.dean_bootstrap_system import get_dean_system
+from src.pipeline.hybrid_orchestrator import HybridOrchestrator",import,0
+meta_learning/base.py,abc.ABC,from,0
+meta_learning/base.py,"abc.abstractmethod
+from typing import Any
+
+
+class BaseMetaComponent",from,0
+meta_learning/real_time_learning.py,datetime.datetime,from,0
+meta_learning/real_time_learning.py,"datetime.timedelta
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+meta_learning/__init__.py,.awareness.context.models.EventImpact,from,0
+meta_learning/__init__.py,.awareness.context.models.EventType,from,0
+meta_learning/__init__.py,".awareness.context.models.MarketRegime
+from",from,0
+meta_learning/__init__.py,.evolution.dual_loops.LearningLoopsEngine,from,0
+meta_learning/__init__.py,".evolution.dual_loops.TradingRule
+from",from,0
+metrics/base.py,abc.ABC,from,0
+metrics/base.py,"abc.abstractmethod
+from typing import Any
+
+
+class BaseMetricCalculator",from,0
+metrics/calculator.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+metrics/calculator.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+metrics/calculator.py,"src.metrics.model.ml_evaluator.MLEvaluator
+
+
+class MetricsCalculator",from,0
+models/feature_selector.py,"numpy as np
+import pandas as pd
+
+
+class ModelFeatureSelector",import,0
+models/integrated_model_manager.py,"json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.models.actions.action_trigger import ActionTrigger
+from src.models.analysis.model_analyzer import ModelAnalyzer
+from src.models.health.model_health_evaluator import ModelHealthEvaluator
+from src.models.monitoring.prediction_drift_monitor import PredictionDriftMonitor
+from src.models.registry.model_registry import ModelRegistry
+from src.models.statistics.model_statistics import ModelStatistics
+
+logger",import,0
+models/interfaces.py,abc.ABC,from,0
+models/interfaces.py,"abc.abstractmethod
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+models/interfaces.py,"src.metrics.calculator.MetricsCalculator
+from src",from,0
+models/loader.py,"logging
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+import joblib
+
+from src.config.unified_config_manager import get_current_config
+from src.core.error_handling.error_handler import ModelLoadingError
+from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+
+class ModelLoaderStrategy",import,0
+models/model_pool.py,"logging
+import threading
+import time
+from collections import OrderedDict
+from collections.abc import Callable
+from typing import Any
+
+
+class ModelPool",import,0
+models/persistent_pool.py,"json
+import logging
+from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger
+from src.models.model_pool import ModelPool
+
+logger",import,0
+models/__init__.py,".analysis.baseline_dominance_detector.BaselineDominanceDetector
+from",from,0
+models/__init__.py,.analysis.regime_winner_analyzer.RegimeWinnerAnalyzer,from,0
+models/__init__.py,.ensemble.confidence_calibrator.ConfidenceCalibrator,from,0
+models/__init__.py,.ensemble.confidence_calibrator.calibrate_confidence_quick,from,0
+models/__init__.py,".ensemble.confidence_calibrator.get_confidence_calibrator
+from",from,0
+models/__init__.py,.integrated_model_manager.IntegratedModelManager,from,0
+models/__init__.py,".integrated_model_manager.get_integrated_model_manager
+from",from,0
+models/__init__.py,.monitoring.prediction_drift_monitor.PredictionDriftMonitor,from,0
+models/__init__.py,".monitoring.prediction_drift_monitor.get_prediction_drift_monitor
+from",from,0
+monitoring/config.py,"os
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+
+class MonitoringConfig",import,0
+monitoring/dashboard.py,"os
+import threading
+import time
+from datetime import datetime
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+from .monitoring_system import MonitoringSystem
+
+logger",import,0
+monitoring/data_freshness_monitor.py,"asyncio
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+monitoring/feature_drift_monitor.py,"datetime.datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+monitoring/feature_drift_monitor.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+monitoring/health_hub.py,datetime.datetime,from,0
+monitoring/health_hub.py,"datetime.timedelta
+from pathlib import Path
+from typing import Any
+
+import joblib
+import numpy as np
+import pandas as pd
+
+from src",from,0
+monitoring/health_hub.py,src.config.unified_config_manager.UnifiedConfigManager,from,0
+monitoring/health_hub.py,"src.config.unified_config_manager.get_current_config
+from src",from,0
+monitoring/health_hub.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+monitoring/health_hub.py,"src.data.management.data_manager.DataManager
+from src",from,0
+monitoring/health_hub.py,"src.utils.artifact_security.resolve_trusted_artifact_path
+
+
+class HealthHub",from,0
+monitoring/ml_analytics.py,"logging
+from datetime import datetime",import,0
+monitoring/ml_analytics.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+import joblib
+import pandas as pd
+from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
+
+from src.analytics.data_managers.model_results_manager import ModelResultsManager as ResultsManager
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+logger",import,0
+monitoring/monitoring_system.py,"logging
+import threading
+import time
+from datetime import datetime",import,0
+monitoring/monitoring_system.py,"timedelta
+from enum import Enum
+from typing import Any
+
+import numpy as np
+import psutil
+
+from src.core.logging.logger import ProjectLogger
+
+
+class alertseverity",import,0
+monitoring/run_dashboard.py,"os
+
+from src.core.logging.logger import ProjectLogger
+from src.monitoring.dashboard import MonitoringDashboardGenerator
+from src.monitoring.monitoring_system import MonitoringSystem
+
+
+def main",import,0
+monitoring/__init__.py,.config.MonitoringConfig,from,0
+monitoring/__init__.py,.config.create_config_file,from,0
+monitoring/__init__.py,.config.get_monitoring_config,from,0
+monitoring/__init__.py,.data_freshness_monitor.DataFreshnessMonitor,from,0
+monitoring/__init__.py,.data_freshness_monitor.check_freshness_quick,from,0
+monitoring/__init__.py,.data_freshness_monitor.get_data_freshness_monitor,from,0
+monitoring/__init__.py,.feature_drift_monitor.FeatureDriftMonitor,from,0
+monitoring/__init__.py,.feature_drift_monitor.check_feature_drift,from,0
+monitoring/__init__.py,.feature_drift_monitor.get_feature_drift_monitor,from,0
+monitoring/__init__.py,".health_hub.HealthHub
+from",from,0
+optimization/base.py,abc.ABC,from,0
+optimization/base.py,"abc.abstractmethod
+from typing import Any
+
+from src",from,0
+optimization/dynamic_config_updater.py,"datetime
+import json
+from pathlib import Path
+
+import psutil
+
+from src.core.logging.logger import ProjectLogger
+
+
+class DynamicConfigurationUpdater",import,0
+optimization/factory.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+optimization/factory.py,"src.optimization.hyperparameters.bayesian.BayesianOptimizer
+from src",from,0
+optimization/hyperparameter_searcher.py,"json
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+
+
+class HyperparameterSearcher",import,0
+optimization/__init__.py,".factory.OptimizationFactory
+from",from,0
+optimization/__init__.py,".portfolio.optimizer.PortfolioOptimizer
+
+__all__",from,0
+patterns/pattern_analyzer.py,"json
+import logging
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.analytics.interfaces import IAnalyzer
+from src.config.unified_config_manager import get_current_config
+
+ta",import,0
+pipeline/hybrid_orchestrator.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/hybrid_orchestrator.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+pipeline/hybrid_orchestrator.py,src.pipeline.hybrid.contracts.HybridFinalStagesRequest,from,0
+pipeline/hybrid_orchestrator.py,"src.pipeline.hybrid.contracts.HybridPipelineRequest
+from src",from,0
+pipeline/hybrid_orchestrator.py,src.pipeline.hybrid.pipeline_config.FinalStagesParams,from,0
+pipeline/hybrid_orchestrator.py,"src.pipeline.hybrid.pipeline_config.PipelineParams
+
+logger",from,0
+pipeline/pipeline_factory.py,"src.analytics.data_managers.model_results_manager.ModelResultsManager
+from src",from,0
+pipeline/pipeline_factory.py,"src.core.clients.http_client_factory.HttpClientFactory
+from src",from,0
+pipeline/pipeline_factory.py,"src.core.monitoring.memory_profiler.get_memory_profiler
+from src",from,0
+pipeline/pipeline_factory.py,"src.monitoring.health_hub.HealthHub
+from src",from,0
+pipeline/pipeline_orchestrator.py,"asyncio
+import inspect
+import logging
+import queue
+import threading
+import time
+from dataclasses import dataclass
+from typing import Any
+
+from src.analytics.data_managers.model_results_manager import ModelResultsManager
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.core.error_handling.error_handler import ErrorHandler
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+from src.core.monitoring.memory_profiler import get_memory_profiler",import,0
+pipeline/pipeline_orchestrator.py,"get_memory_stats
+from src.data.management.data_manager import DataManager
+from src.monitoring.health_hub import HealthHub
+from src.processing.normalization_manager import NormalizationManager
+from src.utils.dynamic_module_loader import DynamicModuleLoader
+from src.validation.pipeline_schemas import",import,0
+pipeline/stage_loader.py,"logging
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.utils.dynamic_module_loader import DynamicModuleLoader
+
+
+class StageLoader",import,0
+predictions/caching.py,"hashlib
+import logging
+import pickle
+from collections import OrderedDict
+from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+predictions/deep_predict.py,"numpy as np
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+predictions/models_predict.py,"os
+from pathlib import Path
+from typing import Any
+
+import joblib
+import numpy as np
+import pandas as pd
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+from src.ensembling.stacked_ensemble import ensemble_forecast
+from src.models.adapters.sentiment_integration import get_sentiment_integrator
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+from .deep_predict import predict_cnn",import,0
+predictions/models_predict.py,predict_lstm,import,0
+predictions/models_predict.py,"predict_transformer
+
+logger",import,0
+processing/cleaners.py,"hashlib
+import logging
+import re
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+processing/data_filter.py,".filters.orchestrator.IntelligentDataFilter as ModularIntelligentDataFilter
+
+
+class IntelligentDataFilter",from,0
+processing/deduplication_utils.py,"pandas as pd
+
+
+def deduplicate_dataframe",import,0
+processing/normalization_manager.py,"logging
+import os
+from typing import Any
+
+import joblib",import,0
+processing/normalization_manager.py,"pandas as pd
+from sklearn.preprocessing import MinMaxScaler",import,0
+processing/normalization_manager.py,"StandardScaler
+
+from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+logger",import,0
+processing/parallel_processor.py,"logging
+import multiprocessing as mp",import,0
+processing/parallel_processor.py,"time
+from collections.abc import Callable
+from concurrent.futures import ProcessPoolExecutor",import,0
+processing/parallel_processor.py,ThreadPoolExecutor,import,0
+processing/parallel_processor.py,"as_completed
+from typing import Any
+
+import pandas as pd
+import psutil
+
+from src.core.logging.logger import ProjectLogger",import,0
+processing/price_preprocessor.py,logging,import,0
+processing/price_preprocessor.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger",import,0
+processing/sampling.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+risk/elite_risk_metrics.py,"logging
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+
+class EliteRiskMetrics",import,0
+risk/exposure_calculator.py,"__future__.annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING",from,0
+risk/kill_switch_manager.py,"typing.Any
+
+import pandas as pd
+
+from",from,0
+risk/kill_switch_manager.py,.kill_switch.manager.KillSwitchManager as ModularKillSwitchManager,from,0
+risk/max_exposure_monitor.py,"datetime.datetime
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+risk/max_exposure_monitor.py,"src.risk.analyzers.concentration_analyzer.ConcentrationAnalyzer
+from src",from,0
+risk/max_exposure_monitor.py,"src.risk.elite_risk_metrics.EliteRiskMetrics
+
+logger",from,0
+risk/metrics.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+risk/metrics.py,"src.utils.data_safety.safe_rolling
+
+logger",from,0
+risk/risk_manager.py,"logging
+from dataclasses import dataclass
+from enum import Enum
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+risk_management/var_calculator.py,"numpy as np
+
+
+class VaRCalculator",import,0
+risk_management/__init__.py,".var_calculator.VaRCalculator
+
+__all__",from,0
+sentiment/sentiment_models.py,"hashlib
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+simulation/simulation_engine.py,"multiprocessing as mp
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass",import,0
+simulation/simulation_engine.py,"field
+from datetime import datetime",import,0
+simulation/simulation_engine.py,"timedelta
+from enum import Enum
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.metrics.calculator import MetricsCalculator
+from src.trading.virtual_portfolio import VirtualPortfolio
+
+logger",import,0
+targets/target_orchestrator.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.targets.calculators.classification_calculator import ClassificationCalculator
+from src.targets.calculators.indicator_prediction_calculator import IndicatorPredictionCalculator
+from src.targets.calculators.regression_calculator import RegressionCalculator
+
+logger",import,0
+trading/adaptive_parameter_manager.py,"logging
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
+
+import pandas as pd
+
+
+class MarketRegime",import,0
+trading/consensus_engine.py,"logging
+from dataclasses import dataclass",import,0
+trading/consensus_engine.py,"field
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.core.utils.prediction_utils import normalize_prediction
+from src.ensembling.stacked_ensemble import StackedEnsemble
+from src.models.dean.dean_bootstrap_system import get_dean_system",import,0
+trading/elite_risk_sizer.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+trading/live_adaptive_ensemble.py,"logging
+from dataclasses import dataclass",import,0
+trading/live_adaptive_ensemble.py,"field
+from datetime import datetime",import,0
+trading/live_adaptive_ensemble.py,"timedelta
+
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger",import,0
+trading/portfolio_manager.py,"logging
+from typing import Any
+
+import numpy as np
+
+from src.algorithms.adaptive_position_sizer import AdaptivePositionSizer",import,0
+trading/portfolio_manager.py,"PositionSizingParams
+from src.algorithms.risk_parity_allocator import RiskParityAllocator
+from src.core.logging.logger import ProjectLogger
+from src.trading.virtual_portfolio import VirtualPortfolio
+
+from .trader import TradeOrder
+
+logger",import,0
+trading/post_inference_filter.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+
+class PostInferenceFilter",import,0
+trading/signal_processor.py,"logging
+from typing import Any",import,0
+trading/signal_processor.py,"cast
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+
+class SignalProcessor",import,0
+trading/trader.py,"dataclasses.dataclass
+
+from src",from,0
+trading/trading_orchestrator.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.trading.consensus_engine import ConsensusEngine
+from src.trading.portfolio_manager import PortfolioManager
+from src.trading.post_inference_filter import PostInferenceFilter
+from src.trading.trader import TradeOrder",import,0
+trading/trading_orchestrator.py,"Trader
+from src.trading.virtual_portfolio import VirtualPortfolio
+
+
+class TradingOrchestrator",import,0
+trading/virtual_portfolio.py,"json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.backtesting.advanced.advanced_engine import TransactionCostModel
+from src.config.unified_config_manager import get_current_config
+from src.core.error_handling.error_handler import get_error_handler
+from src.core.logging.logger import ProjectLogger
+from src.metrics.financial.portfolio_metrics import PortfolioMetricsCalculator
+
+logger",import,0
+trading/__init__.py,".virtual_portfolio.VirtualPortfolio
+
+__all__",from,0
+training/adaptive_training_manager.py,"json
+import logging
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.training.base_trainer import TrainerConfig
+from src.training.unified_training_manager import TrainingStrategy",import,0
+training/adaptive_training_manager.py,"UnifiedTrainingManager
+
+try",import,0
+training/base_trainer.py,"logging
+from abc import ABC",import,0
+training/base_trainer.py,"abstractmethod
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import joblib
+import numpy as np
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.factories.model_factory import ModelFactory
+from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.metrics.model.ml_evaluator import MLEvaluator
+
+
+class TrainingException",import,0
+training/batch_trainer.py,"typing.Any
+
+from joblib import Parallel",from,0
+training/batch_trainer.py,"typing.delayed
+
+from src",from,0
+training/batch_trainer.py,src.training.base_trainer.BaseTrainer,from,0
+training/batch_trainer.py,"src.training.base_trainer.TrainerConfig
+from src",from,0
+training/constants.py,src.factories.model_factory.ModelFactory,from,0
+training/light_model_trainer.py,"logging
+import uuid
+from pathlib import Path
+from typing import Any
+
+import joblib",import,0
+training/light_model_trainer.py,"pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.factories.model_factory import ModelFactory
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+logger",import,0
+training/pattern_aware_training.py,"datetime.datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+training/pattern_aware_training.py,sklearn.linear_model.Lasso,from,0
+training/pattern_aware_training.py,sklearn.linear_model.LinearRegression,from,0
+training/pattern_aware_training.py,"sklearn.linear_model.Ridge
+from sklearn",from,0
+training/pattern_aware_training.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+training/portfolio_optimizer.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from scipy",from,0
+training/portfolio_optimizer.py,"sklearn.covariance.LedoitWolf
+
+from src",from,0
+training/progressive_trainer.py,"json
+import time
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any",import,0
+training/progressive_trainer.py,"cast
+
+import numpy as np
+
+from src.config.unified_config_manager import get_current_config
+from src.core.exceptions import ModelTrainingError
+from src.core.logging.logger import ProjectLogger
+from src.training.base_trainer import BaseTrainer",import,0
+training/progressive_trainer.py,"TrainerConfig
+from src.training.batch.batch_processor import BatchProcessor
+from src.training.constants import",import,0
+training/progressive_trainer.py,"src.training.security.path_security_validator.PathSecurityValidator
+from src",from,0
+training/run_training.py,"argparse
+
+from src.config.tickers import get_tickers
+from src.core.logging.logger import ProjectLogger
+from src.training.adaptive_training_manager import AdaptiveTrainingManager",import,0
+training/run_training.py,"TrainingMode
+from src.training.base_trainer import TrainerConfig
+
+ProjectLogger.setup_logging",import,0
+training/unified_training_manager.py,"__future__.annotations
+
+import json
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import TYPE_CHECKING",from,0
+training/unified_training_manager.py,"__future__.Any
+
+from src",from,0
+training/unified_training_manager.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+utils/artifact_security.py,"__future__.annotations
+
+import os
+from collections",from,0
+utils/artifact_security.py,"pathlib.Path
+
+TRUSTED_ARTIFACT_ROOTS",from,0
+utils/async_timeout.py,"asyncio
+import inspect
+from functools import wraps
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+utils/checkpoint_manager.py,"json
+import logging
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from src.utils.artifact_security import resolve_trusted_artifact_path",import,0
+utils/collector_fixes.py,"asyncio
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+utils/dynamic_module_loader.py,"importlib
+import logging
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+utils/feature_preparation.py,"logging
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger",import,0
+utils/json_utils.py,"logging
+from datetime import datetime
+
+import numpy as np",import,0
+utils/json_utils.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+utils/math_utils.py,"numpy as np
+import pandas as pd
+
+
+def safe_div",import,0
+utils/metrics.py,"numpy as np
+
+
+class MetricsCalculator",import,0
+utils/missing_data_anomaly_detector.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+utils/path_utils.py,"re
+from pathlib import Path
+
+
+def sanitize_filename",import,0
+utils/rate_limiter.py,"asyncio
+import logging
+import threading
+import time
+
+from src.core.logging.logger import ProjectLogger",import,0
+utils/resource_limiter.py,"asyncio.Semaphore
+
+
+class ResourceLimiter",from,0
+utils/smart_missing_data_handler.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+utils/trading_calendar.py,datetime.date,from,0
+utils/trading_calendar.py,"datetime.datetime
+
+import holidays
+import pandas as pd
+from pandas",from,0
+utils/trading_calendar.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+utils/type_conversion.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+logger",import,0
+validation/data_leakage_detector.py,"dataclasses.dataclass
+from enum import Enum
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+validation/pipeline_schemas.py,"typing.Any
+
+import pandas as pd
+from pydantic import BaseModel",from,0
+validation/pipeline_schemas.py,typing.ConfigDict,from,0
+validation/pipeline_schemas.py,"typing.Field
+
+
+class RawDataSchema",from,0
+validation/temporal_feature_separator.py,"json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+validation/time_series_validator.py,"collections.abc.Generator
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+validation/time_series_validator.py,sklearn.model_selection.TimeSeriesSplit,from,0
+validation/time_series_validator.py,"sklearn.model_selection.cross_val_score
+
+from src",from,0
+validation/time_series_validator.py,"src.utils.trading_calendar.TradingCalendar
+
+logger",from,0
+validation/validators.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+validation/validators.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+validation/validators.py,".time_series_validator.TimeSeriesValidator
+
+logger",from,0
+algorithms/regime/clustering.py,"logging
+from typing import Any",import,0
+algorithms/regime/clustering.py,"cast
+
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+from src.core.exceptions import DataProcessingError
+
+logger",import,0
+algorithms/regime/metrics.py,"numpy as np
+
+from src.core.logging.logger import ProjectLogger
+
+
+class RegimeMetricsCalculator",import,0
+algorithms/regime/rules.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+algorithms/regime/rules.py,"src.algorithms.regime.types.MarketRegime
+from src",from,0
+algorithms/regime/rules.py,"src.core.logging.logger.ProjectLogger
+
+
+class RegimeRulesEngine",from,0
+algorithms/regime/types.py,"enum.Enum
+
+
+class MarketRegime",from,0
+analytics/analyzers/adaptive_confidence_analyzer.py,"typing.Any
+
+from src",from,0
+analytics/analyzers/adaptive_confidence_analyzer.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+analytics/analyzers/causal_event_finder.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+analytics/analyzers/causal_event_finder.py,"src.core.exceptions.DataProcessingError
+from src",from,0
+analytics/analyzers/causal_event_finder.py,"..interfaces.IAnalyzer
+
+logger",from,0
+analytics/analyzers/drift_analyzer.py,"typing.Any
+
+from src",from,0
+analytics/analyzers/drift_analyzer.py,"src.monitoring.feature_drift_monitor.FeatureDriftMonitor
+
+
+class DriftAnalyzer",from,0
+analytics/analyzers/hedge_fund_analyzer.py,"datetime.datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import statsmodels",from,0
+analytics/analyzers/hedge_fund_analyzer.py,"src.core.exceptions.DataProcessingError
+from src",from,0
+analytics/analyzers/hedge_fund_analyzer.py,"..calculators.drawdown_calculator.DrawdownCalculator
+from",from,0
+analytics/analyzers/hedge_fund_analyzer.py,"..calculators.risk_reward_calculator.RiskRewardCalculator
+from",from,0
+analytics/analyzers/knn_similarity_finder.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+analytics/analyzers/knn_similarity_finder.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+analytics/analyzers/knn_similarity_finder.py,"..utils.knn_model_wrapper.KnnModelWrapper
+
+logger",from,0
+analytics/analyzers/model_comparison_analyzer.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+analytics/analyzers/model_comparison_analyzer.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+analytics/analyzers/news_impact_analyzer.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+analytics/analyzers/news_impact_analyzer.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+analytics/analyzers/news_impact_analyzer.py,"..interfaces.IAnalyzer
+
+logger",from,0
+analytics/analyzers/performance_attribution_analyzer.py,"datetime.datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+analytics/analyzers/performance_attribution_analyzer.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+analytics/analyzers/performance_attribution_analyzer.py,"..interfaces.IAnalyzer
+
+logger",from,0
+analytics/analyzers/risk_decomposition_analyzer.py,"datetime.datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+analytics/analyzers/risk_decomposition_analyzer.py,"sklearn.linear_model.LinearRegression
+
+from src",from,0
+analytics/analyzers/risk_decomposition_analyzer.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+analytics/analyzers/shap_analyzer.py,"typing.Any
+
+import shap
+
+from src",from,0
+analytics/analyzers/shap_analyzer.py,"src.core.exceptions.DataProcessingError
+from src",from,0
+analytics/analyzers/wrappers.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+analytics/analyzers/wrappers.py,"src.analytics.calculators.fama_french_factors.FamaFrenchFactors
+from src",from,0
+analytics/analyzers/wrappers.py,"src.analytics.interfaces.IAnalyzer
+
+
+class DrawdownAnalyzer",from,0
+analytics/arena/arena_battle.py,"json
+import os
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.metrics import log_loss
+
+from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+from .battle_groups import get_battle_group_manager
+
+rng",import,0
+analytics/arena/arena_orchestrator.py,"time
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.arena.arena_battle import TradingModelArena as ArenaBattle
+from src.analytics.arena.battle_groups import BattleGroupManager as BattleGroups
+from src.analytics.arena.ensemble_performance_bridge import EnsemblePerformanceBridge
+from src.analytics.arena.performance_tracker import ModelPerformanceTracker
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+analytics/arena/battle_groups.py,"dataclasses.dataclass
+from typing import Any
+
+from src",from,0
+analytics/arena/ensemble_performance_bridge.py,"datetime.datetime
+from typing import Any
+
+from src",from,0
+analytics/arena/performance_tracker.py,"json
+from collections import defaultdict
+from dataclasses import asdict",import,0
+analytics/arena/performance_tracker.py,"dataclass
+from datetime import datetime",import,0
+analytics/arena/performance_tracker.py,"timedelta
+from typing import Any
+
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger
+from src.models.registry.model_registry import ModelRegistry
+
+logger",import,0
+analytics/arena/__init__.py,.arena_battle.BattleMetrics,from,0
+analytics/arena/__init__.py,.arena_battle.BattleResult,from,0
+analytics/arena/__init__.py,.arena_battle.TradingModelArena,from,0
+analytics/arena/__init__.py,".arena_battle.get_trading_arena
+from",from,0
+analytics/arena/__init__.py,.performance_tracker.ModelPerformanceTracker,from,0
+analytics/arena/__init__.py,".performance_tracker.get_performance_tracker
+
+__all__",from,0
+analytics/calculators/advanced_econometrics_calculator.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from statsmodels.stats.diagnostic import acorr_ljungbox
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import adfuller",import,0
+analytics/calculators/advanced_econometrics_calculator.py,"grangercausalitytests
+from statsmodels.tsa.vector_ar.vecm import coint_johansen
+
+logger",import,0
+analytics/calculators/drawdown_calculator.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+analytics/calculators/econometrics_calculator.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from statsmodels.tsa.api import VAR
+from statsmodels.tsa.stattools import grangercausalitytests
+
+logger",import,0
+analytics/calculators/explainability_calculator.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd",import,0
+analytics/calculators/fama_french_factors.py,"logging
+from datetime import datetime",import,0
+analytics/calculators/fama_french_factors.py,"timedelta
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger",import,0
+analytics/calculators/macro_score_calculator.py,"logging
+
+import pandas as pd
+from sklearn.preprocessing import minmax_scale
+
+logger",import,0
+analytics/calculators/risk_reward_calculator.py,"logging
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+
+from .volatility_calculator import VolatilityCalculator
+
+logger",import,0
+analytics/calculators/sentiment_stats_calculator.py,"logging
+
+import pandas as pd
+
+logger",import,0
+analytics/calculators/volatility_calculator.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+analytics/context/causal_effect_methods.py,"numpy as np
+import pandas as pd
+from scipy import stats
+from sklearn.ensemble import RandomForestRegressor
+
+from src.core.logging.logger import ProjectLogger
+
+
+class CausalEffectMethods",import,0
+analytics/context/causal_engine.py,"logging
+from datetime import timedelta
+from typing import Any
+
+import pandas as pd
+
+logger",import,0
+analytics/context/contextual_model_selector.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from ..analyzers.knn_similarity_finder import KnnSimilarityFinder
+from ..interfaces import IAnalyzer
+
+logger",import,0
+analytics/context/counterfactual_generator.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+analytics/context/counterfactual_generator.py,"src.analytics.context.difference_in_differences_methods.DifferenceInDifferencesMethods
+from src",from,0
+analytics/context/counterfactual_generator.py,"src.analytics.context.synthetic_control_methods.SyntheticControlMethods
+from src",from,0
+analytics/context/difference_in_differences_methods.py,"numpy as np
+import pandas as pd
+from scipy import stats
+
+from src.core.logging.logger import ProjectLogger
+
+
+class DifferenceInDifferencesMethods",import,0
+analytics/context/ensemble_selector.py,"dataclasses.dataclass
+from datetime import datetime
+from typing import Any
+
+from src",from,0
+analytics/context/macro_context_analyzer.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from ..calculators.macro_score_calculator import MacroScoreCalculator
+from ..interfaces import IAnalyzer
+
+logger",import,0
+analytics/context/market_context_analyzer.py,"logging
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from ..interfaces import IAnalyzer
+
+logger",import,0
+analytics/context/market_phase_analyzer.py,"logging
+import operator
+import re
+from typing import Any
+
+import pandas as pd
+
+from ..interfaces import IAnalyzer
+
+logger",import,0
+analytics/context/market_regime_analyzer.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.algorithms.regime_detector import MarketRegimeDetector
+from src.analytics.interfaces import IAnalyzer
+
+logger",import,0
+analytics/context/prediction_adjuster.py,"logging
+from typing import Any
+
+from ..interfaces import IAnalyzer
+
+logger",import,0
+analytics/context/propensity_score_methods.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+analytics/context/synthetic_control_methods.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+from src",from,0
+analytics/data_managers/model_results_manager.py,"logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.exceptions import DataLoadError",import,0
+analytics/data_managers/model_results_manager.py,"DataProcessingError
+from src.models.registry.model_registry import ModelRegistry
+
+logger",import,0
+analytics/detectors/anomaly_detector.py,"logging
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest
+
+logger",import,0
+analytics/detectors/critical_signal_detector.py,"typing.Any
+
+import pandas as pd
+
+from",from,0
+analytics/engines/causal_engine.py,"numpy as np
+import pandas as pd
+from dowhy import CausalModel
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+analytics/reporting/automated_reports.py,"logging
+from datetime import datetime
+from typing import Any
+
+from src.analytics.data_managers.model_results_manager import ModelResultsManager as ResultsManager
+
+logger",import,0
+analytics/reporting/model_analyzer.py,"json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+analytics/reporting/reporting_orchestrator.py,"typing.Any
+
+from src",from,0
+analytics/reporting/reporting_orchestrator.py,"src.analytics.reporting.model_analyzer.ModelAnalyzer
+from src",from,0
+analytics/reporting/reporting_orchestrator.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+analytics/reporting/results_manager.py,"json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any",import,0
+analytics/reporting/results_manager.py,"cast
+
+import pandas as pd
+
+logger",import,0
+analytics/reporting/visualization.py,"pathlib.Path
+
+import matplotlib",from,0
+analytics/reporting/visualization.py,"pandas as pd
+import seaborn as sns
+
+from src.core.file_management.file_manager import FileManager
+from src.core.logging.logger import ProjectLogger",import,0
+analytics/signals/signal_analytics.py,"logging
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+
+logger",import,0
+analytics/signals/significance_detector.py,"logging
+from typing import Any
+
+import pandas as pd
+
+logger",import,0
+analytics/utils/analytics_math.py,"numpy as np
+import pandas as pd
+
+
+def calculate_market_regime_metrics",import,0
+analytics/utils/knn_model_wrapper.py,"pandas as pd
+from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import StandardScaler
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+backtesting/advanced/advanced_engine.py,"collections.abc.Callable
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+backtesting/advanced/advanced_engine.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+colab/config/config_loader.py,"json
+import sys
+from pathlib import Path
+
+from src.core.logging.logger import ProjectLogger
+
+RUNTIME_PARAMS_FILE",import,0
+colab/config/training_config.py,"dataclasses.dataclass
+from pathlib import Path
+from typing import Any
+
+
+class TrainingConfig",from,0
+colab/config/__init__.py,".config_loader.RuntimeConfigLoader
+from",from,0
+colab/environment/colab_environment.py,"os
+import sys
+from pathlib import Path
+
+COLAB_BASE_PATH",import,0
+colab/environment/setup.py,"os
+import sys
+from pathlib import Path
+
+COLAB_BASE_PATH",import,0
+colab/environment/__init__.py,".colab_environment.ColabEnvironment
+
+__all__",from,0
+colab/memory/memory_monitor.py,"json
+from datetime import datetime
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+colab/memory/__init__.py,".memory_monitor.MemoryMonitor
+
+__all__",from,0
+colab/models/architectures.py,"torch
+import torch.nn as nn
+
+
+class LSTMModel",import,0
+colab/models/model_factory.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+colab/models/sklearn_fallback.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+colab/models/__init__.py,".model_factory.create_model
+
+__all__",from,0
+colab/utils/data_signature.py,"hashlib
+
+
+def compute_data_signature",import,0
+colab/utils/retry.py,"time
+from functools import wraps
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+colab/utils/utils.py,"hashlib
+from pathlib import Path
+
+from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+logger",import,0
+core/cache/cache_manager.py,"hashlib
+import json
+import pickle
+import threading
+import time
+from collections.abc import Callable
+from functools import wraps
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+
+
+class CacheManager",import,0
+core/cache/object_cache.py,"logging
+import pickle
+from datetime import datetime",import,0
+core/cache/object_cache.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+logger",import,0
+core/cache/query_cache.py,"hashlib
+import logging
+from datetime import datetime",import,0
+core/cache/query_cache.py,"timedelta
+from pathlib import Path
+
+import pandas as pd
+
+logger",import,0
+core/cache/__init__.py,".cache_manager.CacheManager
+from",from,0
+core/cache/__init__.py,".query_cache.QueryCache
+
+__all__",from,0
+core/clients/http_client_factory.py,abc.ABC,from,0
+core/clients/http_client_factory.py,"abc.abstractmethod
+from typing import Any
+
+import httpx
+
+from src",from,0
+core/clients/http_client_factory.py,"src.core.error_handling.error_handler.IErrorHandler
+from src",from,0
+core/clients/http_client_factory.py,"src.utils.rate_limiter.RateLimiter
+
+logger",from,0
+core/cloud/gcs_manager.py,"time
+from pathlib import Path
+
+from google.cloud import storage
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+core/error_handling/error_handler.py,"json
+import logging
+import time
+import traceback
+from abc import ABC",import,0
+core/error_handling/error_handler.py,"abstractmethod
+from collections.abc import Callable
+from datetime import datetime",import,0
+core/error_handling/error_handler.py,"timedelta
+from functools import wraps
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.core.logging.notifier import UniversalNotifier
+
+
+class TradingSystemError",import,0
+core/file_management/file_manager.py,"json
+import os
+import time
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+import yaml
+
+from src.core.logging.logger import ProjectLogger
+from src.core.security.path_validator import PathValidationError",import,0
+core/file_management/file_manager.py,"validate_safe_path
+
+logger",import,0
+core/logging/exception_decorator.py,"functools
+import logging
+from collections.abc import Callable
+
+
+def log_and_raise",import,0
+core/logging/logger.py,"csv
+import json
+import logging
+import queue
+import sys
+import threading
+from datetime import datetime
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
+from typing import Any
+
+
+class ContextAdapter",import,0
+core/logging/log_standards.py,"logging
+from typing import Any",import,0
+core/logging/notifier.py,"asyncio
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+import aiofiles
+import aiohttp
+
+logger",import,0
+core/monitoring/memory_profiler.py,"gc
+import logging
+import threading
+import time
+from collections.abc import Callable
+from contextlib import contextmanager
+from functools import wraps
+from typing import Any
+
+import psutil
+
+
+class MemoryProfiler",import,0
+core/security/path_validator.py,"pathlib.Path
+
+
+class PathValidationError",from,0
+core/security/secure_secrets_manager.py,"base64
+import os
+import re
+import sys
+from pathlib import Path
+
+from cryptography.fernet import Fernet",import,0
+core/security/secure_secrets_manager.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+core/system/archive_manager.py,"logging
+import os
+import zipfile
+from datetime import datetime
+
+logger",import,0
+core/system/batch_processor.py,"json
+import logging
+import threading
+import time
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor",import,0
+core/system/batch_processor.py,"as_completed
+from dataclasses import dataclass",import,0
+core/system/batch_processor.py,"field
+from datetime import datetime
+from pathlib import Path
+from typing import Any",import,0
+core/system/connection_registry.py,"atexit
+import logging
+import sqlite3
+
+import duckdb
+
+logger",import,0
+core/system/version_manager.py,"json
+import logging
+from dataclasses import asdict",import,0
+core/system/version_manager.py,"dataclass
+from datetime import datetime
+from pathlib import Path
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+core/utils/lazy_loader.py,"importlib
+from typing import Any
+
+
+class LazyLoader",import,0
+core/utils/math_utils.py,"numpy as np
+
+
+def safe_sqrt",import,0
+core/utils/path_utils.py,"os
+import re
+
+
+def sanitize_path_input",import,0
+core/utils/prediction_utils.py,"logging
+
+import numpy as np
+
+logger",import,0
+core/validation/validators.py,"re
+from datetime import date",import,0
+core/validation/validators.py,"datetime
+from enum import StrEnum
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from pydantic import BaseModel",import,0
+core/validation/validators.py,Field,import,0
+core/validation/validators.py,ValidationError,import,0
+core/validation/validators.py,field_validator,import,0
+core/validation/validators.py,"model_validator
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+data/collectors/aaii_sentiment_collector.py,"hashlib
+import re
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class AIISentimentCollector",import,0
+data/collectors/alternative_me_collector.py,"hashlib
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class AlternativeMeCollector",import,0
+data/collectors/base_collector.py,abc.ABC,from,0
+data/collectors/base_collector.py,"abc.abstractmethod
+from typing import Any
+
+import httpx
+
+from src",from,0
+data/collectors/base_collector.py,"src.core.clients.http_client_factory.HttpClientFactory
+from src",from,0
+data/collectors/base_collector.py,"src.data.management.data_manager.DataManager
+
+
+class BaseCollector",from,0
+data/collectors/bigquery_collector.py,"asyncio
+import logging
+from typing import Any
+
+from ..management.connectors.bigquery_connector import BigQueryConnector
+from .base_collector import BaseCollector
+
+logger",import,0
+data/collectors/cftc_collector.py,"asyncio
+import hashlib
+from datetime import datetime",import,0
+data/collectors/cftc_collector.py,"timedelta
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class CFTCCollector",import,0
+data/collectors/collector_factory.py,"importlib
+import inspect
+import os
+import pkgutil
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class CollectorFactory",import,0
+data/collectors/custom_csv_collector.py,"asyncio
+import csv
+import logging
+from typing import Any
+
+from .base_collector import BaseCollector
+
+logger",import,0
+data/collectors/economic_calendar_collector.py,"asyncio
+import hashlib
+from datetime import datetime",import,0
+data/collectors/economic_calendar_collector.py,"timedelta
+from io import StringIO
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class EconomicCalendarCollector",import,0
+data/collectors/fear_greed_collector.py,"hashlib
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class FearGreedCollector",import,0
+data/collectors/fred_collector.py,"asyncio
+import hashlib
+from datetime import datetime",import,0
+data/collectors/fred_collector.py,"timedelta
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class FredCollector",import,0
+data/collectors/free_google_trends_collector.py,"asyncio
+import logging
+from typing import Any
+
+import pandas as pd
+from pytrends.request import TrendReq
+
+from .base_collector import BaseCollector
+
+logger",import,0
+data/collectors/google_news_collector.py,"asyncio
+import hashlib
+from typing import Any
+
+import pandas as pd
+from gnews import GNews
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class GoogleNewsCollector",import,0
+data/collectors/huggingface_collector.py,"hashlib
+import os
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class HuggingfaceCollector",import,0
+data/collectors/insider_collector.py,"asyncio
+import hashlib
+import logging
+from typing import Any
+
+import httpx
+import pandas as pd
+from bs4 import BeautifulSoup
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+logger",import,0
+data/collectors/local_file_collector.py,"asyncio
+import logging
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.security.path_validator import PathValidationError",import,0
+data/collectors/local_file_collector.py,"validate_safe_path
+from src.data.collectors.base_collector import BaseCollector
+
+logger",import,0
+data/collectors/market_data_collector.py,"asyncio
+import logging
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+logger",import,0
+data/collectors/newsapi_collector.py,"asyncio
+import hashlib
+import os
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class NewsAPICollector",import,0
+data/collectors/put_call_ratio_collector.py,"hashlib
+import re
+from datetime import datetime",import,0
+data/collectors/put_call_ratio_collector.py,"timedelta
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class PutCallRatioCollector",import,0
+data/collectors/reddit_sentiment_collector.py,"hashlib
+import random
+from datetime import datetime",import,0
+data/collectors/reddit_sentiment_collector.py,"timedelta
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+
+class RedditSentimentCollector",import,0
+data/collectors/rss_collector.py,"asyncio
+import hashlib
+from datetime import UTC",import,0
+data/collectors/rss_collector.py,datetime,import,0
+data/collectors/rss_collector.py,"timedelta
+from typing import Any
+
+import feedparser
+import httpx
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+_CONNECT_TIMEOUT",import,0
+data/collectors/sec_filings_collector.py,"asyncio
+import hashlib
+import json
+import logging
+from datetime import datetime",import,0
+data/collectors/sec_filings_collector.py,"timedelta
+from typing import Any
+
+import httpx
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+logger",import,0
+data/collectors/synthetic_generator.py,"numpy as np
+
+from .base_collector import BaseCollector
+
+
+class SyntheticGenerator",import,0
+data/collectors/vix_collector.py,"hashlib
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.cache.cache_manager import CacheManager
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+logger",import,0
+data/collectors/yf_collector.py,"asyncio
+import hashlib
+import logging
+import time
+from datetime import datetime",import,0
+data/collectors/yf_collector.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+import yfinance as yf
+
+from src.core.clients.http_client_factory import HttpClientFactory
+from src.data.management.data_manager import DataManager
+
+from .base_collector import BaseCollector
+
+logger",import,0
+data/management/asset_manager.py,"logging
+from dataclasses import dataclass
+from enum import Enum
+
+import pandas as pd
+
+logger",import,0
+data/management/data_cleaner.py,"numpy as np
+import pandas as pd
+
+
+class DataCleaner",import,0
+data/management/data_manager.py,"logging
+import os
+import re
+import time
+from contextlib import contextmanager
+from typing import Any
+
+import duckdb
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.error_handling.error_handler import ErrorHandler",import,0
+data/management/data_manager.py,"IErrorHandler
+from src.core.exceptions import DataLoadError
+
+logger",import,0
+data/management/data_versioning.py,"hashlib
+import json
+import logging
+from datetime import datetime",import,0
+data/management/data_versioning.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+logger",import,0
+data/quality/data_freshness_checker.py,datetime.datetime,from,0
+data/quality/data_freshness_checker.py,"datetime.timedelta
+
+import pandas as pd
+
+from src",from,0
+data/quality/news_price_availability_filter.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+data/quality/temporal_alignment_checker.py,"logging
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+data/quality/__init__.py,.data_freshness_checker.DataFreshnessChecker,from,0
+data/quality/__init__.py,".data_freshness_checker.check_data_freshness
+from",from,0
+data/synthetic/data_generator.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+data/synthetic/data_generator.py,"src.core.logging.logger.ProjectLogger
+
+
+class DataGenerator",from,0
+data/validation/event_dataset_validator.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+data/management/connectors/bigquery_connector.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+data/management/connectors/bigquery_connector.py,"src.integrations.data.bigquery_client.BigQueryClient
+
+logger",from,0
+data/management/handlers/connection_handler.py,"logging
+import os
+import time
+from contextlib import contextmanager
+
+import duckdb
+
+logger",import,0
+ensembling/ensemble/__init__.py,..stacked_ensemble.EnsembleResult,from,0
+ensembling/ensemble/__init__.py,..stacked_ensemble.StackedEnsemble,from,0
+ensembling/ensemble/__init__.py,"..stacked_ensemble.ensemble_forecast
+
+__all__",from,0
+features/analysis/importance_stability_analyzer.py,"datetime.datetime
+from typing import Any
+
+import numpy as np
+
+from src",from,0
+features/analysis/market_conditions_analyzer.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/analysis/news_decay_modeler.py,"json
+from datetime import datetime",import,0
+features/analysis/news_decay_modeler.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.features.analysis.decay.decay_function_registry import DecayFunctionRegistry
+from src.features.analysis.decay.decay_model_fitter import DecayModelFitter
+from src.features.analysis.decay.decay_predictor import DecayPredictor
+
+logger",import,0
+features/analysis/regime_adapter.py,"typing.Any
+
+from src",from,0
+features/analysis/regime_importance_tracker.py,"json
+from datetime import datetime",import,0
+features/analysis/regime_importance_tracker.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+from src.features.analysis.importance_stability_analyzer import ImportanceStabilityAnalyzer
+from src.features.analysis.market_conditions_analyzer import MarketConditionsAnalyzer
+from src.features.analysis.regime_adapter import RegimeAdapter
+
+logger",import,0
+features/analysis/__init__.py,.news_decay_modeler.NewsDecayModeler,from,0
+features/analysis/__init__.py,.news_decay_modeler.fit_news_decay_model_quick,from,0
+features/analysis/__init__.py,".news_decay_modeler.get_news_decay_modeler
+from",from,0
+features/builders/news_event_dataset_builder.py,"__future__.annotations
+
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+features/builders/news_event_dataset_builder.py,"src.utils.trading_calendar.TradingCalendar
+
+from",from,0
+features/builders/news_event_dataset_builder.py,.news_event.enricher.NewsGlobalEnricher,from,0
+features/builders/news_event_dataset_builder.py,".news_event.filter.NewsEventDataFilter
+
+logger",from,0
+features/builders/__init__.py,".news_event_dataset_builder.NewsEventDatasetBuilder
+
+__all__",from,0
+features/enrichers/advanced_analytics_enricher.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+features/enrichers/advanced_analytics_enricher.py,"src.analytics.calculators.sentiment_stats_calculator.SentimentStatsCalculator
+from src",from,0
+features/enrichers/advanced_analytics_enricher.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+features/enrichers/base.py,"logging
+from abc import ABC",import,0
+features/enrichers/base.py,"abstractmethod
+
+import pandas as pd
+
+
+class EnricherError",import,0
+features/enrichers/context_map_enricher.py,"hashlib
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+from .base import BaseEnricher
+
+logger",import,0
+features/enrichers/decay_features_enricher.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from .base import BaseEnricher
+
+logger",import,0
+features/enrichers/derived_features_enricher.py,"logging
+
+import pandas as pd
+
+from src.analytics.calculators.volatility_calculator import VolatilityCalculator
+from src.config.unified_config_manager import get_current_config
+from src.features.enrichers.base import BaseEnricher
+
+logger",import,0
+features/enrichers/hype_enricher.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+features/enrichers/hype_enricher.py,"src.features.enrichers.base.BaseEnricher
+
+logger",from,0
+features/enrichers/keyword_entity_enricher.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+features/enrichers/keyword_entity_enricher.py,"src.features.enrichers.base.BaseEnricher
+from src",from,0
+features/enrichers/keyword_entity_enricher.py,"src.features.nlp.extractors.keyword_extractor.KeywordExtractor
+
+logger",from,0
+features/enrichers/macro_features_enricher.py,"logging
+import os
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
+
+logger",import,0
+features/enrichers/market_context_enricher.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
+from src.core.logging.logger import ProjectLogger
+
+from .base import BaseEnricher
+
+logger",import,0
+features/enrichers/news_impact_enricher.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.analyzers.news_impact_analyzer import NewsImpactAnalyzer
+from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
+
+logger",import,0
+features/enrichers/news_quality_enricher.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+features/enrichers/news_quality_enricher.py,"src.features.enrichers.base.BaseEnricher
+
+logger",from,0
+features/enrichers/nlp_features_enricher.py,"pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
+from src.features.nlp.processors.news_analyzer import NewsAnalyzer
+
+logger",import,0
+features/enrichers/sentiment_features_enricher.py,"numpy as np
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.features.enrichers.base import BaseEnricher
+
+logger",import,0
+features/enrichers/significance_features_enricher.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.features.enrichers.base import BaseEnricher
+
+logger",import,0
+features/enrichers/technical_analysis_enricher.py,"logging
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.features.utils.technical_indicators_lib import TechnicalIndicators
+
+from .base import BaseEnricher
+
+logger",import,0
+features/enrichers/time_features_enricher.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.features.enrichers.base import BaseEnricher
+from src.features.utils.time_utils import add_time_features
+
+
+class TimeFeaturesEnricher",import,0
+features/enrichers/volatility_enricher.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+features/enrichers/volatility_enricher.py,".base.BaseEnricher
+
+logger",from,0
+features/enrichers/volume_enricher.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+features/enrichers/volume_enricher.py,".base.BaseEnricher
+
+logger",from,0
+features/monitoring/feature_drift_detector.py,"json
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/nlp/deduplication_service.py,"pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/selection/enhanced_smart_selector.py,"datetime.datetime
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+features/selection/enhanced_smart_selector.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+features/selection/enhanced_smart_selector.py,"src.features.analysis.regime_importance_tracker.get_regime_importance_tracker
+from src",from,0
+features/selection/enhanced_smart_selector.py,src.monitoring.data_freshness_monitor.get_data_freshness_monitor,from,0
+features/selection/enhanced_smart_selector.py,src.monitoring.feature_drift_monitor.get_feature_drift_monitor,from,0
+features/selection/enhanced_smart_selector.py,".smart_selector.SmartFeatureSelector
+
+logger",from,0
+features/selection/smart_selector.py,"json
+import logging
+import os
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn.feature_selection import mutual_info_classif",import,0
+features/selection/smart_selector.py,"mutual_info_regression
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/selection/volatility_driver_selector.py,"numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/selection/__init__.py,.enhanced_smart_selector.EnhancedSmartFeatureSelector,from,0
+features/selection/__init__.py,.enhanced_smart_selector.get_enhanced_smart_selector,from,0
+features/selection/__init__.py,".enhanced_smart_selector.select_features_enhanced
+from",from,0
+features/utils/datetime_utils.py,"logging
+
+import pandas as pd
+
+logger",import,0
+features/utils/modular_adaptive_technical_indicators.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+features/utils/modular_adaptive_technical_indicators.py,"src.utils.data_safety.safe_rolling
+
+logger",from,0
+features/utils/technical_indicators_lib.py,"numpy as np
+import pandas as pd
+
+
+class TechnicalIndicators",import,0
+features/utils/time_utils.py,"logging
+
+import numpy as np
+import pandas as pd
+
+logger",import,0
+features/validation/feature_leakage_guard.py,"json
+import logging
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/validation/redundancy_detector.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+features/validation/redundancy_detector.py,"sklearn.linear_model.LinearRegression
+from sklearn",from,0
+features/validation/redundancy_detector.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+features/validation/__init__.py,.feature_leakage_guard.FeatureLeakageGuard,from,0
+features/validation/__init__.py,.feature_leakage_guard.LeakageReport,from,0
+features/validation/__init__.py,".feature_leakage_guard.get_leakage_guard
+from",from,0
+features/analysis/decay/decay_function_registry.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+features/analysis/decay/decay_model_fitter.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from scipy",from,0
+features/analysis/decay/decay_model_fitter.py,sklearn.metrics.mean_absolute_error,from,0
+features/analysis/decay/decay_model_fitter.py,"sklearn.metrics.mean_squared_error
+
+from src",from,0
+features/analysis/decay/decay_predictor.py,"datetime.timedelta
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+features/builders/news_event/candle_seeker.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+features/builders/news_event/enricher.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+features/builders/news_event/filter.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/nlp/extractors/entity_extractor.py,"logging
+from collections.abc import Iterable
+from typing import Any
+
+logger",import,0
+features/nlp/extractors/keyword_extractor.py,"logging
+import re
+
+logger",import,0
+features/nlp/extractors/news_ticker_detector.py,"logging
+from collections import defaultdict
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/nlp/models/finbert_pipeline.py,"threading.Lock
+from typing import Any
+
+from src",from,0
+features/nlp/models/roberta_sentiment.py,"logging
+from typing import Any",import,0
+features/nlp/models/sentiment_core.py,"hashlib
+import logging
+
+from src.config.sentiment_config import SENTIMENT_DEFAULTS
+from src.core.logging.logger import ProjectLogger
+from src.features.nlp.scoring.news_score import compute_news_score",import,0
+features/nlp/processors/article_processor.py,"logging
+from typing import Any
+
+from src.features.nlp.extractors.keyword_extractor import KeywordExtractor",import,0
+features/nlp/processors/article_processor.py,"src.features.nlp.models.roberta_sentiment.RobertaSentimentAnalyzer
+from src",from,0
+features/nlp/processors/article_processor.py,"src.features.nlp.scoring.simple_sentiment.SimpleSentimentAnalyzer
+from src",from,0
+features/nlp/processors/news_analyzer.py,"numpy as np
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+from textblob import TextBlob
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/nlp/processors/news_harmonizer.py,"logging
+
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/nlp/processors/news_processing.py,"os
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+features/nlp/scoring/keyword_features.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+features/nlp/scoring/news_score.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+features/nlp/scoring/news_scorer.py,"logging
+import math
+from typing import Any
+
+logger",import,0
+features/nlp/scoring/simple_sentiment.py,"logging
+import re
+from typing import Any
+
+logger",import,0
+features/nlp/scoring/summarizer.py,"logging
+from typing import Any",import,0
+features/nlp/utils/gdelt_utils.py,"pandas as pd
+
+from .keyword_features import KeywordExtractor
+
+
+def _extract_date_from_gdelt",import,0
+features/nlp/utils/mention_utils.py,"logging
+from typing import Any
+
+from src.features.nlp.keyword_extractor import KeywordExtractor
+
+logger",import,0
+feature_engineering/transformers/transformers.py,"__future__.annotations
+
+from collections",from,0
+feature_engineering/transformers/transformers.py,dataclasses.dataclass,from,0
+feature_engineering/transformers/transformers.py,"dataclasses.field
+
+import pandas as pd
+from sklearn",from,0
+integrations/data/bigquery_client.py,"os
+import random
+from datetime import datetime",import,0
+integrations/data/bigquery_client.py,"timedelta
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from google.auth.exceptions import DefaultCredentialsError
+from google.cloud import bigquery
+from pandas_gbq.gbq import GenericGBQException
+
+from src.core.base_integration import BaseIntegration
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+main/modes/backtest.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+main/modes/backtest.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+main/modes/backtest.py,"src.pipeline.pipeline_orchestrator.PipelineOrchestrator
+from src",from,0
+main/modes/backtest.py,".base.BaseMode
+
+logger",from,0
+main/modes/base.py,abc.ABC,from,0
+main/modes/base.py,"abc.abstractmethod
+from typing import Any
+
+from src",from,0
+main/modes/base.py,"src.core.logging.logger.ProjectLogger
+
+
+class BaseMode",from,0
+main/modes/intelligent.py,"logging
+from typing import Any",import,0
+main/modes/intelligent.py,"cast
+
+from src.main.system_orchestrator import SystemOrchestrator
+
+
+class IntelligentMode",import,0
+main/modes/monster_test.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.main.modes.base import BaseMode
+from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+from src.simulation.simulation_engine import SimulationEngine
+
+logger",import,0
+main/modes/predict.py,"asyncio
+import inspect
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.main.modes.base import BaseMode
+from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
+
+class PredictMode",import,0
+main/modes/train.py,"asyncio
+import inspect
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.main.modes.base import BaseMode
+from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
+
+class TrainMode",import,0
+main/modes/training_data_pipeline.py,"asyncio
+from pathlib import Path
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+from src.features.feature_orchestrator import FeatureOrchestrator
+from src.pipeline.stages.stage_1_collection import CollectionStage",import,0
+main/modes/training_data_pipeline.py,"src.targets.target_orchestrator.TargetOrchestrator
+
+logger",from,0
+main/modes/web_ui.py,"http.server
+import json
+import socketserver
+from datetime import datetime
+from typing import Any
+
+from src.main.modes.base import BaseMode
+
+CONTENT_TYPE_HTML",import,0
+main/modes/__init__.py,".backtest.BacktestMode
+from",from,0
+main/modes/__init__.py,".monster_test.MonsterTestMode
+from",from,0
+meta_learning/awareness/context_engine.py,".context.manager.ContextAwarenessEngine as ModularContextAwarenessEngine
+
+
+class ContextAwarenessEngine",from,0
+meta_learning/evolution/dual_loops.py,"json
+import sqlite3
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.arena.arena_battle import get_trading_arena
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+from src.devtools.rule_generator import ContextRuleGenerator
+from src.meta_learning.base import BaseMetaComponent
+from src.meta_learning.memory.diary_engine import DiaryEngine",import,0
+meta_learning/memory/contextual_weight_calculator.py,"logging
+from dataclasses import dataclass
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger",import,0
+meta_learning/memory/diary_engine.py,"json
+import logging
+import sys
+from collections import deque
+from dataclasses import dataclass",import,0
+meta_learning/memory/diary_engine.py,"field
+from datetime import UTC",import,0
+meta_learning/memory/diary_engine.py,"datetime
+from enum import Enum
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.data.management.data_manager import DataManager
+from src.meta_learning.base import BaseMetaComponent
+from src.meta_learning.memory.contextual_weight_calculator import ContextualWeightCalculator
+from src.meta_learning.memory.knn_context_finder import KnnContextFinder
+
+
+class DecisionType",import,0
+meta_learning/memory/knn_context_finder.py,"logging
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.meta_learning.memory.contextual_weight_calculator import ContextualWeightCalculator
+
+
+class KnnContextFinder",import,0
+meta_learning/security/agent_permissions.py,"json
+from dataclasses import dataclass
+from datetime import datetime",import,0
+meta_learning/security/agent_permissions.py,"timedelta
+from enum import Enum
+from pathlib import Path
+from threading import RLock
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+meta_learning/security/constraint_engine.py,"collections.abc.Callable
+from dataclasses import dataclass",from,0
+meta_learning/security/constraint_engine.py,"collections.abc.field
+from datetime import datetime",from,0
+meta_learning/security/constraint_engine.py,"collections.abc.timedelta
+from enum import Enum
+from threading import RLock
+from typing import Any
+
+from src",from,0
+meta_learning/security/constraint_engine.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+meta_learning/security/constraint_validators.py,datetime.datetime,from,0
+meta_learning/security/constraint_validators.py,"datetime.timedelta
+from typing import Any
+
+from src",from,0
+meta_learning/security/constraint_validators.py,"src.core.logging.logger.ProjectLogger
+
+
+class ConstraintValidators",from,0
+meta_learning/awareness/context/analyzer.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+meta_learning/awareness/context/analyzer.py,.models.EventImpact,from,0
+meta_learning/awareness/context/analyzer.py,.models.MarketContext,from,0
+meta_learning/awareness/context/analyzer.py,.models.MarketEvent,from,0
+meta_learning/awareness/context/analyzer.py,".models.MarketRegime
+
+logger",from,0
+meta_learning/awareness/context/manager.py,"datetime.datetime
+from typing import Any
+
+from src",from,0
+meta_learning/awareness/context/manager.py,"src.meta_learning.base.BaseMetaComponent
+
+from",from,0
+meta_learning/awareness/context/manager.py,".models.MarketContext
+from",from,0
+meta_learning/awareness/context/manager.py,".storage.ContextStorage
+
+logger",from,0
+meta_learning/awareness/context/models.py,"dataclasses.dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+
+class EventType",from,0
+meta_learning/awareness/context/scanner.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+meta_learning/awareness/context/storage.py,"json
+import sqlite3
+from datetime import datetime",import,0
+meta_learning/awareness/context/storage.py,"timedelta
+
+from src.core.logging.logger import ProjectLogger
+
+from .models import EventImpact",import,0
+meta_learning/awareness/context/storage.py,EventType,import,0
+meta_learning/awareness/context/storage.py,MarketContext,import,0
+meta_learning/awareness/context/storage.py,"MarketEvent
+
+logger",import,0
+meta_learning/awareness/context/__init__.py,".analyzer.ContextAnalyzer
+from",from,0
+meta_learning/awareness/context/__init__.py,.models.EventImpact,from,0
+meta_learning/awareness/context/__init__.py,.models.EventType,from,0
+meta_learning/awareness/context/__init__.py,.models.MarketContext,from,0
+meta_learning/awareness/context/__init__.py,.models.MarketEvent,from,0
+meta_learning/awareness/context/__init__.py,".models.MarketRegime
+from",from,0
+meta_learning/awareness/context/__init__.py,".storage.ContextStorage
+
+__all__",from,0
+metrics/financial/financial_metrics_library.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from statsmodels",from,0
+metrics/financial/financial_metrics_library.py,statsmodels.tsa.stattools.adfuller,from,0
+metrics/financial/financial_metrics_library.py,"statsmodels.tsa.stattools.grangercausalitytests
+
+from src",from,0
+metrics/financial/portfolio_metrics.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+metrics/financial/portfolio_metrics.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+metrics/model/ml_evaluator.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+metrics/model/ml_evaluator.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+metrics/utils/calculation_tools.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/actions/action_trigger.py,"typing.Any
+
+from src",from,0
+models/actions/action_trigger.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/adapters/data_preparation.py,"logging
+from typing import Any",import,0
+models/adapters/data_preparation.py,"numpy as np
+import pandas as pd
+from scipy.stats import kurtosis",import,0
+models/adapters/data_preparation.py,"skew
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import LabelEncoder",import,0
+models/adapters/data_preparation.py,"StandardScaler
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/adapters/sentiment_integration.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+models/adapters/sentiment_integration.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/analysis/baseline_dominance_detector.py,"datetime.datetime
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+models/analysis/baseline_dominance_detector.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/analysis/baseline_dominance_detector.py,"src.models.analysis.baseline.recommendations.BaselineRecommendationEngine
+
+logger",from,0
+models/analysis/model_analyzer.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/analysis/model_analyzer.py,"src.core.exceptions.DataProcessingError
+from src",from,0
+models/analysis/model_analyzer.py,"src.models.analysis.baseline_dominance_detector.BaselineDominanceDetector
+from src",from,0
+models/analysis/model_analyzer.py,"src.models.analysis.regime_winner_analyzer.RegimeWinnerAnalyzer
+from src",from,0
+models/analysis/model_health_analyzer.py,"datetime.datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+models/analysis/model_health_analyzer.py,"src.models.analysis.baseline_dominance_detector.BaselineDominanceDetector
+from src",from,0
+models/analysis/model_health_analyzer.py,"src.models.analysis.regime_winner_analyzer.RegimeWinnerAnalyzer
+from src",from,0
+models/analysis/overfitting_detector.py,"typing.Any
+
+import pandas as pd
+
+from",from,0
+models/analysis/regime_winner_analyzer.py,"json
+from collections import defaultdict
+from datetime import datetime",import,0
+models/analysis/regime_winner_analyzer.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/analysis/__init__.py,".baseline_dominance_detector.BaselineDominanceDetector
+from",from,0
+models/analysis/__init__.py,".regime_winner_analyzer.RegimeWinnerAnalyzer
+
+__all__",from,0
+models/dean/dean_bootstrap_system.py,"logging
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+import numpy as np",import,0
+models/ensemble/confidence_calibrator.py,"pathlib.Path
+from typing import Any
+
+import joblib
+import numpy as np
+
+from src",from,0
+models/ensemble/confidence_calibrator.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/ensemble/confidence_calibrator.py,"src.utils.artifact_security.resolve_trusted_artifact_path
+
+logger",from,0
+models/ensemble/dynamic_weights.py,"json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/ensemble/enhanced_ensemble.py,"logging
+from pathlib import Path
+from typing import Any
+
+import joblib
+import numpy as np
+import pandas as pd
+
+from src.models.registry.model_registry import ModelRegistry
+
+logger",import,0
+models/ensemble/ensemble_model.py,"pathlib.Path
+from typing import Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/ensemble/ensemble_model.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/ensemble/model_correlation_analyzer.py,"typing.Any
+
+import pandas as pd
+
+from",from,0
+models/ensemble/model_correlation_analyzer.py,".correlation.correlation_visualizer.get_correlation_visualizer
+
+
+class ModelCorrelationAnalyzer",from,0
+models/ensemble/weight_stability_monitor.py,"datetime.datetime
+from typing import Any
+
+from",from,0
+models/ensemble/__init__.py,.confidence_calibrator.ConfidenceCalibrator,from,0
+models/ensemble/__init__.py,.confidence_calibrator.calibrate_confidence_quick,from,0
+models/ensemble/__init__.py,".confidence_calibrator.get_confidence_calibrator
+from",from,0
+models/ensembling/composer.py,"logging
+from dataclasses import dataclass
+from typing import Any
+
+logger",import,0
+models/health/model_health_evaluator.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+models/linear/knn_model.py,"typing.Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/linear/knn_model.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/linear/linear_model.py,"typing.Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/linear/linear_model.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/linear/svm_model.py,"typing.Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/linear/svm_model.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/model_selector/adaptive_selector.py,"json
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import TYPE_CHECKING",import,0
+models/model_selector/adaptive_selector.py,Any,import,0
+models/model_selector/adaptive_selector.py,"Optional
+
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger
+from src.models.model_selector.fingerprint_selector import SmartModelSelector as FingerprintModelSelector
+
+if TYPE_CHECKING",import,0
+models/model_selector/fingerprint_selector.py,typing.Any,from,0
+models/model_selector/fingerprint_selector.py,"typing.cast
+
+from src",from,0
+models/model_selector/heavy_light_comparator.py,"dataclasses.dataclass
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+import psutil",from,0
+models/model_selector/heavy_light_comparator.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/model_selector/smart_selector.py,"json
+import warnings
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+
+from src.core.logging.logger import ProjectLogger
+
+warnings.filterwarnings",import,0
+models/model_selector/__init__.py,.adaptive_selector.AdaptiveModelSelector,from,0
+models/model_selector/__init__.py,".fingerprint_selector.SmartModelSelector as FingerprintModelSelector
+from",from,0
+models/monitoring/prediction_drift_monitor.py,"json
+from datetime import datetime",import,0
+models/monitoring/prediction_drift_monitor.py,"timedelta
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+from src.models.monitoring.drift.alert_system import get_alert_system
+from src.models.monitoring.drift.analyzer import DriftAnalyzer
+from src.models.monitoring.drift.drift_calculator import get_drift_calculator
+from src.models.monitoring.drift.drift_visualizer import get_drift_visualizer
+from src.models.monitoring.drift.history import HistoryManager
+
+logger",import,0
+models/monitoring/__init__.py,.prediction_drift_monitor.PredictionDriftMonitor,from,0
+models/monitoring/__init__.py,.prediction_drift_monitor.get_prediction_drift_monitor,from,0
+models/monitoring/__init__.py,".prediction_drift_monitor.monitor_predictions_quick
+
+__all__",from,0
+models/neural/autoencoder_model.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+models/neural/autoencoder_model.py,src.models.neural.base_neural.BaseNeuralModel,from,0
+models/neural/autoencoder_model.py,"src.models.neural.base_neural._get_tf
+
+
+class AutoencoderModel",from,0
+models/neural/base_neural.py,logging,import,0
+models/neural/base_neural.py,"os
+from abc import abstractmethod
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel",import,0
+models/neural/cnn_model.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+models/neural/cnn_model.py,src.models.neural.base_neural.BaseNeuralModel,from,0
+models/neural/cnn_model.py,"src.models.neural.base_neural._get_tf
+
+
+class CNNModel",from,0
+models/neural/gru_model.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+models/neural/gru_model.py,src.models.neural.base_neural.BaseNeuralModel,from,0
+models/neural/gru_model.py,"src.models.neural.base_neural._get_tf
+
+
+class GRUModel",from,0
+models/neural/lstm_model.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+models/neural/lstm_model.py,src.models.neural.base_neural.BaseNeuralModel,from,0
+models/neural/lstm_model.py,"src.models.neural.base_neural._get_tf
+
+
+class LSTMModel",from,0
+models/neural/mlp_model.py,"typing.Any
+
+from src",from,0
+models/neural/mlp_model.py,src.models.neural.base_neural.BaseNeuralModel,from,0
+models/neural/mlp_model.py,"src.models.neural.base_neural._get_tf
+
+
+class MLPModel",from,0
+models/neural/tabnet_model.py,"pathlib.Path
+
+import joblib
+import numpy as np
+import pandas as pd",from,0
+models/neural/tabnet_model.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/neural/transformer_model.py,"__future__.annotations
+
+import logging
+import warnings
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/neural/transformer_model.py,"sklearn.preprocessing.StandardScaler
+
+from src",from,0
+models/prototypes/prototype.py,"importlib
+import logging
+from datetime import datetime
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel
+
+logger",import,0
+models/prototypes/registry.py,"json
+import logging
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.models.prototypes.prototype import ModelPrototype
+
+logger",import,0
+models/prototypes/__init__.py,"src.models.prototypes.prototype.ModelPrototype
+from src",from,0
+models/quality/controller.py,"logging
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/quality/__init__.py,"src.models.quality.controller.ModelQualityController
+
+__all__",from,0
+models/registry/model_registry.py,"typing.Any
+
+from src",from,0
+models/statistics/model_statistics.py,datetime.datetime,from,0
+models/statistics/model_statistics.py,"datetime.timedelta
+from typing import Any
+
+import numpy as np
+
+from src",from,0
+models/tree/catboost_model.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from catboost import CatBoostClassifier",from,0
+models/tree/catboost_model.py,"typing.CatBoostRegressor
+
+from src",from,0
+models/tree/catboost_model.py,src.models.interfaces.BaseModel,from,0
+models/tree/lightgbm_model.py,"typing.Any
+
+import joblib
+import lightgbm as lgb
+import numpy as np
+import pandas as pd
+
+from src",from,0
+models/tree/lightgbm_model.py,"src.models.interfaces.BaseModel
+
+
+class LightGBMModel",from,0
+models/tree/random_forest_model.py,"typing.Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/tree/random_forest_model.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+models/tree/xgboost_model.py,"typing.Any
+
+import joblib
+import numpy as np
+import pandas as pd
+
+from src",from,0
+models/tree/xgboost_model.py,src.models.interfaces.BaseModel,from,0
+models/analysis/baseline/comparison.py,"logging
+from typing import Any
+
+logger",import,0
+models/analysis/baseline/recommendations.py,"logging
+from typing import Any
+
+logger",import,0
+models/analysis/baselines/base.py,abc.ABC,from,0
+models/analysis/baselines/base.py,"abc.abstractmethod
+from typing import Any
+
+import pandas as pd
+from sklearn",from,0
+models/analysis/baselines/models.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/analysis/baselines/models.py,"sklearn.linear_model.LinearRegression
+
+from src",from,0
+models/analysis/baselines/models.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+models/analysis/baselines/strategies.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+models/analysis/baselines/strategies.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+models/analysis/baselines/__init__.py,".base.BaseBaseline
+from",from,0
+models/analysis/baselines/__init__.py,.strategies.BuyAndHoldBaseline,from,0
+models/analysis/baselines/__init__.py,.strategies.MeanReversionBaseline,from,0
+models/analysis/baselines/__init__.py,".strategies.MovingAverageBaseline
+
+__all__",from,0
+models/analysis/overfitting_detection/analyzer.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/analysis/overfitting_detection/analyzer.py,"src.core.exceptions.DataProcessingError
+from src",from,0
+models/analysis/overfitting_detection/config.py,"pathlib.Path
+from typing import Any
+
+import numpy as np
+
+
+class OverfittingConfig",from,0
+models/analysis/overfitting_detection/manager.py,"json
+from datetime import datetime
+from typing import Any
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+from .analyzer import OverfittingAnalyzer
+from .config import OverfittingConfig
+from .metrics import OverfittingMetrics
+from .visualizer import OverfittingVisualizer
+
+logger",import,0
+models/analysis/overfitting_detection/metrics.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+models/analysis/overfitting_detection/metrics.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/analysis/overfitting_detection/visualizer.py,"pathlib.Path
+from typing import Any
+
+import matplotlib",from,0
+models/analysis/overfitting_detection/visualizer.py,"seaborn as sns
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/analysis/overfitting_detection/__init__.py,".analyzer.OverfittingAnalyzer
+from",from,0
+models/analysis/overfitting_detection/__init__.py,".manager.OverfittingDetector
+from",from,0
+models/analysis/overfitting_detection/__init__.py,".visualizer.OverfittingVisualizer
+
+__all__",from,0
+models/analysis/regime/detector.py,"numpy as np
+import pandas as pd
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/analysis/regime/metrics.py,"typing.Any
+
+from src",from,0
+models/analysis/regime/metrics.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/analysis/regime/patterns.py,"collections.defaultdict
+from typing import Any
+
+import numpy as np
+
+from src",from,0
+models/analysis/regime/patterns.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/analysis/regime/recommendations.py,"typing.Any
+
+from src",from,0
+models/analysis/regime/stability.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+models/analysis/regime/stability.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/analysis/regime/__init__.py,".detector.RegimeDetector
+from",from,0
+models/analysis/regime/__init__.py,".patterns.RegimePatternAnalyzer
+from",from,0
+models/analysis/regime/__init__.py,".stability.RegimeStabilityAnalyzer
+
+__all__",from,0
+models/ensemble/calibration/base.py,abc.ABC,from,0
+models/ensemble/calibration/base.py,"abc.abstractmethod
+from typing import Any
+
+import numpy as np
+
+from src",from,0
+models/ensemble/calibration/strategies.py,"typing.Any
+
+import numpy as np
+from sklearn",from,0
+models/ensemble/calibration/strategies.py,"sklearn.linear_model.LogisticRegression
+
+from",from,0
+models/ensemble/correlation/correlation_engine.py,datetime.datetime,from,0
+models/ensemble/correlation/correlation_engine.py,"datetime.timedelta
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from scipy",from,0
+models/ensemble/correlation/correlation_engine.py,"sklearn.metrics.mutual_info_score
+
+from src",from,0
+models/ensemble/correlation/correlation_engine.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/ensemble/correlation/correlation_visualizer.py,"pathlib.Path
+from typing import Any
+
+import matplotlib",from,0
+models/ensemble/correlation/correlation_visualizer.py,"pandas as pd
+import seaborn as sns
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/ensemble/correlation/__init__.py,.correlation_engine.CorrelationEngine,from,0
+models/ensemble/correlation/__init__.py,".correlation_engine.get_correlation_engine
+from",from,0
+models/ensemble/weight_stability/analyzer.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+models/ensemble/weight_stability/calculator.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+models/ensemble/weight_stability/manager.py,datetime.datetime,from,0
+models/ensemble/weight_stability/manager.py,"datetime.timedelta
+from typing import Any
+
+from src",from,0
+models/ensemble/weight_stability/manager.py,".analyzer.WeightStabilityAnalyzer
+from",from,0
+models/ensemble/weight_stability/manager.py,".config.WeightStabilityConfig
+from",from,0
+models/ensemble/weight_stability/manager.py,".visualizer.WeightStabilityVisualizer
+
+logger",from,0
+models/ensemble/weight_stability/stabilizer.py,"typing.Any
+
+from src",from,0
+models/ensemble/weight_stability/visualizer.py,"matplotlib
+import numpy as np
+
+matplotlib.use",import,0
+models/ensemble/weight_stability/visualizer.py,"typing.Any
+
+import matplotlib",from,0
+models/ensemble/weight_stability/visualizer.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+models/ensemble/weight_stability/__init__.py,".analyzer.WeightStabilityAnalyzer
+from",from,0
+models/ensemble/weight_stability/__init__.py,".config.WeightStabilityConfig
+from",from,0
+models/ensemble/weight_stability/__init__.py,".stabilizer.WeightStabilizer
+from",from,0
+models/monitoring/drift/alert_system.py,"datetime.datetime
+from typing import Any
+
+from src",from,0
+models/monitoring/drift/analyzer.py,"logging
+from typing import Any
+
+import numpy as np
+
+from src.core.exceptions import DataProcessingError
+
+logger",import,0
+models/monitoring/drift/drift_calculator.py,"typing.Any
+
+import numpy as np
+from scipy import stats
+
+from src",from,0
+models/monitoring/drift/drift_visualizer.py,"typing.Any
+
+import matplotlib",from,0
+models/monitoring/drift/drift_visualizer.py,"numpy as np
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+models/monitoring/drift/history.py,"logging
+from collections import deque
+from datetime import datetime
+from typing import Any
+
+from src.core.exceptions import DataProcessingError
+
+logger",import,0
+models/monitoring/drift/__init__.py,.alert_system.AlertSystem,from,0
+models/monitoring/drift/__init__.py,".alert_system.get_alert_system
+from",from,0
+models/monitoring/drift/__init__.py,.drift_visualizer.DriftVisualizer,from,0
+models/monitoring/drift/__init__.py,".drift_visualizer.get_drift_visualizer
+
+__all__",from,0
+monitoring/infrastructure/resource_monitor.py,"queue
+import time
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from functools import wraps
+from threading import Lock",import,0
+monitoring/infrastructure/resource_monitor.py,"Thread
+from typing import Any
+
+import psutil
+
+from src.core.logging.logger import ProjectLogger
+
+
+class ResourceMonitor",import,0
+monitoring/reporting/performance_reports.py,"json
+import os
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager",import,0
+monitoring/reporting/performance_reports.py,"get_current_config
+from src.core.logging.logger import ProjectLogger
+from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
+
+logger",import,0
+optimization/hyperparameters/bayesian.py,"collections.abc.Callable
+from typing import Any
+
+import numpy as np
+from sklearn",from,0
+optimization/hyperparameters/bayesian.py,"src.optimization.base.BaseOptimizer
+
+try",from,0
+optimization/portfolio/optimizer.py,"dataclasses.dataclass
+from typing import Any
+
+import numpy as np
+import pandas as pd
+from scipy",from,0
+optimization/portfolio/optimizer.py,"scipy.optimize.minimize
+
+from src",from,0
+optimization/portfolio/optimizer.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+optimization/portfolio/optimizer.py,src.optimization.base.BaseOptimizer,from,0
+pipeline/guards/macro_release_timing_guard.py,"datetime.time
+from typing import Any
+
+import pandas as pd
+import pytz
+
+from src",from,0
+pipeline/guards/safe_feature_combiner.py,"logging
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.guards.timeframe_alignment_guard import TimeframeAlignmentGuard
+
+logger",import,0
+pipeline/guards/temporal_leakage_guard.py,"re
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/guards/temporal_target_guard.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/guards/timeframe_alignment_guard.py,"datetime.time
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/guards/__init__.py,.safe_feature_combiner.SafeFeatureCombiner,from,0
+pipeline/guards/__init__.py,.safe_feature_combiner.combine_timeframes_quick,from,0
+pipeline/guards/__init__.py,".safe_feature_combiner.get_safe_feature_combiner
+from",from,0
+pipeline/guards/__init__.py,.temporal_target_guard.TemporalTargetGuard,from,0
+pipeline/guards/__init__.py,.temporal_target_guard.generate_targets_quick,from,0
+pipeline/guards/__init__.py,".temporal_target_guard.get_temporal_target_guard
+from",from,0
+pipeline/hybrid/cache_manager.py,"json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/hybrid/colab_manager.py,"json
+import logging
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.features.validation.feature_leakage_guard import FeatureLeakageGuard
+
+logger",import,0
+pipeline/hybrid/colab_workflow_manager.py,"json
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+
+class ColabWorkflowManager",import,0
+pipeline/hybrid/component_factory.py,"typing.Any
+
+from src",from,0
+pipeline/hybrid/component_factory.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+pipeline/hybrid/component_factory.py,".cache_manager.CacheManager
+from",from,0
+pipeline/hybrid/component_factory.py,".colab_workflow_manager.ColabWorkflowManager
+from",from,0
+pipeline/hybrid/component_factory.py,".data_batch_manager.DataBatchManager
+from",from,0
+pipeline/hybrid/component_factory.py,".data_manager.HybridDataManager
+from",from,0
+pipeline/hybrid/component_factory.py,".data_utils.DataUtils
+from",from,0
+pipeline/hybrid/component_factory.py,".feature_selection_manager.FeatureSelectionManager
+from",from,0
+pipeline/hybrid/component_factory.py,".final_stages_executor.FinalStagesExecutor
+from",from,0
+pipeline/hybrid/component_factory.py,".light_models_trainer.LightModelsTrainer
+from",from,0
+pipeline/hybrid/component_factory.py,".model_training_orchestrator.ModelTrainingOrchestrator
+from",from,0
+pipeline/hybrid/component_factory.py,".pipeline_executor.PipelineExecutor
+from",from,0
+pipeline/hybrid/component_factory.py,".pipeline_metadata_manager.PipelineMetadataManager
+from",from,0
+pipeline/hybrid/component_factory.py,".results_processor.ResultsProcessor
+from",from,0
+pipeline/hybrid/component_factory.py,".storage_manager.StorageManager
+from",from,0
+pipeline/hybrid/context_builder.py,"pathlib.Path
+from typing import Any
+
+from src",from,0
+pipeline/hybrid/context_builder.py,".test_mode_manager.TestModeManager
+
+
+class ContextBuilder",from,0
+pipeline/hybrid/contracts.py,"dataclasses.dataclass
+from pathlib import Path
+from typing import Any
+
+import pandas as pd",from,0
+pipeline/hybrid/data_batch_manager.py,"json
+import logging
+import shutil
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger",import,0
+pipeline/hybrid/data_cache_manager.py,"logging
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+
+class DataCacheManager",import,0
+pipeline/hybrid/data_components_context.py,"pathlib.Path
+from typing import Any
+
+from src",from,0
+pipeline/hybrid/data_components_context.py,"src.pipeline.hybrid.data_manager.HybridDataManager
+from src",from,0
+pipeline/hybrid/data_components_context.py,"src.pipeline.hybrid.data_utils.DataUtils
+from src",from,0
+pipeline/hybrid/data_manager.py,"pathlib.Path
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/hybrid/data_processor.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/hybrid/data_utils.py,"pathlib.Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+pipeline/hybrid/feature_loader.py,"json
+import logging
+from pathlib import Path
+
+import aiofiles
+
+logger",import,0
+pipeline/hybrid/feature_processor.py,"pathlib.Path
+
+import pandas as pd
+
+from src",from,0
+pipeline/hybrid/feature_selection_manager.py,"json
+from dataclasses import dataclass
+from pathlib import Path
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.hybrid.feature_selection_validator import MockFeatureFilesRequest
+
+logger",import,0
+pipeline/hybrid/feature_selection_validator.py,"json
+import logging
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+FEATURES_FILE",import,0
+pipeline/hybrid/final_stages_executor.py,"json
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
+logger",import,0
+pipeline/hybrid/final_stages_orchestrator.py,"json
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Any",import,0
+pipeline/hybrid/final_stages_orchestrator.py,"cast
+
+import aiofiles
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
+
+class FinalStagesOrchestrator",import,0
+pipeline/hybrid/light_models_trainer.py,"copy
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any",import,0
+pipeline/hybrid/light_models_trainer.py,"cast
+
+import aiofiles
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
+logger",import,0
+pipeline/hybrid/metadata_manager.py,"json
+import pickle
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger",import,0
+pipeline/hybrid/model_training_orchestrator.py,"logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any",import,0
+pipeline/hybrid/model_training_orchestrator.py,"cast
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import accuracy_score",import,0
+pipeline/hybrid/model_training_orchestrator.py,mean_absolute_error,import,0
+pipeline/hybrid/model_training_orchestrator.py,mean_squared_error,import,0
+pipeline/hybrid/model_training_orchestrator.py,"r2_score
+
+from src.core.logging.logger import ProjectLogger
+
+
+class ModelTrainingOrchestrator",import,0
+pipeline/hybrid/orchestrator_config.py,"dataclasses.dataclass
+from importlib",from,0
+pipeline/hybrid/orchestrator_config.py,"pathlib.Path
+
+from src",from,0
+pipeline/hybrid/orchestrator_config.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+pipeline/hybrid/orchestrator_context.py,"functools.cached_property
+from pathlib import Path
+from typing import Any
+
+
+class OrchestratorContext",from,0
+pipeline/hybrid/orchestrator_interface.py,"pathlib.Path
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/hybrid/orchestrator_interface.py,.pipeline_config.FinalStagesParams,from,0
+pipeline/hybrid/orchestrator_interface.py,".pipeline_config.PipelineParams
+
+logger",from,0
+pipeline/hybrid/pipeline_config.py,"dataclasses.dataclass
+from typing import Any
+
+import pandas as pd",from,0
+pipeline/hybrid/pipeline_executor.py,"json
+import pickle
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/hybrid/pipeline_manager.py,"pathlib.Path
+from typing import Any",from,0
+pipeline/hybrid/pipeline_manager.py,"pathlib.cast
+
+import pandas as pd
+
+from src",from,0
+pipeline/hybrid/pipeline_manager.py,"src.pipeline.hybrid.colab_manager.BatchPreparationConfig
+from src",from,0
+pipeline/hybrid/pipeline_manager.py,.pipeline_config.FinalStagesParams,from,0
+pipeline/hybrid/pipeline_manager.py,".pipeline_config.PipelineParams
+
+
+class PipelineManager",from,0
+pipeline/hybrid/pipeline_metadata_manager.py,"json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import aiofiles
+
+from src.core.logging.logger import ProjectLogger
+
+
+class PipelineMetadataManager",import,0
+pipeline/hybrid/pipeline_runner.py,"time
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.hybrid.metadata_manager import MetadataManager",import,0
+pipeline/hybrid/pipeline_runner.py,"MetadataParams
+from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
+
+logger",import,0
+pipeline/hybrid/results_processor.py,"json
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+
+class ResultsProcessor",import,0
+pipeline/hybrid/selected_features_processor.py,"json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import aiofiles
+
+from src.core.logging.logger import ProjectLogger
+
+from .context_builder import ContextBuilder
+from .feature_selection_validator import FeatureSelectionValidator",import,0
+pipeline/hybrid/selected_features_processor.py,MockFeaturesRequest,import,0
+pipeline/hybrid/storage_helpers.py,"importlib.util.find_spec
+from pathlib import Path
+
+from src",from,0
+pipeline/hybrid/storage_manager.py,"pathlib.Path
+
+from src",from,0
+pipeline/hybrid/test_mode_manager.py,"json
+from pathlib import Path
+
+import aiofiles
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+
+class TestModeManager",import,0
+pipeline/hybrid/__init__.py,".cache_manager.CacheManager
+from",from,0
+pipeline/hybrid/__init__.py,.contracts.HybridFinalStagesRequest,from,0
+pipeline/hybrid/__init__.py,".contracts.HybridPipelineRequest
+from",from,0
+pipeline/hybrid/__init__.py,".data_utils.DataUtils
+from",from,0
+pipeline/hybrid/__init__.py,".feature_selection_manager.FeatureSelectionManager
+from",from,0
+pipeline/hybrid/__init__.py,.orchestrator_config.OrchestratorConfigManager,from,0
+pipeline/hybrid/__init__.py,".orchestrator_config.PipelineConfig
+from",from,0
+pipeline/hybrid/__init__.py,.pipeline_config.ColabBatchParams,from,0
+pipeline/hybrid/__init__.py,.pipeline_config.FinalStagesParams,from,0
+pipeline/hybrid/__init__.py,".pipeline_config.PipelineParams
+from",from,0
+pipeline/hybrid/__init__.py,".pipeline_manager.PipelineManager
+from",from,0
+pipeline/stages/base_stage.py,abc.ABC,from,0
+pipeline/stages/base_stage.py,"abc.abstractmethod
+from typing import Any
+
+from src",from,0
+pipeline/stages/base_stage.py,"src.core.clients.http_client_factory.HttpClientFactory
+from src",from,0
+pipeline/stages/stage_0_data_generation.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+pipeline/stages/stage_0_data_generation.py,"src.core.logging.logger.ProjectLogger
+
+
+class DataGenerator",from,0
+pipeline/stages/stage_0_setup.py,"logging
+import os
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.stages.base_stage import BaseStage
+
+
+class Stage0Setup",import,0
+pipeline/stages/stage_1_collection.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/stage_1_collection.py,"src.core.error_handling.error_handler.ErrorHandler
+from src",from,0
+pipeline/stages/stage_1_collection.py,"src.data.collectors.collector_factory.CollectorFactory
+from src",from,0
+pipeline/stages/stage_1_collection.py,"src.pipeline.stages.base_stage.BaseStage
+from src",from,0
+pipeline/stages/stage_1_collection.py,"src.pipeline.stages.utils.data_schema_mapper.DataSchemaMapper
+
+
+class CollectionStage",from,0
+pipeline/stages/stage_2_processing.py,".processing.orchestrator.ProcessingStage as ModularProcessingStage
+
+
+class ProcessingStage",from,0
+pipeline/stages/stage_3_feature_engineering.py,".feature_engineering.orchestrator.FeatureEngineeringStage as ModularFeatureEngineeringStage
+
+
+class FeatureEngineeringStage",from,0
+pipeline/stages/stage_3_improvements.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/stage_4_modeling.py,"datetime
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.analyzers.model_comparison_analyzer import ModelComparisonAnalyzer
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.models.adapters.data_preparation import prepare_data_for_models
+from src.pipeline.stages.base_stage import BaseStage
+from src.training.constants import",import,0
+pipeline/stages/stage_4_modeling.py,src.training.unified_training_manager.TrainerConfig,from,0
+pipeline/stages/stage_4_modeling.py,src.training.unified_training_manager.TrainingStrategy,from,0
+pipeline/stages/stage_4_modeling.py,"src.training.unified_training_manager.UnifiedTrainingManager
+
+logger",from,0
+pipeline/stages/stage_5_prediction.py,"json
+import logging
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
+from src.analytics.context.prediction_adjuster import PredictionAdjuster
+from src.analytics.detectors.anomaly_detector import AnomalyDetector
+from src.analytics.detectors.critical_signal_detector import CriticalSignalDetector
+from src.analytics.signals.signal_analytics import analyze_signals
+from src.analytics.signals.significance_detector import detect_significant_events
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.ensembling.stacked_ensemble import StackedEnsemble
+from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.models.loader import ModelLoaderStrategy
+from src.models.model_pool import get_model_pool
+from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
+from src.models.model_selector.smart_selector import SmartModelSelector
+from src.pipeline.stages.base_stage import BaseStage
+from src.pipeline.stages.prediction import AnomalyEngine",import,0
+pipeline/stages/stage_5_prediction.py,ModelResolver,import,0
+pipeline/stages/stage_5_prediction.py,"PredictionGenerator
+from src.pipeline.stages.prediction.data_preparation_service import DataPreparationService
+from src.pipeline.stages.prediction.model_selection_service import ModelSelectionService
+from src.pipeline.stages.prediction.prediction_context_manager import PredictionContextManager
+from src.pipeline.stages.prediction.scaler_service import ScalerService
+from src.predictions.caching import get_ensemble_cache",import,0
+pipeline/stages/stage_6_trading_execution.py,"json
+from datetime import UTC",import,0
+pipeline/stages/stage_6_trading_execution.py,"datetime
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.meta_learning.memory.diary_engine import",import,0
+pipeline/stages/stage_6_trading_execution.py,"src.pipeline.stages.base_stage.BaseStage
+from src",from,0
+pipeline/stages/stage_6_trading_execution.py,"src.risk.max_exposure_monitor.MaxExposureMonitor
+from src",from,0
+pipeline/stages/stage_6_trading_execution.py,"src.trading.consensus_engine.EnhancedConsensusEngine
+from src",from,0
+pipeline/stages/stage_6_trading_execution.py,"src.trading.portfolio_manager.PortfolioManager
+from src",from,0
+pipeline/stages/stage_6_trading_execution.py,"src.trading.trader.Trader
+from src",from,0
+pipeline/stages/stage_6_trading_execution.py,"src.trading.virtual_portfolio.VirtualPortfolio
+
+
+class TradingExecutionStage",from,0
+pipeline/stages/stage_7_evaluation.py,"asyncio
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
+from src.core.logging.notifier import UniversalNotifier
+from src.pipeline.stages.base_stage import BaseStage
+
+from .evaluation.backtest_analyzer import get_backtest_analyzer",import,0
+pipeline/stages/stage_7_evaluation.py,".evaluation.metrics_calculator.get_metrics_calculator
+from",from,0
+pipeline/stages/cache/feature_cache_manager.py,"logging
+import json
+import hashlib
+from typing import Dict",import,0
+pipeline/stages/cache/feature_cache_manager.py,Any,import,0
+pipeline/stages/cache/feature_cache_manager.py,"Optional
+import pandas as pd
+from src.core.logging.logger import ProjectLogger
+from src.features.feature_cache import get_feature_cache
+
+logger",import,0
+pipeline/stages/evaluation/analytics.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+pipeline/stages/evaluation/backtest_adapter.py,"asyncio
+import logging
+from functools import partial
+from typing import Any
+
+import pandas as pd
+
+logger",import,0
+pipeline/stages/evaluation/backtest_analyzer.py,"asyncio
+import logging
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/stages/evaluation/io.py,"json
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/stages/evaluation/metrics_calculator.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+pipeline/stages/evaluation/reporting.py,"logging
+from pathlib import Path
+from typing import Any
+
+import matplotlib
+
+matplotlib.use",import,0
+pipeline/stages/evaluation/reporting.py,"matplotlib.pyplot as plt
+
+logger",import,0
+pipeline/stages/evaluation/report_generator.py,"json
+from pathlib import Path
+from typing import Any
+
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/stages/evaluation/__init__.py,..analytics,from,0
+pipeline/stages/evaluation/__init__.py,..backtest_adapter,from,0
+pipeline/stages/evaluation/__init__.py,..data_recovery,from,0
+pipeline/stages/evaluation/__init__.py,..io,from,0
+pipeline/stages/evaluation/__init__.py,"..reporting
+from",from,0
+pipeline/stages/evaluation/__init__.py,.metrics_calculator.MetricsCalculator,from,0
+pipeline/stages/evaluation/__init__.py,".metrics_calculator.get_metrics_calculator
+from",from,0
+pipeline/stages/features/orchestrator_manager.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/features/orchestrator_manager.py,"src.features.feature_orchestrator.FeatureOrchestrator
+
+logger",from,0
+pipeline/stages/feature_engineering/enricher.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/feature_engineering/enricher.py,"src.features.feature_cache.get_feature_cache
+from src",from,0
+pipeline/stages/feature_engineering/guards.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.guards.macro_release_timing_guard import get_macro_release_timing_guard
+from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
+from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
+from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard
+from src.pipeline.guards.timeframe_alignment_guard import get_timeframe_alignment_guard
+
+logger",import,0
+pipeline/stages/feature_engineering/orchestrator.py,"datetime.datetime
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/feature_engineering/orchestrator.py,"src.core.error_handling.error_handler.ErrorHandler
+from src",from,0
+pipeline/stages/feature_engineering/orchestrator.py,"src.features.selection.enhanced_smart_selector.get_enhanced_smart_selector
+from src",from,0
+pipeline/stages/feature_engineering/orchestrator.py,".enricher.FeatureEnricher
+from",from,0
+pipeline/stages/feature_engineering/orchestrator.py,".targets.TargetGenerator
+
+
+class FeatureEngineeringStage",from,0
+pipeline/stages/feature_engineering/targets.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/feature_engineering/targets.py,"src.targets.target_orchestrator.TargetOrchestrator
+
+logger",from,0
+pipeline/stages/feature_engineering/__init__.py,".enricher.FeatureEnricher
+from",from,0
+pipeline/stages/feature_engineering/__init__.py,".orchestrator.FeatureEngineeringStage
+from",from,0
+pipeline/stages/modeling/dataclasses.py,"dataclasses.dataclass
+from pathlib import Path
+from typing import Any",from,0
+pipeline/stages/modeling/io.py,"json
+import logging
+from pathlib import Path
+from typing import Any
+
+import aiofiles
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/stages/modeling/metrics.py,"datetime
+from typing import Any
+
+
+def calculate_model_metrics",import,0
+pipeline/stages/modeling/orchestration.py,"json
+from typing import Any
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+from src.models.adapters.data_preparation import prepare_data_for_models
+from src.pipeline.stages.modeling import io as modeling_io
+from src.pipeline.stages.modeling import training as modeling_training
+from src.pipeline.stages.modeling.dataclasses import",import,0
+pipeline/stages/modeling/orchestration.py,"src.training.constants.DEFAULT_TEST_SIZE
+
+logger",from,0
+pipeline/stages/modeling/training.py,"pathlib.Path
+from typing import Any
+
+from src",from,0
+pipeline/stages/modeling/training.py,"src.pipeline.stages.modeling.io as modeling_io
+from src",from,0
+pipeline/stages/modeling/training.py,src.pipeline.stages.modeling.dataclasses.LightModelChampionConfig,from,0
+pipeline/stages/modeling/training.py,"src.pipeline.stages.modeling.dataclasses.SingleModelTrainingConfig
+
+logger",from,0
+pipeline/stages/modeling/utils.py,"datetime
+from typing import Any
+
+import pandas as pd
+import psutil
+
+
+def get_context_fingerprint",import,0
+pipeline/stages/monitoring/feature_monitoring.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+pipeline/stages/monitoring/feature_monitoring.py,"src.monitoring.data_freshness_monitor.get_data_freshness_monitor
+from src",from,0
+pipeline/stages/news/news_manager.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/news/news_manager.py,"src.features.news_clusterer.cluster_news_simple
+from src",from,0
+pipeline/stages/prediction/anomaly_engine.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+from sklearn",from,0
+pipeline/stages/prediction/anomaly_engine.py,"sklearn.neighbors.LocalOutlierFactor
+
+from src",from,0
+pipeline/stages/prediction/anomaly_engine.py,"src.core.logging.logger.ProjectLogger
+
+
+class AnomalyEngine",from,0
+pipeline/stages/prediction/data_preparation_service.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+
+class DataPreparationService",import,0
+pipeline/stages/prediction/data_preparer.py,"logging
+import os
+from pathlib import Path
+from typing import Any
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+from src.utils.artifact_security import resolve_trusted_artifact_path
+
+
+class PredictionDataPreparer",import,0
+pipeline/stages/prediction/model_resolver.py,"json
+import logging
+import os
+from pathlib import Path
+from typing import Any",import,0
+pipeline/stages/prediction/model_resolver.py,"cast
+
+from src.core.logging.logger import ProjectLogger
+
+
+class ModelResolver",import,0
+pipeline/stages/prediction/model_selection_service.py,"logging
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+
+class ModelSelectionService",import,0
+pipeline/stages/prediction/prediction_context_manager.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+pipeline/stages/prediction/prediction_generator.py,"logging
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+
+class PredictionGenerator",import,0
+pipeline/stages/prediction/result_builder.py,"json
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+from .result_request import PredictionResultRequest
+
+
+class PredictionResultBuilder",import,0
+pipeline/stages/prediction/result_request.py,"dataclasses.dataclass
+from typing import Any
+
+import pandas as pd",from,0
+pipeline/stages/prediction/scaler_service.py,"pathlib.Path
+from typing import Any
+
+import joblib
+
+from src",from,0
+pipeline/stages/prediction/scaler_service.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+pipeline/stages/prediction/__init__.py,".anomaly_engine.AnomalyEngine
+from",from,0
+pipeline/stages/prediction/__init__.py,".prediction_generator.PredictionGenerator
+
+__all__",from,0
+pipeline/stages/processing/data_handler.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/processing/data_handler.py,"src.processing.cleaners.DataCleaner
+from src",from,0
+pipeline/stages/processing/orchestrator.py,"datetime.datetime
+from typing import Any
+
+from src",from,0
+pipeline/stages/processing/orchestrator.py,"src.core.cloud.gcs_manager.GCSManager
+from src",from,0
+pipeline/stages/processing/orchestrator.py,"src.core.file_management.file_manager.FileManager
+from src",from,0
+pipeline/stages/processing/orchestrator.py,"src.monitoring.infrastructure.resource_monitor.get_resource_monitor
+from src",from,0
+pipeline/stages/processing/orchestrator.py,"src.processing.data_filter.IntelligentDataFilter
+from src",from,0
+pipeline/stages/processing/orchestrator.py,".data_handler.ProcessingDataHandler
+from",from,0
+pipeline/stages/processing/orchestrator.py,".validator.ProcessingValidator
+
+
+class ProcessingStage",from,0
+pipeline/stages/processing/storage.py,"datetime.datetime
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/processing/storage.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+pipeline/stages/processing/validator.py,"logging
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+from src.validation.validators import UnifiedValidator
+
+logger",import,0
+pipeline/stages/processing/__init__.py,".data_handler.ProcessingDataHandler
+from",from,0
+pipeline/stages/processing/__init__.py,".storage.ProcessingStorage
+from",from,0
+pipeline/stages/trading/data_io.py,"__future__.annotations
+
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import aiofiles
+
+from src",from,0
+pipeline/stages/trading/data_io.py,"src.core.logging.logger.ProjectLogger
+
+
+class TradingDataIO",from,0
+pipeline/stages/trading/recommendation_engine.py,"__future__.annotations
+
+import logging
+from datetime import datetime
+from typing import Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+pipeline/stages/trading/recommendation_engine.py,"src.core.utils.prediction_utils.normalize_prediction
+from src",from,0
+pipeline/stages/trading/recommendation_engine.py,"src.risk.elite_risk_metrics.EliteRiskMetrics
+from src",from,0
+pipeline/stages/trading/__init__.py,"src.pipeline.stages.trading.data_io.TradingDataIO
+from src",from,0
+pipeline/stages/utils/collection_manager.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+pipeline/stages/utils/collection_manager.py,"src.core.logging.logger.ProjectLogger
+from src",from,0
+pipeline/stages/utils/data_schema_mapper.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+processing/filters/news_filter.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+processing/filters/orchestrator.py,"src.core.logging.logger.ProjectLogger
+
+from",from,0
+processing/filters/orchestrator.py,".pattern_extractor.PatternExtractor
+from",from,0
+processing/filters/orchestrator.py,".social_filter.SocialFilter
+
+logger",from,0
+processing/filters/pattern_extractor.py,"typing.Any
+
+from src",from,0
+processing/filters/price_filter.py,"datetime.timedelta
+from typing import Any
+
+import pandas as pd
+
+from src",from,0
+processing/filters/social_filter.py,"typing.Any
+
+import pandas as pd
+
+from src",from,0
+processing/filters/__init__.py,".news_filter.NewsFilter
+from",from,0
+processing/filters/__init__.py,".pattern_extractor.PatternExtractor
+from",from,0
+processing/filters/__init__.py,".social_filter.SocialFilter
+
+__all__",from,0
+risk/analyzers/concentration_analyzer.py,"typing.Any
+
+import numpy as np
+
+from src",from,0
+risk/analyzers/correlation_analyzer.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+risk/kill_switch/alerts.py,"datetime.datetime
+
+from src",from,0
+risk/kill_switch/calculator.py,"typing.Any
+
+import numpy as np
+import pandas as pd
+
+from src",from,0
+risk/kill_switch/calculator.py,"src.core.logging.logger.ProjectLogger
+
+logger",from,0
+risk/kill_switch/config.py,"pathlib.Path
+from typing import Any
+
+
+class KillSwitchConfig",from,0
+risk/kill_switch/executor.py,"typing.Any
+
+from src",from,0
+risk/kill_switch/manager.py,"json
+from datetime import datetime
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+from .alerts import AlertManager
+from .calculator import KillSwitchCalculator
+from .config import KillSwitchConfig
+from .executor import KillSwitchExecutor
+
+logger",import,0
+risk/kill_switch/__init__.py,".alerts.AlertManager
+from",from,0
+risk/kill_switch/__init__.py,".config.KillSwitchConfig
+from",from,0
+risk/kill_switch/__init__.py,".manager.KillSwitchManager
+
+__all__",from,0
+targets/calculators/base_news_target_calculator.py,abc.ABC,from,0
+targets/calculators/base_news_target_calculator.py,"abc.abstractmethod
+
+import pandas as pd
+
+from src",from,0
+targets/calculators/classification_calculator.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+targets/calculators/indicator_prediction_calculator.py,"pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+targets/calculators/post_news_target_calculator.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+targets/calculators/pre_news_target_calculator.py,"numpy as np
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+targets/calculators/regression_calculator.py,"logging
+
+import pandas as pd
+
+from src.core.logging.logger import ProjectLogger",import,0
+training/batch/batch_processor.py,"time
+from typing import Any
+
+import numpy as np
+
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+training/security/path_security_validator.py,"os
+import re
+from pathlib import Path
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0
+training/state/training_state_manager.py,"json
+import time
+from dataclasses import dataclass",import,0
+training/state/training_state_manager.py,"field
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from src.core.logging.logger import ProjectLogger
+
+logger",import,0

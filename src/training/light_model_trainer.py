@@ -106,7 +106,7 @@ class LightModelTrainer:
                 "metrics": {"model_type": model_type, "ticker": ticker}
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error training {model_type} for {ticker}: {e}")
             return {
                 "status": "failed",
@@ -153,7 +153,7 @@ class LightModelTrainer:
             joblib.dump(model, path)
             logger.info(f"✅ Saved model {model_key} to {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error saving model {model_key}: {e}")
             return False
 
@@ -177,7 +177,7 @@ class LightModelTrainer:
             self.models_in_memory[model_key] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             logger.info(f"✅ Loaded model from {path} (key: {model_key})")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error loading model from {path}: {e}")
             return False
 

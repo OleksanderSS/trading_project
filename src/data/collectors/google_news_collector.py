@@ -76,6 +76,64 @@ class GoogleNewsCollector(BaseCollector):
             )
             return None
 
+    def _check_google_news_cache(self, cache_key: str, cache_params: dict, table_name: str) -> pd.DataFrame | None:
+        """Check cache for existing Google News data and filter new records."""
+        if not self.cache_manager:
+            return None
+        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+        if cached is not None:
+            df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
+            if "hash" in df_cached.columns:
+                new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
+                if new_from_cache.empty:
+                    self.logger.info("[GoogleNews] Cache hit limit resolved — zero new articles identified in temporal scope boundary.")
+                    return None
+                return new_from_cache
+        return None
+
+    def _process_fetch_results(self, results: list, all_terms: list[str]) -> list[dict]:
+        """Process fetch results and extract articles."""
+        all_articles = []
+        for i, res in enumerate(results):
+            if isinstance(res, Exception):
+                self.logger.error(f"Logic parse constraints execution mapped index block boundary failure '{all_terms[i]}': {res}")
+            elif res:
+                all_articles.extend(res)
+        return all_articles
+
+    def _deduplicate_articles(self, all_articles: list[dict]) -> pd.DataFrame:
+        """Deduplicate articles by URL and create hash."""
+        seen_urls = set()
+        unique_articles = []
+        for a in all_articles:
+            url = a.get("link", "")
+            if url not in seen_urls:
+                seen_urls.add(url)
+                unique_articles.append(a)
+
+        df = pd.DataFrame(unique_articles)
+        df["hash"] = df["link"].apply(lambda url: hashlib.sha256(str(url).encode()).hexdigest())
+        return df
+
+    def _filter_by_cache(self, df: pd.DataFrame) -> pd.DataFrame | None:
+        """Filter DataFrame by cache manager if available."""
+        if self.cache_manager:
+            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
+            df = df[is_new].copy()
+            if df.empty:
+                self.logger.info("[GoogleNews] Duplicative articles verified within local execution limits cache storage.")
+                return None
+        return df
+
+    def _update_cache(self, cache_key: str, cache_params: dict, df: pd.DataFrame, new_df: pd.DataFrame | None = None) -> None:
+        """Update cache with hashes from DataFrame."""
+        if not self.cache_manager:
+            return
+        hashes = new_df["hash"] if new_df is not None else df["hash"]
+        for h in hashes:
+            self.cache_manager.set(h, True, ttl=86400)
+        self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
+
     async def _run_internal(
         self,
         tickers: list[str] | None = None,
@@ -98,16 +156,9 @@ class GoogleNewsCollector(BaseCollector):
         cache_params = {"terms": sorted(all_terms)}
 
         # 1. State cache memory validation block constraints logic mapping
-        if self.cache_manager:
-            cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
-            if cached is not None:
-                df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
-                if "hash" in df_cached.columns:
-                    new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
-                    if new_from_cache.empty:
-                        self.logger.info("[GoogleNews] Cache hit limit resolved — zero new articles identified in temporal scope boundary.")
-                        return None
-                    return new_from_cache
+        cached_result = self._check_google_news_cache(cache_key, cache_params, table_name)
+        if cached_result is not None:
+            return cached_result
 
         self.logger.info(f"[GoogleNews] Initiating scope parameters constraints across {len(all_terms)} block limits (parallel stream blocks constraint index {self.max_concurrent})...")
 
@@ -116,56 +167,30 @@ class GoogleNewsCollector(BaseCollector):
         tasks = [self._fetch_with_semaphore(term, semaphore) for term in all_terms]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        all_articles = []
-        for i, res in enumerate(results):
-            if isinstance(res, Exception):
-                self.logger.error(f"Logic parse constraints execution mapped index block boundary failure '{all_terms[i]}': {res}")
-            elif res:
-                all_articles.extend(res)
+        all_articles = self._process_fetch_results(results, all_terms)
 
         if not all_articles:
             self.logger.info("[GoogleNews] Zero novel entries mapped to execution layers.")
             return None
 
         # 3. Memory limit boundary limits mappings stream url definitions uniqueness check parameter binding boundaries.
-        seen_urls = set()
-        unique_articles = []
-        for a in all_articles:
-            url = a.get("link", "")
-            if url not in seen_urls:
-                seen_urls.add(url)
-                unique_articles.append(a)
-
-        df = pd.DataFrame(unique_articles)
-        df["hash"] = df["link"].apply(
-            lambda url: hashlib.sha256(str(url).encode()).hexdigest()
-        )
+        df = self._deduplicate_articles(all_articles)
 
         # 4. Hash identity comparison mapped resolution
-        if self.cache_manager:
-            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
-            df = df[is_new].copy()
-            if df.empty:
-                self.logger.info("[GoogleNews] Duplicative articles verified within local execution limits cache storage.")
-                return None
+        df = self._filter_by_cache(df)
+        if df is None:
+            return None
 
         # 5. Filter layer constraints evaluation against historical boundary
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             self.logger.info("[GoogleNews] Historical layer identified zero execution constraint mapped articles matching memory constraint query limits protocol checks payload blocks matrix mappings scope parameter definition limits.")
-            if self.cache_manager:
-                for h in df["hash"]:
-                    self.cache_manager.set(h, True, ttl=86400)
-                self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
+            self._update_cache(cache_key, cache_params, df)
             return None
 
         # 6. Database save mapped constraint bounds
         self.db_manager.upsert(table_name, new_df, unique_on=["hash"])
-
-        if self.cache_manager:
-            for h in new_df["hash"]:
-                self.cache_manager.set(h, True, ttl=86400)
-            self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
+        self._update_cache(cache_key, cache_params, df, new_df)
 
         self.logger.info(f"[GoogleNews] Recorded bound {len(new_df)} articles limits check constraint boundary.")
         return new_df
@@ -199,7 +224,7 @@ class GoogleNewsCollector(BaseCollector):
         except TimeoutError:
             self.logger.warning(f"[GoogleNews] Timeout fetching news for '{term}' (30s). Skipping.")
             return []
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Resolution failed mapping boundary limits: '{term}': {e}")
             raise RuntimeError(f"Failed to fetch Google News articles for {term}") from e
 

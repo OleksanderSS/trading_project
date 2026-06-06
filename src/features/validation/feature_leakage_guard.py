@@ -170,7 +170,7 @@ class FeatureLeakageGuard:
                             )
                 if feat_corrs:
                     high_corr[feat] = feat_corrs
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'[{ticker}] Correlation check failed: {e}')
             raise
@@ -188,7 +188,7 @@ class FeatureLeakageGuard:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'Leakage report saved: {report_path}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Could not save leakage report: {e}')
             raise

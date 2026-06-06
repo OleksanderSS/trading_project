@@ -190,7 +190,7 @@ class MemoryProfiler:
         try:
             memory_bytes = float(self.process.memory_info().rss)
             return float(memory_bytes / 1024 ** 3)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error getting memory usage: {e}', exc_info=True)
             return 0.0
 
@@ -208,7 +208,7 @@ class MemoryProfiler:
             freed_bytes = float(before - after)
             freed_mb = float(freed_bytes / 1024 ** 2)
             return float(max(0.0, freed_mb))
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Memory cleanup failed: {e}', exc_info=True)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Memory cleanup measurement failed: {e}')

@@ -47,7 +47,7 @@ class NewsImpactClassifier:
             with open(config_path, encoding='utf-8') as f:
                 config = yaml.safe_load(f)
             return config['news_impact_classification']
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to load impact config: {e}")
             raise RuntimeError("Failed to load news impact classification config") from e
 
@@ -64,7 +64,7 @@ class NewsImpactClassifier:
 
             logger.info(f"Loaded {len(sector_mapping)} sectors with ticker mappings")
             return sector_mapping
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to load sector mapping: {e}")
             raise RuntimeError("Failed to load news impact sector mapping") from e
 

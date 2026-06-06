@@ -49,9 +49,9 @@ class KillSwitchCalculator:
 
             return risk_metrics
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating risk metrics: {e}")
-            raise DataProcessingError(f"Error calculating risk metrics: {e}")
+            raise DataProcessingError(f"Error calculating risk metrics: {e}") from e
 
     def calculate_portfolio_metrics(self,
                                   portfolio_data: dict[str, Any],
@@ -95,9 +95,9 @@ class KillSwitchCalculator:
                 'current_drawdown_pct': current_drawdown_pct,
                 'var_ratio': daily_var / portfolio_volatility if portfolio_volatility > 0 else 0
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating portfolio metrics: {e}")
-            raise DataProcessingError(f"Error calculating portfolio metrics: {e}")
+            raise DataProcessingError(f"Error calculating portfolio metrics: {e}") from e
 
     def _calculate_portfolio_returns(self,
                                    portfolio_data: dict[str, Any],
@@ -123,11 +123,11 @@ class KillSwitchCalculator:
                     symbol_returns = close_prices[symbol].pct_change(fill_method=None).dropna()
                     returns.extend(symbol_returns.tolist())
             return returns
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             if isinstance(e, DataProcessingError):
                 raise
             self.logger.error(f"Error calculating portfolio returns: {e}")
-            raise DataProcessingError(f"Error calculating portfolio returns: {e}")
+            raise DataProcessingError(f"Error calculating portfolio returns: {e}") from e
 
     def calculate_position_metrics(self,
                                  portfolio_data: dict[str, Any],
@@ -166,9 +166,9 @@ class KillSwitchCalculator:
                     'current_drawdown_pct': current_drawdown_pct
                 }
             return position_metrics
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating position metrics: {e}")
-            raise DataProcessingError(f"Error calculating position metrics: {e}")
+            raise DataProcessingError(f"Error calculating position metrics: {e}") from e
 
     def analyze_market_conditions(self, market_data: Any) -> dict[str, Any]:
         """Analyze current market conditions."""
@@ -190,9 +190,12 @@ class KillSwitchCalculator:
 
             # Simple regime detection for now, matching original logic
             volatility_regime = 'normal'
-            if volatility < 0.01: volatility_regime = 'low'
-            elif volatility > 0.04: volatility_regime = 'high'
-            elif volatility > 0.02: volatility_regime = 'elevated'
+            if volatility < 0.01:
+                volatility_regime = 'low'
+            elif volatility > 0.04:
+                volatility_regime = 'high'
+            elif volatility > 0.02:
+                volatility_regime = 'elevated'
 
             recent_vol = returns.rolling(window=5, min_periods=1).std().iloc[-1] if len(returns) > 0 else 0
             hist_vol = returns.rolling(window=20, min_periods=1).std().iloc[-1] if len(returns) > 0 else 0
@@ -203,9 +206,9 @@ class KillSwitchCalculator:
                 'market_stress': market_stress,
                 'current_volatility': volatility
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing market conditions: {e}")
-            raise DataProcessingError(f"Error analyzing market conditions: {e}")
+            raise DataProcessingError(f"Error analyzing market conditions: {e}") from e
 
     def determine_risk_level(self,
                            portfolio_metrics: dict[str, Any],

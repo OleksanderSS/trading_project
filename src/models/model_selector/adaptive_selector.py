@@ -131,7 +131,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
                 f'Loaded Arena leaderboard: {len(converted)} contexts, {len(leaderboard)} models'
                 )
             return converted
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to get Arena leaderboard: {e}')
             raise RuntimeError("Failed to get Arena leaderboard") from e
 
@@ -209,7 +209,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
             if self.arena is not None and hasattr(self.arena,
                 'update_model_performance'):
                 self.arena.update_model_performance(model_id, accuracy)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'Failed to update Arena feedback: {e}')
             raise
@@ -281,7 +281,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
             else:
                 logger.warning('Leaderboard data is not a dictionary')
                 return {}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to load leaderboard: {e}')
             raise RuntimeError(f"Failed to load leaderboard from {self.leaderboard_path}") from e
 
@@ -291,7 +291,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         try:
             with open(self.leaderboard_path, 'w') as f:
                 json.dump(self.arena_leaderboard, f, indent=2)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to save leaderboard: {e}')
 
     def get_leaderboard_summary(self) ->dict[str, Any]:
@@ -318,7 +318,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
                 summary['arena_leaderboard_size'] = len(arena_data.get(
                     'leaderboard', []))
                 summary['arena_last_updated'] = arena_data.get('last_updated')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Failed to get Arena stats: {e}')
                 raise
@@ -346,7 +346,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
             self._save_leaderboard()
             logger.info(
                 f'✅ Synced with Arena: {len(arena_leaderboard)} contexts')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to sync with Arena: {e}')
 
     def export_history(self, filepath: str) ->None:

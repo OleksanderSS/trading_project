@@ -239,7 +239,7 @@ def ensure_dataframe(data: Any, columns: list | None=None) ->pd.DataFrame:
         if result is not None:
             return result
         raise ValueError(f'Cannot convert {type(data)} to DataFrame')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         raise ValueError(f'Failed to convert data to DataFrame: {e}') from e
 
 
@@ -276,7 +276,7 @@ def ensure_array(data: Any, dtype: np.dtype=np.float32) ->np.ndarray:
             return np.array([data], dtype=dtype)
         else:
             raise ValueError(f'Cannot convert {type(data)} to numpy array')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         raise ValueError(f'Failed to convert data to numpy array: {e}') from e
 
 
@@ -307,7 +307,7 @@ def safe_divide(a: float | np.ndarray, b: float | np.ndarray,
                 return result
         else:
             return a / b if b != 0 else default
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Виникла помилка: {e}', exc_info=True)
         return default
 

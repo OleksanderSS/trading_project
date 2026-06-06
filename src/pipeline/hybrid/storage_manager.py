@@ -32,7 +32,7 @@ class StorageManager:
             from googleapiclient.discovery import build
             self.config.gdrive_service = build('drive', 'v3')
             self.logger.info('☁️ Google Drive: ✅ Initialized')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'❌ Google Drive initialization failed: {e}')
             self.config.gdrive_enabled = False
 
@@ -59,7 +59,7 @@ class StorageManager:
             self.use_s3 = True
             self.logger.info('☁️ S3 Fallback: ✅ Enabled')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ S3 fallback failed: {e}')
             return False
@@ -74,7 +74,7 @@ class StorageManager:
             self.use_gcs = True
             self.logger.info('☁️ GCS Fallback: ✅ Enabled')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ GCS fallback failed: {e}')
             return False
@@ -96,7 +96,7 @@ class StorageManager:
             self.logger.info(
                 f'Uploading {local_path} to Google Drive as {remote_path}')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Google Drive upload failed: {e}')
             return False
 
@@ -107,7 +107,7 @@ class StorageManager:
             self.s3_client.upload_file(str(local_path), bucket, remote_path)
             self.logger.info(f'Uploaded {local_path} to S3 as {remote_path}')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'S3 upload failed: {e}')
             return False
 
@@ -122,6 +122,6 @@ class StorageManager:
             blob.upload_from_filename(str(local_path))
             self.logger.info(f'Uploaded {local_path} to GCS as {remote_path}')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'GCS upload failed: {e}')
             return False

@@ -60,7 +60,8 @@ class CausalEngine:
     def _apply_event_causal_effects(self, event_data: dict[str, Any], implied_features: pd.DataFrame,
                                    target_index: pd.DatetimeIndex, speed_factor: float, power_factor: float):
         trigger = event_data['trigger']
-        if trigger not in self.causal_library: return
+        if trigger not in self.causal_library:
+            return
 
         for effect in self.causal_library[trigger]:
             feature_name = f"implied_{effect['feature']}"
@@ -84,7 +85,8 @@ class CausalEngine:
             if column in df.columns:
                 df.iloc[i, df.columns.get_loc(column)] += current_impact
                 current_impact *= decay_factor
-                if abs(current_impact) < 0.01: break
+                if abs(current_impact) < 0.01:
+                    break
 
     def _get_all_causal_features(self) -> list[str]:
         features = set()

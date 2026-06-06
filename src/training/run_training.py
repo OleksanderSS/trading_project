@@ -57,7 +57,7 @@ def main():
                 logger.warning("Running with 'all' tickers, limiting to first 50 for this run.")
                 ticker_list = ticker_list[:50]
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Could not resolve tickers for '{args.tickers}'. Using a default list. Error: {e}")
         ticker_list = ["SPY", "QQQ", "NVDA", "TSLA", "AAPL"]
 

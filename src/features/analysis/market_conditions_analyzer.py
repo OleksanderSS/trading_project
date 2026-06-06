@@ -82,7 +82,7 @@ class MarketConditionsAnalyzer:
                     return regime_name
 
             return 'normal'
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error detecting market regime: {e}')
             return 'normal'
 
@@ -99,7 +99,7 @@ class MarketConditionsAnalyzer:
                     returns = market_data[price_cols[0]].pct_change(fill_method=None).dropna()
                     return float(returns.std() * np.sqrt(252))
                 return 0.02
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error calculating volatility: {e}')
             return 0.02
 
@@ -114,7 +114,7 @@ class MarketConditionsAnalyzer:
                     normalized_trend = slope / recent_prices.mean()
                     return float(normalized_trend)
             return 0.0
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error calculating trend: {e}')
             return 0.0
 
@@ -140,7 +140,7 @@ class MarketConditionsAnalyzer:
                                if len(market_data) >= 21 else 0)
                 conditions['momentum_5d'] = momentum_5d
                 conditions['momentum_20d'] = momentum_20d
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error calculating market conditions: {e}')
 
         return conditions

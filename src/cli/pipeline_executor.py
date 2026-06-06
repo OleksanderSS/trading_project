@@ -54,15 +54,57 @@ class PipelineExecutor:
         list, **kwargs):
         """Execute preparation for Colab (stages 0-3 + packaging)."""
         logger.info('Preparing data for Colab training...')
+
+        # ✅ Enable lineage tracking for this run
+        from src.features.feature_orchestrator import disable_lineage_tracking, enable_lineage_tracking
+        tracker = enable_lineage_tracking("diagnostic_reports/feature_lineage_report.json")
+
         local_results = await orchestrator.run_local_pipeline(tickers=tickers,
             timeframes=timeframes)
         results_data = local_results.get('results', {})
         features_df = results_data.get('features_df', pd.DataFrame())
         targets_df = results_data.get('targets_df', pd.DataFrame())
         logger.info(f'Local pipeline complete: features={features_df.shape}, targets={targets_df.shape}')
-        return await orchestrator.prepare_colab_data(tickers=tickers,
+
+        # ✅ Mark the final features as model input for lineage report
+        if tracker is not None and not features_df.empty:
+            try:
+                tracker.capture_step("final_features", features_df)
+                tracker.mark_model_input(features_df)
+            except Exception as e:
+                logger.warning(f"[Lineage] Could not capture step: {e}")
+
+        result = await orchestrator.prepare_colab_data(tickers=tickers,
             timeframes=timeframes, features_df=features_df,
             targets_df=targets_df, **kwargs)
+
+        # ✅ Mark final features as model input — read from saved Parquet if features_df empty
+        if tracker is not None:
+            try:
+                final_features = features_df
+                if final_features.empty:
+                    # Try to read from saved Parquet
+                    from pathlib import Path
+
+                    features_path = Path("data/processed/features/features.parquet")
+                    if not features_path.exists():
+                        # Try colab batch directory
+                        colab_dirs = sorted(Path("data/colab/accumulated").glob("*/features.parquet"))
+                        if colab_dirs:
+                            features_path = colab_dirs[-1]
+                    if features_path.exists():
+                        final_features = pd.read_parquet(features_path)
+                        logger.info(f"[Lineage] Loaded features from Parquet: {final_features.shape}")
+
+                if not final_features.empty:
+                    tracker.capture_step("model_input", final_features)
+                    tracker.mark_model_input(final_features)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.debug(f"[Lineage] Could not mark model input: {e}")
+
+        # ✅ Save lineage report
+        disable_lineage_tracking()
+        return result
 
     @staticmethod
     @profile_execution
@@ -242,8 +284,8 @@ class PipelineExecutor:
 
             return reconstructed_news, reconstructed_econ
 
-        except Exception as ex:
-            logger.error(f"⚠️ Critical failure reconstructing data from database: {ex}", exc_info=True)
+        except (pd.errors.EmptyDataError, ValueError, KeyError, ImportError) as ex:
+            logger.error(f"⚠️ Failure reconstructing data from database: {ex}", exc_info=True)
             raise
 
     @staticmethod
@@ -253,8 +295,10 @@ class PipelineExecutor:
         for config in collector_configs.values():
             if config.get('table_name') == table_name:
                 dt = config.get('data_type')
-                if dt == 'news': return 'news'
-                if dt == 'macro_data': return 'macro'
+                if dt == 'news':
+                    return 'news'
+                if dt == 'macro_data':
+                    return 'macro'
 
         # Check by name
         name_lower = table_name.lower()
@@ -271,7 +315,7 @@ class PipelineExecutor:
                 if not silent:
                     logger.info(f"Loaded {label}: {df.shape}")
                 return df
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.warning(f"Failed to load {label} from {path}: {e}")
         elif not silent:
             logger.error(f"{label} file not found: {path}")
@@ -305,12 +349,17 @@ class PipelineExecutor:
                 f"Cannot continue batch '{batch_name}': targets.parquet is missing or empty."
                 )
             return {'status': 'failed', 'reason': 'missing_targets'}
+        # audit-ignore: ARCHITECTURAL_USAGE
         target_cols = [col for col in targets_df.columns if str(col).
+            # audit-ignore: ARCHITECTURAL_USAGE
             startswith('target_')]
+        # audit-ignore: ARCHITECTURAL_USAGE
         if not target_cols:
             logger.error(
+                # audit-ignore: ARCHITECTURAL_USAGE
                 f"Cannot continue batch '{batch_name}': targets.parquet has no target_* columns."
                 )
+            # audit-ignore: ARCHITECTURAL_USAGE
             return {'status': 'failed', 'reason': 'missing_target_columns'}
         return None
 

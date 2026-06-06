@@ -115,7 +115,7 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
             self.logger.info(f"✅ Enhanced selection complete: {len(selected_features)} features selected")
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in enhanced feature selection: {e}", exc_info=True)
             results['error'] = str(e)
             return results

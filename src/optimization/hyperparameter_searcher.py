@@ -99,7 +99,7 @@ class HyperparameterSearcher:
                     self.trial_history.append({'trial': trial.number,
                         'params': params, 'score': score})
                     return score
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Помилка під час оцінки MLP параметрів: {e}', exc_info=True)
                     self.logger.warning(f'Trial {trial.number} failed')
                     return float('-inf')
@@ -117,7 +117,7 @@ class HyperparameterSearcher:
             return {'method': 'optuna', 'model_type': 'mlp', 'best_params':
                 self.best_params, 'best_score': self.best_score, 'n_trials':
                 self.n_trials, 'trial_history': self.trial_history}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Optuna optimization failed: {e}')
             return self._optimize_grid_search(X_train, y_train, x_val,
                 y_val, self._get_default_param_space('mlp'), metric_func,
@@ -147,7 +147,7 @@ class HyperparameterSearcher:
                     self.trial_history.append({'trial': trial.number,
                         'params': params, 'score': score})
                     return score
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Помилка під час оцінки LSTM параметрів: {e}', exc_info=True)
                     return float('-inf')
             sampler = optuna.samplers.TPESampler(seed=self.random_seed)
@@ -161,7 +161,7 @@ class HyperparameterSearcher:
             return {'method': 'optuna', 'model_type': 'lstm', 'best_params':
                 self.best_params, 'best_score': self.best_score, 'n_trials':
                 self.n_trials}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'LSTM optimization failed: {e}')
             return self._optimize_grid_search(X_train, y_train, x_val,
                 y_val, self._get_default_param_space('lstm'), metric_func,
@@ -200,7 +200,7 @@ class HyperparameterSearcher:
                     best_params = params
                 trial_count += 1
                 self.logger.info(f'Trial {trial_count}: score={score:.4f}')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Trial {trial_count} failed: {e}')
                 trial_count += 1

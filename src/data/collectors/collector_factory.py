@@ -29,7 +29,7 @@ class CollectorFactory:
                 self.cache_manager = CacheManager(data_manager=self.
                     db_manager, config_manager=self.config_manager)
                 self.logger.info('CacheManager initialized successfully.')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(
                     f'CacheManager initialization failed: {e}. Continuing without cache.'
@@ -61,7 +61,7 @@ class CollectorFactory:
                                     f"Duplicate collector_type '{collector_type}'. Overwriting with {name}."
                                     )
                             class_map[collector_type] = obj
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Failed to import {module_name}: {e}')
         self.logger.info(
             f'Discovered {len(class_map)} collector classes: {list(class_map.keys())}'
@@ -85,7 +85,7 @@ class CollectorFactory:
                 http_client_factory=self.http_client_factory,
                 config_manager=self.config_manager, db_manager=self.
                 db_manager, cache_manager=self.cache_manager)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to instantiate '{name}' ({collector_type}): {e}", exc_info=True)
             raise RuntimeError(f"Failed to instantiate collector '{name}' ({collector_type})") from e
 

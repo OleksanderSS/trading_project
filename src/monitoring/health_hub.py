@@ -71,7 +71,7 @@ class HealthHub:
         try:
             self._load_prediction_models()
             self._load_scaler_models()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'Failed to load internal health monitoring ML models: {e}')
 
@@ -120,7 +120,7 @@ class HealthHub:
             anomaly_result = self.detect_anomalies(features)
             return self._build_health_report(current_metrics, predictions,
                 anomaly_result)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'HealthHub diagnostic loop failure: {e}')
             return {'status': 'failed', 'error': str(e)}
 
@@ -185,7 +185,7 @@ class HealthHub:
             pipe_perf = metrics.get('pipeline', {}).get('efficiency', 1.0)
             drift = metrics.get('analytics', {}).get('drift_score', 0.0)
             return [cpu, mem, disk, pipe_perf, drift]
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error extracting features: {e}', exc_info=True)
             return [0.5, 0.5, 0.1, 1.0, 0.0]
 
@@ -214,7 +214,7 @@ class HealthHub:
             is_anomaly = self.models['anomaly_detector'].predict([features])[0
                 ] == -1
             return {'is_anomaly': bool(is_anomaly), 'score': float(score)}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error detecting anomalies: {e}', exc_info=True)
             return {'is_anomaly': False, 'score': 0.0}
 
@@ -250,7 +250,7 @@ class HealthHub:
                 historical_data)
             return {'model_name': model_name, 'drift_detected':
                 drift_detected, 'timestamp': datetime.now().isoformat()}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Financial drift analysis failure: {e}', exc_info=True)
             return {'status': 'error', 'message': str(e)}
 
@@ -263,7 +263,7 @@ class HealthHub:
                 model_name=model_name,
                 order_by='timestamp DESC'
             )
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             # Fallback to query_data if load_data with params fails
             self.logger.warning(f'Initial performance load failed, attempting fallback: {e}')
             query = "SELECT win_rate, sharpe_ratio, timestamp FROM model_performance WHERE model_name = ? ORDER BY timestamp DESC"

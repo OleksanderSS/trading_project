@@ -73,7 +73,7 @@ class NLPFeaturesEnricher(BaseEnricher):
 
             return final_df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during NLP feature enrichment: {e}", exc_info=True)
             return df
 

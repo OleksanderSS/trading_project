@@ -135,7 +135,7 @@ class BayesianOptimizer(BaseOptimizer):
 
             return {"best_params": self.best_params, "best_score": self.best_score}
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Критична помилка під час оптимізації: {e}", exc_info=True)
             raise
 

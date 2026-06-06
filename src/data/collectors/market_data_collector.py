@@ -49,7 +49,7 @@ class MarketDataCollector(BaseCollector):
                     return data
                 else:
                     logger.warning(f"{client_name} returned no data for {ticker}. Trying next client.")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Client {client_name} failed for {ticker}: {e}. Trying next client.", exc_info=True)
                 await asyncio.sleep(0.5)  # Brief delay before retry
 

@@ -97,6 +97,6 @@ class DecayPredictor:
                     })
 
             return pd.DataFrame(predictions)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error predicting news impact: {e}')
             return pd.DataFrame()

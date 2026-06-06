@@ -174,6 +174,29 @@ class TemporalLeakageGuard:
 
         return None
 
+    def _check_feature_name_patterns(self, feature_name: str) -> dict[str, Any]:
+        """Check feature name for leakage patterns."""
+        analysis = {
+            'has_leakage': False,
+            'leakage_type': None,
+            'issues': []
+        }
+
+        for pattern_name, patterns in self.LEAKAGE_PATTERNS.items():
+            if pattern_name == 'lookahead_indicators':
+                continue  # Check separately
+
+            for pattern in patterns:
+                if re.search(pattern, feature_name, re.IGNORECASE):
+                    analysis['has_leakage'] = True
+                    analysis['leakage_type'] = pattern_name
+                    analysis['issues'].append(
+                        f"Feature name indicates future data: {feature_name} matches {pattern}"
+                    )
+                    return analysis
+
+        return analysis
+
     def _analyze_feature_for_leakage(self,
                                    series: pd.Series,
                                    feature_name: str,
@@ -189,18 +212,9 @@ class TemporalLeakageGuard:
         }
 
         # Check 1: Future price patterns in feature name
-        for pattern_name, patterns in self.LEAKAGE_PATTERNS.items():
-            if pattern_name == 'lookahead_indicators':
-                continue  # Check separately
-
-            for pattern in patterns:
-                if re.search(pattern, feature_name, re.IGNORECASE):
-                    analysis['has_leakage'] = True
-                    analysis['leakage_type'] = pattern_name
-                    analysis['issues'].append(
-                        f"Feature name indicates future data: {feature_name} matches {pattern}"
-                    )
-                    return analysis
+        name_analysis = self._check_feature_name_patterns(feature_name)
+        if name_analysis['has_leakage']:
+            return name_analysis
 
         # Check 2: Lookahead patterns in feature values (if it's a calculation result)
         if series.dtype in ['float64', 'int64']:
@@ -382,7 +396,7 @@ class TemporalLeakageGuard:
     def check_feature_target_alignment(self,
                                    features_df: pd.DataFrame,
                                    target_df: pd.DataFrame,
-                                   max_alignment_gap: pd.Timedelta = pd.Timedelta(hours=1)) -> dict[str, Any]:
+                                   max_alignment_gap: pd.Timedelta | None = None) -> dict[str, Any]:
         """
         Check temporal alignment between features and targets.
 
@@ -394,6 +408,9 @@ class TemporalLeakageGuard:
         Returns:
             Alignment validation result
         """
+        if max_alignment_gap is None:
+            max_alignment_gap = pd.Timedelta(hours=1)
+
         self.logger.info("🔍 Checking feature-target temporal alignment")
 
         issues = []

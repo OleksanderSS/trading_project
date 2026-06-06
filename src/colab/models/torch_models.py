@@ -58,26 +58,31 @@ def create_mlp_model(input_size):
 
 def create_lstm_model(input_size):
     """Create LSTM model"""
+    from src.colab.models.architectures import LSTMModel
     return LSTMModel(input_size)
 
 
 def create_gru_model(input_size):
     """Create GRU model"""
+    from src.colab.models.architectures import GRUModel
     return GRUModel(input_size)
 
 
 def create_cnn_model(input_size):
     """Create CNN model"""
+    from src.colab.models.architectures import CNNModel
     return CNNModel(input_size)
 
 
 def create_transformer_model(input_size):
     """Create Transformer model"""
+    from src.colab.models.architectures import TransformerModel
     return TransformerModel(input_size)
 
 
 def create_tabnet_model(input_size):
     """Create TabNet model (fallback to MLP)"""
+    import torch.nn as nn
     return nn.Sequential(
         nn.Linear(input_size, 128),
         nn.ReLU(),
@@ -109,6 +114,7 @@ def create_random_forest_wrapper(input_size):
             return self.forward(x)
 
         def forward(self, x):
+            import torch
             if hasattr(x, 'detach'):
                 x_np = x.detach().cpu().numpy()
             else:
@@ -129,4 +135,5 @@ def create_random_forest_wrapper(input_size):
 
 def create_autoencoder_model(input_size):  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
     """Create Autoencoder model"""
+    from src.colab.models.architectures import AutoencoderModel  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
     return AutoencoderModel(input_size)  # audit-ignore: AUTOENCODER_ROUTING_REVIEW

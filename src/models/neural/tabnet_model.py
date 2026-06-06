@@ -142,6 +142,6 @@ class TabNetModel(BaseModel):
         except FileNotFoundError:
             self.logger.error(f"Файл моделі або метаданих не знайдено за шляхом: {path}")
             return False
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Помилка під час завантаження моделі: {e}")
             return False

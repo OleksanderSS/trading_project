@@ -112,7 +112,7 @@ class SimulationEngine:
                 max_drawdown=metrics_calculator.calculate_max_drawdown()
             )
             return report
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in single path simulation: {e}", exc_info=True)
             raise RuntimeError(
                 f"Single path simulation failed for {context.ticker}"

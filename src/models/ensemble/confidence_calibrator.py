@@ -33,8 +33,10 @@ class ConfidenceCalibrator:
         self.logger.info(f"✅ ConfidenceCalibrator initialized with method: {method}")
 
     def _get_strategy(self, method: str, task_type: str):
-        if method == 'platt': return PlattScalingStrategy()
-        if method == 'isotonic': return IsotonicRegressionStrategy(task_type)
+        if method == 'platt':
+            return PlattScalingStrategy()
+        if method == 'isotonic':
+            return IsotonicRegressionStrategy(task_type)
         raise ValueError(f"Unknown calibration method: {method}")
 
     def fit(self,
@@ -57,7 +59,7 @@ class ConfidenceCalibrator:
 
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error fitting calibrator: {e}", exc_info=True)
             raise DataProcessingError(f"Fitting calibrator failed: {e}") from e
 
@@ -69,7 +71,7 @@ class ConfidenceCalibrator:
 
         try:
             return self.strategy.transform(predictions)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error applying calibration: {e}")
             raise DataProcessingError(f"Applying calibration failed: {e}") from e
 
@@ -108,7 +110,7 @@ class ConfidenceCalibrator:
                 'strategy': self.strategy,
             }, path)
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error saving calibrator: {e}", exc_info=True)
             return False
 
@@ -137,7 +139,7 @@ class ConfidenceCalibrator:
             self.is_fitted = payload['is_fitted']
             self.strategy = payload['strategy']
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error loading calibrator: {e}", exc_info=True)
             return False
 

@@ -53,6 +53,60 @@ class NewsAPICollector(BaseCollector):
             )
         return self._api_key
 
+    def _check_newsapi_cache(self, cache_key: str, cache_params: dict, table_name: str) -> pd.DataFrame | None:
+        """Check cache for existing NewsAPI data and filter new records."""
+        if not self.cache_manager:
+            return None
+        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+        if cached is not None:
+            df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
+            if "hash" in df_cached.columns:
+                new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
+                if new_from_cache.empty:
+                    self.logger.info("[NewsAPI] Cache hit — no new articles detected.")
+                    return None
+                return new_from_cache
+        return None
+
+    def _process_fetch_results(self, results: list, search_terms: list[str]) -> list[dict]:
+        """Process fetch results and extract articles."""
+        all_articles = []
+        for i, res in enumerate(results):
+            if isinstance(res, list):
+                all_articles.extend(res)
+            elif isinstance(res, Exception):
+                self.logger.error(f"[NewsAPI] Network error for term '{search_terms[i]}': {res}")
+        return all_articles
+
+    def _create_article_hash(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create cryptographic hash for deduplication."""
+        df["hash"] = df.apply(
+            lambda row: hashlib.sha256(
+                "|".join(str(row.get(k, "")) for k in self.hash_keys).encode()
+            ).hexdigest(),
+            axis=1,
+        )
+        return df
+
+    def _filter_by_cache(self, df: pd.DataFrame) -> pd.DataFrame | None:
+        """Filter DataFrame by cache manager if available."""
+        if self.cache_manager:
+            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
+            df = df[is_new].copy()
+            if df.empty:
+                self.logger.info("[NewsAPI] All fetched articles already exist in active cache.")
+                return None
+        return df
+
+    def _update_cache(self, cache_key: str, cache_params: dict, df: pd.DataFrame, new_df: pd.DataFrame | None = None) -> None:
+        """Update cache with hashes from DataFrame."""
+        if not self.cache_manager:
+            return
+        hashes = new_df["hash"] if new_df is not None else df["hash"]
+        for h in hashes:
+            self.cache_manager.set(h, True, ttl=3600)
+        self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
+
     async def run(
         self,
         tickers: list[str] | None = None,
@@ -67,103 +121,48 @@ class NewsAPICollector(BaseCollector):
         table_name = self.configs.get("table_name", "newsapi_articles")
         search_terms = list(set((tickers or []) + (keywords or [])))
         if not search_terms:
-            self.logger.warning(
-                "[NewsAPI] No search terms provided. Skipping execution."
-            )
+            self.logger.warning("[NewsAPI] No search terms provided. Skipping execution.")
             return None
 
         cache_key = f"{self.__class__.__name__}_run"
         cache_params = {"terms": sorted(search_terms)}
 
         # 1. State Verification (Cache lookup)
-        if self.cache_manager:
-            cached = self.cache_manager.get(
-                cache_key, cache_params, namespace="collectors"
-            )
-            if cached is not None:
-                df_cached = (
-                    pd.DataFrame(cached)
-                    if isinstance(cached, list)
-                    else cached
-                )
-                if "hash" in df_cached.columns:
-                    new_from_cache = self.db_manager.filter_new_records(
-                        table_name, df_cached
-                    )
-                    if new_from_cache.empty:
-                        self.logger.info(
-                            "[NewsAPI] Cache hit — no new articles detected."
-                        )
-                        return None
-                    return new_from_cache
+        cached_result = self._check_newsapi_cache(cache_key, cache_params, table_name)
+        if cached_result is not None:
+            return cached_result
 
         # 2. Sequential Data Acquisition
-        self.logger.info(
-            f"[NewsAPI] Issuing collection requests for {len(search_terms)} terms..."
-        )
+        self.logger.info(f"[NewsAPI] Issuing collection requests for {len(search_terms)} terms...")
         tasks = [self._fetch_for_term(term, api_key) for term in search_terms]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        all_articles = []
-        for i, res in enumerate(results):
-            if isinstance(res, list):
-                all_articles.extend(res)
-            elif isinstance(res, Exception):
-                self.logger.error(
-                    f"[NewsAPI] Network error for term '{search_terms[i]}': {res}"
-                )
+        all_articles = self._process_fetch_results(results, search_terms)
 
         if not all_articles:
-            self.logger.info(
-                "[NewsAPI] Zero articles retrieved from external queries."
-            )
+            self.logger.info("[NewsAPI] Zero articles retrieved from external queries.")
             return None
 
         df = pd.DataFrame(all_articles)
 
         # 3. Cryptographic Deduplication Hash
-        df["hash"] = df.apply(
-            lambda row: hashlib.sha256(
-                "|".join(str(row.get(k, "")) for k in self.hash_keys).encode()
-            ).hexdigest(),
-            axis=1,
-        )
+        df = self._create_article_hash(df)
 
         # 4. Filter against Hash Memory
-        if self.cache_manager:
-            is_new = df["hash"].apply(
-                lambda h: self.cache_manager.get(h) is None
-            )
-            df = df[is_new].copy()
-            if df.empty:
-                self.logger.info(
-                    "[NewsAPI] All fetched articles already exist in active cache."
-                )
-                return None
+        df = self._filter_by_cache(df)
+        if df is None:
+            return None
 
         # 5. Filter against Historical Database
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
-            self.logger.info(
-                "[NewsAPI] No novel articles identified against historical database."
-            )
-            if self.cache_manager:
-                for h in df["hash"]:
-                    self.cache_manager.set(h, True, ttl=3600)
+            self.logger.info("[NewsAPI] No novel articles identified against historical database.")
+            self._update_cache(cache_key, cache_params, df)
             return None
 
         # 6. Persistence to Storage
         self.db_manager.upsert(table_name, new_df, unique_on=["hash"])
-
-        if self.cache_manager:
-            for h in new_df["hash"]:
-                self.cache_manager.set(h, True, ttl=3600)
-            self.cache_manager.set(
-                cache_key,
-                df.to_dict("records"),
-                cache_params,
-                namespace="collectors",
-            )
+        self._update_cache(cache_key, cache_params, df, new_df)
 
         self.logger.info(
             f"[NewsAPI] Successfully persisted {len(new_df)} new articles."
@@ -192,7 +191,7 @@ class NewsAPICollector(BaseCollector):
                     a["search_term"] = term
                     filtered.append(a)
             return filtered
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f"[NewsAPI] HTTP context error for '{term}': {e}"
             )

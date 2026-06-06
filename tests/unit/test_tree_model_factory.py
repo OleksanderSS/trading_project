@@ -22,4 +22,6 @@ def test_model_factory_normalizes_config_names():
     assert ModelFactory._validate_and_normalize_name('transformer') == 'Transformer'
     assert ModelFactory._validate_and_normalize_name('lightgbm') == 'LightGBM'
     assert ModelFactory._validate_and_normalize_name('random_forest') == 'RandomForest'
-    assert 'Transformer' in ModelFactory.get_available_models()
+    
+    # Check if a tree model is available in the registry-backed list
+    assert 'xgboost' in ModelFactory.get_available_models()

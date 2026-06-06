@@ -1,4 +1,6 @@
 import asyncio
+import tempfile
+from pathlib import Path
 from types import SimpleNamespace
 
 import pandas as pd
@@ -54,18 +56,19 @@ def test_execute_full_mode_uses_hybrid_request():
     assert orchestrator.request.accumulate is True
 
 
-def test_load_continue_data_returns_stable_tuple_on_missing_colab_results(tmp_path):
+def test_load_continue_data_returns_stable_tuple_on_missing_colab_results():
     args = SimpleNamespace(batch_name="missing_batch")
-    orchestrator = ContinueModeOrchestrator(
-        batch_dir=tmp_path,
-        colab_results={"status": "error", "message": "not found"},
-    )
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        orchestrator = ContinueModeOrchestrator(
+            batch_dir=Path(tmp_dir),
+            colab_results={"status": "error", "message": "not found"},
+        )
 
-    result = PipelineExecutor._load_continue_data(orchestrator, args)
+        result = PipelineExecutor._load_continue_data(orchestrator, args)
 
-    assert len(result) == 5
-    assert result[0] is None
-    assert result[2]["status"] == "error"
+        assert len(result) == 5
+        assert result[0] is None
+        assert result[2]["status"] == "error"
 
 
 def test_validate_continue_inputs_rejects_missing_targets():
@@ -106,42 +109,44 @@ def test_merge_results_data_initializes_models_metadata():
     assert merged["models_metadata"]["light_model"]["score"] == 1.0
 
 
-def test_execute_continue_mode_trains_light_models_on_loaded_data(monkeypatch, tmp_path):
+def test_execute_continue_mode_trains_light_models_on_loaded_data(monkeypatch):
     features_df = pd.DataFrame({"datetime": ["2026-05-08"], "ticker": ["AMD"], "f1": [1.0]})
     targets_df = pd.DataFrame({"target_return": [0.1], "ticker": ["AMD"]})
     colab_results = {"status": "success", "ticker_results": {"AMD": {}}}
-    orchestrator = ContinueExecutionOrchestrator(tmp_path, colab_results)
-    args = SimpleNamespace(
-        batch_name="main_database",
-        test_ticker=None,
-        test_target=None,
-        stages=None,
-    )
+    
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        orchestrator = ContinueExecutionOrchestrator(Path(tmp_dir), colab_results)
+        args = SimpleNamespace(
+            batch_name="main_database",
+            test_ticker=None,
+            test_target=None,
+            stages=None,
+        )
 
-    monkeypatch.setattr(
-        PipelineExecutor,
-        "_validate_batch_contract",
-        staticmethod(lambda _orchestrator: {
-            "valid": True,
-            "manifest": {"timeframes": ["1d"]},
-            "errors": [],
-        }),
-    )
-    monkeypatch.setattr(
-        PipelineExecutor,
-        "_load_continue_data",
-        staticmethod(lambda _orchestrator, _args: (
-            features_df,
-            targets_df,
-            colab_results,
-            None,
-            None,
-        )),
-    )
+        monkeypatch.setattr(
+            PipelineExecutor,
+            "_validate_batch_contract",
+            staticmethod(lambda _orchestrator: {
+                "valid": True,
+                "manifest": {"timeframes": ["1d"]},
+                "errors": [],
+            }),
+        )
+        monkeypatch.setattr(
+            PipelineExecutor,
+            "_load_continue_data",
+            staticmethod(lambda _orchestrator, _args: (
+                features_df,
+                targets_df,
+                colab_results,
+                None,
+                None,
+            )),
+        )
 
-    result = asyncio.run(PipelineExecutor.execute_continue_mode(orchestrator, args))
+        result = asyncio.run(PipelineExecutor.execute_continue_mode(orchestrator, args))
 
-    assert result["status"] == "completed"
-    assert orchestrator.light_kwargs["features_df"].equals(features_df)
-    assert orchestrator.light_kwargs["targets_df"].equals(targets_df)
-    assert orchestrator.final_request["light_results"]["models_metadata"]["light_model"]["score"] == 1.0
+        assert result["status"] == "completed"
+        assert orchestrator.light_kwargs["features_df"].equals(features_df)
+        assert orchestrator.light_kwargs["targets_df"].equals(targets_df)
+        assert orchestrator.final_request["light_results"]["models_metadata"]["light_model"]["score"] == 1.0

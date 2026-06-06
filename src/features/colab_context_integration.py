@@ -62,7 +62,7 @@ class ContextAwareColabFeatureSelector:
             self.feature_selector = SimpleFeatureSelector()
             print('✅ SimpleFeatureSelector initialized (basic fallback)')
             self.uses_context_aware = False
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка: {e}', exc_info=True)
             print(f'❌ Error initializing feature selector: {e}')
             self.feature_selector = None
@@ -159,7 +159,7 @@ def save_feature_analysis(analysis: dict[str, Any], ticker: str, target:
         with open(output_path, 'w') as f:
             json.dump(full_analysis, f, indent=2)
         print(f'✅ Saved feature analysis to {output_path}')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Виникла помилка: {e}', exc_info=True)
         print(f'⚠️ Failed to save feature analysis: {e}')
         raise
@@ -196,7 +196,7 @@ def visualize_context_importance(analysis: dict[str, Any], output_path:
         plt.close()
     except ImportError:
         print('⚠️ matplotlib not available, skipping visualization')
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Виникла помилка: {e}', exc_info=True)
         print(f'⚠️ Failed to create visualization: {e}')
         raise

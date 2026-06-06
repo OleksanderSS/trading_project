@@ -63,7 +63,7 @@ class BiasDetector:
                 "threshold": threshold,
                 "lag_periods": lag_periods,
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Look-ahead bias detection failed: {e}", exc_info=True)
             return {
                 "lookahead_bias_detected": False,
@@ -105,10 +105,10 @@ class BiasDetector:
     @staticmethod
     def _future_returns(prices: pd.DataFrame, lag_periods: int) -> pd.DataFrame:
         lag = max(1, int(lag_periods))
-        returns = prices.pct_change(periods=lag, fill_method=None).shift(-lag)
+        returns = prices.pct_change(periods=lag, fill_method=None).shift(-lag)  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL
         returns = returns.replace([np.inf, -np.inf], np.nan)
         if returns.dropna(how="all").empty:
-            return prices.shift(-lag)
+            return prices.shift(-lag)  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL
         return returns
 
     @staticmethod

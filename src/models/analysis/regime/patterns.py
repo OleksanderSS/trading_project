@@ -36,7 +36,7 @@ class RegimePatternAnalyzer:
                         consistency_score = 0.0
                     model_consistency[model_name] = float(consistency_score)
             return model_consistency
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error calculating model consistency: {e}", exc_info=True)
             raise DataProcessingError(f"Model consistency calculation failed: {e}") from e
 
@@ -67,7 +67,7 @@ class RegimePatternAnalyzer:
                 expected_winners, actual_winners)
             winner_patterns['regime_specific_insights'] = insights
             return winner_patterns
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error analyzing winner patterns: {e}", exc_info=True)
             raise DataProcessingError(f"Winner pattern analysis failed: {e}") from e
 
@@ -108,6 +108,6 @@ class RegimePatternAnalyzer:
                     f'🚨 Poor alignment with {regime} regime. Consider model selection review'
                     )
             return insights
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error generating regime insights: {e}", exc_info=True)
             raise DataProcessingError(f"Regime insights generation failed: {e}") from e

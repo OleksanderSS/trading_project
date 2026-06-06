@@ -12,6 +12,7 @@ from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
 def temp_leaderboard():
     """Create temporary leaderboard file."""
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
+        json.dump({}, f)
         filepath = f.name
     yield filepath
     Path(filepath).unlink(missing_ok=True)

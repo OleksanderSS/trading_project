@@ -42,7 +42,7 @@ class DataCacheManager:
             try:
                 n_f = pd.read_parquet(f_p)
                 n_t = pd.read_parquet(t_p)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'⚠️ Error loading cache: {e}')
                 return n_f, n_t
@@ -69,7 +69,7 @@ class DataCacheManager:
                 self.logger.info(
                     f'📊 Found {len(current - known)} new data points')
             return has_new
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Error checking cache freshness: {e}')
             return True

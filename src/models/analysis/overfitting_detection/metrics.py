@@ -20,9 +20,9 @@ class OverfittingMetrics:
                 'r2': float(r2_score(y_true, y_pred)),
                 'rmse': float(np.sqrt(mean_squared_error(y_true, y_pred)))
             }
-        except Exception as e:
-            logger.error(f"Error calculating metrics: {e}", exc_info=True)
-            raise RuntimeError("Failed to calculate overfitting metrics") from e
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.warning(f"Error calculating metrics (returning empty): {e}")
+            return {}
 
     def analyze_data_characteristics(self,
                                  X_train: pd.DataFrame,

@@ -40,6 +40,6 @@ class RegimeRecommendationEngine:
             regime_recommendations = regime_insights.get('recommendations', [])
             recommendations.extend(regime_recommendations)
             return recommendations
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error generating recommendations: {e}')
             return []

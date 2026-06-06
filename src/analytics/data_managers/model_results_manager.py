@@ -10,6 +10,7 @@ from typing import Any
 import pandas as pd
 
 from src.core.exceptions import DataLoadError, DataProcessingError
+from src.models.registry.model_registry import ModelRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class ModelResultsManager:
     COMBINED_FILENAME = 'combined_analysis.parquet'
 
     def __init__(self, base_path: str='data/models'):
-        self.LIGHT_MODEL_TYPES = ['lgbm', 'rf', 'linear', 'mlp', 'ensemble']
+        self.LIGHT_MODEL_TYPES = ModelRegistry.get_models_by_type('light')
         self.base_path = Path(base_path)
         self.base_path.mkdir(parents=True, exist_ok=True)
         self.light_results_path = self.base_path / self.LIGHT_MODELS_FILENAME
@@ -67,7 +68,7 @@ class ModelResultsManager:
                 f'Persisted {len(df_to_save)} new results to {target_path}')
             self._cache.pop(str(target_path), None)
             self._cache.pop('combined', None)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to persist results to {target_path}: {e}',
                 exc_info=True)
             raise DataProcessingError(f'Failed to persist results to {target_path}: {e}') from e
@@ -119,7 +120,7 @@ class ModelResultsManager:
                     f'Loaded {len(df)} performance records from {file_path.name}'
                     )
                 return df
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 error_msg = f'Data corruption or I/O error reading {file_path}: {e}'
                 logger.error(error_msg, exc_info=True)
                 raise DataLoadError(error_msg) from e
@@ -152,7 +153,7 @@ class ModelResultsManager:
             if not relevant_history.empty:
                 return float(relevant_history['metric_value'].tail(10).mean())
             return 0.5
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Experience Diary lookup failed for {model_id}: {e}', exc_info=True)
             raise DataProcessingError(f'Experience Diary lookup failed for {model_id}: {e}') from e
 
@@ -208,6 +209,6 @@ class ModelResultsManager:
             with open(target_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=4)
             logger.info(f'Saved JSON report to {target_path}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to save JSON report to {target_path}: {e}')
             raise DataProcessingError(f'Failed to save JSON report to {target_path}: {e}') from e

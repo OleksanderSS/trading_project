@@ -9,8 +9,10 @@ class DriftAnalyzer(IAnalyzer):
     Adapter for FeatureDriftMonitor to integrate with UnifiedAnalyticsEngine.
     """
 
-    def __init__(self, threshold: float = 0.05):
-        self.monitor = FeatureDriftMonitor(threshold=threshold)
+    def __init__(self, threshold: float = 0.05, config: dict = None):
+        if config:
+            threshold = config.get('threshold', threshold)
+        self.monitor = FeatureDriftMonitor(drift_threshold=threshold)
 
     def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         """

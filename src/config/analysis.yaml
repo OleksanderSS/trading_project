@@ -46,6 +46,19 @@ engine:
       module: "src.analytics.detectors.critical_signal_detector"
       class: "CriticalSignalDetector"
       data_mapping: ["price_data"]
+    - name: "pattern_analysis"
+      module: "src.patterns.pattern_analyzer"
+      class: "PatternAnalyzer"
+      data_mapping: ["price_data"]
+      params:
+        fractal_window: 20
+        min_pattern_bars: 5
+    - name: "risk_decomposition"
+      module: "src.analytics.analyzers.risk_decomposition_analyzer"
+      class: "RiskDecompositionAnalyzer"
+      data_mapping: ["portfolio_data", "market_data"]
+      params:
+        n_components: 5
 
 calculators_config:
   volatility:

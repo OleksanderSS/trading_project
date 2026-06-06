@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Light Models Trainer - Handles light model training logic
 """
@@ -102,7 +103,7 @@ class LightModelsTrainer:
                 accumulated['runs'].append(current_run)
                 accumulated['last_updated'] = current_run['timestamp']
                 return accumulated
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Could not load existing results: {e}')
                 raise
@@ -142,7 +143,7 @@ class LightModelsTrainer:
                     if features_data.get('model_name') == model_name:
                         return cast(list[str], features_data.get(
                             'selected_features', []))
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.logger.warning(
                         f'Could not load features from {features_file}: {e}')

@@ -68,7 +68,7 @@ class ReportGenerator:
             self.logger.info(f"Equity curve saved to {plot_path}")
             return str(plot_path)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting equity curve: {e}")
             return ""
 
@@ -107,7 +107,7 @@ class ReportGenerator:
 
             return summary
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error creating evaluation summary: {e}")
             return {
                 'metrics': financial_metrics,
@@ -137,7 +137,7 @@ class ReportGenerator:
 
             return message
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating notification message: {e}")
             return "Pipeline execution finished (error generating details)"
 
@@ -165,7 +165,7 @@ class ReportGenerator:
             self.logger.info(f"Summary saved to {file_path}")
             return str(file_path)
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error saving summary: {e}")
             return ""
 

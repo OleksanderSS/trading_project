@@ -83,7 +83,8 @@ class PortfolioOptimizer:
 
         # Використовуємо Ledoit-Wolf estimator для стабільності
         cov_matrix = LedoitWolf().fit(returns_df).covariance_
-        correlation_matrix = cov_matrix / np.sqrt(np.outer(np.diag(cov_matrix), np.diag(cov_matrix)))
+        corr_coefs = cov_matrix / np.sqrt(np.outer(np.diag(cov_matrix), np.diag(cov_matrix)))
+        correlation_matrix = pd.DataFrame(corr_coefs, index=returns_df.columns, columns=returns_df.columns)
 
         self.logger.info(f"📈 Correlation matrix shape: {correlation_matrix.shape}")
         return correlation_matrix
@@ -277,8 +278,17 @@ class PortfolioOptimizer:
         from sklearn.linear_model import LinearRegression
 
         # Підготовка даних
-        X = ticker_features
+        X = ticker_features.drop(['ticker', 'returns'], axis=1, errors='ignore')
+        X = X.select_dtypes(include=[np.number]).replace([np.inf, -np.inf], np.nan)
         y = ticker_targets.iloc[:, 0] if len(ticker_targets.columns) > 0 else ticker_targets
+        y = pd.to_numeric(y, errors='coerce')
+
+        valid_mask = y.notna() & X.notna().all(axis=1)
+        X = X.loc[valid_mask].reset_index(drop=True)
+        y = y.loc[valid_mask].reset_index(drop=True)
+
+        if len(y) < 5:
+            raise ValueError(f"Not enough aligned samples for local model {ticker}")
 
         # Використовуємо shuffle=False для збереження часової послідовності
         X_train, X_test, y_train, y_test = self._chronological_split(X, y)
@@ -294,6 +304,8 @@ class PortfolioOptimizer:
             'model': model,
             'score': score,
             'weight': weight,
+            'feature_columns': list(X.columns),
+            'feature_medians': X.median().to_dict(),
             'global_influence': self._calculate_global_influence(global_model, ticker_features)
         }
 
@@ -317,7 +329,12 @@ class PortfolioOptimizer:
             global_pred = global_model['model'].predict(global_features)
 
             # Локальний прогноз
-            local_pred = local_models[ticker]['model'].predict(features)
+            local_features = self._select_model_features(
+                features,
+                local_models[ticker].get('feature_columns'),
+                local_models[ticker].get('feature_medians'),
+            )
+            local_pred = local_models[ticker]['model'].predict(local_features)
 
             # Комбінований прогноз з вагами
             weight = optimal_weights[ticker]

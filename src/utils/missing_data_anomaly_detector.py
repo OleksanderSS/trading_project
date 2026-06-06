@@ -297,7 +297,7 @@ class MissingDataAnomalyDetector:
         # Check if many columns were filled at the same time (systematic issue)
         if len(fill_patterns) > 1:
             timestamp_counts = {}
-            for col, pattern in fill_patterns.items():
+            for _col, pattern in fill_patterns.items():
                 for timestamp in pattern['fill_timestamps']:
                     timestamp_counts[timestamp] = timestamp_counts.get(timestamp, 0) + 1
 

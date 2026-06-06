@@ -147,7 +147,7 @@ class RegimeImportanceTracker:
             self.logger.info(f'✅ Regime importance tracking complete. Regime: {current_regime}')
 
             return results
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error in regime importance tracking: {e}', exc_info=True)
             raise DataProcessingError(f"Regime importance tracking failed: {e}") from e
 
@@ -158,7 +158,7 @@ class RegimeImportanceTracker:
                 self.importance_history = self.importance_history[-1000:]
             if len(self.regime_switch_points) > 100:
                 self.regime_switch_points = self.regime_switch_points[-100:]
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error cleaning old data: {e}', exc_info=True)
 
     def _store_tracking_results(self, results: dict[str, Any]) -> None:
@@ -173,7 +173,7 @@ class RegimeImportanceTracker:
             files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
             for file_to_delete in files[100:]:
                 file_to_delete.unlink()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to store tracking results: {e}', exc_info=True)
             raise DataProcessingError(f"Failed to store tracking results: {e}") from e
 

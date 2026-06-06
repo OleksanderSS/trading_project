@@ -105,7 +105,7 @@ class TrainingStateManager:
             with open(filepath, 'w') as f:
                 json.dump(checkpoint, f, indent=2)
             self.logger.debug(f"Checkpoint saved: {filepath.name}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to save checkpoint: {e}")
 
     def load_checkpoint(self, checkpoint_file: str, path_validator) -> bool:
@@ -133,7 +133,7 @@ class TrainingStateManager:
         except ValueError as e:
             self.logger.error(f"Security validation failed for {checkpoint_file}: {e}")
             return False
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"State recovery failed for {checkpoint_file}: {e}")
             return False
 

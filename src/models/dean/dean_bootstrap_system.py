@@ -1,3 +1,12 @@
+import logging
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+import numpy as np
+
 """
 !!! ПОТРІБНО ДООПРАЦЮВАТИ !!!
 Цей файл містить сиру, експериментальну логіку, натхненну принципами Станіслава Деана.
@@ -8,15 +17,6 @@
 DEAN BOOTSTRAP SYSTEM
 Система на основі принципів Станіслава Деана: бутстреп, критика, внутрішня симуляція
 """
-
-import logging
-import time
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
-from typing import Any
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,14 @@ class DeanBootstrapSystem:
             'actor_rewards': [],
             'critic_rewards': []
         }
+        # ✅ Integrated: security constraint validation for agent actions
+        try:
+            from src.meta_learning.security.constraint_engine import get_security_constraint_engine
+            self.security_engine = get_security_constraint_engine()
+            self.logger.info("✅ SecurityConstraintEngine integrated in DeanBootstrapSystem")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.security_engine = None
+            self.logger.warning(f"SecurityConstraintEngine not available: {e}")
 
     def register_model(self, model_id: str, role: ModelRole, model_instance: Any):
         """Реєстрація моделі в системі"""

@@ -6,8 +6,9 @@ from src.core.logging.logger import ProjectLogger
 
 
 class BaseNewsTargetCalculator(ABC):
-    def __init__(self, name: str):
+    def __init__(self, name: str, is_post: bool = False):
         self.logger = ProjectLogger.get_logger(name)
+        self.is_post = is_post
 
     def _prepare_data(
         self,
@@ -22,13 +23,14 @@ class BaseNewsTargetCalculator(ABC):
             return None, None
 
         ticker_news = news_df[news_df["ticker"] == ticker]
-        return ticker_news, ticker_news[
-            (ticker_news["published_date"] >= current_time - time_window)
-            if self.is_post
-            else (ticker_news["published_date"] >= current_time) & (ticker_news["published_date"] <= current_time)
-            if self.is_post
-            else (ticker_news["published_date"] <= current_time + time_window)
-        ]
+        if self.is_post:
+            filtered_news = ticker_news[ticker_news["published_date"] >= current_time - time_window]
+        else:
+            filtered_news = ticker_news[
+                (ticker_news["published_date"] >= current_time) & 
+                (ticker_news["published_date"] <= current_time + time_window)
+            ]
+        return ticker_news, filtered_news
 
     @abstractmethod
     def calculate(

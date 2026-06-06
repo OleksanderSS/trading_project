@@ -42,7 +42,7 @@ class WebUIMode(BaseMode):
                     return self._handle_server_shutdown(host, port)
         except OSError as e:
             return self._handle_startup_error(e, host, port)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             return self._handle_startup_error(e, host, port)
 
@@ -74,10 +74,107 @@ class WebUIMode(BaseMode):
         """Stvorennya obrobnika zapytiv"""
         return self._create_trading_ui_handler()
 
+    def _create_static_file_handler(self, handler_class):
+        """Create static file request handler."""
+        def _is_static_file_request(self):
+            """Check if request is for static file"""
+            return self.path not in ['/', '/dashboard', '/trading']
+
+        def _handle_static_file(self):
+            """Handle static file requests"""
+            super(handler_class, self).do_GET()
+
+        handler_class._is_static_file_request = _is_static_file_request
+        handler_class._handle_static_file = _handle_static_file
+
+    def _create_page_request_handler(self, handler_class):
+        """Create page request handler."""
+        def _handle_page_request(self):
+            """Handle page requests"""
+            page_handlers = {'/': ('index.html', CONTENT_TYPE_HTML),
+                '/dashboard': ('dashboard.html', CONTENT_TYPE_HTML),
+                '/trading': ('trading.html', CONTENT_TYPE_HTML)}
+            if self.path in page_handlers:
+                filename, content_type = page_handlers[self.path]
+                self.serve_file(filename, content_type)
+            else:
+                self.send_error(404)
+
+        handler_class._handle_page_request = _handle_page_request
+
+    def _create_api_request_handler(self, handler_class):
+        """Create API request handler."""
+        def handle_api_request(self):
+            try:
+                response = self._get_api_response()
+                if response is not None:
+                    self.send_json_response(response)
+                else:
+                    self.send_error(404)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                self.logger.error('API request failed: %s', str(e))
+                self.send_error(500, str(e))
+
+        def _get_api_response(self):
+            """Get API response based on path"""
+            api_handlers = {'/api/system/overview': self.web_ui_mode.
+                get_system_overview, '/api/portfolio/status': self.
+                web_ui_mode.get_portfolio_status, '/api/market/data':
+                self.web_ui_mode.get_market_data,
+                '/api/performance/metrics': self.web_ui_mode.
+                get_performance_metrics}
+            if self.path in api_handlers:
+                return api_handlers[self.path]()
+            return None
+
+        handler_class.handle_api_request = handle_api_request
+        handler_class._get_api_response = _get_api_response
+
+    def _create_json_response_handler(self, handler_class):
+        """Create JSON response handler."""
+        def send_json_response(self, data):
+            content = json.dumps(data, default=str, ensure_ascii=False, indent=2)
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content.encode('utf-8'))
+
+        handler_class.send_json_response = send_json_response
+
+    def _create_html_content_handler(self, handler_class):
+        """Create HTML content handler."""
+        def get_html_content(self, filename):
+            html_handlers = {'index.html': self.web_ui_mode.
+                get_index_html, 'dashboard.html': self.web_ui_mode.
+                get_dashboard_html, 'trading.html': self.web_ui_mode.
+                get_trading_html}
+            if filename in html_handlers:
+                return html_handlers[filename]()
+            else:
+                raise FileNotFoundError(f'File {filename} not found')
+
+        handler_class.get_html_content = get_html_content
+
+    def _create_serve_file_handler(self, handler_class):
+        """Create serve file handler."""
+        def serve_file(self, filename, content_type):
+            try:
+                content = self.get_html_content(filename)
+                self.send_response(200)
+                self.send_header('Content-type', content_type)
+                self.send_header('Content-Length', str(len(content)))
+                self.end_headers()
+                self.wfile.write(content.encode('utf-8'))
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+                self.send_error(500, str(e))
+                raise
+
+        handler_class.serve_file = serve_file
+
     def _create_trading_ui_handler(self):
         """Create trading UI handler class"""
-
-
         class TradingUIHandler(http.server.SimpleHTTPRequestHandler):
 
             def __init__(self, *args, **kwargs):
@@ -92,79 +189,14 @@ class WebUIMode(BaseMode):
                 else:
                     self._handle_page_request()
 
-            def _is_static_file_request(self):
-                """Check if request is for static file"""
-                return self.path not in ['/', '/dashboard', '/trading']
+        # Attach all handler methods
+        self._create_static_file_handler(TradingUIHandler)
+        self._create_page_request_handler(TradingUIHandler)
+        self._create_api_request_handler(TradingUIHandler)
+        self._create_json_response_handler(TradingUIHandler)
+        self._create_html_content_handler(TradingUIHandler)
+        self._create_serve_file_handler(TradingUIHandler)
 
-            def _handle_static_file(self):
-                """Handle static file requests"""
-                super().do_GET()
-
-            def _handle_page_request(self):
-                """Handle page requests"""
-                page_handlers = {'/': ('index.html', CONTENT_TYPE_HTML),
-                    '/dashboard': ('dashboard.html', CONTENT_TYPE_HTML),
-                    '/trading': ('trading.html', CONTENT_TYPE_HTML)}
-                if self.path in page_handlers:
-                    filename, content_type = page_handlers[self.path]
-                    self.serve_file(filename, content_type)
-                else:
-                    self.send_error(404)
-
-            def serve_file(self, filename, content_type):
-                try:
-                    content = self.get_html_content(filename)
-                    self.send_response(200)
-                    self.send_header('Content-type', content_type)
-                    self.send_header('Content-Length', str(len(content)))
-                    self.end_headers()
-                    self.wfile.write(content.encode('utf-8'))
-                except Exception as e:
-                    self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-                    self.send_error(500, str(e))
-                    raise
-
-            def handle_api_request(self):
-                try:
-                    response = self._get_api_response()
-                    if response is not None:
-                        self.send_json_response(response)
-                    else:
-                        self.send_error(404)
-                except Exception as e:
-                    self.logger.error('API request failed: %s', str(e))
-                    self.send_error(500, str(e))
-
-            def _get_api_response(self):
-                """Get API response based on path"""
-                api_handlers = {'/api/system/overview': self.web_ui_mode.
-                    get_system_overview, '/api/portfolio/status': self.
-                    web_ui_mode.get_portfolio_status, '/api/market/data':
-                    self.web_ui_mode.get_market_data,
-                    '/api/performance/metrics': self.web_ui_mode.
-                    get_performance_metrics}
-                if self.path in api_handlers:
-                    return api_handlers[self.path]()
-                return None
-
-            def send_json_response(self, data):
-                content = json.dumps(data, default=str, ensure_ascii=False,
-                    indent=2)
-                self.send_response(200)
-                self.send_header('Content-type', 'application/json')
-                self.send_header('Content-Length', str(len(content)))
-                self.end_headers()
-                self.wfile.write(content.encode('utf-8'))
-
-            def get_html_content(self, filename):
-                html_handlers = {'index.html': self.web_ui_mode.
-                    get_index_html, 'dashboard.html': self.web_ui_mode.
-                    get_dashboard_html, 'trading.html': self.web_ui_mode.
-                    get_trading_html}
-                if filename in html_handlers:
-                    return html_handlers[filename]()
-                else:
-                    raise FileNotFoundError(f'File {filename} not found')
         TradingUIHandler.web_ui_mode = self
         return TradingUIHandler
 
@@ -201,7 +233,7 @@ class WebUIMode(BaseMode):
                     uniform(-5, 5), 2), 'volume': random.randint(1000000,
                     10000000), 'timestamp': datetime.now().isoformat(),
                     'source': 'simulation'}
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning('Failed to get market data for %s: %s',
                     ticker, str(e))
@@ -225,7 +257,7 @@ class WebUIMode(BaseMode):
         if self.performance_monitor:
             try:
                 return self.performance_monitor.get_performance_report()
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning('Failed to get performance report: %s',
                     str(e))

@@ -72,7 +72,7 @@ class DataManager(IDatabaseManager):
             try:
                 conn.close()
                 logger.info(f"Closed connection to '{db_path}'")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Error closing connection to '{db_path}': {e}", exc_info=True)
         cls._connections.clear()
         cls._connection_lock.clear()
@@ -89,7 +89,7 @@ class DataManager(IDatabaseManager):
         if force_new and db_path in cls._connections:
             try:
                 cls._connections[db_path].close()
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'Error closing connection: {e}', exc_info=True)
             del cls._connections[db_path]
 
@@ -119,7 +119,7 @@ class DataManager(IDatabaseManager):
                 ConnectionRegistry.register(f'duckdb_{db_path}', cls._connections[db_path])
                 logger.info(f"Successfully created DB connection to '{db_path}' (attempt {attempt + 1}/{retry_count})")
                 return cls._connections[db_path]
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.warning(f"Connection attempt {attempt + 1} failed for '{db_path}': {e}")
                 last_error = e
                 if attempt < retry_count - 1:
@@ -129,7 +129,7 @@ class DataManager(IDatabaseManager):
             # Резервна спроба зі стандартними налаштуваннями
             cls._connections[db_path] = duckdb.connect(database=db_path, read_only=False)
             return cls._connections[db_path]
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to connect to database '{db_path}' after retries. Last error: {last_error}. Fallback error: {e}", exc_info=True)
             raise RuntimeError(f"Cannot connect to database '{db_path}': {last_error or e}") from e
 
@@ -145,7 +145,7 @@ class DataManager(IDatabaseManager):
             self.con.commit()
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug('Transaction committed successfully')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.con.rollback()
             self.error_handler.handle_error(e, context={'action': 'transaction_rollback'})
             logger.error(f'Transaction rolled back due to error: {e}', exc_info=True)
@@ -193,7 +193,7 @@ class DataManager(IDatabaseManager):
             df = self.fetch_df(query)
             logger.info(f"Successfully fetched {len(df)} records from '{table_name}'.")
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка при читанні таблиці {table_name}: {e}', exc_info=True)
             self.error_handler.handle_error(e, context={'table_name': table_name, 'operation': 'fetch_data_from_table'})
             raise DataLoadError(f"Failed to fetch data from table '{table_name}': {e}") from e
@@ -201,7 +201,7 @@ class DataManager(IDatabaseManager):
     def fetch_df(self, query: str, params: list[Any] | None = None) -> pd.DataFrame:
         try:
             return self.con.execute(query, params).fetchdf()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка при виклику fetch_df: {e}', exc_info=True)
             self.error_handler.handle_error(e, context={'query': query})
             raise DataLoadError(f"Failed to fetch DataFrame: {e}") from e
@@ -235,7 +235,7 @@ class DataManager(IDatabaseManager):
             pivot_df.index = pd.to_datetime(pivot_df.index)
             logger.info(f'Loaded and aligned data for {len(tickers)} tickers. Shape: {pivot_df.shape}')
             return pivot_df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка при завантаженні тікерів: {e}', exc_info=True)
             self.error_handler.handle_error(e, context={'tickers': tickers, 'operation': 'load_data_for_tickers'})
             raise DataLoadError(f"Failed to load data for tickers {tickers}: {e}") from e
@@ -373,7 +373,7 @@ class DataManager(IDatabaseManager):
         finally:
             try:
                 self.con.unregister('df_to_upsert')
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Failed to unregister df_to_upsert: {e}", exc_info=True)
 
     def _create_unique_index(self, table_name: str, unique_on: list[str]):
@@ -439,10 +439,12 @@ class DataManager(IDatabaseManager):
 
     def get_table_schema(self, table_name: str) -> dict[str, str]:
         try:
+            # ✅ FIX: Use DuckDB information_schema instead of SQLite PRAGMA
             schema_info = self.con.execute(
-                f'PRAGMA table_info({self._quote_identifier(table_name)})'
+                "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = ?",
+                [table_name]
             ).fetchall()
-            return {row[1]: row[2].upper() for row in schema_info}
+            return {row[0]: row[1].upper() for row in schema_info}
         except (duckdb.Error, Exception) as e:
             logger.error(f'Помилка отримання схеми таблиці {table_name}: {e}', exc_info=True)
             raise DataLoadError(f"Failed to get schema for table '{table_name}': {e}") from e
@@ -459,17 +461,18 @@ class DataManager(IDatabaseManager):
 
         if nan_count > 0:
             nan_pct = nan_count / (len(df) * len(numeric_cols)) * 100
-            logger.warning(f"Table '{table_name}': {nan_count} NaN values ({nan_pct:.2f}%)")
-
             if nan_pct > 10:
-                logger.error(f"Critical: >10% NaN values in '{table_name}'")
-                df[numeric_cols] = df[numeric_cols].ffill()
-                remaining_nan_count = df[numeric_cols].isna().sum().sum()
-                if remaining_nan_count:
-                    logger.warning(
-                        f"Table '{table_name}': {remaining_nan_count} leading NaN values left unfilled to avoid lookahead"
-                    )
-                logger.info(f"Applied causal forward-fill to {nan_count - remaining_nan_count} NaN values in '{table_name}'")
+                logger.error(f"Critical: >10% NaN values in '{table_name}' ({nan_pct:.2f}%)")
+            else:
+                logger.warning(f"Table '{table_name}': {nan_count} NaN values ({nan_pct:.2f}%)")
+
+            df[numeric_cols] = df[numeric_cols].ffill()
+            remaining_nan_count = df[numeric_cols].isna().sum().sum()
+            if remaining_nan_count:
+                logger.warning(
+                    f"Table '{table_name}': {remaining_nan_count} leading NaN values left unfilled to avoid lookahead"
+                )
+            logger.info(f"Applied causal forward-fill to {nan_count - remaining_nan_count} NaN values in '{table_name}'")
         return df
 
     def _should_checkpoint(self, table_name: str) -> bool:
@@ -494,10 +497,9 @@ class DataManager(IDatabaseManager):
                 )
                 logger.info(f"Created unique index for '{table_name}' on columns: {unique_on}")
         except Exception as idx_e:
-            if logger.isEnabledFor(logging.DEBUG):
-                logger.debug(
-                    f"Could not create/verify unique index for '{table_name}': {idx_e}",
-                    exc_info=True)
+            logger.warning(
+                f"Could not create/verify unique index for '{table_name}': {idx_e}",
+                exc_info=True)
 
     def _clean_duplicates(self, table_name: str, unique_on: list[str]) -> None:
         """Очищує дублікати у таблиці, залишаючи перший запис."""
@@ -506,6 +508,7 @@ class DataManager(IDatabaseManager):
             logger.info(f"Cleaning duplicates in '{table_name}'...")
 
             # Створюємо тимчасову таблицю з унікальними записами
+            self.con.execute("DROP TABLE IF EXISTS tmp_clean")
             self.con.execute(f"CREATE TEMP TABLE tmp_clean AS SELECT DISTINCT ON ({', '.join([self._quote_identifier(c) for c in unique_on])}) * FROM {quoted_table}")
 
             # Очищуємо оригінальну таблицю та перезаписуємо дані
@@ -513,8 +516,9 @@ class DataManager(IDatabaseManager):
             self.con.execute(f"INSERT INTO {quoted_table} SELECT * FROM tmp_clean")
             self.con.execute("DROP TABLE tmp_clean")
             logger.info(f"Successfully cleaned duplicates in '{table_name}'.")
-        except Exception as clean_e:
+        except (duckdb.Error, Exception) as clean_e:
             logger.error(f"Failed to clean duplicates in '{table_name}': {clean_e}", exc_info=True)
+            raise DataLoadError(f"Failed to clean duplicates in '{table_name}': {clean_e}") from clean_e
 
     def _verify_no_duplicates(self, table_name: str, unique_on: list[str]) -> None:
         """Перевіряє відсутність дублікатів після додавання записів."""
@@ -533,6 +537,7 @@ class DataManager(IDatabaseManager):
             else:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"✅ No duplicates in '{table_name}' after upsert")
-        except Exception as check_e:
+        except (duckdb.Error, Exception) as check_e:
             logger.warning(f'⚠️ Could not verify duplicates: {check_e}',
                 exc_info=True)
+            # Not raising here as this is a verification step that shouldn't break the main upsert flow if it fails.

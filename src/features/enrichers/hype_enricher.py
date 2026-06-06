@@ -62,7 +62,7 @@ class HypeEnricher(BaseEnricher):
 
         try:
             return self._process_hype_enrichment(df, news_df, time_col)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during hype enrichment: {e}", exc_info=True)
             return df
 

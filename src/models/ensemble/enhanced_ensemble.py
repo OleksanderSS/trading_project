@@ -10,6 +10,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
+from src.models.registry.model_registry import ModelRegistry
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,6 +24,7 @@ class EnhancedEnsembleModel:
         self.light_models = {}
         self.diary = None
         self.logger = logger
+        self.light_model_types = ModelRegistry.get_models_by_type('light')
 
     def load_colab_results(self, colab_results: dict[str, Any]) ->dict[str, Any
         ]:
@@ -133,7 +136,7 @@ class EnhancedEnsembleModel:
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f'✅ Loaded model from {path_candidate}')
                     return model_obj
-                except Exception as e:
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(
@@ -174,7 +177,7 @@ class EnhancedEnsembleModel:
                 'target'], 'timeframe': model_info['timeframe'],
                 'model_type': model_info['model_type'], 'model_path': str(
                 model_file), 'model_obj': model, 'type': 'light'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(f'⚠️ Failed to load {model_file}: {e}')
             raise RuntimeError(f"Failed to load model file {model_file}") from e
@@ -186,12 +189,10 @@ class EnhancedEnsembleModel:
             '📥 Loading ALL 8 types of light models locally (with TF support)...'
             )
         light_models = {}
-        light_model_types = ['catboost', 'lightgbm', 'xgboost',
-            'random_forest', 'linear', 'svm', 'knn', 'ensemble']
         model_files = list(self.models_path.glob('*.joblib'))
         logger.info(f'🔍 Found {len(model_files)} model files. Filtering...')
         for model_file in model_files:
-            model_data = self._load_single_model(model_file, light_model_types)
+            model_data = self._load_single_model(model_file, self.light_model_types)
             if not model_data:
                 continue
             model_info = self._parse_model_filename(model_file.stem)

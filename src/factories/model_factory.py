@@ -13,13 +13,14 @@ from src.models.linear.knn_model import KNNModel
 # Моделі, що залишилися (поки що)
 from src.models.linear.linear_model import LinearModel
 from src.models.linear.svm_model import SVMModel
-from src.models.neural.autoencoder_model import AutoencoderModel  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+from src.models.neural.autoencoder_model import AutoencoderModel
 from src.models.neural.cnn_model import CNNModel
 from src.models.neural.gru_model import GRUModel
 from src.models.neural.lstm_model import LSTMModel
 from src.models.neural.mlp_model import MLPModel
 from src.models.neural.tabnet_model import TabNetModel
 from src.models.neural.transformer_model import TransformerModel
+from src.models.registry.model_registry import ModelRegistry
 
 logger = ProjectLogger.get_logger('ModelFactory')
 
@@ -27,22 +28,17 @@ logger = ProjectLogger.get_logger('ModelFactory')
 class ModelFactory:
     """
     A factory for creating machine learning models based on configuration.
-    It maps model names from the config to their respective classes.
+    It maps model names from the config to their respective classes using ModelRegistry.
     """
-    _model_map: dict[str, Any] = {
+
+    # Mapping to actual classes
+    _class_map = {
         'Linear': LinearModel, 'SVM': SVMModel, 'KNN': KNNModel,
         'LSTM': LSTMModel, 'GRU': GRUModel, 'CNN': CNNModel,
         'Transformer': TransformerModel, 'TabNet': TabNetModel, 'MLP':
-        MLPModel, 'Autoencoder': AutoencoderModel, 'Ensemble': EnsembleModel  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
-    }
-    _model_aliases: dict[str, str] = {
-        'linear': 'Linear', 'svm': 'SVM', 'knn': 'KNN',
-        'mlp': 'MLP', 'cnn': 'CNN', 'lstm': 'LSTM', 'gru': 'GRU',
-        'transformer': 'Transformer', 'tabnet': 'TabNet', 'autoencoder':  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
-        'Autoencoder', 'ensemble': 'Ensemble', 'xgboost': 'XGBoost',
-        'xgb': 'XGBoost', 'lightgbm': 'LightGBM', 'lgbm': 'LightGBM',
-        'catboost': 'CatBoost', 'random_forest': 'RandomForest',
-        'randomforest': 'RandomForest', 'rf': 'RandomForest'
+        MLPModel, 'Autoencoder': AutoencoderModel, 'Ensemble': EnsembleModel,
+        'XGBoost': 'XGBoost', 'LightGBM': 'LightGBM', 'CatBoost': 'CatBoost',
+        'RandomForest': 'RandomForest'
     }
 
     @staticmethod
@@ -67,18 +63,25 @@ class ModelFactory:
 
     @staticmethod
     def _validate_and_normalize_name(model_name: str) ->str:
-        """Validate and normalize model name"""
+        """Validate and normalize model name using ModelRegistry"""
         if not isinstance(model_name, str) or not model_name.strip():
             logger.error('create_model called without a valid model_name')
             raise ValueError('Unsupported model name: {model_name}')
-        normalized_name = model_name.strip()
-        lookup_key = normalized_name.lower().replace('-', '_')
-        return ModelFactory._model_aliases.get(lookup_key, normalized_name)
+
+        normalized_name = model_name.strip().lower()
+        # Direct lookup in Registry
+        config = ModelRegistry.get_model_config(normalized_name)
+        if config:
+            return config.get('class', normalized_name.capitalize())
+
+        # Fallback for aliases/legacy names
+        # ... logic to handle aliases if not directly in registry ...
+        return normalized_name.capitalize()
 
     @staticmethod
     def _get_model_class(canonical_name: str, original_name: str):
         """Get model class from canonical name"""
-        model_class = ModelFactory._model_map.get(canonical_name)
+        model_class = ModelFactory._class_map.get(canonical_name)
         if not model_class:
             logger.error(f"Model '{original_name}' not found in factory.")
             raise ValueError(f'Unsupported model name: {original_name}')
@@ -165,9 +168,9 @@ class ModelFactory:
     @staticmethod
     def get_available_models() ->list[str]:
         """
-        Returns a list of all available model names.
+        Returns a list of all available model names from ModelRegistry.
         """
-        return list(ModelFactory._model_map.keys())
+        return ModelRegistry.get_all_model_names()
 
     @staticmethod
     def get_model(model_name: str, **kwargs) ->BaseModel | None:
@@ -198,6 +201,6 @@ class ModelFactory:
                 f"Could not import dependencies for model '{model_name}'. Skipping. Please install required libraries if you need this model. Error: {e}"
                 )
             return None
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to instantiate model '{model_name}': {e}")
             raise

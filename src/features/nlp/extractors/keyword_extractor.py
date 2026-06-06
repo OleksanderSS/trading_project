@@ -3,7 +3,6 @@
 
 import logging
 import re
-from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +81,6 @@ class KeywordExtractor:
 
         logger.info(f"Extractor updated with {len(self.tickers)} tickers and {len(self.keywords)} keywords.")
 
-    @lru_cache(maxsize=1024)
     def extract(self, text: str) -> list[str]:
         """
         Extracts all configured keywords and tickers from the given text.
@@ -93,6 +91,12 @@ class KeywordExtractor:
         Returns:
             List[str]: A sorted list of unique keywords and tickers found in the text.
         """
+        # ✅ FIX: Use instance-level dict cache instead of lru_cache (avoids memory leak via self ref)
+        if not hasattr(self, '_extract_cache'):
+            self._extract_cache: dict = {}
+        if text in self._extract_cache:
+            return self._extract_cache[text]
+
         if not text or not isinstance(text, str):
             return []
 
@@ -104,12 +108,13 @@ class KeywordExtractor:
 
         # Find keywords using the compiled case-insensitive regex
         if self.keyword_regex:
-            # We search on the lowercased text and add the found keyword in its canonical (lowercase) form
             found_matches.update(match.lower() for match in self.keyword_regex.findall(text))
 
-        if not found_matches:
-            return []
+        result = sorted(found_matches) if found_matches else []
 
-        # Return a sorted list for consistent output
-        return sorted(found_matches)
+        # Store in instance cache (limit size to avoid unbounded growth)
+        if len(self._extract_cache) < 1024:
+            self._extract_cache[text] = result
+
+        return result
 

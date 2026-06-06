@@ -9,6 +9,10 @@ class BaseIntegration(ABC):
     Provides a unified interface for status checking and identification.
     """
 
+    def __init__(self):
+        from src.core.logging.logger import ProjectLogger
+        self.logger = ProjectLogger.get_logger(self.__class__.__name__)
+
     @property
     @abstractmethod
     def name(self) ->str:
@@ -38,7 +42,7 @@ class BaseIntegration(ABC):
         error = None
         try:
             is_alive = self.ping()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             error = str(e)
             raise

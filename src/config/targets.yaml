@@ -151,8 +151,8 @@ targets:
   target_intraday_volatility_15m:
     type: "regression"
     params:
-      description: "Predict volatility in next 15min."
-      base_col: "true_range"
+      description: "Predict volatility in next 15min (via high-low range as proxy)."
+      base_col: "high"
       shift: -1
       window: 3
 

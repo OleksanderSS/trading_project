@@ -108,7 +108,7 @@ class UnifiedAnalyticsEngine:
                     stable_repr[key] = str(value)
             deterministic_json = json.dumps(stable_repr, sort_keys=True)
             return hashlib.sha256(deterministic_json.encode()).hexdigest()
-        except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
             logger.error(f'Виникла помилка: {e}', exc_info=True)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(
@@ -157,7 +157,7 @@ class UnifiedAnalyticsEngine:
         for name, future in futures.items():
             try:
                 results[name] = future.result(timeout=120)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(
                     f"Parallel execution failed for analyzer '{name}': {e}",
                     exc_info=True)

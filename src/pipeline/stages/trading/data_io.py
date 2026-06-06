@@ -76,7 +76,7 @@ class TradingDataIO:
             self.logger.info(
                 f'✅ Loaded prices for {len(current_prices)} tickers')
             return predictions, current_prices, kwargs
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'❌ Error loading {stage_5_file}: {e}',
                 exc_info=True)
             return None, None, kwargs
@@ -103,7 +103,7 @@ class TradingDataIO:
             with open(results_file, 'w', encoding='utf-8') as f:
                 json.dump(stage_6_results, f, indent=2, default=str)
             self.logger.info(f'✅ Stage 6 results saved: {results_file.name}')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'⚠️ Error saving Stage 6 results: {e}',
                 exc_info=True)

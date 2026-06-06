@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 import pandas as pd
 
@@ -55,7 +56,7 @@ class TargetOrchestrator:
             try:
                 with open(params_path) as f:
                     runtime_params = json.load(f)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f'Could not load runtime_params.json: {e}')
                 raise
@@ -83,6 +84,25 @@ class TargetOrchestrator:
             f'TargetOrchestrator initialized with {len(self.targets)} target configurations.'
             )
 
+    def _is_target_for_timeframe(self, target: dict[str, Any], timeframe: str) -> bool:
+        """Check if a target is applicable for the given timeframe."""
+        name = target['name']
+
+        if timeframe == '15m':
+            return 'intraday_15m' in name or 'intraday' in name or not any(
+                timeframe_indicator in name for timeframe_indicator in ['hourly', 'weekly', 'daily']
+            )
+        elif timeframe == '60m':
+            return 'hourly_1h' in name or 'hourly' in name or not any(
+                timeframe_indicator in name for timeframe_indicator in ['weekly', 'daily', 'intraday']
+            )
+        elif timeframe == '1d':
+            return 'weekly' in name or 'daily' in name or not any(
+                timeframe_indicator in name for timeframe_indicator in ['hourly', 'intraday']
+            )
+        else:
+            return True
+
     def _filter_targets_by_timeframe(self, timeframe: str) ->list:
         """
         Filter targets based on timeframe.
@@ -98,30 +118,7 @@ class TargetOrchestrator:
         Returns:
             Filtered list of target configurations
         """
-        filtered_targets = []
-        for target in self.targets:
-            name = target['name']
-            if timeframe == '15m':
-                if 'intraday_15m' in name or 'intraday' in name:
-                    filtered_targets.append(target)
-                elif not any(timeframe_indicator in name for
-                    timeframe_indicator in ['hourly', 'weekly', 'daily']):
-                    filtered_targets.append(target)
-            elif timeframe == '60m':
-                if 'hourly_1h' in name or 'hourly' in name:
-                    filtered_targets.append(target)
-                elif not any(timeframe_indicator in name for
-                    timeframe_indicator in ['weekly', 'daily', 'intraday']):
-                    filtered_targets.append(target)
-            elif timeframe == '1d':
-                if 'weekly' in name or 'daily' in name:
-                    filtered_targets.append(target)
-                elif not any(timeframe_indicator in name for
-                    timeframe_indicator in ['hourly', 'intraday']):
-                    filtered_targets.append(target)
-            else:
-                filtered_targets.append(target)
-        return filtered_targets
+        return [target for target in self.targets if self._is_target_for_timeframe(target, timeframe)]
 
     def generate_targets(self, df: pd.DataFrame, **kwargs) ->pd.DataFrame:
         """
@@ -172,7 +169,7 @@ class TargetOrchestrator:
         try:
             self._handle_standard_target(df, name, target_type, params,
                 targets_dict)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to generate target '{name}'. Error: {e}",
                 exc_info=True)
 

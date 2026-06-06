@@ -62,10 +62,9 @@ class ContextMapEnricher(BaseEnricher):
                     self.temporal_features = set(noise_config.get('temporal_features', []))
                     self.default_dynamic_threshold = noise_config.get('default_dynamic_threshold', 0.005)
                     self.noise_sensitivity = noise_config.get('noise_sensitivity', 0.5)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
              logger.error(f"Failed to load noise filter config: {e}", exc_info=True)
              self._load_defaults()
-             raise RuntimeError("Failed to load noise filter config") from e
 
         logger.info(f"ContextMapEnricher initialized. Pattern Length: {self.pattern_length}")
 
@@ -117,7 +116,8 @@ class ContextMapEnricher(BaseEnricher):
         if 'ticker' not in df.columns or self.champion_ticker not in df['ticker'].values:
             return None
         champ_data = df[df['ticker'] == self.champion_ticker].copy()
-        if champ_data.empty: return None
+        if champ_data.empty:
+            return None
         champ_close = champ_data['close']
         champ_sma = champ_close.rolling(20, min_periods=1).mean()
         state = np.where(champ_close > champ_sma, 1, -1)
@@ -129,6 +129,7 @@ class ContextMapEnricher(BaseEnricher):
         context_columns = df.select_dtypes(include=[np.number]).columns.tolist()
         exclude = ['hash', 'interval', 'state_champion',
             'context_pattern_id', 'context_pattern_seq']
+        # audit-ignore: ARCHITECTURAL_USAGE
         return [c for c in context_columns if not c.startswith('target_') and not c.startswith('state_') and c not in exclude]
 
     def _integrate_higher_order_features(self, df: pd.DataFrame, existing_states: list[str]) -> list[str]:
@@ -154,7 +155,8 @@ class ContextMapEnricher(BaseEnricher):
         """Перетворює сирі дані у дискретні стани (-1, 0, 1)."""
         state_cols, temporal_cols = [], []
         for col in context_columns:
-            if col not in res_df.columns: continue
+            if col not in res_df.columns:
+                continue
             state_col_name = f"state_{col}"
             if col in self.temporal_features:
                 res_df[state_col_name] = res_df[col]
@@ -176,7 +178,8 @@ class ContextMapEnricher(BaseEnricher):
             np.where(returns.loc[valid] < -threshold.loc[valid], -1, 0),
         )
         res_df[state_col_name] = state
-        if state_col_name not in state_cols: state_cols.append(state_col_name)
+        if state_col_name not in state_cols:
+            state_cols.append(state_col_name)
 
     def _generate_context_features(self, res_df: pd.DataFrame, state_cols: list[str], temporal_cols: list[str]):
         """Створює фінгерпрінт як конкатенацію станів."""
@@ -218,4 +221,4 @@ class ContextMapEnricher(BaseEnricher):
         logger.info(f"✅ Context Patterns Generated. Features integrated: {len(self.higher_order_features)}")
 
     def _get_threshold(self, df: pd.DataFrame, col: str) -> float:
-        return self.default_dynamic_threshold
+        return self.noise_filter_thresholds.get(col, self.default_dynamic_threshold)

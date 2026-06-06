@@ -18,6 +18,7 @@ from src.meta_learning.memory.diary_engine import (
 )
 from src.pipeline.stages.base_stage import BaseStage
 from src.risk.elite_risk_metrics import EliteRiskMetrics
+from src.risk.max_exposure_monitor import MaxExposureMonitor
 from src.trading.adaptive_parameter_manager import AdaptiveParameterManager
 from src.trading.consensus_engine import EnhancedConsensusEngine
 from src.trading.elite_risk_sizer import EliteRiskSizer
@@ -49,6 +50,10 @@ class TradingExecutionStage(BaseStage):
         self.risk_sizer = EliteRiskSizer(logger=self.logger)
         self.risk_metrics = EliteRiskMetrics(logger=self.logger)
         self.param_manager = AdaptiveParameterManager(logger=self.logger)
+        # ✅ Integrated: multi-layer exposure monitoring
+        self.exposure_monitor = MaxExposureMonitor(
+            config=self.config_manager.get('strategy.risk_management', {})
+        )
 
         self.portfolio_manager = PortfolioManager(
             virtual_portfolio=self.portfolio,
@@ -58,7 +63,7 @@ class TradingExecutionStage(BaseStage):
         self.trader = Trader(paper_trading=True)
 
         self.trading_orchestrator = TradingOrchestrator(
-            consensus_engine=None,
+            consensus_engine=self.enhanced_consensus,  # Увімкнено консенсус
             portfolio_manager=self.portfolio_manager,
             virtual_portfolio=self.portfolio,
             trader=self.trader,
@@ -149,7 +154,7 @@ class TradingExecutionStage(BaseStage):
                 record = self._build_decision_record(transaction, prediction)
                 self.diary_engine.record_decision(record)
                 records_written += 1
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(
                     f"Failed to record Stage 6 transaction in diary for {ticker}: {e}",
                     exc_info=True,

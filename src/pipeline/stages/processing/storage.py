@@ -30,7 +30,7 @@ class ProcessingStorage:
                     nested_paths = self._save_nested_dataframes(key, data, timestamp)
                     if nested_paths:
                         saved_paths[key] = nested_paths
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Error saving {key}: {e}")
 
         return saved_paths

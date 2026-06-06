@@ -72,7 +72,7 @@ class PredictMode(BaseMode):
                 'results': results
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Critical error during prediction execution: {e}", exc_info=True)
             return {
                 'status': 'failed',

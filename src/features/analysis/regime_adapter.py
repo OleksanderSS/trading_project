@@ -91,7 +91,7 @@ class RegimeAdapter:
             recommendations.extend(regime_recommendations)
 
             return recommendations
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error generating recommendations: {e}')
             return []
 
@@ -132,7 +132,7 @@ class RegimeAdapter:
                 ])
 
             return recommendations
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error getting regime-specific recommendations: {e}')
             return recommendations
 

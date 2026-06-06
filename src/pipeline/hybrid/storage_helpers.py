@@ -34,7 +34,7 @@ def init_gdrive(stage) -> bool:
             "⚠️ No GDrive credentials found (service_account_path or credentials_path). Falling back to manual file transfer."
         )
         return False
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         stage.logger.error(f"❌ Google Drive initialization error: {e}")
         return False
 
@@ -75,7 +75,7 @@ def init_s3_storage(stage) -> bool:
         stage.s3_bucket = s3_config.get("bucket")
         stage.logger.info(f"✅ S3 fallback initialized: {stage.s3_bucket}")
         return True
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         stage.logger.error(f"Виникла помилка: {e}", exc_info=True)
         stage.logger.warning(f"⚠️ S3 fallback failed: {e}")
         return False
@@ -91,7 +91,7 @@ def init_gcs_storage(stage) -> bool:
         stage.gcs_bucket = stage.gcs_client.bucket(gcs_config.get("bucket"))
         stage.logger.info(f"✅ GCS fallback initialized: {gcs_config.get('bucket')}")
         return True
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         stage.logger.error(f"Виникла помилка: {e}", exc_info=True)
         stage.logger.warning(f"⚠️ GCS fallback failed: {e}")
         return False

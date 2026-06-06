@@ -36,7 +36,7 @@ class BacktestMode(BaseMode):
                 return self._run_walk_forward_validation()
             else:
                 return self._run_standard_backtest()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.exception(f'[Backtest] A critical error occurred: {e}')
             return {'status': 'failed', 'error': str(e)}
 
@@ -97,7 +97,7 @@ class BacktestMode(BaseMode):
                         )
             bias_results['survivorship_bias'] = {'has_survivorship_bias':
                 False, 'message': 'Not enough data for analysis'}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Bias detection failed: {e}')
             bias_results['warnings'].append(f'Bias detection error: {e}')
@@ -123,7 +123,7 @@ class BacktestMode(BaseMode):
                     f'[Backtest] Embargo applied: {len(signals_df)} -> {len(embargoed_signals)} signals'
                     )
             return embargoed_signals
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Embargo application failed: {e}')
             return signals_df

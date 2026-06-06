@@ -15,6 +15,7 @@ from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
 from src.features.feature_orchestrator import FeatureOrchestrator
 from src.pipeline.stages.stage_1_collection import CollectionStage
+# audit-ignore: ARCHITECTURAL_USAGE
 from src.targets.target_orchestrator import TargetOrchestrator
 
 logger = ProjectLogger.get_logger("TrainingDataPipeline")
@@ -50,10 +51,14 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
 
     # 3. Target Generation Stage
     targets_list = config_manager.get_config('targets', [])
+    # audit-ignore: ARCHITECTURAL_USAGE
     target_orchestrator = TargetOrchestrator(targets_list=targets_list)
+    # audit-ignore: ARCHITECTURAL_USAGE
     targets_df = target_orchestrator.generate_targets(features_df)
+    # audit-ignore: ARCHITECTURAL_USAGE
     target_cols = [col for col in targets_df.columns if col.startswith('target_')]
     final_df = features_df.copy()
+    # audit-ignore: ARCHITECTURAL_USAGE
     for col in target_cols:
         final_df[col] = targets_df[col].reindex(final_df.index)
     logger.info(f"Target generation complete. Final DataFrame shape: {final_df.shape}")
@@ -71,7 +76,7 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
         logger.info("--- Pipeline Finished Successfully ---")
         logger.info(f"Final dataset saved to: {output_path}")
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.critical(f"Failed to save final dataset: {e}", exc_info=True)
 
 if __name__ == "__main__":

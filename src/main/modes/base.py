@@ -47,6 +47,7 @@ class BaseMode(ABC):
         """
         return True
 
+    @abstractmethod
     def cleanup(self) -> None:
         """
         Очищення ресурсів після завершення роботи режиму.

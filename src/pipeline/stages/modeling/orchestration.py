@@ -61,7 +61,7 @@ async def create_ensemble_from_top_models_async(stage, training_results:
             json.dump(ensemble_config, f, indent=2)
         logger.info(f'   Saved to: {ensemble_path}')
         return ensemble_config
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(
             f'Failed to create ensemble for {ticker}_{target_name}: {e}',
             exc_info=True)
@@ -81,7 +81,7 @@ async def process_ticker(stage, ticker: str, df, champions: dict[str, Any]
                 target_name=target_name, timeframe=timeframe, champions=
                 champions)
             await process_target(stage, config)
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.error(f'Виникла помилка: {e}', exc_info=True)
         stage.handle_stage_error(e, context=f'Modeling-{ticker}', severity=
             'error')

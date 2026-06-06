@@ -17,7 +17,8 @@ class OverfittingVisualizer:
     def plot_learning_curve(self, learning_curve_data: dict[str, Any], save_path: Path) -> None:
         """Plot and save the learning curve."""
         try:
-            if not learning_curve_data: return
+            if not learning_curve_data:
+                return
 
             plt.figure(figsize=(10, 6))
             train_sizes = learning_curve_data['train_sizes']
@@ -35,13 +36,14 @@ class OverfittingVisualizer:
 
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error plotting learning curve: {e}", exc_info=True)
 
     def plot_cv_distribution(self, cv_results: dict[str, Any], save_path: Path) -> None:
         """Plot cross-validation score distribution."""
         try:
-            if not cv_results: return
+            if not cv_results:
+                return
 
             plt.figure(figsize=(10, 6))
             sns.boxplot(y=cv_results['scores'])
@@ -50,5 +52,5 @@ class OverfittingVisualizer:
 
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error plotting CV distribution: {e}", exc_info=True)

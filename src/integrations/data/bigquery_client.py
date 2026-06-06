@@ -58,7 +58,7 @@ class BigQueryClient(BaseIntegration):
                     'GCP authentication failed. Please configure your environment with valid credentials. You can run in simulator mode by setting BIGQUERY_SIMULATOR_MODE=true.'
                     )
                 self.use_simulator = True
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f'Failed to initialize BigQuery client: {e}',
                     exc_info=True)
                 self.use_simulator = True
@@ -80,7 +80,7 @@ class BigQueryClient(BaseIntegration):
             self.client.query('SELECT 1').result()
             logger.info('BigQuery ping successful.')
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'BigQuery ping failed: {e}', exc_info=True)
             return False
 
@@ -154,7 +154,7 @@ class BigQueryClient(BaseIntegration):
                 f'BigQuery dry run successful. Estimated GB to be processed: {gb_processed:.4f}'
                 )
             return estimate
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             logger.warning(
                 f'Could not perform BigQuery dry run: {e}. Falling back to heuristic estimation.'

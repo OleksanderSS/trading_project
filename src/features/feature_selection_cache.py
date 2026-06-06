@@ -39,7 +39,7 @@ class FeatureSelectionCache:
                 logger.info(
                     f'✅ Loaded feature selection cache: {len(cache)} entries')
                 return cache
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.warning(f'Failed to load cache: {e}')
                 raise RuntimeError(
                     f"Failed to load feature selection cache from {self.cache_file}"
@@ -54,7 +54,7 @@ class FeatureSelectionCache:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(
                     f'💾 Saved feature selection cache: {len(self.cache)} entries')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to save cache: {e}')
 
     def _compute_cache_key(self, model_type: str, target_name: str,

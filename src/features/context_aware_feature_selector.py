@@ -175,7 +175,7 @@ class ContextAwareFeatureSelector:
 
             return selected_features, importances
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Feature selection failed: {e}")
             # Fallback: return first top_k features
             return feature_names[:self.top_k], {}
@@ -209,7 +209,7 @@ class ContextAwareFeatureSelector:
 
             return selected_features, importances
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Random Forest selection failed: {e}")
             return feature_names[:self.top_k], {}
 
@@ -266,5 +266,5 @@ class ContextAwareFeatureSelector:
             with open(output_path, 'w') as f:
                 json.dump(analysis, f, indent=2)
             logger.info(f"✅ Saved feature analysis to {output_path}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save analysis: {e}")

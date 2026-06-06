@@ -55,7 +55,7 @@ class SECFilingsCollector(BaseCollector):
                     if "cik" in data
                 }
                 logger.info(f"Loaded CIK map for {len(self._cik_map)} tickers.")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Failed to load CIK map: {e}", exc_info=True)
                 self._cik_map = {}
         return self._cik_map
@@ -68,6 +68,65 @@ class SECFilingsCollector(BaseCollector):
         else:
             days = 60
         return run_date - timedelta(days=days)
+
+    def _check_sec_cache(self, cache_key: str, cache_params: dict, table_name: str) -> pd.DataFrame | None:
+        """Check cache for existing SEC filings data and filter new records."""
+        if not self.cache_manager:
+            return None
+        cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
+        if cached is not None:
+            df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
+            if "hash" in df_cached.columns:
+                new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
+                if new_from_cache.empty:
+                    logger.info("[SEC] Cache hit — no new filings detected.")
+                    return None
+                return new_from_cache
+        return None
+
+    def _get_valid_ciks(self, tickers: list[str]) -> dict[str, str] | None:
+        """Get valid CIKs for provided tickers."""
+        cik_map = self._get_cik_map()
+        valid_ciks = {
+            ticker: str(cik_map.get(ticker.upper(), "")).zfill(10)
+            for ticker in tickers
+            if ticker.upper() in cik_map
+        }
+        if not valid_ciks:
+            logger.warning("No valid CIKs found for provided tickers.")
+            return None
+        return valid_ciks
+
+    def _process_fetch_results(self, results: list, valid_ciks: dict[str, str]) -> list[dict[str, Any]]:
+        """Process fetch results and extract filings."""
+        all_filings: list[dict[str, Any]] = []
+        for i, res in enumerate(results):
+            if isinstance(res, list):
+                all_filings.extend(res)
+            elif isinstance(res, Exception):
+                ticker = list(valid_ciks.keys())[i]
+                logger.error(f"Error fetching filings for {ticker}: {res}")
+        return all_filings
+
+    def _create_filing_hash(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Create cryptographic hash for deduplication."""
+        for key in self.hash_keys:
+            if key in df.columns:
+                df[key] = df[key].astype(str)
+        df["hash"] = df.apply(
+            lambda row: hashlib.sha256(
+                "".join(str(row.get(k, "")) for k in self.hash_keys).encode()
+            ).hexdigest(),
+            axis=1,
+        )
+        return df
+
+    def _update_sec_cache(self, cache_key: str, cache_params: dict, df: pd.DataFrame) -> None:
+        """Update cache with SEC filings data."""
+        if self.cache_manager:
+            self.cache_manager.set(
+                cache_key, df.to_dict("records"), cache_params, namespace="collectors"
+            )
 
     async def run(self, tickers: list[str], **kwargs) -> pd.DataFrame | None:
         if not tickers:
@@ -83,31 +142,16 @@ class SECFilingsCollector(BaseCollector):
         cache_params = {"tickers": sorted(tickers), "start_date": str(start_date.date())}
 
         # 1. Cache Verification
-        if self.cache_manager:
-            cached = self.cache_manager.get(cache_key, cache_params, namespace="collectors")
-            if cached is not None:
-                df_cached = pd.DataFrame(cached) if isinstance(cached, list) else cached
-                if "hash" in df_cached.columns:
-                    new_from_cache = self.db_manager.filter_new_records(table_name, df_cached)
-                    if new_from_cache.empty:
-                        logger.info("[SEC] Cache hit — no new filings detected.")
-                        return None
-                    return new_from_cache
+        cached_result = self._check_sec_cache(cache_key, cache_params, table_name)
+        if cached_result is not None:
+            return cached_result
 
         # 2. Sequential Data Acquisition
-        cik_map = self._get_cik_map()
-        valid_ciks = {
-            ticker: str(cik_map.get(ticker.upper(), "")).zfill(10)
-            for ticker in tickers
-            if ticker.upper() in cik_map
-        }
-
+        valid_ciks = self._get_valid_ciks(tickers)
         if not valid_ciks:
-            logger.warning("No valid CIKs found for provided tickers.")
             return None
 
         logger.info(f"[SEC] Fetching filings for {len(valid_ciks)} tickers from {start_date.date()}.")
-        all_filings: list[dict[str, Any]] = []
 
         async with self.http_client_factory.get_http_client() as client:
             tasks = [
@@ -116,12 +160,7 @@ class SECFilingsCollector(BaseCollector):
             ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        for i, res in enumerate(results):
-            if isinstance(res, list):
-                all_filings.extend(res)
-            elif isinstance(res, Exception):
-                ticker = list(valid_ciks.keys())[i]
-                logger.error(f"Error fetching filings for {ticker}: {res}")
+        all_filings = self._process_fetch_results(results, valid_ciks)
 
         if not all_filings:
             logger.info("[SEC] Zero raw filings retrieved from external queries.")
@@ -130,33 +169,18 @@ class SECFilingsCollector(BaseCollector):
         df = pd.DataFrame(all_filings)
 
         # 3. Cryptographic Deduplication Hash
-        for key in self.hash_keys:
-            if key in df.columns:
-                df[key] = df[key].astype(str)
-        df["hash"] = df.apply(
-            lambda row: hashlib.sha256(
-                "".join(str(row.get(k, "")) for k in self.hash_keys).encode()
-            ).hexdigest(),
-            axis=1,
-        )
+        df = self._create_filing_hash(df)
 
         # 4. Database Level Filtering
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             logger.info("[SEC] No novel filings identified against historical database.")
-            if self.cache_manager:
-                self.cache_manager.set(
-                    cache_key, df.to_dict("records"), cache_params, namespace="collectors"
-                )
+            self._update_sec_cache(cache_key, cache_params, df)
             return None
 
         # 5. Persistence to Storage
         self.db_manager.upsert(table_name, new_df, unique_on=["hash"])
-
-        if self.cache_manager:
-            self.cache_manager.set(
-                cache_key, df.to_dict("records"), cache_params, namespace="collectors"
-            )
+        self._update_sec_cache(cache_key, cache_params, df)
 
         logger.info(f"[SEC] Successfully persisted {len(new_df)} new filings.")
         return new_df
@@ -201,6 +225,6 @@ class SECFilingsCollector(BaseCollector):
 
             return filtered
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error processing {ticker} (CIK: {cik}): {e}")
             raise RuntimeError(f"Failed to fetch SEC filings for {ticker} ({cik})") from e

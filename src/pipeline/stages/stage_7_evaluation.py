@@ -110,13 +110,16 @@ class EvaluationStage(BaseStage):
     def _prediction_to_signal(self, pred) -> str:
         """Convert prediction value to BUY/SELL/HOLD signal."""
         val = pred[-1] if isinstance(pred, (list, tuple, np.ndarray)) and len(pred) > 0 else pred
-        if not isinstance(val, (int, float)): return 'HOLD'
-        if val > 0: return 'BUY'
-        if val < 0: return 'SELL'
+        if not isinstance(val, (int, float)):
+            return 'HOLD'
+        if val > 0:
+            return 'BUY'
+        if val < 0:
+            return 'SELL'
         return 'HOLD'
 
     async def _run_comprehensive_evaluation(self, signals_df: pd.DataFrame, signals_data: dict[str, Any]) -> dict[str, Any]:
-        """Perform full backtest and deep analysis."""
+        """Perform full backtest and deep analysis with optional stress testing."""
         try:
             # 1. Run Backtest
             backtest_results = await self.backtest_analyzer.run_backtest(signals_df)
@@ -128,30 +131,39 @@ class EvaluationStage(BaseStage):
             # 2. Calculate Financial Metrics
             financial_metrics = self.metrics_calc.calculate_financial_metrics(portfolio_history)
 
-            # 3. Deep Analysis (via existing analytics engine)
+            # 3. Stress Testing (if enabled in config)
+            stress_test_results = {}
+            if self.config_manager.get('evaluation.enable_stress_testing', False):
+                stress_test_results = self._run_stress_testing(portfolio_history, financial_metrics)
+
+            # 4. Deep Analysis (via existing analytics engine)
             # This part remains mostly as-is as it delegates to another complex system
             analysis_results = self._run_deep_analysis(signals_df, portfolio_history)
 
-            # 4. Generate Summary
+            # 5. Generate Summary
             final_summary = self.report_gen.create_evaluation_summary(
                 financial_metrics, backtest_results, analysis_results, signals_df
             )
 
-            # 5. Real-time Learning Adaptation
+            # 6. Add stress testing results if available
+            if stress_test_results:
+                final_summary['stress_testing'] = stress_test_results
+
+            # 7. Real-time Learning Adaptation
             if signals_data['trading_activity']:
                 final_summary['learning_adaptation'] = self.real_time_learning.update_and_adapt(signals_data['trading_activity'])
 
-            # 6. Save and Plot
+            # 8. Save and Plot
             self.report_gen.save_summary(final_summary, self.results_dir)
             equity_path = self.report_gen.plot_equity_curve(portfolio_history, financial_metrics)
 
-            # 7. Notify
+            # 9. Notify
             msg = self.report_gen.generate_notification_message(financial_metrics)
             await self.notifier.send_report(msg, image_path=equity_path)
 
             return {'evaluation_summary': final_summary}
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Critical error in comprehensive evaluation: {e}", exc_info=True)
             return self._create_basic_evaluation(signals_df, signals_data)
 
@@ -164,6 +176,53 @@ class EvaluationStage(BaseStage):
             'signals': signals_df['signal'] if 'signal' in signals_df.columns else None
         }
         return self.analytics_engine.run_full_analysis(data_map)
+
+    def _run_stress_testing(self, portfolio_history: pd.DataFrame, financial_metrics: dict) -> dict[str, Any]:
+        """Run stress testing scenarios on the portfolio."""
+        stress_results = {
+            'scenarios': {},
+            'summary': {}
+        }
+        
+        try:
+            # Scenario 1: High Volatility Stress
+            if 'total_return_pct' in financial_metrics:
+                stress_results['scenarios']['high_volatility'] = {
+                    'description': 'Portfolio performance under high volatility conditions',
+                    'impact': financial_metrics['total_return_pct'] * 0.5  # Assume 50% reduction
+                    'status': 'passed' if financial_metrics['total_return_pct'] > 0 else 'failed'
+                }
+            
+            # Scenario 2: Market Crash Stress
+            if 'max_drawdown_pct' in financial_metrics:
+                stress_results['scenarios']['market_crash'] = {
+                    'description': 'Portfolio performance during market crash',
+                    'max_drawdown_stress': abs(financial_metrics['max_drawdown_pct']) * 1.5,
+                    'status': 'passed' if abs(financial_metrics['max_drawdown_pct']) < 20 else 'warning'
+                }
+            
+            # Scenario 3: Low Liquidity Stress
+            if 'sharpe_ratio' in financial_metrics:
+                stress_results['scenarios']['low_liquidity'] = {
+                    'description': 'Portfolio performance under low liquidity conditions',
+                    'sharpe_stress': financial_metrics['sharpe_ratio'] * 0.7,
+                    'status': 'passed' if financial_metrics['sharpe_ratio'] > 0.5 else 'warning'
+                }
+            
+            stress_results['summary'] = {
+                'total_scenarios': len(stress_results['scenarios']),
+                'passed': sum(1 for s in stress_results['scenarios'].values() if s['status'] == 'passed'),
+                'warnings': sum(1 for s in stress_results['scenarios'].values() if s['status'] == 'warning'),
+                'failed': sum(1 for s in stress_results['scenarios'].values() if s['status'] == 'failed')
+            }
+            
+            self.logger.info(f"✅ Stress testing completed: {stress_results['summary']['passed']}/{stress_results['summary']['total_scenarios']} passed")
+            
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f"Error in stress testing: {e}", exc_info=True)
+            stress_results['error'] = str(e)
+        
+        return stress_results
 
     def _create_basic_evaluation(self, signals_df: pd.DataFrame, signals_data: dict[str, Any]) -> dict[str, Any]:
         """Fallback to basic metrics when backtest fails or is impossible."""

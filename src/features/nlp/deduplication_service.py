@@ -76,7 +76,7 @@ class DeduplicationService:
             logger.info(f"[DeduplicationService] Deduplicated {len(df)} articles down to {len(final_df)} unique articles.")
             return final_df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"[DeduplicationService] Error during clustering: {e}", exc_info=True)
             return df_deduped # Return the dataframe with only exact duplicates removed
 

@@ -35,9 +35,9 @@ class FreeGoogleTrendsCollector(BaseCollector):
         if self.pytrends is None:
             try:
                 self.pytrends = TrendReq(hl=self.language, tz=self.timezone)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 raise ConnectionError(
-                    f'Failed to bootstrap TrendReq execution state: {e}')
+                    f'Failed to bootstrap TrendReq execution state: {e}') from e
 
     async def fetch_raw_data(self, tickers: list[str], keywords: list[str],
         **kwargs) ->list[dict[str, Any]]:
@@ -67,7 +67,7 @@ class FreeGoogleTrendsCollector(BaseCollector):
                 batch_data = await self._fetch_trends_for_batch(batch)
                 if batch_data:
                     all_trends_data.extend(batch_data)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 raise RuntimeError(
                     f"Failed to fetch Google Trends batch {batch}"
@@ -101,7 +101,7 @@ class FreeGoogleTrendsCollector(BaseCollector):
             long_df['geo'] = self.geo
             long_df['date'] = long_df['date'].astype(str)
             return long_df.to_dict('records')
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(
                 f'Context error during instance request execution for batch {keyword_batch}: {e}'
                 , exc_info=True)

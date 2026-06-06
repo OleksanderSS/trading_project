@@ -72,9 +72,37 @@ class PutCallRatioCollector(BaseCollector):
             self.logger.info(f"Successfully fetched {len(df)} Put/Call Ratio records")
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in PutCallRatioCollector: {e}", exc_info=True)
             raise RuntimeError("Put/Call Ratio collection failed") from e
+
+    def _classify_sentiment(self, historical_ratio: float) -> tuple[int, str]:
+        """Classify sentiment based on Put/Call ratio."""
+        if historical_ratio >= 1.2:
+            return -1, "Very Bearish"
+        elif historical_ratio >= 1.0:
+            return -0.5, "Bearish"
+        elif historical_ratio >= 0.8:
+            return 0, "Neutral"
+        elif historical_ratio >= 0.6:
+            return 0.5, "Bullish"
+        return 1, "Very Bullish"
+
+    def _create_historical_data_point(self, date_obj: datetime, latest_ratio: float, previous_ratio: float) -> dict[str, Any]:
+        """Create a single historical data point."""
+        variation = ((date_obj - (datetime.now() - timedelta(days=60))).days % 14 - 7) * 0.1
+        historical_ratio = max(0.3, min(2.0, latest_ratio + variation))
+        sentiment_signal, sentiment_classification = self._classify_sentiment(historical_ratio)
+
+        return {
+            'date': date_obj.strftime('%Y-%m-%d'),
+            'put_call_ratio': historical_ratio,
+            'sentiment_signal': sentiment_signal,
+            'sentiment_classification': sentiment_classification,
+            'extreme_reading': 1 if historical_ratio >= 1.2 or historical_ratio <= 0.4 else 0,
+            'ratio_change': historical_ratio - previous_ratio,
+            'timestamp': date_obj
+        }
 
     async def _fetch_put_call_data(self) -> list[dict[str, Any]]:
         """Fetches Put/Call Ratio data from CBOE - FREE!"""
@@ -118,37 +146,8 @@ class PutCallRatioCollector(BaseCollector):
 
             for i in range(60):  # 60 days of historical data
                 date_obj = base_date + timedelta(days=i)
-
-                # Simulate realistic Put/Call variations
-                variation = (i % 14 - 7) * 0.1  # Bi-weekly variations
-                historical_ratio = max(0.3, min(2.0, latest_ratio + variation))
-
-                # Classify sentiment based on ratio
-                if historical_ratio >= 1.2:
-                    sentiment_signal = -1  # Bearish
-                    sentiment_classification = "Very Bearish"
-                elif historical_ratio >= 1.0:
-                    sentiment_signal = -0.5  # Moderately Bearish
-                    sentiment_classification = "Bearish"
-                elif historical_ratio >= 0.8:
-                    sentiment_signal = 0  # Neutral
-                    sentiment_classification = "Neutral"
-                elif historical_ratio >= 0.6:
-                    sentiment_signal = 0.5  # Moderately Bullish
-                    sentiment_classification = "Bullish"
-                else:
-                    sentiment_signal = 1  # Bullish
-                    sentiment_classification = "Very Bullish"
-
-                data.append({
-                    'date': date_obj.strftime('%Y-%m-%d'),
-                    'put_call_ratio': historical_ratio,
-                    'sentiment_signal': sentiment_signal,
-                    'sentiment_classification': sentiment_classification,
-                    'extreme_reading': 1 if historical_ratio >= 1.2 or historical_ratio <= 0.4 else 0,
-                    'ratio_change': historical_ratio - (data[-1]['put_call_ratio'] if data else latest_ratio),
-                    'timestamp': date_obj
-                })
+                previous_ratio = data[-1]['put_call_ratio'] if data else latest_ratio
+                data.append(self._create_historical_data_point(date_obj, latest_ratio, previous_ratio))
 
             # Add current reading as the most recent
             if data:
@@ -164,12 +163,12 @@ class PutCallRatioCollector(BaseCollector):
 
             return data
 
-        except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
             self.logger.error(f"Error fetching Put/Call Ratio data: {e}", exc_info=True)
             if self.allow_sample_fallback:
                 self.logger.warning("Using sample data fallback for Put/Call Ratio")
                 return self._create_sample_put_call_data()
-            raise RuntimeError(f"Put/Call Ratio collection failed and sample fallback disabled: {e}")
+            raise RuntimeError(f"Put/Call Ratio collection failed and sample fallback disabled: {e}") from e
 
 
     def _create_sample_put_call_data(self) -> list[dict[str, Any]]:
@@ -247,7 +246,7 @@ class PutCallRatioCollector(BaseCollector):
 
             return df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error standardizing Put/Call Ratio columns: {e}")
             return pd.DataFrame()
 

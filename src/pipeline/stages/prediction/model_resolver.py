@@ -47,19 +47,19 @@ class ModelResolver:
                 f"   - {context_id}: model_path='{model_path}', model_type='{model_type}'"
                 )
 
-    def resolve_batch_directory(self, models_meta: dict[str, Any], kwargs:
-        dict[str, Any] | None=None) ->Path | None:
-        """Resolve batch directory from kwargs batch_name or model paths."""
-        base_dir = Path(self.config_manager.get(self.
-            ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
+    def _resolve_batch_from_kwargs(self, base_dir: Path, kwargs: dict[str, Any] | None) -> Path | None:
+        """Resolve batch directory from kwargs batch_name."""
         if kwargs:
             batch_name = kwargs.get('batch_name')
             if batch_name:
                 batch_dir = base_dir / batch_name
                 if batch_dir.exists():
-                    self.logger.info(
-                        f'✅ Resolved batch_dir from batch_name: {batch_dir}')
+                    self.logger.info(f'✅ Resolved batch_dir from batch_name: {batch_dir}')
                     return cast(Path | None, batch_dir)
+        return None
+
+    def _resolve_batch_from_model_paths(self, base_dir: Path, models_meta: dict[str, Any]) -> Path | None:
+        """Resolve batch directory from model paths."""
         for _context_id, meta in models_meta.items():
             model_path = meta.get('model_path', '')
             if model_path:
@@ -69,10 +69,12 @@ class ModelResolver:
                     if part == 'accumulated' and i + 1 < len(parts):
                         batch_dir = base_dir / parts[i + 1]
                         if batch_dir.exists():
-                            self.logger.info(
-                                f'✅ Resolved batch_dir from model_path: {batch_dir}'
-                                )
+                            self.logger.info(f'✅ Resolved batch_dir from model_path: {batch_dir}')
                             return cast(Path | None, batch_dir)
+        return None
+
+    def _resolve_most_recent_batch(self, base_dir: Path) -> Path | None:
+        """Resolve most recent batch directory from base_dir."""
         if base_dir.exists():
             subdirs = [d for d in base_dir.iterdir() if d.is_dir()]
             if subdirs:
@@ -81,44 +83,75 @@ class ModelResolver:
                 return chosen
         return None
 
-    def update_local_model_paths(self, models_meta: dict[str, Any],
-        batch_dir: Path) ->bool:
-        """Update model paths to use local files found in batch_dir."""
+    def resolve_batch_directory(self, models_meta: dict[str, Any], kwargs:
+        dict[str, Any] | None=None) ->Path | None:
+        """Resolve batch directory from kwargs batch_name or model paths."""
+        base_dir = Path(self.config_manager.get(self.
+            ACCUMULATION_OUTPUT_DIR_CONFIG, self.DEFAULT_ACCUMULATION_DIR))
+
+        batch_dir = self._resolve_batch_from_kwargs(base_dir, kwargs)
+        if batch_dir:
+            return batch_dir
+
+        batch_dir = self._resolve_batch_from_model_paths(base_dir, models_meta)
+        if batch_dir:
+            return batch_dir
+
+        return self._resolve_most_recent_batch(base_dir)
+
+    def _find_available_model_files(self, batch_dir: Path) -> dict[str, Path]:
+        """Find all model files in batch directory."""
         model_extensions = {'.keras', '.pkl', '.h5', '.pt', '.joblib'}
         available_files = {}
         for f in batch_dir.iterdir():
             if f.is_file() and f.suffix in model_extensions:
                 available_files[f.stem.lower()] = f
+        return available_files
+
+    def _match_model_file(self, ticker: str, target: str, model_type: str,
+                          available_files: dict[str, Path]) -> Path | None:
+        """Match a model file based on ticker, target, and model type."""
+        expected_target = target.lower().replace('-', '_')
+        for stem, fpath in available_files.items():
+            stem_lower = stem.lower()
+            stem_parts = stem_lower.split('_')
+            if len(stem_parts) >= 4:
+                file_ticker = stem_parts[1]
+                file_model_type = stem_parts[-1]
+                file_target = '_'.join(stem_parts[2:-1])
+                if file_ticker == ticker.lower() and file_model_type == model_type.lower():
+                    if file_target == expected_target:
+                        return fpath
+        return None
+
+    def update_local_model_paths(self, models_meta: dict[str, Any],
+        batch_dir: Path) ->bool:
+        """Update model paths to use local files found in batch_dir."""
+        available_files = self._find_available_model_files(batch_dir)
+
         if not available_files:
             self.logger.warning(f'⚠️ No model files found in: {batch_dir}')
             return False
-        self.logger.info(
-            f'✅ Found {len(available_files)} model files in {batch_dir}')
+
+        self.logger.info(f'✅ Found {len(available_files)} model files in {batch_dir}')
+
         has_local_models = False
         for context_id, meta in models_meta.items():
             ticker = meta.get('ticker', '')
             target = meta.get('target', '')
             model_type = meta.get('model_type', '')
+
             if not ticker or not model_type:
                 continue
-            matched = None
-            for stem, fpath in available_files.items():
-                stem_lower = stem.lower()
-                stem_parts = stem_lower.split('_')
-                if len(stem_parts) >= 4:
-                    file_ticker = stem_parts[1]
-                    file_model_type = stem_parts[-1]
-                    file_target = '_'.join(stem_parts[2:-1])
-                    expected_target = target.lower().replace('-', '_')
-                    if file_ticker == ticker.lower() and file_model_type == model_type.lower():
-                        if file_target == expected_target:
-                            matched = fpath
-                            break
+
+            matched = self._match_model_file(ticker, target, model_type, available_files)
+
             if matched:
                 meta['model_path'] = str(matched)
                 has_local_models = True
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(f'✅ Mapped {context_id} -> {matched.name}')
+
         mapped = sum(1 for m in models_meta.values() if m.get('model_path'))
         self.logger.info(f'📊 Mapped model paths: {mapped}/{len(models_meta)}')
         return has_local_models
@@ -164,7 +197,7 @@ class ModelResolver:
                 model_loader.load_path(path, meta))
             if loaded_model is not None:
                 return {model_name: loaded_model}
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
                 f'Failed to load model via direct path {direct_path}: {e}')
@@ -251,7 +284,7 @@ class ModelResolver:
                 model_loader.load_path(path, meta))
             if loaded_model is not None:
                 loaded_models[cur_model_name] = loaded_model
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Failed to load model from {path}: {e}')
 
@@ -270,7 +303,7 @@ class ModelResolver:
                     runtime_params = json.load(f)
                     _ = runtime_params.get('test_mode', {}).get('enabled',
                         False)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Could not read runtime_params.json: {e}')
 
@@ -304,7 +337,7 @@ class ModelResolver:
                     self.logger.info(
                         f'Loaded {len(light_meta)} light models from {latest_light.name}'
                         )
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Error loading light models: {e}')
 
@@ -324,7 +357,7 @@ class ModelResolver:
                     else:
                         self._process_ticker_results_from_colab(colab_results,
                             models_metadata)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Error loading colab models: {e}')
 

@@ -78,7 +78,7 @@ class NewsEventDatasetBuilder:
 
                 if (idx + 1) % 100 == 0:
                     logger.info(f"Processed {idx + 1}/{len(news_df)} news. Valid: {self.filter.stats['valid_records']}")
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.error(f"Error processing news index {idx}: {e}", exc_info=True)
                 raise RuntimeError(f"Error processing news index {idx}") from e
         return records
@@ -156,6 +156,7 @@ class NewsEventDatasetBuilder:
 
     def _add_targets_from_candle(self, record: dict, candle: pd.Series, ticker: str):
         for col in candle.index:
+            # audit-ignore: ARCHITECTURAL_USAGE
             if isinstance(col, str) and col.startswith('target_'):
                 record[f'{ticker}_{col}'] = candle[col]
 

@@ -23,9 +23,9 @@ class RegimeClusteringEngine:
     def detect_regime_ml(self, returns: np.ndarray, prices: np.ndarray | None, volume: np.ndarray | None, sentiment: np.ndarray | None) -> dict[str, Any]:
         """ML-based regime detection using clustering."""
         try:
+            self._ensure_cluster_model_fitted()
             features = self._extract_ml_features(returns, prices, volume, sentiment)
             features_scaled = self._normalize_features(features)
-            self._ensure_cluster_model_fitted()
 
             model = cast(KMeans, self.cluster_model)
             cluster = model.predict(features_scaled)[0]
@@ -39,7 +39,7 @@ class RegimeClusteringEngine:
                 'method': 'ml_clustering',
                 'cluster': int(cluster)
             }
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise DataProcessingError("ML regime detection failed") from e
 
     def _extract_ml_features(self, returns: np.ndarray, prices: np.ndarray | None, volume: np.ndarray | None, sentiment: np.ndarray | None) -> list[float]:
@@ -48,19 +48,25 @@ class RegimeClusteringEngine:
         if prices is not None and len(prices) > 20:
             trend = np.polyfit(np.arange(len(prices)), prices, 1)[0]
             features.append(float(trend))
+        else:
+            features.append(0.0)
 
         if volume is not None and len(volume) > 20:
             volume_sma = np.mean(volume[-20:])
-            features.append(float(volume[-1] / volume_sma if volume_sma > 0 else 1))
+            features.append(float(volume[-1] / volume_sma if volume_sma > 0 else 1.0))
+        else:
+            features.append(1.0)
 
         if sentiment is not None and len(sentiment) > 0:
             features.append(float(np.mean(sentiment)))
+        else:
+            features.append(0.0)
 
         return features
 
     def _normalize_features(self, features: list[float]) -> np.ndarray:
         features_array = np.array(features).reshape(1, -1)
-        return self.scaler.fit_transform(features_array)
+        return self.scaler.transform(features_array)
 
     def _ensure_cluster_model_fitted(self):
         if self.cluster_model is None:
@@ -84,7 +90,9 @@ class RegimeClusteringEngine:
             [0.003, 0.025, -0.02, 0.06, 0.002, 1.0, 0.2],
             [0.002, 0.03, -0.04, 0.08, 0.001, 0.8, 0.3]
         ])
+        self.scaler.fit(centers)
         self.cluster_model = KMeans(n_clusters=self.n_clusters, init=centers, n_init=1, random_state=self.seed)
+        self.cluster_model.fit(centers)
 
     def _cluster_to_regime(self, cluster: int) -> Any:
         from src.algorithms.regime.types import MarketRegime
