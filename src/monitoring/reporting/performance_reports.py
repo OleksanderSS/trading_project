@@ -117,7 +117,7 @@ class ComprehensiveReporter:
                 json.dump(report, f, indent=4)
             logger.info(f"Comprehensive report saved to {output_path}")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to save report: {e}")
+            logger.exception(f"Failed to save report: {e}")
 
         self._print_console_summary(report)
         return report

@@ -63,7 +63,7 @@ class MLAnalytics:
                 )
                 self.scalers['resource_scaler'] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Failed to load monitoring ML models: {e}')
+            logger.exception(f'Failed to load monitoring ML models: {e}')
 
     def train_models(self, force_retrain: bool=False) ->dict[str, Any]:
         """Trains monitoring models on historical system execution logs."""
@@ -121,7 +121,7 @@ class MLAnalytics:
                 predictions), 'recommendations': self.
                 generate_ml_recommendations(predictions, anomaly)}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Real-time issue prediction failed: {e}')
+            logger.exception(f'Real-time issue prediction failed: {e}')
             return {'status': 'failed', 'error': str(e)}
 
     def check_model_drift(self, model_name: str, window_days: int=7) ->dict[
@@ -163,7 +163,7 @@ class MLAnalytics:
                 2.0), 'z_score': float(z_score), 'recent_avg': recent_avg,
                 'baseline_avg': baseline_avg}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Drift detection failed for {model_name}: {e}')
+            logger.exception(f'Drift detection failed for {model_name}: {e}')
             return {'status': 'error', 'error': str(e)}
 
     def extract_features_from_metrics(self, metrics: dict[str, Any]) ->list[
@@ -181,7 +181,7 @@ class MLAnalytics:
                 features.append(0.0)
             return features
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Metric feature extraction failed: {e}')
+            logger.exception(f'Metric feature extraction failed: {e}')
             return [0.0] * 17
 
     def calculate_risk_level(self, prob: float) ->str:

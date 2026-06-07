@@ -80,7 +80,7 @@ class VersionChecker:
 
             except importlib.metadata.PackageNotFoundError:
                 msg = f"Dependency Missing: {package_name} is not installed in the current environment."
-                logger.error(msg)
+                logger.exception(msg)
                 issues.append(msg)
 
         return len(issues) == 0, issues

@@ -62,7 +62,7 @@ class ContextAwareFeatureSelector:
 
             logger.info(f"✅ Initialized {self.method} feature selector (top_k={self.top_k})")
         except ImportError as e:
-            logger.error(f"Failed to import sklearn: {e}")
+            logger.exception(f"Failed to import sklearn: {e}")
             self.selector = None
 
     def select_features(
@@ -176,7 +176,7 @@ class ContextAwareFeatureSelector:
             return selected_features, importances
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Feature selection failed: {e}")
+            logger.exception(f"Feature selection failed: {e}")
             # Fallback: return first top_k features
             return feature_names[:self.top_k], {}
 
@@ -210,7 +210,7 @@ class ContextAwareFeatureSelector:
             return selected_features, importances
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Random Forest selection failed: {e}")
+            logger.exception(f"Random Forest selection failed: {e}")
             return feature_names[:self.top_k], {}
 
     def _analyze_context_importance(
@@ -267,4 +267,4 @@ class ContextAwareFeatureSelector:
                 json.dump(analysis, f, indent=2)
             logger.info(f"✅ Saved feature analysis to {output_path}")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to save analysis: {e}")
+            logger.exception(f"Failed to save analysis: {e}")

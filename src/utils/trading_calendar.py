@@ -52,7 +52,7 @@ class TradingCalendar:
             dt = pd.to_datetime(day).normalize()
             return dt in self.trading_days
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Could not parse date {day}: {e}')
+            logger.exception(f'Could not parse date {day}: {e}')
             return False
 
     def get_next_trading_day(self, from_date: date | datetime | str
@@ -77,7 +77,7 @@ class TradingCalendar:
                     f'Date {dt} is before the start of the calendar.')
                 return []
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Error finding location for {dt}: {e}')
+            logger.exception(f'Error finding location for {dt}: {e}')
             raise RuntimeError(f"Failed to find previous trading days for {dt}") from e
         if loc >= 0 and self.trading_days[loc] >= dt:
             end_index = loc
@@ -111,7 +111,7 @@ class TradingCalendar:
                     dates = pd.to_datetime(earnings.index).normalize().date
                     all_earnings.update(dates)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(
+                logger.exception(
                     f"Failed to fetch earnings for ticker '{ticker_str}': {e}")
         self.earnings_dates.update(all_earnings)
         logger.info(

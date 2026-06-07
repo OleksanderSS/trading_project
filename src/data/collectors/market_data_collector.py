@@ -81,7 +81,7 @@ class MarketDataCollector(BaseCollector):
 
         for ticker, response in zip(tickers, responses, strict=False):
             if isinstance(response, Exception):
-                logger.error(f"Exception for {ticker}: {response}")
+                logger.exception(f"Exception for {ticker}: {response}")
             elif response is not None:
                 results[ticker] = response
 

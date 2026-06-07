@@ -99,14 +99,12 @@ class ModelingStage(BaseStage):
             timeframe = df['interval'].iloc[-1] if 'interval' in df.columns else '1d'
 
             for target_name in target_cols:
-                # Готуємо дані з PURGED GAP та CROSS-VALIDATION
-                use_cv = self.modeling_config.get('use_cross_validation', False)
+                # Готуємо дані з PURGED GAP
                 prepared_data = prepare_data_for_models(
                     df=df, ticker=ticker, timeframe=timeframe,
                     target_cols=[target_name],
                     gap_size=10, # Обов'язковий розрив для чесності
-                    test_size=self.modeling_config.get('test_size', DEFAULT_TEST_SIZE),
-                    use_cross_validation=use_cv  # Додано cross-validation
+                    test_size=self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
                 )
 
                 if not prepared_data:

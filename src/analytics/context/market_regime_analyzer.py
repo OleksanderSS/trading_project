@@ -74,8 +74,8 @@ class MarketRegimeAnalyzer(IAnalyzer):
             )
             return result
 
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"MarketRegimeAnalyzer error: {e}", exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception("MarketRegimeAnalyzer error")
             return self._empty_result()
 
     # ------------------------------------------------------------------

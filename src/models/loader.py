@@ -22,6 +22,8 @@ from src.core.error_handling.error_handler import ModelLoadingError
 from src.core.logging.logger import ProjectLogger
 from src.utils.artifact_security import resolve_trusted_artifact_path
 
+KERAS_EXTENSION = '.keras'
+
 
 class ModelLoaderStrategy:
     """
@@ -127,7 +129,7 @@ class ModelLoaderStrategy:
                 return self._load_pickle(path)
             if path.suffix.lower() == '.pt':
                 return self._load_torch_model(path, meta)
-            if path.suffix.lower() in ('.keras', '.h5'):
+            if path.suffix.lower() in (KERAS_EXTENSION, '.h5'):
                 return self._load_keras_model(path, meta)
         except ModelLoadingError:
             raise
@@ -248,7 +250,7 @@ class ModelLoaderStrategy:
         try:
             from tensorflow.keras.models import load_model
             trusted_path = resolve_trusted_artifact_path(path,
-                allowed_suffixes={'.keras', '.h5'}, must_exist=True)
+                allowed_suffixes={KERAS_EXTENSION, '.h5'}, must_exist=True)
             try:
                 model = load_model(str(trusted_path), compile=False,
                     safe_mode=True)

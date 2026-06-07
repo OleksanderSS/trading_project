@@ -55,7 +55,7 @@ class FeatureSelectionCache:
                 logger.debug(
                     f'💾 Saved feature selection cache: {len(self.cache)} entries')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Failed to save cache: {e}')
+            logger.exception(f'Failed to save cache: {e}')
 
     def _compute_cache_key(self, model_type: str, target_name: str,
         market_regime: str, available_features: list[str]) ->str:

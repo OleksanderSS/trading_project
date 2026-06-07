@@ -40,12 +40,12 @@ def get_analyzer(name: str, config: dict = None) -> IAnalyzer:
             try:
                 return analyzer_class()
             except (TypeError, ValueError) as e2:
-                logger.error(f"Failed to instantiate analyzer '{name}' without config: {e2}")
+                logger.exception(f"Failed to instantiate analyzer '{name}' without config")
                 # Fallback: try with **kwargs
                 try:
                     return analyzer_class(**(config or {}))
                 except (TypeError, ValueError) as e3:
-                    logger.error(f"Failed to instantiate analyzer '{name}' with **kwargs: {e3}")
+                    logger.exception(f"Failed to instantiate analyzer '{name}' with **kwargs")
                     raise ValueError(f"Failed to instantiate analyzer '{name}': {e3}") from e3
         else:
             raise ValueError(f"Failed to instantiate analyzer '{name}': {e}") from e

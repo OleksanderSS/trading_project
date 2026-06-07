@@ -192,5 +192,17 @@ class WalkForwardOptimizerExtended(WalkForwardOptimizer):
         data: pd.DataFrame,
         param_space: dict[str, Any],
         metric: str = "sharpe",
+        n_splits: int = 5,
+        train_size: int | None = None,
+        test_size: int | None = None,
+        anchor_type: str = "rolling",
     ) -> dict[str, Any]:
-        return super().run_walk_forward(data, param_space, metric=metric)
+        return super().run_walk_forward(
+            data,
+            param_space,
+            metric=metric,
+            n_splits=n_splits,
+            train_size=train_size,
+            test_size=test_size,
+            anchor_type=anchor_type,
+        )

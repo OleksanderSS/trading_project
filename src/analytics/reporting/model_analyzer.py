@@ -152,7 +152,7 @@ class ModelAnalyzer:
             logger.info(f"Training report saved successfully to {file_path}")
             return str(file_path)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to save training report: {e}")
+            logger.exception(f"Failed to save training report: {e}")
             return ""
 
     def get_light_vs_heavy_stats(self) -> dict[str, float]:

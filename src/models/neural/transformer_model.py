@@ -62,7 +62,7 @@ class TransformerModel(BaseModel):
             return True
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to create fallback model: {e}")
+            logger.exception(f"Failed to create fallback model: {e}")
             return False
 
     def _create_sequences(self, X: np.ndarray, seq_len: int = 10) -> np.ndarray:
@@ -113,14 +113,14 @@ class TransformerModel(BaseModel):
                     f"(classification: {self.classification})"
                 )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Transformer training failed: {e}")
+            logger.exception(f"Transformer training failed: {e}")
             # Fallback to simple model
             try:
                 self._fit_fallback(X, y)
                 self.is_trained = True
                 logger.info("OK Used fallback model")
             except Exception as e2:
-                logger.error(f"Fallback training also failed: {e2}")
+                logger.exception(f"Fallback training also failed: {e2}")
                 raise
 
     def _fit_tensorflow_transformer(self, X, y, seq_len: int, epochs: int, batch_size: int):
@@ -237,12 +237,12 @@ class TransformerModel(BaseModel):
                 return self._predict_fallback(X)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Transformer prediction failed: {e}")
+            logger.exception(f"Transformer prediction failed: {e}")
             # Fallback
             try:
                 return self._predict_fallback(X)
             except Exception as e2:
-                logger.error(f"Fallback prediction also failed: {e2}")
+                logger.exception(f"Fallback prediction also failed: {e2}")
                 raise
 
     def _predict_tensorflow(self, X, seq_len: int):
@@ -346,7 +346,7 @@ def train_transformer_model(
         return model
 
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"Error training Transformer {ticker} {timeframe}: {e}")
+        logger.exception(f"Error training Transformer {ticker} {timeframe}: {e}")
         raise RuntimeError(
             f"Failed to train Transformer model for {ticker} {timeframe}"
         ) from e

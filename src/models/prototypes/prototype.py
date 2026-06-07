@@ -95,7 +95,7 @@ class ModelPrototype:
                 )
             return model
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to clone {self.model_id}: {e}")
+            logger.exception(f"Failed to clone {self.model_id}: {e}")
             raise RuntimeError(f"Failed to clone model prototype {self.model_id}") from e
 
     def validate_dependencies(self) -> bool:

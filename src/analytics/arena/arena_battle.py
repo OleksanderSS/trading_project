@@ -114,8 +114,8 @@ class TradingModelArena:
             try:
                 binary_actuals = (actuals > 0).astype(int)
                 l_loss = log_loss(binary_actuals, probs)
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+                logger.exception('Помилка розрахунку метрик втрат (log_loss)')
                 l_loss = 1.0
         financial_loss = np.mean(np.abs(predictions - actuals) * np.abs(
             actuals))
@@ -355,8 +355,8 @@ class TradingModelArena:
                 results.append({'battle_id': len(self.battle_history),
                     'winner': winner, 'timestamp': battle.end_time.isoformat()}
                     )
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'[ARENA] Battle failed: {e}')
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+                logger.exception('[ARENA] Battle failed')
         self.current_battles.clear()
         return {'battles_completed': len(results), 'results': results,
             'timestamp': datetime.now().isoformat()}
@@ -368,9 +368,8 @@ class TradingModelArena:
             model_info = self.models[model_name]
             return self._get_instance_predictions(model_info['instance'],
                 test_data)
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(
-                f'[ARENA] Failed to get predictions from {model_name}: {e}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception(f'[ARENA] Failed to get predictions from {model_name}')
             return np.zeros(len(test_data))
 
     def _get_instance_predictions(self, model_instance: Any, data: pd.DataFrame
@@ -409,8 +408,8 @@ class TradingModelArena:
                 recall=accuracy, f1_score=accuracy, sharpe_ratio=
                 sharpe_ratio, max_drawdown=0.0, win_rate=accuracy,
                 execution_time=0.1, confidence_score=0.7, mse=mse)
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[ARENA] Failed to calculate metrics: {e}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[ARENA] Failed to calculate metrics')
             return BattleMetrics(0, 0, 0, 0, 0, 0, 0, 0, 0)
 
     def _calculate_max_drawdown(self, returns: np.ndarray) ->float:
@@ -465,9 +464,8 @@ class TradingModelArena:
             with open(filepath, 'w') as f:
                 json.dump({'models': serializable}, f, indent=2, default=str)
             return True
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            logger.warning(f'[ARENA] Failed to save arena state: {e}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            self.logger.exception('Виникла помилка під час збереження стану арени')
             return False
 
     def load_arena_state(self, filepath: str) ->bool:
@@ -476,9 +474,8 @@ class TradingModelArena:
                 state = json.load(f)
             self.models = state.get('models', {})
             return True
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            logger.warning(f'[ARENA] Failed to load arena state: {e}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            self.logger.exception('Виникла помилка під час завантаження стану арени')
             return False
 
 

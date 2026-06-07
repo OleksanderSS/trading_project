@@ -224,27 +224,27 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             try:
                 self._add_volatility_features(df_enriched, returns)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Error adding volatility features: {e}')
+                logger.exception(f'Error adding volatility features: {e}')
             try:
                 self._add_market_regime_features(df_enriched, returns)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Error adding market regime features: {e}')
+                logger.exception(f'Error adding market regime features: {e}')
             try:
                 self._add_drawdown_features(df_enriched, returns)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Error adding drawdown features: {e}')
+                logger.exception(f'Error adding drawdown features: {e}')
             try:
                 self._add_risk_reward_features(df_enriched, returns)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Error adding risk-reward features: {e}')
+                logger.exception(f'Error adding risk-reward features: {e}')
             try:
                 self._add_econometrics_features(df_enriched, returns)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Error adding econometrics features: {e}')
+                logger.exception(f'Error adding econometrics features: {e}')
             try:
                 self._add_fama_french_features(df_enriched, returns)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Error adding Fama-French features: {e}')
+                logger.exception(f'Error adding Fama-French features: {e}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Error adding advanced calculator features: {e}',
                 exc_info=True)
@@ -322,17 +322,23 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 rolling_std = returns.rolling(window=window, min_periods=min_periods).std()
 
                 # Sharpe Ratio
-                sharpe = (rolling_mean / rolling_std).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
-                df_enriched['SHARPE_RATIO'] = sharpe.fillna(0.0)
+                # Guard against zero/near-zero std to prevent inf/nan
+                sharpe_denominator = rolling_std.copy()
+                sharpe_denominator[sharpe_denominator < 1e-10] = np.nan
+                sharpe = (rolling_mean / sharpe_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
+                df_enriched['SHARPE_RATIO'] = sharpe.fillna(np.nan)
 
                 # Sortino Ratio
                 downside_returns = returns.copy()
                 downside_returns[downside_returns > 0] = 0.0
                 rolling_downside_var = downside_returns.pow(2).rolling(window=window, min_periods=min_periods).mean()
                 rolling_downside_std = np.sqrt(rolling_downside_var)
-
-                sortino = (rolling_mean / rolling_downside_std).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
-                df_enriched['SORTINO_RATIO'] = sortino.fillna(0.0)
+                
+                # Guard against zero/near-zero std to prevent inf/nan
+                sortino_denominator = rolling_downside_std.copy()
+                sortino_denominator[sortino_denominator < 1e-10] = np.nan
+                sortino = (rolling_mean / sortino_denominator).replace([float('inf'), float('-inf')], float('nan')) * np.sqrt(252)
+                df_enriched['SORTINO_RATIO'] = sortino.fillna(np.nan)
 
                 logger.info('Added rolling risk-reward features')
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
@@ -351,7 +357,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 min_periods = 30
 
                 # Rolling autocorrelation (correlation of returns with returns.shift(1))
-                df_enriched['AUTOCORR'] = returns.rolling(window=window, min_periods=min_periods).corr(returns.shift(1)).fillna(0.0)
+                df_enriched['AUTOCORR'] = returns.rolling(window=window, min_periods=min_periods).corr(returns.shift(1)).fillna(np.nan)
 
                 # Rolling Hurst Exponent
                 df_enriched['HURST_EXPONENT'] = returns.rolling(window=window, min_periods=100).apply(
@@ -359,10 +365,10 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 ).fillna(0.5)
 
                 # Rolling Skewness
-                df_enriched['SKEWNESS'] = returns.rolling(window=window, min_periods=min_periods).skew().fillna(0.0)
+                df_enriched['SKEWNESS'] = returns.rolling(window=window, min_periods=min_periods).skew().fillna(np.nan)
 
                 # Rolling Kurtosis
-                df_enriched['KURTOSIS'] = returns.rolling(window=window, min_periods=min_periods).kurt().fillna(0.0)
+                df_enriched['KURTOSIS'] = returns.rolling(window=window, min_periods=min_periods).kurt().fillna(np.nan)
 
                 logger.info('Added rolling econometrics features')
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:

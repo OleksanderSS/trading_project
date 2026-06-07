@@ -308,7 +308,7 @@ def safe_divide(a: float | np.ndarray, b: float | np.ndarray,
         else:
             return a / b if b != 0 else default
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f'Виникла помилка: {e}', exc_info=True)
+        logger.exception(f'Виникла помилка: {e}')
         return default
 
 

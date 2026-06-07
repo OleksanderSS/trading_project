@@ -48,6 +48,13 @@ class ObjectCache:
             return None
 
         try:
+            # Security: Validate path is within cache directory to prevent traversal
+            resolved_path = cache_file.resolve()
+            cache_dir = self.cache_dir.resolve()
+            if not str(resolved_path).startswith(str(cache_dir)):
+                logger.error(f"Security: Attempted to load pickle from outside cache directory: {cache_file}")
+                return None
+            
             with open(cache_file, "rb") as f:
                 obj = pickle.load(f)
             logger.debug(f"Loaded object from cache for key: '{key}'")

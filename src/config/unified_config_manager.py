@@ -148,7 +148,7 @@ class UnifiedConfigManager:
                 logger.debug(f"Configuration state synchronized. Keys: {list(self.merged_config.keys())}")
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Critical synchronization failure in UnifiedConfigManager: {e}")
+            logger.exception(f"Critical synchronization failure in UnifiedConfigManager: {e}")
             raise
 
     def _process_config_files(self, config_files: Sequence[str | Path], key_sources: dict[str, str]):
@@ -327,7 +327,7 @@ class UnifiedConfigManager:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"FS Integrity: Path '{key}' resolution ('{dir_to_create}') verified.")
         except OSError as e:
-            logger.error(f"FS Sync Failure for '{key}' ('{path_str}'): {e}")
+            logger.exception(f"FS Sync Failure for '{key}' ('{path_str}'): {e}")
 
     def _resolve_path_object(self, path_str: str) -> Path:
         """Resolve path string to Path object."""

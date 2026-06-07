@@ -92,7 +92,7 @@ class FamaFrenchFactors:
             return factors_df
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Systematic factor computation failed: {e}", exc_info=True)
+            logger.exception("Systematic factor computation failed")
             raise RuntimeError(f"Systematic factor computation failed: {e}") from e
 
     def _check_factor_cache(self, cache_key: str) -> pd.DataFrame | None:
@@ -165,8 +165,8 @@ class FamaFrenchFactors:
             if not result.empty:
                 self._update_cache(cache_key, result)
             return result
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Remote benchmark ingestion failed (yfinance): {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception("Remote benchmark ingestion failed (yfinance)")
             return self._get_fallback_cache(cache_key)
 
     def _validate_date_range(self, start_date: str, end_date: str) -> bool:
@@ -178,8 +178,8 @@ class FamaFrenchFactors:
                 logger.info(f"Temporal range too narrow for factor analysis: {start_date} to {end_date}")
                 return False
             return True
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Temporal parameters malformed: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception("Temporal parameters malformed")
             return False
 
     def _check_cache(self, cache_key: str, start_date: str) -> pd.DataFrame | None:

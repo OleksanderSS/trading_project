@@ -290,7 +290,7 @@ class SentimentFeaturesEnricher(BaseEnricher):
             return df
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error merging sentiment with main DataFrame: {e}")
+            logger.exception(f"Error merging sentiment with main DataFrame: {e}")
             return df
 
     def _prepare_dataframe(self, df: pd.DataFrame, sentiment_col: str) -> pd.DataFrame:

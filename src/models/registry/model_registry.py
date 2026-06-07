@@ -4,6 +4,7 @@ Model Registry - Centralized Model Management
 Handles model registration, metadata storage, and retrieval.
 """
 
+from datetime import datetime
 from typing import Any
 
 from src.core.logging.logger import ProjectLogger
@@ -50,10 +51,12 @@ class ModelRegistry:
         'random_forest': {'alias_for': 'rf'},
     }
 
-    def __init__(self):
+    def __init__(self, storage_path: Any = None):
         self.logger = logger
-        self.models: dict[str, Any] = {}
-        self.logger.info("✅ Unified ModelRegistry initialized")
+        self._registered_models: dict[str, Any] = {}
+        self._metadata: dict[str, dict[str, Any]] = {}
+        self.storage_path = storage_path
+        self.logger.info(f"✅ Unified ModelRegistry initialized (storage: {storage_path})")
 
     @classmethod
     def get_model_config(cls, model_name: str) -> dict[str, Any] | None:
@@ -74,9 +77,26 @@ class ModelRegistry:
         """Register model in the registry."""
         if model_name not in self.MODELS:
             self.logger.warning(f"Registering model not in registry: {model_name}")
-        self.models[model_name] = model
+        self._registered_models[model_name] = model
+        
+        # Initialize default metadata if not exists
+        if model_name not in self._metadata:
+            self._metadata[model_name] = {
+                'registration_time': datetime.now(),
+                'analysis_count': 0,
+                'last_analysis': None
+            }
+            
         self.logger.info(f"✅ Model registered: {model_name}")
 
     def get_model(self, model_name: str) -> Any | None:
         """Get model by name."""
-        return self.models.get(model_name)
+        return self._registered_models.get(model_name)
+
+    def get_model_metadata(self, model_name: str) -> dict[str, Any] | None:
+        """Get metadata for a model."""
+        return self._metadata.get(model_name)
+
+    def update_metadata(self, model_name: str, metadata: dict[str, Any]) -> None:
+        """Update metadata for a model."""
+        self._metadata[model_name] = metadata

@@ -17,6 +17,8 @@ except ImportError:
 from src.core.logging.logger import ProjectLogger
 from src.models.interfaces import BaseModel
 
+META_EXTENSION = '.meta'
+
 
 class TabNetModel(BaseModel):
     """
@@ -105,7 +107,7 @@ class TabNetModel(BaseModel):
             'task_type': self.task_type
         }
         # Шлях до файлу метаданих буде поруч з моделлю
-        metadata_path = Path(model_path).with_suffix('.meta')
+        metadata_path = Path(model_path).with_suffix(META_EXTENSION)
         joblib.dump(metadata, metadata_path)
 
         self.logger.info(f"Модель збережено в {model_path} та метадані в {metadata_path}")
@@ -125,8 +127,8 @@ class TabNetModel(BaseModel):
                 allowed_suffixes={'.zip'},
             )
             metadata_path = self._resolve_model_artifact_path(
-                Path(path).with_suffix('.meta'),
-                allowed_suffixes={'.meta'},
+                Path(path).with_suffix(META_EXTENSION),
+                allowed_suffixes={META_EXTENSION},
             )
             metadata = joblib.load(metadata_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             self.feature_cols = metadata['feature_cols']

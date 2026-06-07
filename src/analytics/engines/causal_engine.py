@@ -46,7 +46,7 @@ class CausalEngine:
             logger.info("Causal model created successfully.")
             return model
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error creating CausalModel: {e}", exc_info=True)
+            logger.exception(f"Error creating CausalModel: {e}")
             raise DataProcessingError(f"Error creating CausalModel: {e}") from e
 
     def identify_effect(self):
@@ -84,8 +84,24 @@ class CausalEngine:
             logger.info(f"Causal effect estimated using {method_name}: {effect_value}")
             return float(effect_value) if not np.isnan(effect_value) else 0.0
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error during causal effect estimation: {e}", exc_info=True)
+            logger.exception(f"Error during causal effect estimation: {e}")
             raise DataProcessingError(f"Error during causal effect estimation: {e}") from e
+
+    def _run_refutation(self, method_name: str, result_key: str, description: str):
+        """
+        Helper to run a specific refutation method.
+        """
+        try:
+            res = self._model.refute_estimate(
+                self.identified_estimand,
+                self._model.latest_estimate,
+                method_name=method_name
+            )
+            logger.info(f"Refutation ({description}): {res.new_effect} (p-value: {res.p_value})")
+            return str(res)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Could not run {method_name} refutation: {e}")
+            raise DataProcessingError(f"Could not run {method_name} refutation: {e}") from e
 
     def run_refutation_tests(self, **kwargs) -> dict:
         """
@@ -97,24 +113,9 @@ class CausalEngine:
         if not hasattr(self, 'identified_estimand'):
             raise DataProcessingError("Cannot run refutation without an identified estimand.")
 
-        refutation_results = {}
-
-        # Example: Random Common Cause
-        try:
-            res_random = self._model.refute_estimate(self.identified_estimand, self._model.latest_estimate, method_name="random_common_cause")
-            refutation_results['random_common_cause'] = str(res_random)
-            logger.info(f"Refutation (Random Common Cause): {res_random.new_effect} (p-value: {res_random.p_value})")
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Could not run random_common_cause refutation: {e}", exc_info=True)
-            raise DataProcessingError(f"Could not run random_common_cause refutation: {e}") from e
-
-        # Example: Data Subset Refuter
-        try:
-            res_subset = self._model.refute_estimate(self.identified_estimand, self._model.latest_estimate, method_name="data_subset_refuter", subset_fraction=0.8)
-            refutation_results['data_subset_refuter'] = str(res_subset)
-            logger.info(f"Refutation (Data Subset): {res_subset.new_effect} (p-value: {res_subset.p_value})")
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Could not run data_subset_refuter refutation: {e}", exc_info=True)
-            raise DataProcessingError(f"Could not run data_subset_refuter refutation: {e}") from e
+        refutation_results = {
+            'random_common_cause': self._run_refutation("random_common_cause", "random_common_cause", "Random Common Cause"),
+            'data_subset_refuter': self._run_refutation("data_subset_refuter", "data_subset_refuter", "Data Subset")
+        }
 
         return refutation_results

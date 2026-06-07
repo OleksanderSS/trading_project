@@ -20,7 +20,7 @@ class PipelineDataLoader:
                 logger.info(f"Loaded {label}: {df.shape}")
                 return df
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f"Error loading {label} from {path}: {e}")
+                logger.exception(f"Error loading {label} from {path}: {e}")
         else:
             logger.error(f"{label.capitalize()} file not found: {path}")
         return None
@@ -108,7 +108,7 @@ class PipelineDataLoader:
             if economic_data is None and macro_dfs:
                 economic_data = PipelineDataLoader.reconstruct_from_db(macro_dfs, "economic", deduplicate_dataframe)
         except (ValueError, TypeError, KeyError, ImportError, pd.errors.EmptyDataError) as ex:
-            logger.error(f"Виникла помилка: {ex}", exc_info=True)
+            logger.exception(f"Виникла помилка: {ex}")
             logger.warning(f"⚠️ Failed to load news/macro fallback from database: {ex}")
             raise
         return news_data, economic_data

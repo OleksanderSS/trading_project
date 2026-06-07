@@ -61,14 +61,14 @@ class InsiderCollector(BaseCollector):
 
             for i, result in enumerate(results):
                 if isinstance(result, Exception):
-                    self.logger.error(f"Network error parsing URL resource {urls_to_scrape[i]}: {result}")
+                    self.logger.exception(f"Network error parsing URL resource {urls_to_scrape[i]}: {result}")
                 elif result:
                     all_trades.extend(result)
 
                 # Rate limiting: delay between requests
                 await asyncio.sleep(1)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Network interface initialization failed: {e}")
+            self.logger.exception(f"Network interface initialization failed: {e}")
             raise RuntimeError("Failed to initialize insider collector network interface") from e
 
         self.logger.info(f"Total isolated records aggregated: {len(all_trades)}.")
@@ -90,7 +90,7 @@ class InsiderCollector(BaseCollector):
             return self._parse_html(response.text, url)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error handling DOM layout state from {url}: {e}")
+            self.logger.exception(f"Error handling DOM layout state from {url}: {e}")
             raise e
 
     def _scrape_url_sync(self, url: str) -> list[dict[str, Any]] | None:
@@ -110,7 +110,7 @@ class InsiderCollector(BaseCollector):
                 response.raise_for_status()
                 return self._parse_html(response.text, url)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Synchronous execution block error {url}: {e}")
+            self.logger.exception(f"Synchronous execution block error {url}: {e}")
             raise e
 
     def _parse_html(self, html: str, url: str) -> list[dict[str, Any]]:
@@ -209,7 +209,7 @@ class InsiderCollector(BaseCollector):
         try:
             raw_data = await self.fetch_raw_data(**kwargs)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"[Insider] Contextual data parse process aborted: {e}")
+            self.logger.exception(f"[Insider] Contextual data parse process aborted: {e}")
             raise RuntimeError("Insider collection failed") from e
 
         if not raw_data:

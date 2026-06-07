@@ -46,7 +46,7 @@ class ColabDataLoader:
             self._normalize_timezones()
             return self.features_df, self.targets_df
         except PathValidationError as e:
-            logger.error(f"Security violation: {e}")
+            logger.exception(f"Security violation: {e}")
             raise FileNotFoundError(f"Access denied to data files in {self.config.batch_dir}") from e
 
     def _normalize_timezones(self) ->None:

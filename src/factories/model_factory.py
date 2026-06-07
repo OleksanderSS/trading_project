@@ -47,6 +47,13 @@ class ModelFactory:
         """Creates an instance of a model."""
         canonical_name = ModelFactory._validate_and_normalize_name(model_name)
 
+        # Guard: Autoencoder should not be used as primary predictor
+        model_config = ModelRegistry.get_model_config(canonical_name.lower())
+        if model_config and model_config.get('role') == 'anomaly' and model_config.get('can_be_primary') == False:
+            if kwargs.get('use_as_primary', False):
+                logger.error(f"Model '{canonical_name}' is an anomaly detection model and cannot be used as primary predictor")
+                raise ValueError(f"Model '{canonical_name}' is an anomaly detection model and cannot be used as primary predictor")
+
         # Делегуємо деревні моделі
         if TreeModelFactory.is_tree_model(canonical_name):
             return TreeModelFactory.create_model(canonical_name, config=config, **kwargs)
@@ -146,9 +153,8 @@ class ModelFactory:
                     )
             model_instance: BaseModel = model_class(**filtered_params)
             return model_instance
-        except Exception as inspect_error:
-            logger.error(f'Виникла помилка: {inspect_error}', exc_info
-                =True)
+        except (TypeError, ValueError, AttributeError, KeyError) as inspect_error:
+            logger.error(f'Виникла помилка: {inspect_error}', exc_info=True)
             logger.warning(
                 f'Could not inspect {canonical_name} constructor signature: {inspect_error}. Passing all params.'
                 )

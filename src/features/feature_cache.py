@@ -102,7 +102,7 @@ class FeatureCache:
             self.stats['errors'] += 1
             try:
                 cache_file.unlink()
-            except Exception as unlink_err:
+            except (OSError, PermissionError) as unlink_err:
                 self.logger.debug(f'Could not remove corrupted cache file {cache_file}: {unlink_err}')
             raise RuntimeError(f"Failed to read cache file {cache_file}: {e}") from e
 

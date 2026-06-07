@@ -184,7 +184,7 @@ class TimeSeriesValidator:
                     float(mean_squared_error(y_val, y_pred)), 'r2': float(
                     r2_score(y_val, y_pred))})
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(
+                logger.exception(
                     f'Error in walk-forward fold at {y_val.index[0]}: {e}')
         if not predictions:
             return {'status': 'error', 'message':
@@ -381,7 +381,7 @@ class TimeSeriesValidator:
                 issues_found=[] if agreement >= agreement_threshold else [
                 'Low agreement'], recommendations=[], detailed_results={})
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Consensus validation error: {e}')
+            logger.exception(f'Consensus validation error: {e}')
             return ValidationResult(ValidationType.CONSENSUS_STABILITY,
                 False, 0.0, {}, [str(e)], [], {})
 

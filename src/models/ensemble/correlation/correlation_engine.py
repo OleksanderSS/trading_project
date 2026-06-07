@@ -330,7 +330,7 @@ class CorrelationEngine:
 
             return redundant_pairs
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error finding redundant pairs: {e}")
+            self.logger.exception(f"Error finding redundant pairs: {e}")
             raise RuntimeError("Failed to find redundant model pairs") from e
 
     def select_optimal_subsets(self, predictions: dict[str, np.ndarray],
@@ -350,7 +350,7 @@ class CorrelationEngine:
 
             return optimal_subsets
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error selecting optimal subsets: {e}")
+            self.logger.exception(f"Error selecting optimal subsets: {e}")
             raise RuntimeError("Failed to select optimal model subsets") from e
 
     def find_best_subset(self, model_names: list[str], predictions: dict[str, np.ndarray],
@@ -411,7 +411,7 @@ class CorrelationEngine:
 
             return best_subset
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error finding best subset: {e}")
+            self.logger.exception(f"Error finding best subset: {e}")
             raise RuntimeError("Failed to find best model subset") from e
 
     def calculate_subset_diversity_score(self, predictions: dict[str, np.ndarray],
@@ -441,7 +441,7 @@ class CorrelationEngine:
 
             return list(models.keys())[:max_models]
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error selecting diverse subset: {e}")
+            self.logger.exception(f"Error selecting diverse subset: {e}")
             return list(models.keys())[:max_models]
 
     def adjust_weights_by_correlation(self, base_weights: dict[str, float],
@@ -469,7 +469,7 @@ class CorrelationEngine:
 
             return adjusted_weights
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error adjusting weights by correlation: {e}")
+            self.logger.exception(f"Error adjusting weights by correlation: {e}")
             return base_weights
 
     def get_analysis_summary(self, days: int = 30) -> dict[str, Any]:
@@ -498,7 +498,7 @@ class CorrelationEngine:
 
             return summary
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error getting analysis summary: {e}")
+            self.logger.exception(f"Error getting analysis summary: {e}")
             return {'error': str(e)}
 
     def get_most_common_redundant_pairs(self, analyses: list[dict[str, Any]]) -> list[str]:
@@ -515,7 +515,7 @@ class CorrelationEngine:
             sorted_pairs = sorted(pair_counts.items(), key=lambda x: x[1], reverse=True)
             return [pair[0] for pair in sorted_pairs[:5]]
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error getting most common redundant pairs: {e}")
+            self.logger.exception(f"Error getting most common redundant pairs: {e}")
             raise RuntimeError("Failed to get most common redundant pairs") from e
 
     def analyze_correlation_trends(self, analyses: list[dict[str, Any]]) -> dict[str, str]:
@@ -544,7 +544,7 @@ class CorrelationEngine:
 
             return {'status': 'insufficient_data'}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error analyzing correlation trends: {e}")
+            self.logger.exception(f"Error analyzing correlation trends: {e}")
             return {'status': 'error', 'error': str(e)}
 
 

@@ -221,7 +221,7 @@ class SafeFeatureCombiner:
             # Remove duplicate columns if any
             dup_cols = [col for col in combined.columns if col.endswith('_dup')]
             if dup_cols:
-                combined.drop(columns=dup_cols, inplace=True)
+                combined = combined.drop(columns=dup_cols)
                 if self.logger.isEnabledFor(logging.DEBUG):
                     self.logger.debug(f"🗑️ Removed {len(dup_cols)} duplicate columns from {timeframe} merge")
 

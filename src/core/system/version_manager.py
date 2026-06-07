@@ -61,7 +61,7 @@ class ConfigVersionManager:
                 f"from {self.history_path}"
             )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to load version history: {e}")
+            logger.exception(f"Failed to load version history: {e}")
             self.versions = self._get_default_versions()
 
     def _save_versions(self):
@@ -75,7 +75,7 @@ class ConfigVersionManager:
             with open(self.history_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to save version history: {e}")
+            logger.exception(f"Failed to save version history: {e}")
 
     def _get_default_versions(self) -> list[ConfigVersion]:
         """Initial versions if the file is missing"""

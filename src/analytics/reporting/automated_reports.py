@@ -30,10 +30,7 @@ class AutomatedReporting:
             logger.info(f"[AutomatedReporting] Generated daily report: {filename}")
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(
-                f"[AutomatedReporting] Failed to generate daily report: {e}",
-                exc_info=True,
-            )
+            logger.exception(f"[AutomatedReporting] Failed to generate daily report: {e}")
 
     def get_daily_summary(self) -> dict:
         """Отримати щоденну статистику"""
@@ -65,7 +62,7 @@ class HistoricalAnalytics:
             return trends
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
-            logger.error(f"[HistoricalAnalytics] Failed to analyze trends: {e}", exc_info=True)
+            logger.exception(f"[HistoricalAnalytics] Failed to analyze trends: {e}")
             return {}
 
     def generate_trend_report(self, days: int = 30) -> dict:

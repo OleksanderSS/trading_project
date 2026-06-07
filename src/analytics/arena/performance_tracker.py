@@ -108,9 +108,8 @@ class ModelPerformanceTracker:
                 f'[TRACKER] Battle performance recorded: {model1_name} vs {model2_name}'
                 )
             return True
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[TRACKER] Failed to record battle performance: {e}'
-                , exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[TRACKER] Failed to record battle performance')
             return False
 
     def _record_model_performance(self, model_name: str, metrics: dict[str,
@@ -143,10 +142,8 @@ class ModelPerformanceTracker:
                 stats['win_rates'] = stats['win_rates'][-100:]
                 stats['confidence_scores'] = stats['confidence_scores'][-100:]
                 stats['execution_times'] = stats['execution_times'][-100:]
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(
-                f'[TRACKER] Failed to record model performance for {model_name}: {e}'
-                )
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception(f'[TRACKER] Failed to record model performance for {model_name}')
 
     def _get_battle_result(self, model_name: str, winner: str) ->str:
         """Отримати результат бою для моделі"""
@@ -177,9 +174,8 @@ class ModelPerformanceTracker:
                 else:
                     stats['draws'] += 1
                     stats['current_streak'] = 0
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[TRACKER] Failed to update battle stats: {e}',
-                exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[TRACKER] Failed to update battle stats')
 
     def _update_leaderboard(self):
         """Оновлення таблиці лідерів"""
@@ -196,9 +192,8 @@ class ModelPerformanceTracker:
             logger.info(
                 f'[TRACKER] Leaderboard updated with {len(leaderboard_entries)} models'
                 )
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[TRACKER] Failed to update leaderboard: {e}',
-                exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[TRACKER] Failed to update leaderboard')
 
     def _create_leaderboard_entry(self, model_name: str, stats: dict[str, Any]
         ) ->LeaderboardEntry:
@@ -259,9 +254,8 @@ class ModelPerformanceTracker:
                 accuracies)}
             return {'model_name': model_name, 'records': [asdict(r) for r in
                 model_records], 'summary': summary, 'period_days': days}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(
-                f'[TRACKER] Failed to get model performance history: {e}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[TRACKER] Failed to get model performance history')
             return {'model_name': model_name, 'records': [], 'summary': {},
                 'period_days': days}
 
@@ -278,10 +272,8 @@ class ModelPerformanceTracker:
                 return 'declining'
             else:
                 return 'stable'
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            logger.warning(
-                f'[TRACKER] Could not calculate performance trend: {e}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[TRACKER] Could not calculate performance trend')
             return 'unknown'
 
     def get_model_stats(self, model_name: str) ->dict[str, Any]:
@@ -317,8 +309,7 @@ class ModelPerformanceTracker:
                 'last_battle'] else None, 'performance_trend': self.
                 _calculate_performance_trend(stats['accuracy_scores'])}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[TRACKER] Failed to get model stats: {e}',
-                exc_info=True)
+            logger.exception('[TRACKER] Failed to get model stats')
             return {'error': str(e)}
 
     def get_top_performers(self, metric: str='points', limit: int=5) ->list[
@@ -342,7 +333,7 @@ class ModelPerformanceTracker:
             top_models = sorted_models[:limit]
             return [asdict(model) for model in top_models]
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[TRACKER] Failed to get top performers: {e}', exc_info=True)
+            logger.exception('[TRACKER] Failed to get top performers')
             raise RuntimeError(f'[TRACKER] Failed to get top performers: {e}') from e
 
     def save_performance_data(self, filepath: str) ->bool:
@@ -368,9 +359,8 @@ class ModelPerformanceTracker:
                 json.dump(data, f, indent=2)
             logger.info(f'[TRACKER] Performance data saved to {filepath}')
             return True
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[TRACKER] Failed to save performance data: {e}',
-                exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[TRACKER] Failed to save performance data')
             return False
 
     def load_performance_data(self, filepath: str) ->bool:
@@ -413,9 +403,8 @@ class ModelPerformanceTracker:
             self.battle_results = data.get('battle_results', [])
             logger.info(f'[TRACKER] Performance data loaded from {filepath}')
             return True
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'[TRACKER] Failed to load performance data: {e}',
-                exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('[TRACKER] Failed to load performance data')
             return False
 
 

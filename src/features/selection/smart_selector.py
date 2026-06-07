@@ -55,7 +55,7 @@ class SmartFeatureSelector:
                         return data
                     return {}
             except (OSError, json.JSONDecodeError) as e:
-                logger.error(f"Failed to load feature cache from {self.storage_path}: {e}")
+                logger.exception(f"Failed to load feature cache from {self.storage_path}: {e}")
         return {}
 
     def _save_storage(self):
@@ -64,7 +64,7 @@ class SmartFeatureSelector:
             with open(self.storage_path, 'w') as f:
                 json.dump(self.cache, f, indent=4)
         except OSError as e:
-            logger.error(f"Failed to save feature cache to {self.storage_path}: {e}")
+            logger.exception(f"Failed to save feature cache to {self.storage_path}: {e}")
 
     def _check_cache(self, regime_context_id: str, features_df: pd.DataFrame, force_recalculate: bool) -> list[str] | None:
         """Check cache and return cached features if valid."""
@@ -108,7 +108,7 @@ class SmartFeatureSelector:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(f"Method {method_func.__name__} added weight {weight} to {top_n} features")
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f"Feature selection method {method_func.__name__} failed for {regime_context_id}: {e}", exc_info=True)
+                logger.exception(f"Feature selection method {method_func.__name__} failed for {regime_context_id}: {e}")
 
         return scores
 
@@ -252,7 +252,7 @@ class SmartFeatureSelector:
             return pd.Series(model.feature_importance(importance_type='gain'),
                           index=features_df.columns).sort_values(ascending=False)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"LGBM filter failed: {e}")
+            logger.exception(f"LGBM filter failed: {e}")
             raise RuntimeError("LGBM feature importance filter failed") from e
 
     def _random_forest_filter(self, features_df, target_series, is_classification) -> pd.Series | None:
@@ -297,7 +297,7 @@ class SmartFeatureSelector:
             model.fit(features_df, target_series)
             return pd.Series(model.feature_importances_, index=features_df.columns).sort_values(ascending=False)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Random Forest filter failed: {e}")
+            logger.exception(f"Random Forest filter failed: {e}")
             raise RuntimeError("Random Forest feature importance filter failed") from e
 
     def _variance_filter(self, features_df, target_series, is_classification) -> pd.Series | None:
@@ -308,5 +308,5 @@ class SmartFeatureSelector:
             normalized_var = (variances - variances.min()) / (variances.max() - variances.min() + self.variance_epsilon)
             return normalized_var.sort_values(ascending=False)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Variance filter failed: {e}")
+            logger.exception(f"Variance filter failed: {e}")
             raise RuntimeError("Variance feature filter failed") from e

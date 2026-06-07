@@ -165,7 +165,7 @@ class PrototypeRegistry:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"💾 Registry saved: {len(data)} prototypes")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to save registry: {e}")
+            logger.exception(f"Failed to save registry: {e}")
 
     def _load_registry(self):
         """Load registry from disk"""
@@ -196,7 +196,7 @@ class PrototypeRegistry:
 
             logger.info(f"📖 Loaded {len(data)} prototypes from registry")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to load registry: {e}")
+            logger.exception(f"Failed to load registry: {e}")
 
     def export_summary(self) -> dict[str, Any]:
         """

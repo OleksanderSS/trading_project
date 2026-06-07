@@ -106,7 +106,7 @@ class MacroFeaturesEnricher(BaseEnricher):
                         merged.to_parquet(self.cache_path)
                         logger.info(f'Updated macro cache with {len(pivoted)} new rows → {len(merged)} total')
                     except Exception as e:
-                        logger.error(f'Failed to save macro cache: {e}')
+                        logger.exception(f'Failed to save macro cache: {e}')
                     return merged
                 return pivoted
         # Fallback to FRED API or cache
@@ -411,7 +411,7 @@ class MacroFeaturesEnricher(BaseEnricher):
             return fred_data
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Error loading data from FRED: {e}')
+            logger.exception(f'Error loading data from FRED: {e}')
             return self._try_load_cache_fallback()
 
     def _strip_timezone_from_date(self, date):

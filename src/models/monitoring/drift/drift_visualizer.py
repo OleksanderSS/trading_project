@@ -13,6 +13,9 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("DriftVisualizer")
 
+MATPLOTLIB_UNAVAILABLE = "matplotlib not available, skipping visualization"
+DRIFT_SCORE = "Drift Score"
+
 
 class DriftVisualizer:
     """
@@ -154,7 +157,7 @@ class DriftVisualizer:
             return result
 
         except ImportError:
-            self.logger.warning("matplotlib not available, skipping visualization")
+            self.logger.warning(MATPLOTLIB_UNAVAILABLE)
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting performance trend: {e}")
@@ -226,7 +229,7 @@ class DriftVisualizer:
         drift_score = drift_analysis.get('overall_drift_score', 0)
         severity = drift_analysis.get('drift_severity', 'none')
         colors = {'critical': 'red', 'high': 'orange', 'medium': 'yellow', 'low': 'lightgreen', 'none': 'green'}
-        ax.bar(['Drift Score'], [drift_score], color=colors.get(severity, 'gray'))
+        ax.bar([DRIFT_SCORE], [drift_score], color=colors.get(severity, 'gray'))
         ax.set_ylim(0, 1)
         ax.set_ylabel('Score')
         ax.set_title(f'Overall Drift Score ({severity.upper()})')
@@ -257,7 +260,7 @@ class DriftVisualizer:
         method_detected = [drift_methods[m].get('drift_detected', False) for m in method_names]
         colors_list = ['red' if d else 'green' for d in method_detected]
         ax.bar(method_names, method_scores, color=colors_list)
-        ax.set_ylabel('Drift Score')
+        ax.set_ylabel(DRIFT_SCORE)
         ax.set_title('Drift Detection Methods Comparison')
         ax.set_ylim(0, 1)
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
@@ -321,7 +324,7 @@ class DriftVisualizer:
             return result
 
         except ImportError:
-            self.logger.warning("matplotlib not available, skipping visualization")
+            self.logger.warning(MATPLOTLIB_UNAVAILABLE)
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting drift summary dashboard: {e}")
@@ -362,7 +365,7 @@ class DriftVisualizer:
                     ax.scatter(ts, score, color='red', s=100, zorder=5)
 
             ax.set_xlabel('Time')
-            ax.set_ylabel('Drift Score')
+            ax.set_ylabel(DRIFT_SCORE)
             ax.set_title('Drift Detection Timeline')
             ax.legend()
             ax.grid(True, alpha=0.3)
@@ -385,7 +388,7 @@ class DriftVisualizer:
             return result
 
         except ImportError:
-            self.logger.warning("matplotlib not available, skipping visualization")
+            self.logger.warning(MATPLOTLIB_UNAVAILABLE)
             return {'status': 'skipped', 'reason': 'visualization_libraries_not_available'}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error plotting drift timeline: {e}")

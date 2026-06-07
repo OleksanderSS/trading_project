@@ -34,7 +34,7 @@ class DataVersioning:
                 with open(self.metadata_file) as f:
                     return json.load(f)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f'Error loading metadata: {e}')
+                self.logger.exception(f'Error loading metadata: {e}')
                 raise RuntimeError(
                     f"Failed to load data version metadata from {self.metadata_file}"
                 ) from e
@@ -46,7 +46,7 @@ class DataVersioning:
             with open(self.metadata_file, 'w') as f:
                 json.dump(self.metadata, f, indent=2, default=str)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Error saving metadata: {e}')
+            self.logger.exception(f'Error saving metadata: {e}')
 
     def _get_file_hash(self, file_path: Path) ->str:
         """Calculate file hash"""
@@ -56,7 +56,7 @@ class DataVersioning:
             with open(file_path, 'rb') as f:
                 return hashlib.sha256(f.read()).hexdigest()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Error calculating hash for {file_path}: {e}')
+            self.logger.exception(f'Error calculating hash for {file_path}: {e}')
             return ''
 
     def _get_file_size(self, file_path: Path) ->int:

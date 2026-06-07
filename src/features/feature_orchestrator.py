@@ -145,7 +145,7 @@ class FeatureOrchestrator:
                 result = name_prop.fget(dummy)
                 if result and isinstance(result, str):
                     return result
-            except Exception:  # noqa: S110
+            except (AttributeError, TypeError, RuntimeError):
                 pass  # intentional: fallback to full instantiation below
 
         # Fallback: full instantiation (original behavior)
@@ -235,7 +235,7 @@ class FeatureOrchestrator:
                     before=df,
                     after=df_enriched,
                 )
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError, KeyError):
                 pass  # never block pipeline due to tracking
 
         end_time = pd.Timestamp.now()

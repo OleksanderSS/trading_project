@@ -62,7 +62,7 @@ class ExplainabilityCalculator:
             return dict(sorted(importance.items(), key=lambda item: item[1], reverse=True))
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to analyze feature importance: {e}", exc_info=True)
+            logger.exception("Failed to analyze feature importance")
             raise RuntimeError(f"Failed to analyze feature importance: {e}") from e
 
     @staticmethod
@@ -87,5 +87,5 @@ class ExplainabilityCalculator:
             # We can reuse the main importance analyzer with a single row
             return ExplainabilityCalculator.analyze_feature_importance(model, data_row, feature_names)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to explain prediction: {e}", exc_info=True)
+            logger.exception("Failed to explain prediction")
             raise RuntimeError(f"Failed to explain prediction: {e}") from e

@@ -72,9 +72,9 @@ class UnifiedAnalyticsEngine:
                         f"Class '{class_name}' from '{module_path}' is not a valid IAnalyzer instance."
                         )
             except (ImportError, AttributeError, KeyError, TypeError) as e:
-                logger.error(
+                logger.exception(
                     f"Failed to register analyzer '{config.get('name', 'unknown')}': {e}"
-                    , exc_info=True)
+                    )
 
     def register_analyzer(self, analyzer: IAnalyzer, name: str):
         """Registers a single analyzer instance into the engine registry."""
@@ -109,7 +109,7 @@ class UnifiedAnalyticsEngine:
             deterministic_json = json.dumps(stable_repr, sort_keys=True)
             return hashlib.sha256(deterministic_json.encode()).hexdigest()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
-            logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.exception(f'Виникла помилка: {e}')
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(
                     f'Fallback hashing triggered due to complex types: {e}')
@@ -158,9 +158,9 @@ class UnifiedAnalyticsEngine:
             try:
                 results[name] = future.result(timeout=120)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(
-                    f"Parallel execution failed for analyzer '{name}': {e}",
-                    exc_info=True)
+                logger.exception(
+                    f"Parallel execution failed for analyzer '{name}': {e}"
+                    )
                 results[name] = {'error': str(e), 'status': 'failed'}
         self.results_manager.cache_analysis(data_hash, results)
         return results

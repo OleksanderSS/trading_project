@@ -105,7 +105,7 @@ class SECFilingsCollector(BaseCollector):
                 all_filings.extend(res)
             elif isinstance(res, Exception):
                 ticker = list(valid_ciks.keys())[i]
-                logger.error(f"Error fetching filings for {ticker}: {res}")
+                logger.exception(f"Error fetching filings for {ticker}: {res}")
         return all_filings
 
     def _create_filing_hash(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -226,5 +226,5 @@ class SECFilingsCollector(BaseCollector):
             return filtered
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error processing {ticker} (CIK: {cik}): {e}")
+            logger.exception(f"Error processing {ticker} (CIK: {cik}): {e}")
             raise RuntimeError(f"Failed to fetch SEC filings for {ticker} ({cik})") from e

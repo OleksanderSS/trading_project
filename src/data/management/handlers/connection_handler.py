@@ -7,6 +7,8 @@ import duckdb
 
 logger = logging.getLogger(__name__)
 
+MEMORY_DB = ':memory:'
+
 
 class ConnectionHandler:
     """Handles DuckDB connection lifecycle and shared connections."""
@@ -15,7 +17,7 @@ class ConnectionHandler:
 
     def __init__(self, db_path: str):
         self.db_path = os.path.abspath(db_path
-            ) if db_path != ':memory:' else db_path
+            ) if db_path != MEMORY_DB else db_path
         self.con = self.get_connection(self.db_path)
 
     @classmethod
@@ -37,7 +39,7 @@ class ConnectionHandler:
         retry_count: int=3) ->duckdb.DuckDBPyConnection:
         """Get or create a DuckDB connection."""
         db_path = os.path.abspath(db_path
-            ) if db_path != ':memory:' else db_path
+            ) if db_path != MEMORY_DB else db_path
         if force_new or db_path not in cls._connections:
             if force_new and db_path in cls._connections:
                 try:
@@ -47,11 +49,11 @@ class ConnectionHandler:
                     logger.warning(f'Error closing connection: {e}')
                     raise
                 del cls._connections[db_path]
-            if force_new and os.path.exists(db_path) and db_path != ':memory:':
+            if force_new and os.path.exists(db_path) and db_path != MEMORY_DB:
                 try:
                     os.remove(db_path)
                 except OSError as e:
-                    logger.error(
+                    logger.exception(
                         f"Error removing database file '{db_path}': {e}")
             last_error = None
             for attempt in range(retry_count):

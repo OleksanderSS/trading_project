@@ -156,7 +156,7 @@ class FinancialMetricsLibrary:
                 index=pd.date_range(start=data.index[-1] + pd.Timedelta(days=1), periods=steps),
             )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"VAR forecast failed: {e}")
+            logger.exception(f"VAR forecast failed: {e}")
             return pd.DataFrame()
 
     @staticmethod

@@ -233,7 +233,7 @@ class PersistentModelPool(ModelPool):
                 self.quality_scores = data.get('quality', {})
             logger.info(f"Loaded cache index: {len(self.model_metadata)} models")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to load cache index: {e}")
+            logger.exception(f"Failed to load cache index: {e}")
 
     def _save_cache_index(self) -> None:
         """Save cache index to disk."""
@@ -247,7 +247,7 @@ class PersistentModelPool(ModelPool):
                     'updated_at': datetime.now().isoformat()
                 }, f, indent=2)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to save cache index: {e}")
+            logger.exception(f"Failed to save cache index: {e}")
 
     def get_enhanced_stats(self) -> dict[str, Any]:
         """
@@ -291,7 +291,7 @@ class PersistentModelPool(ModelPool):
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.debug(f"Exported {model_id} to {model_path}")
                 except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                    logger.error(f"Failed to export {model_id}: {e}")
+                    logger.exception(f"Failed to export {model_id}: {e}")
 
         # Save cache index
         self._save_cache_index()

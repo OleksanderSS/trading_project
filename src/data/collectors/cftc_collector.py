@@ -81,7 +81,7 @@ class CFTCCollector(BaseCollector):
             return df
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error in CFTCCollector: {e}")
+            self.logger.exception(f"Error in CFTCCollector: {e}")
             raise RuntimeError("CFTC collection failed") from e
 
     async def _fetch_cftc_data(self, instrument: str) -> list[dict[str, Any]]:
@@ -143,7 +143,7 @@ class CFTCCollector(BaseCollector):
             return data
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
-            self.logger.error(f"Error fetching CFTC data for {instrument}: {e}")
+            self.logger.exception(f"Error fetching CFTC data for {instrument}: {e}")
             raise RuntimeError(f"Failed to fetch CFTC data for {instrument}") from e
 
     def _find_data_start(self, lines: list[str]) -> int:
@@ -318,7 +318,7 @@ class CFTCCollector(BaseCollector):
             return df
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error standardizing CFTC columns: {e}")
+            self.logger.exception(f"Error standardizing CFTC columns: {e}")
             return pd.DataFrame()
 
     def _categorize_position(self, net_pct: float) -> str:

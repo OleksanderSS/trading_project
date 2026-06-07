@@ -200,7 +200,7 @@ class FeatureDriftDetector:
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error parsing drift results: {e}")
+            logger.exception(f"Error parsing drift results: {e}")
             return {
                 'drift_detected': False,
                 'drift_share': 0.0,

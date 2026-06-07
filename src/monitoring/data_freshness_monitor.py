@@ -147,7 +147,7 @@ class DataFreshnessMonitor:
                     overall_status = 'warning'
 
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f"Error checking {source_name}: {e}")
+                self.logger.exception(f"Error checking {source_name}: {e}")
                 results[source_name] = {
                     'status': 'error',
                     'error': str(e)
@@ -261,7 +261,7 @@ class DataFreshnessMonitor:
                 return self._get_latest_timestamp_from_models(path_obj)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error getting latest timestamp for {source_name}: {e}")
+            self.logger.exception(f"Error getting latest timestamp for {source_name}: {e}")
 
         return None
 
@@ -381,7 +381,7 @@ class DataFreshnessMonitor:
             await notifier.send_message(message)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Failed to send Telegram alert: {e}")
+            self.logger.exception(f"Failed to send Telegram alert: {e}")
 
     async def _send_email_alert(self, message: str) -> None:
         """Send alert via email."""
@@ -391,7 +391,7 @@ class DataFreshnessMonitor:
             self.logger.info(f"Email alert (not implemented): {message}")
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Failed to send email alert: {e}")
+            self.logger.exception(f"Failed to send email alert: {e}")
 
     def _log_freshness_summary(self, summary: dict[str, Any]) -> None:
         """Log comprehensive freshness summary."""
@@ -507,7 +507,7 @@ class DataFreshnessMonitor:
                 await asyncio.sleep(check_interval_minutes * 60)
 
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f"Error in monitoring loop: {e}")
+                self.logger.exception(f"Error in monitoring loop: {e}")
                 await asyncio.sleep(60)  # Wait 1 minute on error
 
 

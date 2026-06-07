@@ -139,6 +139,17 @@ class CacheManager:
             if pq_file.exists():
                 value = pd.read_parquet(pq_file)
             elif pkl_file.exists():
+                # Security: Validate path is within cache directory to prevent traversal
+                try:
+                    resolved_path = pkl_file.resolve()
+                    cache_dir = self.cache_dir.resolve()
+                    if not str(resolved_path).startswith(str(cache_dir)):
+                        self.logger.error(f"Security: Attempted to load pickle from outside cache directory: {pkl_file}")
+                        return None
+                except (OSError, ValueError, RuntimeError) as e:
+                    self.logger.exception(f"Security: Path validation failed for {pkl_file}: {e}")
+                    return None
+                
                 with open(pkl_file, 'rb') as f:
                     value = pickle.load(f)
 
@@ -191,7 +202,7 @@ class CacheManager:
             self.db.upsert('cache_metadata', meta_df, unique_on=['key_hash'])
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Failed to save cache for {key}: {e}")
+            self.logger.exception(f"Failed to save cache for {key}: {e}")
 
     def get_stats(self) -> dict[str, Any]:
         """Повертає статистику кешу: загальний розмір, кількість об'єктів у пам'яті та на диску."""
@@ -211,7 +222,7 @@ class CacheManager:
                 "db_salt": self.db_salt
             }
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Failed to get cache stats: {e}")
+            self.logger.exception(f"Failed to get cache stats: {e}")
             return {"error": str(e)}
 
     def invalidate_namespace(self, namespace: str) -> None:

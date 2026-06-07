@@ -30,13 +30,13 @@ class KnnModelWrapper:
         historical/training data, not future/test data.
         """
         if features_df.empty:
-            logger.error("Cannot fit on an empty DataFrame.")
+            logger.exception("Cannot fit on an empty DataFrame.")
             raise ValueError("Input DataFrame for fitting cannot be empty.")
 
         # Ensure we only use numeric, non-null data
         numeric_df = features_df.select_dtypes(include=['number']).dropna()
         if numeric_df.empty:
-            logger.error("No numeric, non-null data available for fitting after cleaning.")
+            logger.exception("No numeric, non-null data available for fitting after cleaning.")
             raise ValueError("Cleaned DataFrame has no data to fit.")
 
         self.fitted_data_index = numeric_df.index
@@ -53,7 +53,7 @@ class KnnModelWrapper:
             A tuple containing (distances, indices) of the neighbors.
         """
         if not self.is_fitted:
-            logger.error("The model must be fitted before finding neighbors.")
+            logger.exception("The model must be fitted before finding neighbors.")
             raise RuntimeError("Model is not fitted. Call .fit() first.")
 
         # Ensure columns and data types match what the scaler expects
@@ -66,7 +66,7 @@ class KnnModelWrapper:
             # Use the already fitted scaler to transform the target data
             scaled_target = self.scaler.transform(numeric_target_df)
         except ValueError as e:
-            logger.error(f"Error transforming target data. Ensure columns match the fitted data. Details: {e}")
+            logger.exception(f"Error transforming target data. Ensure columns match the fitted data. Details: {e}")
             raise
 
         distances, indices = self.model.kneighbors(scaled_target)

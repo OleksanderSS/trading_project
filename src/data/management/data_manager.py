@@ -14,6 +14,8 @@ from src.core.exceptions import DataLoadError
 
 logger = logging.getLogger(__name__)
 
+MEMORY_DB = ':memory:'
+
 
 class IDatabaseManager:
     """Interface for database management."""
@@ -58,8 +60,8 @@ class DataManager(IDatabaseManager):
 
     def __init__(self, config_manager: UnifiedConfigManager, error_handler: IErrorHandler | None = None):
         self.config_manager = config_manager
-        raw_path = self.config_manager.get('paths.raw_db', ':memory:')
-        self.db_path = os.path.abspath(raw_path) if raw_path != ':memory:' else raw_path
+        raw_path = self.config_manager.get('paths.raw_db', MEMORY_DB)
+        self.db_path = os.path.abspath(raw_path) if raw_path != MEMORY_DB else raw_path
         self.error_handler = error_handler or ErrorHandler()
         self._initialize_connection(force_new=False)
         if logger.isEnabledFor(logging.DEBUG):
@@ -80,7 +82,7 @@ class DataManager(IDatabaseManager):
     @classmethod
     def get_connection(cls, db_path: str, force_new: bool = False, retry_count: int = 3) -> duckdb.DuckDBPyConnection:
         """Повертає або створює з'єднання до DuckDB з повторними спробами (retry-логікою)."""
-        db_path = os.path.abspath(db_path) if db_path != ':memory:' else db_path
+        db_path = os.path.abspath(db_path) if db_path != MEMORY_DB else db_path
 
         if not force_new and db_path in cls._connections:
             return cls._connections[db_path]
@@ -93,7 +95,7 @@ class DataManager(IDatabaseManager):
                 logger.error(f'Error closing connection: {e}', exc_info=True)
             del cls._connections[db_path]
 
-        if force_new and os.path.exists(db_path) and db_path != ':memory:':
+        if force_new and os.path.exists(db_path) and db_path != MEMORY_DB:
             try:
                 os.remove(db_path)
             except OSError as e:

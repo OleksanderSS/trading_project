@@ -99,7 +99,7 @@ class CounterfactualGenerator:
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Synthetic control generation failed: {e}", exc_info=True)
+            logger.exception("Synthetic control generation failed")
             raise RuntimeError(f"Synthetic control generation failed: {e}") from e
 
     def run_difference_in_differences(self,
@@ -161,7 +161,7 @@ class CounterfactualGenerator:
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"DiD analysis failed: {e}", exc_info=True)
+            logger.exception("DiD analysis failed")
             raise RuntimeError(f"DiD analysis failed: {e}") from e
 
     def propensity_score_matching(self,
@@ -213,7 +213,7 @@ class CounterfactualGenerator:
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Propensity score matching failed: {e}", exc_info=True)
+            logger.exception("Propensity score matching failed")
             raise RuntimeError(f"Propensity score matching failed: {e}") from e
 
     def estimate_causal_effects(self,
@@ -265,5 +265,5 @@ class CounterfactualGenerator:
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Causal effect estimation failed: {e}", exc_info=True)
+            logger.exception("Causal effect estimation failed")
             raise RuntimeError(f"Causal effect estimation failed: {e}") from e

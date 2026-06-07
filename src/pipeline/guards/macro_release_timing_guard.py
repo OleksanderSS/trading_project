@@ -6,9 +6,9 @@ Ensures macroeconomic data is only used after official release times.
 
 from datetime import time
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
-import pytz
 
 from src.core.logging.logger import ProjectLogger
 
@@ -30,7 +30,7 @@ class MacroReleaseTimingGuard:
     """
 
     # US Eastern Timezone (where most US data is released)
-    US_EASTERN = pytz.timezone('US/Eastern')
+    US_EASTERN = ZoneInfo('US/Eastern')
 
     def __init__(self):
         """Initialize the MacroReleaseTimingGuard."""

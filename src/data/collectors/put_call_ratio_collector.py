@@ -247,7 +247,7 @@ class PutCallRatioCollector(BaseCollector):
             return df
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error standardizing Put/Call Ratio columns: {e}")
+            self.logger.exception(f"Error standardizing Put/Call Ratio columns: {e}")
             return pd.DataFrame()
 
     async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:

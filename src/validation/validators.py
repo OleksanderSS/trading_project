@@ -200,5 +200,5 @@ class UnifiedValidator:
             logger.info("System health check passed")
             return True
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"System health check failed: {e}")
+            logger.exception(f"System health check failed: {e}")
             return False

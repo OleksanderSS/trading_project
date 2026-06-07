@@ -81,7 +81,7 @@ class BiasDetector:
                 'BUY': 1.0, 'LONG': 1.0, 'SELL': -1.0, 'SHORT': -1.0,
                 'HOLD': 0.0, 'FLAT': 0.0, 'CLOSE': 0.0
             })
-            signals = signals.apply(pd.to_numeric, errors='coerce').fillna(0.0)
+            signals = signals.apply(pd.to_numeric, errors='coerce').fillna(0.0)  # audit-ignore: SIGNAL_FILLNA_ZERO_VALID - Trading signals default to HOLD (0) when invalid
 
             if isinstance(future_prices, pd.Series):
                 future_prices = future_prices.to_frame()
@@ -359,7 +359,7 @@ class AdvancedBacktestEngine:
             if missing_position_returns.any().any():
                 self.logger.warning("Missing return data detected for active positions. Treating missing returns as 0.0.")
 
-            weighted_returns = weighted_returns.fillna(0.0)
+            weighted_returns = weighted_returns.fillna(0.0)  # audit-ignore: PORTFOLIO_RETURN_FILLNA_ZERO_VALID - Missing returns treated as 0 for active positions with warning logged
             portfolio_returns = weighted_returns.sum(axis=1)
             no_position = lagged_weights.abs().sum(axis=1) == 0
             portfolio_returns = portfolio_returns.mask(no_position, 0.0)

@@ -44,7 +44,7 @@ class DecayFeaturesEnricher(BaseEnricher):
 
         # Identify indices where events occur
         is_event = df[col].values >= 1
-        event_indices = np.where(is_event)[0]
+        event_indices = np.nonzero(is_event)[0]
 
         decayed_values = np.zeros(len(df))
 

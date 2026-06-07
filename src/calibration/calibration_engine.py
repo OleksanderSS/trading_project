@@ -93,7 +93,7 @@ class CalibrationEngine:
             conn.close()
             return {'features': features_df, 'targets': targets_df}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'❌ Failed to load real data: {e}')
+            logger.exception(f'❌ Failed to load real data: {e}')
             return {'features': pd.DataFrame(), 'targets': pd.DataFrame()}
 
     def load_synthetic_scenarios(self) ->dict[str, list[dict[str, Any]]]:
@@ -131,7 +131,7 @@ class CalibrationEngine:
             logger.info(f"   Context: {len(scenarios['context'])}")
             return scenarios
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'❌ Failed to load synthetic scenarios: {e}')
+            logger.exception(f'❌ Failed to load synthetic scenarios: {e}')
             return {'typical': [], 'shock': [], 'context': []}
 
     def define_hyperparameter_space(self, trial) ->dict[str, Any]:
@@ -233,7 +233,7 @@ class CalibrationEngine:
             logger.info(f'   Combined: {combined_metric:.4f}')
             return float(combined_metric)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'❌ Evaluation failed: {e}')
+            logger.exception(f'❌ Evaluation failed: {e}')
             return self._fallback_evaluation(hyperparams)
 
     def _fallback_evaluation(self, hyperparams: dict[str, Any]) ->float:
@@ -271,7 +271,7 @@ class CalibrationEngine:
                     sharpe = metrics.get('sharpe_ratio', 0)
                     sharpe_ratios.append(abs(sharpe))
                 except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                    self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+                    logger.exception(f'Виникла помилка: {e}')
                     logger.warning(f'⚠️ Failed to evaluate scenario: {e}')
                     continue
         if not sharpe_ratios:
@@ -298,7 +298,7 @@ class CalibrationEngine:
             sharpe = np.clip(sharpe, -5.0, 5.0)
             return float(sharpe)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.exception(f'Виникла помилка: {e}')
             logger.warning(f'⚠️ Sharpe calculation failed: {e}')
             return 0.0
 

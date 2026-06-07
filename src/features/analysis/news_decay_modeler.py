@@ -164,7 +164,7 @@ class NewsDecayModeler:
             combined_data = pd.concat(aligned_data, ignore_index=True)
             return {'combined_data': combined_data, 'news_by_type': news_by_type, 'error': None}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Error preparing modeling data: {e}')
+            self.logger.exception(f'Error preparing modeling data: {e}')
             return {'error': str(e)}
 
     async def _fit_news_type_model(self, news_data: pd.DataFrame, news_type: str) -> dict[str, Any]:
@@ -197,7 +197,7 @@ class NewsDecayModeler:
 
             return type_results
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Error fitting news type model for {news_type}: {e}')
+            self.logger.exception(f'Error fitting news type model for {news_type}: {e}')
             return {'news_type': news_type, 'models': {}, 'best_model': None, 'performance_comparison': {}, 'error': str(e)}
 
     async def _generate_optimization_summary(self, results: dict[str, Any]) -> dict[str, Any]:
@@ -260,7 +260,7 @@ class NewsDecayModeler:
 
             return summary
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Error generating optimization summary: {e}')
+            self.logger.exception(f'Error generating optimization summary: {e}')
             return summary
 
     def _store_trained_models(self, results: dict[str, Any]) ->None:
@@ -275,7 +275,7 @@ class NewsDecayModeler:
             for file_to_delete in files[50:]:
                 file_to_delete.unlink()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Failed to store trained models: {e}')
+            self.logger.exception(f'Failed to store trained models: {e}')
 
     async def predict_news_impact(self,
                                   news_data: pd.DataFrame,
@@ -325,7 +325,7 @@ class NewsDecayModeler:
                             'function_name'), 'mse': perf.get('mse'), 'mae':
                             perf.get('mae'), 'r2': perf.get('r2')})
                 except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                    self.logger.error(
+                    self.logger.exception(
                         f'Error loading model file {file_path}: {e}')
             if not performance_history:
                 return {'error': 'No valid performance data found'}
@@ -344,7 +344,7 @@ class NewsDecayModeler:
                 performance_trends, 'model_stability': self.
                 _calculate_model_stability(performance_history)}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Error getting model performance summary: {e}')
+            self.logger.exception(f'Error getting model performance summary: {e}')
             return {'error': str(e)}
 
     def _calculate_model_stability(self, performance_history: list[dict[str,

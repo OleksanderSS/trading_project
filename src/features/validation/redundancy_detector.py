@@ -263,7 +263,7 @@ class RedundancyDetector:
             return results
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error in correlation redundancy detection: {e}")
+            self.logger.exception(f"Error in correlation redundancy detection: {e}")
             return results
 
     def _calculate_vif_analysis(self,
@@ -326,7 +326,7 @@ class RedundancyDetector:
             return results
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error in VIF analysis: {e}")
+            self.logger.exception(f"Error in VIF analysis: {e}")
             return {'vif_scores': {}, 'high_vif_features': [], 'vif_threshold': self.thresholds['vif_threshold'], 'error': str(e)}
 
     def _select_representative_features(self,
@@ -403,7 +403,7 @@ class RedundancyDetector:
             return results
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error in feature selection: {e}")
+            self.logger.exception(f"Error in feature selection: {e}")
             return {'selected_features': features_df.copy(), 'selection_method': {}, 'removed_features': [], 'error': str(e)}
 
     def _select_best_feature_from_group(self,
@@ -442,7 +442,7 @@ class RedundancyDetector:
                 return str(best_by_correlation)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error selecting best feature from group: {e}")
+            self.logger.exception(f"Error selecting best feature from group: {e}")
             return feature_names[0]  # Return first feature as fallback
 
     def _create_empty_result(self,

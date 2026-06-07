@@ -83,11 +83,9 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
                 'causality_strength': AdvancedEconometricsCalculator.
                 _calculate_causality_strength(granger_results,
                 stationarity_results, cointegration_results or {})}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(
-                f"Comprehensive Granger test failed for predictor '{predictor_col}' on target '{target_col}': {e}"
-                , exc_info=True)
-            return {'error': str(e)}
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception(f"Comprehensive Granger test failed for predictor '{predictor_col}' on target '{target_col}'")
+            return {'error': "Granger test failed"}
 
     @staticmethod
     def _test_stationarity(test_data: pd.DataFrame, target_col: str,
@@ -101,9 +99,9 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
                     adf_result[1], 'critical_values': adf_result[4],
                     'is_stationary': adf_result[1] < 0.05, 'is_i1': not
                     adf_result[1] < 0.05}
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f"Stationarity test failed for {col}: {e}", exc_info=True)
-                results[col] = {'error': str(e), 'is_stationary': False,
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+                logger.exception(f"Stationarity test failed for {col}")
+                results[col] = {'error': "Stationarity test failed", 'is_stationary': False,
                     'is_i1': False}
         return results
 
@@ -120,8 +118,8 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
                     lag_results.hqic)
             else:
                 return int(lag_results.aic)
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Lag selection failed: {e}', exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('Lag selection failed')
             return 2
 
     @staticmethod
@@ -144,9 +142,9 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
                 'residuals_autocorrelated': lb_test['lb_pvalue'].iloc[0] <
                 0.05}, 'is_valid': min_p_value < 0.05 and lb_test[
                 'lb_pvalue'].iloc[0] > 0.05}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Granger validation test failed: {e}')
-            return {'error': str(e), 'p_value': 1.0, 'is_valid': False}
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('Granger validation test failed')
+            return {'error': "Granger validation failed", 'p_value': 1.0, 'is_valid': False}
 
     @staticmethod
     def _test_cointegration(test_data: pd.DataFrame) ->dict[str, Any]:
@@ -157,9 +155,9 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
                 result.cvt[:, 0], 'is_cointegrated': result.lr1[0] > result
                 .cvt[0, 0], 'eigenvalue_statistic': result.lr2[0],
                 'eigenvectors': result.evec}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Cointegration test failed: {e}', exc_info=True)
-            return {'error': str(e), 'is_cointegrated': False}
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('Cointegration test failed')
+            return {'error': "Cointegration test failed", 'is_cointegrated': False}
 
     @staticmethod
     def _calculate_impulse_response(test_data: pd.DataFrame, lag: int,
@@ -172,9 +170,9 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
             irf_data = irf.irfs
             return {'response_data': irf_data, 'cumulative_effect': irf.
                 cum_effects, 'confidence_intervals': irf.cum_effects_ci}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Impulse response calculation failed: {e}', exc_info=True)
-            return {'error': str(e)}
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('Impulse response calculation failed')
+            return {'error': "IRF calculation failed"}
 
     @staticmethod
     def _calculate_variance_decomposition(test_data: pd.DataFrame, lag: int,
@@ -186,9 +184,9 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
             fevd = fitted_model.fevd(periods)
             return {'decomposition': fevd.decomp, 'explained_variance':
                 fevd.cumm_effects}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Variance decomposition failed: {e}', exc_info=True)
-            return {'error': str(e)}
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception('Variance decomposition failed')
+            return {'error': "Variance decomposition failed"}
 
     @staticmethod
     def _calculate_causality_strength(granger_results: dict[str, Any],

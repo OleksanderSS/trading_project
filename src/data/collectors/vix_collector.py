@@ -91,7 +91,7 @@ class VIXCollector(BaseCollector):
             return df
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error in VIXCollector: {e}")
+            self.logger.exception(f"Error in VIXCollector: {e}")
             raise RuntimeError("VIX collection failed") from e
 
     async def _fetch_vix_data(self) -> list[dict[str, Any]]:
@@ -160,7 +160,7 @@ class VIXCollector(BaseCollector):
             return data
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error fetching VIX data: {e}")
+            self.logger.exception(f"Error fetching VIX data: {e}")
             raise RuntimeError("Failed to fetch VIX data") from e
 
     def _standardize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -197,7 +197,7 @@ class VIXCollector(BaseCollector):
             return df
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f"Error standardizing VIX columns: {e}")
+            self.logger.exception(f"Error standardizing VIX columns: {e}")
             return pd.DataFrame()
 
     async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
