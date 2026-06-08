@@ -109,7 +109,7 @@ class NewsContextDatasetBuilder:
                     removed_reasons['insufficient_candles'] += 1
 
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'❌ Error filtering news {idx}: {e}', exc_info=True)
+                logger.exception(f'❌ Error filtering news {idx}: {e}')
                 removed_reasons['datetime_error'] += 1
                 raise RuntimeError(f"Error filtering news {idx}") from e
 
@@ -136,7 +136,7 @@ class NewsContextDatasetBuilder:
                 if (idx + 1) % 100 == 0:
                     logger.info(f'Processed {idx + 1}/{len(news_filtered)} news articles')
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Failed to process news {idx}: {e}', exc_info=True)
+                logger.exception(f'Failed to process news {idx}: {e}')
                 raise RuntimeError(f"Failed to process news {idx}") from e
 
         if not dataset_rows:
@@ -196,7 +196,7 @@ class NewsContextDatasetBuilder:
 
             return row if len(row) > 20 else None
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error in _build_news_row: {e}", exc_info=True)
+            logger.exception(f"Error in _build_news_row: {e}")
             raise RuntimeError("Error in _build_news_row") from e
 
     def _add_candle_to_row(self, row: dict, candle: pd.Series, prefix: str):

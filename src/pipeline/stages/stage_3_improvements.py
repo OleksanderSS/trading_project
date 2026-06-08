@@ -224,4 +224,4 @@ def log_data_quality_report(metrics: dict[str, Any]) -> None:
         logger.info("=" * 80)
 
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"❌ Error logging data quality report: {e}")
+        logger.exception(f"❌ Error logging data quality report: {e}")

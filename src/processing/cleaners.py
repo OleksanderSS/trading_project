@@ -63,7 +63,7 @@ class DataCleaner:
                     )
             return df_out
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(
+            logger.exception(
                 f'Error during outlier removal for columns {columns}: {e}')
             return df
 
@@ -164,7 +164,7 @@ def _sanitize_index_timezone(df: pd.DataFrame, label: str) ->pd.DataFrame:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f'[{label}] Converted DatetimeIndex to timezone-naive.')
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f'Виникла помилка: {e}', exc_info=True)
+        logger.exception(f'Виникла помилка: {e}')
         logger.warning(f'[{label}] Failed to sanitize index timezone: {e}')
         raise
     return df
@@ -179,7 +179,7 @@ def _sanitize_column_timezone(df: pd.DataFrame, col: str, label: str) ->None:
                 logger.debug(
                     f"[{label}] Converted column '{col}' to timezone-naive.")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.exception(f'Виникла помилка: {e}')
             logger.warning(
                 f"[{label}] Failed to sanitize column '{col}' timezone: {e}")
             raise
@@ -309,3 +309,5 @@ def filter_by_terms(df: pd.DataFrame, terms: list[str], search_col: str=
         f"Filtered records: {len(df)} -> {len(filtered_df)} based on terms in '{search_col}'."
         )
     return filtered_df
+n filtered_df
+n filtered_df

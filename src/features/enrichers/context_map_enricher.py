@@ -63,7 +63,7 @@ class ContextMapEnricher(BaseEnricher):
                     self.default_dynamic_threshold = noise_config.get('default_dynamic_threshold', 0.005)
                     self.noise_sensitivity = noise_config.get('noise_sensitivity', 0.5)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-             logger.error(f"Failed to load noise filter config: {e}", exc_info=True)
+             logger.exception(f"Failed to load noise filter config: {e}")
              self._load_defaults()
 
         logger.info(f"ContextMapEnricher initialized. Pattern Length: {self.pattern_length}")

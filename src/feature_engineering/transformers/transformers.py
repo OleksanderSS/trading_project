@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 
@@ -11,7 +13,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 class _BaseScalerTransformer:
     columns: list[str] = field(default_factory=list)
 
-    scaler_cls = StandardScaler
+    scaler_cls: type[Any] = StandardScaler
 
     def __post_init__(self) -> None:
         self.scalers = {}
@@ -47,8 +49,8 @@ class _BaseScalerTransformer:
 
 
 class StandardScalerTransformer(_BaseScalerTransformer):
-    scaler_cls = StandardScaler
+    scaler_cls: type[Any] = StandardScaler
 
 
 class MinMaxScalerTransformer(_BaseScalerTransformer):
-    scaler_cls = MinMaxScaler
+    scaler_cls: type[Any] = MinMaxScaler

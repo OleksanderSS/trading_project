@@ -259,37 +259,38 @@ class ColabManager:
             return {'error': f'Batch directory not found: {batch_dir}'}
 
         results = {}
-
-        # Mapping of filenames to result keys
         files_to_load = {
             SELECTED_FEATURES_PATTERN: 'selected_features',
             'trained_models_metadata.json': 'models_metadata',
-            'colab_results.json': 'models_metadata',  # Fallback/Alternative name from Colab
+            'colab_results.json': 'models_metadata',
             'evaluation_results.json': 'evaluation_results'
         }
 
+        self._load_files_from_directory(batch_dir, files_to_load, results)
+        return results
+
+    def _load_files_from_directory(self, batch_dir: Path, files_to_load: dict[str, str], results: dict[str, Any]) -> None:
+        """Helper to load files."""
         for pattern, key in files_to_load.items():
             if "*" in pattern:
                 found_files = list(batch_dir.glob(pattern))
                 for file_path in found_files:
-                    if file_path.exists():
-                        with open(file_path) as f:
-                            data = json.load(f)
-                            if key not in results:
-                                results[key] = data
-                            elif isinstance(results[key], dict) and isinstance(data, dict):
-                                results[key].update(data)
+                    self._load_single_file(file_path, key, results)
             else:
                 file_path = batch_dir / pattern
                 if file_path.exists():
-                    with open(file_path) as f:
-                        data = json.load(f)
-                        if key == 'models_metadata' and 'models_metadata' in data:
-                            results[key] = data['models_metadata']
-                        else:
-                            results[key] = data
+                    self._load_single_file(file_path, key, results)
 
-        return results
+    def _load_single_file(self, file_path: Path, key: str, results: dict[str, Any]) -> None:
+        """Helper to load a single file."""
+        with open(file_path, encoding='utf-8') as f:
+            data = json.load(f)
+            if key == 'models_metadata' and 'models_metadata' in data:
+                results[key] = data['models_metadata']
+            elif key in results and isinstance(results[key], dict) and isinstance(data, dict):
+                results[key].update(data)
+            else:
+                results[key] = data
 
     def _find_batch_directory(self, batch_name: str) -> Path:
         """Find the batch directory by name."""

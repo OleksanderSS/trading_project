@@ -44,7 +44,7 @@ class SmartModelSelector:
             with open(file_path) as f:
                 return json.load(f)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Не вдалося завантажити карту компетенцій: {e}')
+            logger.exception(f'Не вдалося завантажити карту компетенцій: {e}')
             raise
 
     def _save_performance_history(self):
@@ -52,7 +52,7 @@ class SmartModelSelector:
             with open(self.results_file, 'w') as f:
                 json.dump(self.performance_history, f, indent=2, default=str)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Помилка збереження історії: {e}')
+            logger.exception(f'Помилка збереження історії: {e}')
 
     def train_error_meta_model(self, model_name: str, ticker: str):
         """Тренує мета-модель на історичних помилках конкретної моделі."""
@@ -162,7 +162,7 @@ class SmartModelSelector:
                 columns=context.keys()).to_numpy()
             return self.error_meta_model.predict(context_for_pred)[0]
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Error predicting expected error: {e}', exc_info=True)
+            logger.exception(f'Error predicting expected error: {e}')
             return 0.5
 
 

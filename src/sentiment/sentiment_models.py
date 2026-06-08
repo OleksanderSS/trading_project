@@ -68,7 +68,7 @@ def get_finbert_pipeline(device: int = None):
         logger.warning("⚠️ Libraries 'torch' or 'transformers' not found. Sentiment analysis will be disabled.")
         _FINBERT_PIPELINE = "disabled" # Mark as checked and disabled
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"❌ Error loading FinBERT: {e}", exc_info=True)
+        logger.exception(f"❌ Error loading FinBERT: {e}")
         logger.warning("⚠️ FinBERT disabled. Sentiment analysis will return neutral for all texts.")
         _FINBERT_PIPELINE = "disabled"
 
@@ -138,7 +138,7 @@ def _process_batch(pipe, uncached_texts: list[str], uncached_indices: list[int],
             rows.append(row)
             _CACHE[_stable_hash(original_batch[idx])] = row
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"[WARN] Batch {batch_idx} error: {e}", exc_info=True)
+        logger.exception(f"[WARN] Batch {batch_idx} error: {e}")
         for idx in uncached_indices:
             rows.append({"text": original_batch[idx], "label": "error", "score": 0.0})
 

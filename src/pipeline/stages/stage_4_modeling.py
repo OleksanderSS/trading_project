@@ -136,7 +136,7 @@ class ModelingStage(BaseStage):
                     logger.info(f"🏆 Pattern Champion for {context_key}: {winner_name} (Score: {metrics.get('score', 0):.4f})")
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error modeling {ticker}: {e}", exc_info=True)
+            logger.exception(f"Error modeling {ticker}: {e}")
 
     def _log_expert_to_diary(self, info: dict[str, Any], tf: str):
         """Зберігає інформацію про експертну модель у щоденник досвіду."""

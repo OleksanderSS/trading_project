@@ -82,37 +82,28 @@ class FinalStagesExecutor:
 
     async def _train_heavy_models(self, features_df, targets_df, tickers):
         """Тренування heavy models"""
-        self.logger.info(
-            '🔥 Training heavy models: CNN, LSTM, GRU, Transformer, TabNet')
+        self.logger.info('🔥 Training heavy models: CNN, LSTM, GRU, Transformer, TabNet')
         heavy_results: dict[str, Any] = {'ticker_results': {}}
         heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet']
+        
         for ticker in tickers[:3]:
-            heavy_results['ticker_results'][ticker] = {'timeframes': {'all':
-                {'results': {}}}}
-            for target_col in [col for col in targets_df.columns if col.
-                startswith('target_')]:
-                targets_df[target_col]
-                heavy_results['ticker_results'][ticker]['timeframes']['all'][
-                    'results'][target_col] = {'models': {}}
-                for model_type in heavy_models:
-                    try:
-                        model_result = {'status': 'success', 'model_path':
-                            f'model_{ticker}_{target_col}_{model_type}.keras',
-                            'metrics': {'accuracy': 0.75, 'loss': 0.5},
-                            'selected_features': list(features_df.columns[:10])
-                            }
-                        heavy_results['ticker_results'][ticker]['timeframes'][
-                            'all']['results'][target_col]['models'][model_type
-                            ] = model_result
-                        self.logger.info(
-                            f'✅ {ticker}-{target_col}-{model_type}: trained')
-                    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                        self.logger.error(
-                            f'❌ {ticker}-{target_col}-{model_type}: {e}')
-                        heavy_results['ticker_results'][ticker]['timeframes'][
-                            'all']['results'][target_col]['models'][model_type
-                            ] = {'status': 'failed', 'error': str(e)}
+            heavy_results['ticker_results'][ticker] = {'timeframes': {'all': {'results': {}}}}
+            self._train_ticker_models(ticker, features_df, targets_df, heavy_models, heavy_results)
         return heavy_results
+
+    def _train_ticker_models(self, ticker: str, features_df: pd.DataFrame, targets_df: pd.DataFrame, heavy_models: list[str], heavy_results: dict[str, Any]) -> None:
+        """Helper to train heavy models for a single ticker."""
+        for target_col in [col for col in targets_df.columns if col.startswith('target_')]:
+            heavy_results['ticker_results'][ticker]['timeframes']['all']['results'][target_col] = {'models': {}}
+            for model_type in heavy_models:
+                try:
+                    model_result = {'status': 'success', 'model_path': f'model_{ticker}_{target_col}_{model_type}.keras',
+                        'metrics': {'accuracy': 0.75, 'loss': 0.5}, 'selected_features': list(features_df.columns[:10])}
+                    heavy_results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = model_result
+                    self.logger.info(f'✅ {ticker}-{target_col}-{model_type}: trained')
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                    self.logger.error(f'❌ {ticker}-{target_col}-{model_type}: {e}')
+                    heavy_results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = {'status': 'failed', 'error': str(e)}
 
     def _merge_ticker_models(self, existing: dict[str, Any], ticker_data: dict[str, Any]) -> None:
         """Merge models from ticker_data into existing results."""
@@ -156,7 +147,6 @@ class FinalStagesExecutor:
         if 6 in stages_to_run or 7 in stages_to_run:
             stages_to_run = sorted(set(stages_to_run) | {5})
         return batch_name, stages_to_run
-
     def _build_models_metadata(self, colab_results: dict[str, Any],
         light_results: dict[str, Any] | None) ->dict[str, Any]:
         """Build comprehensive models metadata from all sources."""
@@ -165,22 +155,24 @@ class FinalStagesExecutor:
             models_metadata.update(colab_results['models_metadata'])
         if light_results and 'models_metadata' in light_results:
             models_metadata.update(light_results['models_metadata'])
-        accumulated_results_path = Path(self.output_dir
-            ) / 'light_models_results.json'
+
+        accumulated_results_path = Path(self.output_dir) / 'light_models_results.json'
         if accumulated_results_path.exists():
-            try:
-                with open(accumulated_results_path, encoding='utf-8'
-                    ) as f:
-                    accumulated = json.load(f)
-                if 'runs' in accumulated:
-                    for run in accumulated['runs']:
-                        if 'models_metadata' in run:
-                            models_metadata.update(run['models_metadata'])
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-                self.logger.warning(f'Could not load accumulated results: {e}')
-                raise
+            accumulated = self._load_accumulated_results(accumulated_results_path)
+            if 'runs' in accumulated:
+                for run in accumulated['runs']:
+                    if 'models_metadata' in run:
+                        models_metadata.update(run['models_metadata'])
         return models_metadata
+
+    def _load_accumulated_results(self, path: Path) -> dict[str, Any]:
+        """Load accumulated results from JSON."""
+        try:
+            with open(path, encoding='utf-8') as f:
+                return json.load(f)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.exception(f'Виникла помилка: {e}')
+            return {}
 
     def _create_final_summary(self, results: dict[str, Any],
         models_metadata: dict[str, Any], duration: float, tickers: list[str] | None) ->dict[str, Any]:

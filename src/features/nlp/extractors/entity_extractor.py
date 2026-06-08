@@ -98,6 +98,6 @@ class EntityExtractor:
                 entities = {ent.text.strip() for ent in doc.ents if not entity_types or ent.label_ in entity_types}
                 results.append(sorted(entities))
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"An error occurred during batch entity extraction: {e}", exc_info=True)
+            logger.exception(f"An error occurred during batch entity extraction: {e}")
             return [[] for _ in texts]
         return results

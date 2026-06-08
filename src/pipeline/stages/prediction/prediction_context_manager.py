@@ -75,5 +75,5 @@ class PredictionContextManager:
             regime_val = regime_map.get(market_regime.lower(), 0)
             return f"legacy_{regime_val}"
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Помилка генерації контексту: {e}', exc_info=True)
+            logger.exception(f'Помилка генерації контексту: {e}')
             return 'unknown_context'

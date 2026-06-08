@@ -92,16 +92,12 @@ class MacroFeaturesEnricher(BaseEnricher):
         macro_data = kwargs.get('macro_data')
         if macro_data is not None and isinstance(macro_data, pd.DataFrame) and not macro_data.empty:
             logger.info(f'Using macro_data from Stage 1 ({len(macro_data)} rows in long format)')
-            # ✅ FIX: Stage 1 gives only NEW records (delta), so pivot and return as-is for merging
-            # But we also need to rebuild cache from full DB history
             pivoted = self._pivot_macro_data(macro_data)
             if not pivoted.empty:
-                # Try to load full history from cache and merge with new data
                 full_cache = self._load_full_macro_from_cache()
                 if not full_cache.empty:
                     merged = pd.concat([full_cache, pivoted]).sort_index()
                     merged = merged[~merged.index.duplicated(keep='last')]
-                    # Save updated cache
                     try:
                         merged.to_parquet(self.cache_path)
                         logger.info(f'Updated macro cache with {len(pivoted)} new rows → {len(merged)} total')
@@ -109,8 +105,13 @@ class MacroFeaturesEnricher(BaseEnricher):
                         logger.exception(f'Failed to save macro cache: {e}')
                     return merged
                 return pivoted
-        # Fallback to FRED API or cache
+        
         logger.info('No macro_data in kwargs, loading from FRED API or cache...')
+        start_date, end_date = self._determine_date_range(df)
+        return self._load_macro_data(start_date, end_date)
+
+    def _determine_date_range(self, df: pd.DataFrame) -> tuple[pd.Timestamp, pd.Timestamp]:
+        """Determine start and end dates from DataFrame."""
         if isinstance(df.index, pd.DatetimeIndex):
             start_date = df.index.min()
             end_date = df.index.max()
@@ -121,12 +122,13 @@ class MacroFeaturesEnricher(BaseEnricher):
             logger.warning('No datetime index or column found, using default date range')
             start_date = pd.Timestamp('2020-01-01')
             end_date = pd.Timestamp.now()
+        
         # ✅ Strip timezone
         if hasattr(start_date, 'tzinfo') and start_date.tzinfo is not None:
             start_date = start_date.tz_localize(None)
         if hasattr(end_date, 'tzinfo') and end_date.tzinfo is not None:
             end_date = end_date.tz_localize(None)
-        return self._load_macro_data(start_date, end_date)
+        return start_date, end_date
 
     def _load_full_macro_from_cache(self) -> pd.DataFrame:
         """Load all macro data from cache regardless of date range."""

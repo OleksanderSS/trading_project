@@ -309,26 +309,16 @@ class NewsDecayModeler:
                 fromtimestamp(f.stat().st_mtime) >= cutoff_time]
             if not recent_files:
                 return {'error': 'No recent model performance data available'}
+            
             performance_history = []
             for file_path in recent_files:
-                try:
-                    with open(file_path) as f:
-                        data = json.load(f)
-                    if 'best_overall_model' in data and data[
-                        'best_overall_model']:
-                        perf = data['best_overall_model'].get('performance', {}
-                            )
-                        file_time = datetime.fromtimestamp(file_path.stat()
-                            .st_mtime)
-                        performance_history.append({'timestamp': file_time,
-                            'model_name': data['best_overall_model'].get(
-                            'function_name'), 'mse': perf.get('mse'), 'mae':
-                            perf.get('mae'), 'r2': perf.get('r2')})
-                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                    self.logger.exception(
-                        f'Error loading model file {file_path}: {e}')
+                perf_data = self._process_model_file(file_path)
+                if perf_data:
+                    performance_history.append(perf_data)
+            
             if not performance_history:
-                return {'error': 'No valid performance data found'}
+                return {'error': 'No performance data could be parsed'}
+            
             performance_trends = {}
             for metric in ['mse', 'mae', 'r2']:
                 values = [p[metric] for p in performance_history if metric in
@@ -339,13 +329,38 @@ class NewsDecayModeler:
                         trend < 0 else 'degrading', 'trend_slope': trend,
                         'latest_value': values[-1], 'average_value': np.
                         mean(values)}
+            
             return {'period_days': days, 'performance_history':
                 performance_history, 'performance_trends':
                 performance_trends, 'model_stability': self.
                 _calculate_model_stability(performance_history)}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.exception(f'Error getting model performance summary: {e}')
+        except Exception as e:
+            self.logger.exception(f"Error getting performance summary: {e}")
             return {'error': str(e)}
+
+    def _process_model_file(self, file_path: Path) -> dict[str, Any] | None:
+        """Parses a single decay model file."""
+        try:
+            with open(file_path) as f:
+                data = json.load(f)
+            
+            best_model = data.get('best_overall_model')
+            if not best_model:
+                return None
+            
+            perf = best_model.get('performance', {})
+            file_time = datetime.fromtimestamp(file_path.stat().st_mtime)
+            
+            return {
+                'timestamp': file_time,
+                'model_name': best_model.get('function_name'),
+                'mse': perf.get('mse'),
+                'mae': perf.get('mae'),
+                'r2': perf.get('r2')
+            }
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.exception(f'Error loading model file {file_path}: {e}')
+            return None
 
     def _calculate_model_stability(self, performance_history: list[dict[str,
         Any]]) ->dict[str, float]:

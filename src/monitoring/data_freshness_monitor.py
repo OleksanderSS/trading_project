@@ -458,42 +458,42 @@ class DataFreshnessMonitor:
             'overall_availability': 0
         }
 
-        # Calculate metrics per source
-        all_sources = set()
-        fresh_counts = {}
+        fresh_counts = self._aggregate_fresh_counts(history, source_name)
+        self._calculate_availability_metrics(metrics, fresh_counts)
 
+        return metrics
+
+    def _aggregate_fresh_counts(self, history: list[dict[str, Any]], source_name: str | None) -> dict[str, dict[str, int]]:
+        """Aggregate fresh counts by source."""
+        fresh_counts = {}
         for entry in history:
             for src_name, src_result in entry['sources'].items():
                 if source_name is None or src_name == source_name:
-                    all_sources.add(src_name)
-
                     if src_name not in fresh_counts:
                         fresh_counts[src_name] = {'fresh': 0, 'total': 0}
-
                     fresh_counts[src_name]['total'] += 1
                     if src_result['status'] == 'fresh':
                         fresh_counts[src_name]['fresh'] += 1
+        return fresh_counts
 
-        # Calculate availability percentages
+    def _calculate_availability_metrics(self, metrics: dict[str, Any], fresh_counts: dict[str, dict[str, int]]) -> None:
+        """Calculate and update availability metrics."""
         total_fresh = 0
         total_checks = 0
 
-        for src in all_sources:
-            if src in fresh_counts:
-                availability = (fresh_counts[src]['fresh'] / fresh_counts[src]['total']) * 100
-                metrics['source_metrics'][src] = {
-                    'availability_pct': availability,
-                    'fresh_checks': fresh_counts[src]['fresh'],
-                    'total_checks': fresh_counts[src]['total']
-                }
-
-                total_fresh += fresh_counts[src]['fresh']
-                total_checks += fresh_counts[src]['total']
+        for src, counts in fresh_counts.items():
+            availability = (counts['fresh'] / counts['total']) * 100
+            metrics['source_metrics'][src] = {
+                'availability_pct': availability,
+                'fresh_checks': counts['fresh'],
+                'total_checks': counts['total']
+            }
+            total_fresh += counts['fresh']
+            total_checks += counts['total']
 
         if total_checks > 0:
             metrics['overall_availability'] = (total_fresh / total_checks) * 100
 
-        return metrics
 
     async def start_monitoring(self,
                             check_interval_minutes: int = 15) -> None:

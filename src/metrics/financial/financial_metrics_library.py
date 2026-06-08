@@ -137,7 +137,7 @@ class FinancialMetricsLibrary:
                 "is_spurious": abs(correlation) > 0.7 and min_p >= 0.05,
             }
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Виникла помилка: {e}", exc_info=True)
+            logger.exception(f"Виникла помилка: {e}")
             return {"error": str(e)}
 
     @staticmethod

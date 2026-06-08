@@ -59,8 +59,7 @@ class BigQueryClient(BaseIntegration):
                     )
                 self.use_simulator = True
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Failed to initialize BigQuery client: {e}',
-                    exc_info=True)
+                logger.exception(f'Failed to initialize BigQuery client: {e}')
                 self.use_simulator = True
 
     @property
@@ -81,7 +80,7 @@ class BigQueryClient(BaseIntegration):
             logger.info('BigQuery ping successful.')
             return True
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'BigQuery ping failed: {e}', exc_info=True)
+            logger.exception(f'BigQuery ping failed: {e}')
             return False
 
     def execute_query(self, query: str, use_cache: bool=True) ->pd.DataFrame:
@@ -106,7 +105,7 @@ class BigQueryClient(BaseIntegration):
                 f'Query executed successfully. Returned {len(df)} rows.')
             return df
         except (GenericGBQException, DefaultCredentialsError) as e:
-            logger.error(f'Error executing BigQuery query: {e}', exc_info=True)
+            logger.exception(f'Error executing BigQuery query: {e}')
             return pd.DataFrame()
 
     def validate_query(self, query: str) ->dict[str, Any]:

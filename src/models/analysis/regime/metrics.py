@@ -29,7 +29,7 @@ class RegimeMetrics:
                     total_weight += abs(weight)
             return score / total_weight if total_weight > 0 else 0.0
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error calculating performance score: {e}", exc_info=True)
+            logger.exception(f"Error calculating performance score: {e}")
             raise DataProcessingError(f"Performance score calculation failed: {e}") from e
 
     @staticmethod

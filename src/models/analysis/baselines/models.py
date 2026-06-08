@@ -76,5 +76,5 @@ class SimpleRandomForestBaseline(BaseBaseline):
                 'feature_count': len(X.columns), 'feature_importance': dict(
                 zip(X.columns, model.feature_importances_, strict=False))}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error in SimpleRandomForestBaseline: {e}", exc_info=True)
+            logger.exception(f"Error in SimpleRandomForestBaseline: {e}")
             raise DataProcessingError(f"SimpleRandomForestBaseline training failed: {e}") from e

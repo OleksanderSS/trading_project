@@ -74,8 +74,7 @@ class KeywordEntityEnricher(BaseEnricher):
         try:
             return self._process_enrichment(df, news_df, text_col, time_col)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Error during keyword/entity enrichment: {e}',
-                exc_info=True)
+            logger.exception(f'Error during keyword/entity enrichment: {e}')
             return df
 
     def _validate_input(self, df: pd.DataFrame) ->bool:

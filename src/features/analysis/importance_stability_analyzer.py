@@ -64,29 +64,13 @@ class ImportanceStabilityAnalyzer:
 
             feature_importances: dict[str, list[float]] = {}
             for record in regime_importance:
-                for feature_name, importance in record['importance'].items():
+                for feature_name, importance in record.items():
                     if feature_name not in feature_importances:
                         feature_importances[feature_name] = []
                     feature_importances[feature_name].append(importance)
 
             for feature_name, importance_values in feature_importances.items():
-                if len(importance_values) >= 2:
-                    importance_variance = np.var(importance_values)
-                    importance_mean = np.mean(importance_values)
-                    cv = (np.std(importance_values) / importance_mean
-                          if importance_mean > 0 else float('inf'))
-
-                    stability_analysis['importance_variance'][feature_name] = {
-                        'variance': importance_variance,
-                        'mean': importance_mean,
-                        'cv': cv,
-                        'values': importance_values
-                    }
-
-                    if cv <= self.stability_threshold:
-                        stability_analysis['stable_features'].append(feature_name)
-                    else:
-                        stability_analysis['unstable_features'].append(feature_name)
+                self._process_feature_stability(feature_name, importance_values, stability_analysis)
 
             total_features = (len(stability_analysis.get('stable_features', [])) +
                             len(stability_analysis.get('unstable_features', [])))
@@ -104,6 +88,31 @@ class ImportanceStabilityAnalyzer:
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error analyzing importance stability: {e}', exc_info=True)
             return stability_analysis
+
+    def _process_feature_stability(self,
+                                   feature_name: str,
+                                   importance_values: list[float],
+                                   stability_analysis: dict[str, Any]) -> None:
+        """Process stability metrics for a single feature."""
+        if len(importance_values) < 2:
+            return
+
+        importance_variance = np.var(importance_values)
+        importance_mean = np.mean(importance_values)
+        cv = (np.std(importance_values) / importance_mean
+                if importance_mean > 0 else float('inf'))
+
+        stability_analysis['importance_variance'][feature_name] = {
+            'variance': importance_variance,
+            'mean': importance_mean,
+            'cv': cv,
+            'values': importance_values
+        }
+
+        if cv <= self.stability_threshold:
+            stability_analysis['stable_features'].append(feature_name)
+        else:
+            stability_analysis['unstable_features'].append(feature_name)
 
     def detect_regime_switch(self,
                            importance_history: list[dict[str, Any]],
@@ -129,32 +138,40 @@ class ImportanceStabilityAnalyzer:
 
             previous_regime = recent_records[-2]['regime']
 
-            if previous_regime != current_regime:
-                switch_detection['switch_detected'] = True
-                switch_detection['previous_regime'] = previous_regime
-                switch_detection['switch_confidence'] = 0.8
-                switch_detection['switch_reason'] = (
-                    f'Regime changed from {previous_regime} to {current_regime}'
-                )
+            if previous_regime == current_regime:
+                return switch_detection
 
-                last_switch_time = None
-                for switch_point in reversed(regime_switch_points):
-                    if switch_point['timestamp'] < current_time:
-                        last_switch_time = switch_point['timestamp']
-                        break
+            switch_detection['switch_detected'] = True
+            switch_detection['previous_regime'] = previous_regime
+            switch_detection['switch_confidence'] = 0.8
+            switch_detection['switch_reason'] = (
+                f'Regime changed from {previous_regime} to {current_regime}'
+            )
 
-                if last_switch_time:
-                    time_since_last = current_time - last_switch_time
-                    switch_detection['time_since_last_switch'] = time_since_last.total_seconds() / 3600
+            switch_detection['time_since_last_switch'] = self._get_time_since_last_switch(
+                current_time, regime_switch_points
+            )
 
-                self.logger.info(
-                    f'🔄 Regime switch detected: {previous_regime} -> {current_regime}'
-                )
+            self.logger.info(
+                f'🔄 Regime switch detected: {previous_regime} -> {current_regime}'
+            )
 
             return switch_detection
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Error detecting regime switch: {e}', exc_info=True)
             return switch_detection
+
+    def _get_time_since_last_switch(self, current_time: datetime, regime_switch_points: list[dict[str, Any]]) -> float | None:
+        """Calculate time in hours since last switch."""
+        last_switch_time = None
+        for switch_point in reversed(regime_switch_points):
+            if switch_point['timestamp'] < current_time:
+                last_switch_time = switch_point['timestamp']
+                break
+
+        if last_switch_time:
+            return (current_time - last_switch_time).total_seconds() / 3600
+        return None
 
     def _calculate_feature_change(self, feature_name: str, current_imp: float, last_imp: float) -> dict[str, Any]:
         """Calculate change metrics for a single feature."""

@@ -32,7 +32,7 @@ class CollectionManager:
                     raw_data[table_name] = df
                     logger.info(f'✅ Collected {len(df)} rows from {collector.__class__.__name__}')
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'❌ Collector {collector.__class__.__name__} failed: {e}', exc_info=True)
+                logger.exception(f'❌ Collector {collector.__class__.__name__} failed: {e}')
                 # Re-raising or handling depends on whether we want to fail the whole stage or just skip
                 # Given current requirement to fix "silent" errors, we should at least log properly or raise if critical.
                 # For now, let's keep it skipping but with better diagnostic log.

@@ -132,7 +132,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
                 )
             return converted
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Failed to get Arena leaderboard: {e}')
+            logger.exception(f'Failed to get Arena leaderboard: {e}')
             raise RuntimeError("Failed to get Arena leaderboard") from e
 
     def select_best_model_adaptive(self, context_fingerprint: str, features:
@@ -292,7 +292,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
             with open(self.leaderboard_path, 'w') as f:
                 json.dump(self.arena_leaderboard, f, indent=2)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Failed to save leaderboard: {e}')
+            logger.exception(f'Failed to save leaderboard: {e}')
 
     def get_leaderboard_summary(self) ->dict[str, Any]:
         """

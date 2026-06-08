@@ -191,31 +191,7 @@ class RegimeImportanceTracker:
             regime_records = [record for record in recent_records
                            if record['regime'] == regime]
             if regime_records:
-                all_features = set()
-                feature_importances: dict[str, list[float]] = {}
-                for record in regime_records:
-                    for feature_name, importance in record['importance'].items():
-                        all_features.add(feature_name)
-                        if feature_name not in feature_importances:
-                            feature_importances[feature_name] = []
-                        feature_importances[feature_name].append(importance)
-
-                regime_stats = {}
-                for feature_name in all_features:
-                    values = feature_importances[feature_name]
-                    regime_stats[feature_name] = {
-                        'mean': np.mean(values),
-                        'std': np.std(values),
-                        'min': np.min(values),
-                        'max': np.max(values),
-                        'count': len(values)
-                    }
-
-                regime_analysis[regime] = {
-                    'record_count': len(regime_records),
-                    'feature_count': len(all_features),
-                    'feature_importance': regime_stats
-                }
+                regime_analysis[regime] = self._calculate_regime_stats(regime_records)
 
         regime_transitions = []
         for i in range(1, len(recent_records)):
@@ -236,6 +212,34 @@ class RegimeImportanceTracker:
         }
 
         return summary
+
+    def _calculate_regime_stats(self, regime_records: list[dict[str, Any]]) -> dict[str, Any]:
+        """Calculate statistics for features in a regime."""
+        all_features = set()
+        feature_importances: dict[str, list[float]] = {}
+        for record in regime_records:
+            for feature_name, importance in record['importance'].items():
+                all_features.add(feature_name)
+                if feature_name not in feature_importances:
+                    feature_importances[feature_name] = []
+                feature_importances[feature_name].append(importance)
+
+        regime_stats = {}
+        for feature_name in all_features:
+            values = feature_importances[feature_name]
+            regime_stats[feature_name] = {
+                'mean': np.mean(values),
+                'std': np.std(values),
+                'min': np.min(values),
+                'max': np.max(values),
+                'count': len(values)
+            }
+        
+        return {
+            'record_count': len(regime_records),
+            'feature_count': len(all_features),
+            'feature_importance': regime_stats
+        }
 
     def _get_most_common_regime(self, records: list[dict[str, Any]]) -> str:
         """Get the most common regime in the period."""

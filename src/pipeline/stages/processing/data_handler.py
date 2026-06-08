@@ -71,7 +71,18 @@ class ProcessingDataHandler:
         filtered_data = filter_result.get('filtered_data', filter_result)
         result: dict[str, Any] = {}
 
-        prices = filtered_data.get('prices') if isinstance(filtered_data, dict) else None
+        if isinstance(filtered_data, dict):
+            self._extract_prices(filtered_data, result)
+            for key, value in filtered_data.items():
+                if key != 'prices':
+                    result[key] = value
+
+        self._extract_metadata(filter_result, result)
+        return result
+
+    def _extract_prices(self, filtered_data: dict[str, Any], result: dict[str, Any]) -> None:
+        """Extract prices from filtered data."""
+        prices = filtered_data.get('prices')
         if isinstance(prices, dict):
             result['prices'] = {}
             for timeframe, payload in prices.items():
@@ -79,17 +90,11 @@ class ProcessingDataHandler:
                 if isinstance(data, pd.DataFrame):
                     result['prices'][timeframe] = data
 
-        if isinstance(filtered_data, dict):
-            for key, value in filtered_data.items():
-                if key == 'prices':
-                    continue
-                result[key] = value
-
+    def _extract_metadata(self, filter_result: dict[str, Any], result: dict[str, Any]) -> None:
+        """Extract quality metadata."""
         for meta_key in ('quality_report', 'patterns', 'filtering_summary'):
             if meta_key in filter_result:
                 result[meta_key] = filter_result[meta_key]
-
-        return result
 
     def _collect_dataframes(self, data: Any) -> list[pd.DataFrame]:
         """Collect all DataFrame leaves from nested dictionaries."""

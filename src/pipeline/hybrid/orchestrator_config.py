@@ -34,7 +34,7 @@ class PipelineConfig:
     system_config: dict
     gdrive_enabled: bool
     gdrive_folder_id: str | None = None
-    gdrive_service = None
+    gdrive_service: Any = None
     storage_fallback: dict | None = None
     use_s3: bool = False
     use_gcs: bool = False

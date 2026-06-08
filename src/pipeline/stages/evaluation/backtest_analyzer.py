@@ -88,64 +88,46 @@ class BacktestAnalyzer:
             return pd.DataFrame(), pd.DataFrame()
 
     def create_simulation_data(self, signals_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """
-        Create simulation data for backtesting when real data is insufficient.
-
-        Args:
-            signals_df: DataFrame with signals
-
-        Returns:
-            Tuple of (price_df, signal_df)
-        """
+        """Create simulation data for backtesting."""
         try:
             self.logger.info('Creating simulation data for backtest...')
-
-            if 'ticker' in signals_df.columns:
-                tickers = signals_df['ticker'].unique()
-            else:
-                tickers = ['SPY', 'QQQ', 'AAPL']
-
+            tickers = signals_df['ticker'].unique() if 'ticker' in signals_df.columns else ['SPY', 'QQQ', 'AAPL']
             end_date = datetime.now()
             dates = pd.date_range(end=end_date, periods=30, freq='D')
 
             price_data = {}
             signal_data = {}
-
             for ticker in tickers:
-                base_price = 100.0 + np.random.uniform(-50, 200)
-                returns = np.random.normal(0.001, 0.02, len(dates))
-                prices = [base_price]
-                for ret in returns:
-                    prices.append(prices[-1] * (1 + ret))
-                prices = prices[1:]
+                prices, signals = self._generate_ticker_data(dates)
                 price_data[ticker] = prices
-
-                signals = []
-                for i, price in enumerate(prices):
-                    if i == 0:
-                        signals.append(0)
-                    else:
-                        price_change = (price - prices[i - 1]) / prices[i - 1]
-                        if price_change > 0.02:
-                            signals.append(1)
-                        elif price_change < -0.02:
-                            signals.append(-1)
-                        else:
-                            signals.append(0)
                 signal_data[ticker] = signals
 
             price_df = pd.DataFrame(price_data, index=dates)
             signal_df = pd.DataFrame(signal_data, index=dates)
-
             self.logger.info(f'Created simulation data: {price_df.shape[0]} days, {len(tickers)} tickers')
             return price_df, signal_df
-
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to create simulation data: {e}")
             dates = pd.date_range(end=datetime.now(), periods=2, freq='D')
-            price_df = pd.DataFrame({'SPY': [100.0, 101.0]}, index=dates)
-            signal_df = pd.DataFrame({'SPY': [0, 1]}, index=dates)
-            return price_df, signal_df
+            return pd.DataFrame({'SPY': [100.0, 101.0]}, index=dates), pd.DataFrame({'SPY': [0, 1]}, index=dates)
+
+    def _generate_ticker_data(self, dates: pd.DatetimeIndex) -> tuple[list[float], list[int]]:
+        """Generate prices and signals for one ticker."""
+        base_price = 100.0 + np.random.uniform(-50, 200)
+        returns = np.random.normal(0.001, 0.02, len(dates))
+        prices = [base_price]
+        for ret in returns:
+            prices.append(prices[-1] * (1 + ret))
+        prices = prices[1:]
+
+        signals = []
+        for i, price in enumerate(prices):
+            if i == 0:
+                signals.append(0)
+            else:
+                price_change = (price - prices[i - 1]) / prices[i - 1]
+                signals.append(1 if price_change > 0.02 else (-1 if price_change < -0.02 else 0))
+        return prices, signals
 
     def _validate_signals_df(self, signals_df: pd.DataFrame) -> bool:
         """Validate signals DataFrame for backtest."""

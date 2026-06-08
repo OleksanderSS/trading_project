@@ -123,8 +123,7 @@ class FeatureOrchestrator:
                     )
             return instance
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Failed to instantiate enricher {name}: {e}',
-                exc_info=True)
+            logger.exception(f'Failed to instantiate enricher {name}: {e}')
             raise RuntimeError(f"Failed to instantiate enabled enricher {name}") from e
 
     @staticmethod
@@ -398,3 +397,4 @@ class FeatureOrchestrator:
             logger.error(f'Dynamic context feature selection failed: {e}',
                 exc_info=True)
         return df
+      return df

@@ -102,7 +102,7 @@ class VirtualPortfolio:
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'Portfolio saved to {self.portfolio_file}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.exception(f'Виникла помилка: {e}')
             error_handler.handle_error(e, 'Saving Virtual Portfolio')
             raise
 

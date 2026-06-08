@@ -25,7 +25,7 @@ class FeatureEngineeringNewsManager:
             news_clustered = cluster_news_simple(news_df, similarity_threshold=0.85, text_column="title")
             logger.info(f"✅ Clustered {len(news_df)} → {len(news_clustered)} news")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"News clustering failed: {e}. Falling back to unclustered news.", exc_info=True)
+            logger.exception(f"News clustering failed: {e}. Falling back to unclustered news.")
             news_clustered = news_df
 
         news_features_df = self.news_builder.build_dataset(

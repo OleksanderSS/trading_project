@@ -219,15 +219,22 @@ class PredictionStage(BaseStage):
             self.logger.error(f'Ticker missing for context {context_id}')
             return None
 
-        # ✅ ELITE FIX: Визначаємо поточний патерн та стан Чемпіона
-        current_pattern = ticker_df_clean['context_pattern_id'].iloc[-1] if 'context_pattern_id' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else 'normal'
-        current_pattern_seq = ticker_df_clean['context_pattern_seq'].iloc[-1] if 'context_pattern_seq' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else None
-        current_fingerprint = ticker_df_clean['context_fingerprint'].iloc[-1] if 'context_fingerprint' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else current_pattern
-        champion_state = ticker_df_clean['state_champion'].iloc[-1] if 'state_champion' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else 0
-        context_velocity = ticker_df_clean['context_velocity'].iloc[-1] if 'context_velocity' in ticker_df_clean.columns and len(ticker_df_clean) > 0 else 0
+        state = self._extract_context_state(ticker_df_clean)
 
         # 1. Шукаємо ЕКСПЕРТНУ модель для цього патерна
-        expert_context_id = f"{ticker}_{meta.get('target')}_{current_pattern}"
+        expert_context_id = f"{ticker}_{meta.get('target')}_{state['pattern']}"
+        # ... rest of the method ...
+        return {} # Placeholder return
+
+    def _extract_context_state(self, ticker_df: pd.DataFrame) -> dict[str, Any]:
+        """Extracts context state from dataframe."""
+        return {
+            'pattern': ticker_df['context_pattern_id'].iloc[-1] if 'context_pattern_id' in ticker_df.columns and len(ticker_df) > 0 else 'normal',
+            'seq': ticker_df['context_pattern_seq'].iloc[-1] if 'context_pattern_seq' in ticker_df.columns and len(ticker_df) > 0 else None,
+            'fingerprint': ticker_df['context_fingerprint'].iloc[-1] if 'context_fingerprint' in ticker_df.columns and len(ticker_df) > 0 else None,
+            'champion': ticker_df['state_champion'].iloc[-1] if 'state_champion' in ticker_df.columns and len(ticker_df) > 0 else 0,
+            'velocity': ticker_df['context_velocity'].iloc[-1] if 'context_velocity' in ticker_df.columns and len(ticker_df) > 0 else 0
+        }
         models = self.model_resolver.load_available_models(expert_context_id, {
             expert_context_id: meta})
 

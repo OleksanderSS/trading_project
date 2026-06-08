@@ -37,7 +37,7 @@ class RegimePatternAnalyzer:
                     model_consistency[model_name] = float(consistency_score)
             return model_consistency
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error calculating model consistency: {e}", exc_info=True)
+            logger.exception(f"Error calculating model consistency: {e}")
             raise DataProcessingError(f"Model consistency calculation failed: {e}") from e
 
     def analyze_winner_patterns(self, regime_winners: dict[str, Any],
@@ -109,5 +109,5 @@ class RegimePatternAnalyzer:
                     )
             return insights
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error generating regime insights: {e}", exc_info=True)
+            logger.exception(f"Error generating regime insights: {e}")
             raise DataProcessingError(f"Regime insights generation failed: {e}") from e

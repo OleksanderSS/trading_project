@@ -23,7 +23,7 @@ async def load_stage6_results(batch_dir: Path) -> tuple[list[dict[str, Any]], li
             portfolio_summary = data.get("portfolio_summary", {})
             return signals, trading_activity, portfolio_summary
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"Error loading stage 6 results from {stage_6_file}: {e}", exc_info=True)
+        logger.exception(f"Error loading stage 6 results from {stage_6_file}: {e}")
         raise
 
 

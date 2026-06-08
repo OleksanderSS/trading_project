@@ -170,8 +170,7 @@ class TargetOrchestrator:
             self._handle_standard_target(df, name, target_type, params,
                 targets_dict)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Failed to generate target '{name}'. Error: {e}",
-                exc_info=True)
+            logger.exception(f"Failed to generate target '{name}'. Error: {e}")
 
     def _handle_standard_target(self, df: pd.DataFrame, name: str,
         target_type: str, params: dict, targets_dict: dict) ->None:

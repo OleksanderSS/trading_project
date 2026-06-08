@@ -88,8 +88,7 @@ class MLAnalytics:
             logger.info('Monitoring ML training session completed.')
             return results
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Training of monitoring models failed: {e}',
-                exc_info=True)
+            logger.exception(f'Training of monitoring models failed: {e}')
             return {'status': 'failed', 'error': str(e)}
 
     def predict_system_issues(self) ->dict[str, Any]:
@@ -230,7 +229,7 @@ class MLAnalytics:
             if hasattr(self.results_manager, 'load_all_results'):
                 return self.results_manager.load_all_results()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.exception(f'Виникла помилка при завантаженні історичних даних: {e}')
             logger.warning(f'Could not load historical monitoring data: {e}')
             raise
         return []
@@ -281,8 +280,7 @@ class MLAnalytics:
             return {'status': 'trained', 'accuracy': float(accuracy),
                 'model_path': str(model_path)}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Training failed for {problem_type} predictor: {e}',
-                exc_info=True)
+            logger.exception(f'Training failed for {problem_type} predictor: {e}')
             return {'status': 'failed', 'error': str(e)}
 
     def _chronological_split(
@@ -308,6 +306,5 @@ class MLAnalytics:
             self.models['anomaly_detector'] = model
             return {'status': 'trained', 'model_path': str(model_path)}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Anomaly detector training failed: {e}', exc_info
-                =True)
+            logger.exception(f'Anomaly detector training failed: {e}')
             return {'status': 'failed', 'error': str(e)}

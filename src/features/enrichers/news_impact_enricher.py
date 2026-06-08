@@ -119,7 +119,7 @@ class NewsImpactEnricher(BaseEnricher):
             return self._run_analyzer_and_merge(df_enriched, news_prepared, time_col, "event-centric")
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"❌ Error during event-centric news impact enrichment: {e}", exc_info=True)
+            logger.exception(f"❌ Error during event-centric news impact enrichment: {e}")
             return self._add_zero_scores(df)
 
     def _find_text_column(self, df: pd.DataFrame) -> str | None:
@@ -283,7 +283,7 @@ class NewsImpactEnricher(BaseEnricher):
             return self._run_analyzer_and_merge_traditional(df, news_prepared)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error during news impact enrichment: {e}", exc_info=True)
+            logger.exception(f"Error during news impact enrichment: {e}")
             return df
 
     def _find_news_text_column(self, news_df: pd.DataFrame) -> str | None:
@@ -325,7 +325,7 @@ class NewsImpactEnricher(BaseEnricher):
             return news_prepared
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error preparing traditional news data: {e}", exc_info=True)
+            logger.exception(f"Error preparing traditional news data: {e}")
             raise RuntimeError("Failed to prepare traditional news data") from e
 
     def _run_analyzer_and_merge_traditional(self, df: pd.DataFrame, news_prepared: pd.DataFrame) -> pd.DataFrame:

@@ -100,8 +100,7 @@ class ColabFeatureSelector:
                 return [ticker_features.columns[i] for i in
                     selected_indices[:max_features]]
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Виникла помилка: {e}', exc_info=True)
-            print(f'Помилка при виборі ознак для {ticker}: {e}')
+            logger.exception(f'Помилка при виборі ознак для {ticker}: {e}')
             raise
         return list(ticker_features.columns[:max_features])
 

@@ -250,5 +250,5 @@ def analyze_market_conditions(market_data: pd.DataFrame) -> dict[str, Any]:
         }
 
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"Error analyzing market conditions: {e}", exc_info=True)
+        logger.exception(f"Error analyzing market conditions: {e}")
         raise RuntimeError("Failed to analyze market conditions") from e

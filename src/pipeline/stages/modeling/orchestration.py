@@ -57,14 +57,13 @@ async def create_ensemble_from_top_models_async(stage, training_results:
             f"   Weights: {[f'{w:.3f}' for w in ensemble_config['weights']]}")
         ensemble_path = (stage.models_dir /
             f'ensemble_{ticker}_{target_name}.json')
-        with open(ensemble_path, 'w') as f:
-            json.dump(ensemble_config, f, indent=2)
+        async with aiofiles.open(ensemble_path, 'w') as f:
+            await f.write(json.dumps(ensemble_config, indent=2))
         logger.info(f'   Saved to: {ensemble_path}')
         return ensemble_config
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(
-            f'Failed to create ensemble for {ticker}_{target_name}: {e}',
-            exc_info=True)
+        logger.exception(
+            f'Failed to create ensemble for {ticker}_{target_name}: {e}')
         raise RuntimeError(
             f"Failed to create ensemble for {ticker}_{target_name}"
         ) from e
@@ -82,7 +81,7 @@ async def process_ticker(stage, ticker: str, df, champions: dict[str, Any]
                 champions)
             await process_target(stage, config)
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f'Виникла помилка: {e}', exc_info=True)
+        logger.exception(f'Виникла помилка: {e}')
         stage.handle_stage_error(e, context=f'Modeling-{ticker}', severity=
             'error')
         raise
@@ -154,3 +153,4 @@ async def process_successful_training(stage, config: SuccessfulTrainingConfig
     stage._log_to_diary(champion_info, config.timeframe)
     for light_info in light_models_trained.values():
         stage._log_to_diary(light_info, config.timeframe)
+ig.timeframe)

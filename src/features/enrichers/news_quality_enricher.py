@@ -65,7 +65,7 @@ class NewsQualityEnricher(BaseEnricher):
             return self._merge_with_main_dataframe(df, aggregated, news_timestamps)
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error during news quality enrichment: {e}", exc_info=True)
+            logger.exception(f"Error during news quality enrichment: {e}")
             return df
 
     def _find_time_column(self, news_df: pd.DataFrame) -> str | None:

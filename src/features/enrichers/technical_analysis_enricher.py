@@ -246,8 +246,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.exception(f'Error adding Fama-French features: {e}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Error adding advanced calculator features: {e}',
-                exc_info=True)
+            logger.exception(f'Error adding advanced calculator features: {e}')
 
     def _add_volatility_features(self, df_enriched: pd.DataFrame, returns: pd.Series = None):
         """Add volatility features."""
@@ -342,7 +341,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
 
                 logger.info('Added rolling risk-reward features')
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+                self.logger.exception(f'Виникла помилка: {e}')
                 logger.warning(f'Could not add risk-reward features: {e}')
                 raise
 
@@ -388,7 +387,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                     ] = market_return - market_return.rolling(252, min_periods=1).mean()
                 logger.info('Added Fama-French factors')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            self.logger.exception(f'Виникла помилка: {e}')
             logger.warning(f'Could not add Fama-French factors: {e}')
             raise
 
@@ -409,3 +408,4 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             return float(poly[0] * 2.0)
         except Exception:
             return 0.5
+     return 0.5

@@ -36,7 +36,7 @@ def plot_equity_curve(portfolio_history, financial_metrics=None) -> Path:
             plt.savefig(p)
             plt.close()
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"Failed to plot equity curve: {e}", exc_info=True)
+        logger.exception(f"Failed to plot equity curve: {e}")
         raise
     return p
 

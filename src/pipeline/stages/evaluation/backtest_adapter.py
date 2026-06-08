@@ -43,7 +43,7 @@ def prepare_pivot(signals_df: pd.DataFrame):
 
         return price_pivot, signal_pivot
     except Exception as e:
-        logger.error(f"Error in prepare_pivot: {e}", exc_info=True)
+        logger.exception(f"Error in prepare_pivot: {e}")
         return pd.DataFrame(), pd.DataFrame()
 
 
@@ -76,5 +76,5 @@ async def run_backtest(backtester, signals_df) -> dict[str, Any]:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, partial(method, price_pivot, signal_pivot))
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f"Backtest execution failed: {e}", exc_info=True)
+        logger.exception(f"Backtest execution failed: {e}")
         return {}

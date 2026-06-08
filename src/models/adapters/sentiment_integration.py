@@ -251,7 +251,7 @@ class SentimentModelIntegrator:
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"[SENTIMENT] Помилка генерації сигналу: {e}", exc_info=True)
+            logger.exception(f"[SENTIMENT] Помилка генерації сигналу: {e}")
             raise DataProcessingError(f"[SENTIMENT] Помилка генерації сигналу: {e}") from e
 
 # Глобальний інтегратор

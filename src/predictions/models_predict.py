@@ -142,7 +142,7 @@ def predict_sentiment_models(news_data: pd.DataFrame, price_data: pd.DataFrame
             )
         return signal_result
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f'[SENTIMENT] Prediction error: {e}', exc_info=True)
+        logger.exception(f'[SENTIMENT] Prediction error: {e}')
         raise DataProcessingError(f'[SENTIMENT] Prediction error: {e}') from e
 
 

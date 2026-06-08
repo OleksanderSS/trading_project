@@ -89,7 +89,7 @@ class MarketContextEnricher(BaseEnricher):
                 logger.warning("⚠️ MarketContextAnalyzer returned None")
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"❌ Failed to calculate market context: {e}", exc_info=True)
+            logger.exception(f"❌ Failed to calculate market context: {e}")
 
         return result_df
 

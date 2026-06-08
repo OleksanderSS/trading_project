@@ -138,7 +138,7 @@ def save_light_models_results(stage, ticker: str, target_name: str, light_models
             json.dump(existing, f, indent=2, default=str)
         logger.info(f'✅ Saved light model results for {ticker}/{target_name} ({len(target_data)} models) -> {results_file.name}')
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f'❌ Failed to save light_models_results.json: {e}', exc_info=True)
+        logger.exception(f'❌ Failed to save light_models_results.json: {e}')
 
 
 def resolve_selected_features_batch_dir(stage) -> Path:

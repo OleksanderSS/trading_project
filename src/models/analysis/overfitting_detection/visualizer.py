@@ -37,7 +37,7 @@ class OverfittingVisualizer:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error plotting learning curve: {e}", exc_info=True)
+            logger.exception(f"Error plotting learning curve: {e}")
 
     def plot_cv_distribution(self, cv_results: dict[str, Any], save_path: Path) -> None:
         """Plot cross-validation score distribution."""
@@ -53,4 +53,4 @@ class OverfittingVisualizer:
             plt.savefig(save_path, dpi=300, bbox_inches='tight')
             plt.close()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error plotting CV distribution: {e}", exc_info=True)
+            logger.exception(f"Error plotting CV distribution: {e}")

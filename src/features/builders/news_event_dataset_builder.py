@@ -79,7 +79,7 @@ class NewsEventDatasetBuilder:
                 if (idx + 1) % 100 == 0:
                     logger.info(f"Processed {idx + 1}/{len(news_df)} news. Valid: {self.filter.stats['valid_records']}")
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f"Error processing news index {idx}: {e}", exc_info=True)
+                logger.exception(f"Error processing news index {idx}: {e}")
                 raise RuntimeError(f"Error processing news index {idx}") from e
         return records
 

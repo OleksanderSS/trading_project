@@ -6,6 +6,7 @@ class VaRCalculator:
         pass
 
     def calculate(self, data):
+        # TODO: Implement VaR calculation logic. Currently returning 0.0.
         return 0.0
 
     def calculate_var_historical(self, returns, confidence=0.95, time_horizon=1):

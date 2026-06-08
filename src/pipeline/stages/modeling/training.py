@@ -57,7 +57,7 @@ def train_light_models_locally(
                 light_models[context_key] = model_result
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"❌ Failed to train {model_type}: {e}", exc_info=True)
+            logger.exception(f"❌ Failed to train {model_type}: {e}")
             continue
 
     return light_models

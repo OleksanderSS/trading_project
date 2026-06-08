@@ -14,7 +14,7 @@ def _get_news_fields():
         config = get_current_config().get_config('enrichment')
         return config.get('news_fields', {})
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-        logger.error(f'Виникла помилка: {e}', exc_info=True)
+        logger.exception(f'Виникла помилка: {e}')
         logger.warning(
             f'[news_harmonizer] Failed to load news fields config: {e}')
         raise RuntimeError("Failed to load news fields configuration") from e

@@ -160,7 +160,7 @@ class FeatureDriftDetector:
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"❌ Drift detection failed: {e}", exc_info=True)
+            logger.exception(f"❌ Drift detection failed: {e}")
             return {
                 'status': 'ERROR',
                 'message': str(e),

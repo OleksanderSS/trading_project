@@ -24,7 +24,7 @@ class RegimeDetector:
                     return regime_name
             return 'normal'
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error detecting regime: {e}", exc_info=True)
+            logger.exception(f"Error detecting regime: {e}")
             raise DataProcessingError(f"Regime detection failed: {e}") from e
 
     def _calculate_volatility(self, market_data: pd.DataFrame) ->float:
@@ -40,7 +40,7 @@ class RegimeDetector:
                 return float(returns.std() * np.sqrt(252))
             return 0.0
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error calculating volatility: {e}", exc_info=True)
+            logger.exception(f"Error calculating volatility: {e}")
             raise DataProcessingError(f"Volatility calculation failed: {e}") from e
 
     def _calculate_trend(self, market_data: pd.DataFrame) ->float:
@@ -55,5 +55,5 @@ class RegimeDetector:
                     return float(normalized_trend)
             return 0.0
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"Error calculating trend: {e}", exc_info=True)
+            logger.exception(f"Error calculating trend: {e}")
             raise DataProcessingError(f"Trend calculation failed: {e}") from e

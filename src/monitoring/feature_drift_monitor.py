@@ -175,7 +175,7 @@ class FeatureDriftMonitor:
             return result
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f"❌ Error checking drift: {e}", exc_info=True)
+            logger.exception(f"❌ Error checking drift: {e}")
             raise DataProcessingError(f"Error checking drift: {e}") from e
 
     def get_drift_summary(self) -> dict[str, Any]:

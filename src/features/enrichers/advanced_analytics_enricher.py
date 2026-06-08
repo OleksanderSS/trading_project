@@ -116,8 +116,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
                 f"Added sentiment statistics: mean={stats['mean']:.3f}, std={stats['std']:.3f}"
                 )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Error calculating sentiment stats: {e}',
-                exc_info=True)
+            logger.exception(f'Error calculating sentiment stats: {e}')
 
     def _add_macro_composite_score(self, df_enriched: pd.DataFrame) ->None:
         """Add macro composite score to DataFrame."""
@@ -143,8 +142,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
                     f"Added macro composite score (range: [{df_enriched['macro_composite_score'].min():.1f}, {df_enriched['macro_composite_score'].max():.1f}])"
                     )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Error calculating macro composite score: {e}',
-                exc_info=True)
+            logger.exception(f'Error calculating macro composite score: {e}')
 
     def _add_market_phase_detection(self, df_enriched: pd.DataFrame) ->None:
         """Add market phase detection to DataFrame."""
@@ -167,7 +165,7 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
                 f"Detected market phase: {market_phase} (encoded as {df_enriched['market_phase'].iloc[0]})"
                 )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            logger.error(f'Error detecting market phase: {e}', exc_info=True)
+            logger.exception(f'Error detecting market phase: {e}')
 
     def _get_phase_mapping(self) ->dict[str, int]:
         """Get market phase mapping to numeric values."""

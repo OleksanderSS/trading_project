@@ -109,10 +109,9 @@ class PipelineOrchestrator:
                 self.logger.info(
                     f"Stage {global_index} '{stage_info.get('name')}' loaded successfully.")
             except (ImportError, AttributeError, TypeError, ValueError) as e:
-                self.logger.error(
-                    f"Failed to load stage '{stage_info.get('name')}': {e}",
-                    exc_info=True)
-                raise
+                self.logger.exception(
+                    f"Failed to load stage '{stage_info.get('name')}': {e}")
+                raise RuntimeError(f"Failed to load stage '{stage_info.get('name')}'") from e
             global_index += 1
         return loaded_stages
 
