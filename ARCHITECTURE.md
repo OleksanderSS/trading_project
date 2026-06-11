@@ -93,3 +93,49 @@ gcloud functions deploy nlp-news-processor \
 --timeout=540s \
 --memory=2048MB
 ```
+
+---
+
+## 7. Code Audit & Recent Fixes (2026-05-08)
+
+This section documents the recent code audit, fixes applied, and structural improvements to the trading_project codebase.
+
+### 7.1 Resolved TODOs & Dead Code Removal
+| File | Issue | Fix Applied |
+|------|-------|-------------|
+| `src/training/unified_training_manager.py` | Pending TODO: `run_battle` missing `actual_targets` parameter | Updated `execute_unified_training` to pass `data_context.get('actual_targets')` to `self.arena.run_battle`, enabling automatic arena battles. |
+| `src/pipeline/stages/stage_4_modeling.py` | Dead import: `ModelEnsembleComposer` (module not found) | Removed dead import/comments, retained `EnsembleModel` integration. Ensemble creation now uses existing `EnsembleModel` class with top-N model selection by `r2_score`. |
+| `src/core/security/secure_secrets_manager.py` | Pending TODO: `mask_secret` implementation | Confirmed `mask_secret` is fully implemented and functional (masks secrets as `XXXX...XXXX`). |
+| `src/trading/adaptive_parameter_manager.py` & `src/processing/data_filter.py` | Dead constants: `MarketRegime.DEAD`, `MarketRegime.VOLATILE` | Removed unused enum values and associated preset configurations to reduce clutter. |
+
+### 7.2 Consolidated Deduplication Logic
+Created a new utility module `src/processing/deduplication_utils.py` with a reusable function:
+```python
+def deduplicate_dataframe(df: pd.DataFrame, subset_cols: List[str]) -> tuple[pd.DataFrame, int]:
+    """Drop duplicates on given columns, return cleaned DF + count of removed rows."""
+    if not subset_cols:
+        return df, 0
+    duplicates = int(df.duplicated(subset=subset_cols).sum())
+    if duplicates > 0:
+        df = df.drop_duplicates(subset=subset_cols)
+    return df, duplicates
+```
+This replaces duplicated deduplication logic in:
+- `src/pipeline/stages/stage_1_collection.py` (`_remove_news_duplicates`)
+- `src/pipeline/stages/stage_2_processing.py` (`_deduplicate_news_data`)
+- `src/processing/data_filter.py` (`_deduplicate_news`)
+
+### 7.3 Ensemble Creation Logic (Stage 4)
+- Removed dead `ModelEnsembleComposer` references.
+- Ensemble configuration is now generated via `_create_ensemble_from_top_models_async`:
+  1. Selects top-N models by `r2_score` (or configurable metric).
+  2. Builds `ensemble_config` dictionary with model names, metrics, equal weights.
+  3. Persists config to `models_dir/ensemble_{ticker}_{target_name}.json` for use by `TradingModelArena`.
+
+### 7.4 Next Steps & Recommendations
+| Area | Action |
+|------|--------|
+| **Testing** | Add unit tests for: <br>• `run_battle` receiving `actual_targets` correctly.<br>• Ensemble config generation/loading.<br>• `deduplicate_dataframe` correctness across stages. |
+| **Deduplication Integration** | Complete replacement of all remaining duplicate-handling logic with `deduplicate_dataframe` calls. |
+| **Performance Monitoring** | Enhance memory logging in `pipeline_orchestrator.py` to detect leaks during large DataFrame operations. |
+| **Documentation** | Maintain this audit section with future code changes. |
