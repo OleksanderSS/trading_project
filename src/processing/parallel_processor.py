@@ -1,9 +1,10 @@
 # src/core/processing/parallel_processor.py
 
-import time
 import multiprocessing as mp
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
-from typing import Dict, Any, List, Callable, Optional, Tuple
+import time
+from collections.abc import Callable
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from typing import Any
 
 import pandas as pd
 import psutil
@@ -22,7 +23,7 @@ class ParallelProcessor:
         self.timeout = timeout
         self.chunk_size = chunk_size
         self.logger = logger
-        
+
         # Initial memory check
         mem = psutil.virtual_memory()
         self.logger.debug(f"ParallelProcessor initialized. System RAM: {mem.total / (1024**3):.2f} GB ({mem.percent}% used)")
@@ -33,7 +34,7 @@ class ParallelProcessor:
             return ProcessPoolExecutor(max_workers=self.max_workers)
         return ThreadPoolExecutor(max_workers=self.max_workers)
 
-    def process_items(self, func: Callable, items: List[Any], **kwargs) -> List[Any]:
+    def process_items(self, func: Callable, items: list[Any], **kwargs) -> list[Any]:
         """
         Processes a list of items in parallel.
 
@@ -49,25 +50,27 @@ class ParallelProcessor:
             return []
 
         self.logger.info(f"Processing {len(items)} items in parallel (workers={self.max_workers}, processes={self.use_processes})")
-        results = []
+        # Pre-allocate results to guarantee exact index alignment with original input items
+        results = [None] * len(items)
         start_time = time.time()
 
         with self._get_executor() as executor:
             future_to_item = {executor.submit(func, item, **kwargs): i for i, item in enumerate(items)}
 
             for future in as_completed(future_to_item):
+                idx = future_to_item[future]
                 try:
                     result = future.result()
-                    results.append(result)
+                    results[idx] = result
                 except Exception as e:
-                    self.logger.error(f"Error processing item #{future_to_item[future]}: {e}", exc_info=True)
-                    results.append(None) # Append None to maintain order
+                    self.logger.error(f"Error processing item #{idx}: {e}", exc_info=True)
+                    results[idx] = None  # Already None, but explicitly set for visual clarity
 
         elapsed = time.time() - start_time
         self.logger.info(f"Parallel processing of {len(items)} items completed in {elapsed:.2f}s")
         return results
 
-    def process_dataframe_chunks(self, df: pd.DataFrame, func: Callable, chunk_size: Optional[int] = None, **kwargs) -> pd.DataFrame:
+    def process_dataframe_chunks(self, df: pd.DataFrame, func: Callable, chunk_size: int | None = None, **kwargs) -> pd.DataFrame:
         """
         Processes a DataFrame in parallel by splitting it into chunks.
 
@@ -87,7 +90,7 @@ class ParallelProcessor:
         # Dynamic memory check and chunk size adjustment
         mem = psutil.virtual_memory()
         effective_chunk_size = base_chunk_size
-        
+
         if mem.percent > 80:
             effective_chunk_size = max(1, base_chunk_size // 2)
             self.logger.warning(
@@ -107,14 +110,14 @@ class ParallelProcessor:
 
         self.logger.info("Concatenating chunk results.")
         final_df = pd.concat(valid_results, ignore_index=True)
-        
+
         # Optional: Sort if a date column exists to maintain order
         if 'date' in final_df.columns:
             final_df = final_df.sort_values('date').reset_index(drop=True)
-            
+
         return final_df
 
-    def process_tickers_parallel(self, func: Callable, tickers: List[str], timeframes: List[str], **kwargs) -> List[Any]:
+    def process_tickers_parallel(self, func: Callable, tickers: list[str], timeframes: list[str], **kwargs) -> list[Any]:
         """
         Processes a combination of tickers and timeframes in parallel.
         This is a specialized method useful for financial data processing.
@@ -137,13 +140,13 @@ class ParallelProcessor:
 
         # This wrapper function unpacks the tuple task before calling the user-provided function.
         # It allows us to use the generic `process_items` method for this specific task structure.
-        def task_wrapper(task_tuple: Tuple[str, str], **inner_kwargs: Any) -> Any:
+        def task_wrapper(task_tuple: tuple[str, str], **inner_kwargs: Any) -> Any:
             ticker, timeframe = task_tuple
             return func(ticker, timeframe, **inner_kwargs)
 
         return self.process_items(task_wrapper, tasks, **kwargs)
 
-    def benchmark(self, test_func: Callable, test_data: List[Any], **kwargs) -> Dict[str, Any]:
+    def benchmark(self, test_func: Callable, test_data: list[Any], **kwargs) -> dict[str, Any]:
         """
         Benchmarks sequential vs. parallel execution for a given function and data.
 
@@ -183,7 +186,7 @@ class ParallelProcessor:
         self.logger.info(f"Benchmark Results: Sequential={sequential_time:.2f}s, Parallel={parallel_time:.2f}s, Speedup={speedup:.2f}x")
         return results
 
-    def suggest_optimal_config(self, data_size: int, task_complexity: str = 'medium') -> Dict[str, Any]:
+    def suggest_optimal_config(self, data_size: int, task_complexity: str = 'medium') -> dict[str, Any]:
         """
         Suggests an optimal configuration based on data size and task complexity.
 

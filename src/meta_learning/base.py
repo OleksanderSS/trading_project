@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
+
 
 class BaseMetaComponent(ABC):
     """
@@ -13,7 +14,7 @@ class BaseMetaComponent(ABC):
         Updates the component's internal state with new data or experience.
 
         Args:
-            data: The new information (e.g., trade results, market features) 
+            data: The new information (e.g., trade results, market features)
                   to be processed by the meta-engine.
         """
         pass
@@ -26,7 +27,7 @@ class BaseMetaComponent(ABC):
         """
         pass
 
-    def get_state(self) -> Dict[str, Any]:
+    def get_state(self) -> dict[str, Any]:
         """
         Returns the current internal state of the component.
         Useful for logging, serialization, or state-based decision making.

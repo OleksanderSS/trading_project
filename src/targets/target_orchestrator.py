@@ -1,81 +1,79 @@
 
+from typing import Any, Protocol, Type
+
 import pandas as pd
-import yaml
-from typing import List, Dict, Any
+
 from src.core.logging.logger import ProjectLogger
-from src.targets.calculators.regression_calculator import RegressionCalculator
 from src.targets.calculators.classification_calculator import ClassificationCalculator
 from src.targets.calculators.indicator_prediction_calculator import IndicatorPredictionCalculator
+from src.targets.calculators.regression_calculator import RegressionCalculator
 
 logger = ProjectLogger.get_logger("TargetOrchestrator")
 
+
+class TargetCalculator(Protocol):
+    def calculate(self, df: pd.DataFrame, **kwargs) -> pd.Series:
+        ...
+
 class TargetOrchestrator:
     """
-    Orchestrates the generation of target variables based on a YAML configuration.
-    It dynamically loads and applies the required calculators.
+    Unified Orchestrator for target variable generation.
     """
-
-    CALCULATOR_MAPPING = {
+    CALCULATOR_MAPPING: dict[str, Type[TargetCalculator]] = {
         "regression": RegressionCalculator,
         "classification_binary": ClassificationCalculator,
-        "classification_multiclass": ClassificationCalculator,
         "indicator_prediction": IndicatorPredictionCalculator,
     }
 
-    METHOD_MAPPING = {
-        "classification_binary": "calculate_binary",
-        "classification_multiclass": "calculate_multiclass",
-    }
+    def __init__(self, targets_list: Any):
+        # Handle both dict and list input formats
+        if isinstance(targets_list, dict):
+            self.targets = [{'name': k, **v} for k, v in targets_list.items()]
+        else:
+            self.targets = targets_list
 
-    def __init__(self, targets_list: List[Dict[str, Any]]):
-        self.targets = targets_list
-        logger.info(f"TargetOrchestrator initialized with {len(self.targets)} target configurations.")
+        logger.info(f"TargetOrchestrator initialized with {len(self.targets)} configurations.")
 
-    def generate_targets(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Generates all configured targets for the given DataFrame.
-        """
-        if 'ticker' not in df.columns:
-            logger.error("DataFrame must contain a 'ticker' column for target generation.")
-            raise ValueError("Missing 'ticker' column.")
+    @property
+    def target_configs(self) -> dict[str, list[dict]]:
+        """Returns targets grouped by timeframe keywords."""
+        grouped: dict[str, list[dict]] = {'15m': [], '60m': [], '1d': [], 'mixed': []}
+        for t in self.targets:
+            name = t['name'].lower()
+            if '15m' in name: grouped['15m'].append(t)
+            elif '1h' in name or '60m' in name: grouped['60m'].append(t)
+            elif '1d' in name: grouped['1d'].append(t)
+            else: grouped['mixed'].append(t)
+        return grouped
 
-        df_with_targets = df.copy()
-        # Use a list to collect results for each target configuration
-        all_targets_df_list = [df_with_targets]
+    def generate_targets(self, df: pd.DataFrame, timeframe: str | None = None, **kwargs) -> pd.DataFrame:
+        """Main entry point for generating targets for a DataFrame."""
+        if df.empty: return pd.DataFrame()
 
-        for target_config in self.targets:
-            name = target_config['name']
-            target_type = target_config['type']
-            params = target_config.get('params', {})
+        # ✅ ENHANCED: Validate critical columns
+        required = {'datetime', 'ticker'}
+        if not required.issubset(df.columns):
+            missing = required - set(df.columns)
+            logger.error(f"Missing required columns for target generation: {missing}")
+            raise KeyError(f"TargetOrchestrator requires {missing} to be present in input DataFrame")
 
-            logger.debug(f"Generating target: {name} (Type: {target_type})")
+        # Filter targets if timeframe provided
+        targets_to_run = self.target_configs.get(timeframe, self.targets) if timeframe else self.targets
 
-            calculator_class = self.CALCULATOR_MAPPING.get(target_type)
-            if not calculator_class:
-                logger.warning(f"No calculator found for target type '{target_type}'. Skipping target '{name}'.")
-                continue
+        results = {'datetime': df['datetime'], 'ticker': df['ticker']}
+        if 'interval' in df.columns: results['interval'] = df['interval']
 
+        for config in targets_to_run:
             try:
-                calculator_instance = calculator_class()
-                method_name = self.METHOD_MAPPING.get(target_type, 'calculate')
-                calculation_method = getattr(calculator_instance, method_name)
+                calc_type = config.get('type', 'regression')
+                calc_class = self.CALCULATOR_MAPPING.get(calc_type, RegressionCalculator)
+                calc: TargetCalculator = calc_class()
 
-                # This approach ensures that we handle single and multi-ticker data correctly
-                # without relying on groupby().apply() which can have tricky return types.
-                if 'ticker' in df.columns:
-                    # Process by group and concatenate
-                    target_series_list = []
-                    for ticker, group in df.groupby('ticker'):
-                        target_series_list.append(calculation_method(group.copy(), **params))
-                    target_series = pd.concat(target_series_list)
-                else:
-                    # Process the whole dataframe if no ticker is present
-                    target_series = calculation_method(df, **params)
-
-                df_with_targets[name] = target_series
-                logger.info(f"Successfully generated target '{name}'.")
-
+                # Perform calculation (assumes calculators have a 'calculate' method)
+                # and handle ticker grouping internally if needed
+                res = calc.calculate(df, **config.get('params', {}))
+                results[config['name']] = res
             except Exception as e:
-                logger.error(f"Failed to generate target '{name}'. Error: {e}", exc_info=True)
+                logger.error(f"Failed to generate target {config['name']}: {e}")
 
-        return df_with_targets
+        return pd.DataFrame(results)

@@ -1,7 +1,6 @@
 # src/utils/trading_calendar.py
 
-from datetime import date, datetime, timedelta
-from typing import List, Set, Optional, Union
+from datetime import date, datetime
 
 import holidays
 import pandas as pd
@@ -23,12 +22,12 @@ class TradingCalendar:
         self.country = country
         self.start_year = start_year
         self.end_year = end_year
-        self.holidays: Set[date] = self._get_holidays()
+        self.holidays: set[date] = self._get_holidays()
         self.trading_days: pd.DatetimeIndex = self._generate_trading_days()
-        self.earnings_dates: Set[date] = set()
+        self.earnings_dates: set[date] = set()
         logger.info(f"TradingCalendar initialized for {country} from {start_year} to {end_year}. Found {len(self.holidays)} holidays.")
 
-    def _get_holidays(self) -> Set[date]:
+    def _get_holidays(self) -> set[date]:
         """Fetches holidays for the specified country and year range."""
         try:
             return set(holidays.CountryHoliday(
@@ -45,7 +44,7 @@ class TradingCalendar:
         logger.info(f"Generated {len(trading_days)} trading days.")
         return trading_days
 
-    def is_trading_day(self, day: Union[date, datetime, str]) -> bool:
+    def is_trading_day(self, day: date | datetime | str) -> bool:
         """Checks if a given date is a trading day using the pre-generated index."""
         try:
             dt = pd.to_datetime(day).normalize()
@@ -54,43 +53,63 @@ class TradingCalendar:
             logger.error(f"Could not parse date {day}: {e}")
             return False
 
-    def get_next_trading_day(self, from_date: Union[date, datetime, str]) -> date:
+    def get_next_trading_day(self, from_date: date | datetime | str) -> date:
         """Returns the next trading day after the given date from the index."""
         dt = pd.to_datetime(from_date).normalize()
-        
+
         # Find the first trading day strictly after the given date
         future_days = self.trading_days[self.trading_days > dt]
         if not future_days.empty:
             return future_days[0].date()
-        
+
         # Fallback if outside pre-generated range (not efficient but safe)
         next_day = (dt + BDay(1)).date()
         while next_day in self.holidays:
             next_day = (pd.to_datetime(next_day) + BDay(1)).date()
         return next_day
 
-    def get_previous_trading_days(self, from_date: Union[date, datetime, str], count: int) -> List[date]:
+    def get_previous_trading_days(self, from_date: date | datetime | str, count: int) -> list[date]:
         """Returns a list of the previous `count` trading days from a given date using the index."""
         dt = pd.to_datetime(from_date).normalize()
-        
+
         try:
-            loc = self.trading_days.get_loc(dt, method='pad')
-        except KeyError:
+            # Pandas 2.0+ does not support method='pad', using searchsorted instead
+            loc = self.trading_days.searchsorted(dt, side='right') - 1
+            if loc < 0:
+                logger.warning(f"Date {dt} is before the start of the calendar.")
+                return []
+        except Exception as e:
+            logger.error(f"Error finding location for {dt}: {e}")
             if dt < self.trading_days[0]:
                 logger.warning(f"Date {dt} is before the start of the calendar.")
                 return []
             loc = len(self.trading_days) - 1
 
         # Adjust indices to exclude current day if it matches dt
-        if self.trading_days[loc] >= dt:
+        if loc >= 0 and self.trading_days[loc] >= dt:
             end_index = loc
         else:
             end_index = loc + 1
-            
+
         start_index = max(0, end_index - count)
         return [d.date() for d in self.trading_days[start_index:end_index]]
 
-    def fetch_and_set_earnings_dates(self, tickers: List[str]):
+    def get_previous_trading_day(self, from_date: date | datetime | str) -> date:
+        """Returns the previous trading day before the given date from the index."""
+        dt = pd.to_datetime(from_date).normalize()
+
+        # Find the first trading day strictly before the given date
+        past_days = self.trading_days[self.trading_days < dt]
+        if not past_days.empty:
+            return past_days[-1].date()
+
+        # Fallback if outside pre-generated range (not efficient but safe)
+        prev_day = (dt - BDay(1)).date()
+        while prev_day in self.holidays:
+            prev_day = (pd.to_datetime(prev_day) - BDay(1)).date()
+        return prev_day
+
+    def fetch_and_set_earnings_dates(self, tickers: list[str]):
         """Fetches earnings dates for tickers and updates the calendar."""
         all_earnings = set()
         for ticker_str in tickers:
@@ -102,11 +121,11 @@ class TradingCalendar:
                     all_earnings.update(dates)
             except Exception as e:
                 logger.error(f"Failed to fetch earnings for ticker '{ticker_str}': {e}")
-        
+
         self.earnings_dates.update(all_earnings)
         logger.info(f"Updated earnings dates. Total unique dates: {len(self.earnings_dates)}")
 
-    def is_earnings_day(self, day: Union[date, datetime, str], ticker: Optional[str] = None) -> bool:
+    def is_earnings_day(self, day: date | datetime | str) -> bool:
         """Checks if a given date is an earnings announcement day."""
         try:
             dt = pd.to_datetime(day).normalize().date()

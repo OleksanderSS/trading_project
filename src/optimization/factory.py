@@ -1,18 +1,18 @@
 # src/optimization/factory.py
 
-from typing import Optional, Any
-from src.optimization.base import BaseOptimizer
-from src.optimization.portfolio.optimizer import PortfolioOptimizer
-from src.optimization.hyperparameters.bayesian import BayesianOptimizer
 from src.core.logging.logger import ProjectLogger
+from src.optimization.base import BaseOptimizer
+from src.optimization.hyperparameters.bayesian import BayesianOptimizer
+from src.optimization.portfolio.optimizer import PortfolioOptimizer
+
 
 class OptimizationFactory:
     """
     Central point for obtaining optimization tools based on the requested type.
-    This factory simplifies the instantiation of different optimization engines 
+    This factory simplifies the instantiation of different optimization engines
     used across the trading system.
     """
-    
+
     logger = ProjectLogger.get_logger("OptimizationFactory")
 
     @staticmethod
@@ -31,16 +31,16 @@ class OptimizationFactory:
             ValueError: If the requested optimizer_type is not supported.
         """
         optimizer_type = optimizer_type.lower()
-        
+
         OptimizationFactory.logger.info(f"Creating optimizer of type: {optimizer_type}")
 
         if optimizer_type == 'portfolio':
             return PortfolioOptimizer(**kwargs)
-        
+
         elif optimizer_type in ['hyperparameters', 'bayesian']:
             # BayesianOptimizer might require model_func and param_space in kwargs
             return BayesianOptimizer(**kwargs)
-        
+
         else:
             error_msg = f"Unsupported optimizer type: {optimizer_type}"
             OptimizationFactory.logger.error(error_msg)

@@ -1,61 +1,62 @@
 # src/processing/cleaners.py
 
-import pandas as pd
-import numpy as np
 import hashlib
 import re
-from typing import List, Dict, Optional, Union
+
+import numpy as np
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("DataCleaner")
 
 class DataCleaner:
     """
-    A utility class providing static methods for data sanitization and cleaning 
+    A utility class providing static methods for data sanitization and cleaning
     of market and news data before feature engineering.
     """
 
     @staticmethod
-    def remove_outliers_zscore(df: pd.DataFrame, columns: Union[str, List[str]] = 'close', threshold: float = 3.0) -> pd.DataFrame:
+    def remove_outliers_zscore(df: pd.DataFrame, columns: str | list[str] = 'close', threshold: float = 3.0) -> pd.DataFrame:
         """
         Removes outliers from specified columns based on Z-score calculated on rolling log returns.
-        
+
         Args:
             df: Input DataFrame.
             columns: Column name or list of columns to analyze.
             threshold: Z-score threshold for outlier detection (default 3.0).
-            
+
         Returns:
             DataFrame with rows containing outliers in specified columns removed.
         """
         if df is None or df.empty:
             return df
-            
+
         if isinstance(columns, str):
             columns = [columns]
-            
+
         df_out = df.copy()
         try:
             total_mask = pd.Series([False] * len(df_out), index=df_out.index)
-            
+
             for col in columns:
                 if col not in df_out.columns:
                     continue
-                
+
                 # Calculate rolling Z-score on log returns to normalize series
                 log_returns = np.log(df_out[col] / df_out[col].shift(1))
                 rolling_mean = log_returns.rolling(20).mean()
                 rolling_std = log_returns.rolling(20).std()
-                
+
                 z_scores = (log_returns - rolling_mean) / rolling_std
                 col_mask = (z_scores.abs() > threshold).fillna(False)
                 total_mask |= col_mask
-            
+
             outlier_count = total_mask.sum()
             if outlier_count > 0:
                 df_out = df_out[~total_mask]
                 logger.info(f"Removed {outlier_count} rows containing outliers in columns {columns} (Threshold: {threshold})")
-                
+
             return df_out
         except Exception as e:
             logger.error(f"Error during outlier removal for columns {columns}: {e}")
@@ -68,33 +69,34 @@ class DataCleaner:
         """
         if df is None or df.empty:
             return df
-            
+
         df_out = df.copy()
         nan_count = df_out.isna().sum().sum()
-        
+
         if nan_count > 0:
             if method == 'ffill':
-                df_out = df_out.ffill().bfill()
+                df_out = df_out.ffill()
             elif method == 'bfill':
+                logger.warning("Backfill can introduce future information in time series; use only for non-causal data.")
                 df_out = df_out.bfill().ffill()
             logger.info(f"Handled {nan_count} missing values using {method}.")
-            
+
         return df_out
 
     @staticmethod
-    def validate_schema(df: pd.DataFrame, required_cols: List[str]) -> bool:
+    def validate_schema(df: pd.DataFrame, required_cols: list[str]) -> bool:
         """
         Validates if the DataFrame contains all required columns.
         """
         if df is None:
             logger.error("Schema validation failed: DataFrame is None")
             return False
-            
+
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
             logger.warning(f"Schema validation: Missing required columns: {missing}")
             return False
-            
+
         logger.debug(f"Schema validation successful for columns: {required_cols}")
         return True
 
@@ -124,7 +126,7 @@ def harmonize_dataframe(df: pd.DataFrame, dropna_cols: bool = False) -> pd.DataF
 
     return df
 
-def safe_fill(df: pd.DataFrame, zero_fill_cols: Optional[List[str]] = None, unknown_fill_val: str = "unknown") -> pd.DataFrame:
+def safe_fill(df: pd.DataFrame, zero_fill_cols: list[str] | None = None, unknown_fill_val: str = "unknown") -> pd.DataFrame:
     """
     Safely fills NaN values based on column types and specific column requirements.
     """
@@ -139,9 +141,10 @@ def safe_fill(df: pd.DataFrame, zero_fill_cols: Optional[List[str]] = None, unkn
             if col in df.columns:
                 df[col] = df[col].fillna(0)
 
-    # 2. Fill numeric columns with ffill/bfill
+    # 2. Fill numeric columns causally. Leading NaNs should be handled by
+    # downstream train-time masks rather than filled from future rows.
     num_cols = df.select_dtypes(include=["number"]).columns
-    df[num_cols] = df[num_cols].ffill().bfill()
+    df[num_cols] = df[num_cols].ffill()
 
     # 3. Fill categorical/object columns with a placeholder
     cat_cols = df.select_dtypes(include=["object", "category"]).columns
@@ -150,72 +153,76 @@ def safe_fill(df: pd.DataFrame, zero_fill_cols: Optional[List[str]] = None, unkn
 
     return df
 
+def _sanitize_index_timezone(df: pd.DataFrame, label: str) -> pd.DataFrame:
+    """Sanitize DatetimeIndex timezone."""
+    try:
+        df.index = df.index.tz_localize(None)
+        logger.debug(f"[{label}] Converted DatetimeIndex to timezone-naive.")
+    except Exception as e:
+        logger.warning(f"[{label}] Failed to sanitize index timezone: {e}")
+    return df
+
+def _sanitize_column_timezone(df: pd.DataFrame, col: str, label: str) -> None:
+    """Sanitize a single datetime column timezone."""
+    if df[col].dt.tz is not None:
+        try:
+            df[col] = df[col].dt.tz_localize(None)
+            logger.debug(f"[{label}] Converted column '{col}' to timezone-naive.")
+        except Exception as e:
+            logger.warning(f"[{label}] Failed to sanitize column '{col}' timezone: {e}")
+
 def sanitize_dataframe_timezone(df: pd.DataFrame, label: str = "sanitize_df") -> pd.DataFrame:
     """
     Ensures that a DataFrame's DatetimeIndex and datetime columns are timezone-naive.
     """
     if df is None or df.empty:
         return df
-    
+
     df = df.copy()
 
     if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is not None:
-        try:
-            df.index = df.index.tz_localize(None)
-            logger.debug(f"[{label}] Converted DatetimeIndex to timezone-naive.")
-        except Exception as e:
-            logger.warning(f"[{label}] Failed to sanitize index timezone: {e}")
+        df = _sanitize_index_timezone(df, label)
 
-    for col in df.columns:
-        if pd.api.types.is_datetime64_any_dtype(df[col]):
-            if df[col].dt.tz is not None:
-                try:
-                    df[col] = df[col].dt.tz_localize(None)
-                    logger.debug(f"[{label}] Converted column '{col}' to timezone-naive.")
-                except Exception as e:
-                    logger.warning(f"[{label}] Failed to sanitize column '{col}' timezone: {e}")
-    
+    datetime_cols = [col for col in df.columns if pd.api.types.is_datetime64_any_dtype(df[col])]
+    for col in datetime_cols:
+        _sanitize_column_timezone(df, col, label)
+
     return df
 
-def generate_content_hash(df: pd.DataFrame, cols_to_hash: List[str] = ['title', 'description', 'published_at']) -> pd.Series:
+def generate_content_hash(df: pd.DataFrame, cols_to_hash: list[str] = None) -> pd.Series:
     """
     Generates hashes for rows based on content. Optimized for performance.
     """
+    if cols_to_hash is None:
+        cols_to_hash = ['title', 'description', 'published_at']
     if df.empty:
         return pd.Series([], dtype=str)
-    
+
     # Vectorized concatenation of relevant strings
     content = pd.Series("", index=df.index)
     for col in cols_to_hash:
         if col in df.columns:
             content += df[col].fillna("").astype(str) + " "
-    
+
     # Vectorized cleaning
     content = content.str.lower().str.replace(r'[^\w\s]', '', regex=True).str.replace(r'\s+', ' ', regex=True).str.strip()
-    
+
     # Hash generation
-    def _md5(val):
-        return hashlib.md5(val.encode('utf-8')).hexdigest()
-    
-    hashes = content.apply(_md5)
+    def _sha256(val):
+        return hashlib.sha256(val.encode('utf-8')).hexdigest()
+
+    hashes = content.apply(_sha256)
     logger.info(f"Generated {len(hashes)} content hashes for deduplication.")
     return hashes
 
-def normalize_to_unified_schema(df: pd.DataFrame, source_type: str, required_columns: List[str], column_mapping: Dict[str, str]) -> pd.DataFrame:
-    """
-    Normalizes a DataFrame to a standard project-wide schema using dynamic mapping.
-    """
-    if df.empty:
-        return df
-    
-    normalized = df.copy()
-    
-    # Rename columns based on provided mapping
+def _apply_column_mapping(normalized: pd.DataFrame, column_mapping: dict[str, str]) -> None:
+    """Apply column mapping to normalized DataFrame."""
     for old_col, new_col in column_mapping.items():
         if old_col in normalized.columns and new_col not in normalized.columns:
             normalized.rename(columns={old_col: new_col}, inplace=True)
-    
-    # Add missing required columns with defaults
+
+def _add_missing_columns(normalized: pd.DataFrame, source_type: str, required_columns: list[str]) -> None:
+    """Add missing required columns with defaults."""
     for col in required_columns:
         if col not in normalized.columns:
             if col == 'id':
@@ -225,47 +232,62 @@ def normalize_to_unified_schema(df: pd.DataFrame, source_type: str, required_col
             elif 'score' in col.lower() or 'count' in col.lower():
                 normalized[col] = 0.0
             else:
-                 normalized[col] = ''
-    
+                normalized[col] = ''
+
+def _process_published_at(normalized: pd.DataFrame) -> None:
+    """Process published_at column."""
     if 'published_at' in normalized.columns:
         normalized['published_at'] = pd.to_datetime(normalized['published_at'], errors='coerce')
 
+def normalize_to_unified_schema(df: pd.DataFrame, source_type: str, required_columns: list[str], column_mapping: dict[str, str]) -> pd.DataFrame:
+    """
+    Normalizes a DataFrame to a standard project-wide schema using dynamic mapping.
+    """
+    if df.empty:
+        return df
+
+    normalized = df.copy()
+
+    _apply_column_mapping(normalized, column_mapping)
+    _add_missing_columns(normalized, source_type, required_columns)
+    _process_published_at(normalized)
+
     normalized['hash'] = generate_content_hash(normalized)
-    
+
     logger.info(f"Normalized {len(normalized)} records from source '{source_type}' to unified schema.")
     return normalized[required_columns]
 
-def merge_and_deduplicate(dataframes: List[pd.DataFrame], hash_col: str = 'hash') -> pd.DataFrame:
+def merge_and_deduplicate(dataframes: list[pd.DataFrame], hash_col: str = 'hash') -> pd.DataFrame:
     """
     Merges DataFrames and removes duplicates based on a hash column.
     """
     if not dataframes:
         return pd.DataFrame()
-    
+
     merged = pd.concat(dataframes, ignore_index=True)
-    
+
     if merged.empty:
         return merged
-    
+
     if hash_col not in merged.columns:
         logger.warning(f"Deduplication skipped: Column '{hash_col}' missing.")
         return merged
-    
+
     before = len(merged)
     merged.drop_duplicates(subset=[hash_col], keep='last', inplace=True)
     logger.info(f"Removed {before - len(merged)} duplicates based on '{hash_col}'. Remaining: {len(merged)}")
     return merged
 
-def filter_by_terms(df: pd.DataFrame, terms: List[str], search_col: str = 'description') -> pd.DataFrame:
+def filter_by_terms(df: pd.DataFrame, terms: list[str], search_col: str = 'description') -> pd.DataFrame:
     """
     Filters a DataFrame based on search terms in a specific column.
     """
     if df.empty or not terms or search_col not in df.columns:
         return df
-    
+
     pattern = r'\b(?:' + '|'.join(map(re.escape, terms)) + r')\b'
     mask = df[search_col].str.contains(pattern, case=False, regex=True, na=False)
-    
+
     filtered_df = df[mask]
     logger.info(f"Filtered records: {len(df)} -> {len(filtered_df)} based on terms in '{search_col}'.")
     return filtered_df

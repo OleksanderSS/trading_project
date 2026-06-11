@@ -1,16 +1,24 @@
 # src/metrics/model/ml_evaluator.py
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Optional, List, Union
 from sklearn.metrics import (
-    mean_absolute_error, mean_squared_error, r2_score,
-    accuracy_score, precision_score, recall_score, f1_score,
-    roc_auc_score, log_loss
+    accuracy_score,
+    f1_score,
+    log_loss,
+    mean_absolute_error,
+    mean_squared_error,
+    precision_score,
+    r2_score,
+    recall_score,
+    roc_auc_score,
 )
 
 from src.core.logging.logger import ProjectLogger
 from src.metrics.base import BaseMetricCalculator
+
 
 class MLEvaluator(BaseMetricCalculator):
     """
@@ -33,10 +41,10 @@ class MLEvaluator(BaseMetricCalculator):
             return False
         return True
 
-    def calculate(self, y_true: Any, y_pred: Any, task_type: Optional[str] = None, **kwargs) -> Dict[str, float]:
+    def calculate(self, y_true: Any, y_pred: Any, task_type: str | None = None, **kwargs) -> dict[str, float]:
         """
         Розраховує ML метрики на основі типу задачі.
-        
+
         Args:
             y_true: Істинні значення.
             y_pred: Прогнозовані значення.
@@ -47,7 +55,7 @@ class MLEvaluator(BaseMetricCalculator):
             return {}
 
         y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
-        
+
         # Очищення від NaN та нескінченних значень
         mask = (~np.isnan(y_true)) & (~np.isnan(y_pred)) & np.isfinite(y_true) & np.isfinite(y_pred)
         y_true, y_pred = y_true[mask], y_pred[mask]
@@ -71,7 +79,7 @@ class MLEvaluator(BaseMetricCalculator):
             self.logger.error(f"Невідомий тип задачі: {task_type}")
             return {}
 
-    def calculate_regression_metrics(self, y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
+    def calculate_regression_metrics(self, y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
         """Розраховує метрики регресії."""
         mse = mean_squared_error(y_true, y_pred)
         return {
@@ -81,7 +89,7 @@ class MLEvaluator(BaseMetricCalculator):
             "R2": float(r2_score(y_true, y_pred))
         }
 
-    def calculate_classification_metrics(self, y_true: np.ndarray, y_pred: np.ndarray, y_prob: Optional[np.ndarray] = None) -> Dict[str, float]:
+    def calculate_classification_metrics(self, y_true: np.ndarray, y_pred: np.ndarray, y_prob: np.ndarray | None = None) -> dict[str, float]:
         """Розраховує метрики класифікації."""
         metrics = {
             "Accuracy": float(accuracy_score(y_true, y_pred)),
@@ -89,21 +97,21 @@ class MLEvaluator(BaseMetricCalculator):
             "Recall": float(recall_score(y_true, y_pred, average='binary', zero_division=0)),
             "F1": float(f1_score(y_true, y_pred, average='binary', zero_division=0))
         }
-        
+
         if y_prob is not None:
             try:
                 metrics["ROC_AUC"] = float(roc_auc_score(y_true, y_prob))
                 metrics["Log_Loss"] = float(log_loss(y_true, y_prob))
             except Exception as e:
                 self.logger.warning(f"Не вдалося розрахувати імовірнісні метрики: {e}")
-                
+
         return metrics
 
-    def _calculate_probabilistic_metrics(self, y_true: np.ndarray, y_pred: np.ndarray, y_prob: Optional[np.ndarray] = None) -> Dict[str, float]:
+    def _calculate_probabilistic_metrics(self, y_true: np.ndarray, y_pred: np.ndarray, y_prob: np.ndarray | None = None) -> dict[str, float]:
         """Розраховує імовірнісні метрики (ROC AUC, Log Loss)."""
         # Якщо y_prob не передано, використовуємо y_pred як імовірності
         probs = y_prob if y_prob is not None else y_pred
-        
+
         try:
             return {
                 "ROC_AUC": float(roc_auc_score(y_true, probs)),
@@ -123,7 +131,7 @@ class MLEvaluator(BaseMetricCalculator):
         else:
             return "regression"
 
-def calculate_all_metrics(y_true: Any, y_pred: Any, task_type: Optional[str] = None, **kwargs) -> Dict[str, float]:
+def calculate_all_metrics(y_true: Any, y_pred: Any, task_type: str | None = None, **kwargs) -> dict[str, float]:
     """Глобальна функція-обгортка для сумісності з іншими модулями."""
     evaluator = MLEvaluator()
     return evaluator.calculate(y_true, y_pred, task_type=task_type, **kwargs)
