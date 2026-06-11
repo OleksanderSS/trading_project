@@ -6,25 +6,33 @@ features:
   enabled_enrichers:
     time_features: true             # Creates time-based features (e.g., day of week, month)
     technical_analysis: true        # Calculates a suite of technical indicators
-    derived_features: false         # Calculates features from existing ones (e.g., price ratios)
-    macro_features: false           # Fetches and integrates macroeconomic data
-    sentiment_features: false       # Analyzes sentiment from news or social media
-    nlp_features: false             # Extracts features from text using NLP
-    hype_features: false            # Measures market hype or attention
-    significance_features: false    # Evaluates the statistical significance of events
-    decay_features: false           # Applies decay functions to features over time
+    derived_features: true          # Calculates features from existing ones (e.g., price ratios) - FIXED NAME
+    macro_features: true            # Fetches and integrates macroeconomic data
+    keyword_entity: true            # Extracts keywords and entities from news (NEW)
+    news_quality: true              # News quality metrics - completeness, freshness, diversity (NEW)
+    sentiment_features: true        # Analyzes sentiment from news or social media
+    nlp_features: true              # Extracts features from text using NLP
+    news_impact: true               # Reverse impact analyzer - time-decaying news impact (NEW)
+    hype_features: true             # Measures market hype or attention
+    significance_features: true     # Evaluates statistical significance of events
+    decay_features: true            # Applies decay functions to features over time - FIXED NAME
+    advanced_analytics: true        # Advanced analytics - sentiment stats, macro score, market phase (NEW) - FIXED NAME
     context_map: true               # Generates a dynamic context fingerprint for each data point
+    market_context: true            # Adds macro/market indicators (yield curve, Fed Funds, breadth, etc.) (NEW)
+    technical: true                 # Basic technical indicators (SMA, EMA, RSI, Bollinger Bands) (NEW)
+    volume: true                   # Volume-based indicators (volume SMA, ROC, OBV) (NEW)
+    volatility: true               # Volatility indicators (historical vol, ATR, Garman-Klass) (NEW)
 
 # Detailed configuration for the Technical Analysis enricher.
 # This corresponds to the 'technical_analysis' key in enabled_enrichers.
 technical_analysis:
   sma:
     enabled: true
-    window: 20
+    windows: [5, 10, 20, 50, 100, 200]  # Multiple moving averages
   
   ema:
     enabled: true
-    window: 20
+    windows: [5, 10, 20, 50, 100, 200]  # Multiple exponential moving averages
 
   rsi:
     enabled: true
@@ -37,23 +45,110 @@ technical_analysis:
     signal: 9
 
   bollinger_bands:
-    enabled: false
+    enabled: true
     period: 20
     std: 2
 
   atr:
-    enabled: false
+    enabled: true
     period: 14
 
   stochastic:
-    enabled: false
+    enabled: true
     k_period: 14
     d_period: 3
 
   williams_r:
-    enabled: false
+    enabled: true
     period: 14
 
   cci:
-    enabled: false
+    enabled: true
     period: 20
+
+  market_regime:
+    enabled: true
+    window: 10  # Reduced from 20 for better coverage with limited data
+
+# Market Context Enricher Configuration
+# Adds macroeconomic and market indicators to the dataset
+market_context:
+  context_features:
+    # Volatility metrics
+    - "volatility_5d"
+    - "volatility_20d"
+    - "volatility_ratio"
+    # Trend metrics
+    - "trend_5d"
+    - "trend_20d"
+    - "trend_alignment"
+    # Technical indicators
+    - "rsi_current"
+    - "volume_ratio"
+    - "price_to_ma20"
+    # Temporal features
+    - "hour_of_day"
+    - "day_of_week"
+    # Macro indicators (NEW)
+    - "yield_curve_slope"        # 10Y - 2Y yield spread
+    - "yield_curve_inverted"     # Inversion flag (0/1)
+    - "fed_funds_trend"          # Fed Funds rate trend (3 months)
+    - "fed_funds_velocity"       # Fed Funds rate velocity (1 month)
+    - "market_breadth"           # Advance/decline ratio
+    - "dollar_strength"          # DXY index
+    - "put_call_ratio"           # Put/Call ratio (fear gauge)
+
+# Configuration for new basic technical indicators enricher
+technical:
+  enabled: true
+  indicators:
+    sma:
+      enabled: true
+      periods: [5, 10, 20]
+    ema:
+      enabled: true
+      periods: [5, 10]
+    rsi:
+      enabled: true
+      period: 14
+    bollinger_bands:
+      enabled: true
+      period: 20
+      std_dev: 2
+
+# Configuration for volume indicators enricher
+volume:
+  enabled: true
+  indicators:
+    volume_sma:
+      enabled: true
+      periods: [5, 10]
+    volume_roc:
+      enabled: true
+      period: 5
+    price_volume_trend:
+      enabled: true
+    on_balance_volume:
+      enabled: true
+    volume_relative_strength:
+      enabled: true
+      comparison_period: 10
+
+# Configuration for volatility indicators enricher
+volatility:
+  enabled: true
+  indicators:
+    historical_volatility:
+      enabled: true
+      periods: [5, 10, 20]
+      annualization_factor: 252
+    average_true_range:
+      enabled: true
+      period: 14
+    garman_klass:
+      enabled: true
+      window: 20
+    volatility_regime:
+      enabled: true
+      bins: [0.15, 0.25, 0.35]
+      labels: ['low', 'normal', 'high', 'extreme']

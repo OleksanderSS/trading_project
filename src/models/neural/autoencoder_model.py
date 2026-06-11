@@ -1,12 +1,14 @@
 # src/models/neural/autoencoder_model.py
 
+from typing import Any
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, models
-from typing import Dict, Any, Tuple
 
-from src.models.neural.base_neural import BaseNeuralModel
 from src.core.logging.logger import ProjectLogger
+from src.models.neural.base_neural import BaseNeuralModel
+
 
 class AutoencoderModel(BaseNeuralModel):
     """
@@ -29,7 +31,7 @@ class AutoencoderModel(BaseNeuralModel):
         """Returns the unique name of the model."""
         return "autoencoder_conv1d"
 
-    def _build_architecture(self, input_shape: Tuple[int, ...]) -> tf.keras.Model:
+    def _build_architecture(self, input_shape: tuple[int, ...]) -> tf.keras.Model:
         """
         Defines the Conv1D autoencoder architecture.
         The input_shape is expected to be (timesteps, n_features).
@@ -65,12 +67,12 @@ class AutoencoderModel(BaseNeuralModel):
         self.logger.info(f"Autoencoder architecture built: Input({timesteps}, {n_features}) -> Output({decoded.shape[1]}, {decoded.shape[2]})")
         return model
 
-    def train(self, X: np.ndarray, y: np.ndarray = None, **kwargs) -> Dict[str, Any]:
+    def train(self, X: np.ndarray, y: np.ndarray = None, **kwargs) -> dict[str, Any]:
         """
         Trains the Autoencoder model. 'y' is ignored, as the model learns to reconstruct 'X'.
         """
         self.logger.info(f"Starting training for {self.name}...")
-        
+
         if len(X.shape) == 2:
             X = np.reshape(X, (X.shape[0], 1, X.shape[1]))
 
@@ -87,15 +89,15 @@ class AutoencoderModel(BaseNeuralModel):
 
         if len(X.shape) == 2:
             X = np.reshape(X, (X.shape[0], 1, X.shape[1]))
-            
+
         X_norm = self._normalize_data(X, fit=False)
         X_reconstructed_norm = self.model.predict(X_norm, verbose=0)
-        
+
         reconstruction_error = np.mean(np.square(X_norm - X_reconstructed_norm), axis=(1, 2))
-        
+
         self.logger.info(f"Calculated reconstruction error for {X.shape[0]} samples.")
         return reconstruction_error
-        
+
     def get_anomaly_labels(self, X: np.ndarray, threshold: float = 0.1) -> np.ndarray:
         """
         Classifies data points as normal (0) or anomalous (1) based on a threshold.

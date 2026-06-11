@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Any
+
 
 class BaseMonitor(ABC):
     """
@@ -8,7 +9,7 @@ class BaseMonitor(ABC):
     """
 
     @abstractmethod
-    def collect_metrics(self) -> Dict[str, Any]:
+    def collect_metrics(self) -> dict[str, Any]:
         """
         Abstract method to collect and return specific metrics.
         Returns:
@@ -28,7 +29,7 @@ class BaseMonitor(ABC):
         """
         Default implementation to determine health status based on thresholds.
         Can be overridden by subclasses for more complex logic.
-        
+
         Returns:
             bool: True if metrics are within acceptable limits, False otherwise.
         """

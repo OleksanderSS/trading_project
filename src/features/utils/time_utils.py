@@ -1,9 +1,9 @@
 # src/features/utils/time_utils.py
 
-import pandas as pd
-import numpy as np
 import logging
-from typing import List
+
+import numpy as np
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def add_time_features(
     df: pd.DataFrame,
     timestamp_col: str = 'timestamp',
-    enabled_features: List[str] = None
+    enabled_features: list[str] | None = None
 ) -> pd.DataFrame:
     """
     Adds specified time-based features to the DataFrame.
@@ -34,7 +34,7 @@ def add_time_features(
 
     df_out = df.copy()
     timestamps = pd.to_datetime(df_out[timestamp_col])
-    
+
     # Feature generation mapping
     feature_generators = {
         'hour': lambda ts: ts.dt.hour,
@@ -76,5 +76,5 @@ def add_time_features(
 
     if added_cols:
         logger.info(f"Added {len(added_cols)} time features: {added_cols}")
-    
+
     return df_out

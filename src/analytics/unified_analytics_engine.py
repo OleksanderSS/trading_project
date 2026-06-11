@@ -1,57 +1,61 @@
-import pandas as pd
-import logging
-import importlib
-import hashlib
-import json
-from typing import Dict, List, Any, Optional
-from concurrent.futures import ThreadPoolExecutor, as_completed
+# src/analytics/unified_analytics_engine.py
+"""
+Unified Analytics Engine
+Orchestrates the execution of various analytical modules in a parallelized and cached environment.
+"""
 
+import hashlib
+import importlib
+import json
+import logging
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.data_managers.model_results_manager import ModelResultsManager
 from src.analytics.interfaces import IAnalyzer
 from src.config.unified_config_manager import UnifiedConfigManager
-from src.analytics.data_managers.model_results_manager import ModelResultsManager
 
 logger = logging.getLogger(__name__)
 
 class UnifiedAnalyticsEngine:
     """
-    Головний аналітичний рушій, що оркеструє виконання різноманітних аналітичних модулів.
+    Main analytical engine responsible for orchestrating multiple analysis modules.
 
-    Ключові обов'язки:
-    - Динамічно завантажує та реєструє аналізатори (IAnalyzer) на основі конфігурації.
-    - Виконує аналізатори паралельно за допомогою пулу потоків для максимальної ефективності.
-    - Керує передачею даних кожному аналізатору згідно з конфігурацією 'data_mapping'.
-    - Інтегрує механізм кешування для уникнення повторних обчислень для однакових вхідних даних.
-    - Зберігає та керує результатами аналізу за допомогою ModelResultsManager.
+    Key Responsibilities:
+    - Automatically loads and registers analyzers (IAnalyzer) based on centralized configuration.
+    - Executes analysis tasks in parallel using a thread pool for high throughput.
+    - Manages data routing to each analyzer according to 'data_mapping' definitions.
+    - Implements a caching mechanism to prevent redundant computations for identical input datasets.
+    - Persists and manages analytical results via ModelResultsManager.
     """
 
     def __init__(self, config_manager: UnifiedConfigManager):
         """
-        Ініціалізує рушій.
+        Initializes the analytics engine.
 
         Args:
-            config_manager: Екземпляр UnifiedConfigManager для завантаження конфігурацій,
-                            зокрема 'analysis.engine' та налаштувань аналізаторів.
+            config_manager: UnifiedConfigManager instance for loading engine and analyzer settings.
         """
         self.config_manager = config_manager
-        self.analyzers: Dict[str, IAnalyzer] = {}
-        self.analyzer_data_map: Dict[str, List[str]] = {}
-        self._load_config()
-        
-        self.results_manager = ModelResultsManager()
-        
-        self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
-        self._register_analyzers_from_config()
-        logger.info(f"UnifiedAnalyticsEngine ініціалізовано з {len(self.analyzers)} аналізаторами.")
+        self.analyzers: dict[str, IAnalyzer] = {}
+        self.analyzer_data_map: dict[str, list[str]] = {}
 
-    def _load_config(self):
-        """Завантажує конфігурацію рушія з UnifiedConfigManager."""
-        engine_config = self.config_manager.get_specific_config('analysis', 'engine') or {}
+        # Load engine configuration
+        engine_config = self.config_manager.get('analysis.engine', {})
         self.max_workers = engine_config.get('max_workers', 4)
         self.analyzer_configs = engine_config.get('analyzers', [])
-        logger.debug(f"Конфігурацію аналітичного рушія завантажено: max_workers={self.max_workers}")
+
+        self.results_manager = ModelResultsManager()
+        self.thread_pool = ThreadPoolExecutor(max_workers=self.max_workers)
+
+        # Register configured modules
+        self._register_analyzers_from_config()
+        logger.info(f"UnifiedAnalyticsEngine initialized with {len(self.analyzers)} analyzers.")
 
     def _register_analyzers_from_config(self):
-        """Динамічно імпортує та реєструє аналізатори на основі конфігурації."""
+        """Dynamically imports and initializes analyzer instances based on configuration."""
         for config in self.analyzer_configs:
             try:
                 module_path = config['module']
@@ -59,6 +63,7 @@ class UnifiedAnalyticsEngine:
                 analyzer_name = config.get('name', class_name.lower())
                 params = config.get('params', {})
 
+                # Dynamic Import
                 module = importlib.import_module(module_path)
                 analyzer_class = getattr(module, class_name)
                 analyzer_instance = analyzer_class(**params)
@@ -67,120 +72,138 @@ class UnifiedAnalyticsEngine:
                     self.register_analyzer(analyzer_instance, name=analyzer_name)
                     self.analyzer_data_map[analyzer_name] = config.get('data_mapping', [])
                 else:
-                    logger.warning(f"Клас {class_name} з {module_path} не є валідним IAnalyzer.")
+                    logger.warning(f"Class '{class_name}' from '{module_path}' is not a valid IAnalyzer instance.")
             except (ImportError, AttributeError, KeyError, TypeError) as e:
-                logger.error(f"Помилка реєстрації аналізатора з конфігурації: {config}. Помилка: {e}", exc_info=True)
+                logger.error(f"Failed to register analyzer '{config.get('name', 'unknown')}': {e}", exc_info=True)
 
     def register_analyzer(self, analyzer: IAnalyzer, name: str):
-        """Реєструє один екземпляр аналізатора."""
+        """Registers a single analyzer instance into the engine registry."""
         if not isinstance(analyzer, IAnalyzer):
-            raise TypeError("Наданий об'єкт не є валідним IAnalyzer.")
+            raise TypeError(f"Object '{name}' does not implement the IAnalyzer interface.")
         self.analyzers[name] = analyzer
-        logger.info(f"Зареєстровано аналізатор: {name}")
+        logger.info(f"Registered analyzer component: {name}")
 
-    def _generate_data_hash(self, data_map: Dict[str, Any]) -> str:
+    def _generate_data_hash(self, data_map: dict[str, Any]) -> str:
         """
-        Генерує стабільний хеш для вхідних даних, що використовується як ключ для кешу.
+        Generates a stable fingerprint (MD5 hash) for input datasets to support result caching.
         """
-        # Спрощена версія хешування; для реальних умов може знадобитися більш надійний підхід.
-        # Залежить від стабільного порядку та представлення даних.
         try:
-            # Використовуємо json для серіалізації, але з обробкою несеріалізованих об'єктів.
-            deterministic_json = json.dumps(data_map, sort_keys=True, default=str)
-            return hashlib.md5(deterministic_json.encode()).hexdigest()
-        except Exception:
-             # Fallback для складних об'єктів
+            stable_repr: dict[str, Any] = {}
+            for key in sorted(data_map.keys()):
+                value = data_map[key]
+                if isinstance(value, pd.DataFrame):
+                    # Sample boundaries to maintain performance while ensuring fingerprint uniqueness
+                    sample = value.head(10).tail(5)
+                    stable_repr[key] = {
+                        'shape': value.shape,
+                        'columns': list(value.columns),
+                        'sample_hash': hashlib.sha256(sample.to_json(date_format='iso', orient='split').encode()).hexdigest()
+                    }
+                elif isinstance(value, pd.Series):
+                    sample = value.head(10)
+                    stable_repr[key] = {
+                        'shape': value.shape,
+                        'name': value.name,
+                        'sample_hash': hashlib.sha256(sample.to_json(date_format='iso', orient='split').encode()).hexdigest()
+                    }
+                else:
+                    stable_repr[key] = str(value)
+
+            deterministic_json = json.dumps(stable_repr, sort_keys=True)
+            return hashlib.sha256(deterministic_json.encode()).hexdigest()
+        except Exception as e:
+            logger.debug(f"Fallback hashing triggered due to complex types: {e}")
             hash_input = ""
             for key, value in sorted(data_map.items()):
-                if isinstance(value, pd.DataFrame):
-                    hash_input += f"{key}_{value.shape}_{pd.util.hash_pandas_object(value).sum()}"
-                elif isinstance(value, pd.Series):
-                    hash_input += f"{key}_{len(value)}_{pd.util.hash_pandas_object(value).sum()}"
+                if isinstance(value, (pd.DataFrame, pd.Series)):
+                    sample = value.head(3)
+                    sample_json = sample.to_json(date_format='iso', orient='split')
+                    sample_hash = hashlib.sha256(sample_json.encode()).hexdigest()
+                    hash_input += f"{key}_{value.shape}_{sample_hash}"
                 else:
                     hash_input += f"{key}_{str(value)}"
-            return hashlib.md5(hash_input.encode()).hexdigest()
+            return hashlib.sha256(hash_input.encode()).hexdigest()
 
-    def run_full_analysis(self, data_map: Dict[str, Any], **kwargs) -> Dict[str, Any]:
+    def run_full_analysis(self, data_map: dict[str, Any], **kwargs) -> dict[str, Any]:
         """
-        Запускає всі зареєстровані аналізатори паралельно.
+        Executes all registered analyzers in parallel using the thread pool.
 
-        Процес:
-        1. Генерує хеш вхідних даних.
-        2. Перевіряє, чи є результат у кеші. Якщо так, повертає його.
-        3. Якщо ні, запускає аналізатори в окремих потоках.
-        4. Кожному аналізатору передається тільки той зріз даних, який вказано в його 'data_mapping'.
-        5. Збирає результати, кешує їх та повертає.
-
-        Args:
-            data_map: Словник, де ключі - це ідентифікатори даних (напр., 'price_data'),
-                      а значення - самі дані (напр., pd.DataFrame).
-            **kwargs: Додаткові параметри, що будуть передані в метод `analyze` кожного аналізатора.
-
-        Returns:
-            Словник, що містить результати від усіх аналізаторів.
+        Workflow:
+        1. Generate input data fingerprint.
+        2. Check cache for existing results.
+        3. If no cache, route relevant data slices to analyzers.
+        4. Collect and aggregate parallel results with safety timeouts.
         """
         data_hash = self._generate_data_hash(data_map)
-        
+
+        # Check Caching Layer
         cached_results = self.results_manager.get_cached_analysis(data_hash)
         if cached_results:
-            logger.info("Результати аналізу отримано з кешу.")
+            logger.info("Retrieved analysis results from persistent cache.")
             return cached_results
 
-        logger.info(f"Запуск повного паралельного аналізу з {len(self.analyzers)} аналізаторами.")
+        logger.info(f"Commencing parallel analysis suite with {len(self.analyzers)} modules.")
         futures = {}
         for name, analyzer in self.analyzers.items():
             input_data = self._get_data_for_analyzer(name, data_map)
             if input_data is not None:
-                # Передаємо input_data як перший аргумент в analyze
+                # Dispatch to thread pool
                 futures[name] = self.thread_pool.submit(analyzer.analyze, input_data, **kwargs)
             else:
-                logger.warning(f"Пропуск аналізатора '{name}', оскільки необхідні дані відсутні.")
+                logger.warning(f"Skipping analyzer '{name}': dependent data keys not found in data_map.")
 
         results = {}
         for name, future in futures.items():
             try:
-                results[name] = future.result(timeout=120)  # 120-секундний таймаут
+                # 120-second timeout to prevent stalling the pipeline
+                results[name] = future.result(timeout=120)
             except Exception as e:
-                logger.error(f"Паралельний аналіз для '{name}' зазнав невдачі: {e}", exc_info=True)
-                results[name] = {"error": str(e)}
-        
+                logger.error(f"Parallel execution failed for analyzer '{name}': {e}", exc_info=True)
+                results[name] = {"error": str(e), "status": "failed"}
+
+        # Persist to cache
         self.results_manager.cache_analysis(data_hash, results)
-        
         return results
 
-    def _get_data_for_analyzer(self, analyzer_name: str, data_map: Dict[str, Any]) -> Optional[Any]:
-        """
-        Формує вхідні дані для конкретного аналізатора на основі його 'data_mapping'.
-        Якщо вказано один ключ - повертає дані напряму.
-        Якщо декілька - повертає словник з потрібними даними.
-        """
+    def _get_data_for_analyzer(self, analyzer_name: str, data_map: dict[str, Any]) -> Any | None:
+        """Routes specific data subsets to an analyzer based on its configured requirements."""
         required_keys = self.analyzer_data_map.get(analyzer_name, [])
         if not required_keys:
-            logger.warning(f"Для аналізатора '{analyzer_name}' не вказано 'data_mapping'. Пропуск.")
+            logger.warning(f"No data_mapping defined for analyzer '{analyzer_name}'. Skipping.")
             return None
 
-        if not all(key in data_map for key in required_keys):
-            logger.warning(f"Відсутні дані для аналізатора '{analyzer_name}'. Потрібно: {required_keys}, Доступно: {list(data_map.keys())}")
-            return None
+        # Check for missing keys
+        missing = [k for k in required_keys if k not in data_map]
         
+        # ✅ ENHANCED: Try one-time recovery if possible
+        if missing and hasattr(self.results_manager, 'recover_data'):
+            logger.info(f"🔍 '{analyzer_name}' missing keys: {missing}. Attempting recovery...")
+            for key in missing:
+                recovered = self.results_manager.recover_data(key)
+                if recovered is not None:
+                    data_map[key] = recovered
+            # Re-check after potential recovery
+            missing = [k for k in required_keys if k not in data_map]
+
+        if missing:
+            logger.warning(f"Insufficient data for '{analyzer_name}'. Missing keys: {missing}.")
+            return None
+
         if len(required_keys) == 1:
             return data_map[required_keys[0]]
-        
+
         return {key: data_map[key] for key in required_keys}
 
-    def get_contextual_report(self) -> Dict[str, Any]:
-        """
-        Збирає та повертає звіт про поточний стан та конфігурацію рушія.
-        """
-        report = {
-            "engine_status": "active",
-            "registered_analyzers": list(self.analyzers.keys()),
-            "max_workers": self.max_workers,
-            "analyzer_configurations": self.analyzer_configs,
-            "data_flow_map": self.analyzer_data_map
+    def get_contextual_report(self) -> dict[str, Any]:
+        """Generates an observability report on the engine's current operational state."""
+        return {
+            "engine_status": "operational",
+            "active_analyzers_count": len(self.analyzers),
+            "registered_modules": list(self.analyzers.keys()),
+            "max_concurrency": self.max_workers,
+            "orchestration_map": self.analyzer_data_map
         }
-        return report
 
-    def get_registered_components(self) -> Dict[str, List[str]]:
-        """Повертає словник із зареєстрованими компонентами."""
+    def get_registered_components(self) -> dict[str, list[str]]:
+        """Returns the list of registered analysis components."""
         return {'analyzers': list(self.analyzers.keys())}

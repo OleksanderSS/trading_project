@@ -1,9 +1,10 @@
-from ..interfaces import IAnalyzer
-import pandas as pd
-from typing import Dict, Any, Optional
 import logging
+from typing import Any
+
+import pandas as pd
 
 from ..calculators.macro_score_calculator import MacroScoreCalculator
+from ..interfaces import IAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class MacroContextAnalyzer(IAnalyzer):
     This analyzer uses the MacroScoreCalculator to compute indicator scores.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None, **kwargs):
+    def __init__(self, config: dict[str, Any] | None = None, **kwargs):
         """
         Initializes the analyzer with configuration for indicators and regime thresholds.
 
@@ -43,7 +44,7 @@ class MacroContextAnalyzer(IAnalyzer):
             return pd.DataFrame(columns=['macro_score', 'market_regime'])
 
         total_score = pd.Series(0.0, index=data.index)
-        
+
         for indicator_name, indicator_cfg in self.indicators_config.items():
             if indicator_name in data.columns:
                 indicator_series = data[indicator_name]
@@ -51,17 +52,17 @@ class MacroContextAnalyzer(IAnalyzer):
                 total_score += score
             else:
                 logger.debug(f"Indicator '{indicator_name}' not found in data. Skipping.")
-        
+
         result_df = pd.DataFrame(index=data.index)
         result_df['macro_score'] = total_score
         result_df['market_regime'] = self._get_regime(total_score)
-        
+
         logger.info("Macro context analysis complete.")
         return result_df
 
     def _get_regime(self, score_series: pd.Series) -> pd.Series:
         """Classifies the macro score into a market regime."""
-        
+
         # Define default thresholds if not provided
         defaults = {
             'strong_expansion': 0.5,

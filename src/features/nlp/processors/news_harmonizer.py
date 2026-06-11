@@ -1,19 +1,25 @@
 # feature_engineering/nlp/news_harmonizer.py
 
 import pandas as pd
-from src.core.logging.logger import ProjectLogger
-from src.config.unified_config_manager import UnifiedConfigManager
 
+from src.config.unified_config_manager import get_current_config
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
-# Get the unified config to access news fields
-config = UnifiedConfigManager().get_config()
-NEWS_FIELDS = config.get('news_fields', {})
+def _get_news_fields():
+    """Lazy load news fields configuration."""
+    try:
+        config = get_current_config().get_config('enrichment')
+        return config.get('news_fields', {})
+    except Exception as e:
+        logger.warning(f"[news_harmonizer] Failed to load news fields config: {e}")
+        return {}
 
 def detect_news_format(entry: dict) -> dict:
-    date_fields = NEWS_FIELDS.get("date", [])
-    text_fields = NEWS_FIELDS.get("text", [])
+    news_fields = _get_news_fields()
+    date_fields = news_fields.get("date", [])
+    text_fields = news_fields.get("text", [])
 
     date_field = next((f for f in date_fields if f in entry and entry[f]), None)
     text_field = next((f for f in text_fields if f in entry and entry[f]), None)

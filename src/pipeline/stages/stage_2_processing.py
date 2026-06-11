@@ -1,155 +1,154 @@
 # src/pipeline/stages/stage_2_processing.py
 
-import pandas as pd
-import io
-import time
-from datetime import datetime
+from typing import Any
 
-from src.pipeline.stages.base_stage import BaseStage
 from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.cloud.gcs_manager import GCSManager
 from src.core.error_handling.error_handler import ErrorHandler
-from src.processing.price_preprocessor import normalize_price_df
-from src.processing.cleaners import DataCleaner
+from src.core.file_management.file_manager import FileManager
+from src.core.logging.logger import ProjectLogger
+from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
+from src.patterns.pattern_analyzer import PatternAnalyzer
+from src.pipeline.stages.base_stage import BaseStage
 from src.processing.data_filter import IntelligentDataFilter
 from src.processing.normalization_manager import NormalizationManager
-from src.validation.validators import UnifiedValidator
+from src.processing.price_preprocessor import PricePreprocessor
 from src.utils.trading_calendar import TradingCalendar
-from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
-from src.core.logging.logger import ProjectLogger
-from src.core.cloud.gcs_manager import GCSManager
-from src.core.file_management.file_manager import FileManager
+from src.validation.validators import UnifiedValidator
+
 
 class ProcessingStage(BaseStage):
     """
     Stage 2: Data Processing, Cleaning, and Cloud Offloading.
-    - Normalizes and cleans market and macro data locally.
-    - Offloads raw news data to cloud storage for heavy NLP processing.
     """
     def __init__(self, config_manager: UnifiedConfigManager, error_handler: ErrorHandler, **kwargs):
         super().__init__(config_manager, error_handler, **kwargs)
         self.logger = ProjectLogger.get_logger("ProcessingStage")
+        self.analysis_history: list[dict[str, Any]] = []
         self.validator = UnifiedValidator()
         self.calendar = TradingCalendar()
         self.resource_monitor = get_resource_monitor()
-        self.gcs_manager = GCSManager()
-        self.file_manager = FileManager(base_dir='.')
+        self.pattern_analyzer = PatternAnalyzer(enable_debug=True)
+        self.file_manager: FileManager = FileManager(base_dir='.')
 
-        # Safely get nested configuration
-        processing_config = self.config_manager.get_config('processing') or {}
-        filtering_config = processing_config.get('filtering')
-        
+        try:
+            self.gcs_manager: GCSManager | None = GCSManager()
+        except Exception as e:
+            self.logger.warning(f"GCS Manager initialization failed: {e}. Continuing without cloud storage.")
+            self.gcs_manager = None
+
         paths_config = self.config_manager.get_config('paths') or {}
-        scaler_path = paths_config.get('scalers')
+        scaler_dir = paths_config.get('scalers')
+        self.scaler_dir: str | None = scaler_dir
+        self.data_filter: IntelligentDataFilter = IntelligentDataFilter(config_manager=self.config_manager)
+        self.normalization_manager = NormalizationManager(scaler_dir=scaler_dir or '')
 
-        if not scaler_path:
-            self.logger.critical("Scaler path ('paths.scalers') not found in configuration. Cannot proceed.")
-            raise ValueError("Scaler path configuration is missing.")
-
-        self.data_filter = IntelligentDataFilter(config=filtering_config)
-        self.normalization_manager = NormalizationManager(scaler_dir=scaler_path)
-
-    async def run(self, **kwargs) -> dict:
-        """
-        Runs the processing cycle. Offloads news data to GCS.
-        """
-        raw_data = kwargs.get('raw_data')
-        if not raw_data:
-            self.logger.error("No 'raw_data' found for processing. Skipping Stage 2.")
-            return {}
-
+    async def run(self, **kwargs) -> dict[str, Any]:
+        """Runs the processing cycle."""
         self.logger.info("Starting data processing stage...")
-        cleaned_data_map = {}
+        raw_data = {**kwargs}
+        if 'raw_data' in raw_data and isinstance(raw_data['raw_data'], dict):
+            raw_data.update(raw_data.pop('raw_data'))
 
-        # 1. Process Market Data (Prices) - Local
+        self.cleaned_data_map: dict[str, Any] = {}
+        self._process_market_data(raw_data, self.cleaned_data_map)
+        self._process_news_data(raw_data, self.cleaned_data_map)
+
+        # Застосування фільтрації та нормалізації
+        filtered_results = self._apply_intelligent_filtering(self.cleaned_data_map)
+        self._apply_normalization(filtered_results)
+
+        return self._finalize_results(filtered_results)
+
+    def _process_market_data(self, raw_data: dict, cleaned_data_map: dict):
+        """Process market data (prices) and split by interval."""
         if 'market_data' in raw_data:
-            self.logger.info("Normalizing and cleaning market data...")
-            df_m = raw_data['market_data']
-            df_m = normalize_price_df(df_m)
-            df_m = DataCleaner.remove_outliers_zscore(df_m, columns=['close'], threshold=3.0)
-            df_m = DataCleaner.handle_missing_values(df_m, method='ffill')
-            
-            price_data_dict = {}
-            if 'interval' in df_m.columns:
-                for interval, group in df_m.groupby('interval'):
-                    price_data_dict[interval] = group
+            df = raw_data['market_data']
+            df = PricePreprocessor().normalize_price_df(df)
+
+            # ✅ SPLIT BY INTERVAL: Instead of hardcoding '1d', split the data
+            if 'interval' in df.columns:
+                timeframes = {}
+                for interval, group in df.groupby('interval'):
+                    timeframes[str(interval)] = group
+                cleaned_data_map['prices'] = timeframes
+                self.logger.info(f"✅ Split market data into timeframes: {list(timeframes.keys())}")
             else:
-                self.logger.warning("'interval' column not found in market data. Assuming single timeframe '1d'.")
-                price_data_dict['1d'] = df_m
-            
-            cleaned_data_map['prices'] = price_data_dict
+                self.logger.warning("⚠️ No 'interval' column in market data, defaulting to '1d'")
+                cleaned_data_map['prices'] = {'1d': df}
 
-        # 2. Process News Data
-        if 'news_data' in raw_data and not raw_data['news_data'].empty:
-            self.logger.info("Processing news data...")
-            df_n = raw_data['news_data'].copy().drop_duplicates(subset=['title', 'link'])
-            
-            # DEBUG: Temporarily reduce dataset size to test cloud function
-            self.logger.warning(f"Original news articles: {len(df_n)}. Truncating to 100 for debugging cloud function.")
-            df_n = df_n.head(100)
+    def _process_news_data(self, raw_data: dict, cleaned_data_map: dict):
+        """Process news data."""
+        if 'news' in raw_data:
+            cleaned_data_map['news'] = raw_data['news']
 
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            raw_file_name = f"raw_news_{timestamp}.parquet"
-            gcs_path_prefix_raw = self.config_manager.get_config('cloud_storage')['paths']['raw_data']
-            gcs_full_path_raw = f"{gcs_path_prefix_raw}/{raw_file_name}"
+    def _apply_intelligent_filtering(self, cleaned_data_map: dict) -> dict:
+        filtered = self.data_filter.filter_quality_data(cleaned_data_map)
 
-            try:
-                buffer = io.BytesIO()
-                df_n.to_parquet(buffer, index=False)
-                buffer.seek(0)
-                self.gcs_manager.upload_blob_from_memory(buffer, gcs_full_path_raw)
-                self.logger.info(f"Successfully uploaded news data to: gs://{self.gcs_manager.bucket_name}/{gcs_full_path_raw}")
+        # Simple NaN% quality check on numeric price columns (informational only).
+        import pandas as pd
+        prices = filtered.get('filtered_data', {}).get('prices', {})
+        for tf, tf_entry in prices.items():
+            df = tf_entry.get('data') if isinstance(tf_entry, dict) else tf_entry
 
-                # Wait for the processed file
-                gcs_path_prefix_processed = self.config_manager.get_config('cloud_storage')['paths']['processed_data']
-                processed_file_name = f"{gcs_path_prefix_processed}/{raw_file_name}"
-                
-                self.logger.info(f"Waiting for processed file at: {processed_file_name}")
-                processed_blob = self.gcs_manager.wait_for_blob(processed_file_name, timeout=300)
+            if df is None or not isinstance(df, pd.DataFrame) or df.empty:
+                self.logger.warning(f"⚠️ No valid DataFrame for timeframe '{tf}', skipping quality check.")
+                continue
 
-                if processed_blob:
-                    self.logger.info("Processed file found. Downloading...")
-                    processed_buffer = io.BytesIO()
-                    processed_blob.download_to_file(processed_buffer)
-                    processed_buffer.seek(0)
-                    processed_df = pd.read_parquet(processed_buffer)
-                    cleaned_data_map['news'] = processed_df
-                    self.logger.info("Processed news data successfully downloaded and loaded.")
-                else:
-                    self.logger.error("Timed out waiting for processed news file. Using raw data for now.")
-                    cleaned_data_map['news'] = df_n
+            numeric_df = df.select_dtypes(include='number')
+            if numeric_df.empty:
+                continue
 
-            except Exception as e:
-                self.logger.error(f"An error occurred during news processing pipeline: {e}", exc_info=True)
-                cleaned_data_map['news'] = df_n
-        
-        # 3. Process Macro Data - Local
-        if 'macro_data' in raw_data:
-            self.logger.info("Processing macro data...")
-            df_macro = raw_data['macro_data'].copy().drop_duplicates()
-            df_macro = df_macro.ffill().bfill()
-            cleaned_data_map['macro_data'] = df_macro
+            total_cells = numeric_df.size
+            nan_cells = numeric_df.isna().sum().sum()
+            nan_pct = (nan_cells / total_cells * 100) if total_cells > 0 else 0
 
-        # 4. Intelligent Filtering
-        self.logger.info("Applying intelligent data filtering...")
-        filtered_results = self.data_filter.filter_quality_data(cleaned_data_map)
-        
-        # 5. Normalization
+            if nan_pct > 20:
+                self.logger.warning(
+                    f"⚠️ High NaN rate in '{tf}': {nan_pct:.1f}% missing values. "
+                    f"Continuing with forward-fill."
+                )
+            else:
+                self.logger.info(f"✅ Data quality for '{tf}': {nan_pct:.1f}% NaN (rows={len(df)})")
+
+        return filtered
+
+    def _unwrap_price_entries(self, filtered_data: dict) -> dict:
+        """
+        Unwrap PriceFilter's {'data': df, 'quality': ..., ...} entries into plain DataFrames.
+        ProcessedDataSchema._validate_price_dataframe expects plain DataFrames, not dicts.
+        """
+        import pandas as pd
+        prices = filtered_data.get('prices', {})
+        unwrapped: dict[str, pd.DataFrame] = {}
+        for tf, entry in prices.items():
+            if isinstance(entry, dict) and 'data' in entry:
+                df = entry['data']
+            else:
+                df = entry
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                unwrapped[tf] = df
+        if unwrapped:
+            filtered_data = {**filtered_data, 'prices': unwrapped}
+        return filtered_data
+
+    def _apply_normalization(self, filtered_results: dict):
         self.logger.info("Fitting normalization scalers...")
-        features_to_normalize = self.config_manager.get_config('processing.normalization.features')
-        
-        if 'prices' in filtered_results.get('filtered_data', {}) and filtered_results['filtered_data']['prices']:
-            first_timeframe = next(iter(filtered_results['filtered_data']['prices']))
-            fittable_data = filtered_results['filtered_data']['prices'][first_timeframe]['data'].copy()
-            self.normalization_manager.fit_scalers(fittable_data, features_to_normalize)
+        features_to_normalize = self.config_manager.get_config('processing.normalization.features') or []
 
-        # 6. System Validation
-        self.logger.info("Running unified data validation...")
-        validation_results = self.validator.validate_cleaned_data(filtered_results.get('filtered_data', {}))
-        
-        if not validation_results.get('is_valid', False):
-            self.logger.warning(f"Validation issues detected: {validation_results.get('issues', [])}")
+        # Unwrap PriceFilter entries to get plain DataFrames
+        prices_data = self._unwrap_price_entries(
+            filtered_results.get('filtered_data', {})
+        ).get('prices', {})
+        first_tf = next(iter(prices_data.values()), None)
 
-        health = self.resource_monitor.get_health_status()
-        self.logger.info(f"Stage 2 complete. System Health: CPU {health.get('cpu')}, MEM {health.get('memory')}")
+        if first_tf is not None and not first_tf.empty:
+            self.normalization_manager.fit_scalers(first_tf, features_to_normalize)
+        else:
+            self.logger.info("Skipping normalization (no data for fitting)")
 
-        return {"cleaned_data": filtered_results.get('filtered_data', {})}
+    def _finalize_results(self, filtered_results: dict) -> dict:
+        # Unwrap {'data': df, ...} entries so downstream stages and the schema
+        # validator receive plain DataFrames under 'prices'.
+        cleaned = self._unwrap_price_entries(filtered_results.get('filtered_data', {}))
+        return {"cleaned_data": cleaned}

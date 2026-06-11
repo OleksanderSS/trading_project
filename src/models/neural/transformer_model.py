@@ -1,89 +1,120 @@
 # models/transformer_model.py
 
+from __future__ import annotations
+
+import logging
+import warnings
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Optional, Dict, Any, Tuple
-import logging
-from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-import warnings
+from sklearn.preprocessing import StandardScaler
+
+from src.models.interfaces import BaseModel
+
 warnings.filterwarnings('ignore')
 
 logger = logging.getLogger(__name__)
 
-class TransformerModel:
-    """Transformer модель з fallback на sklearn"""
-    
-    def __init__(self, input_size: int = None, num_heads: int = 4, ff_dim: int = 64, 
-                 dropout: float = 0.1, classification: bool = True):
+class TransformerModel(BaseModel):
+    """Transformer model with sklearn fallback"""
+
+    def __init__(
+        self,
+        input_size: int | None = None,
+        num_heads: int = 4,
+        ff_dim: int = 64,
+        dropout: float = 0.1,
+        classification: bool = True
+    ):
+        super().__init__(model_type="transformer", task_type="classification" if classification else "regression")
         self.input_size = input_size
         self.num_heads = num_heads
         self.ff_dim = ff_dim
         self.dropout = dropout
         self.classification = classification
         self.is_trained = False
-        self.model = None
+        self.model: Any | None = None
         self.scaler = StandardScaler()
-        
-        # Fallback модель
-        self.fallback_model = None
-        
+
+        # Fallback model
+        self.fallback_model: Any | None = None
+
     def _create_fallback_model(self):
-        """Створити fallback модель на основі sklearn"""
+        """Create fallback model based on sklearn"""
         try:
             self.fallback_model = RandomForestClassifier(
                 n_estimators=100,
                 random_state=42,
-                max_depth=10
+                max_depth=10,
+                min_samples_leaf=1,
+                max_features='sqrt'
             ) if self.classification else RandomForestRegressor(
                 n_estimators=100,
                 random_state=42,
-                max_depth=10
+                max_depth=10,
+                min_samples_leaf=1,
+                max_features='sqrt'
             )
-            
+
             logger.info("OK Created fallback RandomForest model")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to create fallback model: {e}")
             return False
-    
+
     def _create_sequences(self, X: np.ndarray, seq_len: int = 10) -> np.ndarray:
-        """Створити послідовності для Transformer"""
+        """Create sequences for Transformer"""
         if X.ndim != 2 or X.shape[1] == 0:
-            raise ValueError("X має бути 2D і мати хоча б одну ознаку")
-        
-        X_seq = []
+            raise ValueError("X must be 2D and have at least one feature")
+
+        x_seq = []
         for i in range(len(X) - seq_len + 1):
-            X_seq.append(X[i:i + seq_len])
-        
-        return np.array(X_seq)
-    
+            x_seq.append(X[i:i + seq_len])
+
+        return np.array(x_seq)
+
     def fit(self, X, y, seq_len: int = 10, epochs: int = 20, batch_size: int = 32):
-        """Тренування моделі"""
+        """Train the model"""
         try:
-            # Конвертація в numpy
+            # Convert to numpy
             if hasattr(X, 'values'):
                 X = X.values
             if hasattr(y, 'values'):
                 y = y.values
-                
+
             X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
             y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
-            
-            # Спроба використати TensorFlow/Keras
+
+            # Перетворення в числові типи для Keras
+            X = X.astype(np.float32)
+            y = y.astype(np.float32)
+
+            # Attempt to use TensorFlow/Keras
             try:
-                self._fit_tensorflow_transformer(X, y, seq_len, epochs, batch_size)
+                self._fit_tensorflow_transformer(
+                    X,
+                    y,
+                    seq_len,
+                    epochs,
+                    batch_size,
+                )
             except ImportError:
-                logger.warning("TensorFlow not available, using fallback model")
+                logger.warning(
+                    "TensorFlow not available, using fallback model"
+                )
                 self._fit_fallback(X, y)
-                
-            self.is_trained = True
-            logger.info(f"OK Transformer model trained (classification: {self.classification})")
-            
+            else:
+                self.is_trained = True
+                logger.info(
+                    f"OK Transformer model trained "
+                    f"(classification: {self.classification})"
+                )
         except Exception as e:
             logger.error(f"Transformer training failed: {e}")
-            # Fallback до простої моделі
+            # Fallback to simple model
             try:
                 self._fit_fallback(X, y)
                 self.is_trained = True
@@ -91,123 +122,120 @@ class TransformerModel:
             except Exception as e2:
                 logger.error(f"Fallback training also failed: {e2}")
                 raise
-    
+
     def _fit_tensorflow_transformer(self, X, y, seq_len: int, epochs: int, batch_size: int):
-        """Тренування TensorFlow Transformer"""
-        import tensorflow as tf
-        from tensorflow.keras.models import Model
-        from tensorflow.keras.layers import Input, Dense, Dropout, LayerNormalization
-        from tensorflow.keras.layers import MultiHeadAttention, Flatten
+        """Train TensorFlow Transformer"""
         from tensorflow.keras.optimizers import Adam
-        
-        # Створення послідовностей
-        X_seq = self._create_sequences(X, seq_len)
-        if len(X_seq) == 0:
+
+        # Create sequences
+        x_seq = self._create_sequences(X, seq_len)
+        if len(x_seq) == 0:
             raise ValueError("Not enough data for sequences")
-        
-        # Вирівнювання довжини y
-        y_seq = y[seq_len-1:seq_len-1+len(X_seq)]
-        
-        # Розподіл на train/val
-        split_idx = int(len(X_seq) * 0.8)
-        X_train, X_val = X_seq[:split_idx], X_seq[split_idx:]
+
+        # Align length of y
+        y_seq = y[seq_len-1:seq_len-1+len(x_seq)]
+
+        # Split into train/val
+        split_idx = int(len(x_seq) * 0.8)
+        x_train, x_val = x_seq[:split_idx], x_seq[split_idx:]
         y_train, y_val = y_seq[:split_idx], y_seq[split_idx:]
-        
-        # Створення моделі
+
+        # Create model
         self.input_size = X.shape[1]
         self.model = self._create_transformer_model()
-        
-        # Тренування
+
+        # Training
         loss = "binary_crossentropy" if self.classification else "mse"
+        assert self.model is not None
         self.model.compile(optimizer=Adam(learning_rate=0.001), loss=loss, metrics=["mae"])
-        
-        # Тренування з валідацією
+
+        # Training with validation
         history = self.model.fit(
-            X_train, y_train,
+            x_train, y_train,
             epochs=epochs,
             batch_size=batch_size,
-            validation_data=(X_val, y_val),
+            validation_data=(x_val, y_val),
             verbose=0
         )
-        
-        # Логування результатів
+
+        # Log results
         final_loss = history.history['loss'][-1]
         val_loss = history.history['val_loss'][-1]
         logger.info(f"Transformer training completed - Loss: {final_loss:.6f}, Val Loss: {val_loss:.6f}")
-    
+
     def _create_transformer_model(self):
-        """Створити TensorFlow Transformer модель"""
+        """Create TensorFlow Transformer model"""
         import tensorflow as tf
-        from tensorflow.keras.models import Model
-        from tensorflow.keras.layers import Input, Dense, Dropout, LayerNormalization
-        from tensorflow.keras.layers import MultiHeadAttention, Flatten
-        
-        # Архітектура Transformer
-        inputs = Input(shape=(None, self.input_size))  # seq_len буде динамічним
-        
+
+        # Transformer architecture
+        inputs = tf.keras.layers.Input(shape=(None, self.input_size))  # seq_len will be dynamic
+
         # Multi-Head Attention
-        attention_output = MultiHeadAttention(
-            num_heads=self.num_heads, 
+        attention_output = tf.keras.layers.MultiHeadAttention(
+            num_heads=self.num_heads,
             key_dim=self.input_size
         )(inputs, inputs)
-        attention_output = Dropout(self.dropout)(attention_output)
-        attention_output = LayerNormalization(epsilon=1e-6)(attention_output + inputs)
-        
+        attention_output = tf.keras.layers.Dropout(self.dropout)(attention_output)
+        attention_output = tf.keras.layers.LayerNormalization(epsilon=1e-6)(attention_output + inputs)
+
         # Feed Forward
-        ff_output = Dense(self.ff_dim, activation="relu")(attention_output)
-        ff_output = Dense(self.input_size)(ff_output)
-        ff_output = Dropout(self.dropout)(ff_output)
-        ff_output = LayerNormalization(epsilon=1e-6)(ff_output + attention_output)
-        
-        # Global Average Pooling замість Flatten
+        ff_output = tf.keras.layers.Dense(self.ff_dim, activation="relu")(attention_output)
+        ff_output = tf.keras.layers.Dense(self.input_size)(ff_output)
+        ff_output = tf.keras.layers.Dropout(self.dropout)(ff_output)
+        ff_output = tf.keras.layers.LayerNormalization(epsilon=1e-6)(ff_output + attention_output)
+
+        # Global Average Pooling instead of Flatten
         x = tf.reduce_mean(ff_output, axis=1)  # Global average pooling
-        x = Dense(64, activation="relu")(x)
-        x = Dropout(0.3)(x)
-        
-        # Вихідний шар
+        x = tf.keras.layers.Dense(64, activation="relu")(x)
+        x = tf.keras.layers.Dropout(0.3)(x)
+
+        # Output layer
         if self.classification:
-            outputs = Dense(1, activation="sigmoid")(x)
+            outputs = tf.keras.layers.Dense(1, activation="sigmoid")(x)
         else:
-            outputs = Dense(1, activation="linear")(x)
-        
-        model = Model(inputs=inputs, outputs=outputs)
+            outputs = tf.keras.layers.Dense(1, activation="linear")(x)
+
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
         return model
-    
+
     def _fit_fallback(self, X, y):
-        """Тренування fallback моделі"""
-        if self.fallback_model is None:
-            if not self._create_fallback_model():
-                raise RuntimeError("Cannot create fallback model")
-        
-        # Використовуємо останні значення для тренування
+        """Train fallback model"""
+        if self.fallback_model is None and not self._create_fallback_model():
+            raise RuntimeError("Cannot create fallback model")
+
+        # Використовуємо останні значення для Training
         if len(X) > 10:
-            X_train = X[-min(len(X), 100):]  # Останні 100 точок
+            X_train = X[-min(len(X), 100):]  # Last 100 points
             y_train = y[-min(len(y), 100):]
         else:
             X_train = X
             y_train = y
-        
+
+        assert self.fallback_model is not None
         self.fallback_model.fit(X_train, y_train)
         logger.info("OK Fallback model trained")
-    
+
     def predict(self, X, seq_len: int = 10):
-        """Прогнозування"""
+        """Prediction"""
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction")
-        
+
         try:
-            # Конвертація в numpy
+            # Convert to numpy
             if hasattr(X, 'values'):
                 X = X.values
-                
+
             X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
-            
-            # Спроба TensorFlow
+
+            # Перетворення в числовий тип для Keras
+            X = X.astype(np.float32)
+
+            # Attempt TensorFlow
             if self.model is not None:
                 return self._predict_tensorflow(X, seq_len)
             else:
                 return self._predict_fallback(X)
-                
+
         except Exception as e:
             logger.error(f"Transformer prediction failed: {e}")
             # Fallback
@@ -216,37 +244,36 @@ class TransformerModel:
             except Exception as e2:
                 logger.error(f"Fallback prediction also failed: {e2}")
                 raise
-    
+
     def _predict_tensorflow(self, X, seq_len: int):
-        """Прогнозування TensorFlow"""
-        import tensorflow as tf
-        
-        X_seq = self._create_sequences(X, seq_len)
-        if len(X_seq) == 0:
+        """TensorFlow prediction"""
+        x_seq = self._create_sequences(X, seq_len)
+        if len(x_seq) == 0:
             raise ValueError("Not enough data for prediction")
-        
-        predictions = self.model.predict(X_seq, verbose=0)
+
+        assert self.model is not None
+        predictions = self.model.predict(x_seq, verbose=0)
         return predictions
-    
+
     def _predict_fallback(self, X):
-        """Прогнозування fallback"""
+        """Fallback prediction"""
         if self.fallback_model is None:
             raise RuntimeError("No fallback model available")
-        
-        # Використовуємо останні значення для прогнозу
+
+        # Use latest values for prediction
         if len(X.shape) == 2:
             return self.fallback_model.predict(X[-1:].reshape(1, -1))
         else:
             return self.fallback_model.predict(X.reshape(1, -1))
-    
+
     def predict_proba(self, X, seq_len: int = 10):
-        """Прогнозування ймовірностей"""
+        """Probability prediction"""
         if not self.classification:
             raise ValueError("predict_proba only available for classification")
-        
+
         predictions = self.predict(X, seq_len)
-        
-        # Конвертація в ймовірності
+
+        # Convert to probabilities
         if len(predictions.shape) == 1:
             probas = np.zeros((len(predictions), 2))
             probas[:, 1] = predictions
@@ -254,9 +281,9 @@ class TransformerModel:
             return probas
         else:
             return predictions
-    
-    def get_params(self) -> Dict[str, Any]:
-        """Параметри моделі"""
+
+    def get_params(self) -> dict[str, Any]:
+        """Model parameters"""
         return {
             'input_size': self.input_size,
             'num_heads': self.num_heads,
@@ -268,40 +295,47 @@ class TransformerModel:
             'has_fallback_model': self.fallback_model is not None
         }
 
-# Зберігаємо стару функцію для сумісності
-def train_transformer_model(df: pd.DataFrame, ticker: str, timeframe: str, 
-                           task: str = "regression", epochs: int = 20, batch_size: int = 16,
-                           num_heads: int = 4, ff_dim: int = 64):
-    """Стара функція для сумісності"""
+# Keep old function for compatibility
+def train_transformer_model(
+    df: pd.DataFrame,
+    ticker: str,
+    timeframe: str,
+    task: str = "regression",
+    epochs: int = 20,
+    batch_size: int = 16,
+    num_heads: int = 4,
+    ff_dim: int = 64
+):
+    """Old function for compatibility"""
     try:
-        # Підготовка data
+        # Prepare data
         feature_cols = [col for col in df.columns if col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
         X = df[feature_cols].fillna(0).values
         y = (df['Close'].shift(-1) > df['Close']).astype(int) if task == "classification" else df['Close'].shift(-1)
-        
-        # Видаляємо NaN з y
+
+        # Remove NaN from y
         mask = ~np.isnan(y)
         X = X[mask]
         y = y[mask]
-        
+
         if len(X) < 20:
             logger.warning(f"Not enough data for {ticker} {timeframe}")
             return None
-        
-        # Створення моделі
+
+        # Create model
         model = TransformerModel(
             input_size=X.shape[1],
             num_heads=num_heads,
             ff_dim=ff_dim,
             classification=(task == "classification")
         )
-        
-        # Тренування
+
+        # Training
         model.fit(X, y, epochs=epochs, batch_size=batch_size)
-        
+
         logger.info(f"OK Transformer trained for {ticker} {timeframe}")
         return model
-        
+
     except Exception as e:
         logger.error(f"Error training Transformer {ticker} {timeframe}: {e}")
         return None

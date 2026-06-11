@@ -1,8 +1,9 @@
 # src/feature_engineering/nlp/mention_utils.py
 
-from src.features.nlp.keyword_extractor import KeywordExtractor
-from typing import Any, Dict, Optional, Union
 import logging
+from typing import Any
+
+from src.features.nlp.keyword_extractor import KeywordExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -14,15 +15,15 @@ TICKER_ALIASES = {
 }
 
 
-def safe_get(data: Union[Dict, Any], key: str, default: Any = None) -> Any:
+def safe_get(data: dict | Any, key: str, default: Any = None) -> Any:
     """
     Safely get value from dictionary or object attribute
-    
+
     Args:
         data: Dictionary or object to extract value from
         key: Key or attribute name to extract
         default: Default value if key not found
-        
+
     Returns:
         Extracted value or default
     """

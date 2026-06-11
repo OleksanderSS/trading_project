@@ -1,20 +1,20 @@
 # src/feature_engineering/nlp/finbert_pipeline.py
 
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
-import torch
 from threading import Lock
-from typing import Optional
-from src.core.logging.logger import ProjectLogger
 
+import torch
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
-_FINBERT_PIPELINE: Optional[pipeline] = None
+_FINBERT_PIPELINE: pipeline | None = None
 _LOCK = Lock()
 _DEVICE = None
 
 
-def get_finbert_pipeline(device_preference: str = "auto") -> Optional[pipeline]:
+def get_finbert_pipeline(device_preference: str = "auto") -> pipeline | None:
     """
     Synchronously returns FinBERT pipeline.
     - Lazy loading, blocks on lock.

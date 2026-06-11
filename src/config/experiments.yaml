@@ -1,42 +1,37 @@
 base:
-  output_dir: "experiments/results"
-
+  output_dir: experiments/results
 compare_layers:
   days: 365
   parallel: true
   workers: 4
   visualize: true
-
 output:
   create_timestamp_dirs: true
-  save_formats: ["csv", "json"]
+  save_formats:
+  - csv
+  - json
   generate_plots: true
-  plot_format: "png"
+  plot_format: png
   plot_dpi: 300
-
 parallel:
   enabled: true
   max_workers: null
   chunk_size: 10
   timeout_seconds: 300
-
 default_params:
   days: 365
   tickers: null
   timeframes: null
-  metrics: ["MAE", "RMSE", "R2", "Sharpe"]
+  metrics:
+  - MAE
+  - RMSE
+  - R2
+  - Sharpe
   higher_is_better:
     MAE: false
     RMSE: false
     R2: true
     Sharpe: true
-
-logging:
-  level: "INFO"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  save_to_file: true
-  log_dir: "logs/experiments"
-
 tracking:
   track_execution_time: true
   track_memory_usage: true

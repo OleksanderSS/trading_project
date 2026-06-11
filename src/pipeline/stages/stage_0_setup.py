@@ -1,28 +1,21 @@
-"""
-Stage 0: Environment Setup
-
-Responsible for system initialization, directory creation, and verification 
-of environment readiness before the pipeline execution.
-"""
+# src/pipeline/stages/stage_0_setup.py
 
 import os
-from typing import Optional, Any, Dict
-
-from src.pipeline.stages.base_stage import BaseStage
+from typing import Any
 from src.config.unified_config_manager import UnifiedConfigManager
-from src.core.logging.logger import ProjectLogger
 from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
+from src.pipeline.stages.base_stage import BaseStage
 
-class Stage_0_Setup(BaseStage):
-    """
-    Stage responsible for preparing the working environment by ensuring 
-    necessary infrastructure and configurations are in place.
-    """
+class Stage0Setup(BaseStage):
     def __init__(self, config_manager: UnifiedConfigManager, error_handler: ErrorHandler, **kwargs):
         super().__init__(config_manager, error_handler, **kwargs)
         self.logger = ProjectLogger.get_logger("Stage0Setup")
 
-    async def run(self, **kwargs) -> Dict[str, Any]:
+    async def execute(self, **kwargs) -> dict[str, Any]:
+        return await self.run(**kwargs)
+
+    async def run(self, **kwargs) -> dict[str, Any]:
         """
         Executes environment setup by creating required system directories.
 
@@ -31,7 +24,7 @@ class Stage_0_Setup(BaseStage):
 
         Args:
             **kwargs: Arbitrary keyword arguments (not used in this stage).
-        
+
         Returns:
             An empty dictionary, as this stage does not produce output for subsequent stages.
 
@@ -44,11 +37,11 @@ class Stage_0_Setup(BaseStage):
         try:
             # Retrieve paths configuration
             paths_config = self.config_manager.get_config('paths')
-            
+
             if not paths_config:
                 self.logger.critical("Critical error: 'paths' configuration section is missing. Pipeline cannot proceed.")
                 raise KeyError("Missing 'paths' configuration section.")
-            
+
             # Define required directories
             required_paths = {
                 'data': paths_config.get('root'),
@@ -69,15 +62,13 @@ class Stage_0_Setup(BaseStage):
                     created_dirs.append(path)
                 else:
                     self.logger.debug(f"Directory already exists: {path}")
-            
+
             summary = ", ".join(created_dirs) if created_dirs else "none (all existed)"
             self.logger.info(f"Environment setup successfully completed. New directories: {summary}")
 
         except KeyError as e:
-            self.logger.error(f"Missing required configuration key in 'paths.yaml': {e}")
-            raise
+            self.handle_stage_error(e, context="ConfigKey-paths", severity="error", should_raise=True)
         except Exception as e:
-            self.logger.error(f"Failed to complete environment setup: {e}", exc_info=True)
-            raise
-        
+            self.handle_stage_error(e, context="EnvironmentSetup", severity="error", should_raise=True)
+
         return {}

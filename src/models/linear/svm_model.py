@@ -1,12 +1,15 @@
 # src/models/linear/svm_model.py
 
+from typing import Any
+
+import joblib
 import numpy as np
 import pandas as pd
-import joblib
-from typing import Dict, Any
 from sklearn.svm import SVC, SVR
-from src.models.interfaces import BaseModel
+
 from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel
+
 
 class SVMModel(BaseModel):
     """Support Vector Machine model for classification and regression tasks."""
@@ -17,13 +20,13 @@ class SVMModel(BaseModel):
         self.C = C
         self.gamma = gamma
         self.logger = ProjectLogger.get_logger("SVMModel")
-        self.model = None
+        self.model: SVC | SVR | None = None
 
     @property
     def name(self) -> str:
         return "svm"
 
-    def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> Dict[str, Any]:
+    def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> dict[str, Any]:
         """Trains the SVM model."""
         try:
             if self.task_type == "classification":
@@ -43,11 +46,11 @@ class SVMModel(BaseModel):
                     gamma=self.gamma,
                     **kwargs
                 )
-            
+
             self.model.fit(X, y)
             self.is_trained = True
             self.logger.info(f"SVM model trained successfully (task: {self.task_type}, kernel={self.kernel})")
-            
+
             return self.get_model_info()
 
         except Exception as e:
@@ -58,7 +61,7 @@ class SVMModel(BaseModel):
         """Makes predictions with the trained model."""
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction.")
-        
+
         return self.model.predict(X)
 
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
@@ -67,7 +70,7 @@ class SVMModel(BaseModel):
             raise ValueError("predict_proba is only available for classification tasks")
         if not self.is_trained:
             raise ValueError("Model must be trained before prediction")
-        
+
         return self.model.predict_proba(X)
 
     def save_model(self, path: str) -> bool:
@@ -75,7 +78,7 @@ class SVMModel(BaseModel):
         if not self.is_trained:
             self.logger.error("Cannot save an untrained model.")
             return False
-        
+
         try:
             joblib.dump(self, path)
             self.logger.info(f"SVM model saved to {path}")

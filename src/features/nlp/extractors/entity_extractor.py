@@ -1,9 +1,10 @@
 
 # src/feature_engineering/nlp/entity_extractor.py
 
-import spacy
-from typing import List, Dict, Any, Optional
 import logging
+from typing import Any
+
+import spacy
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ class EntityExtractor:
     Extracts named entities from text using a pre-trained spaCy model.
     """
 
-    def __init__(self, entity_config: Dict[str, Any]):
+    def __init__(self, entity_config: dict[str, Any]):
         """
         Initializes the EntityExtractor with a specific configuration.
 
@@ -26,10 +27,10 @@ class EntityExtractor:
 
         self.model_name = entity_config.get("spacy_model", "en_core_web_sm")
         self.disable_components = entity_config.get("disable_components", ["tagger", "parser", "attribute_ruler", "lemmatizer"])
-        
+
         self.nlp = self._load_model()
 
-    def _load_model(self) -> Optional[spacy.Language]:
+    def _load_model(self) -> spacy.Language | None:
         """
         Loads the configured spaCy model, handling potential errors.
         """
@@ -46,13 +47,13 @@ class EntityExtractor:
             # Return None to indicate failure, allowing graceful degradation
             return None
 
-    def extract(self, text: str, entity_types: Optional[List[str]] = None) -> List[str]:
+    def extract(self, text: str, entity_types: list[str] | None = None) -> list[str]:
         """
         Extracts named entities from a given text.
 
         Args:
             text (str): The input text to analyze.
-            entity_types (Optional[List[str]]): A list of specific entity labels to filter for 
+            entity_types (Optional[List[str]]): A list of specific entity labels to filter for
                                                (e.g., ['ORG', 'GPE']). If None, all entities are returned.
 
         Returns:
@@ -63,10 +64,10 @@ class EntityExtractor:
 
         try:
             doc = self.nlp(text)
-            # Use a set for automatic deduplication, then convert to list
+            # Use a set for automatic deduplication, then convert to sorted list
             entities = {ent.text.strip() for ent in doc.ents if not entity_types or ent.label_ in entity_types}
             logger.debug(f"Extracted {len(entities)} entities from text.")
-            return sorted(list(entities))
+            return sorted(entities)
         except Exception as e:
             logger.error(f"An unexpected error occurred during entity extraction: {e}", exc_info=True)
             return []

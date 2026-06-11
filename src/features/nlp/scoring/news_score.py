@@ -1,14 +1,13 @@
 # src/feature_engineering/nlp/news_score.py
 
-from typing import List, Dict
-from src.core.logging.logger import ProjectLogger
 
+from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
 def compute_news_score(
-    sentiment: Dict[str, float],
-    keywords: List[str],
+    sentiment: dict[str, float],
+    keywords: list[str],
     weight_keywords: float = 0.7,
     weight_sentiment: float = 0.3
 ) -> float:

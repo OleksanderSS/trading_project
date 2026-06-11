@@ -2,9 +2,10 @@
 # src/feature_engineering/nlp/summarizer.py
 
 import logging
+from typing import Any
+
 import torch
-from transformers import pipeline, Pipeline
-from typing import Dict, Any, Optional
+from transformers import Pipeline, pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ class Summarizer:
     Features lazy loading and robust error handling.
     """
 
-    def __init__(self, model_config: Dict[str, Any]):
+    def __init__(self, model_config: dict[str, Any]):
         """
         Initializes the Summarizer with a specific configuration.
 
@@ -35,7 +36,7 @@ class Summarizer:
         self.min_length = model_config.get('min_length', 30)
         self.input_max_len = model_config.get('input_max_len', 1024) # Max tokens for model input
         self.min_words_for_summary = model_config.get('min_words_for_summary', 20)
-        
+
         # Determine the device to run on
         device_override = model_config.get('device')
         if device_override:
@@ -47,7 +48,7 @@ class Summarizer:
             device_index = 0 if is_cuda else -1
         self.pipeline_device_index = device_index
 
-        self.summarization_pipeline: Optional[Pipeline] = None
+        self.summarization_pipeline: Pipeline | None = None
         logger.info(f"Summarizer initialized for model '{self.model_name}' on device '{self.device}'.")
 
     def _load_model(self):
@@ -116,7 +117,7 @@ class Summarizer:
             )
 
             summary = result[0]['summary_text'].strip() if result and isinstance(result, list) else ""
-            
+
             if not summary:
                 logger.warning("Model generated an empty summary. Providing fallback.")
                 return truncated_text.split('.')[0] + '.' # Return first sentence as a fallback

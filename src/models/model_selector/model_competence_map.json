@@ -1,5 +1,5 @@
 {
-  "comment": "This file defines the competence of models based on market context.",
+  "comment": "Competence of models based on market context. Short type names match last segment of model key.",
   "metric_weights": {
     "accuracy": 0.3,
     "f1": 0.3,
@@ -8,41 +8,45 @@
   "default_scores": {
     "classification": {
       "lgbm": 0.75, "xgb": 0.73, "rf": 0.70, "catboost": 0.72, "svm": 0.65,
-      "knn": 0.60, "mlp": 0.68, "linear": 0.55, "lstm": 0.70, "transformer": 0.68,
-      "gru": 0.72, "cnn": 0.65, "tabnet": 0.67, "autoencoder": 0.63, "ensemble": 0.78
+      "knn": 0.60, "mlp": 0.68, "linear": 0.55, "lstm": 0.72, "transformer": 0.70,
+      "gru": 0.73, "cnn": 0.67, "tabnet": 0.69, "autoencoder": 0.63, "ensemble": 0.78,
+      "lightgbm": 0.75, "xgboost": 0.73, "random_forest": 0.70,
+      "neural_network": 0.68, "base_neural": 0.65
     },
     "regression": {
-      "linear": 0.70, "mlp": 0.72, "lstm": 0.68, "transformer": 0.65, "lgbm": 0.73,
-      "xgb": 0.71, "rf": 0.68, "svm": 0.66, "catboost": 0.74, "cnn": 0.64,
-      "tabnet": 0.66, "autoencoder": 0.62, "ensemble": 0.77
+      "linear": 0.70, "mlp": 0.72, "lstm": 0.70, "transformer": 0.67, "lgbm": 0.73,
+      "xgb": 0.71, "rf": 0.68, "svm": 0.66, "catboost": 0.74, "cnn": 0.66,
+      "tabnet": 0.68, "autoencoder": 0.62, "ensemble": 0.77, "gru": 0.71,
+      "lightgbm": 0.73, "xgboost": 0.71, "random_forest": 0.68,
+      "neural_network": 0.72, "base_neural": 0.65
     }
   },
   "context_rules": {
     "volatility": {
       "high": {
-        "models": ["lstm", "transformer", "mlp", "cnn", "tabnet"],
+        "models": ["lstm", "gru", "transformer", "mlp", "cnn", "tabnet", "neural_network"],
         "adjustment": 1.1
       },
       "low": {
-        "models": ["lstm", "transformer", "mlp", "cnn", "tabnet"],
+        "models": ["lstm", "gru", "transformer", "mlp", "cnn", "tabnet"],
         "adjustment": 0.9
       },
       "high_specific": {
-        "models": ["lgbm", "xgb", "rf"],
+        "models": ["lgbm", "xgb", "rf", "lightgbm", "xgboost", "random_forest", "catboost"],
         "adjustment": 0.95
       },
-       "low_specific": {
-        "models": ["lgbm", "xgb", "rf"],
+      "low_specific": {
+        "models": ["lgbm", "xgb", "rf", "lightgbm", "xgboost", "random_forest", "catboost"],
         "adjustment": 1.1
       }
     },
     "trend": {
       "trending": {
-        "models": ["linear", "svm", "cnn", "tabnet"],
+        "models": ["linear", "svm", "cnn", "tabnet", "gru", "lstm"],
         "adjustment": 1.1
       },
       "sideways": {
-        "models": ["linear", "svm"],
+        "models": ["linear", "svm", "autoencoder"],
         "adjustment": 0.9
       }
     },
@@ -55,27 +59,27 @@
         "models": ["knn", "svm", "autoencoder", "ensemble"],
         "adjustment": 1.05
       },
-       "low_specific": {
+      "low_specific": {
         "models": ["autoencoder", "ensemble"],
         "adjustment": 0.9
       }
     },
     "market_regime": {
       "bear": {
-        "models": ["lstm", "transformer"],
-        "adjustment": 1.1
+        "models": ["lstm", "gru", "transformer"],
+        "adjustment": 1.12
       },
       "bull": {
-         "models": ["linear"],
-         "adjustment": 1.1
+        "models": ["linear", "lightgbm", "xgboost", "catboost"],
+        "adjustment": 1.1
       },
       "trending": {
-        "models": ["cnn", "tabnet"],
+        "models": ["cnn", "tabnet", "gru"],
         "adjustment": 1.05
       },
-      "neutral":{
-         "models": ["cnn", "tabnet"],
-         "adjustment": 0.95
+      "neutral": {
+        "models": ["cnn", "tabnet"],
+        "adjustment": 0.95
       }
     }
   },
@@ -90,7 +94,7 @@
     },
     "anomaly_present": {
       "random_forest": {"n_estimators": 300, "max_depth": 3},
-      "gradient_boosting': {'n_estimators': 150, 'learning_rate': 0.03}
+      "gradient_boosting": {"n_estimators": 150, "learning_rate": 0.03}
     },
     "regime_change": {
       "random_forest": {"n_estimators": 250, "max_depth": 4},

@@ -1,16 +1,17 @@
 # src/features/nlp/processors/article_processor.py
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any
+
+from src.features.nlp.extractors.keyword_extractor import KeywordExtractor
 
 # --- NLP Components ---
 from src.features.nlp.models.roberta_sentiment import RobertaSentimentAnalyzer
-from src.features.nlp.scoring.summarizer import Summarizer
-from src.features.nlp.extractors.keyword_extractor import KeywordExtractor
+from src.features.nlp.scoring.news_scorer import NewsScorer
 
 # --- Scoring Components ---
 from src.features.nlp.scoring.simple_sentiment import SimpleSentimentAnalyzer
-from src.features.nlp.scoring.news_scorer import NewsScorer
+from src.features.nlp.scoring.summarizer import Summarizer
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class ArticleProcessor:
     It extracts sentiment, keywords, entities, and a summary, then calculates a final score.
     """
 
-    def __init__(self, processor_config: Dict[str, Any], primary_tickers: Optional[List[str]] = None):
+    def __init__(self, processor_config: dict[str, Any], primary_tickers: list[str] | None = None):
         """
         Initializes the ArticleProcessor and its sub-components based on configuration.
 
@@ -35,9 +36,9 @@ class ArticleProcessor:
         # --- 1. Initialize Sentiment Analyzer ---
         sentiment_config = processor_config.get('sentiment', {})
         analyzer_type = sentiment_config.get('analyzer', 'simple').lower()
-        
+
         if analyzer_type == 'roberta' and 'roberta_model' in sentiment_config:
-            self.sentiment_analyzer = RobertaSentimentAnalyzer(sentiment_config['roberta_model'])
+            self.sentiment_analyzer: RobertaSentimentAnalyzer | SimpleSentimentAnalyzer = RobertaSentimentAnalyzer(sentiment_config['roberta_model'])
             logger.info("Using RobertaSentimentAnalyzer for sentiment analysis.")
         else:
             self.sentiment_analyzer = SimpleSentimentAnalyzer(sentiment_config.get('simple_model'))
@@ -54,7 +55,7 @@ class ArticleProcessor:
         self.scorer = NewsScorer(processor_config.get('scoring'), primary_tickers)
         logger.info("NewsScorer initialized.")
 
-    def process(self, article: Dict[str, Any]) -> Dict[str, Any]:
+    def process(self, article: dict[str, Any]) -> dict[str, Any]:
         """
         Processes a single article to enrich it with NLP features and a final score.
 
@@ -62,7 +63,7 @@ class ArticleProcessor:
             article (Dict[str, Any]): The article to process, containing 'content' or 'description'.
 
         Returns:
-            Dict[str, Any]: The enriched article with new keys: 'sentiment', 'summary', 
+            Dict[str, Any]: The enriched article with new keys: 'sentiment', 'summary',
                             'keywords', 'entities', and 'score'.
         """
         text = article.get('content') or article.get('description') or article.get('title')
@@ -74,21 +75,21 @@ class ArticleProcessor:
         # --- Step 1: Feature Extraction ---
         sentiment_result = self.sentiment_analyzer.analyze(text)
         summary = self.summarizer.summarize(text)
-        
+
         # In a real implementation, you'd extract entities here.
         # For this example, we'll simulate it with keywords or predefined tickers.
         # entities = self.entity_extractor.extract(text)
-        entities = self.keyword_extractor.extract_keywords(text) # Using keywords as a proxy for entities
+        entities = self.keyword_extractor.extract(text)  # Using keywords as a proxy for entities
 
         # Combine extracted keywords with any existing ones
-        extracted_keywords = self.keyword_extractor.extract_keywords(text)
-        all_keywords = sorted(list(set(article.get('keywords', [])) | set(extracted_keywords)))
+        all_keywords = sorted(set(article.get('keywords', [])) | set(entities))
 
         # --- Step 2: Scoring ---
         final_score = self.scorer.score(
             sentiment_details=sentiment_result.get('details', {}),
             keywords=all_keywords,
-            entities=entities # Passing keywords as a stand-in for entities
+            entities=entities, # Passing keywords as a stand-in for entities
+            text=text
         )
 
         # --- Step 3: Assemble Final Result ---

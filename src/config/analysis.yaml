@@ -14,8 +14,12 @@ engine:
       data_mapping: ["price_data", "market_indicators"]
     - name: "causal_event_finder"
       module: "src.analytics.analyzers.causal_event_finder"
-      class: "CausalEngine"
+      class: "CausalEventFinder"
       data_mapping: ["target_series", "causal_series"]
+      params:
+        treatment: "signal"
+        outcome: "predicted_return"
+        common_causes: ["confidence", "anomaly_score"]
     - name: "knn_similarity"
       module: "src.analytics.analyzers.knn_similarity_finder"
       class: "KnnSimilarityFinder"
@@ -40,10 +44,43 @@ engine:
       module: "src.analytics.context.macro_context_analyzer"
       class: "MacroContextAnalyzer"
       data_mapping: ["macro_data"]
+      params:
+        context_features: []
     - name: "critical_signals"
       module: "src.analytics.detectors.critical_signal_detector"
       class: "CriticalSignalDetector"
       data_mapping: ["price_data"]
+    - name: "shap_explainability"
+      module: "src.analytics.analyzers.shap_analyzer"
+      class: "ShapAnalyzer"
+      data_mapping: ["models_metadata", "features_data"]
+      params:
+        summary_only: true
+        enabled: true
+    - name: "arena_battle"
+      module: "src.analytics.arena.arena_battle"
+      class: "TradingModelArena"
+      params:
+        enabled: true
+        min_samples: 10
+    - name: "significance_filter"
+      module: "src.features.enrichers.significance_features_enricher"
+      class: "SignificanceAnalyzer"
+      params:
+        threshold: 0.8
+        enabled: true
+    - name: "drift_monitoring"
+      module: "src.analytics.analyzers.drift_analyzer"
+      class: "DriftAnalyzer"
+      data_mapping: ["features_data"]
+      params:
+        drift_threshold: 0.35
+    - name: "pattern_analysis"
+      module: "src.patterns.pattern_analyzer"
+      class: "PatternAnalyzer"
+      data_mapping: ["price_data", "news_data"]
+      params:
+        enable_debug: false
 
 calculators_config:
   volatility:

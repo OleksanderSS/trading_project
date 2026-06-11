@@ -1,9 +1,10 @@
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
-import logging
 
-logger = logging.getLogger(__name__)
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
 
 class KnnModelWrapper:
     """
@@ -51,13 +52,13 @@ class KnnModelWrapper:
         if not self.is_fitted:
             logger.error("The model must be fitted before finding neighbors.")
             raise RuntimeError("Model is not fitted. Call .fit() first.")
-        
+
         # Ensure columns and data types match what the scaler expects
         numeric_target_df = target_features_df.select_dtypes(include=['number']).dropna()
         if numeric_target_df.empty:
             logger.warning("Target DataFrame is empty or has no numeric data after cleaning.")
             return ([], [])
-        
+
         try:
             # Use the already fitted scaler to transform the target data
             scaled_target = self.scaler.transform(numeric_target_df)

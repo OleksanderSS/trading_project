@@ -1,35 +1,37 @@
 # src/models/neural/tabnet_model.py
 
-import numpy as np
-import pandas as pd
-import joblib
 from pathlib import Path
 
-# Попередження: pytorch_tabnet не є стандартною бібліотекою.
-# Переконайтеся, що її встановлено: pip install pytorch-tabnet
+import joblib
+import numpy as np
+import pandas as pd
+
+# Warning: pytorch_tabnet is not a standard library.
+# Ensure it is installed: pip install pytorch-tabnet
 try:
-    from pytorch_tabnet.tab_model import TabNetRegressor, TabNetClassifier
+    from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 except ImportError:
     TabNetRegressor = None
     TabNetClassifier = None
 
-from src.models.interfaces import BaseModel
 from src.core.logging.logger import ProjectLogger
+from src.models.interfaces import BaseModel
+
 
 class TabNetModel(BaseModel):
     """
-    Обгортка для моделі TabNet, що відповідає інтерфейсу BaseModel.
+    Wrapper for TabNet model matching BaseModel interface.
     """
     def __init__(self, task_type: str = "regression", **kwargs):
         if TabNetRegressor is None:
-            raise ImportError("pytorch_tabnet не встановлено. Будь ласка, встановіть її, щоб використовувати TabNetModel.")
-        
+            raise ImportError("pytorch_tabnet not installed. Please install it to use TabNetModel.")
+
         super().__init__(model_type="tabnet", task_type=task_type)
         self.model = self._create_model_instance(**kwargs)
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
 
     def _create_model_instance(self, **kwargs):
-        """Створює екземпляр моделі TabNet на основі типу задачі."""
+        """Creates TabNet model instance based on task type."""
         if self.task_type == "classification":
             return TabNetClassifier(**kwargs)
         else:
@@ -37,20 +39,20 @@ class TabNetModel(BaseModel):
 
     def train(self, X: pd.DataFrame, y: pd.Series, **kwargs) -> dict:
         """
-        Тренує модель TabNet.
-        
-        :param X: Навчальні дані (ознаки).
-        :param y: Навчальні дані (цільова змінна).
+        Trains model TabNet.
+
+        :param X: Training data (features).
+        :param y: Навчальні дані (Target variable..
         :param kwargs: Додаткові параметри для методу `fit`, наприклад, `eval_set`.
         """
         self.feature_cols = X.columns.tolist()
-        
-        # TabNet вимагає, щоб X та y були у форматі np.ndarray
-        X_np = X.values
-        y_np = y.values.reshape(-1, 1)
 
-        self.logger.info(f"Тренування моделі {self.name}...")
-        
+        # TabNet вимагає, щоб X та y були у форматі np.ndarray
+        x_np = X.values.astype(np.float32)
+        y_np = y.values.reshape(-1, 1).astype(np.float32)
+
+        self.logger.info(f"Train the model {self.name}...")
+
         # Використовуємо параметри з kwargs, якщо вони надані
         fit_params = {
             "max_epochs": 50,
@@ -60,43 +62,43 @@ class TabNetModel(BaseModel):
         }
 
         self.model.fit(
-            X_train=X_np,
+            X_train=x_np,
             y_train=y_np,
             **fit_params
         )
         self.is_trained = True
-        self.logger.info("Тренування завершено.")
+        self.logger.info("Training завершено.")
         return {"status": "success", "message": f"Модель {self.name} успішно натренована."}
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """
-        Робить прогнози за допомогою натренованої моделі.
-        
-        :param X: Дані для прогнозування.
+        Makes predictions.за допомогою натренованої моделі.
+
+        :param X: Дані для Prediction.
         :return: Масив прогнозів.
         """
         if not self.is_trained:
-            raise RuntimeError("Модель ще не натренована. Викличте метод `train` перед прогнозуванням.")
-        
-        X_np = X[self.feature_cols].values
+            raise RuntimeError("Модель ще не натренована. Викличте метод `train` перед Predictionм.")
+
+        x_np = X[self.feature_cols].values
         self.logger.info(f"Створення прогнозів з моделлю {self.name}...")
-        predictions = self.model.predict(X_np)
+        predictions = self.model.predict(x_np)
         return predictions.flatten()
 
     def save_model(self, path: str) -> bool:
         """
         Зберігає натреновану модель TabNet.
-        
+
         :param path: Шлях для збереження моделі (файл .zip).
         :return: True, якщо збереження пройшло успішно.
         """
         if not self.is_trained:
             self.logger.warning("Спроба зберегти ненатреновану модель.")
             return False
-            
+
         # Зберігаємо саму модель TabNet
         model_path = self.model.save_model(path) # Повертає шлях до .zip
-        
+
         # Зберігаємо метадані (наприклад, список ознак)
         metadata = {
             'feature_cols': self.feature_cols,
@@ -105,14 +107,14 @@ class TabNetModel(BaseModel):
         # Шлях до файлу метаданих буде поруч з моделлю
         metadata_path = Path(model_path).with_suffix('.meta')
         joblib.dump(metadata, metadata_path)
-        
+
         self.logger.info(f"Модель збережено в {model_path} та метадані в {metadata_path}")
         return True
 
     def load_model(self, path: str) -> bool:
         """
         Завантажує натреновану модель TabNet.
-        
+
         :param path: Шлях до збереженої моделі (файл .zip).
         :return: True, якщо завантаження пройшло успішно.
         """
@@ -122,11 +124,11 @@ class TabNetModel(BaseModel):
             metadata = joblib.load(metadata_path)
             self.feature_cols = metadata['feature_cols']
             self.task_type = metadata['task_type']
-            
+
             # Створюємо екземпляр моделі і завантажуємо стан
             self.model = self._create_model_instance()
             self.model.load_model(path)
-            
+
             self.is_trained = True
             self.logger.info(f"Модель успішно завантажено з {path}")
             return True

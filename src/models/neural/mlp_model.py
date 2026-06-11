@@ -1,12 +1,12 @@
 # src/models/neural/mlp_model.py
 
-import numpy as np
+
 import tensorflow as tf
 from tensorflow.keras import layers, models
-from typing import Dict, Any, Tuple
 
-from src.models.neural.base_neural import BaseNeuralModel
 from src.core.logging.logger import ProjectLogger
+from src.models.neural.base_neural import BaseNeuralModel
+
 
 class MLPModel(BaseNeuralModel):
     """
@@ -24,7 +24,7 @@ class MLPModel(BaseNeuralModel):
     def name(self) -> str:
         return "mlp_tf"
 
-    def _build_architecture(self, input_shape: Tuple[int, ...]) -> tf.keras.Model:
+    def _build_architecture(self, input_shape: tuple[int, ...]) -> tf.keras.Model:
         """
         Defines the MLP architecture.
         The input_shape is expected to be a tuple with a single element (n_features,).
@@ -35,12 +35,12 @@ class MLPModel(BaseNeuralModel):
         n_features = input_shape[0]
 
         inputs = layers.Input(shape=(n_features,))
-        
+
         x = layers.Dense(128, activation='relu')(inputs)
         x = layers.Dropout(0.2)(x)
         x = layers.Dense(64, activation='relu')(x)
         x = layers.Dropout(0.2)(x)
-        
+
         # Output layer configuration depends on the task
         if self.task_type == "classification":
             # Binary classification is assumed

@@ -1,6 +1,9 @@
+from typing import Any
+
 import pandas as pd
-from typing import Dict, Any, Optional
+
 from ..interfaces import IAnalyzer
+
 
 class CriticalSignalDetector(IAnalyzer):
     """
@@ -8,7 +11,7 @@ class CriticalSignalDetector(IAnalyzer):
     and volatility explosions based on dynamic configuration.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: dict[str, Any] | None = None):
         """
         Initializes the detector with specific configuration settings.
 
@@ -82,9 +85,9 @@ class CriticalSignalDetector(IAnalyzer):
             pd.DataFrame: DataFrame with detected signals.
         """
         result_df = data.copy()
-        
+
         result_df['price_shock_detected'] = self.detect_price_shock(result_df)
         result_df['volume_spike_detected'] = self.detect_volume_spike(result_df)
         result_df['volatility_explosion_detected'] = self.detect_volatility_explosion(result_df)
-        
+
         return result_df
