@@ -1,0 +1,11 @@
+{
+  "batch_id": "RIVN_transformer_20260322_131115",
+  "ticker": "RIVN",
+  "model_name": "transformer",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_atr14_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T13:11:15.524786",
+  "status": "PENDING_COLAB"
+}

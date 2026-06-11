@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 import pandas as pd
 
@@ -9,9 +8,10 @@ from src.features.enrichers.base import BaseEnricher
 
 logger = logging.getLogger(__name__)
 
-class DerivedFeaturesEnricher(BaseEnricher):
+class DerivedFeaturesEnricher(BaseEnricher): # audit-ignore: ARCHITECTURAL_USAGE
     """
-    Enriches the DataFrame with derived features (lags, velocity, rolling stats, and forward-looking targets).
+    Enriches the DataFrame with derived features (lags, velocity, rolling stats).
+    Targets are handled by the Stage 3 Target Orchestrator.
     """
 
     def __init__(self, target_column: str = 'close', returns_column: str = 'returns'):
@@ -25,12 +25,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
                 'acceleration': [5, 10],
                 'rolling_skew': [10, 20],
                 'rolling_kurtosis': [10, 20],
-                'rolling_volatility': [10, 20],
-                'forward_targets': {
-                    'periods': [1, 5, 10],
-                    'include_returns': True,
-                    'include_direction': True
-                }
+                'rolling_volatility': [10, 20]
             }
             logger.info("Using default configuration for derived features.")
         self.target_column = target_column # Used for price-based features
@@ -51,7 +46,7 @@ class DerivedFeaturesEnricher(BaseEnricher):
 
     def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
-        Adds derived features and target labels to the DataFrame.
+        Adds derived features to the DataFrame.
 
         Args:
             df: DataFrame with data. Must contain the target_column or returns_column.
@@ -87,7 +82,11 @@ class DerivedFeaturesEnricher(BaseEnricher):
 
         # Calculate returns if missing
         if self.returns_column not in df_enriched.columns:
-            df_enriched[self.returns_column] = df_enriched[price_target_col].pct_change()
+            df_enriched[self.returns_column] = (
+                df_enriched[price_target_col]
+                .pct_change(fill_method=None)
+                .replace([float("inf"), float("-inf")], pd.NA)
+            )
             logger.info(f"Calculated '{self.returns_column}' from '{price_target_col}'")
 
         # Add various price-based features
@@ -108,8 +107,6 @@ class DerivedFeaturesEnricher(BaseEnricher):
 
         if 'rolling_volatility' in self.config:
             self._add_rolling_stat(df_enriched, returns_col, 'rolling_volatility', self.config['rolling_volatility'])
-        if 'forward_targets' in self.config:
-            self._add_forward_targets(df_enriched, returns_col, self.config['forward_targets'])
 
     def _add_lags(self, df: pd.DataFrame, target_col: str, lags: list[int]):
         for lag in lags:
@@ -128,21 +125,6 @@ class DerivedFeaturesEnricher(BaseEnricher):
             if stat_name == 'rolling_volatility':
                 df[f'ROLLING_VOL_{window}'] = VolatilityCalculator.calculate_rolling_volatility(df[col], window, self.periods_per_year)
             elif stat_name == 'rolling_skew':
-                df[f'ROLLING_SKEW_{window}'] = df[col].rolling(window=window).skew()
+                df[f'ROLLING_SKEW_{window}'] = df[col].rolling(window=window, min_periods=1).skew()
             elif stat_name == 'rolling_kurtosis':
-                df[f'ROLLING_KURT_{window}'] = df[col].rolling(window=window).kurt()
-
-    def _add_forward_targets(self, df: pd.DataFrame, returns_col: str, config: dict[str, Any]):
-        """Adds forward-looking returns and direction as target labels."""
-        periods = config.get('periods', [])
-        if not periods: return
-
-        price = (1 + df[returns_col]).cumprod()
-        for p in periods:
-            if p <= 0: continue
-            forward_price = price.shift(-p)
-            forward_returns = (forward_price - price) / price
-            if config.get('include_returns', True):
-                df[f'TARGET_RETURN_{p}P'] = forward_returns
-            if config.get('include_direction', True):
-                df[f'TARGET_DIRECTION_{p}P'] = (forward_returns > 0).astype(int)
+                df[f'ROLLING_KURT_{window}'] = df[col].rolling(window=window, min_periods=1).kurt()

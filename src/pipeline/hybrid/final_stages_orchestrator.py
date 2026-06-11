@@ -40,9 +40,6 @@ class FinalStagesOrchestrator:
 
         batch_name = batch_name or colab_results.get('batch_name', self.batch_name)
         stages_to_run = stages_to_run or [5, 6, 7]
-        stages_to_run = [s for s in stages_to_run if s in [5, 6, 7]]
-        if not stages_to_run:
-            stages_to_run = [5, 6, 7]
 
         # Ensure stage 5 is included if stages 6 or 7 are requested
         if 6 in stages_to_run or 7 in stages_to_run:
@@ -64,10 +61,7 @@ class FinalStagesOrchestrator:
     async def _run_stages_5_to_7(self, features_df: pd.DataFrame, targets_df: pd.DataFrame,
                                 tickers: list[str] | None, timeframes: list[str] | None,
                                 batch_name: str, stages_to_run: list[int],
-                                models_metadata: dict[str, Any],
-                                news_data: pd.DataFrame | None = None,
-                                economic_data: pd.DataFrame | None = None,
-                                market_indicators: pd.DataFrame | None = None) -> dict[str, Any]:
+                                models_metadata: dict[str, Any]) -> dict[str, Any]:
         """Run stages 5-7 using PipelineOrchestrator."""
         valid_stages = [s for s in stages_to_run if s in [5, 6, 7]]
         orchestrator = PipelineOrchestrator(
@@ -84,20 +78,17 @@ class FinalStagesOrchestrator:
             targets_df=targets_df,
             models_metadata=models_metadata,
             batch_name=batch_name,
-            stages_to_run=valid_stages,
-            news_data=news_data,
-            economic_data=economic_data,
-            market_indicators=market_indicators
+            stages_to_run=valid_stages
         ))
 
-    def _create_final_summary(self, results: dict[str, Any], tickers: list[str] | None, start_time: float = 0.0) -> dict[str, Any]:
+    def _create_final_summary(self, results: dict[str, Any], tickers: list[str] | None) -> dict[str, Any]:
         """Create final summary dictionary."""
         return {
             'timestamp': datetime.now().isoformat(),
             'tickers': tickers,
             'prediction_results': results.get('prediction_results', {}),
             'trading_summary': results.get('portfolio_summary', {}),
-            'duration_seconds': time.time() - start_time,
+            'duration_seconds': time.time()
         }
 
     async def _save_final_results(self, final_summary: dict[str, Any]) -> Path:
@@ -112,14 +103,13 @@ class FinalStagesOrchestrator:
 
     async def run_final_stages(self, request) -> dict[str, Any]:
         """Main entry point for final stages execution."""
-        from src.pipeline.hybrid_orchestrator import HybridFinalStagesRequest
+        from src.pipeline.hybrid.contracts import HybridFinalStagesRequest
 
         if not isinstance(request, HybridFinalStagesRequest):
             self.logger.error("Invalid request type for run_final_stages")
             return {'status': 'error', 'message': 'Invalid request type'}
 
         self.logger.info(f"🏁 Starting final stages for batch: {request.batch_name}")
-        start_time = time.time()
 
         # 1. Build models metadata
         from src.pipeline.hybrid.results_processor import ResultsProcessor
@@ -127,7 +117,7 @@ class FinalStagesOrchestrator:
         models_metadata = rp.build_models_metadata(request.colab_results or {}, request.light_results)
 
         # 2. Run stages 5-7
-        stages_to_run = request.stages_to_run or [5, 6, 7]
+        stages_to_run = [5, 6, 7]
         results = await self._run_stages_5_to_7(
             features_df=request.features_df,
             targets_df=request.targets_df,
@@ -135,14 +125,11 @@ class FinalStagesOrchestrator:
             timeframes=request.timeframes or ['15m', '60m', '1d'],
             batch_name=request.batch_name or self.batch_name,
             stages_to_run=stages_to_run,
-            models_metadata=models_metadata,
-            news_data=request.news_data,
-            economic_data=request.economic_data,
-            market_indicators=request.market_indicators
+            models_metadata=models_metadata
         )
 
         # 3. Create and save summary
-        summary = self._create_final_summary(results, request.tickers, start_time)
+        summary = self._create_final_summary(results, request.tickers)
         saved_path = await self._save_final_results(summary)
 
         self.logger.info(f"✅ Final results saved to {saved_path}")

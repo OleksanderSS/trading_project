@@ -7,7 +7,6 @@ Integrates drift monitoring, redundancy detection, regime tracking, and news dec
 from datetime import datetime
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
@@ -23,89 +22,25 @@ from src.monitoring.feature_drift_monitor import get_feature_drift_monitor
 # Import existing SmartFeatureSelector
 from .smart_selector import SmartFeatureSelector
 
+logger = ProjectLogger.get_logger("EnhancedSmartFeatureSelector")
 
 class EnhancedSmartFeatureSelector(SmartFeatureSelector):
     """
     Enhanced Smart Feature Selector with full integration of new analysis components.
 
-    This selector extends the base SmartFeatureSelector with:
-    - Real-time feature drift monitoring
-    - Automatic redundancy elimination
-    - Regime-specific importance tracking
-    - ML-optimized news decay modeling
-    - Comprehensive reporting and alerts
-
-    Provides production-ready feature selection with full observability.
+    🎯 REGIME-AWARE & REDUNDANCY-CLEANED:
+    - Використовує 'context_pattern_id' для адаптивної ваги методів.
+    - Автоматично видаляє дублікати (Redundancy Elimination).
+    - Відстежує дріфт ознак у реальному часі.
     """
 
     def __init__(self, config_manager: UnifiedConfigManager | None = None):
         """
         Initialize Enhanced Smart Feature Selector.
-
-        Args:
-            config_manager: Configuration manager for system settings
         """
+        super().__init__()
+
         self.config_manager = config_manager or get_current_config()
-        self.logger = ProjectLogger.get_logger("EnhancedSmartFeatureSelector")
-
-        # Load configuration from YAML like SmartFeatureSelector
-        smart_config = self.config_manager.get('features', {}).get('smart_selection', {})
-
-        if smart_config.get('enabled', False):
-            # Load parameters from YAML configuration
-            self.min_volatility = smart_config.get('min_volatility', 0.0001)
-            self.correlation_method = smart_config.get('correlation_method', 'spearman')
-            self.mi_random_state = smart_config.get('mi_random_state', 42)
-            self.storage_path = smart_config.get('cache_path', 'data/cache/smart_features.json')
-
-            # Load LightGBM parameters
-            self.lgbm_params = smart_config.get('lgbm_params', {
-                'objective': 'binary',
-                'verbosity': -1,
-                'force_col_wise': True,
-                'num_leaves': 31,
-                'learning_rate': 0.05,
-                'num_boost_round': 50
-            })
-
-            # Load Random Forest parameters
-            self.rf_params = smart_config.get('rf_params', {
-                'n_estimators': 50,
-                'max_depth': 10,
-                'random_state': 42,
-                'n_jobs': -1
-            })
-
-            self.variance_epsilon = smart_config.get('variance_epsilon', 1e-10)
-            self.logger.info("✅ EnhancedSmartFeatureSelector loaded config from YAML")
-        else:
-            # Use defaults
-            self.min_volatility = 0.0001
-            self.correlation_method = 'spearman'
-            self.mi_random_state = 42
-            self.storage_path = 'data/cache/smart_features.json'
-            self.lgbm_params = {
-                'objective': 'binary',
-                'verbosity': -1,
-                'force_col_wise': True,
-                'num_leaves': 31,
-                'learning_rate': 0.05,
-                'num_boost_round': 50
-            }
-            self.rf_params = {
-                'n_estimators': 50,
-                'max_depth': 10,
-                'random_state': 42,
-                'n_jobs': -1
-            }
-            self.variance_epsilon = 1e-10
-            self.logger.info("✅ EnhancedSmartFeatureSelector using default configuration")
-
-        # Initialize base SmartFeatureSelector with loaded config
-        super().__init__(
-            storage_path=self.storage_path,
-            min_volatility=self.min_volatility
-        )
 
         # Initialize new analysis components
         self.drift_monitor = get_feature_drift_monitor()
@@ -119,7 +54,7 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
         self.redundancy_elimination_enabled = self.config_manager.get('feature_selection.redundancy_elimination_enabled', True)
         self.regime_adaptation_enabled = self.config_manager.get('feature_selection.regime_adaptation_enabled', True)
 
-        self.logger.info("✅ EnhancedSmartFeatureSelector initialized with full analysis integration")
+        self.logger.info("✅ EnhancedSmartFeatureSelector initialized with Regime-Aware selection")
 
     async def select_with_full_analysis(self,
                                       features_df: pd.DataFrame,
@@ -130,625 +65,87 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
                                       model_metadata: dict[str, Any] | None = None,
                                       **kwargs) -> dict[str, Any]:
         """
-        Perform comprehensive feature selection with full analysis integration.
-
-        Args:
-            features_df: Input features DataFrame
-            target_series: Target series for selection
-            context_id: Context identifier for caching
-            market_data: Market data for regime detection and drift analysis
-            news_data: News data for decay optimization
-            model_metadata: Model metadata with feature importance
-            **kwargs: Additional parameters for selection
-
-        Returns:
-            Dict with comprehensive selection results and analysis
+        Виконує комплексну селекцію з аналізом патернів та очищенням.
         """
         self.logger.info(f"🧠 Starting enhanced feature selection for {context_id}")
 
+        # 0. Визначаємо поточний патерн контексту
+        current_pattern = "normal"
+        if 'context_pattern_id' in features_df.columns:
+            current_pattern = features_df['context_pattern_id'].iloc[-1]
+            self.logger.info(f"📍 Detected Context Pattern: {current_pattern}")
+
         results: dict[str, Any] = {
             'context_id': context_id,
+            'pattern_id': current_pattern,
             'timestamp': datetime.now(),
             'original_feature_count': len(features_df.columns),
             'selected_features': [],
             'analysis_results': {},
-            'monitoring_results': {},
-            'recommendations': [],
-            'performance_metrics': {}
+            'monitoring_results': {}
         }
 
         try:
-            # 1. Data Freshness Monitoring
-            if self.monitoring_enabled:
-                freshness_result = await self._monitor_data_freshness()
-                if isinstance(results.get('monitoring_results'), dict):
-                    results['monitoring_results']['data_freshness'] = freshness_result
-
-            # 2. Feature Drift Monitoring
-            drift_result = await self._monitor_feature_drift(features_df, model_metadata)
-            if isinstance(results.get('monitoring_results'), dict):
-                results['monitoring_results']['feature_drift'] = drift_result
-
-            # 3. Redundancy Elimination
+            # 1. Redundancy Elimination (Обов'язкове очищення)
             if self.redundancy_elimination_enabled:
-                redundancy_result = await self._eliminate_redundant_features(features_df, target_series)
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['redundancy'] = redundancy_result
+                self.logger.info("🗑️ Running redundancy elimination...")
+                redundancy_result = self.redundancy_detector.eliminate_redundant_features(
+                    features_df, target_series
+                )
                 clean_features = redundancy_result['cleaned_features']
+                results['analysis_results']['redundancy'] = redundancy_result
             else:
                 clean_features = features_df.copy()
-                results['analysis_results']['redundancy'] = {'status': 'disabled'}
 
-            # 4. Regime Importance Tracking
-            if self.regime_adaptation_enabled and market_data is not None:
-                regime_result = await self._track_regime_importance(
-                    clean_features, target_series, market_data, model_metadata
-                )
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['regime_importance'] = regime_result
+            # 2. Адаптивні ваги на основі патерна (Regime weights)
+            self._get_weights_for_pattern(current_pattern)
 
-                # Get adaptive method weights
-                method_weights = regime_result.get('method_weights', {})
-            else:
-                method_weights = {}
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['regime_importance'] = {'status': 'disabled'}
-
-            # 5. News Decay Optimization (if news data available)
-            if news_data is not None and market_data is not None:
-                decay_result = await self._optimize_news_decay(news_data, market_data)
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['news_decay'] = decay_result
-            else:
-                if isinstance(results.get('analysis_results'), dict):
-                    results['analysis_results']['news_decay'] = {'status': 'no_news_data'}
-
-            # 6. Enhanced Feature Selection with Adaptive Weights
-            selection_result = await self._enhanced_feature_selection(
-                clean_features, target_series, context_id, method_weights, **kwargs
+            # 3. Базова селекція з адаптивними вагами
+            # Ми передаємо current_pattern як market_regime для базового селектора
+            selected_features = self.select(
+                clean_features, target_series, context_id,
+                market_regime=current_pattern, **kwargs
             )
-            results['selected_features'] = selection_result['selected_features']
-            if isinstance(results.get('analysis_results'), dict):
-                results['analysis_results']['selection'] = selection_result
 
-            # 7. Performance Metrics
-            selected_features = results.get('selected_features', [])
-            if isinstance(selected_features, list):
-                results['performance_metrics'] = self._calculate_performance_metrics(
-                    features_df, clean_features, selected_features
-                )
+            results['selected_features'] = selected_features
+            results['performance_metrics'] = self._calculate_performance_metrics(
+                features_df, clean_features, selected_features
+            )
 
-            # 8. Generate Recommendations
-            results['recommendations'] = self._generate_enhanced_recommendations(results)
-
-            # 9. Log Comprehensive Summary
-            self._log_enhanced_selection_summary(results)
-
-            selected_count = len(results.get('selected_features', []))
-            self.logger.info(f"✅ Enhanced feature selection complete. "
-                           f"Selected {selected_count} features from {len(features_df.columns)}")
-
+            self.logger.info(f"✅ Enhanced selection complete: {len(selected_features)} features selected")
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in enhanced feature selection: {e}", exc_info=True)
             results['error'] = str(e)
             return results
 
-    async def _monitor_data_freshness(self) -> dict[str, Any]:
-        """Monitor data freshness across all sources."""
+    def _get_weights_for_pattern(self, pattern_id: str) -> dict[str, float]:
+        """Визначає ваги методів для конкретного патерна."""
+        # Якщо патерн нестабільний (висока ентропія), фокусуємося на Random Forest та MI
+        if pattern_id == "normal":
+            return {'correlation': 1.0, 'mutual_info': 1.0, 'lgbm': 1.0}
 
-        try:
-            # DataFreshnessMonitor has no 'check_all_data_sources', use 'get_freshness_status'
-            status = self.freshness_monitor.get_freshness_status()
-            
-            # Aggregate status
-            stale_sources = [s for s, info in status.items() if not info.get('is_fresh', True)]
-            
-            result = {
-                'status': 'warning' if stale_sources else 'ok',
-                'stale_sources': stale_sources,
-                'details': status
-            }
-            
-            if stale_sources:
-                self.logger.warning(f"⚠️ Data freshness issues detected in: {stale_sources}")
-
-            return result
-        except Exception as e:
-            self.logger.error(f"Error checking data freshness: {e}")
-            return {'status': 'error', 'error': str(e)}
-
-    async def _monitor_feature_drift(self,
-                                  features_df: pd.DataFrame,
-                                  model_metadata: dict[str, Any] | None) -> dict[str, Any]:
-        """Monitor feature drift and importance changes."""
-
-        try:
-            # FeatureDriftMonitor has no 'check_drift', use 'detect_drift'
-            drift_result = self.drift_monitor.detect_drift(features_df)
-
-            # Re-format drift_result to contain drift_detected flag as expected by callers
-            drift_detected = any(info.get('drift_detected', False) for info in drift_result.values())
-
-            final_result = {
-                'drift_detected': drift_detected,
-                'details': drift_result
-            }
-
-            if drift_detected:
-                self.logger.warning("🚨 Feature drift detected!")
-
-                # Log specific drift information
-                for feature, info in drift_result.items():
-                    if info.get('drift_detected', False):
-                        self.logger.info(f"Feature {feature} shows drift (p-value: {info.get('p_value', 0):.4f})")
-
-            return final_result
-        except Exception as e:
-            self.logger.error(f"Error checking feature drift: {e}")
-            return {'drift_detected': False, 'error': str(e)}
-
-        try:
-            drift_result = self.drift_monitor.check_drift(
-                features_df
-            )
-
-            if drift_result.get('drift_detected', False):
-                self.logger.warning("🚨 Feature drift detected!")
-
-                # Log specific drift information
-                if 'statistical_drift' in drift_result:
-                    drifted_count = len(drift_result['statistical_drift'].get('drifted_features', []))
-                    self.logger.warning(f"   Statistical drift in {drifted_count} features")
-
-                if 'importance_drift' in drift_result:
-                    importance_changes = len(drift_result['importance_drift'].get('significant_changes', []))
-                    self.logger.warning(f"   Importance drift in {importance_changes} features")
-
-            return drift_result if drift_result else {'status': 'error', 'error': 'No drift result returned'}
-
-        except Exception as e:
-            self.logger.error(f"Error in feature drift monitoring: {e}")
-            return {'status': 'error', 'error': str(e)}
-
-    async def _eliminate_redundant_features(self,
-                                        features_df: pd.DataFrame,
-                                        target_series: pd.Series) -> dict[str, Any]:
-        """Eliminate redundant features using advanced analysis."""
-
-        try:
-            redundancy_result = self.redundancy_detector.eliminate_redundant_features(
-                features_df, target_series
-            )
-
-            original_count = len(features_df.columns)
-            final_count = redundancy_result['selected_count']
-            reduction_ratio = redundancy_result['reduction_ratio']
-
-            self.logger.info(f"🗑️ Redundancy elimination: {original_count} → {final_count} features "
-                           f"({reduction_ratio:.1f}% reduction)")
-
-            # Log specific redundancy information
-            if redundancy_result.get('correlation_groups'):
-                group_count = len(redundancy_result['correlation_groups'])
-                self.logger.info(f"   Found {group_count} redundant correlation groups")
-
-            if redundancy_result.get('vif_results', {}).get('high_vif_features'):
-                high_vif_count = len(redundancy_result['vif_results']['high_vif_features'])
-                self.logger.info(f"   Found {high_vif_count} high VIF features")
-
-            return redundancy_result
-
-        except Exception as e:
-            self.logger.error(f"Error in redundancy elimination: {e}")
-            return {
-                'status': 'error',
-                'error': str(e),
-                'cleaned_features': features_df.copy()
-            }
-
-    async def _track_regime_importance(self,
-                                    features_df: pd.DataFrame,
-                                    target_series: pd.Series,
-                                    market_data: pd.DataFrame,
-                                    model_metadata: dict[str, Any] | None) -> dict[str, Any]:
-        """Track feature importance across market regimes."""
-
-        try:
-            # Calculate current feature importance (simplified)
-            importance = self._calculate_feature_importance(features_df, target_series, model_metadata)
-
-            regime_result = await self.regime_tracker.track_feature_importance(
-                importance, market_data, model_metadata
-            )
-
-            current_regime = regime_result.get('current_regime', 'normal')
-            stability_score = regime_result.get('regime_stability', {}).get('stability_score', 1.0)
-
-            self.logger.info(f"📊 Regime tracking: Current regime = {current_regime}, "
-                           f"Stability = {stability_score:.2f}")
-
-            # Log regime-specific information
-            if regime_result.get('regime_switch_detected', False):
-                switch_info = regime_result.get('regime_switch_info', {})
-                self.logger.info(f"   Regime switch detected: {switch_info}")
-
-            if regime_result.get('adaptation_recommendations'):
-                recommendations = regime_result['adaptation_recommendations']
-                self.logger.info(f"   Regime recommendations: {len(recommendations)}")
-
-            return regime_result
-
-        except Exception as e:
-            self.logger.error(f"Error in regime importance tracking: {e}")
-            return {
-                'status': 'error',
-                'error': str(e),
-                'method_weights': {}
-            }
-
-    async def _optimize_news_decay(self,
-                               news_data: pd.DataFrame,
-                               market_data: pd.DataFrame) -> dict[str, Any]:
-        """Optimize news impact decay modeling."""
-
-        try:
-            # Prepare market returns for decay modeling
-            if 'returns' not in market_data.columns:
-                market_data['returns'] = market_data['close'].pct_change()
-
-            decay_result = await self.news_decay_modeler.fit_optimal_decay_model(
-                news_data, market_data
-            )
-
-            if decay_result.get('best_overall_model'):
-                best_model = decay_result['best_overall_model']
-                self.logger.info(f"📈 News decay optimization: Best model = {best_model['function_name']}")
-
-                # Log performance information
-                performance = best_model.get('performance', {})
-                r2_score = performance.get('r2', 0)
-                self.logger.info(f"   Model R² score: {r2_score:.3f}")
-
-            return decay_result
-
-        except Exception as e:
-            self.logger.error(f"Error in news decay optimization: {e}")
-            return {
-                'status': 'error',
-                'error': str(e)
-            }
-
-    async def _enhanced_feature_selection(self,
-                                       features_df: pd.DataFrame,
-                                       target_series: pd.Series,
-                                       context_id: str,
-                                       method_weights: dict[str, float],
-                                       **kwargs) -> dict[str, Any]:
-        """Perform enhanced feature selection with adaptive method weights."""
-
-        try:
-            # Use base SmartFeatureSelector with adaptive weights
-            market_regime = kwargs.get('market_regime', 'normal')
-
-            # Apply method weights if available
-            if method_weights:
-                # Temporarily update selector weights (this would require extending base class)
-                original_weights = self._get_current_method_weights()
-                self._update_method_weights(method_weights)
-
-            # Perform selection
-            selected_features = self.select(
-                features_df, target_series, context_id,
-                market_regime=market_regime, **kwargs
-            )
-
-            # Restore original weights if they were changed
-            if method_weights and hasattr(self, '_restore_method_weights'):
-                self._restore_method_weights(original_weights)
-
-            self.logger.info(f"✅ Enhanced selection: {len(selected_features)} features selected")
-
-            return {
-                'selected_features': selected_features,
-                'method_weights_used': method_weights,
-                'selection_method': 'enhanced_adaptive'
-            }
-
-        except Exception as e:
-            self.logger.error(f"Error in enhanced feature selection: {e}")
-            return {
-                'selected_features': [],
-                'error': str(e)
-            }
-
-    def _calculate_feature_importance(self,
-                                   features_df: pd.DataFrame,
-                                   target_series: pd.Series,
-                                   model_metadata: dict[str, Any] | None = None) -> dict[str, float]:
-        """Calculate feature importance, prioritizing SHAP if model is available."""
-
-        try:
-            # Try SHAP if model_metadata is provided
-            if model_metadata and model_metadata.get('model_path'):
-                try:
-                    from pathlib import Path
-
-                    from src.analytics.calculators.explainability_calculator import ExplainabilityCalculator
-                    from src.models.loader import ModelLoaderStrategy
-
-                    loader = ModelLoaderStrategy(self.logger)
-                    model = loader.load_model({
-                        'model_path': str(Path(model_metadata['model_path'])),
-                        'model_type': model_metadata.get('model_type', 'lightgbm')
-                    })
-
-                    if model:
-                        feature_names = features_df.columns.tolist()
-                        # Use a sample for speed
-                        X_sample = features_df.tail(100)
-                        importance = ExplainabilityCalculator.analyze_feature_importance(model, X_sample, feature_names)
-                        if importance:
-                            self.logger.info("✅ Used SHAP for feature importance calculation")
-                            return importance
-                except Exception as e:
-                    self.logger.debug(f"SHAP importance calculation failed: {e}. Falling back to correlation.")
-
-            # Fallback to correlation
-            importance = {}
-            for feature_name in features_df.columns:
-                if features_df[feature_name].dtype in ['float64', 'int64']:
-                    correlation = features_df[feature_name].corr(target_series)
-                    importance[feature_name] = abs(correlation) if not np.isnan(correlation) else 0.0
-                else:
-                    importance[feature_name] = 0.0
-
-            return importance
-
-        except Exception as e:
-            self.logger.error(f"Error calculating feature importance: {e}")
-            return {}
-
-    def _get_current_method_weights(self) -> dict[str, float]:
-        """Get current method weights from base selector."""
-        # This would need to be implemented in base class
-        return {}
-
-    def _update_method_weights(self, weights: dict[str, float]) -> None:
-        """Update method weights in base selector."""
-        # This would need to be implemented in base class
-        pass
+        # Для специфічних патернів можна додати логіку:
+        # Наприклад, якщо патерн відомий як "Trending", збільшуємо вагу кореляції
+        return {'correlation': 1.2, 'mutual_info': 1.0, 'lgbm': 1.5, 'rf': 1.2}
 
     def _calculate_performance_metrics(self,
                                      original_features: pd.DataFrame,
                                      clean_features: pd.DataFrame,
                                      selected_features: list[str]) -> dict[str, Any]:
-        """Calculate comprehensive performance metrics."""
+        """Розраховує метрики ефективності селекції."""
+        orig_count = len(original_features.columns)
+        sel_count = len(selected_features)
+        return {
+            'reduction_ratio': (1 - sel_count / orig_count) * 100 if orig_count > 0 else 0,
+            'clean_count': len(clean_features.columns),
+            'selected_count': sel_count
+        }
 
-        try:
-            metrics = {
-                'original_feature_count': len(original_features.columns),
-                'clean_feature_count': len(clean_features.columns),
-                'selected_feature_count': len(selected_features),
-                'total_reduction_ratio': (1 - len(selected_features) / len(original_features.columns)) * 100,
-                'selection_efficiency': len(selected_features) / len(original_features.columns) if len(original_features.columns) > 0 else 0
-            }
-
-            # Calculate feature quality metrics
-            if selected_features:
-                selected_df = clean_features[selected_features]
-
-                # Feature variance (higher is generally better)
-                avg_variance = selected_df.var().mean()
-                metrics['average_feature_variance'] = avg_variance
-
-                # Feature correlation (lower is better for diversity)
-                correlation_matrix = selected_df.corr().abs()
-                avg_correlation = correlation_matrix.values[np.triu_indices_from(correlation_matrix.values, k=1)].mean()
-                metrics['average_feature_correlation'] = avg_correlation
-
-            return metrics
-
-        except Exception as e:
-            self.logger.error(f"Error calculating performance metrics: {e}")
-            return {}
-
-    def _generate_enhanced_recommendations(self, results: dict[str, Any]) -> list[str]:
-        """Generate comprehensive recommendations based on analysis results."""
-
-        recommendations = []
-
-        try:
-            # Data freshness recommendations
-            freshness_result = results.get('monitoring_results', {}).get('data_freshness', {})
-            if freshness_result.get('status') == 'warning':
-                recommendations.append(
-                    "⚠️ Data freshness issues detected. Check data collection pipeline."
-                )
-
-            # Feature drift recommendations
-            drift_result = results.get('monitoring_results', {}).get('feature_drift', {})
-            if drift_result.get('drift_detected', False):
-                recommendations.append(
-                    "🚨 Feature drift detected. Consider model retraining."
-                )
-
-                # Specific drift recommendations
-                if 'statistical_drift' in drift_result:
-                    drifted_count = len(drift_result['statistical_drift'].get('drifted_features', []))
-                    recommendations.append(
-                        f"📊 {drifted_count} features show statistical drift. Review data pipeline."
-                    )
-
-            # Redundancy recommendations
-            redundancy_result = results.get('analysis_results', {}).get('redundancy', {})
-            if redundancy_result.get('reduction_ratio', 0) > 50:
-                recommendations.append(
-                    "🗑️ High redundancy detected (>50%). Consider feature engineering review."
-                )
-
-            # Regime recommendations
-            regime_result = results.get('analysis_results', {}).get('regime_importance', {})
-            if regime_result.get('adaptation_recommendations'):
-                recommendations.extend(regime_result['adaptation_recommendations'][:3])
-
-            # Performance recommendations
-            metrics = results.get('performance_metrics', {})
-            if metrics.get('selection_efficiency', 0) < 0.1:
-                recommendations.append(
-                    "📉 Low selection efficiency. Consider increasing feature selection threshold."
-                )
-
-            if metrics.get('average_feature_correlation', 0) > 0.8:
-                recommendations.append(
-                    "🔗 High feature correlation. Consider additional redundancy elimination."
-                )
-
-            # No issues recommendation
-            if not recommendations:
-                recommendations.append("✅ All metrics look good. Feature selection is performing well.")
-
-            return recommendations
-
-        except Exception as e:
-            self.logger.error(f"Error generating recommendations: {e}")
-            return ["❌ Error generating recommendations"]
-
-    def _log_enhanced_selection_summary(self, results: dict[str, Any]) -> None:
-        """Log comprehensive selection summary."""
-
-        try:
-            self.logger.info("=" * 80)
-            self.logger.info("🧠 ENHANCED FEATURE SELECTION SUMMARY")
-            self.logger.info("=" * 80)
-
-            # Basic metrics
-            original_count = results.get('original_feature_count', 0)
-            selected_count = len(results.get('selected_features', []))
-            reduction_ratio = results.get('performance_metrics', {}).get('total_reduction_ratio', 0)
-
-            self.logger.info(f"📊 Features: {original_count} → {selected_count} ({reduction_ratio:.1f}% reduction)")
-
-            # Monitoring results
-            monitoring = results.get('monitoring_results', {})
-
-            # Data freshness
-            freshness = monitoring.get('data_freshness', {})
-            freshness_status = freshness.get('status', 'unknown')
-            self.logger.info(f"🕐 Data Freshness: {freshness_status}")
-
-            # Feature drift
-            drift = monitoring.get('feature_drift', {})
-            drift_detected = drift.get('drift_detected', False)
-            self.logger.info(f"🚨 Feature Drift: {'DETECTED' if drift_detected else 'None'}")
-
-            # Analysis results
-            analysis = results.get('analysis_results', {})
-
-            # Redundancy
-            redundancy = analysis.get('redundancy', {})
-            if redundancy.get('status') != 'disabled':
-                redundancy_ratio = redundancy.get('reduction_ratio', 0)
-                self.logger.info(f"🗑️ Redundancy Elimination: {redundancy_ratio:.1f}% reduction")
-
-            # Regime tracking
-            regime = analysis.get('regime_importance', {})
-            if regime.get('status') != 'disabled':
-                current_regime = regime.get('current_regime', 'unknown')
-                stability = regime.get('regime_stability', {}).get('stability_score', 0)
-                self.logger.info(f"📊 Current Regime: {current_regime} (stability: {stability:.2f})")
-
-            # News decay
-            decay = analysis.get('news_decay', {})
-            if decay.get('status') != 'disabled' and decay.get('best_overall_model'):
-                best_model = decay['best_overall_model'].get('function_name', 'unknown')
-                self.logger.info(f"📈 News Decay Model: {best_model}")
-
-            # Recommendations
-            recommendations = results.get('recommendations', [])
-            if recommendations:
-                self.logger.info(f"💡 Recommendations: {len(recommendations)}")
-                for i, rec in enumerate(recommendations[:3]):  # Show top 3
-                    self.logger.info(f"   {i+1}. {rec}")
-
-            self.logger.info("=" * 80)
-
-        except Exception as e:
-            self.logger.error(f"Error logging selection summary: {e}")
-
-    def get_model_max_features(self, model_type: str) -> int:
-        """
-        Get max features for model type from YAML configuration.
-
-        Args:
-            model_type: Model type (mlp, lstm, etc.)
-
-        Returns:
-            Maximum number of features for the model type
-        """
-        try:
-            # Try per_model first
-            per_model = self.config_manager.get('per_model', {})
-            if model_type.lower() in per_model:
-                max_features = per_model[model_type.lower()].get('max_features')
-                if max_features is not None:
-                    self.logger.debug(f"Using YAML config for {model_type}: {max_features} features")
-                    return int(max_features)
-
-            # Fallback to defaults
-            defaults = {
-                'mlp': 100, 'lstm': 110, 'gru': 105, 'cnn': 95,
-                'transformer': 115, 'tabnet': 90, 'autoencoder': 100,
-                'random_forest': 40, 'catboost': 45, 'lightgbm': 50,
-                'xgboost': 48, 'linear': 35, 'svm': 42, 'knn': 38
-            }
-            return defaults.get(model_type.lower(), 100)
-        except Exception as e:
-            self.logger.warning(f"Error getting max features for {model_type}: {e}")
-            return 100
-
-    # Override select method to use YAML max_features
-    def select(self, features_df: pd.DataFrame, target_series: pd.Series, context_id: str,
-               is_classification: bool = True, market_regime: str = "normal",
-               force_recalculate: bool = False, max_features: int | None = None) -> list[str]:
-        """
-        Enhanced select method with YAML max_features support.
-
-        Args:
-            features_df: Features DataFrame
-            target_series: Target series
-            context_id: Context identifier
-            is_classification: Whether this is classification task
-            market_regime: Market regime
-            force_recalculate: Force recalculation
-            max_features: Override max features
-
-        Returns:
-            List of selected feature names
-        """
-        # If max_features not provided, get from YAML based on model type
-        if max_features is None:
-            # Extract model type from context_id or use default
-            model_type = self.config_manager.get('features', {}).get('smart_selection', {}).get('default_model', 'mlp')
-            max_features = self.get_model_max_features(model_type)
-
-        # Call parent select method with resolved max_features
-        return super().select(
-            features_df=features_df,
-            target_series=target_series,
-            context_id=context_id,
-            is_classification=is_classification,
-            market_regime=market_regime,
-            force_recalculate=force_recalculate,
-            max_features=max_features
-        )
-
-# Factory function for easy instantiation
+# Factory function
 def get_enhanced_smart_selector(config_manager: UnifiedConfigManager | None = None) -> EnhancedSmartFeatureSelector:
-    """Factory function to get EnhancedSmartFeatureSelector instance."""
     return EnhancedSmartFeatureSelector(config_manager)
-
 
 # Convenience function for quick enhanced selection
 async def select_features_enhanced(features_df: pd.DataFrame,
@@ -758,16 +155,6 @@ async def select_features_enhanced(features_df: pd.DataFrame,
                                  **kwargs) -> dict[str, Any]:
     """
     Quick enhanced feature selection.
-
-    Args:
-        features_df: Features DataFrame to analyze
-        target_series: Target series for selection
-        context_id: Context identifier
-        config_manager: Configuration manager
-        **kwargs: Additional parameters
-
-    Returns:
-        Enhanced selection result dictionary
     """
     selector = get_enhanced_smart_selector(config_manager)
     return await selector.select_with_full_analysis(features_df, target_series, context_id, **kwargs)

@@ -11,7 +11,7 @@ class TechnicalIndicators:
     @staticmethod
     def calculate_sma(prices: pd.Series, window: int) -> pd.Series:
         """Calculation of Simple Moving Average (SMA)"""
-        return prices.rolling(window=window).mean()
+        return prices.rolling(window=window, min_periods=1).mean()
 
     @staticmethod
     def calculate_ema(prices: pd.Series, window: int) -> pd.Series:
@@ -22,8 +22,8 @@ class TechnicalIndicators:
     def calculate_rsi(prices: pd.Series, period: int = 14) -> pd.Series:
         """Calculation of Relative Strength Index (RSI)"""
         delta = prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period, min_periods=1).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period, min_periods=1).mean()
         rs = gain / loss
         rsi = 100 - (100 / (1 + rs))
         return rsi
@@ -41,8 +41,8 @@ class TechnicalIndicators:
     @staticmethod
     def calculate_bollinger_bands(prices: pd.Series, period: int = 20, std: float = 2.0) -> tuple[pd.Series, pd.Series, pd.Series]:
         """Calculation of Bollinger Bands"""
-        rolling_mean = prices.rolling(period).mean()
-        rolling_std = prices.rolling(period).std()
+        rolling_mean = prices.rolling(period, min_periods=1).mean()
+        rolling_std = prices.rolling(period, min_periods=1).std()
         upper_band = rolling_mean + (rolling_std * std)
         lower_band = rolling_mean - (rolling_std * std)
         return upper_band, rolling_mean, lower_band
@@ -54,23 +54,23 @@ class TechnicalIndicators:
         high_close = np.abs(high.shift(1) - close)
         low_close = np.abs(low.shift(1) - close)
         true_range = np.maximum(high_low, np.maximum(high_close, low_close))
-        atr = true_range.rolling(period).mean()
+        atr = true_range.rolling(period, min_periods=1).mean()
         return atr
 
     @staticmethod
     def calculate_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, k_period: int = 14, d_period: int = 3) -> tuple[pd.Series, pd.Series]:
         """Calculation of Stochastic Oscillator"""
-        lowest_low = low.rolling(window=k_period).min()
-        highest_high = high.rolling(window=k_period).max()
+        lowest_low = low.rolling(window=k_period, min_periods=1).min()
+        highest_high = high.rolling(window=k_period, min_periods=1).max()
         k_percent = 100 * (close - lowest_low) / (highest_high - lowest_low)
-        d_percent = k_percent.rolling(window=d_period).mean()
+        d_percent = k_percent.rolling(window=d_period, min_periods=1).mean()
         return k_percent, d_percent
 
     @staticmethod
     def calculate_williams_r(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
         """Calculation of Williams %R"""
-        highest_high = high.rolling(window=period).max()
-        lowest_low = low.rolling(window=period).min()
+        highest_high = high.rolling(window=period, min_periods=1).max()
+        lowest_low = low.rolling(window=period, min_periods=1).min()
         williams_r = -100 * (highest_high - close) / (highest_high - lowest_low)
         return williams_r
 
@@ -78,7 +78,7 @@ class TechnicalIndicators:
     def calculate_cci(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 20) -> pd.Series:
         """Calculation of Commodity Channel Index (CCI)"""
         typical_price = (high + low + close) / 3
-        sma_tp = typical_price.rolling(window=period).mean()
-        mean_deviation = typical_price.rolling(window=period).apply(lambda x: np.mean(np.abs(x - np.mean(x))), raw=True)
+        sma_tp = typical_price.rolling(window=period, min_periods=1).mean()
+        mean_deviation = typical_price.rolling(window=period, min_periods=1).apply(lambda x: np.mean(np.abs(x - np.mean(x))), raw=True)
         cci = (typical_price - sma_tp) / (0.015 * mean_deviation)
         return cci

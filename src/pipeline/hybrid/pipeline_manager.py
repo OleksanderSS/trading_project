@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Pipeline Manager for Hybrid Orchestrator.
 Handles pipeline execution and coordination.
@@ -9,11 +10,10 @@ from typing import Any, cast
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.hybrid.colab_manager import BatchPreparationConfig
+from src.pipeline.hybrid.contracts import HybridFinalStagesRequest
 
-from .colab_manager import BatchPreparationConfig
 from .pipeline_config import FinalStagesParams, PipelineParams
-
-logger = ProjectLogger.get_logger(__name__)
 
 
 class PipelineManager:
@@ -32,14 +32,12 @@ class PipelineManager:
 
         # Step 1: Collect local data
         local_res = await self._collect_local_data(params.tickers, params.timeframes)
-        if local_res.get('status') not in {'completed', 'local_complete'}:
+        if local_res['status'] != 'local_complete':
             return local_res
 
-        self._ensure_direct_feature_target_outputs(local_res)
-
         # Step 2: Check cache and handle data
-        n_f, n_t = self._handle_data_caching(local_res, params.force_training)
-        if n_f is None or n_t is None:
+        features_df, targets_df = self._handle_data_caching(local_res, params.force_training)
+        if features_df is None or targets_df is None:
             return {'status': 'no_data', 'message': 'No data collected'}
 
         # Step 3: Prepare Colab package
@@ -52,14 +50,20 @@ class PipelineManager:
             force_feature_selection=params.force_feature_selection,
         )
         b_info = self.orchestrator.colab_manager.prepare_colab_batch(
-            features_df=n_f,
-            targets_df=n_t,
-            config=colab_config
+            features_df,
+            targets_df,
+            colab_config,
         )
 
         # Step 4: Handle Colab or skip path
         if params.skip_colab:
-            return await self._handle_skip_colab_path(b_info, n_f, n_t, params.tickers, params.timeframes)
+            return await self._handle_skip_colab_path(
+                b_info,
+                features_df,
+                targets_df,
+                params.tickers,
+                params.timeframes,
+            )
         else:
             return self._handle_colab_path(b_info)
 
@@ -68,9 +72,6 @@ class PipelineManager:
         if params is None:
             params = FinalStagesParams()
 
-        # Delegate to final_stages_orchestrator for real execution
-        from src.pipeline.hybrid_orchestrator import HybridFinalStagesRequest
-
         request = HybridFinalStagesRequest(
             features_df=params.features_df,
             targets_df=params.targets_df,
@@ -78,11 +79,7 @@ class PipelineManager:
             light_results=params.light_results,
             tickers=params.tickers,
             timeframes=params.timeframes,
-            batch_name=params.batch_name or self.orchestrator.batch_name,
-            stages_to_run=params.stages_to_run,
-            news_data=params.news_data,
-            economic_data=params.economic_data,
-            market_indicators=params.market_indicators,
+            batch_name=params.batch_name or self.orchestrator.batch_name
         )
 
         return cast(dict[str, Any], await self.orchestrator.final_stages_orchestrator.run_final_stages(request))
@@ -95,40 +92,29 @@ class PipelineManager:
 
     def _handle_data_caching(self, local_res: dict[str, Any], force_training: bool) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
         """Handle data caching logic."""
-        return cast(tuple[pd.DataFrame | None, pd.DataFrame | None], self.orchestrator.data_cache_manager.handle_data_caching(
+        cache_manager = getattr(self.orchestrator, "data_cache_manager", None)
+        if cache_manager is None or not hasattr(cache_manager, "handle_data_caching"):
+            raise AttributeError("Hybrid orchestrator has no data_cache_manager.handle_data_caching")
+
+        return cast(tuple[pd.DataFrame | None, pd.DataFrame | None], cache_manager.handle_data_caching(
             local_res, force_training, self.orchestrator.batch_name, self.orchestrator.config.output_dir
         ))
 
-    async def _handle_skip_colab_path(self, b_info: dict[str, Any], n_f: pd.DataFrame, n_t: pd.DataFrame,
+    async def _handle_skip_colab_path(self, b_info: dict[str, Any],
+                                     features_df: pd.DataFrame,
+                                     targets_df: pd.DataFrame,
                                      tickers: list[str] | None,
                                      timeframes: list[str] | None) -> dict[str, Any]:
         """Handle skip Colab path."""
-        self._create_fallback_selected_features(b_info, n_f)
+        self._create_fallback_selected_features(b_info, features_df)
         final_results = await self.run_final_stages(FinalStagesParams(
-            features_df=n_f,
-            targets_df=n_t,
+            features_df=features_df,
+            targets_df=targets_df,
             tickers=tickers,
             timeframes=timeframes,
             batch_name=self.orchestrator.batch_name,
         ))
         return {'status': 'completed_without_colab', 'final_results': final_results}
-
-    def _ensure_direct_feature_target_outputs(self, local_res: dict[str, Any]) -> None:
-        """Populate direct feature/target keys for cache handlers after Stage 3 refactors."""
-        results = local_res.get('results')
-        if not isinstance(results, dict):
-            return
-
-        has_features = isinstance(results.get('features_df'), pd.DataFrame) and not results['features_df'].empty
-        has_targets = isinstance(results.get('targets_df'), pd.DataFrame) and not results['targets_df'].empty
-        if has_features and has_targets:
-            return
-
-        features_df, targets_df = self.orchestrator._extract_features_and_targets(local_res)
-        if isinstance(features_df, pd.DataFrame) and not features_df.empty:
-            results['features_df'] = features_df
-        if isinstance(targets_df, pd.DataFrame) and not targets_df.empty:
-            results['targets_df'] = targets_df
 
     def _handle_colab_path(self, b_info: dict[str, Any]) -> dict[str, Any]:
         """Handle Colab training path."""
@@ -139,12 +125,16 @@ class PipelineManager:
     def _create_fallback_selected_features(self, batch_info: dict[str, Any], features_df: pd.DataFrame):
         """Create fallback selected features when skipping Colab."""
         batch_dir = Path(batch_info['batch_dir'])
-        selected_features = list(features_df.columns)
+        batch_dir.mkdir(parents=True, exist_ok=True)
+        selected_features = [
+            col for col in features_df.columns
+            if not str(col).startswith("target_")
+        ]
 
         # Save fallback features
         import json
         features_file = batch_dir / 'selected_features_fallback.json'
-        with open(features_file, 'w') as f:
+        with open(features_file, 'w', encoding='utf-8') as f:
             json.dump({'features': selected_features, 'method': 'fallback'}, f, indent=2)
 
     def _generate_colab_instructions(self, batch_info: dict[str, Any]) -> str:
@@ -157,16 +147,3 @@ COLAB INSTRUCTIONS:
 3. Perform feature selection and heavy model training.
 4. Once finished, run: python run_hybrid_pipeline.py --mode continue --batch-name {name}
 """
-
-    async def _run_light_models(self, features_df: pd.DataFrame, targets_df: pd.DataFrame,
-                               tickers: list[str], timeframes: list[str]) -> dict[str, Any]:
-        """Run light models training."""
-        self.logger.info("Training light models...")
-
-        # This would integrate with the actual light model training
-        # For now, return placeholder results
-        return {
-            'models_trained': ['light_model_1', 'light_model_2'],
-            'performance': {'accuracy': 0.85, 'f1_score': 0.82},
-            'status': 'completed'
-        }

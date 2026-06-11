@@ -12,6 +12,8 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
+RESULTS_PATTERN = "results_*.json"
+
 
 class ResultsManager:
     """
@@ -54,8 +56,8 @@ class ResultsManager:
             logger.info(f"Results saved to {filepath}")
             return str(filepath)
 
-        except Exception as e:
-            logger.error(f"Failed to save results: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to save results: {e}")
             raise
 
     def load_results(self, filename: str) -> dict[str, Any] | None:
@@ -86,8 +88,8 @@ class ResultsManager:
             logger.info(f"Results loaded from {filepath}")
             return cast(dict[str, Any], results)
 
-        except Exception as e:
-            logger.error(f"Failed to load results: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            logger.exception(f"Failed to load results: {e}")
             return None
 
     def get_latest_results(self) -> dict[str, Any] | None:
@@ -98,7 +100,7 @@ class ResultsManager:
             Latest results dictionary or None if no results exist
         """
         try:
-            result_files = list(self.results_dir.glob("results_*.json"))
+            result_files = list(self.results_dir.glob(RESULTS_PATTERN))
             if not result_files:
                 return None
 
@@ -106,8 +108,8 @@ class ResultsManager:
             latest_file = max(result_files, key=lambda f: f.stat().st_mtime)
             return self.load_results(latest_file.name)
 
-        except Exception as e:
-            logger.error(f"Failed to get latest results: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            logger.exception(f"Failed to get latest results: {e}")
             return None
 
     def list_results(self) -> list[str]:
@@ -118,9 +120,9 @@ class ResultsManager:
             List of results filenames
         """
         try:
-            return [f.name for f in self.results_dir.glob("results_*.json")]
-        except Exception as e:
-            logger.error(f"Failed to list results: {e}")
+            return [f.name for f in self.results_dir.glob(RESULTS_PATTERN)]
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            logger.exception(f"Failed to list results: {e}")
             return []
 
     def delete_results(self, filename: str) -> bool:
@@ -145,8 +147,8 @@ class ResultsManager:
                 logger.warning(f"Results file not found: {filepath}")
                 return False
 
-        except Exception as e:
-            logger.error(f"Failed to delete results: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to delete results: {e}")
             return False
 
     def get_results_summary(self) -> dict[str, Any]:
@@ -157,7 +159,7 @@ class ResultsManager:
             Summary dictionary with results statistics
         """
         try:
-            result_files = list(self.results_dir.glob("results_*.json"))
+            result_files = list(self.results_dir.glob(RESULTS_PATTERN))
 
             summary: dict[str, Any] = {
                 'total_results': len(result_files),
@@ -184,8 +186,8 @@ class ResultsManager:
 
             return summary
 
-        except Exception as e:
-            logger.error(f"Failed to get results summary: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to get results summary: {e}")
             return {'error': str(e)}
 
     def export_results_to_csv(self, filename: str, output_path: str | None = None) -> str | None:
@@ -215,9 +217,9 @@ class ResultsManager:
             logger.info(f"Results exported to CSV: {output_path}")
             return cast(str, str(output_path))
 
-        except Exception as e:
-            logger.error(f"Failed to export results to CSV: {e}")
-            return None
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to export results to CSV: {e}")
+            raise RuntimeError(f"Failed to export results {filename} to CSV") from e
 
     def _flatten_dict(self, d: dict[str, Any], parent_key: str = '', sep: str = '_') -> dict[str, Any]:
         """

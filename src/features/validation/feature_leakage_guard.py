@@ -1,4 +1,3 @@
-# src/features/validation/feature_leakage_guard.py
 """
 FeatureLeakageGuard — Data leakage detector between features and targets.
 
@@ -10,8 +9,8 @@ Checks if features "see" the future via:
 Integration: called at the end of Stage 3 (FeatureEngineeringStage)
 and before saving to Parquet in HybridOrchestrator.
 """
-
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -19,15 +18,10 @@ import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
-logger = ProjectLogger.get_logger("FeatureLeakageGuard")
-
-
-# Columns that are almost certainly future leakage
-_FORBIDDEN_PATTERNS = [
-    "future_", "next_close", "next_open", "next_high", "next_low",
-    "next_price", "forward_", "fwd_", "t+1", "t_plus",
-    "tomorrow_", "lead_", "ahead_"
-]
+logger = ProjectLogger.get_logger('FeatureLeakageGuard')
+_FORBIDDEN_PATTERNS = ['future_', 'next_close', 'next_open', 'next_high',
+    'next_low', 'next_price', 'forward_', 'fwd_', 't+1', 't_plus',
+    'tomorrow_', 'lead_', 'ahead_']
 
 
 class LeakageReport:
@@ -35,29 +29,24 @@ class LeakageReport:
 
     def __init__(self):
         self.forbidden_cols: list[str] = []
-        self.high_corr_cols: dict[str, dict[str, float]] = {}  # feature -> {target: corr}
+        self.high_corr_cols: dict[str, dict[str, float]] = {}
         self.timestamp = datetime.now().isoformat()
-        self.status: str = "clean"  # "clean" | "warning" | "blocked"
+        self.status: str = 'clean'
 
     @property
-    def has_issues(self) -> bool:
+    def has_issues(self) ->bool:
         return bool(self.forbidden_cols or self.high_corr_cols)
 
-    def to_dict(self) -> dict:
-        return {
-            "status": self.status,
-            "timestamp": self.timestamp,
-            "forbidden_columns": self.forbidden_cols,
-            "high_correlation_columns": self.high_corr_cols,
-            "total_issues": len(self.forbidden_cols) + len(self.high_corr_cols),
-        }
+    def to_dict(self) ->dict:
+        return {'status': self.status, 'timestamp': self.timestamp,
+            'forbidden_columns': self.forbidden_cols,
+            'high_correlation_columns': self.high_corr_cols, 'total_issues':
+            len(self.forbidden_cols) + len(self.high_corr_cols)}
 
-    def __repr__(self) -> str:
+    def __repr__(self) ->str:
         return (
-            f"LeakageReport(status={self.status}, "
-            f"forbidden={len(self.forbidden_cols)}, "
-            f"high_corr={len(self.high_corr_cols)})"
-        )
+            f'LeakageReport(status={self.status}, forbidden={len(self.forbidden_cols)}, high_corr={len(self.high_corr_cols)})'
+            )
 
 
 class FeatureLeakageGuard:
@@ -68,12 +57,8 @@ class FeatureLeakageGuard:
     Prevents "good-but-wrong" models that actually see the future.
     """
 
-    def __init__(
-        self,
-        corr_threshold: float = 0.95,
-        block_on_forbidden: bool = True,
-        report_dir: str | None = "reports/leakage",
-    ):
+    def __init__(self, corr_threshold: float=0.95, block_on_forbidden: bool
+        =True, report_dir: str | None='reports/leakage'):
         """
         Args:
             corr_threshold: Correlation threshold above which a feature is suspicious.
@@ -86,13 +71,9 @@ class FeatureLeakageGuard:
         if self.report_dir:
             self.report_dir.mkdir(parents=True, exist_ok=True)
 
-    def check(
-        self,
-        df: pd.DataFrame,
-        feature_cols: list[str] | None = None,
-        target_cols: list[str] | None = None,
-        ticker: str = "unknown",
-    ) -> LeakageReport:
+    def check(self, df: pd.DataFrame, feature_cols: list[str] | None=
+        None, target_cols: list[str] | None=None, ticker: str='unknown'
+        ) ->LeakageReport:
         """
         Perform full data leakage check.
 
@@ -106,52 +87,45 @@ class FeatureLeakageGuard:
             LeakageReport with check results.
         """
         report = LeakageReport()
-
-        # --- Determine feature / target columns ---
         if target_cols is None:
-            target_cols = [c for c in df.columns if c and isinstance(c, str) and c.startswith("target_")]
+            target_cols = [c for c in df.columns if c.startswith('target_')]
         if feature_cols is None:
-            meta_cols = {"datetime", "ticker", "published_at", "date"} | set(target_cols)
+            meta_cols = {'datetime', 'ticker', 'published_at', 'date'} | set(
+                target_cols)
             feature_cols = [c for c in df.columns if c not in meta_cols]
-
         if not target_cols:
-            logger.debug(f"[{ticker}] No target columns found — skipping leakage check.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    f'[{ticker}] No target columns found — skipping leakage check.'
+                    )
             return report
-
-        # --- 1. Check forbidden columns ---
-        report.forbidden_cols = self._check_forbidden_cols(feature_cols, ticker)
-
-        # --- 2. Check correlation ---
-        report.high_corr_cols = self._check_correlation(df, feature_cols, target_cols, ticker)
-
-        # --- Status setting ---
-        if report.forbidden_cols:
-            report.status = "blocked"
-            msg = (
-                f"[{ticker}] ⛔ FeatureLeakageGuard: {len(report.forbidden_cols)} "
-                f"FORBIDDEN column(s) detected → {report.forbidden_cols}. "
-                f"These likely contain future information!"
+        report.forbidden_cols = self._check_forbidden_cols(feature_cols, ticker
             )
+        report.high_corr_cols = self._check_correlation(df, feature_cols,
+            target_cols, ticker)
+        if report.forbidden_cols:
+            report.status = 'blocked'
+            msg = (
+                f'[{ticker}] ⛔ FeatureLeakageGuard: {len(report.forbidden_cols)} FORBIDDEN column(s) detected → {report.forbidden_cols}. These likely contain future information!'
+                )
             logger.error(msg)
             if self.block_on_forbidden:
                 self._save_report(report, ticker)
                 raise ValueError(msg)
         elif report.high_corr_cols:
-            report.status = "warning"
+            report.status = 'warning'
             logger.warning(
-                f"[{ticker}] ⚠️ FeatureLeakageGuard: {len(report.high_corr_cols)} "
-                f"high-correlation feature(s) detected (threshold={self.corr_threshold}). "
-                f"Review before training."
-            )
+                f'[{ticker}] ⚠️ FeatureLeakageGuard: {len(report.high_corr_cols)} high-correlation feature(s) detected (threshold={self.corr_threshold}). Review before training.'
+                )
         else:
-            report.status = "clean"
-            logger.info(f"[{ticker}] ✅ FeatureLeakageGuard: No leakage detected.")
-
-        # --- Save report ---
+            report.status = 'clean'
+            logger.info(
+                f'[{ticker}] ✅ FeatureLeakageGuard: No leakage detected.')
         self._save_report(report, ticker)
         return report
 
-    def _check_forbidden_cols(self, feature_cols: list[str], ticker: str) -> list[str]:
+    def _check_forbidden_cols(self, feature_cols: list[str], ticker: str
+        ) ->list[str]:
         """Searches for forbidden column names (future patterns)."""
         forbidden = []
         for col in feature_cols:
@@ -159,52 +133,32 @@ class FeatureLeakageGuard:
             if any(pattern in col_lower for pattern in _FORBIDDEN_PATTERNS):
                 forbidden.append(col)
                 logger.warning(
-                    f"[{ticker}] ⛔ Forbidden pattern found in column: '{col}'"
-                )
+                    f"[{ticker}] ⛔ Forbidden pattern found in column: '{col}'")
         return forbidden
 
-    def _check_correlation(
-        self,
-        df: pd.DataFrame,
-        feature_cols: list[str],
-        target_cols: list[str],
-        ticker: str,
-    ) -> dict[str, dict[str, float]]:
+    def _check_correlation(self, df: pd.DataFrame, feature_cols: list[str],
+        target_cols: list[str], ticker: str) ->dict[str, dict[str, float]]:
         """
         Checks correlation between features and targets.
         Returns dict: {feature_col: {target_col: correlation}}.
         """
         high_corr: dict[str, dict[str, float]] = {}
-
-        # Take only numeric features
-        numeric_features = [
-            c for c in feature_cols
-            if c in df.columns and pd.api.types.is_numeric_dtype(df[c])
-        ]
-        numeric_targets = [
-            c for c in target_cols
-            if c in df.columns and pd.api.types.is_numeric_dtype(df[c])
-        ]
-
+        numeric_features = [c for c in feature_cols if c in df.columns and
+            pd.api.types.is_numeric_dtype(df[c])]
+        numeric_targets = [c for c in target_cols if c in df.columns and pd
+            .api.types.is_numeric_dtype(df[c])]
         if not numeric_features or not numeric_targets:
             return high_corr
-
-        # Limit sample size for efficiency
         sample_df = df[numeric_features + numeric_targets].dropna()
-        if len(sample_df) > 50_000:
-            sample_df = sample_df.sample(50_000, random_state=42)
-
+        if len(sample_df) > 50000:
+            sample_df = sample_df.sample(50000, random_state=42)
         if sample_df.empty:
             return high_corr
-
         try:
-            corr_matrix = sample_df[numeric_features].corrwith(
-                sample_df[numeric_targets[0]]  # Check against the first target
-            ).abs()
-
-            # For each suspicious feature check all targets
-            suspicious = corr_matrix[corr_matrix >= self.corr_threshold].index.tolist()
-
+            corr_matrix = sample_df[numeric_features].corrwith(sample_df[
+                numeric_targets[0]]).abs()
+            suspicious = corr_matrix[corr_matrix >= self.corr_threshold
+                ].index.tolist()
             for feat in suspicious:
                 feat_corrs = {}
                 for tgt in numeric_targets:
@@ -212,49 +166,45 @@ class FeatureLeakageGuard:
                     if abs(corr_val) >= self.corr_threshold:
                         feat_corrs[tgt] = round(float(corr_val), 4)
                         logger.warning(
-                            f"[{ticker}] ⚠️ HIGH CORRELATION: '{feat}' ↔ '{tgt}' = {corr_val:.3f} "
-                            f"(threshold={self.corr_threshold}) — possible data leakage!"
-                        )
+                            f"[{ticker}] ⚠️ HIGH CORRELATION: '{feat}' ↔ '{tgt}' = {corr_val:.3f} (threshold={self.corr_threshold}) — possible data leakage!"
+                            )
                 if feat_corrs:
                     high_corr[feat] = feat_corrs
-
-        except Exception as e:
-            logger.warning(f"[{ticker}] Correlation check failed: {e}")
-
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.warning(f'[{ticker}] Correlation check failed: {e}')
+            raise
         return high_corr
 
-    def _save_report(self, report: LeakageReport, ticker: str) -> None:
+    def _save_report(self, report: LeakageReport, ticker: str) ->None:
         """Saves leakage report to JSON file."""
         if not self.report_dir:
             return
         try:
-            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_path = self.report_dir / f"leakage_report_{ticker}_{ts}.json"
-            with open(report_path, "w", encoding="utf-8") as f:
+            ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+            report_path = (self.report_dir /
+                f'leakage_report_{ticker}_{ts}.json')
+            with open(report_path, 'w', encoding='utf-8') as f:
                 json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
-            logger.debug(f"Leakage report saved: {report_path}")
-        except Exception as e:
-            logger.warning(f"Could not save leakage report: {e}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f'Leakage report saved: {report_path}')
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.warning(f'Could not save leakage report: {e}')
+            raise
 
 
-# --- Module-level singleton for pipeline integration ---
 _guard_instance: FeatureLeakageGuard | None = None
 
 
-def get_leakage_guard(
-    corr_threshold: float = 0.95,
-    block_on_forbidden: bool = True,
-    report_dir: str = "reports/leakage",
-) -> FeatureLeakageGuard:
+def get_leakage_guard(corr_threshold: float=0.95, block_on_forbidden: bool=
+    True, report_dir: str='reports/leakage') ->FeatureLeakageGuard:
     """
     Returns singleton instance of FeatureLeakageGuard for pipeline use.
     Called from Stage3 or HybridOrchestrator before saving to Parquet.
     """
     global _guard_instance
     if _guard_instance is None:
-        _guard_instance = FeatureLeakageGuard(
-            corr_threshold=corr_threshold,
-            block_on_forbidden=block_on_forbidden,
-            report_dir=report_dir,
-        )
+        _guard_instance = FeatureLeakageGuard(corr_threshold=corr_threshold,
+            block_on_forbidden=block_on_forbidden, report_dir=report_dir)
     return _guard_instance

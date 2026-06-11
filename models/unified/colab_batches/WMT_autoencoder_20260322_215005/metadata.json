@@ -1,0 +1,11 @@
+{
+  "batch_id": "WMT_autoencoder_20260322_215005",
+  "ticker": "WMT",
+  "model_name": "autoencoder",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_macd_hist_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T21:50:05.683817",
+  "status": "PENDING_COLAB"
+}

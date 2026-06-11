@@ -5,7 +5,6 @@ Real-Time Learning Loop
 
 from datetime import datetime, timedelta
 from typing import Any
-import asyncio
 
 import numpy as np
 import pandas as pd
@@ -38,11 +37,10 @@ class RealTimeLearning:
         self.min_trades_for_learning = 50
         self.learning_frequency = 100  # Кожні 100 торгів
         self.adaptation_threshold = 0.05
-        self.is_learning = False  # Флаг стану
 
-    async def update_and_adapt(self, new_trade_results: list[dict[str, Any]]) -> dict[str, Any]:
+    def update_and_adapt(self, new_trade_results: list[dict[str, Any]]) -> dict[str, Any]:
         """
-        Асинхронно оновлює дані та адаптує стратегії на основі результатів торгів.
+        Оновлює дані та адаптує стратегії
 
         Args:
             new_trade_results: Нові результати торгів
@@ -58,20 +56,16 @@ class RealTimeLearning:
         # 2. Аналіз продуктивності
         performance_analysis = self._analyze_performance()
 
-        # 3. Запуск мета-навчання асинхронно, якщо не запущено
-        if not self.is_learning and len(self.trade_history) >= self.min_trades_for_learning:
-            self.is_learning = True
-            asyncio.create_task(self._run_meta_learning_async())
-
-        # 4. Виявлення проблемних моделей
+        # 3. Виявлення проблемних моделей
         problematic_models = self._identify_problematic_models(performance_analysis)
 
-        # 5. Адаптація стратегій
+        # 4. Адаптація стратегій
         adaptation_results = {}
+
         if len(self.trade_history) >= self.min_trades_for_learning:
             adaptation_results = self._perform_adaptation(problematic_models, performance_analysis)
 
-        # 6. Оновлення метаданих
+        # 5. Оновлення метаданих
         self._update_metadata(performance_analysis, adaptation_results)
 
         return {
@@ -79,33 +73,7 @@ class RealTimeLearning:
             'problematic_models': problematic_models,
             'adaptation_results': adaptation_results,
             'recommendations': self._generate_recommendations(performance_analysis),
-            'next_adaptation_due': self._calculate_next_adaptation(),
-            'status': 'adaptation_in_progress' if self.is_learning else 'monitoring'
-        }
-
-    async def _run_meta_learning_async(self) -> None:
-        """Асинхронний процес оновлення мета-моделі."""
-        try:
-            self.meta_learner.update_meta_model(self.trade_history)
-            self.logger.info("🧠 Meta-model updated asynchronously.")
-        except Exception as e:
-            self.logger.error(f"Error in async meta-learning: {e}")
-        finally:
-            self.is_learning = False
-
-    def _perform_adaptation(self, problematic_models: list[dict[str, Any]], performance_analysis: dict[str, Any]) -> dict[str, Any]:
-        """Виконує адаптацію стратегій та ризиків."""
-        self.logger.info("🔄 Performing real-time strategy adaptation...")
-        
-        weight_adjustments = self.strategy_adapter.adapt_model_weights(problematic_models, performance_analysis)
-        risk_adjustments = self.strategy_adapter.adapt_risk_parameters(performance_analysis)
-        strategy_adjustments = self.strategy_adapter.adapt_entry_exit_strategies(performance_analysis)
-        
-        return {
-            'weight_adjustments': weight_adjustments,
-            'risk_adjustments': risk_adjustments,
-            'strategy_adjustments': strategy_adjustments,
-            'timestamp': datetime.now()
+            'next_adaptation_due': self._calculate_next_adaptation()
         }
 
     def _update_trade_history(self, new_trade_results: list[dict[str, Any]]) -> None:
@@ -235,7 +203,31 @@ class RealTimeLearning:
         self.logger.info(f"⚠️ Found {len(problematic)} problematic models")
         return problematic
 
+    def _perform_adaptation(self, problematic_models: list[dict], performance_analysis: dict[str, Any]) -> dict[str, Any]:
+        """Виконує адаптацію стратегій"""
+        adaptation_results = {}
 
+        # 1. Адаптація ваг моделей
+        if problematic_models:
+            weight_adaptation = self.strategy_adapter.adapt_model_weights(
+                problematic_models, performance_analysis
+            )
+            adaptation_results['weight_adaptation'] = weight_adaptation
+
+        # 2. Адаптація параметрів ризику
+        risk_adaptation = self.strategy_adapter.adapt_risk_parameters(performance_analysis)
+        adaptation_results['risk_adaptation'] = risk_adaptation
+
+        # 3. Адаптація стратегій входу/виходу
+        strategy_adaptation = self.strategy_adapter.adapt_entry_exit_strategies(performance_analysis)
+        adaptation_results['strategy_adaptation'] = strategy_adaptation
+
+        # 4. Мета-навчання
+        if len(self.trade_history) >= self.min_trades_for_learning * 2:
+            meta_learning_results = self.meta_learner.update_meta_model(self.trade_history)
+            adaptation_results['meta_learning'] = meta_learning_results
+
+        return adaptation_results
 
     def _generate_recommendations(self, performance_analysis: dict[str, Any]) -> list[str]:
         """Генерує рекомендації на основі аналізу"""
@@ -279,7 +271,7 @@ class RealTimeLearning:
         return float(drawdown.min())
 
     def _calculate_sharpe_ratio(self, pnl_series: pd.Series) -> float:
-        """Розраховує Sharpe ratio (per trade)"""
+        """Розраховує Sharpe ratio"""
         if len(pnl_series) < 2:
             return 0.0
 
@@ -288,10 +280,10 @@ class RealTimeLearning:
             return 0.0
 
         std = returns.std()
-        if std == 0:
+        if std == 0 or pd.isna(std):
             return 0.0
 
-        return float(returns.mean() / std)
+        return float(returns.mean() / std * np.sqrt(252))  # Annualized
 
     def _calculate_performance_trend(self, df: pd.DataFrame) -> str:
         """Розраховує тренд продуктивності"""
@@ -474,14 +466,7 @@ class MetaLearner:
         y = features['profit_loss_positive']
 
         self.meta_model = RandomForestClassifier(n_estimators=50, random_state=42)
-        
-        # ✅ Recency weighting: exponential weight decay based on trade sequence (half-life of 100 trades)
-        total_samples = len(df)
-        trade_indices = np.arange(total_samples)
-        half_life_trades = 100
-        sample_weights = 2.0 ** (-(total_samples - 1 - trade_indices) / half_life_trades)
-        
-        self.meta_model.fit(X, y, sample_weight=sample_weights)
+        self.meta_model.fit(X, y)
 
         return {
             'status': 'updated',

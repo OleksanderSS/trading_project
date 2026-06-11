@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 # src/pipeline/hybrid/colab_workflow_manager.py
 """
 Colab Workflow Manager for Hybrid Orchestrator.

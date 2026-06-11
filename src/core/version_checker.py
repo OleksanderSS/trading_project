@@ -1,15 +1,16 @@
-# src/core/version_checker.py
-"""
-Version Checker - Ensures runtime compatibility between Python environment and required dependencies.
-"""
-
 import importlib.metadata
+import logging
 import sys
 from typing import Any
 
 from packaging import version
 
 from src.core.logging.logger import ProjectLogger
+
+# src/core/version_checker.py
+"""
+Version Checker - Ensures runtime compatibility between Python environment and required dependencies.
+"""
 
 logger = ProjectLogger.get_logger("VersionChecker")
 
@@ -24,15 +25,8 @@ class VersionChecker:
         Initializes the checker with the global configuration.
         """
         self.config_manager = config_manager
-        # Attempt to retrieve specific versioning metadata from configuration with multi-format fallback
-        if hasattr(config_manager, 'get_config'):
-            self.version_config = config_manager.get_config('version', {})
-        elif hasattr(config_manager, 'get'):
-            self.version_config = config_manager.get('version', {})
-        elif isinstance(config_manager, dict):
-            self.version_config = config_manager.get('version', {})
-        else:
-            self.version_config = {}
+        # Attempt to retrieve specific versioning metadata from configuration
+        self.version_config = config_manager.get_config('version', {})
 
     def check_python_version(self) -> tuple[bool, str]:
         """
@@ -78,13 +72,15 @@ class VersionChecker:
                         logger.error(msg)
                         issues.append(msg)
                     else:
-                        logger.debug(f"Package compliant: {package_name} {installed_version} OK")
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug(f"Package compliant: {package_name} {installed_version} OK")
                 else:
-                    logger.debug(f"Package check skipped (no specification): {package_name} {installed_version}")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Package check skipped (no specification): {package_name} {installed_version}")
 
             except importlib.metadata.PackageNotFoundError:
                 msg = f"Dependency Missing: {package_name} is not installed in the current environment."
-                logger.error(msg)
+                logger.exception(msg)
                 issues.append(msg)
 
         return len(issues) == 0, issues

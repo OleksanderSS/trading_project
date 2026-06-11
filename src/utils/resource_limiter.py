@@ -1,4 +1,3 @@
-
 # Resource limiter for concurrent operations
 from asyncio import Semaphore
 
@@ -21,6 +20,7 @@ class ResourceLimiter:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.release()
+
 
 # Global limiters
 api_limiter = ResourceLimiter(max_concurrent=3)  # Limit API calls

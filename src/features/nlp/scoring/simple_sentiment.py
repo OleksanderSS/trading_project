@@ -35,12 +35,9 @@ class SimpleSentimentAnalyzer:
         """
         config = sentiment_config or {}
 
-        # Use provided keywords or fall back to defaults safely without triggering set(None) TypeError
-        pos_list = config.get('positive_words')
-        self.positive_words: set[str] = set(pos_list) if pos_list is not None else DEFAULT_POSITIVE_WORDS
-
-        neg_list = config.get('negative_words')
-        self.negative_words: set[str] = set(neg_list) if neg_list is not None else DEFAULT_NEGATIVE_WORDS
+        # Use provided keywords or fall back to defaults
+        self.positive_words: set[str] = set(config.get('positive_words')) or DEFAULT_POSITIVE_WORDS
+        self.negative_words: set[str] = set(config.get('negative_words')) or DEFAULT_NEGATIVE_WORDS
 
         # Regex to find all matching keywords in one pass
         all_words = self.positive_words.union(self.negative_words)

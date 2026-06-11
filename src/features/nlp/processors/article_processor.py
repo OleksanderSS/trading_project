@@ -88,8 +88,7 @@ class ArticleProcessor:
         final_score = self.scorer.score(
             sentiment_details=sentiment_result.get('details', {}),
             keywords=all_keywords,
-            entities=entities, # Passing keywords as a stand-in for entities
-            text=text
+            entities=entities # Passing keywords as a stand-in for entities
         )
 
         # --- Step 3: Assemble Final Result ---

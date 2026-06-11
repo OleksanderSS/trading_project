@@ -1,0 +1,11 @@
+{
+  "batch_id": "QQQ_tabnet_20260322_160737",
+  "ticker": "QQQ",
+  "model_name": "tabnet",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_macd_hist_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T16:07:37.995796",
+  "status": "PENDING_COLAB"
+}

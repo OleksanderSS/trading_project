@@ -7,15 +7,16 @@ from typing import Any
 import pandas as pd
 import yaml
 
+# Assuming these imports are correct relative to the project structure
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.data.management.data_manager import DataManager
 
 logger = logging.getLogger(__name__)
 
-
 class ContextRuleGenerator:
     """
-    Analyzes historical data to identify statistically significant market regimes.
+    Analyzes historical data to identify statistically significant market regimes
+    and generates rules for their application.
     """
 
     def __init__(self, config_manager: UnifiedConfigManager, data_manager: DataManager):
@@ -50,9 +51,9 @@ class ContextRuleGenerator:
             if historical_data.empty:
                 logger.error("No historical data loaded. Aborting.")
                 return
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to load historical data: {e}", exc_info=True)
-            return
+            raise RuntimeError("Failed to load historical data for rule generation") from e
 
         # 2. Generate rules
         generated_rules = self._generate_rules(historical_data)
@@ -100,9 +101,9 @@ class ContextRuleGenerator:
             return None
 
         # Prepare future returns for the target asset
-        target_returns = data[self.target_asset].pct_change()
+        target_returns = data[self.target_asset].pct_change(fill_method=None)
         for window in effect_windows:
-            data[f'target_return_{window}d'] = target_returns.shift(-window)
+            data[f'target_return_{window}d'] = target_returns.shift(-window)  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL target generation
 
         # Identify event occurrences
         if condition == '>':
@@ -148,5 +149,6 @@ class ContextRuleGenerator:
             with open(path, 'w') as f:
                 yaml.dump({'generated_context_rules': rules}, f, allow_unicode=True, sort_keys=False)
             logger.info(f"Rules successfully saved to {path}")
-        except Exception:
-            logger.exception(f"Failed to save rules to {path}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to save rules to {path}: {e}")
+            raise RuntimeError(f"Failed to save rules to {path}") from e

@@ -187,4 +187,4 @@ temporal_features:
 # SETTINGS
 # ============================================
 default_dynamic_threshold: 0.005  # 0.5% default for unknown indicators
-noise_sensitivity: 1.5            # Multiplier for dynamic threshold calculation (IQR * sensitivity)
+noise_sensitivity: 0.5            # Multiplier for dynamic threshold calculation (IQR * sensitivity)

@@ -1,0 +1,11 @@
+{
+  "batch_id": "WMT_gru_20260322_131531",
+  "ticker": "WMT",
+  "model_name": "gru",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_return_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T13:15:32.317041",
+  "status": "PENDING_COLAB"
+}

@@ -37,8 +37,8 @@ def process_news_data(news_df: pd.DataFrame,
             filepath = os.path.join(out_dir, fname)
             clustered_df.to_parquet(filepath, index=False)
             logger.info(f"Saved clustered news to {filepath}")
-        except Exception as e:
-            logger.error(f"Error saving clustered news: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Error saving clustered news: {e}")
 
     return clustered_df
 
@@ -83,8 +83,8 @@ def _cluster_news(df: pd.DataFrame, n_clusters: int = 10) -> pd.DataFrame:
     except ImportError:
         logger.warning("sklearn not available, returning original dataframe")
         return df
-    except Exception as e:
-        logger.error(f"Error clustering news: {e}")
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        logger.exception(f"Error clustering news: {e}")
         return df
 
 def get_news_sentiment(news_df: pd.DataFrame) -> dict[str, float]:
@@ -109,8 +109,8 @@ def get_news_sentiment(news_df: pd.DataFrame) -> dict[str, float]:
     except ImportError:
         logger.warning("textblob not available, returning neutral sentiment")
         return {'average_sentiment': 0.0, 'positive_count': 0, 'negative_count': 0, 'neutral_count': len(news_df)}
-    except Exception as e:
-        logger.error(f"Error calculating sentiment: {e}")
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        logger.exception(f"Error calculating sentiment: {e}")
         return {'average_sentiment': 0.0, 'positive_count': 0, 'negative_count': 0, 'neutral_count': 0}
 
 def filter_news_by_date(

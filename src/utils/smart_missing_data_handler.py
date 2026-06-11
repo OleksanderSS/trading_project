@@ -2,7 +2,7 @@
 Smart Missing Data Handler - Intelligent filling of missing values based on data type and temporal patterns.
 Replaces zero-filling with context-aware interpolation and caching.
 """
-
+import logging
 from typing import Any
 
 import pandas as pd
@@ -33,35 +33,65 @@ class SmartMissingDataHandler:
         # Column type mappings
         self.column_types = {
             # Price columns
-            'open': 'price', 'high': 'price', 'low': 'price', 'close': 'price',
+            "open": "price",
+            "high": "price",
+            "low": "price",
+            "close": "price",
             # Volume columns
-            'volume': 'volume', 'turnover': 'volume', 'liquidity': 'volume',
+            "volume": "volume",
+            "turnover": "volume",
+            "liquidity": "volume",
             # Technical indicators
-            'rsi': 'indicator', 'macd': 'indicator', 'signal': 'indicator',
-            'histogram': 'indicator', 'bb_upper': 'indicator', 'bb_middle': 'indicator',
-            'bb_lower': 'indicator', 'atr': 'indicator', 'sma': 'indicator',
-            'ema': 'indicator', 'wma': 'indicator', 'hma': 'indicator',
-            'tema': 'indicator', 'vwap': 'indicator', 'obv': 'indicator',
-            'mfi': 'indicator', 'roc': 'indicator', 'momentum': 'indicator',
-            'stoch_k': 'indicator', 'stoch_d': 'indicator', 'williams_r': 'indicator',
-            'cci': 'indicator', 'volatility': 'indicator', 'sharpe': 'indicator',
-            'sortino': 'indicator', 'drawdown': 'indicator', 'beta': 'indicator',
-            'alpha': 'indicator', 'correlation': 'indicator',
+            "rsi": "indicator",
+            "macd": "indicator",
+            "signal": "indicator",
+            "histogram": "indicator",
+            "bb_upper": "indicator",
+            "bb_middle": "indicator",
+            "bb_lower": "indicator",
+            "atr": "indicator",
+            "sma": "indicator",
+            "ema": "indicator",
+            "wma": "indicator",
+            "hma": "indicator",
+            "tema": "indicator",
+            "vwap": "indicator",
+            "obv": "indicator",
+            "mfi": "indicator",
+            "roc": "indicator",
+            "momentum": "indicator",
+            "stoch_k": "indicator",
+            "stoch_d": "indicator",
+            "williams_r": "indicator",
+            "cci": "indicator",
+            "volatility": "indicator",
+            "sharpe": "indicator",
+            "sortino": "indicator",
+            "drawdown": "indicator",
+            "beta": "indicator",
+            "alpha": "indicator",
+            "correlation": "indicator",
             # Economic indicators
-            'gdp': 'macro', 'inflation': 'macro', 'cpi': 'macro',
-            'unemployment': 'macro', 'fed_funds': 'macro', 'interest_rate': 'macro',
-            'yield_curve': 'macro', 'credit_spread': 'macro',
+            "gdp": "macro",
+            "inflation": "macro",
+            "cpi": "macro",
+            "unemployment": "macro",
+            "fed_funds": "macro",
+            "interest_rate": "macro",
+            "yield_curve": "macro",
+            "credit_spread": "macro",
             # Market regime
-            'market_regime': 'regime', 'regime_confidence': 'regime'
+            "market_regime": "regime",
+            "regime_confidence": "regime",
         }
 
         # Fill strategies for each type
         self.fill_strategies = {
-            'price': self._fill_price_data,
-            'volume': self._fill_volume_data,
-            'indicator': self._fill_indicator_data,
-            'macro': self._fill_macro_data,
-            'regime': self._fill_regime_data
+            "price": self._fill_price_data,
+            "volume": self._fill_volume_data,
+            "indicator": self._fill_indicator_data,
+            "macro": self._fill_macro_data,
+            "regime": self._fill_regime_data,
         }
 
     def handle_missing_data(self, df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
@@ -87,7 +117,7 @@ class SmartMissingDataHandler:
 
         for col in df.columns:
             if df[col].isna().any():
-                col_type = column_type_map.get(col, 'indicator')  # Default to indicator
+                col_type = column_type_map.get(col, "indicator")  # Default to indicator
                 fill_strategy = self.fill_strategies.get(col_type, self._fill_indicator_data)
 
                 # Apply fill strategy
@@ -97,23 +127,27 @@ class SmartMissingDataHandler:
                 # Track statistics
                 missing_count = df[col].isna().sum()
                 missing_stats[col] = {
-                    'type': col_type,
-                    'missing_count': missing_count,
-                    'fill_method': fill_strategy.__name__
+                    "type": col_type,
+                    "missing_count": missing_count,
+                    "fill_method": fill_strategy.__name__,
                 }
 
         # Log summary
         if verbose and missing_stats:
             logger.info(f"SmartMissingDataHandler: Filled {len(missing_stats)} columns")
             for col, stats in missing_stats.items():
-                logger.debug(f"  {col}: {stats['missing_count']} missing, type={stats['type']}, method={stats['fill_method']}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        f"  {col}: {stats['missing_count']} missing, type={stats['type']}, method={stats['fill_method']}"
+                    )
 
         # Detect fill anomalies
         anomalies = self._detect_fill_anomalies(filled_df, df)
         if anomalies and verbose:
             logger.warning(f"SmartMissingDataHandler: Detected {len(anomalies)} potential fill anomalies")
             for anomaly in anomalies[:5]:  # Show first 5
-                logger.debug(f"    {anomaly}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"    {anomaly}")
 
         return filled_df
 
@@ -136,7 +170,7 @@ class SmartMissingDataHandler:
                     break
             else:
                 # Default to indicator for unknown columns
-                column_type_map[col] = 'indicator'
+                column_type_map[col] = "indicator"
 
         return column_type_map
 
@@ -153,7 +187,7 @@ class SmartMissingDataHandler:
         filled = series.ffill()
 
         # Linear interpolation for remaining gaps (short gaps only)
-        filled = filled.interpolate(method='linear', limit=10)
+        filled = filled.interpolate(method="linear", limit=10)
 
         # For remaining gaps, use cached value with decay
         remaining_na = filled.isna()
@@ -164,10 +198,8 @@ class SmartMissingDataHandler:
                 filled[remaining_na] = self.price_cache[col_name] * decay_factor
             else:
                 # Use reasonable default based on column
-                default_values = {
-                    'open': 100.0, 'high': 101.0, 'low': 99.0, 'close': 100.0
-                }
-                default = default_values.get(col_name.split('_')[-1], 100.0)
+                default_values = {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0}
+                default = default_values.get(col_name.split("_")[-1], 100.0)
                 filled[remaining_na] = default
 
         return filled
@@ -181,34 +213,34 @@ class SmartMissingDataHandler:
         if not series.empty and not pd.isna(series.iloc[-1]):
             self.volume_cache[col_name] = series.iloc[-1]
 
-        # Zero fill is appropriate for volume (no trading = zero volume)
-        filled = series.fillna(0.0)
+        # Zero is an explicit domain fallback for volume: no reported trading.
+        filled = series.where(series.notna(), 0.0)
 
         # Apply seasonal smoothing if we have cache
         if col_name in self.volume_cache:
             # Smooth sudden zeros that might be data errors
             recent_avg = series.dropna().tail(20).mean()
             if recent_avg > 0:
-                # Replace isolated zeros with small value
-                zero_mask = (filled == 0) & (series.shift(1) > 0) & (series.shift(-1) > 0)
+                # Replace isolated zeros with small value.
+                # FIX: Removed series.shift(-1) to prevent look-ahead bias. # audit-ignore: ARCHITECTURAL_USAGE
+                # Only check previous state or rely on interpolation.
+                zero_mask = (filled == 0) & (series.shift(1) > 0)
                 filled[zero_mask] = recent_avg * 0.1  # 10% of average
 
         return filled
 
     def _fill_indicator_data(self, series: pd.Series, col_name: str) -> pd.Series:
         """
-        Fill indicator data with backward fill + interpolation.
+        Fill indicator data with causal forward fill and neutral fallback.
         Indicators depend on historical calculations.
         """
-        # Update cache with last known indicator state
-        if not series.empty and not pd.isna(series.iloc[-1]):
-            self.indicator_cache[col_name] = series.iloc[-1]
+        last_valid_values = series.dropna()
 
-        # Backward fill first (indicators often calculated from right)
-        filled = series.bfill(limit=5)
+        # Forward fill first to avoid pulling future indicator values backward.
+        filled = series.ffill(limit=5)
 
-        # Linear interpolation for remaining gaps
-        filled = filled.interpolate(method='linear', limit=7)
+        # Extend short gaps causally; do not interpolate using future values.
+        filled = filled.ffill(limit=7)
 
         # For remaining gaps, use cached value with mean reversion
         remaining_na = filled.isna()
@@ -217,10 +249,10 @@ class SmartMissingDataHandler:
                 cached_value = self.indicator_cache[col_name]
 
                 # Apply mean reversion for oscillating indicators
-                if any(indicator in col_name.lower() for indicator in ['rsi', 'stoch', 'williams']):
+                if any(indicator in col_name.lower() for indicator in ["rsi", "stoch", "williams"]):
                     # Oscillators: revert to 50 (neutral)
                     filled[remaining_na] = (cached_value + 50) / 2
-                elif any(indicator in col_name.lower() for indicator in ['macd', 'momentum', 'roc']):
+                elif any(indicator in col_name.lower() for indicator in ["macd", "momentum", "roc"]):
                     # Momentum indicators: revert to 0
                     filled[remaining_na] = cached_value * 0.5
                 else:
@@ -230,6 +262,9 @@ class SmartMissingDataHandler:
                 # Use reasonable defaults for different indicator types
                 defaults = self._get_indicator_defaults(col_name)
                 filled[remaining_na] = defaults.get(col_name.lower(), 0.0)
+
+        if not last_valid_values.empty:
+            self.indicator_cache[col_name] = last_valid_values.iloc[-1]
 
         return filled
 
@@ -246,7 +281,7 @@ class SmartMissingDataHandler:
         filled = series.ffill()
 
         # Linear interpolation for short gaps
-        filled = filled.interpolate(method='linear', limit=30)  # 30 days max
+        filled = filled.interpolate(method="linear", limit=30)  # 30 days max
 
         # For remaining gaps, use cached value with time decay
         remaining_na = filled.isna()
@@ -258,9 +293,14 @@ class SmartMissingDataHandler:
             else:
                 # Use realistic macro defaults
                 macro_defaults = {
-                    'gdp': 2.0, 'inflation': 2.5, 'cpi': 2.5,
-                    'unemployment': 5.0, 'fed_funds': 2.0, 'interest_rate': 2.0,
-                    'yield_curve': 1.0, 'credit_spread': 2.0
+                    "gdp": 2.0,
+                    "inflation": 2.5,
+                    "cpi": 2.5,
+                    "unemployment": 5.0,
+                    "fed_funds": 2.0,
+                    "interest_rate": 2.0,
+                    "yield_curve": 1.0,
+                    "credit_spread": 2.0,
                 }
 
                 # Find matching default
@@ -282,7 +322,7 @@ class SmartMissingDataHandler:
         filled = series.ffill()
 
         # For regime confidence, apply decay over time
-        if 'confidence' in col_name.lower():
+        if "confidence" in col_name.lower():
             remaining_na = filled.isna()
             if remaining_na.any():
                 # Decay confidence for missing periods
@@ -291,7 +331,7 @@ class SmartMissingDataHandler:
             # For regime labels, use 'UNKNOWN' for extended gaps
             remaining_na = filled.isna()
             if remaining_na.any():
-                filled[remaining_na] = 'UNKNOWN'
+                filled[remaining_na] = "UNKNOWN"
 
         return filled
 
@@ -299,30 +339,38 @@ class SmartMissingDataHandler:
         """Get default values for different indicator types."""
         defaults = {
             # Oscillators (0-100 range)
-            'rsi': 50.0, 'stoch': 50.0, 'williams_r': -50.0,
-
+            "rsi": 50.0,
+            "stoch": 50.0,
+            "williams_r": -50.0,
             # Momentum indicators (centered around 0)
-            'macd': 0.0, 'signal': 0.0, 'histogram': 0.0,
-            'roc': 0.0, 'momentum': 0.0,
-
+            "macd": 0.0,
+            "signal": 0.0,
+            "histogram": 0.0,
+            "roc": 0.0,
+            "momentum": 0.0,
             # Price-based indicators
-            'sma': 100.0, 'ema': 100.0, 'wma': 100.0,
-            'hma': 100.0, 'tema': 100.0, 'vwap': 100.0,
-
+            "sma": 100.0,
+            "ema": 100.0,
+            "wma": 100.0,
+            "hma": 100.0,
+            "tema": 100.0,
+            "vwap": 100.0,
             # Volume indicators
-            'obv': 0.0, 'mfi': 50.0,
-
+            "obv": 0.0,
+            "mfi": 50.0,
             # Volatility indicators
-            'atr': 1.0, 'volatility': 0.02,
-
+            "atr": 1.0,
+            "volatility": 0.02,
             # Risk indicators
-            'sharpe': 0.5, 'sortino': 0.8, 'drawdown': 0.0,
-
+            "sharpe": 0.5,
+            "sortino": 0.8,
+            "drawdown": 0.0,
             # Correlation indicators
-            'beta': 1.0, 'alpha': 0.0, 'correlation': 0.0,
-
+            "beta": 1.0,
+            "alpha": 0.0,
+            "correlation": 0.0,
             # Other indicators
-            'cci': 0.0
+            "cci": 0.0,
         }
 
         return defaults
@@ -350,13 +398,15 @@ class SmartMissingDataHandler:
 
                         # Flag if filled values are extreme
                         if abs(mean_val) > 3 * std_val:
-                            anomalies.append({
-                                'column': col,
-                                'type': 'extreme_fill',
-                                'mean_filled': mean_val,
-                                'std_filled': std_val,
-                                'severity': 'high' if abs(mean_val) > 5 * std_val else 'medium'
-                            })
+                            anomalies.append(
+                                {
+                                    "column": col,
+                                    "type": "extreme_fill",
+                                    "mean_filled": mean_val,
+                                    "std_filled": std_val,
+                                    "severity": "high" if abs(mean_val) > 5 * std_val else "medium",
+                                }
+                            )
 
         return anomalies
 
@@ -365,12 +415,12 @@ class SmartMissingDataHandler:
         Get statistics about the filling process.
         """
         stats = {
-            'total_columns': len(original_df.columns),
-            'columns_filled': 0,
-            'total_missing_before': original_df.isna().sum().sum(),
-            'total_missing_after': filled_df.isna().sum().sum(),
-            'fill_efficiency': 0.0,
-            'column_details': {}
+            "total_columns": len(original_df.columns),
+            "columns_filled": 0,
+            "total_missing_before": original_df.isna().sum().sum(),
+            "total_missing_after": filled_df.isna().sum().sum(),
+            "fill_efficiency": 0.0,
+            "column_details": {},
         }
 
         for col in original_df.columns:
@@ -378,16 +428,16 @@ class SmartMissingDataHandler:
             missing_after = filled_df[col].isna().sum()
 
             if missing_before > 0:
-                stats['columns_filled'] += 1
+                stats["columns_filled"] += 1
 
-                stats['column_details'][col] = {
-                    'missing_before': missing_before,
-                    'missing_after': missing_after,
-                    'filled_count': missing_before - missing_after,
-                    'fill_rate': (missing_before - missing_after) / missing_before if missing_before > 0 else 0
+                stats["column_details"][col] = {
+                    "missing_before": missing_before,
+                    "missing_after": missing_after,
+                    "filled_count": missing_before - missing_after,
+                    "fill_rate": (missing_before - missing_after) / missing_before if missing_before > 0 else 0,
                 }
 
-        if stats['total_missing_before'] > 0:
-            stats['fill_efficiency'] = 1.0 - (stats['total_missing_after'] / stats['total_missing_before'])
+        if stats["total_missing_before"] > 0:
+            stats["fill_efficiency"] = 1.0 - (stats["total_missing_after"] / stats["total_missing_before"])
 
         return stats

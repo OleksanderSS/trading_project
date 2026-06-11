@@ -32,6 +32,36 @@ class DecayFeaturesEnricher(BaseEnricher):
         """Execution order - run after significance features (70)"""
         return 75
 
+    def _calculate_decay_factor(self, half_life_periods: int) -> float:
+        """Calculate decay factor based on half-life formula."""
+        return np.exp(-np.log(2) / half_life_periods)
+
+    def _apply_decay_to_column(self, df: pd.DataFrame, col: str, decay_factor: float) -> np.ndarray:
+        """Apply exponential decay to a single column."""
+        if col not in df.columns:
+            logger.warning(f"Event column '{col}' not found in DataFrame. Skipping.")
+            return np.zeros(len(df))
+
+        # Identify indices where events occur
+        is_event = df[col].values >= 1
+        event_indices = np.nonzero(is_event)[0]
+
+        decayed_values = np.zeros(len(df))
+
+        # Apply decay
+        if len(event_indices) > 0:
+            decayed_values = np.zeros(len(df))
+            current_value = 0.0
+            values = df[col].values
+            for i in range(len(df)):
+                if values[i] >= 1:
+                    current_value = 1.0
+                else:
+                    current_value *= decay_factor
+                decayed_values[i] = current_value
+
+        return decayed_values
+
     def _enrich_impl(self, df: pd.DataFrame, event_columns: list[str] | None = None, half_life_periods: int | None = None, **kwargs) -> pd.DataFrame:
         """
         Adds exponential decay features for specified event columns.
@@ -58,31 +88,14 @@ class DecayFeaturesEnricher(BaseEnricher):
             half_life_periods = self.half_life_periods
             logger.info(f"Using default half_life_periods from config: {half_life_periods}")
 
-        # Calculate decay factor based on half-life formula: N(t) = N0 * e^(-λt)
-        # Multiplier per step = exp(-ln(2) / half_life)
-        decay_factor = np.exp(-np.log(2) / half_life_periods)
+        decay_factor = self._calculate_decay_factor(half_life_periods)
 
         enriched_df = df.copy()
 
         for col in event_columns:
-            if col not in df.columns:
-                logger.warning(f"Event column '{col}' not found in DataFrame. Skipping.")
-                continue
-
-            decayed_values = np.zeros(len(df))
-            current_value = 0.0
-
-            # Use a simple loop to apply decay with resets
-            # Resetting to 1.0 on new event (rather than stacking) to prevent extreme outliers for ML models
-            for i in range(len(df)):
-                if df[col].iloc[i] >= 1:
-                    current_value = 1.0
-                else:
-                    current_value *= decay_factor
-
-                decayed_values[i] = current_value
-
+            decayed_values = self._apply_decay_to_column(df, col, decay_factor)
             enriched_df[f"{col}_decayed"] = decayed_values
-            logger.debug(f"Added decay feature for '{col}' with half-life {half_life_periods}.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Added decay feature for '{col}' with half-life {half_life_periods}.")
 
         return enriched_df

@@ -1,0 +1,11 @@
+{
+  "batch_id": "SPY_lstm_20260322_170720",
+  "ticker": "SPY",
+  "model_name": "lstm",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_direction_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T17:07:20.773123",
+  "status": "PENDING_COLAB"
+}

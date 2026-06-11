@@ -1,0 +1,14 @@
+artifact_uri: file:///D:/trading_project/mlruns/145031389980923445/9779f40e2cc04b75b3d8f2b1b6869d42/artifacts
+end_time: 1777670658397
+entry_point_name: ''
+experiment_id: '145031389980923445'
+lifecycle_stage: active
+run_id: 9779f40e2cc04b75b3d8f2b1b6869d42
+run_name: API_Test_Run
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1777670657951
+status: 3
+tags: []
+user_id: Alexa

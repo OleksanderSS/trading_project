@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 import numpy as np
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 
 from src.optimization.base import BaseOptimizer
 
@@ -89,7 +89,7 @@ class BayesianOptimizer(BaseOptimizer):
         model = self.model_func(**params)
 
         # Оцінюємо через cross-validation
-        scores = cross_val_score(model, X, y, cv=self.cv, scoring=self.scoring)
+        scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.cv), scoring=self.scoring)
         return float(scores.mean())
 
     def optimize(self, data: Any, target: Any = None, **kwargs) -> dict[str, Any]:
@@ -135,7 +135,7 @@ class BayesianOptimizer(BaseOptimizer):
 
             return {"best_params": self.best_params, "best_score": self.best_score}
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Критична помилка під час оптимізації: {e}", exc_info=True)
             raise
 

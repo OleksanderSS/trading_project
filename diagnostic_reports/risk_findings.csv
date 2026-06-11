@@ -1,0 +1,959 @@
+severity,rule_id,file,line,snippet,why
+P0,TARGET_IN_FEATURE_MODULE,algorithms/adaptive_position_sizer.py,213,target_risk_pct = self.base_position_size_pct,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/adaptive_position_sizer.py,216,"return min(target_risk_pct / var_pct, 2.0)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,96,"{}), 'target_volatility': params.get('target_volatility')}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,96,"{}), 'target_volatility': params.get('target_volatility')}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,107,if params['target_volatility'] is not None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,108,"weights = self._scale_to_target_volatility(weights, vols,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,109,"correlations, params['target_volatility'])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,126,"]), 'target_volatility': params['target_volatility']}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,126,"]), 'target_volatility': params['target_volatility']}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,175,target_vol_contrib = 1.0 / n_assets,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,176,return np.sum((risk_contrib - target_vol_contrib) ** 2),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,379,"def _scale_to_target_volatility(self, weights: np.ndarray, vols: np.",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,380,"ndarray, correlations: (np.ndarray | None), target_volatility: float",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,391,scale_factor = target_volatility / portfolio_vol,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,93,target_name = args.test_target,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,94,if not target_name.startswith('target_'):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,94,if not target_name.startswith('target_'):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,95,"target_name = f""target_{target_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,95,"target_name = f""target_{target_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,95,"target_name = f""target_{target_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,97,if target_name not in config_data['available_targets']:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/batch_manager.py,36,target_name = args.test_target,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/batch_manager.py,38,if not target_name.startswith('target_'):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/batch_manager.py,38,if not target_name.startswith('target_'):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/batch_manager.py,40,"target_name = f""target_{target_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/batch_manager.py,40,"target_name = f""target_{target_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/batch_manager.py,40,"target_name = f""target_{target_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/batch_manager.py,42,parts.append(target_name),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/pipeline_executor.py,353,target_cols = [col for col in targets_df.columns if str(col).,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/pipeline_executor.py,355,startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/pipeline_executor.py,357,if not target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/pipeline_executor.py,360,"f""Cannot continue batch '{batch_name}': targets.parquet has no target_* columns.""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,cli/pipeline_executor.py,363,"return {'status': 'failed', 'reason': 'missing_target_columns'}",Feature-like module may create target columns.
+P2,BROAD_EXCEPT,cli/pipeline_executor.py,74,except Exception as e:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,devtools/rule_generator.py,37,"self.target_asset = self.analysis_config.get('target_asset', 'SPY')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,devtools/rule_generator.py,37,"self.target_asset = self.analysis_config.get('target_asset', 'SPY')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,devtools/rule_generator.py,47,all_tickers = [self.target_asset] + [ind['name'] for ind in self.indicators_to_analyze],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,devtools/rule_generator.py,104,target_returns = data[self.target_asset].pct_change(fill_method=None),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,devtools/rule_generator.py,104,target_returns = data[self.target_asset].pct_change(fill_method=None),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,devtools/rule_generator.py,117,event_data = data[event_mask].dropna(subset=[f'target_return_{w}d' for w in effect_windows]),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,devtools/rule_generator.py,125,returns_col = f'target_return_{window}d',Feature-like module may create target columns.
+P2,BROAD_EXCEPT,factories/model_factory.py,149,except Exception as inspect_error:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,features/colab_context_integration.py,73,"DataFrame, ticker: str, target_col: str, model_type: str='mlp'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/colab_context_integration.py,82,target_col: Target column name,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/colab_context_integration.py,93,if target_col not in ticker_targets.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/colab_context_integration.py,94,"raise ValueError(f""Target '{target_col}' not found in targets"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/colab_context_integration.py,95,y = ticker_targets[target_col],Feature-like module may create target columns.
+P2,BROAD_EXCEPT,features/feature_cache.py,105,except Exception as unlink_err:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,348,target_cols = [col for col in df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,348,target_cols = [col for col in df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,350,exclude_cols = set(service_cols + target_cols),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,379,target_col = selector_config.get('target_col'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,379,target_col = selector_config.get('target_col'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,381,if not aux_pool or not target_col:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,384,"""'auxiliary_pool_cols' and 'target_col' must be configured for context selection.""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_orchestrator.py,391,"aux_pool, target_col)",Feature-like module may create target columns.
+P2,BROAD_EXCEPT,features/feature_orchestrator.py,148,except Exception:  # noqa: S110,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,features/feature_orchestrator.py,238,except Exception:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,21,"- target_name (target_return_1d, target_up_1d, etc.)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,21,"- target_name (target_return_1d, target_up_1d, etc.)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,21,"- target_name (target_return_1d, target_up_1d, etc.)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,60,"def _compute_cache_key(self, model_type: str, target_name: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,67,- target_name,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,75,f'{model_type}_{target_name}_{market_regime}_{features_hash}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,78,"def get_selection(self, model_type: str, target_name: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,90,"cache_key = self._compute_cache_key(model_type, target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,103,"def save_selection(self, model_type: str, target_name: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,112,target_name: Назва таргету,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,119,"cache_key = self._compute_cache_key(model_type, target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,121,"cached_data = {'model_type': model_type, 'target_name': target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,121,"cached_data = {'model_type': model_type, 'target_name': target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,136,"def is_cached(self, model_type: str, target_name: str, market_regime:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,139,"cache_key = self._compute_cache_key(model_type, target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,143,"def invalidate(self, model_type: str | None=None, target_name:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,150,if (model_type is None and target_name is None and market_regime is,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,161,if target_name and cached_data.get('target_name') != target_name:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,161,if target_name and cached_data.get('target_name') != target_name:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,161,if target_name and cached_data.get('target_name') != target_name:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,181,target_names = {},Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,185,"target_name = cached_data.get('target_name', 'unknown')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,185,"target_name = cached_data.get('target_name', 'unknown')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,188,"target_names[target_name] = target_names.get(target_name, 0) + 1",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,188,"target_names[target_name] = target_names.get(target_name, 0) + 1",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,188,"target_names[target_name] = target_names.get(target_name, 0) + 1",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,188,"target_names[target_name] = target_names.get(target_name, 0) + 1",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,192,"cache_size_mb, 2), 'model_types': model_types, 'target_names':",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,193,"target_names, 'market_regimes': market_regimes, 'cache_file':",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,210,"for target_name, count in stats['target_names'].items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,210,"for target_name, count in stats['target_names'].items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selection_cache.py,211,logger.info(f'  {target_name}: {count}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,153,"target_col: str, model_type: str='mlp', market_regime: str='normal'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,159,"f'🔍 Selecting features for {ticker} (Target: {target_col}, Model: {model_type})'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,167,if target_col not in ticker_targets.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,168,"self.logger.error(f""❌ Target '{target_col}' not found for {ticker}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,171,target_series = ticker_targets[target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,171,target_series = ticker_targets[target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,173,context_id = f'{ticker}_{target_col}_{model_type}',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,175,"target_series=target_series, context_id=context_id,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/feature_selector.py,175,"target_series=target_series, context_id=context_id,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/feature_selector.py,9,self.target_features = [,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/feature_selector.py,63,available_features = [f for f in self.target_features if f in cols_to_use],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/feature_selector.py,81,# Leakage guard: ensure no column in final_selected starts with 'target_',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/feature_selector.py,102,return self.target_features,Feature-like module may create target columns.
+P2,BROAD_EXCEPT,models/loader.py,233,except Exception as e1:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,models/loader.py,240,except Exception as e2:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,models/loader.py,272,except Exception as fallback_error:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,models/loader.py,359,except Exception as e:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,monitoring/feature_drift_monitor.py,101,"if not col.startswith('target_') and col not in ['hash', 'interval']",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,predictions/models_predict.py,62,"target_scaler=None, ensemble_weights: dict[str, float] | None=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,predictions/models_predict.py,77,if target_scaler is not None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,predictions/models_predict.py,78,"y_pred = safe_inverse_transform(target_scaler, y_pred)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,predictions/models_predict.py,109,target_scaler = None,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,predictions/models_predict.py,119,target_scaler = model,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,predictions/models_predict.py,123,"ensemble_result = get_predictions(models_dict, df, target_scaler=",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,predictions/models_predict.py,124,target_scaler),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,21,"target_columns = [""datetime"", ""ticker""] + metrics",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,26,return pd.DataFrame(columns=target_columns),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,36,"logger.debug(f""Target columns: {target_columns}"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,38,"if self._is_already_normalized(df, target_columns):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,41,"processed_df = self._preserve_metadata_columns(df, target_columns, preserve_columns)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,45,"processed_df = self._normalize_structure(df, metrics, target_columns)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,47,"processed_df = self._finalize_dataframe(processed_df, metrics, target_columns, preserve_columns)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,50,"def _is_already_normalized(self, df: pd.DataFrame, target_columns: list[str]) -> bool:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,53,return all(col in current_cols for col in target_columns),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,55,"def _preserve_metadata_columns(self, df: pd.DataFrame, target_columns: list[str], preserve_columns: list[str]) -> pd.DataFrame:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,59,columns_to_keep = target_columns.copy(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,68,"def _normalize_structure(self, df: pd.DataFrame, metrics: list[str], target_columns: list[str]) -> pd.DataFrame:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,140,"def _finalize_dataframe(self, processed_df: pd.DataFrame, metrics: list[str], target_columns: list[str], preserve_columns: list[str]) -> pd.DataFrame:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/price_preprocessor.py,152,columns_to_keep = target_columns.copy(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/sampling.py,23,"target_col: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/sampling.py,32,"target_col: The name of the column to balance (e.g., a label or a boolean flag).",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/sampling.py,39,if df.empty or target_col not in df.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/sampling.py,40,"logger.warning(f""DataFrame is empty or target column '{target_col}' not found. Returning original DataFrame."")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/sampling.py,44,class_counts = df[target_col].value_counts(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/sampling.py,56,"logger.info(f""Balancing dataset based on column '{target_col}'. Original class counts:\n{class_counts}"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,processing/sampling.py,62,class_df = df[df[target_col] == class_label],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,risk/risk_manager.py,63,"target_volatility: float = 0.02,      # 2% target volatility",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,risk/risk_manager.py,75,target_volatility: Target volatility for position sizing,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,risk/risk_manager.py,83,self.target_volatility = target_volatility,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,risk/risk_manager.py,83,self.target_volatility = target_volatility,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,risk/risk_manager.py,255,vol_adjustment = self.target_volatility / volatility,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,167,"target_allocations: dict[str, float], current_prices: dict[str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,174,target_allocations: {ticker: 0.10}  (10% each),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,182,"for ticker, target_pct in target_allocations.items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,182,"for ticker, target_pct in target_allocations.items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,183,target_value = total_equity * target_pct,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,183,target_value = total_equity * target_pct,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,190,diff_value = target_value - current_value,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/elite_risk_sizer.py,196,"f'[REBALANCE] {ticker}: {action} {abs(diff_shares)} shares (current: ${current_value:.2f}, target: ${target_value:.2f})'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,240,"volatilities: dict[str, float], target_assets: (list[str] | None)=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,246,if not target_assets:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,247,target_assets = list(current_prices.keys()),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,249,correlations = np.eye(len(target_assets)),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,251,"target_assets, volatilities={asset: volatilities.get(asset,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,252,"0.15) for asset in target_assets}, correlations=",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,253,"correlations, params={'target_volatility': None})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,255,"for asset, target_weight in allocation_result['weights'].items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,258,target_value = total_value * target_weight,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,258,target_value = total_value * target_weight,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/portfolio_manager.py,264,value_adjustment = target_value - current_value,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/signal_processor.py,80,target_features = historical_features.tail(1),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/signal_processor.py,81,if target_features.empty:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/signal_processor.py,84,"{""historical_features"": historical_features, ""target_features"": target_features}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/signal_processor.py,84,"{""historical_features"": historical_features, ""target_features"": target_features}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/signal_processor.py,86,"return analysis.get(""similarities"", {}).get(target_features.index[-1], [])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/trading_orchestrator.py,140,target_features = historical_features.tail(1),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/trading_orchestrator.py,142,'target_features': target_features},Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/trading_orchestrator.py,142,'target_features': target_features},Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,trading/trading_orchestrator.py,145,"target_features.index[-1], [])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,38,from src.features.adaptive_target_generator import AdaptiveTargetGenerator,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,62,"'hybrid', max_targets_per_ticker=10, target_diversity_threshold",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,65,"enable_quality_filtering=True, enable_target_validation=True)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,67,self.target_system = AdaptiveTargetsSystem(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,68,self.target_generator = AdaptiveTargetGenerator(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,90,"'target_analysis': {}, 'compatibility_matrix': {},",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,95,analysis['target_analysis'] = self._analyze_target_compatibility(,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,95,analysis['target_analysis'] = self._analyze_target_compatibility(,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,114,suitable_targets = self.target_system.get_suitable_targets(,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,116,target_categories = self.target_system.get_targets_by_category(,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,116,target_categories = self.target_system.get_targets_by_category(,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,120,"), 'target_categories': {cat: len(targets) for cat, targets in",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,121,"target_categories.items() if targets},",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,122,'target_quality_score': self.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,123,"_calculate_target_quality_score(suitable_targets),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,129,"'target_quality_score', 0)))}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,131,"def _calculate_target_quality_score(self, targets: list) ->float:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,160,scores = [analysis['target_quality_score'] for analysis in,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,165,"def _analyze_target_compatibility(self, tickers: list[str]) ->dict[str, Any",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,169,"'unique_targets': {}, 'target_distribution': {},",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,174,"ticker_target_set = {f'target_volatility_1h_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,174,"ticker_target_set = {f'target_volatility_1h_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,175,"f'target_return_1h_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,176,"f'target_direction_1h_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,177,"f'target_volatility_4h_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,178,"f'target_return_4h_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,179,"f'target_volatility_1d_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,180,"f'target_return_5d_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,181,"f'target_volatility_5d_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,182,"f'target_direction_5d_{ticker}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,183,f'target_max_drawdown_20d_{ticker}'},Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,184,ticker_targets[ticker] = ticker_target_set,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,185,all_targets.update(ticker_target_set),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,195,compatibility['target_distribution'] = {'total_unique': len(,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,240,common_targets = analysis['target_analysis']['common_targets'],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,275,"'training_groups'], 'target_configurations': {},",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,279,plan['target_configurations'][f'group_{i + 1}',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,280,"] = self._create_group_target_config(group, analysis)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,300,"def _create_group_target_config(self, group: list[str], analysis: dict[",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,307,"ticker_targets.extend(['target_vol_5d', 'target_ret_5d',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,307,"ticker_targets.extend(['target_vol_5d', 'target_ret_5d',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,308,'target_drawdown_20d']),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,310,"ticker_targets.extend(['target_vol_1h', 'target_ret_1h',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,310,"ticker_targets.extend(['target_vol_1h', 'target_ret_1h',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,311,'target_direction_1h']),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,330,'target_diversity_index': len(analysis['target_analysis'][,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/adaptive_training_manager.py,330,'target_diversity_index': len(analysis['target_analysis'][,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,64,"target_diversity_threshold: float | None = None,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,67,enable_target_validation: bool = True,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,90,self.target_diversity_threshold = target_diversity_threshold,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,90,self.target_diversity_threshold = target_diversity_threshold,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,93,self.enable_target_validation = enable_target_validation,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,93,self.enable_target_validation = enable_target_validation,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,257,"is_classification = 'classification' in data.get('target_type', '')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,327,"self._save_champion(model, ticker, data.get('target_name', 'unknown'))",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,329,"ticker=ticker, model_name=m_type, target=data.get('target_name', 'unknown'),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/base_trainer.py,399,"required_keys = ['X_train', 'y_train', 'X_test', 'y_test', 'target_name']",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,46,- target_col: Name of target column,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,58,target_col = config['target_col'],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,58,target_col = config['target_col'],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,65,drop_cols = [c for c in features_df.columns if c.startswith('target_') or c in metadata_cols],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,67,# Ensure target_col is removed from drop_cols so we can extract it for y,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,70,y = features_df[target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,72,# Check if target_col was actually in features_df and not dropped,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,73,# (target_col is usually one of the columns starting with 'target_'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/light_model_trainer.py,73,# (target_col is usually one of the columns starting with 'target_'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,130,y = self._create_target_vector(targets),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,165,drop_cols = [col for col in frame.columns if str(col).startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,168,"def _create_target_vector(self, targets: Any) -> pd.Series:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,173,target_cols = [col for col in targets.columns if str(col).startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,173,target_cols = [col for col in targets.columns if str(col).startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,174,selected_col = target_cols[0] if target_cols else targets.select_dtypes(include=[np.number]).columns[0],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,174,selected_col = target_cols[0] if target_cols else targets.select_dtypes(include=[np.number]).columns[0],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,178,target_cols = [col for col in frame.columns if str(col).startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,178,target_cols = [col for col in frame.columns if str(col).startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,179,selected_col = target_cols[0] if target_cols else frame.columns[0],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,training/pattern_aware_training.py,179,selected_col = target_cols[0] if target_cols else frame.columns[0],Feature-like module may create target columns.
+P2,BROAD_EXCEPT,training/unified_training_manager.py,123,except Exception as e:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,utils/checkpoint_manager.py,79,"def find_latest_checkpoint(checkpoint_dir: str, ticker: str, target_col: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,utils/checkpoint_manager.py,85,"pattern = f""{ticker}_{target_col}_{model_type}_*.pt""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,22,"TARGET_LEAKAGE = ""target_leakage""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,51,"def detect_correlation_leakage(df: pd.DataFrame, target_col: str, threshold: float = 0.99) -> dict[str, float]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,57,target_col: The name of the target column.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,63,if target_col not in df.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,64,"logger.error(f""Target column '{target_col}' not found for correlation analysis."")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,71,correlations = numeric_df.corr()[target_col].abs(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,73,leakage_features = correlations[(correlations >= threshold) & (correlations.index != target_col)],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,76,"logger.warning(f""Detected {len(leakage_features)} features with correlation >= {threshold} against {target_col}."")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,106,"def detect_future_data_in_features(df: pd.DataFrame, features: list[str], target_col: str) -> dict[str, float]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,114,target_col: The target column.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,119,if target_col not in df.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,128,if feature in df.columns and feature != target_col:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,137,"def run_comprehensive_audit(self, df: pd.DataFrame, target_col: str) -> LeakageReport:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,141,"logger.info(f""Starting comprehensive leakage audit for target: {target_col}"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,143,"corr_leakage = self.detect_correlation_leakage(df, target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,144,"lookahead_leakage = self.detect_future_data_in_features(df, df.columns.tolist(), target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/data_leakage_detector.py,194,"report = detector.run_comprehensive_audit(df, target_col='target')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/pipeline_schemas.py,131,target_cols_in_features = [col for col in self.selected_features if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/pipeline_schemas.py,131,target_cols_in_features = [col for col in self.selected_features if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/pipeline_schemas.py,132,target_cols_in_targets = bool(self.all_targets),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/pipeline_schemas.py,134,if not target_cols_in_features and not target_cols_in_targets:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/pipeline_schemas.py,134,if not target_cols_in_features and not target_cols_in_targets:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,45,"def _validate_feature_target_alignment(self, df_features: pd.DataFrame, target_series: pd.Series) -> bool:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,45,"def _validate_feature_target_alignment(self, df_features: pd.DataFrame, target_series: pd.Series) -> bool:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,47,if len(df_features) != len(target_series):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,48,"logger.warning(f""Feature/Target alignment error: Features({len(df_features)}) vs Target({len(target_series)})"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,52,"def _calculate_lookahead_correlations(self, feature_values: np.ndarray, target_series: pd.Series, max_lookahead: int) -> list[dict[str, Any]]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,57,if lag >= len(target_series):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,60,shifted_target = target_series.iloc[lag:].reset_index(drop=True),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,108,"target_series: pd.Series,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,117,target_series: Target vector.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,123,"if not self._validate_feature_target_alignment(df_features, target_series):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,123,"if not self._validate_feature_target_alignment(df_features, target_series):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,131,"feature_values, target_series, max_lookahead",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,157,"def _detect_direct_target_proxy(self, col: str, feature: np.ndarray, target: np.ndarray, threshold: float) -> dict[str, Any] | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,164,"'pattern': 'direct_target_proxy',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,170,"def _detect_delayed_target_redundancy(self, col: str, feature: np.ndarray, target: np.ndarray, threshold: float) -> dict[str, Any] | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,183,"'pattern': 'delayed_target_redundancy',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,192,"target_series: pd.Series,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,204,target = target_series.values,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,210,"direct_pattern = self._detect_direct_target_proxy(col, feature, target, threshold)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,validation/temporal_feature_separator.py,215,"delayed_pattern = self._detect_delayed_target_redundancy(col, feature, target, threshold)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/causal_event_finder.py,19,"def __init__(self, treatment: str = ""event_detected"", outcome: str = ""target_future_return"",",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/causal_event_finder.py,116,if any(p in col_name.lower() for p in forbidden_patterns) and not col_name.startswith('target_'):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/causal_event_finder.py,118,"f""Leakage hazard: '{col_name}' contains future data patterns but lacks 'target_' prefix. """,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/causal_event_finder.py,119,"""Please rename to 'target_<name>'.""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,55,target_df = data.get('target_features'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,55,target_df = data.get('target_features'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,57,if historical_df is None or target_df is None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,76,X_target = target_df.select_dtypes(include=['number']),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,83,"X_hist, X_target = self._prepare_feature_matrices(working_historical, target_df)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,102,"target_df: pd.DataFrame,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,106,"X_target = target_df.apply(pd.to_numeric, errors='coerce')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,133,target_df = current_context.to_frame().T,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,134,"X_target = target_df.reindex(columns=self.feature_columns).apply(pd.to_numeric, errors='coerce')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,147,"def _format_results(self, distances: list, indices: list, target_index: pd.Index, historical_index: pd.Index) -> dict:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,149,"for i, target_id in enumerate(target_index):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,149,"for i, target_id in enumerate(target_index):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/analyzers/knn_similarity_finder.py,161,"results[target_id] = sorted(similar_items, key=lambda x: x['similarity_score'], reverse=True)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,21,"def run_comprehensive_causal_analysis(df: pd.DataFrame, target_col: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,29,target_col: Target variable column name,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,40,"_test_single_predictor_comprehensive(df, target_col, col,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,50,"def _test_single_predictor_comprehensive(df: pd.DataFrame, target_col:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,55,"target_col, predictor_col):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,57,"test_data = df[[target_col, predictor_col]].dropna()",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,63,"_test_stationarity(test_data, target_col, predictor_col))",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,69,if stationarity_results[target_col]['is_i1',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,77,"return {'predictor': predictor_col, 'target': target_col,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,88,"f""Comprehensive Granger test failed for predictor '{predictor_col}' on target '{target_col}': {e}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,93,"def _test_stationarity(test_data: pd.DataFrame, target_col: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,97,"for col in [target_col, predictor_col]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,235,"def _validate_columns(df: pd.DataFrame, target_col: str, predictor_col: str",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/advanced_econometrics_calculator.py,238,return target_col in df.columns and predictor_col in df.columns,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,19,"def run_advanced_granger_test(df: pd.DataFrame, target_col: str, predictor_cols: list[str],",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,26,target_col: Target variable column name,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,37,"result = EconometricsCalculator._test_single_predictor(df, target_col, col, maxlag)  # type: ignore",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,47,"def run_granger_test(df: pd.DataFrame, target_col: str, predictor_cols: list[str], maxlag: int = 5) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,55,"result = EconometricsCalculator._test_single_predictor(df, target_col, col, maxlag)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,62,"def _test_single_predictor(df: pd.DataFrame, target_col: str, predictor_col: str, maxlag: int) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,64,"if not EconometricsCalculator._validate_columns(df, target_col, predictor_col):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,67,"test_data = df[[target_col, predictor_col]].dropna()",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,71,correlation = test_data[target_col].corr(test_data[predictor_col]),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,75,"return EconometricsCalculator._build_causality_result(predictor_col, target_col, correlation, p_value)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,77,"logger.error(f""Granger causality test failed for predictor '{predictor_col}' on target '{target_col}': {e}"", exc_info=True)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,81,"def _validate_columns(df: pd.DataFrame, target_col: str, predictor_col: str) -> bool:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,83,return predictor_col in df.columns and target_col in df.columns,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,101,"def _build_causality_result(predictor_col: str, target_col: str, correlation: float, p_value: float) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,107,"logger.warning(f""Spurious Correlation Alert: {predictor_col} and {target_col} are highly correlated ({correlation:.2f}) but lack Granger causality (p={p_value:.4f})."")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,131,"def get_var_forecast(df: pd.DataFrame, target_cols: list[str], steps: int = 5, maxlags: int = 15, ic='aic') -> pd.DataFrame:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,142,"return EconometricsCalculator._generate_var_forecast(df, target_cols, var_config)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,145,"def _generate_var_forecast(df: pd.DataFrame, target_cols: list[str], config: dict[str, Any]) -> pd.DataFrame:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/econometrics_calculator.py,147,valid_cols = [c for c in target_cols if c in df.columns],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/risk_reward_calculator.py,110,target_return = config.risk_free_rate / periods_per_year,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/risk_reward_calculator.py,111,downside_returns = clean_returns[clean_returns < target_return],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/calculators/risk_reward_calculator.py,121,sortino_ratio = (expected_return - target_return) / downside_std,Feature-like module may create target columns.
+P2,BROAD_EXCEPT,analytics/context/causal_effect_methods.py,193,except Exception as exc:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/causal_engine.py,33,"target_index: pd.DatetimeIndex,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/causal_engine.py,41,implied_features = self._initialize_implied_features(target_index),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/causal_engine.py,53,"self._apply_event_causal_effects(event_data, implied_features, target_index, speed_factor, power_factor)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/causal_engine.py,57,"def _initialize_implied_features(self, target_index: pd.DatetimeIndex) -> pd.DataFrame:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/causal_engine.py,58,"return pd.DataFrame(0.0, index=target_index, columns=self._get_all_causal_features())",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/causal_engine.py,61,"target_index: pd.DatetimeIndex, speed_factor: float, power_factor: float):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/causal_engine.py,74,"idx_pos = target_index.get_indexer([impact_time], method='ffill')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/contextual_model_selector.py,159,"target_col = f""target_{model_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/contextual_model_selector.py,159,"target_col = f""target_{model_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/contextual_model_selector.py,160,if target_col in neighbor_outcomes.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/contextual_model_selector.py,161,model_scores[model_name] = neighbor_outcomes[target_col].mean(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/context/contextual_model_selector.py,194,"(model, row.get(f""target_{model}"", -np.inf))",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,51,target_path = (self.heavy_results_path if is_heavy else self.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,58,if target_path.exists():,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,59,existing_df = pd.read_parquet(target_path),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,66,combined_df.to_parquet(target_path),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,68,f'Persisted {len(df_to_save)} new results to {target_path}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,69,"self._cache.pop(str(target_path), None)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,72,"logger.error(f'Failed to persist results to {target_path}: {e}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,74,raise DataProcessingError(f'Failed to persist results to {target_path}: {e}') from e,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,207,target_path = self.base_path / filename,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,209,"with open(target_path, 'w', encoding='utf-8') as f:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,211,logger.info(f'Saved JSON report to {target_path}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,213,logger.error(f'Failed to save JSON report to {target_path}: {e}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/data_managers/model_results_manager.py,214,raise DataProcessingError(f'Failed to save JSON report to {target_path}: {e}') from e,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/utils/knn_model_wrapper.py,48,"def find_neighbors(self, target_features_df: pd.DataFrame) -> tuple:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/utils/knn_model_wrapper.py,60,numeric_target_df = target_features_df.select_dtypes(include=['number']).dropna(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/utils/knn_model_wrapper.py,60,numeric_target_df = target_features_df.select_dtypes(include=['number']).dropna(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/utils/knn_model_wrapper.py,61,if numeric_target_df.empty:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,analytics/utils/knn_model_wrapper.py,67,scaled_target = self.scaler.transform(numeric_target_df),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/config_loader.py,81,"batch_name = batch_name.replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/config_loader.py,81,"batch_name = batch_name.replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/training_config.py,10,"def __init__(self, model_type, ticker, target_col, start_epoch, epochs,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/training_config.py,14,self.target_col = target_col,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/training_config.py,14,self.target_col = target_col,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/training_config.py,26,target_col: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/training_config.py,39,target_col: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/config/training_config.py,56,target_col: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/utils/utils.py,40,"def save_checkpoint(checkpoint_dir, ticker, target_col, m_type, model, optimizer, epoch, loss):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/utils/utils.py,47,"f""checkpoint_{ticker}_{target_col}_{m_type}_ep{epoch}.pt""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/utils/utils.py,80,"def find_latest_checkpoint(checkpoint_dir, ticker, target_col, m_type):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,colab/utils/utils.py,83,"pattern = f""checkpoint_{ticker}_{target_col}_{m_type}_ep*.pt""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/security/path_validator.py,31,target_path = Path(path).resolve(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/security/path_validator.py,33,if not allow_symlinks and target_path.is_symlink():,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/security/path_validator.py,37,if not str(target_path).startswith(str(base_path)):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/security/path_validator.py,39,"f""Path '{target_path}' is outside authorized base directory '{base_path}'""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/security/path_validator.py,42,return target_path,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/security/secure_secrets_manager.py,274,"target_patterns = [""API"", ""KEY"", ""TOKEN"", ""SECRET"", ""PASSWORD"", ""URL"", ""DATABASE""]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/security/secure_secrets_manager.py,279,is_security_related = any(p in key.upper() for p in target_patterns),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/system/version_manager.py,131,target_version = version or self.current_version,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/system/version_manager.py,134,if v.version == target_version:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/system/version_manager.py,147,target_version = to_version or self.current_version,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/system/version_manager.py,156,"if v.version == target_version),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/validation/validators.py,218,"df: pd.DataFrame, target_cols: list[str], threshold: float = 0.99",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/validation/validators.py,227,"exclude = set(target_cols) | {'datetime', 'ticker', 'timestamp'}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,core/validation/validators.py,230,for target in target_cols:,Feature-like module may create target columns.
+P2,BROAD_EXCEPT,data/collectors/rss_collector.py,202,except Exception as exc:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,data/collectors/rss_collector.py,218,except Exception as exc:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,data/management/data_manager.py,499,except Exception as idx_e:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,24,self.target_prefix = 'target_',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,24,self.target_prefix = 'target_',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,39,issues.extend(self._check_target_columns(df)),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,45,.startswith('Missing') or i.startswith('No target_')]) == 0,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,52,"int(len(df)), 'columns': int(len(df.columns)), 'target_columns':",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,55,"target_prefix)]), 'missing_required': len([c for c in self.",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,92,"def _check_target_columns(self, df: pd.DataFrame) ->list[str]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,94,target_cols = [col for col in df.columns if col.lower().startswith(,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,96,self.target_prefix)],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,98,if not target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,100,return ['CRITICAL: No target_* columns found in event dataset.'],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,102,if df[target_cols].isna().all(axis=None):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,data/validation/event_dataset_validator.py,104,return ['CRITICAL: All target_* values are missing.'],Feature-like module may create target columns.
+P2,BROAD_EXCEPT,data/management/handlers/connection_handler.py,78,except Exception:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,features/builders/news_event_dataset_builder.py,160,"if isinstance(col, str) and col.startswith('target_'):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/context_map_enricher.py,133,return [c for c in context_columns if not c.startswith('target_') and not c.startswith('state_') and c not in exclude],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,17,"def __init__(self, target_column: str = 'close', returns_column: str = 'returns'):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,31,self.target_column = target_column # Used for price-based features,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,31,self.target_column = target_column # Used for price-based features,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,52,df: DataFrame with data. Must contain the target_column or returns_column.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,60,"price_target_col = self._resolve_price_target_column(df_enriched, kwargs.get('target_column', self.target_column))",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,60,"price_target_col = self._resolve_price_target_column(df_enriched, kwargs.get('target_column', self.target_column))",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,60,"price_target_col = self._resolve_price_target_column(df_enriched, kwargs.get('target_column', self.target_column))",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,60,"price_target_col = self._resolve_price_target_column(df_enriched, kwargs.get('target_column', self.target_column))",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,61,if price_target_col:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,62,"self._add_price_based_features(df_enriched, price_target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,72,"def _resolve_price_target_column(self, df_enriched: pd.DataFrame, target_col: str) -> str | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,72,"def _resolve_price_target_column(self, df_enriched: pd.DataFrame, target_col: str) -> str | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,74,"if not isinstance(target_col, str) or target_col not in df_enriched.columns:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,74,"if not isinstance(target_col, str) or target_col not in df_enriched.columns:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,75,# Fallback to 'close' if target_column is invalid,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,77,return target_col,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,79,"def _add_price_based_features(self, df_enriched: pd.DataFrame, price_target_col: str) -> None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,81,"logger.info(f""Generating price-based derived features on column '{price_target_col}'..."")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,86,df_enriched[price_target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,90,"logger.info(f""Calculated '{self.returns_column}' from '{price_target_col}'"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,94,"self._add_lags(df_enriched, price_target_col, self.config['lags'])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,96,"self._add_velocity(df_enriched, price_target_col, self.config['velocity'])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,98,"self._add_acceleration(df_enriched, price_target_col, self.config['acceleration'])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,100,"self._add_rolling_stat(df_enriched, price_target_col, 'rolling_skew', self.config['rolling_skew'])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,102,"self._add_rolling_stat(df_enriched, price_target_col, 'rolling_kurtosis', self.config['rolling_kurtosis'])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,111,"def _add_lags(self, df: pd.DataFrame, target_col: str, lags: list[int]):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,113,df[f'LAG_{lag}'] = df[target_col].shift(lag),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,115,"def _add_velocity(self, df: pd.DataFrame, target_col: str, periods: list[int]):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,117,df[f'VELOCITY_{p}'] = df[target_col].diff(p),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,119,"def _add_acceleration(self, df: pd.DataFrame, target_col: str, periods: list[int]):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/enrichers/derived_features_enricher.py,121,df[f'ACCELERATION_{p}'] = df[target_col].diff(p).diff(p),Feature-like module may create target columns.
+P2,BROAD_EXCEPT,features/enrichers/macro_features_enricher.py,108,except Exception as e:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,features/enrichers/macro_features_enricher.py,138,except Exception as e:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,features/enrichers/macro_features_enricher.py,353,except Exception as series_err:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,features/enrichers/macro_features_enricher.py,365,except Exception as e:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,features/enrichers/news_quality_enricher.py,223,except Exception:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,features/enrichers/technical_analysis_enricher.py,404,except Exception:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/enhanced_smart_selector.py,61,"target_series: pd.Series,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/enhanced_smart_selector.py,93,"features_df, target_series",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/enhanced_smart_selector.py,106,"clean_features, target_series, context_id,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/enhanced_smart_selector.py,152,"target_series: pd.Series,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/enhanced_smart_selector.py,160,"return await selector.select_with_full_analysis(features_df, target_series, context_id, **kwargs)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,80,"def _pre_filter_data(self, features_df: pd.DataFrame, target_series: pd.Series, regime_context_id: str) -> pd.DataFrame | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,82,if target_series.std() < self.min_volatility:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,93,"def _run_feature_selection_methods(self, features_clean: pd.DataFrame, target_series: pd.Series,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,101,"ranked_features = method_func(features_clean, target_series, is_classification)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,152,"def select(self, features_df: pd.DataFrame, target_series: pd.Series, context_id: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,160,target_series: Target series,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,161,"context_id: Context identifier (e.g., ""AMD_target_return_1d_mlp"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,178,"features_clean = self._pre_filter_data(features_df, target_series, regime_context_id)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,183,"scores = self._run_feature_selection_methods(features_clean, target_series, is_classification, market_regime, regime_context_id)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,228,"def _correlation_filter(self, features_df, target_series, is_classification) -> pd.Series:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,230,"return features_df.apply(lambda x: x.corr(target_series, method=self.correlation_method)).abs().sort_values(ascending=False)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,232,"def _mutual_info_filter(self, features_df, target_series, is_classification) -> pd.Series:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,235,"mi = mi_func(features_df, target_series, random_state=self.mi_random_state)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,238,"def _lgbm_filter(self, features_df, target_series, is_classification) -> pd.Series | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,250,"model = lgb.train(params, lgb.Dataset(features_df, label=target_series),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,258,"def _random_forest_filter(self, features_df, target_series, is_classification) -> pd.Series | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,297,"model.fit(features_df, target_series)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/smart_selector.py,303,"def _variance_filter(self, features_df, target_series, is_classification) -> pd.Series | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/volatility_driver_selector.py,29,"def select(self, df: pd.DataFrame, auxiliary_pool: list[str], target_col: str) -> list[str]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/volatility_driver_selector.py,40,df[target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/volatility_driver_selector.py,44,".rename(""_target_volatility"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/selection/volatility_driver_selector.py,55,"y_vol = training_data[""_target_volatility""]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,75,"None, target_cols: list[str] | None=None, ticker: str='unknown'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,83,target_cols: List of target columns. If None — columns with prefix 'target_'.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,83,target_cols: List of target columns. If None — columns with prefix 'target_'.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,90,if target_cols is None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,91,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,91,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,94,target_cols),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,96,if not target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,105,"target_cols, ticker)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,140,"target_cols: list[str], ticker: str) ->dict[str, dict[str, float]]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,143,Returns dict: {feature_col: {target_col: correlation}}.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/feature_leakage_guard.py,148,numeric_targets = [c for c in target_cols if c in df.columns and pd,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,92,"target_series: pd.Series | None = None) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,98,"target_series: Target series (optional, for VIF calculation)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,141,if self.use_vif and target_series is not None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,142,"vif_results = self._calculate_vif_analysis(numeric_features, target_series)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,271,"target_series: pd.Series) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,283,y = target_series.copy(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,542,"target_series: pd.Series | None = None,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,549,"target_series: Target series (optional, for VIF calculation)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,features/validation/redundancy_detector.py,556,"return detector.eliminate_redundant_features(features_df, target_series)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,main/modes/training_data_pipeline.py,19,from src.targets.target_orchestrator import TargetOrchestrator,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,main/modes/training_data_pipeline.py,55,target_orchestrator = TargetOrchestrator(targets_list=targets_list),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,main/modes/training_data_pipeline.py,57,targets_df = target_orchestrator.generate_targets(features_df),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,main/modes/training_data_pipeline.py,59,target_cols = [col for col in targets_df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,main/modes/training_data_pipeline.py,59,target_cols = [col for col in targets_df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,main/modes/training_data_pipeline.py,62,for col in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,86,target_vec = self._fingerprint_to_vec(context_fingerprint),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,87,if not target_vec:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,92,"hist_vecs = [(fp, v) for fp, v in hist_vecs if len(v) == len(target_vec)]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,96,"return target_vec, hist_vecs",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,98,"def _find_knn_neighbors(self, target_vec: list, hist_vecs: list, n_neighbors: int, min_neighbors: int) -> list[str] | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,102,"cols = [f""fp_{i}"" for i in range(len(target_vec))]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,105,"target_df = pd.DataFrame([target_vec], columns=cols, index=[""target""])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,105,"target_df = pd.DataFrame([target_vec], columns=cols, index=[""target""])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,108,"res = finder.analyze({""historical_features"": hist_df, ""target_features"": target_df})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,108,"res = finder.analyze({""historical_features"": hist_df, ""target_features"": target_df})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,189,"target_vec, hist_vecs = knn_data",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,192,"neighbor_fps = self._find_knn_neighbors(target_vec, hist_vecs, n_neighbors, min_neighbors)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,249,target_vec = ContextualWeightCalculator.pattern_sequence_to_vec(context_pattern_seq),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,250,if not target_vec:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,259,if len(vec) == len(target_vec),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,267,"cols = [f""pattern_{i}"" for i in range(len(target_vec))]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,270,"target_df = pd.DataFrame([target_vec], columns=cols, index=[""target""])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,270,"target_df = pd.DataFrame([target_vec], columns=cols, index=[""target""])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,273,"res = finder.analyze({""historical_features"": hist_df, ""target_features"": target_df})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,meta_learning/memory/knn_context_finder.py,273,"res = finder.analyze({""historical_features"": hist_df, ""target_features"": target_df})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,81,target_return = risk_free_rate / periods,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,82,downside_returns = clean_returns[clean_returns < target_return],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,117,"def run_granger_causality(df: pd.DataFrame, target_col: str, predictor_col: str, maxlag: int = 5) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,119,if target_col not in df.columns or predictor_col not in df.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,121,"data = df[[target_col, predictor_col]].dropna()",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,125,target_stationary = adfuller(data[target_col])[1] < 0.05,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,125,target_stationary = adfuller(data[target_col])[1] < 0.05,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,130,correlation = data[target_col].corr(data[predictor_col]),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,135,"""target_stationary"": target_stationary,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,metrics/financial/financial_metrics_library.py,135,"""target_stationary"": target_stationary,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,20,"target_cols: list[str],",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,32,if not target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,33,"logger.error(""target_cols є обов'язковим параметром."")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,43,for col in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,49,"df_processed, categorical_info = handle_categorical_features(filtered_df, target_cols)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,54,"if c not in target_cols and c not in ['datetime', 'date']]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,61,y = df_processed[target_cols],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,98,target_scaler = None,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,100,target_scaler = StandardScaler(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,101,y_train_processed = target_scaler.fit_transform(y_train),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,102,y_val_processed = target_scaler.transform(y_val),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,103,y_test_processed = target_scaler.transform(y_test),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,110,"'imputer': imputer, 'scaler': scaler, 'target_scaler': target_scaler,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,110,"'imputer': imputer, 'scaler': scaler, 'target_scaler': target_scaler,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,121,"'ticker': ticker, 'timeframe': timeframe, 'target_cols': target_cols,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/adapters/data_preparation.py,121,"'ticker': ticker, 'timeframe': timeframe, 'target_cols': target_cols,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baseline_dominance_detector.py,71,"target_series: pd.Series | None = None) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baseline_dominance_detector.py,85,"baseline_results = await self._train_baseline_models(market_data, features_df, target_series)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baseline_dominance_detector.py,114,"target_series: pd.Series | None) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baseline_dominance_detector.py,119,"result = model.train_and_evaluate(market_data, features_df, target_series)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,83,"for target_name, target_result in results.items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,83,"for target_name, target_result in results.items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,84,"if not isinstance(target_result, dict",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,85,) or 'models' not in target_result:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,87,"models = target_result.get('models', {})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,92,model_key = f'{ticker}_{target_name}_{model_type}',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,97,"target_name, 'timeframe': timeframe, 'model_type':",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,122,f'data/colab/accumulated/test_ticker_amd_target_1d_ep5_iter5/models/{model_filename}',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,147,"def _should_skip_model(self, model_info: dict, target_cols: list[str],",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,150,if target_cols and model_info['target'] not in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,150,if target_cols and model_info['target'] not in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,185,"def load_local_light_models(self, target_cols: list[str]=None, tickers:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/ensemble/enhanced_ensemble.py,199,"if self._should_skip_model(model_info, target_cols, tickers,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/fingerprint_selector.py,41,target_bits = context_fingerprint.split('|'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/fingerprint_selector.py,47,if len(fp_bits) != len(target_bits):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/fingerprint_selector.py,50,matches = sum(1 for i in range(len(target_bits)) if target_bits[i] == fp_bits[i]),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/fingerprint_selector.py,50,matches = sum(1 for i in range(len(target_bits)) if target_bits[i] == fp_bits[i]),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/fingerprint_selector.py,56,if best_sim_fp and max_matches >= (len(target_bits) / 2):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,139,"target_type = action.get('target_type', 'classification')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,139,"target_type = action.get('target_type', 'classification')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,146,"ticker, target_type)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,169,"def _get_historical_reliability(self, model_name: str, target_type: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,173,if key.startswith(model_name) and key.endswith(target_type):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,206,"def calculate_model_score(self, model_name: str, target_type: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,209,"base_score = self._get_default_model_score(model_name, target_type)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,210,"historical_score = self._get_historical_score(model_name, target_type)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,218,"def _get_historical_score(self, model_name: str, target_type: str",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,222,if key.startswith(model_name) and key.endswith(target_type):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,249,"def _get_default_model_score(self, model_name: str, target_type: str",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,251,"return self.competence_map.get('default_scores', {}).get(target_type,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,274,"def select_best_model(self, df: pd.DataFrame, target_type: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,278,"'default_scores', {}).get(target_type, {}).keys())",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,280,"model_scores = {name: self.calculate_model_score(name, target_type,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,288,"def update_performance(self, model_name: str, ticker: str, target_type:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/model_selector/smart_selector.py,290,history_key = f'{model_name}_{ticker}_{target_type}',Feature-like module may create target columns.
+P2,BROAD_EXCEPT,models/neural/transformer_model.py,122,except Exception as e2:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,models/neural/transformer_model.py,244,except Exception as e2:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/base.py,16,"pd.DataFrame | None=None, target_series: pd.Series | None=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,24,"pd.DataFrame | None=None, target_series: pd.Series | None=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,27,if features_df is None or target_series is None or len(features_df,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,37,"model.fit(X, target_series)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,38,"predictions = pd.Series(model.predict(X), index=target_series.index)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,40,"predictions, 'metrics': self._calculate_metrics(target_series,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,57,"pd.DataFrame | None=None, target_series: pd.Series | None=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,60,if features_df is None or target_series is None or len(features_df,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,71,"model.fit(X, target_series)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,72,"predictions = pd.Series(model.predict(X), index=target_series.index)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/models.py,74,"predictions, 'metrics': self._calculate_metrics(target_series,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,20,"pd.DataFrame | None=None, target_series: pd.Series | None=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,23,if target_series is not None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,24,predictions = target_series.shift(1).fillna(target_series.mean(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,24,predictions = target_series.shift(1).fillna(target_series.mean(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,26,actual = target_series,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,49,"pd.DataFrame | None=None, target_series: pd.Series | None=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,58,actual = target_series if target_series is not None else prices,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,58,actual = target_series if target_series is not None else prices,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,88,"pd.DataFrame | None=None, target_series: pd.Series | None=None",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,101,actual = target_series if target_series is not None else prices,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,models/analysis/baselines/strategies.py,101,actual = target_series if target_series is not None else prices,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,optimization/portfolio/optimizer.py,84,"lambda : self.markowitz_optimization(returns, target_return=0,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,optimization/portfolio/optimizer.py,172,"float=0.02, target_return: float=None, current_weights: np.ndarray | None=None) ->dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,optimization/portfolio/optimizer.py,191,if target_return is not None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,optimization/portfolio/optimizer.py,193,portfolio_return(x) - target_return}),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,optimization/portfolio/optimizer.py,353,target_risk = 1.0 / n_assets,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,optimization/portfolio/optimizer.py,354,return np.sum((contrib - target_risk) ** 2),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/safe_feature_combiner.py,157,"if col not in ['datetime', 'ticker', 'interval'] and not col.startswith('target_')]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/safe_feature_combiner.py,324,"if col not in ['datetime', 'ticker', 'interval'] and not col.startswith('target_')]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/safe_feature_combiner.py,408,"if col not in ['datetime', 'ticker', 'interval'] and not col.startswith('target_')]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,346,"target_df: pd.DataFrame,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,353,target_df: Target DataFrame,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,375,if not features_df.empty and not target_df.empty:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,377,for target_col in target_df.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,377,for target_col in target_df.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,378,if target_col.startswith('target_'):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,378,if target_col.startswith('target_'):,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,380,"if feature_col.replace('m15_', '').replace('h1_', '').replace('d1_', '') == target_col.replace('target_', ''):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,380,"if feature_col.replace('m15_', '').replace('h1_', '').replace('d1_', '') == target_col.replace('target_', ''):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,382,"f""Feature {feature_col} may be identical to target {target_col}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,391,'targets_shape': target_df.shape,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,396,"def check_feature_target_alignment(self,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,398,"target_df: pd.DataFrame,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,405,target_df: Target DataFrame,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,420,targets_dt = self._get_datetime_column(target_df),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,433,targets_time = target_df.index,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,435,targets_time = pd.to_datetime(target_df[targets_dt]),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,441,"f""target_max={targets_time.max()}, feature_max={features_time.max()}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_leakage_guard.py,448,"f""feature_max={features_time.max()}, target_max={targets_time.max()}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,23,"name = f""target_return_{shift}d""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,31,ret1 = results['target_return_1d'],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,32,results['target_return_1d_direction'] = ret1.gt(0).astype(float).where(ret1.notna()),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,83,"def _process_target_config(self, config: dict, df_enriched: pd.DataFrame) -> tuple:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,114,target_configs: list[dict] | None = None) -> pd.DataFrame:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,119,if df_enriched is None or df_enriched.empty or not target_configs:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,129,for config in target_configs:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,130,"name, result = self._process_target_config(config, df_enriched)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,139,def get_temporal_target_guard(config_manager=None) -> TemporalTargetGuard:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/temporal_target_guard.py,145,guard = get_temporal_target_guard(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/__init__.py,26,"from .temporal_target_guard import TemporalTargetGuard, generate_targets_quick, get_temporal_target_guard",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/__init__.py,26,"from .temporal_target_guard import TemporalTargetGuard, generate_targets_quick, get_temporal_target_guard",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/guards/__init__.py,40,"'get_temporal_target_guard',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,63,"eff_batch_name = (config.batch_name or self.batch_name).replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,63,"eff_batch_name = (config.batch_name or self.batch_name).replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,162,target_cols = [c for c in targets_df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,162,target_cols = [c for c in targets_df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,163,"combined = pd.concat([features_df, targets_df[target_cols]], axis=1) if target_cols else features_df",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,163,"combined = pd.concat([features_df, targets_df[target_cols]], axis=1) if target_cols else features_df",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,165,"report = guard.check(combined, target_cols=target_cols if target_cols else None)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,165,"report = guard.check(combined, target_cols=target_cols if target_cols else None)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,165,"report = guard.check(combined, target_cols=target_cols if target_cols else None)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,254,"batch_name = batch_name.replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_manager.py,254,"batch_name = batch_name.replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/colab_workflow_manager.py,61,feats = [c for c in features_df.columns if not c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/context_builder.py,36,"selected_features: list[str], target_cols: list[str], file_path: Path) -> dict[str, Any]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/context_builder.py,41,"'targets': [context_target] if context_target else list(target_cols),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/context_builder.py,48,"light_models_to_train: list[str], target_cols: list[str],",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/context_builder.py,68,"selected_features, target_cols, file_path)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_batch_manager.py,46,"target_dedup_cols = self._dedup_columns(e_t, targets_df_filtered)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_batch_manager.py,51,"subset=target_dedup_cols, keep='last'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_processor.py,37,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_processor.py,37,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_processor.py,38,feature_cols = [c for c in df.columns if c not in target_cols],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_processor.py,41,targets_df = df[target_cols].copy(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_utils.py,75,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_utils.py,75,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_utils.py,76,feature_cols = [c for c in df.columns if c not in target_cols],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/data_utils.py,79,targets_df = df[target_cols].copy(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_loader.py,16,"def _get_file_candidates(self, model_type: str, ticker: str, target_name: str) -> list[Path]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_loader.py,18,"self.batch_dir / f""selected_features_{model_type}_{ticker}_{target_name}.json"",",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_loader.py,20,"self.batch_dir / f""selected_features_{model_type}_{target_name}.json"",",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_loader.py,24,"async def load_async(self, model_type: str, ticker: str, target_name: str) -> list[str]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_loader.py,26,"candidates = self._get_file_candidates(model_type, ticker, target_name)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_loader.py,40,"def load_sync(self, model_type: str, ticker: str, target_name: str) -> list[str]:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_loader.py,42,"candidates = self._get_file_candidates(model_type, ticker, target_name)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_processor.py,74,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_processor.py,74,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_processor.py,75,feature_cols = [c for c in df.columns if c not in target_cols],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_processor.py,81,targets_columns = target_cols + [col for col in essential_metadata if col in df.columns],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_processor.py,84,"self.logger.info(f""✅ Split: {len(feature_cols)} feature columns, {len(target_cols)} target columns"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_selection_manager.py,57,"if not col.startswith('target_') and col not in ['ticker', 'timeframe', 'date', 'datetime']]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/feature_selection_validator.py,127,"startswith('target_') and col not in ['ticker', 'timeframe',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,76,for target_data in all_results.values():,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,77,"models = target_data.get('models', {})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,92,for target_col in [col for col in targets_df.columns if col.,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,93,startswith('target_')]:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,94,targets_df[target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,96,'results'][target_col] = {'models': {}},Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,100,"f'model_{ticker}_{target_col}_{model_type}.keras',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,105,'all']['results'][target_col]['models'][model_type,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,108,f'✅ {ticker}-{target_col}-{model_type}: trained'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,111,f'❌ {ticker}-{target_col}-{model_type}: {e}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,113,'all']['results'][target_col]['models'][model_type,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,122,"for target, target_data in ticker_data['timeframes']['all']['results'].items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,124,existing['timeframes']['all']['results'][target] = target_data,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/final_stages_executor.py,127,"new_models = target_data.get('models', {})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/light_models_trainer.py,27,target_cols: list[str],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/light_models_trainer.py,127,col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/light_models_trainer.py,129,"'timeframe', 'datetime'] + config.target_cols]",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,63,for target_col in context_data['targets']:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,64,if target_col not in c_targets_df.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,69,"target_col, model_name, resolved_ticker, timeframe, batch_dir",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,74,"context_metadata[f""{resolved_ticker}_{target_col}_{model_name}""] = metadata",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,89,"available_features: list[str], target_col: str, model_name: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,97,"split_data = self._prepare_chronological_split(c_features_df, c_targets_df, available_features, target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,104,task_type = self._resolve_target_task_type(target_col),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,104,task_type = self._resolve_target_task_type(target_col),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,106,"light_trainer, X_train, y_train, model_name, resolved_ticker, timeframe, target_col, task_type",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,116,"model_path = self._save_trained_model(light_trainer, result, batch_dir, model_name, resolved_ticker, target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,119,"return self._create_model_metadata(resolved_ticker, target_col, model_name, metrics, model_path, available_features)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,122,"self.logger.error(f""❌ Error training {model_name} for {target_col}: {e}"", exc_info=True)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,124,"f""Training failed for model={model_name}, ticker={resolved_ticker}, target={target_col}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,128,"feature_cols: list[str], target_col: str) -> tuple | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,132,"X, y = f_sorted[feature_cols].copy(), t_sorted[target_col].copy()",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,153,"'target_col': target,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,178,"resolved_ticker: str, timeframe: str, target_col: str, task_type: str) -> dict[str, Any] | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,184,"'target_col': target_col,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,184,"'target_col': target_col,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,205,"model_name: str, resolved_ticker: str, target_col: str) -> Path:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,209,"model_path = models_dir / f""{model_name}_{resolved_ticker}_{target_col}.joblib""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,215,"def _create_model_metadata(self, resolved_ticker: str, target_col: str, model_name: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,220,"'target': target_col,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,239,"def _resolve_target_task_type(self, target_name: str) -> str:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,239,"def _resolve_target_task_type(self, target_name: str) -> str:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,249,"target_definitions = targets_config.get('targets', targets_config)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,250,"target_meta = target_definitions.get(target_name, {}) if isinstance(target_definitions, dict) else {}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,250,"target_meta = target_definitions.get(target_name, {}) if isinstance(target_definitions, dict) else {}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,250,"target_meta = target_definitions.get(target_name, {}) if isinstance(target_definitions, dict) else {}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,250,"target_meta = target_definitions.get(target_name, {}) if isinstance(target_definitions, dict) else {}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,251,"configured_type = str(target_meta.get('type', '')).lower()",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,253,"return self._determine_task_type(configured_type, target_name)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,255,"def _determine_task_type(self, configured_type: str, target_name: str) -> str:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/model_training_orchestrator.py,262,fallback_name = str(target_name).lower(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/orchestrator_config.py,115,"def resolve_target_task_type(self, target_name: str) -> str:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/orchestrator_config.py,115,"def resolve_target_task_type(self, target_name: str) -> str:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/orchestrator_config.py,121,"configured_type = targets_config.get(target_name, {}).get('type', 'regression')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/orchestrator_config.py,122,"return self._determine_task_type(configured_type, target_name)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/orchestrator_config.py,124,"def _determine_task_type(self, configured_type: str, target_name: str) -> str:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/orchestrator_config.py,132,"self.logger.warning(f""Unknown target type '{configured_type}' for {target_name}, defaulting to regression"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/pipeline_manager.py,131,"if not str(col).startswith(""target_"")",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/results_processor.py,41,"eff_batch_name = batch_name.replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/results_processor.py,41,"eff_batch_name = batch_name.replace('target_target_', 'target_')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/results_processor.py,139,"for target, target_data in timeframe_data.get('results', {}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/results_processor.py,141,"for model, model_data in target_data.get('models', {}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,36,target_cols: list[str],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,46,target_cols: list[str],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,57,target_cols: list[str],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,107,"config.light_models_to_train, config.target_cols, config.",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,134,target_cols=config.target_cols),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,134,target_cols=config.target_cols),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,161,target_cols=request.target_cols),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/selected_features_processor.py,161,target_cols=request.target_cols),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/test_mode_manager.py,56,target_cols = [c for c in targets_df.columns if c.startswith('target_'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/test_mode_manager.py,56,target_cols = [c for c in targets_df.columns if c.startswith('target_'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/test_mode_manager.py,58,if test_target and test_target in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/test_mode_manager.py,59,target_cols = [test_target],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/hybrid/test_mode_manager.py,66,"return features_df, targets_df, target_cols, ticker_col",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_0_data_generation.py,144,future_target_cols = [,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_0_data_generation.py,151,targets = targets.dropna(subset=future_target_cols),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_3_improvements.py,143,"'features_count': len([col for col in features_df.columns if not col.startswith('target_')]),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_3_improvements.py,144,"'targets_count': len([col for col in targets_df.columns if col.startswith('target_')]),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,29,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,98,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,98,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,101,for target_name in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,101,for target_name in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,106,"target_cols=[target_name],",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,106,"target_cols=[target_name],",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,126,"context_key = f""{ticker}_{target_name}_{current_pattern}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_4_modeling.py,129,"'target': target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_5_prediction.py,243,target_scaler = self._load_target_scaler(meta),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_5_prediction.py,243,target_scaler = self._load_target_scaler(meta),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_5_prediction.py,272,"adjusted_prediction, target_scaler)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_5_prediction.py,309,"def _load_target_scaler(self, meta: dict[str, Any]) ->Any | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/stage_5_prediction.py,310,return self.scaler_service.load_target_scaler(meta),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/evaluation/analytics.py,85,"""target_series"": signals_df[""signal""] if ""signal"" in signals_df.columns else pd.Series(dtype=float),",Feature-like module may create target columns.
+P2,BROAD_EXCEPT,pipeline/stages/evaluation/backtest_adapter.py,45,except Exception as e:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/guards.py,7,from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/guards.py,7,from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/guards.py,25,self.temporal_target_guard = get_temporal_target_guard(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/guards.py,25,self.temporal_target_guard = get_temporal_target_guard(),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,33,self.target_gen = TargetGenerator(config_manager),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,60,targets_df = self.target_gen.generate_targets(enriched_df),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,62,target_cols = [col for col in targets_df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,62,target_cols = [col for col in targets_df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,63,for col in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,76,"target_col = kwargs.get('target_column', 'target_up_1d')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,76,"target_col = kwargs.get('target_column', 'target_up_1d')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,76,"target_col = kwargs.get('target_column', 'target_up_1d')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,77,if target_col in final_features.columns:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,80,"target_col,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,109,"target_col: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,112,target_cols = [col for col in final_features.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,112,target_cols = [col for col in final_features.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,114,"candidate_features = final_features.drop(columns=target_cols, errors='ignore')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,120,target_series = final_features[target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,120,target_series = final_features[target_col],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,122,"candidate_features = candidate_features.drop(columns=[target_col], errors='ignore')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,123,valid_index = candidate_features.index.intersection(target_series.dropna().index),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,125,if candidate_features.empty or len(valid_index) < 5 or target_series.loc[valid_index].nunique() < 2:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,132,"target_series.loc[valid_index],",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/orchestrator.py,133,"context_id=kwargs.get('context_id', f'stage3_{target_col}'),",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/targets.py,6,from src.targets.target_orchestrator import TargetOrchestrator,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/targets.py,16,self.target_orchestrator = TargetOrchestrator(targets_list=targets_list),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/targets.py,21,return self.target_orchestrator.generate_targets(df),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/targets.py,26,target_cols = [col for col in targets_df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/targets.py,26,target_cols = [col for col in targets_df.columns if col.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/targets.py,27,if not target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/feature_engineering/targets.py,31,for col in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/dataclasses.py,12,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/dataclasses.py,23,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/dataclasses.py,45,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/dataclasses.py,55,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/dataclasses.py,68,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/dataclasses.py,85,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/dataclasses.py,104,target_name: str,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,16,"config.batch_dir / f'selected_features_{config.model_type}_{config.ticker}_{config.target_name}.json',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,18,"config.batch_dir / f'selected_features_{config.model_type}_{config.target_name}.json',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,37,[c for c in config.x_train.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,65,"config.batch_dir / f'selected_features_{config.model_type}_{config.ticker}_{config.target_name}.json',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,67,"config.batch_dir / f'selected_features_{config.model_type}_{config.target_name}.json',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,84,[c for c in config.x_train.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,105,"def save_light_models_results(stage, ticker: str, target_name: str, light_models: dict[str, Any], batch_dir: Path) -> None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,116,"target_data = ticker_data.get(target_name, {})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,116,"target_data = ticker_data.get(target_name, {})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,120,target_data[model_type] = {,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,134,ticker_data[target_name] = target_data,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,134,ticker_data[target_name] = target_data,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,139,logger.info(f'✅ Saved light model results for {ticker}/{target_name} ({len(target_data)} models) -> {results_file.name}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/io.py,139,logger.info(f'✅ Saved light model results for {ticker}/{target_name} ({len(target_data)} models) -> {results_file.name}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/metrics.py,28,"""target"": config.target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,23,"dict[str, Any], ticker: str, target_name: str, top_n: int=3) ->(dict[",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,36,"f'No metrics found for {ticker}_{target_name}, skipping ensemble'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,53,"'weighted_average', 'ticker': ticker, 'target_name': target_name}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,53,"'weighted_average', 'ticker': ticker, 'target_name': target_name}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,54,logger.info(f'✅ Ensemble created for {ticker}_{target_name}:'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,59,f'ensemble_{ticker}_{target_name}.json'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,66,"f'Failed to create ensemble for {ticker}_{target_name}: {e}',",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,69,"f""Failed to create ensemble for {ticker}_{target_name}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,76,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,76,target_cols = [c for c in df.columns if c.startswith('target_')],Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,79,for target_name in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,79,for target_name in target_cols:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,81,"target_name=target_name, timeframe=timeframe, champions=",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,81,"target_name=target_name, timeframe=timeframe, champions=",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,92,context_key = f'{config.ticker}_{config.target_name}',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,94,"ticker, timeframe=config.timeframe, target_cols=[config.target_name",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,94,"ticker, timeframe=config.timeframe, target_cols=[config.target_name",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,108,"target_name=config.target_name, timeframe=config.timeframe,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,108,"target_name=config.target_name, timeframe=config.timeframe,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,116,context_key = f'{config.ticker}_{config.target_name}',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,128,"config.ticker, target_name=config.target_name, batch_dir=batch_dir,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,128,"config.ticker, target_name=config.target_name, batch_dir=batch_dir,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,136,"champion_config = ChampionInfoConfig(ticker=config.ticker, target_name=",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,137,"config.target_name, winner_name=winner_name, comparison_report=",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/orchestration.py,149,"config.ticker, config.target_name, config.prepared_data, batch_dir,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,15,"target_name: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,33,task_type = stage._determine_task_type(target_name),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,41,"target_name=target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,41,"target_name=target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,56,"context_key = f""{ticker}_{target_name}_{model_type}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,81,train_df[config.target_name] = config.y_train.values,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,87,"'target_col': config.target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,87,"'target_col': config.target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,99,"model_path = stage.models_dir / f""{config.model_type}_{config.ticker}_{config.target_name}.joblib""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,104,"target_name=config.target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/training.py,104,"target_name=config.target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/utils.py,36,"""target"": config.target_name,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/utils.py,78,def determine_task_type(target_name: str) -> str:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/utils.py,79,"return ""regression"" if ""return"" in target_name or ""price"" in target_name else ""classification""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/modeling/utils.py,79,"return ""regression"" if ""return"" in target_name or ""price"" in target_name else ""classification""",Feature-like module may create target columns.
+P2,BROAD_EXCEPT,pipeline/stages/monitoring/feature_monitoring.py,41,except Exception as exc:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,pipeline/stages/monitoring/feature_monitoring.py,46,except Exception as exc:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,pipeline/stages/monitoring/feature_monitoring.py,51,except Exception as exc:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,138,"target_col = meta.get('target', '')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,142,"f'   ticker={ticker}, target={target_col}, model_type={model_type}'",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,321,"target_col = meta.get('target', '')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,324,scaler_filename = f'scaler_{ticker}_{target_col}.pkl',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,346,"for batch_name in ['main_database', 'test_ticker_AAPL_target_return_1d']:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,378,"def load_target_scaler(self, meta: dict[str, Any]) ->(Any | None):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,380,"target_col = meta.get('target', '')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,411,self.logger.debug(f'No target scaler found for {ticker}_{target_col}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,422,"if hasattr(target_scaler, 'scale_'):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,423,if target_scaler.scale_.shape[0] == 1:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,426,return target_scaler,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,428,f'INVALID scaler at {scaler_path}: {target_scaler.scale_.shape[0]} features instead of 1',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,441,"target_col = meta.get('target', '')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,443,if 'return' in target_col.lower():,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,445,elif 'up' in target_col.lower() or 'down' in target_col.lower():,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,445,elif 'up' in target_col.lower() or 'down' in target_col.lower():,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,447,elif 'multi' in target_col.lower():,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/data_preparer.py,453,f'✅ Created fallback scaler for {ticker}_{target_col}'),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/model_resolver.py,371,"for target, target_data in results.items():",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/model_resolver.py,372,"models = target_data.get('models', {})",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/model_selection_service.py,122,"target_type = meta.get('target_type', 'classification')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/model_selection_service.py,122,"target_type = meta.get('target_type', 'classification')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/model_selection_service.py,175,"ticker_df_clean, target_type, list(model_aliases.keys())",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/prediction_generator.py,109,target_scaler: Any) ->float:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/prediction_generator.py,111,if target_scaler is None:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/prediction_generator.py,120,"if hasattr(target_scaler, 'scale_') and target_scaler.scale_.shape[",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/prediction_generator.py,120,"if hasattr(target_scaler, 'scale_') and target_scaler.scale_.shape[",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/prediction_generator.py,123,f'Scaler has wrong number of features: {target_scaler.scale_.shape[0]} instead of 1',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/prediction_generator.py,125,denormalized = target_scaler.inverse_transform(pred_to_denorm),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,28,"def _load_autoencoder_model(self, batch_dir: Path, ticker: str, target_col: str) -> tuple[Any, list[str]] | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,30,ae_key = f'{ticker}_{target_col}_autoencoder',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,34,ae_model_path = batch_dir / f'model_{ticker}_{target_col}_autoencoder{ext}',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,36,"ae_meta = {'ticker': ticker, 'target': target_col, 'model_type': 'autoencoder', 'model_path': str(ae_model_path)}",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,45,"ae_features = self._load_autoencoder_features(batch_dir, ticker, target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,52,"def _load_autoencoder_features(self, batch_dir: Path, ticker: str, target_col: str) -> list[str] | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,54,features_path = batch_dir / f'selected_features_{ticker}_{target_col}_autoencoder.json',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,66,"def _calculate_autoencoder_normalcy(self, ae_model: Any, X_ae: pd.DataFrame, ticker: str, target_col: str) -> float:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,76,"self.logger.info(f'🔒 Autoencoder anomaly integration for {ticker} ({target_col}): MSE={mse:.4f}, normalcy={ae_normalcy:.2%}')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,84,"target_col = request.meta.get('target', '')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,91,"ae_result = self._load_autoencoder_model(batch_dir, ticker, target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,100,"ae_normalcy = self._calculate_autoencoder_normalcy(ae_model, X_ae, ticker, target_col)",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/result_builder.py,103,self.logger.info(f'Blended normalcy for {ticker} ({target_col}): {blended_normalcy:.2%}'),Feature-like module may create target columns.
+P2,BROAD_EXCEPT,pipeline/stages/prediction/result_builder.py,60,except Exception as fe:,Broad exception. Classify fatal/degraded paths.
+P2,BROAD_EXCEPT,pipeline/stages/prediction/result_builder.py,135,except Exception:,Broad exception. Classify fatal/degraded paths.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/scaler_service.py,34,"def load_target_scaler(self, meta: dict[str, Any]) -> Any | None:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/scaler_service.py,46,"target_col = meta.get('target', '')",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/scaler_service.py,70,scaler_path = base_dir / batch_name / f'scaler_{ticker}_{target_col}.pkl',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/scaler_service.py,85,"if hasattr(target_scaler, 'scale_'):",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/scaler_service.py,86,if target_scaler.scale_.shape[0] == 1:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/scaler_service.py,88,return target_scaler,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/prediction/scaler_service.py,91,f'❌ INVALID scaler! Has {target_scaler.scale_.shape[0]} features instead of 1',Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,96,"def _get_champion_model_for_target(self, target_key: str, heavy_models:",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,99,"combined_group = heavy_models.get(target_key, []) + light_models.get(",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,100,"target_key, [])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,110,for target_key in all_targets:,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,111,"champion = self._get_champion_model_for_target(target_key,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,114,recommendations['champion_by_target'][target_key] = {,Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,131,"target_key = f""{ticker}_{'_'.join(parts[2:])}""",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,133,target_key),Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,137,"target_key, models_metadata, [pred])",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,345,"def _calculate_robust_confidence(self, ticker: str, target_key: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,349,"champion_data = self._find_champion_model(ticker, target_key,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,368,"def _find_champion_model(self, ticker: str, target_key: str,",Feature-like module may create target columns.
+P0,TARGET_IN_FEATURE_MODULE,pipeline/stages/trading/recommendation_engine.py,372,"if meta.get('target') == target_key.split('_', 1)[1]:",Feature-like module may create target columns.
+P2,BROAD_EXCEPT,pipeline/stages/trading/recommendation_engine.py,232,except Exception:,Broad exception. Classify fatal/degraded paths.

@@ -5,26 +5,14 @@ Handles pipeline stage execution and result management.
 
 import json
 import pickle
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
-
-
-@dataclass
-class PipelineMetadataParams:
-    """Consolidated parameters for pipeline metadata creation."""
-    timestamp: str
-    tickers: list[str] | None
-    timeframes: list[str] | None
-    stages: list[int]
-    saved_files: dict[str, str]
-    batch_name: str
 
 
 class PipelineExecutor:
@@ -107,18 +95,20 @@ class PipelineExecutor:
             with open(path, 'wb') as f:
                 pickle.dump(data, f)
 
-        return cast(Path, path)
+        return path
 
-    def create_pipeline_metadata(self, params: PipelineMetadataParams) -> dict[str, Any]:
+    def create_pipeline_metadata(self, timestamp: str, tickers: list[str] | None,
+                                  timeframes: list[str] | None, stages: list[int],
+                                  saved_files: dict[str, str], batch_name: str) -> dict[str, Any]:
         """Create pipeline metadata."""
         from .metadata_manager import MetadataParams
         metadata_params = MetadataParams(
-            timestamp=params.timestamp,
-            tickers=params.tickers,
-            timeframes=params.timeframes,
-            stages=params.stages,
-            saved_files=params.saved_files,
-            batch_name=params.batch_name
+            timestamp=timestamp,
+            tickers=tickers,
+            timeframes=timeframes,
+            stages=stages,
+            saved_files=saved_files,
+            batch_name=batch_name
         )
         return self.metadata_manager.create_pipeline_metadata(metadata_params)
 
@@ -151,7 +141,7 @@ class PipelineExecutor:
                     df.to_parquet(file_path)
                     self.logger.info(f"Saved {key} data to {file_path}")
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error saving data: {e}")
 
     def _flatten_data_dict(self, data: dict[str, Any], parent_key: str = "") -> dict[str, pd.DataFrame]:

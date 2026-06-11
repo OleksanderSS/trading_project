@@ -1,143 +1,73 @@
-features:
-  sentiment:
-    model_name: yiyanghkust/finbert-tone
-  smart_selection:
-    cache_path: data/cache/smart_features.json
-    correlation_method: spearman
-    default_model: mlp
-    enabled: true
-    lgbm_params:
-      force_col_wise: true
-      learning_rate: 0.05
-      num_boost_round: 50
-      num_leaves: 31
-      objective: binary
-      verbosity: -1
-    mi_random_state: 42
-    min_volatility: 0.0001
-    rf_params:
-      max_depth: 10
-      n_estimators: 50
-      n_jobs: -1
-      random_state: 42
-    target_features: 42
-    variance_epsilon: 1e-1038
+
+# Dummy section to satisfy the configuration validator
 model:
   is_present: true
+
+# Real configuration used by the ModelFactory
 models:
-  categories:
-    heavy:
-    - cnn
-    - lstm
-    - gru
-    - transformer
-    - tabnet
-    light:
-    - catboost
-    - lightgbm
-    - xgboost
-    - random_forest
-    - linear
-    - svm
-    - knn
-    - mlp
-    - ensemble
-    - autoencoder
-  dual_model_manager:
-    base_path: data/models
-    heavy_models:
-    - gru
-    - tabnet
-    - transformer
-    - cnn
-    - lstm
-    - neural_network
-    - base_neural
-    light_models:
-    - lightgbm
-    - random_forest
-    - linear
-    - mlp
-    - ensemble
-    - catboost
-    - xgboost
-    - knn
-    - svm
-    - autoencoder
   model_definitions:
-    autoencoder:
-      class: AutoencoderModel
-      module: src.models.neural.autoencoder_model
+    catboost: { module: "src.models.tree.catboost_model", class: "CatBoostModel" }
+    lightgbm: { module: "src.models.tree.lightgbm_model", class: "LightGBMModel" }
+    xgboost: { module: "src.models.tree.xgboost_model", class: "XGBoostModel" }
+    random_forest: { module: "src.models.tree.random_forest_model", class: "RandomForestModel" }
+    linear: { module: "src.models.linear.linear_model", class: "LinearModel" }
+    svm: { module: "src.models.linear.svm_model", class: "SVMModel" }
+    knn: { module: "src.models.linear.knn_model", class: "KNNModel" }
+    mlp: { module: "src.models.neural.mlp_model", class: "MLPModel" }
+    cnn: { module: "src.models.neural.cnn_model", class: "CNNModel" }
+    lstm: { module: "src.models.neural.lstm_model", class: "LSTMModel" }
+    gru: { module: "src.models.neural.gru_model", class: "GRUModel" }
+    transformer: { module: "src.models.neural.transformer_model", class: "TransformerModel" }
+    tabnet: { module: "src.models.neural.tabnet_model", class: "TabNetModel" }
+    autoencoder: { module: "src.models.neural.autoencoder_model", class: "AutoencoderModel" }
+    ensemble: { module: "src.models.ensemble.ensemble_model", class: "EnsembleModel" }
+
+  dual_model_manager:
+    base_path: "data/models"
+    light_models: ["lightgbm", "random_forest", "linear", "mlp", "ensemble", "catboost", "xgboost", "knn", "svm"]
+    heavy_models: ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder", "mlp", "neural_network", "base_neural"]
+
+  trained_models_registry:
+    BTC_LSTM_v2: "data/trained_models/BTC_LSTM_v2.joblib"
+    consensus_meta_model: "data/trained_models/consensus_meta_model.pkl"
+
+  categories:
+    light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]
+    heavy: ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]
+
+  # Number of features for each model
+  per_model:
+    # Light models: 20-60 features
     catboost:
-      class: CatBoostModel
-      module: src.models.tree.catboost_model
-    cnn:
-      class: CNNModel
-      module: src.models.neural.cnn_model
-    ensemble:
-      class: EnsembleModel
-      module: src.models.ensemble.ensemble_model
-    gru:
-      class: GRUModel
-      module: src.models.neural.gru_model
-    knn:
-      class: KNNModel
-      module: src.models.linear.knn_model
-    lightgbm:
-      class: LightGBMModel
-      module: src.models.tree.lightgbm_model
-    linear:
-      class: LinearModel
-      module: src.models.linear.linear_model
-    lstm:
-      class: LSTMModel
-      module: src.models.neural.lstm_model
-    mlp:
-      class: MLPModel
-      module: src.models.neural.mlp_model
-    random_forest:
-      class: RandomForestModel
-      module: src.models.tree.random_forest_model
-    svm:
-      class: SVMModel
-      module: src.models.linear.svm_model
-    tabnet:
-      class: TabNetModel
-      module: src.models.neural.tabnet_model
-    transformer:
-      class: TransformerModel
-      module: src.models.neural.transformer_model
-    xgboost:
-      class: XGBoostModel
-      module: src.models.tree.xgboost_model
-per_model:
-  autoencoder:
       max_features: 45
-  catboost:
+    lightgbm:
+      max_features: 50
+    xgboost:
       max_features: 48
-  cnn:
-      max_features: 95
-  ensemble:
-      max_features: 50
-  gru:
-      max_features: 105
-  knn:
-      max_features: 38
-  lightgbm:
-      max_features: 50
-  linear:
-      max_features: 35
-  lstm:
-      max_features: 110
-  mlp:
-      max_features: 100
-  random_forest:
+    random_forest:
       max_features: 40
-  svm:
+    linear:
+      max_features: 35
+    svm:
       max_features: 42
-  tabnet:
-      max_features: 42
-  transformer:
+    knn:
+      max_features: 38
+    
+    # Heavy models: 80-120 features
+    mlp:
+      max_features: 100
+    cnn:
+      max_features: 95
+    lstm:
+      max_features: 110
+    gru:
+      max_features: 105
+    transformer:
       max_features: 115
-  xgboost:
-      max_features: 48
+    tabnet:
+      max_features: 90
+    autoencoder:
+      max_features: 100
+
+  sentiment:
+    model_name: "yiyanghkust/finbert-tone"

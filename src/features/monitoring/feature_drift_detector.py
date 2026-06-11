@@ -16,19 +16,12 @@ logger = ProjectLogger.get_logger("FeatureDriftDetector")
 
 # Try to import Evidently AI
 try:
-    # New version 0.7.21+ uses legacy module
-    from evidently.legacy.metric_preset.data_drift import DataDriftPreset
-    from evidently.legacy.report import Report
+    from evidently.metric_preset import DataDriftPreset
+    from evidently.report import Report
     EVIDENTLY_AVAILABLE = True
 except ImportError:
-    # Fallback to older versions
-    try:
-        from evidently.metric_preset import DataDriftPreset
-        from evidently.report import Report
-        EVIDENTLY_AVAILABLE = True
-    except ImportError:
-        EVIDENTLY_AVAILABLE = False
-        logger.warning("⚠️ Evidently AI not installed. Install with: pip install evidently")
+    EVIDENTLY_AVAILABLE = False
+    logger.warning("⚠️ Evidently AI not installed. Install with: pip install evidently")
 
 
 class FeatureDriftDetector:
@@ -54,7 +47,7 @@ class FeatureDriftDetector:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.metrics: dict[str, Any] = {
+        self.metrics = {
             'checks_performed': 0,
             'drifts_detected': 0,
             'last_check_time': None,
@@ -81,7 +74,7 @@ class FeatureDriftDetector:
         Returns:
             Dict with drift detection results
         """
-        self.metrics['checks_performed'] = int(self.metrics.get('checks_performed', 0)) + 1
+        self.metrics['checks_performed'] += 1
         self.metrics['last_check_time'] = pd.Timestamp.now()
 
         if not EVIDENTLY_AVAILABLE:
@@ -138,15 +131,10 @@ class FeatureDriftDetector:
 
             # Update metrics
             if drift_results['drift_detected']:
-                self.metrics['drifts_detected'] = int(self.metrics.get('drifts_detected', 0)) + 1
+                self.metrics['drifts_detected'] = self.metrics.get('drifts_detected', 0) + 1
 
-            if not isinstance(self.metrics.get('drift_history'), list):
-                self.metrics['drift_history'] = []
-
-            # Type-safe access for Mypy
-            history = self.metrics['drift_history']
-            if isinstance(history, list):
-                history.append({
+            if isinstance(self.metrics.get('drift_history'), list):
+                self.metrics['drift_history'].append({
                     'timestamp': pd.Timestamp.now().isoformat(),
                     'drift_detected': drift_results['drift_detected'],
                     'drift_share': drift_results['drift_share'],
@@ -171,8 +159,8 @@ class FeatureDriftDetector:
                 'details': drift_results
             }
 
-        except Exception as e:
-            logger.error(f"❌ Drift detection failed: {e}", exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"❌ Drift detection failed: {e}")
             return {
                 'status': 'ERROR',
                 'message': str(e),
@@ -211,8 +199,8 @@ class FeatureDriftDetector:
                 'total_features': len(metrics)
             }
 
-        except Exception as e:
-            logger.error(f"Error parsing drift results: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Error parsing drift results: {e}")
             return {
                 'drift_detected': False,
                 'drift_share': 0.0,
@@ -220,7 +208,7 @@ class FeatureDriftDetector:
                 'total_features': 0
             }
 
-    def _save_report(self, report: Report, drift_results: dict) -> Path:
+    def _save_report(self, report: Any, drift_results: dict) -> Path:
         """Save drift report to file."""
         timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         drift_status = "DRIFT" if drift_results['drift_detected'] else "OK"
@@ -257,7 +245,7 @@ def check_feature_drift(
     current_data: pd.DataFrame,
     feature_columns: list[str] | None = None,
     drift_threshold: float = 0.5
-) -> dict[str, Any]:
+) -> dict[str, any]:
     """
     Quick function to check feature drift.
 

@@ -1,0 +1,11 @@
+{
+  "batch_id": "WMT_lstm_20260322_160946",
+  "ticker": "WMT",
+  "model_name": "lstm",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_volume_change_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T16:09:47.153886",
+  "status": "PENDING_COLAB"
+}

@@ -1,6 +1,6 @@
+import json
 import sys
 from pathlib import Path
-import json
 
 project_path = Path("D:/trading_project")
 sys.path.insert(0, str(project_path))
@@ -22,6 +22,7 @@ else:
 
 print("\n=== TRYING TO READ YAML DIRECTLY ===")
 import yaml
+
 with open(project_path / "src" / "config" / "models.yaml", "r") as f:
     raw_yaml = yaml.safe_load(f)
     print("Raw YAML root keys:", list(raw_yaml.keys()))

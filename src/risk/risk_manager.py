@@ -2,7 +2,7 @@
 Risk Manager
 Comprehensive risk management with kill-switch, exposure limits, and volatility scaling.
 """
-
+import logging
 from dataclasses import dataclass
 from enum import Enum
 
@@ -55,7 +55,7 @@ class RiskManager:
 
     def __init__(
         self,
-        portfolio_value: float | dict,
+        portfolio_value: float,
         max_position_exposure: float = 0.25,  # 25% per position
         max_sector_exposure: float = 0.40,    # 40% per sector
         max_total_exposure: float = 1.0,      # 100% total
@@ -67,7 +67,7 @@ class RiskManager:
         Initialize risk manager.
 
         Args:
-            portfolio_value: Total portfolio value or config dict (test compatibility)
+            portfolio_value: Total portfolio value
             max_position_exposure: Max exposure per position (0-1)
             max_sector_exposure: Max exposure per sector (0-1)
             max_total_exposure: Max total exposure (0-1)
@@ -75,16 +75,6 @@ class RiskManager:
             target_volatility: Target volatility for position sizing
             sector_map: Mapping of ticker -> sector
         """
-        # Support config dict (tests may pass a dict with 'portfolio_value' key)
-        if isinstance(portfolio_value, dict):
-            cfg = portfolio_value
-            portfolio_value = cfg.get('portfolio_value', 1_000_000.0)
-            max_position_exposure = cfg.get('max_position_exposure', max_position_exposure)
-            max_sector_exposure = cfg.get('max_sector_exposure', max_sector_exposure)
-            max_total_exposure = cfg.get('max_total_exposure', max_total_exposure)
-            kill_switch_drawdown = cfg.get('kill_switch_drawdown', kill_switch_drawdown)
-            target_volatility = cfg.get('target_volatility', target_volatility)
-            sector_map = cfg.get('sector_map', sector_map)
         self.portfolio_value = portfolio_value
         self.max_position_exposure = max_position_exposure
         self.max_sector_exposure = max_sector_exposure
@@ -129,8 +119,8 @@ class RiskManager:
         if current_portfolio_value > self.peak_portfolio_value:
             self.peak_portfolio_value = current_portfolio_value
 
-        # Calculate drawdown safely with zero-value protection
-        drawdown = (self.peak_portfolio_value - current_portfolio_value) / self.peak_portfolio_value if self.peak_portfolio_value > 0 else 0.0
+        # Calculate drawdown
+        drawdown = (self.peak_portfolio_value - current_portfolio_value) / self.peak_portfolio_value
 
         # Check threshold
         if drawdown >= self.kill_switch_drawdown:
@@ -158,8 +148,7 @@ class RiskManager:
         Returns:
             (is_valid, message)
         """
-        # Safe division for portfolio value
-        exposure = abs(position.value) / self.portfolio_value if self.portfolio_value > 0 else 1.0
+        exposure = abs(position.value) / self.portfolio_value
 
         if exposure > self.max_position_exposure:
             self.metrics['violations_detected'] += 1
@@ -195,7 +184,7 @@ class RiskManager:
         # Check limits
         violations = []
         for sector, exposure_value in sector_exposure.items():
-            exposure_pct = exposure_value / self.portfolio_value if self.portfolio_value > 0 else 1.0
+            exposure_pct = exposure_value / self.portfolio_value
 
             if exposure_pct > self.max_sector_exposure:
                 self.metrics['violations_detected'] += 1
@@ -227,7 +216,7 @@ class RiskManager:
             (is_valid, total_exposure)
         """
         total_exposure_value = sum(abs(pos.value) for pos in positions)
-        total_exposure_pct = total_exposure_value / self.portfolio_value if self.portfolio_value > 0 else 1.0
+        total_exposure_pct = total_exposure_value / self.portfolio_value
 
         if total_exposure_pct > self.max_total_exposure:
             self.metrics['violations_detected'] += 1
@@ -249,11 +238,18 @@ class RiskManager:
     ) -> float:
         """
         Calculate position size with volatility scaling.
-        If volatility is invalid (<=0), rejects trade to prevent over-exposure.
+
+        Args:
+            base_size: Base position size ($)
+            volatility: Asset volatility (std dev of returns)
+            confidence: Confidence level (0-1)
+
+        Returns:
+            Adjusted position size ($)
         """
         if volatility <= 0:
-            logger.error(f"❌ Invalid volatility {volatility}. Risk Manager blocking trade.")
-            return 0.0
+            logger.warning(f"⚠️ Invalid volatility {volatility}, using base size")
+            return base_size
 
         # Volatility adjustment
         vol_adjustment = self.target_volatility / volatility
@@ -268,10 +264,11 @@ class RiskManager:
         max_size = self.portfolio_value * self.max_position_exposure
         adjusted_size = min(adjusted_size, max_size)
 
-        logger.info(
-            f"Position sizing: base=${base_size:,.0f}, vol={volatility:.3f}, "
-            f"conf={confidence:.2f} → ${adjusted_size:,.0f}"
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"Position sizing: base=${base_size:,.0f}, vol={volatility:.3f}, "
+                f"conf={confidence:.2f} → ${adjusted_size:,.0f}"
+            )
 
         return adjusted_size
 
@@ -351,7 +348,7 @@ class RiskManager:
             return RiskLevel.CRITICAL
 
         # Calculate total exposure
-        total_exposure = sum(abs(p.value) for p in self.positions) / self.portfolio_value if self.portfolio_value > 0 else 1.0
+        total_exposure = sum(abs(p.value) for p in self.positions) / self.portfolio_value
 
         if total_exposure > 0.8:
             return RiskLevel.HIGH

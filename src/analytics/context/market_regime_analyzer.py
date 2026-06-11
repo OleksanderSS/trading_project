@@ -30,10 +30,7 @@ class MarketRegimeAnalyzer(IAnalyzer):
         self.window_size = window_size
         self.entropy_window = entropy_window
         self._detector = MarketRegimeDetector()
-        logger.info(
-            f"MarketRegimeAnalyzer initialized "
-            f"(window={window_size}, entropy_window={entropy_window})"
-        )
+        logger.info(f"MarketRegimeAnalyzer initialized (window={window_size}, entropy_window={entropy_window})")
 
     def analyze(self, data: Any, **kwargs) -> dict[str, Any]:
         """
@@ -51,18 +48,15 @@ class MarketRegimeAnalyzer(IAnalyzer):
             return self._empty_result()
 
         if "close" not in df.columns:
-            logger.warning(
-                f"MarketRegimeAnalyzer: 'close' column missing. "
-                f"Available: {df.columns.tolist()}"
-            )
+            logger.warning(f"MarketRegimeAnalyzer: 'close' column missing. Available: {df.columns.tolist()}")
             return self._empty_result()
 
         try:
-            returns = df["close"].pct_change().fillna(0).values
+            returns_series = df["close"].pct_change(fill_method=None).replace(
+                [float("inf"), float("-inf")], pd.NA).dropna()
+            returns = returns_series.values
             if len(returns) < 30:
-                logger.warning(
-                    f"MarketRegimeAnalyzer: insufficient data ({len(returns)} rows, need ≥30)."
-                )
+                logger.warning(f"MarketRegimeAnalyzer: insufficient data ({len(returns)} rows, need ≥30).")
                 return self._empty_result()
 
             data_bundle: dict[str, Any] = {
@@ -76,13 +70,12 @@ class MarketRegimeAnalyzer(IAnalyzer):
                 data_bundle=data_bundle,
             )
             logger.info(
-                f"MarketRegimeAnalyzer: regime={result.get('regime')}, "
-                f"confidence={result.get('confidence', 0):.3f}"
+                f"MarketRegimeAnalyzer: regime={result.get('regime')}, confidence={result.get('confidence', 0):.3f}"
             )
             return result
 
-        except Exception as e:
-            logger.error(f"MarketRegimeAnalyzer error: {e}", exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception("MarketRegimeAnalyzer error")
             return self._empty_result()
 
     # ------------------------------------------------------------------

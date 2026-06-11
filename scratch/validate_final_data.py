@@ -1,6 +1,6 @@
 
 import pandas as pd
-import numpy as np
+
 
 def validate_results():
     features_path = r'd:\trading_project\data\processed\features\features.parquet'

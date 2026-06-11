@@ -1,3 +1,12 @@
+import logging
+import time
+from dataclasses import dataclass
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+import numpy as np
+
 """
 !!! ПОТРІБНО ДООПРАЦЮВАТИ !!!
 Цей файл містить сиру, експериментальну логіку, натхненну принципами Станіслава Деана.
@@ -8,15 +17,6 @@
 DEAN BOOTSTRAP SYSTEM
 Система на основі принципів Станіслава Деана: бутстреп, критика, внутрішня симуляція
 """
-
-import logging
-import time
-from dataclasses import dataclass
-from datetime import datetime
-from enum import Enum
-from typing import Any
-
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,14 @@ class DeanBootstrapSystem:
             'actor_rewards': [],
             'critic_rewards': []
         }
+        # ✅ Integrated: security constraint validation for agent actions
+        try:
+            from src.meta_learning.security.constraint_engine import get_security_constraint_engine
+            self.security_engine = get_security_constraint_engine()
+            self.logger.info("✅ SecurityConstraintEngine integrated in DeanBootstrapSystem")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.security_engine = None
+            self.logger.warning(f"SecurityConstraintEngine not available: {e}")
 
     def register_model(self, model_id: str, role: ModelRole, model_instance: Any):
         """Реєстрація моделі в системі"""
@@ -89,45 +97,22 @@ class DeanBootstrapSystem:
         }
         self.logger.info(f"[BRAIN] Registered {role.value} model: {model_id}")
 
-    def is_ready(self) -> bool:
-        """Check if both actor and critic models are registered."""
-        actor_models = [m for m in self.models.values() if m['role'] == ModelRole.ACTOR]
-        critic_models = [m for m in self.models.values() if m['role'] == ModelRole.CRITIC]
-        return len(actor_models) > 0 and len(critic_models) > 0
-
     def bootstrap_action_critique(self, context: dict[str, Any]) -> tuple[DeanAction, DeanCritique]:
         """
-        Бутстреп: одночасно дія та критика з механізмом зворотного зв'язку.
-        Якщо моделей немає, повертає нейтральні заглушки.
+        Бутстреп: одночасно дія та критика з механізмом зворотного зв'язку
         """
-        if not self.is_ready():
-            self.logger.warning("DEAN not initialized with models. Returning neutral placeholders.")
-            # Neutral action
-            action = DeanAction(
-                action_id=f"act_null_{int(time.time())}",
-                action_type="HOLD",
-                parameters={},
-                confidence=0.0,
-                timestamp=datetime.now(),
-                context=context
-            )
-            # Neutral critique
-            critique = DeanCritique(
-                action_id=action.action_id,
-                critique_score=0.0,
-                critique_points=["DEAN not initialized"],
-                alternative_suggestions=[],
-                confidence=0.0
-            )
-            return action, critique
+        actor_models = [m for m in self.models.values() if m['role'] == ModelRole.ACTOR]
+        critic_models = [m for m in self.models.values() if m['role'] == ModelRole.CRITIC]
 
-        actor = [m for m in self.models.values() if m['role'] == ModelRole.ACTOR][0]['instance']
-        critic = [m for m in self.models.values() if m['role'] == ModelRole.CRITIC][0]['instance']
+        if not actor_models or not critic_models:
+            raise ValueError("Need both actor and critic models for bootstrap")
 
         # 1. Актор генерує дію
+        actor = actor_models[0]['instance']
         action = self._generate_action(actor, context)
 
         # 2. Критик одночасно аналізує дію
+        critic = critic_models[0]['instance']
         critique = self._generate_critique(critic, action, context)
 
         # Записуємо в історію
@@ -331,24 +316,13 @@ class DeanBootstrapSystem:
 
     def _calculate_learning_rate(self) -> float:
         """Розрахунок швидкості навчання"""
-        perf = self.evolution_metrics['actor_performance']
-        n = len(perf)
-        if n < 2:
+        if len(self.evolution_metrics['actor_performance']) < 2:
             return 0.0
 
-        if n >= 10:
-            recent = perf[-5:]
-            older = perf[-10:-5]
-        else:
-            split = n // 2
-            recent = perf[split:]
-            older = perf[:split]
+        recent = self.evolution_metrics['actor_performance'][-5:]
+        older = self.evolution_metrics['actor_performance'][-10:-5]
 
-        # Prevent empty slices
-        if len(recent) == 0 or len(older) == 0:
-            return 0.0
-
-        return float(np.mean(recent) - np.mean(older))
+        return np.mean(recent) - np.mean(older)
 
 
 # Глобальна система Деана

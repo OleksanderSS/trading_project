@@ -27,60 +27,60 @@ class TemporalLeakageGuard:
     and poor live trading performance.
     """
 
-    # Patterns that commonly indicate temporal leakage
-    LEAKAGE_PATTERNS = {
-        'future_price': [
-            r'future_price',
-            r'next_price',
-            r'price_next',
-            r'price_future',
-            r'close_next',
-            r'close_future'
-        ],
-        'future_volume': [
-            r'future_volume',
-            r'next_volume',
-            r'volume_next',
-            r'volume_future'
-        ],
-        'future_high_low': [
-            r'future_high',
-            r'future_low',
-            r'next_high',
-            r'next_low',
-            r'high_next',
-            r'low_next'
-        ],
-        'lookahead_indicators': [
-            r'.*\.shift\(-\d+\)',  # Negative shifts (lookahead)
-            r'rolling_.*\.shift\(-\d+\)',  # Rolling with negative shift
-            r'.*\.fillna\(.*method=.*bfill.*\)',  # Backfill (lookahead)
-            r'.*\.fillna\(.*method=.*backfill.*\)',  # Backfill (lookahead)
-        ]
-    }
-
-    # Safe rolling window configurations
-    SAFE_ROLLING_CONFIGS = {
-        '15m': {
-            'max_periods': 96,  # 24 hours = 96 * 15min
-            'common_windows': [4, 16, 32, 64, 96],  # 1h, 4h, 8h, 16h, 24h
-            'description': '15-minute data'
-        },
-        '60m': {
-            'max_periods': 168,  # 7 days = 168 * 1hour
-            'common_windows': [4, 24, 48, 96, 168],  # 4h, 1d, 2d, 4d, 7d
-            'description': '1-hour data'
-        },
-        '1d': {
-            'max_periods': 252,  # 1 year = 252 trading days
-            'common_windows': [5, 20, 50, 100, 252],  # 1w, 1m, 2m, 4m, 1y
-            'description': 'daily data'
-        }
-    }
-
     def __init__(self):
         """Initialize the TemporalLeakageGuard."""
         self.logger = logger
+
+        # Patterns that commonly indicate temporal leakage
+        self.LEAKAGE_PATTERNS = {
+            'future_price': [
+                r'future_price',
+                r'next_price',
+                r'price_next',
+                r'price_future',
+                r'close_next',
+                r'close_future'
+            ],
+            'future_volume': [
+                r'future_volume',
+                r'next_volume',
+                r'volume_next',
+                r'volume_future'
+            ],
+            'future_high_low': [
+                r'future_high',
+                r'future_low',
+                r'next_high',
+                r'next_low',
+                r'high_next',
+                r'low_next'
+            ],
+            'lookahead_indicators': [
+                r'.*\.shift\(-\d+\)',  # Negative shifts (lookahead)
+                r'rolling_.*\.shift\(-\d+\)',  # Rolling with negative shift
+                r'.*\.fillna\(.*method=.*bfill.*\)',  # Backfill (lookahead)
+                r'.*\.fillna\(.*method=.*backfill.*\)',  # Backfill (lookahead)
+            ]
+        }
+
+        # Safe rolling window configurations
+        self.SAFE_ROLLING_CONFIGS = {
+            '15m': {
+                'max_periods': 96,  # 24 hours = 96 * 15min
+                'common_windows': [4, 16, 32, 64, 96],  # 1h, 4h, 8h, 16h, 24h
+                'description': '15-minute data'
+            },
+            '60m': {
+                'max_periods': 168,  # 7 days = 168 * 1hour
+                'common_windows': [4, 24, 48, 96, 168],  # 4h, 1d, 2d, 4d, 7d
+                'description': '1-hour data'
+            },
+            '1d': {
+                'max_periods': 252,  # 1 year = 252 trading days
+                'common_windows': [5, 20, 50, 100, 252],  # 1w, 1m, 2m, 4m, 1y
+                'description': 'daily data'
+            }
+        }
 
     def validate_rolling_windows(self,
                                features_df: pd.DataFrame,
@@ -174,6 +174,29 @@ class TemporalLeakageGuard:
 
         return None
 
+    def _check_feature_name_patterns(self, feature_name: str) -> dict[str, Any]:
+        """Check feature name for leakage patterns."""
+        analysis = {
+            'has_leakage': False,
+            'leakage_type': None,
+            'issues': []
+        }
+
+        for pattern_name, patterns in self.LEAKAGE_PATTERNS.items():
+            if pattern_name == 'lookahead_indicators':
+                continue  # Check separately
+
+            for pattern in patterns:
+                if re.search(pattern, feature_name, re.IGNORECASE):
+                    analysis['has_leakage'] = True
+                    analysis['leakage_type'] = pattern_name
+                    analysis['issues'].append(
+                        f"Feature name indicates future data: {feature_name} matches {pattern}"
+                    )
+                    return analysis
+
+        return analysis
+
     def _analyze_feature_for_leakage(self,
                                    series: pd.Series,
                                    feature_name: str,
@@ -189,18 +212,9 @@ class TemporalLeakageGuard:
         }
 
         # Check 1: Future price patterns in feature name
-        for pattern_name, patterns in self.LEAKAGE_PATTERNS.items():
-            if pattern_name == 'lookahead_indicators':
-                continue  # Check separately
-
-            for pattern in patterns:
-                if re.search(pattern, feature_name, re.IGNORECASE):
-                    analysis['has_leakage'] = True
-                    analysis['leakage_type'] = pattern_name
-                    analysis['issues'].append(
-                        f"Feature name indicates future data: {feature_name} matches {pattern}"
-                    )
-                    return analysis
+        name_analysis = self._check_feature_name_patterns(feature_name)
+        if name_analysis['has_leakage']:
+            return name_analysis
 
         # Check 2: Lookahead patterns in feature values (if it's a calculation result)
         if series.dtype in ['float64', 'int64']:
@@ -382,7 +396,7 @@ class TemporalLeakageGuard:
     def check_feature_target_alignment(self,
                                    features_df: pd.DataFrame,
                                    target_df: pd.DataFrame,
-                                   max_alignment_gap: pd.Timedelta = pd.Timedelta(hours=1)) -> dict[str, Any]:
+                                   max_alignment_gap: pd.Timedelta | None = None) -> dict[str, Any]:
         """
         Check temporal alignment between features and targets.
 
@@ -394,6 +408,9 @@ class TemporalLeakageGuard:
         Returns:
             Alignment validation result
         """
+        if max_alignment_gap is None:
+            max_alignment_gap = pd.Timedelta(hours=1)
+
         self.logger.info("🔍 Checking feature-target temporal alignment")
 
         issues = []

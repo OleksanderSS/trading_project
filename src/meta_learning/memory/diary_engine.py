@@ -13,10 +13,11 @@ for an objective comparison of their effectiveness.
 """
 
 import json
+import logging
 import sys
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any
 
@@ -27,6 +28,8 @@ from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
 from src.meta_learning.base import BaseMetaComponent
+from src.meta_learning.memory.contextual_weight_calculator import ContextualWeightCalculator
+from src.meta_learning.memory.knn_context_finder import KnnContextFinder
 
 
 class DecisionType(Enum):
@@ -57,6 +60,7 @@ class DecisionRecord:
     # Decision Context
     market_context: dict[str, Any]
     context_fingerprint: str # Long string (30+ drivers) from Context Map 2.0
+    context_pattern_seq: str | None = None
     model_prediction: float | None = None
     model_confidence: float | None = None
 
@@ -69,7 +73,7 @@ class DecisionRecord:
     profit_loss: float | None = None
 
     # Other Metadata
-    decision_timestamp: int = field(default_factory=lambda: int(datetime.now(timezone.utc).timestamp()))
+    decision_timestamp: int = field(default_factory=lambda: int(datetime.now(UTC).timestamp()))
     decision_id: int | None = None
 
 
@@ -88,6 +92,10 @@ class DiaryEngine(BaseMetaComponent):
         # ✅ Phase 4 Quality: Add memory-limited in-memory buffer
         self.maxsize = maxsize
         self.entries: deque[DecisionRecord] = deque(maxlen=maxsize)  # Auto-evict oldest entries
+
+        # Initialize contextual weight calculator and KNN finder
+        self.weight_calculator = ContextualWeightCalculator(self.data_manager, self.logger)
+        self.knn_finder = KnnContextFinder(self.data_manager, self.weight_calculator, self.logger)
 
         self._initialize_database()
 
@@ -114,7 +122,8 @@ class DiaryEngine(BaseMetaComponent):
         Returns the current internal state of the diary.
         """
         try:
-            query = f"SELECT COUNT(*) as total_trades FROM {self.table_name}"
+            # Use literal table name instead of f-string for security
+            query = "SELECT COUNT(*) as total_trades FROM experience_diary"
             result_list = self.data_manager.fetch_all(query)
             result = pd.DataFrame(result_list)
             total_trades = int(result.iloc[0]['total_trades']) if not result.empty else 0
@@ -123,15 +132,16 @@ class DiaryEngine(BaseMetaComponent):
                 "total_trades_recorded": total_trades,
                 "table_name": self.table_name
             }
-        except Exception as e:
-            self.logger.error(f"Failed to retrieve diary state: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f"Failed to retrieve diary state: {e}",
+                exc_info=True)
             return {"error": str(e)}
 
     def _initialize_database(self):
         """Initializes the DuckDB table for the experience diary."""
         # Ensured context_fingerprint is VARCHAR to handle long strings (30+ drivers)
-        query = f"""
-        CREATE TABLE IF NOT EXISTS {self.table_name} (
+        query = """
+        CREATE TABLE IF NOT EXISTS experience_diary (
             id INTEGER PRIMARY KEY,
             agent_id VARCHAR NOT NULL,
             decision_timestamp BIGINT NOT NULL,
@@ -140,6 +150,7 @@ class DiaryEngine(BaseMetaComponent):
             reasoning VARCHAR,
             market_context VARCHAR, -- Saved as JSON string
             context_fingerprint VARCHAR, -- Tri-state drivers map
+            context_pattern_seq VARCHAR, -- Raw rolling sequence used for KNN pattern matching
             model_prediction DOUBLE,
             model_confidence DOUBLE,
             entry_price DOUBLE,
@@ -149,23 +160,36 @@ class DiaryEngine(BaseMetaComponent):
         )
         """
         self.data_manager.execute_query(query)
-        # ✅ ENHANCED: Create index on context_fingerprint for performance
-        index_query = f"CREATE INDEX IF NOT EXISTS idx_context_fingerprint ON {self.table_name}(context_fingerprint)"
-        self.data_manager.execute_query(index_query)
-        self.logger.info(f"ExperienceDiary initialized in DuckDB table '{self.table_name}' with index.")
+        self._ensure_context_pattern_seq_column()
+        self.logger.info(f"ExperienceDiary initialized in DuckDB table '{self.table_name}'.")
 
-    def log_event(self, ticker: str, model_name: str, target: str, metrics: float, context_fingerprint: str = 'default'):
+    def _ensure_context_pattern_seq_column(self) -> None:
+        """Migrate older diary tables that were created before pattern sequences."""
+        try:
+            schema = self.data_manager.get_table_schema(self.table_name)
+            if 'context_pattern_seq' not in schema:
+                self.data_manager.execute_query(
+                    'ALTER TABLE experience_diary ADD COLUMN context_pattern_seq VARCHAR'
+                )
+                self.logger.info("Added context_pattern_seq column to experience_diary.")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.warning(
+                f"Could not ensure context_pattern_seq column: {e}", exc_info=True
+            )
+
+    def log_event(self, ticker: str, model_name: str, target: str, metrics: float, context_fingerprint: str = 'default', context_pattern_seq: str | None = None):
         """
         Logs a non-trading event (e.g., training result) to the experience diary.
         """
         record = DecisionRecord(
             agent_id=model_name,
-            decision_timestamp=int(datetime.now(timezone.utc).timestamp()),
+            decision_timestamp=int(datetime.now(UTC).timestamp()),
             ticker=ticker,
             decision_type=DecisionType.TRAINING,
             reasoning=f"Model training for target {target}",
             market_context={'target': target, 'score': float(metrics)},
             context_fingerprint=context_fingerprint,
+            context_pattern_seq=context_pattern_seq,
             model_prediction=float(metrics),
             model_confidence=1.0,
             entry_price=0.0,
@@ -187,6 +211,7 @@ class DiaryEngine(BaseMetaComponent):
             "reasoning": decision.reasoning,
             "market_context": json.dumps(decision.market_context),
             "context_fingerprint": decision.context_fingerprint,
+            "context_pattern_seq": decision.context_pattern_seq,
             "model_prediction": decision.model_prediction,
             "model_confidence": decision.model_confidence,
             "entry_price": decision.entry_price,
@@ -195,7 +220,8 @@ class DiaryEngine(BaseMetaComponent):
             "profit_loss": decision.profit_loss
         }])
         self.data_manager.upsert(self.table_name, df, unique_on=["agent_id", "decision_timestamp", "ticker"])
-        self.logger.debug(f"Recorded decision for {decision.ticker} by {decision.agent_id}")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"Recorded decision for {decision.ticker} by {decision.agent_id}")
 
     def record_decision_metadata(self, metadata: dict[str, Any]):
         """Records consensus decision metadata for analysis."""
@@ -212,6 +238,7 @@ class DiaryEngine(BaseMetaComponent):
                 "reasoning": json.dumps(metadata),
                 "market_context": json.dumps(metadata),
                 "context_fingerprint": metadata.get('fingerprint', ''),
+                "context_pattern_seq": metadata.get('context_pattern_seq', ''),
                 "model_prediction": metadata.get('raw_score', 0.0),
                 "model_confidence": metadata.get('critic_score', 0.0),
                 "entry_price": 0.0,
@@ -220,14 +247,17 @@ class DiaryEngine(BaseMetaComponent):
                 "profit_loss": 0.0
             }])
             self.data_manager.upsert(self.table_name, df, unique_on=["agent_id", "decision_timestamp", "ticker"])
-            self.logger.debug("Recorded consensus metadata")
-        except Exception as e:
-            self.logger.error(f"Failed to record decision metadata: {e}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug("Recorded consensus metadata")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.error(f"Failed to record decision metadata: {e}",
+                exc_info=True)
 
     def get_history_by_agent(self, agent_id: str) -> pd.DataFrame:
         """Retrieves the decision history for a specific agent."""
-        query = f"SELECT * FROM {self.table_name} WHERE agent_id = '{agent_id}'"
-        return pd.DataFrame(self.data_manager.fetch_all(query))
+        # Use parameterized query to prevent SQL injection
+        query = "SELECT * FROM experience_diary WHERE agent_id = ?"
+        return pd.DataFrame(self.data_manager.fetch_all(query, params=[agent_id]))
 
     def get_recent_trades(self, window: int = 500) -> pd.DataFrame:
         """
@@ -239,23 +269,28 @@ class DiaryEngine(BaseMetaComponent):
         Returns:
             DataFrame with trade history including confidence and outcome signs
         """
-        query = f"""
+        # Use parameterized query to prevent SQL injection
+        query = """
         SELECT
             model_confidence as confidence,
             CASE WHEN model_prediction > 0.5 THEN 1 ELSE -1 END as prediction_sign,
-            CASE WHEN outcome = '{DecisionOutcome.PROFITABLE.value}' THEN (CASE WHEN model_prediction > 0.5 THEN 1 ELSE -1 END)
+            CASE WHEN outcome = ? THEN (CASE WHEN model_prediction > 0.5 THEN 1 ELSE -1 END)
                  ELSE (CASE WHEN model_prediction > 0.5 THEN -1 ELSE 1 END) END as actual_sign
-        FROM {self.table_name}
-        WHERE outcome != '{DecisionOutcome.PENDING.value}'
+        FROM experience_diary
+        WHERE outcome != ?
         ORDER BY decision_timestamp DESC
-        LIMIT {window}
+        LIMIT ?
         """
         try:
-            df = pd.DataFrame(self.data_manager.fetch_all(query))
+            df = pd.DataFrame(self.data_manager.fetch_all(query, params=[
+                DecisionOutcome.PROFITABLE.value,
+                DecisionOutcome.PENDING.value,
+                window
+            ]))
             if df.empty:
                 self.logger.warning("No historical trades found for calibration")
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to retrieve recent trades: {e}")
             return pd.DataFrame()
 
@@ -264,15 +299,19 @@ class DiaryEngine(BaseMetaComponent):
         Performs statistical analysis of unprofitable trades to find failure patterns
         within the 30+ driver context fingerprint.
         """
-        query = f"""
+        # Use parameterized query to prevent SQL injection
+        query = """
         SELECT context_fingerprint, COUNT(*) as loss_count
-        FROM {self.table_name}
-        WHERE agent_id = '{agent_id}' AND outcome = '{DecisionOutcome.UNPROFITABLE.value}'
+        FROM experience_diary
+        WHERE agent_id = ? AND outcome = ?
         GROUP BY context_fingerprint
         ORDER BY loss_count DESC
         LIMIT 10
         """
-        loss_patterns = pd.DataFrame(self.data_manager.fetch_all(query))
+        loss_patterns = pd.DataFrame(self.data_manager.fetch_all(query, params=[
+            agent_id,
+            DecisionOutcome.UNPROFITABLE.value
+        ]))
 
         if loss_patterns.empty:
             return {"status": "No failure patterns detected"}
@@ -289,16 +328,20 @@ class DiaryEngine(BaseMetaComponent):
 
     def get_context_success_analysis(self, agent_id: str) -> dict[str, Any]:
         """Identifies the 'Ideal Context' fingerprints where the model excels."""
-        query = f"""
+        # Use parameterized query to prevent SQL injection
+        query = """
         SELECT context_fingerprint, COUNT(*) as win_count, AVG(profit_loss) as avg_pnl
-        FROM {self.table_name}
-        WHERE agent_id = '{agent_id}' AND outcome = '{DecisionOutcome.PROFITABLE.value}'
+        FROM experience_diary
+        WHERE agent_id = ? AND outcome = ?
         GROUP BY context_fingerprint
         HAVING win_count >= 2
         ORDER BY avg_pnl DESC
         LIMIT 10
         """
-        success_patterns = pd.DataFrame(self.data_manager.fetch_all(query))
+        success_patterns = pd.DataFrame(self.data_manager.fetch_all(query, params=[
+            agent_id,
+            DecisionOutcome.PROFITABLE.value
+        ]))
         if success_patterns.empty:
             return {"status": "No consistent success patterns detected"}
 
@@ -332,18 +375,18 @@ class DiaryEngine(BaseMetaComponent):
         Exports data structured for context-performance heatmaps.
         Aggregates Win Rate by Time Components (from fingerprint).
         """
-        # We extract Time features from the fingerprint: DayOfWeek__Hour__MarketOpen
-        query = f"""
+        # Use parameterized query to prevent SQL injection
+        query = """
         SELECT
             split_part(split_part(context_fingerprint, '__', 2), '|', 1) as day_of_week,
             split_part(split_part(context_fingerprint, '__', 2), '|', 2) as hour,
             AVG(CASE WHEN outcome = 'profitable' THEN 1.0 ELSE 0.0 END) as win_rate,
             COUNT(*) as trade_count
-        FROM {self.table_name}
-        WHERE agent_id = '{agent_id}'
+        FROM experience_diary
+        WHERE agent_id = ?
         GROUP BY day_of_week, hour
         """
-        return pd.DataFrame(self.data_manager.fetch_all(query))
+        return pd.DataFrame(self.data_manager.fetch_all(query, params=[agent_id]))
 
     def compare_agents(self, agent_ids: list[str]) -> dict[str, Any]:
         """
@@ -384,15 +427,30 @@ class DiaryEngine(BaseMetaComponent):
 
     def _calculate_performance_metrics(self, returns: np.ndarray) -> dict[str, Any]:
         """Розраховує метрики продуктивності для масиву повернень."""
-        total_pnl = np.sum(returns)
-        win_rate = (returns > 0).mean()
-        sharpe = (np.mean(returns) / np.std(returns) * np.sqrt(252)) if np.std(returns) != 0 else 0
+        clean_returns = np.asarray(returns, dtype=float)
+        clean_returns = clean_returns[np.isfinite(clean_returns)]
+        if clean_returns.size == 0:
+            return {
+                "total_pnl": 0.0,
+                "win_rate": 0.0,
+                "sharpe_ratio": 0.0,
+                "total_trades": 0
+            }
+
+        total_pnl = np.sum(clean_returns)
+        win_rate = (clean_returns > 0).mean()
+        return_std = float(np.std(clean_returns))
+        sharpe = (
+            np.mean(clean_returns) / return_std * np.sqrt(252)
+            if np.isfinite(return_std) and return_std > 1e-12
+            else 0.0
+        )
 
         return {
             "total_pnl": float(total_pnl),
             "win_rate": float(win_rate),
             "sharpe_ratio": float(sharpe),
-            "total_trades": int(len(returns))
+            "total_trades": int(len(clean_returns))
         }
 
     def _generate_promotion_recommendations(self, agent_ids: list[str],
@@ -433,7 +491,8 @@ class DiaryEngine(BaseMetaComponent):
     def suggest_threshold_adjustments(self, agent_id: str) -> dict[str, Any]:
         """Suggests adjustments for AdaptiveThresholds based on recent performance."""
         df = self.get_history_by_agent(agent_id).tail(20)
-        if len(df) < 5: return {"adjustment": 0.0, "reason": "Insufficient data"}
+        if len(df) < 5:
+            return {"adjustment": 0.0, "reason": "Insufficient data"}
 
         win_rate = (df['outcome'] == DecisionOutcome.PROFITABLE.value).mean()
 
@@ -451,7 +510,8 @@ class DiaryEngine(BaseMetaComponent):
         ✅ Phase 4 Quality: Memory-limited buffer prevents unbounded growth.
         """
         if len(self.entries) == self.maxsize:
-            self.logger.debug(f"Diary buffer full ({self.maxsize}), evicting oldest entry")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Diary buffer full ({self.maxsize}), evicting oldest entry")
         self.entries.append(entry)
 
     def get_recent_entries(self, limit: int = 100) -> list[DecisionRecord]:
@@ -472,53 +532,34 @@ class DiaryEngine(BaseMetaComponent):
         Returns:
             Dict з вагами моделей (model_name -> weight)
         """
-        # Запит для отримання історичної ефективності моделей в цьому контексті
-        query = f"""
-        SELECT
-            agent_id,
-            COUNT(*) as total_decisions,
-            AVG(CASE WHEN outcome = '{DecisionOutcome.PROFITABLE.value}' THEN 1.0 ELSE 0.0 END) as win_rate,
-            AVG(profit_loss) as avg_pnl
-        FROM {self.table_name}
-        WHERE context_fingerprint = '{context_fingerprint}'
-        GROUP BY agent_id
-        HAVING total_decisions >= 2
-        ORDER BY win_rate DESC, avg_pnl DESC
+        return self.weight_calculator.get_contextual_model_weights(context_fingerprint)
+
+    def get_contextual_model_weights_by_pattern_seq(
+        self, context_pattern_seq: str
+    ) -> dict[str, float]:
+        """Return model weights for an exact rolling context-pattern sequence."""
+        return self.weight_calculator.get_contextual_model_weights_by_pattern_seq(context_pattern_seq)
+
+    def get_knn_contextual_model_weights(
+        self,
+        context_fingerprint: str,
+        *,
+        context_pattern_seq: str | None = None,
+        n_neighbors: int = 5,
+        window: int = 5000,
+        min_neighbors: int = 3,
+    ) -> dict[str, float]:
         """
+        KNN expansion for contextual weights.
 
-        try:
-            # Виконуємо запит через DuckDB
-            result_df = self.data_manager.con.execute(query).fetchdf()
+        If we don't have enough history for the exact fingerprint, we search for similar
+        fingerprints (based on tri-state vector tokens) and average their contextual weights.
+        """
+        return self.knn_finder.get_knn_contextual_model_weights(
+            context_fingerprint,
+            context_pattern_seq=context_pattern_seq,
+            n_neighbors=n_neighbors,
+            window=window,
+            min_neighbors=min_neighbors,
+        )
 
-            if result_df.empty:
-                # Якщо немає історії для цього контексту, повертаємо рівні ваги
-                self.logger.debug(f"No historical data for context {context_fingerprint}, using equal weights")
-                return {}
-
-            # Розраховуємо ваги на основі win_rate та avg_pnl
-            weights = {}
-            total_score = 0.0
-
-            for _, row in result_df.iterrows():
-                agent_id = row['agent_id']
-                win_rate = row['win_rate']
-                avg_pnl = row['avg_pnl']
-
-                # Комбінована метрика: win_rate * (1 + normalized_pnl)
-                # Нормалізуємо avg_pnl до діапазону [0, 1]
-                normalized_pnl = max(0, min(1, (avg_pnl + 1) / 2))  # Припускаємо pnl в діапазоні [-1, 1]
-                score = win_rate * (1 + normalized_pnl)
-
-                weights[agent_id] = score
-                total_score += score
-
-            # Нормалізуємо ваги до суми 1.0
-            if total_score > 0:
-                weights = {k: v / total_score for k, v in weights.items()}
-
-            self.logger.debug(f"Contextual weights for {context_fingerprint}: {weights}")
-            return weights
-
-        except Exception as e:
-            self.logger.error(f"Error getting contextual model weights: {e}")
-            return {}

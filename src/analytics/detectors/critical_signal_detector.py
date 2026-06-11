@@ -34,7 +34,7 @@ class CriticalSignalDetector(IAnalyzer):
         if 'close' not in price_data.columns:
             return pd.Series(False, index=price_data.index)
 
-        returns = price_data['close'].pct_change(periods=window)
+        returns = price_data['close'].pct_change(periods=window, fill_method=None)
         return returns < threshold
 
     def detect_volume_spike(self, price_data: pd.DataFrame) -> pd.Series:
@@ -67,7 +67,7 @@ class CriticalSignalDetector(IAnalyzer):
         if 'close' not in price_data.columns:
             return pd.Series(False, index=price_data.index)
 
-        returns = price_data['close'].pct_change()
+        returns = price_data['close'].pct_change(fill_method=None)
         rolling_volatility = returns.rolling(window=window).std()
         avg_rolling_volatility = rolling_volatility.rolling(window=window).mean()
 

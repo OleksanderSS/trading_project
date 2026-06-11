@@ -1,4 +1,6 @@
+import logging
 from logging import getLogger
+from pathlib import Path
 from typing import Any, NamedTuple
 
 import numpy as np
@@ -6,6 +8,7 @@ import pandas as pd
 from sklearn.linear_model import Ridge
 
 from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = getLogger(__name__)
 
@@ -131,9 +134,11 @@ class StackedEnsemble:
             adjusted_weights[i] *= contextual_weight
 
             if contextual_weight < 0.5:
-                logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Contextual weight {contextual_weight:.2f}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Contextual weight {contextual_weight:.2f}")
             elif contextual_weight > 1.5:
-                logger.debug(f"[StackedEnsemble] Boosting {model_name}: Contextual weight {contextual_weight:.2f}")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"[StackedEnsemble] Boosting {model_name}: Contextual weight {contextual_weight:.2f}")
 
             active_weights_map[model_name] = float(adjusted_weights[i])
 
@@ -197,7 +202,8 @@ class StackedEnsemble:
             total = sum(inverse_mape)
             weights = np.array([w / total for w in inverse_mape])
 
-        else:  # equal weights
+        else:
+            # equal weights
             weights = np.ones(len(self.feature_names)) / len(self.feature_names)
 
         # Generate prediction
@@ -296,11 +302,28 @@ class StackedEnsemble:
 
     @classmethod
     def load(cls, path: str):
-        """Load the ensemble state safely."""
+        """Load the ensemble state safely with security validation."""
         import joblib
 
-        with open(path, 'rb') as f:
-            state = joblib.load(f)
+        from src.config.unified_config_manager import get_current_config
+
+        # Security validation: Ensure path is within expected data or models directories
+        trusted_path = resolve_trusted_artifact_path(
+            path,
+            allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+            must_exist=True,
+        )
+
+        # Validate against configured model storage paths
+        config = get_current_config()
+        base_model_path = config.get('models.dual_model_manager.base_path', 'data/models')
+
+        if not trusted_path.resolve().is_relative_to(Path(base_model_path).resolve()):
+            logger.warning(f"🚫 Blocking unsafe ensemble load attempt from: {path}")
+            raise ValueError(f"Unsafe path for loading: {path}")
+
+        with open(trusted_path, 'rb') as f:
+            state = joblib.load(f)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
 
         instance = cls(
             meta_model=state['meta_model'],
@@ -381,7 +404,7 @@ def _align_predictions_and_confidences(
     model_predictions: dict[str, list[float] | np.ndarray],
     model_confidences: dict[str, list[float] | np.ndarray] | None
 ) -> dict[str, Any]:
-    """Align predictions and confidences to same length."""
+    """Align predictions and confidences to same length and return as stacked 2D arrays."""
     max_len = max((len(v) for v in model_predictions.values()), default=0)
 
     aligned_preds = {}
@@ -400,13 +423,13 @@ def _align_predictions_and_confidences(
         aligned_conf[m] = c
         model_order.append(m)
 
-    # Stack into 2D numpy arrays
-    stacked_preds = np.array([aligned_preds[m] for m in model_order]) if model_order else np.empty((0, 0))
-    stacked_conf = np.array([aligned_conf[m] for m in model_order]) if model_order else np.empty((0, 0))
+    # Convert dictionaries to stacked 2D numpy arrays of shape (n_models, n_samples)
+    preds_array = np.array([aligned_preds[m] for m in model_order])
+    conf_array = np.array([aligned_conf[m] for m in model_order])
 
     return {
-        'predictions': stacked_preds,
-        'confidences': stacked_conf,
+        'predictions': preds_array,
+        'confidences': conf_array,
         'model_order': model_order
     }
 
@@ -431,7 +454,8 @@ def _generate_ensemble_signal(stacked_preds: np.ndarray, effective_weights: np.n
         return np.nanmedian(stacked_preds, axis=0)
     elif method == "mean":
         return np.nanmean(stacked_preds, axis=0)
-    else:  # weighted
+    else:
+        # weighted
         return np.nansum(stacked_preds * effective_weights, axis=0)
 
 def _apply_divergence_penalty(signal: np.ndarray, divergence: np.ndarray, divergence_shrinkage: bool) -> np.ndarray:
@@ -439,7 +463,8 @@ def _apply_divergence_penalty(signal: np.ndarray, divergence: np.ndarray, diverg
     if divergence_shrinkage:
         penalty = 1.0 / (1.0 + divergence)
         signal = signal * penalty
-        logger.debug("[Ensemble] Applied divergence penalty (shrinkage).")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("[Ensemble] Applied divergence penalty (shrinkage).")
     return signal
 
 def _apply_smoothing(signal: np.ndarray, rolling_window: int | None, fill_na: float) -> np.ndarray:

@@ -8,12 +8,23 @@
 """
 
 from .adaptive_position_sizer import AdaptivePositionSizer
-from .regime_detector import MarketRegime, MarketRegimeDetector
+from .advanced_backtest_engine import AdvancedBacktestEngine
+from .bias_detector import BiasDetector
+from .regime.types import MarketRegime
+from .regime_detector import MarketRegimeDetector
 from .risk_parity_allocator import RiskParityAllocator
+from .transaction_cost_model import TransactionCostModel
+from .walk_forward_optimizer import WalkForwardOptimizer, WalkForwardOptimizerExtended
 
 __all__ = [
-    'MarketRegimeDetector',
     'MarketRegime',
+    'MarketRegimeDetector',
     'AdaptivePositionSizer',
-    'RiskParityAllocator'
+    'RiskParityAllocator',
+    'TransactionCostModel',
+    'BiasDetector',
+    'WalkForwardOptimizer',
+    'WalkForwardOptimizerExtended',
+    'AdvancedBacktestEngine'
 ]
+

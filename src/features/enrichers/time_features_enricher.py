@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import pandas as pd
@@ -22,9 +23,6 @@ class TimeFeaturesEnricher(BaseEnricher):
             'enabled_features': [
                 'hour', 'day_of_week', 'day_of_month', 'day_of_year',
                 'week_of_year', 'month_of_year', 'quarter',
-                'is_weekend', 'is_month_start', 'is_month_end',
-                'is_quarter_start', 'is_quarter_end',
-                'is_year_start', 'is_year_end',
                 'market_session',
                 'hour_sin', 'hour_cos',
                 'day_of_week_sin', 'day_of_week_cos'
@@ -57,7 +55,8 @@ class TimeFeaturesEnricher(BaseEnricher):
 
         if timestamp_col not in df_enriched.columns:
             if isinstance(df_enriched.index, pd.DatetimeIndex):
-                self.logger.debug(f"Using DatetimeIndex as temporary '{timestamp_col}'.")
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f"Using DatetimeIndex as temporary '{timestamp_col}'.")
                 df_enriched[timestamp_col] = df_enriched.index
                 temp_col_created = True
             else:

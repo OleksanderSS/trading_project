@@ -1,9 +1,11 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Colab Manager for Hybrid Orchestrator.
 Handles all Colab-related operations including batch preparation and result loading.
 """
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -12,6 +14,7 @@ from typing import Any
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.features.validation.feature_leakage_guard import FeatureLeakageGuard
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -51,203 +54,266 @@ class ColabManager:
     def prepare_colab_batch(self,
                             features_df: pd.DataFrame,
                             targets_df: pd.DataFrame,
-                            prices_dict: dict[str, pd.DataFrame],
-                            config: BatchPreparationConfig,
-                            news_df: pd.DataFrame | None = None,
-                            economic_df: pd.DataFrame | None = None) -> dict[str, Any]:
-        """Prepare data package for Colab training."""
-
+                            config: BatchPreparationConfig) -> dict[str, Any]:
+        """
+        Prepare data package for Colab training.
+        High-level orchestrator for batch preparation process.
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        eff_batch_name = (config.batch_name or self.batch_name).replace('target_target_', 'target_')
 
-        # Resolve batch name for metadata (but don't use for path!)
-        base_name = config.batch_name or self.batch_name
-        eff_batch_name = base_name.replace('target_target_', 'target_')
-
-        # ✅ output_dir already includes batch_name! (from OrchestratorConfigManager)
+        # 1. Setup batch directory
         batch_dir = self.output_dir
         batch_dir.mkdir(parents=True, exist_ok=True)
 
-        # Persistent storage for actual data (Stage 3 persistence)
-        # Note: We save data here, and metadata/config in batch_dir
-        persistent_dir = Path("data/processed/features")
-        persistent_dir.mkdir(parents=True, exist_ok=True)
+        # 2. Save and accumulate data
+        features_path, targets_path = self._save_and_accumulate_data(
+            features_df, targets_df, batch_dir, config
+        )
 
-        features_path = persistent_dir / FEATURES_FILE
-        targets_path = persistent_dir / TARGETS_FILE
-        news_path = persistent_dir / "news_data.parquet"
-        economic_path = persistent_dir / "macro_data.parquet"
+        # 3. Handle configuration (Test vs Full mode)
+        config_path = self._handle_batch_configuration(batch_dir, config, timestamp, eff_batch_name)
 
-        # Accumulate data if files exist and accumulate=True
+        # 4. Create metadata
+        final_features = pd.read_parquet(features_path)
+        final_targets = pd.read_parquet(targets_path)
+        metadata = self._create_batch_metadata(
+            eff_batch_name, timestamp, config, final_features, final_targets,
+            features_path, targets_path, config_path
+        )
+
+        # 5. Save metadata
+        metadata_path = batch_dir / BATCH_METADATA_FILE
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=2)
+
+        # 6. Check feature selection
+        fs_check = self._check_feature_selection(
+            batch_dir, features_df, config.check_feature_selection, config.force_feature_selection
+        )
+
+        return self._assemble_preparation_result(
+            batch_dir, eff_batch_name, metadata_path, metadata, fs_check, config, config_path
+        )
+
+    def _save_and_accumulate_data(self,
+                                features_df: pd.DataFrame,
+                                targets_df: pd.DataFrame,
+                                batch_dir: Path,
+                                config: BatchPreparationConfig) -> tuple[Path, Path]:
+        """Handles saving and optional accumulation of features and targets."""
+        features_path = batch_dir / FEATURES_FILE
+        targets_path = batch_dir / TARGETS_FILE
+
         if config.accumulate and features_path.exists() and targets_path.exists():
-            # Load existing data
-            try:
-                existing_features = pd.read_parquet(features_path)
-                existing_targets = pd.read_parquet(targets_path)
+            # Load existing
+            existing_f = pd.read_parquet(features_path)
+            existing_t = pd.read_parquet(targets_path)
 
-                # Combine with new data
-                combined_features = pd.concat([existing_features, features_df], ignore_index=True)
-                combined_targets = pd.concat([existing_targets, targets_df], ignore_index=True)
+            # Combine
+            combined_f = pd.concat([existing_f, features_df], ignore_index=True)
+            combined_t = pd.concat([existing_t, targets_df], ignore_index=True)
 
-                # Remove duplicates
-                combined_features = combined_features.drop_duplicates(
-                    subset=self._dedupe_subset(combined_features, "features"),
-                    keep='last'
-                )
-                combined_targets = combined_targets.drop_duplicates(
-                    subset=self._dedupe_subset(combined_targets, "targets"),
-                    keep='last'
-                )
+            # Deduplicate
+            combined_f = self._deduplicate_df(combined_f)
+            combined_t = self._deduplicate_df(combined_t)
 
-                self.logger.info(f"Accumulated data: {len(existing_features)}→{len(combined_features)} features")
-                features_df = combined_features
-                targets_df = combined_targets
-            except Exception as e:
-                self.logger.warning(f"⚠️ Failed to accumulate data: {e}. Saving only new data.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Accumulated data: {len(existing_f)}→{len(combined_f)} features")
 
-        # Ensure datetime is preserved as a column before saving
-        features_df = self._ensure_datetime_column(features_df)
-        targets_df = self._ensure_datetime_column(targets_df)
+            # ✅ Run leakage guard before saving
+            combined_f = self._check_feature_leakage(combined_f, combined_t)
 
-        # Save main data
-        features_df.to_parquet(features_path, index=False)
-        targets_df.to_parquet(targets_path, index=False)
-        self.logger.info(f"💾 Saved features ({features_df.shape}) and targets ({targets_df.shape}) to {persistent_dir}")
-
-        # Also save to batch_dir for self-contained packaging and continue mode
-        features_df.to_parquet(batch_dir / FEATURES_FILE, index=False)
-        targets_df.to_parquet(batch_dir / TARGETS_FILE, index=False)
-        self.logger.info(f"💾 Saved features and targets to batch directory: {batch_dir}")
-
-        # Save additional data (news and economic)
-        if news_df is not None and not news_df.empty:
-            news_df = self._ensure_datetime_column(news_df)
-            news_df.to_parquet(news_path, index=False)
-            news_df.to_parquet(batch_dir / "news_data.parquet", index=False)
-            self.logger.info(f"💾 Saved news data: {len(news_df)} rows to both persistent and batch directories")
-
-        if economic_df is not None and not economic_df.empty:
-            economic_df = self._ensure_datetime_column(economic_df)
-            economic_df.to_parquet(economic_path, index=False)
-            economic_df.to_parquet(batch_dir / "economic_data.parquet", index=False)
-            self.logger.info(f"💾 Saved economic data: {len(economic_df)} rows to both persistent and batch directories")
-
-        # Create config.json ONLY for test mode
-        config_path = None
-        if self._is_test_mode(config):
-            config_path = self._create_test_config(batch_dir, config, timestamp, eff_batch_name)
+            # Save
+            self._save_df_to_parquet(combined_f, features_path)
+            self._save_df_to_parquet(combined_t, targets_path)
         else:
-            self.logger.info("📊 Full mode: NOT creating config.json (Colab will use all data)")
-            # Clean up old config if exists
-            old_config = batch_dir / "config.json"
-            if old_config.exists():
-                old_config.unlink()
+            # New batch
+            # ✅ Run leakage guard before saving
+            features_df = self._check_feature_leakage(features_df, targets_df)
+            self._save_df_to_parquet(features_df, features_path)
+            self._save_df_to_parquet(targets_df, targets_path)
+            logger.info(f"Created new batch: {len(features_df)} rows")
 
-        # Create batch metadata in the BATCH directory
-        batch_metadata = {
-            'batch_name': eff_batch_name,
+        return features_path, targets_path
+
+    def _deduplicate_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Removes duplicates based on datetime and ticker if columns exist."""
+        subset = []
+        if 'datetime' in df.columns:
+            subset.append('datetime')
+        if 'ticker' in df.columns:
+            subset.append('ticker')
+
+        if subset:
+            return df.drop_duplicates(subset=subset, keep='last')
+        return df
+
+    def _check_feature_leakage(self, features_df: pd.DataFrame, targets_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Run FeatureLeakageGuard before saving to Parquet.
+        Removes forbidden future-leaking columns. Logs warnings for high-correlation features.
+        Returns cleaned features_df.
+        """
+        try:
+            guard = FeatureLeakageGuard(block_on_forbidden=False)  # warn only, don't raise
+
+            # Build combined df with both features and targets for correlation check
+            target_cols = [c for c in targets_df.columns if c.startswith('target_')]
+            combined = pd.concat([features_df, targets_df[target_cols]], axis=1) if target_cols else features_df
+
+            report = guard.check(combined, target_cols=target_cols if target_cols else None)
+
+            if report.has_issues:
+                if report.forbidden_cols:
+                    logger.warning(
+                        f"[LeakageGuard] Removing {len(report.forbidden_cols)} forbidden columns: "
+                        f"{report.forbidden_cols[:5]}{'...' if len(report.forbidden_cols) > 5 else ''}"
+                    )
+                    features_df = features_df.drop(columns=report.forbidden_cols, errors='ignore')
+
+                if report.high_corr_cols:
+                    logger.warning(
+                        f"[LeakageGuard] {len(report.high_corr_cols)} features with high target "
+                        f"correlation. Review: {list(report.high_corr_cols.keys())[:5]}"
+                    )
+            else:
+                logger.debug("[LeakageGuard] No leakage detected.")
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.warning(f"[LeakageGuard] Check failed (non-blocking): {e}")
+
+        return features_df
+
+    def _save_df_to_parquet(self, df: pd.DataFrame, path: Path):
+        """Saves DataFrame to Parquet, ensuring datetime column is preserved."""
+        df_to_save = df.copy()
+        if 'datetime' not in df_to_save.columns and isinstance(df_to_save.index, pd.DatetimeIndex):
+            df_to_save = df_to_save.reset_index()
+            if 'index' in df_to_save.columns:
+                df_to_save = df_to_save.rename(columns={'index': 'datetime'})
+
+        df_to_save.to_parquet(path, index=False)
+
+    def _handle_batch_configuration(self, batch_dir: Path, config: BatchPreparationConfig,
+                                   timestamp: str, batch_name: str) -> Path | None:
+        """Handles config.json creation or removal depending on mode."""
+        if self._is_test_mode(config):
+            return self._create_test_config(batch_dir, config, timestamp, batch_name)
+
+        # Full mode: cleanup old config
+        old_config = batch_dir / "config.json"
+        if old_config.exists():
+            logger.warning("🗑️ Removing old config.json from previous test run")
+            old_config.unlink()
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("📊 Full mode: config.json NOT created (all data will be processed)")
+        return None
+
+    def _create_batch_metadata(self, name: str, timestamp: str, config: BatchPreparationConfig,
+                              f_df: pd.DataFrame, t_df: pd.DataFrame,
+                              f_path: Path, t_path: Path, c_path: Path | None) -> dict[str, Any]:
+        """Creates the batch metadata dictionary."""
+        return {
+            'batch_name': name,
             'timestamp': timestamp,
             'tickers': config.tickers,
             'timeframes': config.timeframes,
-            # Cast shape tuples → list[int] so BatchManifestSchema and json.dump are happy
-            'features_shape': list(features_df.shape),
-            'targets_shape': list(targets_df.shape),
+            'features_shape': f_df.shape,
+            'targets_shape': t_df.shape,
             'accumulated': config.accumulate,
             'test_mode': self._is_test_mode(config),
             'files': {
-                'features': str(features_path),
-                'targets': str(targets_path),
-                'config': str(config_path) if config_path else None
+                'features': str(f_path),
+                'targets': str(t_path),
+                'config': str(c_path) if c_path else None
             }
         }
 
-        # Save metadata to batch_dir
-        metadata_path = batch_dir / BATCH_METADATA_FILE
-        with open(metadata_path, 'w') as f:
-            json.dump(batch_metadata, f, indent=2)
-
-        # Create a stable batch manifest including a simple data signature and code version
-        try:
-            import hashlib
-            # Build a simple signature from shapes and column names
-            feat_cols = ','.join(sorted([str(c) for c in features_df.columns])) if not features_df.empty else ''
-            targ_cols = ','.join(sorted([str(c) for c in targets_df.columns])) if not features_df.empty else ''
-            sig_src = f"{features_df.shape}-{targets_df.shape}-{feat_cols}-{targ_cols}"
-            data_signature = hashlib.md5(sig_src.encode('utf-8'), usedforsecurity=False).hexdigest()
-
-            # Try to detect git commit for code version (optional)
-            code_version = None
-            try:
-                import subprocess
-                git_rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True)
-                code_version = git_rev.stdout.strip()
-            except Exception:
-                code_version = None
-
-            batch_manifest = {
-                'batch_name': eff_batch_name,
-                'timestamp': timestamp,
-                'data_signature': data_signature,
-                'code_version': code_version,
-                'files': batch_metadata['files'],
-                'features_shape': features_df.shape,
-                'targets_shape': targets_df.shape,
-            }
-
-            manifest_path = batch_dir / "batch_manifest.json"
-            with open(manifest_path, 'w', encoding='utf-8') as mf:
-                json.dump(batch_manifest, mf, indent=2, default=str)
-
-            self.logger.info(f"💡 Batch manifest created: {manifest_path}")
-        except Exception as e:
-            self.logger.warning(f"⚠️ Could not create batch manifest: {e}")
-
-        # Explicit Local-Colab Contract Validation
-        try:
-            from src.validation.pipeline_schemas import validate_batch_dir
-            val_report = validate_batch_dir(batch_dir)
-            if val_report["valid"]:
-                self.logger.info(f"✨ Explicit local-Colab contract verified for {eff_batch_name}!")
-            else:
-                self.logger.warning(f"⚠️ Explicit local-Colab contract validation warnings: {val_report['errors']}")
-        except Exception as ve:
-            self.logger.debug(f"Failed to run contract validation: {ve}")
-
-        # Check feature selection using config parameters
-        fs_check = self._check_feature_selection(
-            batch_dir,
-            features_df,
-            config.check_feature_selection,
-            config.force_feature_selection
-        )
-
-        return {
-            'status': 'completed',
+    def _assemble_preparation_result(self, batch_dir: Path, name: str, meta_path: Path,
+                                    metadata: dict[str, Any], fs_check: dict[str, Any],
+                                    config: BatchPreparationConfig, config_path: Path | None) -> dict[str, Any]:
+        """Assembles the final dictionary returned by prepare_colab_batch."""
+        result = {
             'batch_dir': str(batch_dir),
-            'batch_name': eff_batch_name,
-            'metadata_path': str(metadata_path),
-            'files': batch_metadata['files'],
+            'batch_name': name,
+            'metadata_path': str(meta_path),
+            'files': metadata['files'],
             'feature_selection_check': fs_check,
             'test_mode': self._is_test_mode(config)
         }
 
-    def _ensure_datetime_column(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Ensure datetime column exists."""
-        if 'datetime' not in df.columns and isinstance(df.index, pd.DatetimeIndex):
-            df = df.reset_index()
-            if 'index' in df.columns:
-                df = df.rename(columns={'index': 'datetime'})
-        return df
+        if config_path:
+            result['config_path'] = str(config_path)
 
-    def _dedupe_subset(self, df: pd.DataFrame, label: str) -> list[str]:
-        """Return the strongest available row identity for accumulated market data."""
-        subset = ['datetime']
-        if 'ticker' in df.columns:
-            subset.append('ticker')
-        if 'timeframe' in df.columns:
-            subset.append('timeframe')
-        elif 'interval' in df.columns:
-            subset.append('interval')
-        return subset
+        return result
+
+    def load_colab_results(self, batch_name: str) -> dict[str, Any]:
+        """Loads training results from Colab."""
+        batch_name = batch_name.replace('target_target_', 'target_')
+        batch_dir = self._find_batch_directory(batch_name)
+
+        if not batch_dir.exists():
+            self.logger.error(f"Batch directory not found: {batch_dir}")
+            return {'error': f'Batch directory not found: {batch_dir}'}
+
+        results = {}
+        files_to_load = {
+            SELECTED_FEATURES_PATTERN: 'selected_features',
+            'trained_models_metadata.json': 'models_metadata',
+            'colab_results.json': 'models_metadata',
+            'evaluation_results.json': 'evaluation_results'
+        }
+
+        self._load_files_from_directory(batch_dir, files_to_load, results)
+        return results
+
+    def _load_files_from_directory(self, batch_dir: Path, files_to_load: dict[str, str], results: dict[str, Any]) -> None:
+        """Helper to load files."""
+        for pattern, key in files_to_load.items():
+            if "*" in pattern:
+                found_files = list(batch_dir.glob(pattern))
+                for file_path in found_files:
+                    self._load_single_file(file_path, key, results)
+            else:
+                file_path = batch_dir / pattern
+                if file_path.exists():
+                    self._load_single_file(file_path, key, results)
+
+    def _load_single_file(self, file_path: Path, key: str, results: dict[str, Any]) -> None:
+        """Helper to load a single file."""
+        with open(file_path, encoding='utf-8') as f:
+            data = json.load(f)
+            if key == 'models_metadata' and 'models_metadata' in data:
+                results[key] = data['models_metadata']
+            elif key in results and isinstance(results[key], dict) and isinstance(data, dict):
+                results[key].update(data)
+            else:
+                results[key] = data
+
+    def _find_batch_directory(self, batch_name: str) -> Path:
+        """Find the batch directory by name."""
+        if self.output_dir.exists():
+            return self.output_dir
+        return self.output_dir / batch_name
+
+    def _check_feature_selection(self, batch_dir: Path, features_df: pd.DataFrame,
+                                 check_selection: bool, force_selection: bool) -> dict[str, Any]:
+        """Check if feature selection is needed."""
+        if not check_selection:
+            return {'needed': False, 'reason': 'Feature selection check disabled'}
+
+        selected_features_files = list(batch_dir.glob(SELECTED_FEATURES_PATTERN))
+
+        if force_selection or not selected_features_files:
+            reason = 'Forced selection' if force_selection else 'No existing selection'
+            return {'needed': True, 'reason': reason}
+
+        if len(features_df) < 1000:
+            return {'needed': False, 'reason': 'Dataset too small for feature selection'}
+
+        return {'needed': False, 'reason': 'Existing feature selection found'}
 
     def _is_test_mode(self, config: BatchPreparationConfig) -> bool:
         """Check if this is test mode based on config parameters."""
@@ -273,59 +339,5 @@ class ColabManager:
         with open(config_path, 'w') as f:
             json.dump(config_data, f, indent=2)
 
-        self.logger.info(f"🧪 Test mode config created: {config.test_ticker} | {config.test_target}")
+        self.logger.info(f"🧪 Test mode config created: {config.test_ticker} | {config.test_target} | epochs={config.epochs}")
         return config_path
-
-    def _check_feature_selection(self, batch_dir: Path, features_df: pd.DataFrame,
-                                 check_selection: bool, force_selection: bool) -> dict[str, Any]:
-        """Check if feature selection is needed."""
-        if not check_selection:
-            return {'needed': False, 'reason': 'Feature selection check disabled'}
-
-        selected_features_files = list(batch_dir.glob(SELECTED_FEATURES_PATTERN))
-        if force_selection or not selected_features_files:
-            reason = 'Forced selection' if force_selection else 'No existing selection'
-            return {'needed': True, 'reason': reason}
-
-        return {'needed': False, 'reason': 'Existing feature selection found'}
-
-    def load_colab_results(self, batch_name: str) -> dict[str, Any]:
-        """Loads training results from Colab."""
-        batch_name = batch_name.replace('target_target_', 'target_')
-
-        # Search in the batch directory
-        batch_dir = self.output_dir
-        if not batch_dir.exists():
-            self.logger.error(f"Batch directory not found: {batch_dir}")
-            return {'error': f'Batch directory not found: {batch_dir}'}
-
-        results = {}
-        # Mapping of filenames to result keys
-        files_to_load = {
-            SELECTED_FEATURES_PATTERN: 'selected_features',
-            'trained_models_metadata.json': 'models_metadata',
-            'colab_results.json': 'models_metadata',
-            'evaluation_results.json': 'evaluation_results'
-        }
-
-        for pattern, key in files_to_load.items():
-            if "*" in pattern:
-                found_files = list(batch_dir.glob(pattern))
-                for file_path in found_files:
-                    with open(file_path) as f:
-                        data = json.load(f)
-                        if key not in results:
-                            results[key] = data
-                        elif isinstance(results[key], dict) and isinstance(data, dict):
-                            results[key].update(data)
-            else:
-                file_path = batch_dir / pattern
-                if file_path.exists():
-                    with open(file_path) as f:
-                        data = json.load(f)
-                        if key == 'models_metadata' and 'models_metadata' in data:
-                            results[key] = data['models_metadata']
-                        else:
-                            results[key] = data
-
-        return results

@@ -4,6 +4,8 @@ This module contains all magic numbers and constants used across the training sy
 Centralization ensures ease of modification and consistency.
 """
 
+from src.factories.model_factory import ModelFactory
+
 # ============================================================================
 # Batch Training Constants
 # ============================================================================
@@ -118,8 +120,8 @@ DEFAULT_N_JOBS_SEQUENTIAL = 1
 # Model Configuration Constants
 # ============================================================================
 
-# Default enabled model types
-DEFAULT_ENABLED_MODEL_TYPES = ['lgbm', 'rf', 'xgb', 'linear']
+# Default enabled model types - use ModelFactory for canonical source
+DEFAULT_ENABLED_MODEL_TYPES = ModelFactory.get_available_models()
 """Default list of model types to train"""
 
 # Hyperparameter ranges

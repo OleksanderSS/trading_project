@@ -121,7 +121,7 @@ class SentimentFeaturesEnricher(BaseEnricher):
         if not (time_col and news_sentiment_col):
             logger.warning(f"Missing required columns: news_sentiment_col={news_sentiment_col}, time_col={time_col}")
             # Return original df without sentiment enrichment
-            return df
+            return df, None
 
         sentiment_agg = self._aggregate_news_sentiment(news_df, time_col, news_sentiment_col)
         df = self._merge_sentiment_with_main_df(df, sentiment_agg)
@@ -155,67 +155,78 @@ class SentimentFeaturesEnricher(BaseEnricher):
                 return col
         return None
 
-    def _aggregate_news_sentiment(self, news_df: pd.DataFrame, time_col: str, sentiment_col: str) -> pd.DataFrame:
-        """Aggregates news sentiment by time and ticker."""
-        # Normalize timezone and convert to datetime64[ns]
+    def _normalize_time_column(self, news_df: pd.DataFrame, time_col: str) -> pd.DataFrame:
+        """Normalize timezone and convert to datetime64[ns]."""
+        news_df = news_df.copy()
         news_df[time_col] = pd.to_datetime(news_df[time_col], errors='coerce', utc=True)
         if news_df[time_col].dt.tz is not None:
             news_df[time_col] = news_df[time_col].dt.tz_localize(None)
         news_df[time_col] = news_df[time_col].astype(DATETIME64_NS)
+        return news_df
+
+    def _aggregate_ticker_news(self, ticker_news: pd.DataFrame, time_col: str, sentiment_col: str) -> pd.DataFrame:
+        """Aggregate ticker-specific news sentiment."""
+        return ticker_news.groupby(['ticker', pd.Grouper(key=time_col, freq='1h')])[sentiment_col].mean().reset_index()
+
+    def _aggregate_general_news(self, general_news: pd.DataFrame, time_col: str, sentiment_col: str) -> pd.DataFrame:
+        """Aggregate general news sentiment."""
+        general_sentiment = general_news.groupby(pd.Grouper(key=time_col, freq='1h'))[sentiment_col].mean().reset_index()
+        general_sentiment['ticker'] = 'general'
+        return general_sentiment
+
+    def _aggregate_by_type_column(self, news_df: pd.DataFrame, time_col: str, sentiment_col: str) -> list[pd.DataFrame]:
+        """Aggregate news by type column (general or ticker)."""
+        general_news = news_df[news_df['type'] == 'general']
+        ticker_news = news_df[news_df['type'] != 'general']
+        sentiment_parts = []
+
+        if not general_news.empty:
+            sentiment_parts.append(self._aggregate_general_news(general_news, time_col, sentiment_col))
+
+        if not ticker_news.empty:
+            ticker_sentiment = ticker_news.groupby(['type', pd.Grouper(key=time_col, freq='1h')])[sentiment_col].mean().reset_index()
+            ticker_sentiment = ticker_sentiment.rename(columns={'type': 'ticker'})
+            sentiment_parts.append(ticker_sentiment)
+
+        return sentiment_parts
+
+    def _aggregate_by_ticker_column(self, news_df: pd.DataFrame, time_col: str, sentiment_col: str) -> list[pd.DataFrame]:
+        """Aggregate news by ticker column."""
+        ticker_news = news_df[news_df['ticker'].notna()]
+        general_news = news_df[news_df['ticker'].isna()]
+        sentiment_parts = []
+
+        if not general_news.empty:
+            sentiment_parts.append(self._aggregate_general_news(general_news, time_col, sentiment_col))
+
+        if not ticker_news.empty:
+            sentiment_parts.append(self._aggregate_ticker_news(ticker_news, time_col, sentiment_col))
+
+        return sentiment_parts
+
+    def _aggregate_news_sentiment(self, news_df: pd.DataFrame, time_col: str, sentiment_col: str) -> pd.DataFrame:
+        """Aggregates news sentiment by time and ticker."""
+        news_df = self._normalize_time_column(news_df, time_col)
 
         logger.info(f"Found time column '{time_col}' with {len(news_df[news_df[time_col].notna()])} valid timestamps")
 
-        # Aggregate sentiment by date and ticker (if available)
         sentiment_parts = []
 
         if 'ticker' in news_df.columns:
-            # Агрегація по тікерах + загальні новини без тікера
-            ticker_news = news_df[news_df['ticker'].notna()]
-            general_news = news_df[news_df['ticker'].isna()]
-
-            if not general_news.empty:
-                # Обробка загальних новин
-                general_sentiment = general_news.groupby(pd.Grouper(key=time_col, freq='1h'))[sentiment_col].mean().reset_index()
-                general_sentiment['ticker'] = 'general'  # Додаємо загальний тікер
-                sentiment_parts.append(general_sentiment)
-
-            if not ticker_news.empty:
-                # Обробка новин по тікерах
-                ticker_sentiment = ticker_news.groupby(['ticker', pd.Grouper(key=time_col, freq='1h')])[sentiment_col].mean().reset_index()
-                sentiment_parts.append(ticker_sentiment)
-
+            sentiment_parts.extend(self._aggregate_by_ticker_column(news_df, time_col, sentiment_col))
         elif 'type' in news_df.columns:
-            # Агрегація по типу новин (general або ticker)
-            general_news = news_df[news_df['type'] == 'general']
-            ticker_news = news_df[news_df['type'] != 'general']
-
-            if not general_news.empty:
-                # Обробка загальних новин
-                general_sentiment = general_news.groupby(pd.Grouper(key=time_col, freq='1h'))[sentiment_col].mean().reset_index()
-                general_sentiment['ticker'] = 'general'  # Додаємо загальний тікер
-                sentiment_parts.append(general_sentiment)
-
-            if not ticker_news.empty:
-                # Обробка новин по тікерах
-                ticker_sentiment = ticker_news.groupby(['type', pd.Grouper(key=time_col, freq='1h')])[sentiment_col].mean().reset_index()
-                ticker_sentiment = ticker_sentiment.rename(columns={'type': 'ticker'})
-                sentiment_parts.append(ticker_sentiment)
+            sentiment_parts.extend(self._aggregate_by_type_column(news_df, time_col, sentiment_col))
         else:
-            # If there is no ticker in news, aggregate only by date (global sentiment)
             global_sentiment = news_df.groupby(pd.Grouper(key=time_col, freq='1h'))[sentiment_col].mean().reset_index()
-            global_sentiment['ticker'] = 'general'  # Додаємо загальний тікер для консистентності
+            global_sentiment['ticker'] = 'general'
             sentiment_parts.append(global_sentiment)
 
-        # Об'єднуємо всі частини
         if sentiment_parts:
             sentiment_agg = pd.concat(sentiment_parts, ignore_index=True)
         else:
             sentiment_agg = pd.DataFrame(columns=['ticker', 'datetime', 'nlp_sentiment_score'])
 
-        # Normalize timezone + precision in sentiment_agg
         self._normalize_datetime_column(sentiment_agg, 'datetime')
-
-        # Переконуємось що колонки мають правильні назви
         if 'ticker' not in sentiment_agg.columns:
             sentiment_agg['ticker'] = 'general'
         if 'nlp_sentiment_score' not in sentiment_agg.columns:
@@ -278,8 +289,8 @@ class SentimentFeaturesEnricher(BaseEnricher):
 
             return df
 
-        except Exception as e:
-            logger.error(f"Error merging sentiment with main DataFrame: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Error merging sentiment with main DataFrame: {e}")
             return df
 
     def _prepare_dataframe(self, df: pd.DataFrame, sentiment_col: str) -> pd.DataFrame:
@@ -290,9 +301,11 @@ class SentimentFeaturesEnricher(BaseEnricher):
         if 'datetime' in df_enriched.columns:
             df_enriched = df_enriched.sort_values(['ticker', 'datetime'])
 
-        # Fill NaNs in sentiment with forward fill first, then backward fill, then 0 (neutral)
-        df_enriched[sentiment_col] = (df_enriched.groupby('ticker')[sentiment_col]
-                                     .ffill().bfill().fillna(0.0))
+        # Fill sentiment strictly within each ticker, then use neutral for tickers with no signal.
+        sentiment_values = pd.to_numeric(df_enriched[sentiment_col], errors='coerce')
+        carried_sentiment = sentiment_values.groupby(df_enriched['ticker']).ffill()
+        df_enriched['sentiment_available'] = carried_sentiment.notna().astype(int)
+        df_enriched[sentiment_col] = carried_sentiment.where(carried_sentiment.notna(), 0.0)
 
         return df_enriched
 
@@ -323,9 +336,10 @@ class SentimentFeaturesEnricher(BaseEnricher):
                                                            .rolling(window=window, min_periods=1)
                                                            .mean())
             if 'rolling_std' in self.enabled_features:
-                ticker_group[f'sentiment_std_{window}'] = (ticker_group[sentiment_col]
-                                                           .rolling(window=window, min_periods=1)
-                                                           .std().fillna(0))
+                sentiment_std = (ticker_group[sentiment_col]
+                                 .rolling(window=window, min_periods=1)
+                                 .std())
+                ticker_group[f'sentiment_std_{window}'] = sentiment_std.where(sentiment_std.notna(), 0)
 
         ticker_group['sentiment_ema'] = (ticker_group[sentiment_col]
                                         .ewm(span=self.windows[0], adjust=False)
@@ -337,9 +351,8 @@ class SentimentFeaturesEnricher(BaseEnricher):
             return
 
         # Change over the last 3 intervals
-        ticker_group['sentiment_velocity'] = (ticker_group[sentiment_col]
-                                              .diff(periods=3)
-                                              .fillna(0))
+        sentiment_velocity = ticker_group[sentiment_col].diff(periods=3)
+        ticker_group['sentiment_velocity'] = sentiment_velocity.where(sentiment_velocity.notna(), 0)
 
     def _add_news_intensity(self, ticker_group: pd.DataFrame, sentiment_col: str) -> None:
         """Adds news intensity feature."""

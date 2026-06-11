@@ -10,6 +10,7 @@ Modular components for the hybrid pipeline orchestrator.
 
 from .cache_manager import CacheManager
 from .colab_manager import ColabManager
+from .contracts import HybridFinalStagesRequest, HybridPipelineRequest
 from .data_manager import HybridDataManager
 from .data_utils import DataUtils
 from .feature_processor import FeatureProcessor
@@ -38,6 +39,8 @@ __all__ = [
     'PipelineParams',
     'FinalStagesParams',
     'ColabBatchParams',
+    'HybridFinalStagesRequest',
+    'HybridPipelineRequest',
     'OrchestratorInterface',
     'MetadataParams',
     'SaveMetadataParams'

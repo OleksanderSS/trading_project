@@ -1,0 +1,49 @@
+{
+  "total_findings": 1234,
+  "by_severity": {
+    "P0": 22,
+    "P1": 368,
+    "P2": 433,
+    "P3": 411
+  },
+  "by_category": {
+    "missing_policy": 111,
+    "splits": 5,
+    "synthetic_gates": 3,
+    "temporal": 12,
+    "error_policy": 383,
+    "financial_math": 94,
+    "heavy_imports": 48,
+    "model_routing": 17,
+    "security": 118,
+    "config_factory": 31,
+    "determinism": 337,
+    "architecture": 6,
+    "data_lineage": 69
+  },
+  "by_rule": {
+    "BFILL_IN_CAUSAL_DATA": 6,
+    "FILLNA_ZERO_SUSPICIOUS": 85,
+    "RANDOM_TRAIN_TEST_SPLIT": 5,
+    "EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA": 3,
+    "NEGATIVE_SHIFT_LOOKAHEAD": 12,
+    "BROAD_EXCEPTION_SILENT_RETURN": 116,
+    "SHARPE_SORTINO_STD_ZERO_REVIEW": 49,
+    "VAR_SIGN_OR_EMPTY_DATA_REVIEW": 13,
+    "HEAVY_TOP_LEVEL_IMPORT": 48,
+    "PCT_CHANGE_IMPLICIT_FILL_METHOD": 20,
+    "AUTOENCODER_ROUTING_REVIEW": 17,
+    "UNSAFE_MODEL_OR_PICKLE_LOAD": 31,
+    "PLACEHOLDER_SECRET_REVIEW": 29,
+    "HARDCODED_MODEL_LIST": 10,
+    "HARDCODED_MODEL_MAP_OR_ALIASES": 20,
+    "DUPLICATED_MODEL_REGISTRY_ENTRIES": 1,
+    "NON_INJECTED_CLOCK": 337,
+    "LOGGER_ERROR_THEN_RAISE": 267,
+    "DRAWDOWN_SIGN_CONVENTION_REVIEW": 32,
+    "FILE_READ_NEEDS_PATH_VALIDATION": 32,
+    "ENV_LOADING_REVIEW": 26,
+    "GOD_CLASS_REVIEW": 6,
+    "FEATURE_WITHOUT_LOCAL_LINEAGE_HINT": 69
+  }
+}

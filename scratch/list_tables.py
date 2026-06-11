@@ -1,6 +1,8 @@
 
-import duckdb
 import os
+
+import duckdb
+
 from src.config.unified_config_manager import UnifiedConfigManager
 
 config = UnifiedConfigManager()

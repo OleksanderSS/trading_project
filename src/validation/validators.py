@@ -134,8 +134,8 @@ class UnifiedValidator:
             return []
 
         gaps = self.ts_validator.validate_time_gaps(df)
-        if not gaps.get('is_valid', True):
-            return [f"[{data_key}] Time series contains gaps: {gaps.get('missing_points_count')} missing periods."]
+        if gaps.get('has_gaps', False):
+            return [f"[{data_key}] Time series contains gaps: {gaps.get('gap_count')} missing periods."]
         return []
 
     def _check_data_leakage(self, data_map: dict[str, Any]) -> list[str]:
@@ -174,7 +174,7 @@ class UnifiedValidator:
 
         # Check for temporal overlap
         overlap = self.ts_validator.check_leakage(x_train, x_val)
-        if overlap.get('leakage_detected', False):
+        if overlap:
             logger.error("Data leakage detected: Overlapping indices between train and validation sets.")
             return False
 
@@ -199,6 +199,6 @@ class UnifiedValidator:
             # Basic health check: verify file manager can access paths
             logger.info("System health check passed")
             return True
-        except Exception as e:
-            logger.error(f"System health check failed: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"System health check failed: {e}")
             return False

@@ -123,8 +123,9 @@ class ModelAnalyzer:
 
     def _calculate_architecture_comparison(self, light_metrics: list[float], heavy_metrics: list[float]) -> dict[str, float]:
         """Calculate architecture performance comparison"""
-        avg_light = sum(light_metrics) / len(light_metrics) if light_metrics else 0
-        avg_heavy = sum(heavy_metrics) / len(heavy_metrics) if heavy_metrics else 0
+        from src.utils.math_safe import safe_div
+        avg_light = safe_div(sum(light_metrics), len(light_metrics))
+        avg_heavy = safe_div(sum(heavy_metrics), len(heavy_metrics))
 
         heavy_improvement_pct = 0.0
         if avg_light > 0:
@@ -150,8 +151,8 @@ class ModelAnalyzer:
                 json.dump(self.summary, f, indent=4, ensure_ascii=False)
             logger.info(f"Training report saved successfully to {file_path}")
             return str(file_path)
-        except Exception as e:
-            logger.error(f"Failed to save training report: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to save training report: {e}")
             return ""
 
     def get_light_vs_heavy_stats(self) -> dict[str, float]:

@@ -1,0 +1,9309 @@
+# Deep Static Audit Findings
+
+## Summary
+
+Total findings: **928**
+
+### By severity
+
+- P2: 511
+- P3: 417
+
+### By category
+
+- error_policy: 363
+- determinism: 339
+- data_lineage: 69
+- security: 59
+- financial_math: 36
+- config_factory: 31
+- heavy_imports: 21
+- architecture: 10
+
+---
+
+
+## P2
+
+### config_factory / HARDCODED_MODEL_LIST — `analytics/analyzers/model_comparison_analyzer.py:30`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+self.HEAVY_MODELS = ["gru", "tabnet", "transformer", "cnn", "lstm", "autoencoder"]  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `analytics/arena/performance_tracker.py:64`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+all_models = ['lgbm', 'rf', 'xgboost', 'catboost', 'linear', 'mlp',
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `analytics/arena/performance_tracker.py:77`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+enhanced_models = ['dean_ensemble', 'sentiment', 'lgbm_bayesian']
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `analytics/arena/performance_tracker.py:78`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+heavy_models = ['lstm', 'gru', 'transformer', 'cnn', 'tabnet',
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `analytics/data_managers/model_results_manager.py:25`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+self.LIGHT_MODEL_TYPES = ['lgbm', 'rf', 'linear', 'mlp', 'ensemble']
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `analytics/signals/signal_analytics.py:67`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+model_performance[model_name] = {
+```
+
+### config_factory / DUPLICATED_MODEL_REGISTRY_ENTRIES — `factories/model_factory.py:34`
+**Problem:** Model/alias registry entries overlap with other files.
+**Why:** Duplicated registries drift and cause selector/factory/prediction inconsistencies.
+**Fix:** Move all model names, aliases, class paths, role, heavy flag, and can_be_primary to one registry.
+**Test:** Snapshot-test that factory, CLI, arena, and prediction load the same registry.
+**Confidence:** medium  
+```python
+_model_aliases = ['linear', 'svm', 'knn', 'mlp', 'cnn', 'lstm', 'gru', 'transformer', 'tabnet', 'autoencoder']...
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `factories/model_factory.py:34`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+_model_aliases: Dict[str, str] = {
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/colab_context_integration.py:132`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+max_features_map = {'mlp': 256, 'lstm': 128, 'gru': 128, 'cnn': 64,
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/enrichers/news_impact_enricher.py:233`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+significance_map = {'low': 0, 'medium': 1, 'high': 2}
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/enrichers/news_impact_enricher.py:397`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+significance_map = {'low': 0, 'medium': 1, 'high': 2}
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/feature_selector.py:121`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+max_features_map = {'mlp': 256, 'lstm': 128, 'gru': 128, 'cnn': 64,
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/feature_selector.py:146`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+max_features_map = {'mlp': 256, 'lstm': 128, 'gru': 128, 'cnn': 64,
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/news_impact_classifier.py:246`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+mapping = {
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `features/nlp/utils/mention_utils.py:9`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+TICKER_ALIASES = {
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `models/analysis/baseline_dominance_detector.py:32`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+self.BASELINE_MODELS = {
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `models/ensemble/enhanced_ensemble.py:189`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+light_model_types = ['catboost', 'lightgbm', 'xgboost',
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `models/loader.py:387`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+light_models = ['catboost', 'lightgbm', 'xgboost', 'random_forest',
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `monitoring/config.py:58`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+env_mappings = {'MONITORING_CPU_THRESHOLD': ('system_health',
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `monitoring/dashboard.py:384`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+color_map = {
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `monitoring/example_usage.py:193`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+model_names = ['price_predictor', 'trend_analyzer', 'risk_model', 'portfolio_optimizer']
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `monitoring/ml_analytics.py:39`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+model_files = {'performance_predictor':
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `monitoring/ml_analytics.py:78`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+problem_models = ['performance', 'memory', 'disk', 'network']
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/guards/safe_feature_combiner.py:180`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+prefix_map = {
+```
+
+### config_factory / HARDCODED_MODEL_LIST — `pipeline/hybrid/final_stages_executor.py:87`
+**Problem:** Hardcoded model list detected.
+**Why:** Duplicated model lists across factory/arena/pipeline drift over time.
+**Fix:** Move models/aliases/capabilities into one registry/config and reference it everywhere.
+**Test:** Test that factory, CLI, arena, and prediction stage resolve the same registry entries.
+**Confidence:** medium  
+```python
+heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet']
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/data_preparation_service.py:272`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/model_selection_service.py:248`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+known_aliases = {
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/model_selection_service.py:277`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `pipeline/stages/prediction/prediction_context_manager.py:73`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+regime_map = {'bull': 1, 'bear': -1, 'sideways': 0, 'volatile': 2}
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `predictions/models_predict.py:147`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+signal_map = {'buy': 0.015, 'sell': -0.015, 'hold': 0.0, 'strong_buy':
+```
+
+### config_factory / HARDCODED_MODEL_MAP_OR_ALIASES — `sentiment/sentiment_models.py:86`
+**Problem:** Hardcoded model map/alias registry detected.
+**Why:** Multiple registries make routing inconsistent; e.g. training knows a model but prediction/arena does not.
+**Fix:** Use a single model registry with class_path, aliases, role, heavy flag, and can_be_primary.
+**Test:** Snapshot-test that all model names and aliases resolve from one source of truth.
+**Confidence:** medium  
+```python
+label_map = {"positive": "positive", "negative": "negative", "neutral": "neutral"}
+```
+
+### determinism / NON_INJECTED_CLOCK — `main/modes/monster_test.py:64`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(),
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `algorithms/adaptive_position_sizer.py:216`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `algorithms/advanced_backtest_engine.py:127`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `algorithms/regime/clustering.py:40`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `algorithms/regime/rules.py:41`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `algorithms/regime_detector.py:77`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/adaptive_confidence_analyzer.py:46`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/hedge_fund_analyzer.py:72`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/knn_similarity_finder.py:94`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/model_comparison_analyzer.py:108`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/news_impact_analyzer.py:98`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/analyzers/shap_analyzer.py:37`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:102`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (AttributeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:192`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:303`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:323`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/arena_battle.py:426`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/ensemble_performance_bridge.py:114`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/arena/performance_tracker.py:349`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/calculators/explainability_calculator.py:63`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/calculators/explainability_calculator.py:88`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/calculators/fama_french_factors.py:94`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/contextual_model_selector.py:102`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/counterfactual_generator.py:91`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/counterfactual_generator.py:153`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/counterfactual_generator.py:205`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/counterfactual_generator.py:257`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/counterfactual_generator.py:712`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as exc:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/ensemble_selector.py:125`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/market_context_analyzer.py:56`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/context/prediction_adjuster.py:92`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/data_managers/model_results_manager.py:67`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/data_managers/model_results_manager.py:119`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/data_managers/model_results_manager.py:152`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/data_managers/model_results_manager.py:208`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/engines/causal_engine.py:47`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/engines/causal_engine.py:85`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/engines/causal_engine.py:106`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/engines/causal_engine.py:115`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/reporting/results_manager.py:56`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/reporting/results_manager.py:217`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `analytics/reporting/visualization.py:39`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `backtesting/advanced/advanced_engine.py:180`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:129`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:217`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:232`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:263`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `calibration/adaptive_confidence_calibrator.py:336`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `cli/pipeline_data_loader.py:88`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as ex:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `cli/pipeline_executor.py:223`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as ex:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `colab/config/config_loader.py:122`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `config/unified_config_manager.py:150`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/base_integration.py:36`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cache/cache_manager.py:159`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cache/cache_manager.py:301`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/cloud/gcs_manager.py:106`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/error_handling/error_handler.py:89`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/error_handling/error_handler.py:254`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:53`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:95`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:135`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:212`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/file_management/file_manager.py:235`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/logging/exception_decorator.py:17`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/security/secure_secrets_manager.py:117`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/security/secure_secrets_manager.py:178`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/security/secure_secrets_manager.py:211`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `core/system/archive_manager.py:59`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/alternative_me_collector.py:67`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/alternative_me_collector.py:112`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/alternative_me_collector.py:138`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/bigquery_collector.py:45`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/bigquery_collector.py:61`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/cftc_collector.py:81`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/cftc_collector.py:143`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/cftc_collector.py:223`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/collector_factory.py:31`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/collector_factory.py:87`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/custom_csv_collector.py:43`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/economic_calendar_collector.py:101`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/fred_collector.py:112`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/free_google_trends_collector.py:67`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/free_google_trends_collector.py:101`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/google_news_collector.py:201`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/huggingface_collector.py:47`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/insider_collector.py:68`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/insider_collector.py:90`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/insider_collector.py:110`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/insider_collector.py:185`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/local_file_collector.py:56`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/newsapi_collector.py:193`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/put_call_ratio_collector.py:73`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/put_call_ratio_collector.py:165`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/reddit_sentiment_collector.py:75`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/reddit_sentiment_collector.py:160`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/rss_collector.py:169`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as exc:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/rss_collector.py:185`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as exc:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/sec_filings_collector.py:202`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/vix_collector.py:92`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/vix_collector.py:161`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/collectors/yf_collector.py:226`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/connectors/bigquery_connector.py:30`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/connectors/bigquery_connector.py:51`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/connectors/bigquery_connector.py:100`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:130`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:146`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:163`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:171`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:180`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:194`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:202`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:236`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:262`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:284`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:326`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:357`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as insert_error:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:385`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as idx_e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:396`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:426`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:434`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_manager.py:444`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (duckdb.Error, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_versioning.py:35`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/data_versioning.py:217`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/handlers/connection_handler.py:27`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/management/handlers/connection_handler.py:44`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `data/validation/event_dataset_validator.py:63`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `devtools/rule_generator.py:53`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `devtools/rule_generator.py:151`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `factories/model_factory.py:198`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `factories/tree_model_factory.py:37`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/analysis/regime_importance_tracker.py:149`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/analysis/regime_importance_tracker.py:175`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/builders/news_event_dataset_builder.py:78`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/colab_context_integration.py:63`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/colab_context_integration.py:160`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/colab_context_integration.py:197`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/advanced_analytics_enricher.py:36`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/advanced_analytics_enricher.py:52`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/base.py:89`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/context_map_enricher.py:61`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/keyword_entity_enricher.py:33`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/macro_features_enricher.py:79`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/news_impact_enricher.py:326`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:272`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:288`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:305`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/enrichers/technical_analysis_enricher.py:321`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_cache.py:99`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (IOError, ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_cache.py:146`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (IOError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_cache.py:208`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_cache.py:271`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_orchestrator.py:87`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_orchestrator.py:256`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/feature_selector.py:101`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/news_dataset_builder.py:108`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/news_dataset_builder.py:135`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/news_dataset_builder.py:193`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/news_impact_classifier.py:51`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/news_impact_classifier.py:68`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/nlp/extractors/entity_extractor.py:74`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/nlp/models/finbert_pipeline.py:52`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/nlp/processors/news_harmonizer.py:13`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/smart_selector.py:252`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/smart_selector.py:297`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/smart_selector.py:308`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/selection/volatility_driver_selector.py:74`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/validation/feature_leakage_guard.py:172`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `features/validation/feature_leakage_guard.py:190`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:154`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:185`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:217`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integration/ensemble_performance_bridge.py:238`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `integrations/base.py:41`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `main/modes/backtest.py:96`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `main/modes/web_ui.py:121`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `main/modes/web_ui.py:203`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `main/modes/web_ui.py:227`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `main/system_orchestrator.py:224`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/memory/diary_engine.py:582`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/memory/diary_engine.py:618`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/memory/diary_engine.py:745`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/security/constraint_engine.py:453`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/security/constraint_engine.py:479`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/security/constraint_engine.py:513`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/security/constraint_engine.py:534`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/security/constraint_engine.py:548`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/security/constraint_engine.py:564`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `meta_learning/security/constraint_engine.py:584`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `metrics/model/ml_evaluator.py:87`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `metrics/model/ml_evaluator.py:101`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/actions/action_trigger.py:62`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/actions/action_trigger.py:92`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/adapters/data_preparation.py:124`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/adapters/sentiment_integration.py:27`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/adapters/sentiment_integration.py:47`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/adapters/sentiment_integration.py:80`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/adapters/sentiment_integration.py:198`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/adapters/sentiment_integration.py:251`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/adapters/unified_model_adapter.py:135`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baseline/comparison.py:49`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baseline/recommendations.py:39`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baseline/recommendations.py:70`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baseline_dominance_detector.py:105`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baselines/models.py:41`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baselines/models.py:75`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baselines/strategies.py:33`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baselines/strategies.py:73`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/baselines/strategies.py:104`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/model_analyzer.py:76`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/model_analyzer.py:103`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/model_analyzer.py:121`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/model_analyzer.py:137`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/model_analyzer.py:157`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/overfitting_detection/analyzer.py:42`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/overfitting_detection/analyzer.py:61`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/overfitting_detection/analyzer.py:87`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/overfitting_detection/manager.py:71`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/overfitting_detection/manager.py:95`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/overfitting_detection/metrics.py:22`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/detector.py:26`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/detector.py:42`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/detector.py:57`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/metrics.py:31`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/patterns.py:37`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/patterns.py:68`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/patterns.py:109`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/stability.py:28`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/analysis/regime/stability.py:47`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/confidence_calibrator.py:60`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/confidence_calibrator.py:72`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:131`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, KeyError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:172`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:200`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:220`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:333`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:353`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:414`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/correlation/correlation_engine.py:519`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/enhanced_ensemble.py:136`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/enhanced_ensemble.py:177`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/ensemble/ensemble_model.py:45`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/linear/knn_model.py:47`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/linear/linear_model.py:37`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/linear/svm_model.py:53`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:75`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:177`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:191`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, ImportError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:241`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/loader.py:252`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as fallback_error:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_pool.py:137`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/adaptive_selector.py:131`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/adaptive_selector.py:209`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/adaptive_selector.py:281`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/adaptive_selector.py:318`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/model_selector/smart_selector.py:43`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/analyzer.py:42`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/analyzer.py:66`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/analyzer.py:86`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/drift_calculator.py:76`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/drift_calculator.py:131`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/drift_calculator.py:170`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/drift_calculator.py:199`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/drift_calculator.py:286`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/drift/history.py:39`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/monitoring/prediction_drift_monitor.py:112`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/base_neural.py:106`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/cnn_model.py:105`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/cnn_model.py:134`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/transformer_model.py:115`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/transformer_model.py:122`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e2:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/transformer_model.py:239`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/transformer_model.py:244`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e2:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/neural/transformer_model.py:348`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/prototypes/prototype.py:98`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/registry/model_registry.py:62`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/registry/model_registry.py:138`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/registry/model_registry.py:159`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/statistics/model_statistics.py:84`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/catboost_model.py:76`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/catboost_model.py:88`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/catboost_model.py:103`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/catboost_model.py:148`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/lightgbm_model.py:58`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/random_forest_model.py:53`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `models/tree/xgboost_model.py:62`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/config.py:36`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/feature_drift_monitor.py:175`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/ml_analytics.py:231`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:129`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:187`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:243`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `monitoring/monitoring_system.py:427`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/hyperparameter_searcher.py:201`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/hyperparameters/bayesian.py:136`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:71`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:209`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `optimization/portfolio/optimizer.py:254`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `patterns/pattern_analyzer.py:250`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/component_factory.py:101`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/data_batch_manager.py:59`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/feature_loader.py:34`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/feature_loader.py:49`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/final_stages_executor.py:184`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/light_models_trainer.py:104`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/light_models_trainer.py:144`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/model_training_orchestrator.py:120`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/pipeline_metadata_manager.py:75`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/results_processor.py:67`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/results_processor.py:87`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/selected_features_processor.py:105`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/hybrid/test_mode_manager.py:43`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/pipeline_orchestrator.py:257`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/pipeline_orchestrator.py:284`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/analytics.py:20`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/analytics.py:92`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/backtest_adapter.py:70`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/data_recovery.py:26`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/io.py:25`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/evaluation/reporting.py:38`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/modeling/orchestration.py:55`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/modeling/orchestration.py:75`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/anomaly_engine.py:169`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:79`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:301`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/data_preparer.py:349`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/model_selection_service.py:80`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/result_builder.py:59`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as fe:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/result_builder.py:82`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/result_builder.py:204`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/prediction/scaler_service.py:96`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/stage_0_setup.py:76`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/trading/data_io.py:103`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `pipeline/stages/trading/recommendation_engine.py:146`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `predictions/models_predict.py:52`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `predictions/models_predict.py:140`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `processing/cleaners.py:165`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `processing/cleaners.py:180`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:51`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:97`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:125`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:168`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/kill_switch/calculator.py:205`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:41`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:86`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:144`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `risk/metrics.py:239`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `simulation/simulation_engine.py:115`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `targets/target_orchestrator.py:55`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/consensus_engine.py:219`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/consensus_engine.py:294`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/portfolio_manager.py:272`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/signal_processor.py:71`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/signal_processor.py:88`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/trading_orchestrator.py:148`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/trading_orchestrator.py:171`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/virtual_portfolio.py:67`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `trading/virtual_portfolio.py:102`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `training/base_trainer.py:132`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `training/base_trainer.py:196`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `training/base_trainer.py:268`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (ValueError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `training/base_trainer.py:353`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except (IOError, TypeError, Exception) as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `training/progressive_trainer.py:198`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `utils/trading_calendar.py:78`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### error_policy / LOGGER_ERROR_THEN_RAISE — `validation/time_series_validator.py:225`
+**Problem:** Exception is logged and re-raised in the same handler.
+**Why:** If upper layers also log, this creates duplicate error reports and noisy traces.
+**Fix:** Log only at boundary layers, or add context and re-raise without error-level logging.
+**Test:** Add a test/logger capture for one error event per failing operation.
+**Confidence:** medium  
+```python
+except Exception as e:
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/advanced_backtest_engine.py:91`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+return float(drawdown.min())
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/advanced_backtest_engine.py:181`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+max_dd = drawdown.min()
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `algorithms/walk_forward_optimizer.py:141`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+max_drawdown = float(((cumulative - running_max) / running_max).min())
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `analytics/analyzers/hedge_fund_analyzer.py:92`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+metrics['max_drawdown'] = float(drawdown_series.min()
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `analytics/analyzers/wrappers.py:32`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+"max_drawdown": float(clean_drawdown.min()) if not clean_drawdown.empty else 0.0,
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `analytics/arena/arena_battle.py:425`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+return float(np.min(drawdown))
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `backtesting/advanced/advanced_engine.py:215`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+max_dd = drawdown.min()
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `backtesting/advanced/advanced_engine.py:404`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+min_drawdown = drawdown.min()
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `features/enrichers/technical_analysis_enricher.py:268`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+df_enriched['CURRENT_DRAWDOWN'
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `meta_learning/real_time_learning.py:269`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+return float(drawdown.min())
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `metrics/financial/financial_metrics_library.py:98`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+return float(drawdowns.min()) if not drawdowns.empty else 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `metrics/financial/portfolio_metrics.py:100`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+max_drawdown = drawdowns.min()
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `pipeline/stages/evaluation/metrics_calculator.py:95`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+max_drawdown = drawdown.min()
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:444`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+Dict[str, Any]], daily_pnl: float, current_drawdown: float) ->Dict[
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:453`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown: Current drawdown
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:481`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+if current_drawdown > self.limits['max_drawdown']:
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:483`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown, 'limit': self.limits['max_drawdown'],
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/elite_risk_metrics.py:484`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+'message': f'Drawdown {current_drawdown:.1%} exceeds limit'})
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:80`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown_pct = float(
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:93`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+'current_drawdown': current_drawdown_pct,
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:94`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+'current_drawdown_pct': current_drawdown_pct,
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:156`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown_pct = float(drawdowns.iloc[-1]) if len(drawdowns) > 0 else 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:164`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+'current_drawdown': current_drawdown_pct,
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:165`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+'current_drawdown_pct': current_drawdown_pct
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:228`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+if portfolio_metrics.get('current_drawdown_pct', portfolio_metrics.get('current_drawdown', 0)) > thresholds.get('max_drawdown_threshold', 1.0):
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/kill_switch/calculator.py:245`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+if portfolio_metrics.get('current_drawdown_pct', portfolio_metrics.get('current_drawdown', 0)) > 0.10: # 10% drawdown
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:65`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+max_drawdown_signed = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:68`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown = 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:72`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown = (peak - current) / peak if peak > 0 else 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:82`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+"current_drawdown": current_drawdown,
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:83`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+"current_drawdown_pct": current_drawdown,
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:123`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+max_drawdown_signed = float(np.min(drawdowns)) if len(drawdowns) > 0 else 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:126`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown = 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:130`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+current_drawdown = (peak - current) / peak if peak > 0 else 0.0
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:138`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+"current_drawdown": current_drawdown,
+```
+
+### financial_math / DRAWDOWN_SIGN_CONVENTION_REVIEW — `risk/metrics.py:139`
+**Problem:** Drawdown calculation found; sign convention needs review.
+**Why:** Mixing signed max_drawdown (-0.25) and positive current_drawdown (0.25) breaks risk thresholds.
+**Fix:** Expose both max_drawdown_signed and max_drawdown_pct, and use pct in risk limits.
+**Test:** Test monotonic loss series and assert documented sign convention.
+**Confidence:** low  
+```python
+"current_drawdown_pct": current_drawdown,
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/architectures.py:1`
+**Problem:** Top-level import of heavy optional dependency 'torch'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import torch
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/models/architectures.py:2`
+**Problem:** Top-level import of heavy optional dependency 'torch.nn'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import torch.nn as nn
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `colab/utils/utils.py:15`
+**Problem:** Top-level import of heavy optional dependency 'torch'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import torch
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `data/collectors/yf_collector.py:9`
+**Problem:** Top-level import of heavy optional dependency 'yfinance'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import yfinance as yf
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/models/roberta_sentiment.py:2`
+**Problem:** Top-level import of heavy optional dependency 'torch'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import torch
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/models/roberta_sentiment.py:3`
+**Problem:** Top-level import of heavy optional dependency 'transformers'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/models/sentiment_core.py:6`
+**Problem:** Top-level import of heavy optional dependency 'transformers'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from transformers import AutoModelForSequenceClassification
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/scoring/summarizer.py:5`
+**Problem:** Top-level import of heavy optional dependency 'torch'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import torch
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `features/nlp/scoring/summarizer.py:6`
+**Problem:** Top-level import of heavy optional dependency 'transformers'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from transformers import pipeline, Pipeline
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/autoencoder_model.py:4`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import tensorflow as tf
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/autoencoder_model.py:5`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from tensorflow.keras import layers, models
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/base_neural.py:7`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import tensorflow as tf
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/cnn_model.py:5`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import tensorflow as tf
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/cnn_model.py:6`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from tensorflow.keras import Sequential
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/cnn_model.py:7`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras.layers'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from tensorflow.keras.layers import Input, Conv1D, MaxPooling1D, Flatten, Dense, Dropout
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/gru_model.py:4`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import tensorflow as tf
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/gru_model.py:5`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from tensorflow.keras import layers, models
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/lstm_model.py:4`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import tensorflow as tf
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/lstm_model.py:5`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from tensorflow.keras import layers, models
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/mlp_model.py:4`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+import tensorflow as tf
+```
+
+### heavy_imports / HEAVY_TOP_LEVEL_IMPORT — `models/neural/mlp_model.py:5`
+**Problem:** Top-level import of heavy optional dependency 'tensorflow.keras'.
+**Why:** Lightweight CLI/tests/factories may import TensorFlow/PyTorch/HF/spaCy/yfinance even when not needed.
+**Fix:** Move optional heavy imports inside the function/class that needs them, or use a lazy class-path registry.
+**Test:** Add a test importing factory/config/CLI and assert heavy modules are not present in sys.modules.
+**Confidence:** high  
+```python
+from tensorflow.keras import layers, models
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `cli/pipeline_data_loader.py:19`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+df = pd.read_parquet(path)
+```
+
+### security / ENV_LOADING_REVIEW — `colab/__init__.py:20`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+"ColabEnvironment": ("src.colab.environment", "ColabEnvironment"),
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `colab/config/config_loader.py:136`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(config_path, 'r') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `config/tickers.py:382`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(filepath, 'w') as f:
+```
+
+### security / ENV_LOADING_REVIEW — `config/unified_config_manager.py:90`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+self.env = env
+```
+
+### security / ENV_LOADING_REVIEW — `config/unified_config_manager.py:118`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+logger.info(f"UnifiedConfigManager initialized for '{self.env.value}' environment.")
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:67`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(p, 'w', encoding='utf-8') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:72`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(p, encoding='utf-8') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:91`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(path, encoding='utf-8') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:107`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(p, 'w', encoding='utf-8') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:112`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(p, encoding='utf-8') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:131`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(path, encoding='utf-8') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:177`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+pd.read_parquet(p, columns=[df_to_save.columns[0]])
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:179`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+pd.read_csv(p, nrows=1)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:181`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+pd.read_json(p, nrows=1)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:203`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+df = pd.read_parquet(path, **kwargs)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:205`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+df = pd.read_csv(path, **kwargs)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/file_management/file_manager.py:207`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+df = pd.read_json(path, **kwargs)
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:43`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+configured_paths = config.get('security.env_search_paths', [])
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:49`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+def load_dotenv(dotenv_path: str = '.env'):
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:51`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+Manually parses a .env file and injects keys into os.environ.
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:55`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+1. Specified parameter path (default: .env)
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:67`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+# Hierarchical list of potential .env locations
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:78`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+'/content/drive/MyDrive/trading_project/.env',
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:79`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+'/content/drive/MyDrive/.env',
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:80`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+'/content/.env',
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:81`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+'../.env',
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:82`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+Path.home() / '.env',
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:94`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+f"No .env configuration file found across search vectors: {search_paths}. Utilizing existing environment variables."
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/security/secure_secrets_manager.py:100`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(found_path, encoding="utf-8") as f:
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:112`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+os.environ[key] = value
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:133`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+def __init__(self, dotenv_path: str = ".env", encrypted_path: str = ".env.enc"):
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:137`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+self.dotenv_keys = load_dotenv(dotenv_path)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/security/secure_secrets_manager.py:162`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(path, 'rb') as f:
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:173`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+os.environ[key] = value
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:182`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+def encrypt_secrets(self, secrets: dict[str, str], output_path: str = ".env.enc"):
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `core/security/secure_secrets_manager.py:206`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(output_path, 'wb') as f:
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:236`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+Hierarchy: os.environ -> Local Cache.
+```
+
+### security / ENV_LOADING_REVIEW — `core/security/secure_secrets_manager.py:270`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+for key, value in os.environ.items():
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data/collectors/custom_csv_collector.py:53`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(file_path, mode='r', encoding=encoding) as infile:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data/data_loader.py:40`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+self.features_df = pd.read_parquet(features_file)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data/data_loader.py:41`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+self.targets_df = pd.read_parquet(targets_file)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data/data_loader.py:60`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(cache_file, 'r') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data/data_loader.py:74`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(cache_file, 'w') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data_sources/local_file_data_source.py:35`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+df = pd.read_csv(file_path)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `data_sources/local_file_data_source.py:37`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+df = pd.read_parquet(file_path)
+```
+
+### security / ENV_LOADING_REVIEW — `integrations/data/bigquery_client.py:37`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+self.use_simulator = os.environ.get('BIGQUERY_SIMULATOR_MODE', 'false'
+```
+
+### security / ENV_LOADING_REVIEW — `integrations/data/bigquery_client.py:205`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+gcp_project_id = os.environ.get('GCP_PROJECT_ID')
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `meta_learning/security/agent_permissions.py:526`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(audit_file, 'w') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `models/loader.py:218`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(trusted_path, 'rb') as f:
+```
+
+### security / ENV_LOADING_REVIEW — `models/neural/base_neural.py:34`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+os.environ['PYTHONHASHSEED'] = str(self.random_state)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `monitoring/config.py:31`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(self.config_file, 'r', encoding='utf-8') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `monitoring/config.py:50`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(self.config_file, 'w', encoding='utf-8') as f:
+```
+
+### security / ENV_LOADING_REVIEW — `monitoring/config.py:175`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+create_config_file(args.create_config, args.environment)
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `optimization/dynamic_config_updater.py:166`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(filepath, 'w') as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `pipeline/hybrid/feature_loader.py:30`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+async with aiofiles.open(candidate, encoding="utf-8") as f:
+```
+
+### security / FILE_READ_NEEDS_PATH_VALIDATION — `pipeline/hybrid/feature_loader.py:46`
+**Problem:** File read detected in config/data loading path.
+**Why:** User/config-controlled paths need resolve()+allowed-base validation to prevent traversal or wrong-file reads.
+**Fix:** Route all config paths through a single PathSecurityValidator before reading.
+**Test:** Test that '../secret.env' and absolute paths outside allowed base are rejected.
+**Confidence:** medium  
+```python
+with open(candidate, encoding="utf-8") as f:
+```
+
+### security / ENV_LOADING_REVIEW — `sentiment/sentiment_models.py:33`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+os.environ.setdefault('HF_HUB_DOWNLOAD_TIMEOUT', '300')  # 5 minutes
+```
+
+### security / ENV_LOADING_REVIEW — `utils/artifact_security.py:43`
+**Problem:** .env loading/search path detected.
+**Why:** Loose .env search paths can load the wrong secrets; file values may override real environment unexpectedly.
+**Fix:** Make search paths explicit per environment and keep os.environ priority unless override=True.
+**Test:** Test that parent/home .env is not loaded in production/test mode.
+**Confidence:** medium  
+```python
+raw = os.environ.get("TRADING_TRUSTED_ARTIFACT_ROOTS", "")
+```
+
+
+## P3
+
+### architecture / GOD_CLASS_REVIEW — `algorithms/risk_parity_allocator.py:32`
+**Problem:** Class 'RiskParityAllocator' has 35 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class RiskParityAllocator:
+```
+
+### architecture / GOD_CLASS_REVIEW — `analytics/context/market_context_analyzer.py:10`
+**Problem:** Class 'MarketContextAnalyzer' has 41 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class MarketContextAnalyzer(IAnalyzer):
+```
+
+### architecture / GOD_CLASS_REVIEW — `config/unified_config_manager.py:76`
+**Problem:** Class 'UnifiedConfigManager' has 37 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class UnifiedConfigManager:
+```
+
+### architecture / GOD_CLASS_REVIEW — `data/management/data_manager.py:53`
+**Problem:** Class 'DataManager' has 30 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class DataManager(IDatabaseManager):
+```
+
+### architecture / LONG_MODULE_REVIEW — `meta_learning/memory/diary_engine.py:1`
+**Problem:** Long module detected: 723 non-comment LOC.
+**Why:** Large modules tend to mix responsibilities, but mechanical splitting before tests is risky.
+**Fix:** Add characterization tests first, then split by data collection/validation/features/targets/split/training/evaluation/reporting.
+**Test:** Characterization test should compare key outputs before and after refactor.
+**Confidence:** high  
+```python
+#!/usr/bin/env python3
+```
+
+### architecture / GOD_CLASS_REVIEW — `meta_learning/memory/diary_engine.py:76`
+**Problem:** Class 'DiaryEngine' has 31 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class DiaryEngine(BaseMetaComponent):
+```
+
+### architecture / GOD_CLASS_REVIEW — `meta_learning/security/constraint_engine.py:60`
+**Problem:** Class 'SecurityConstraintEngine' has 29 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class SecurityConstraintEngine:
+```
+
+### architecture / GOD_CLASS_REVIEW — `optimization/portfolio/optimizer.py:29`
+**Problem:** Class 'PortfolioOptimizer' has 28 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class PortfolioOptimizer(BaseOptimizer):
+```
+
+### architecture / GOD_CLASS_REVIEW — `pipeline/hybrid/orchestrator_context.py:6`
+**Problem:** Class 'OrchestratorContext' has 28 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class OrchestratorContext:
+```
+
+### architecture / GOD_CLASS_REVIEW — `pipeline/stages/trading/recommendation_engine.py:13`
+**Problem:** Class 'TradingRecommendationEngine' has 27 methods.
+**Why:** God classes hide responsibilities and make fatal/non-fatal error policy hard to enforce.
+**Fix:** Before splitting, add characterization tests; then extract cohesive services by responsibility.
+**Test:** Test public behavior of the class before extraction.
+**Confidence:** high  
+```python
+class TradingRecommendationEngine:
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/advanced_analytics_enricher.py:84`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/advanced_analytics_enricher.py:141`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched['macro_composite_score'] = scores_df[
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/base.py:76`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+self.logger.debug(f"✅ {self.__class__.__name__} completed: {result.shape[1] - df.shape[1]} features added")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/decay_features_enricher.py:63`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+enriched_df = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/decay_features_enricher.py:113`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+enriched_df[f"{col}_decayed"] = decayed_values
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/derived_features_enricher.py:61`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/derived_features_enricher.py:73`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+logger.info(f"Derived features enrichment complete. Added {len(df_enriched.columns) - len(df.columns)} features.")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/hype_enricher.py:98`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+logger.error(f"No time column found in news data. Available columns: {news_df.columns.tolist()[:10]}. Skipping hype enrichment.")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/hype_enricher.py:103`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/keyword_entity_enricher.py:115`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+f'No time column found in news data. Available columns: {news_df.columns.tolist()[:10]}. Skipping keyword/entity enrichment.'
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/keyword_entity_enricher.py:180`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/macro_features_enricher.py:280`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+f'Macro features successfully added. Final shape: {df.shape}')
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/market_context_enricher.py:105`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+result_df[col_name] = feature_value
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/market_context_enricher.py:131`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+result_df[col_name] = feature_value
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:59`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+logger.debug(f"📊 NewsImpactEnricher.enrich() called. DataFrame shape: {df.shape}")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:96`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:208`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:249`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:304`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+logger.error(f"No time column found in news data. Available columns: {news_df.columns.tolist()[:10]}. Skipping news impact enrichment.")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_impact_enricher.py:361`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_quality_enricher.py:76`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+logger.error(f"No time column found in news data. Available columns: {news_df.columns.tolist()[:10]}. Skipping news quality enrichment.")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/news_quality_enricher.py:131`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/nlp_features_enricher.py:178`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/sentiment_features_enricher.py:76`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+logger.info(f"Sentiment enrichment complete. Added {len(final_df.columns) - len(df.columns)} features.")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/sentiment_features_enricher.py:287`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/technical_analysis_enricher.py:72`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/time_features_enricher.py:49`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/volatility_enricher.py:34`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/enrichers/volume_enricher.py:34`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/feature_orchestrator.py:240`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+logger.info(f'🔄 Starting enrichment: {df.shape[0]} rows, {df.shape[1]} columns')
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/feature_orchestrator.py:241`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+df_enriched = df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/feature_orchestrator.py:286`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+feature_cols = [col for col in df.columns if col not in exclude_cols]
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/feature_selector.py:66`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+return features_df.xs(ticker, level='ticker')
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/nlp/deduplication_service.py:22`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+max_features (int): The maximum number of features to use for TF-IDF.
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/enhanced_smart_selector.py:77`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+if 'context_pattern_id' in features_df.columns:
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/enhanced_smart_selector.py:78`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+current_pattern = features_df['context_pattern_id'].iloc[-1]
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/enhanced_smart_selector.py:85`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+'original_feature_count': len(features_df.columns),
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/enhanced_smart_selector.py:101`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+clean_features = features_df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:72`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+if set(cached_data.get("input_features", [])) == set(features_df.columns):
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:143`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+"input_features": features_df.columns.tolist(),
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:201`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+features_clean = features_df.replace([np.inf, -np.inf], np.nan).dropna(axis=1, how='all')
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:228`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+return features_df.apply(lambda x: x.corr(target_series, method=self.correlation_method)).abs().sort_values(ascending=False)
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:234`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+return pd.Series(mi, index=features_df.columns).sort_values(ascending=False)
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:251`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+index=features_df.columns).sort_values(ascending=False)
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:296`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+return pd.Series(model.feature_importances_, index=features_df.columns).sort_values(ascending=False)
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/selection/smart_selector.py:304`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+variances = features_df.var()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/utils/datetime_utils.py:161`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+result = features_df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/feature_leakage_guard.py:94`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+feature_cols = [c for c in df.columns if c not in meta_cols]
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/feature_leakage_guard.py:145`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+numeric_features = [c for c in feature_cols if c in df.columns and
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/feature_leakage_guard.py:151`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+sample_df = df[numeric_features + numeric_targets].dropna()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/feature_leakage_guard.py:157`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+corr_matrix = sample_df[numeric_features].corrwith(sample_df[
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:64`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+numeric_features = features_df.select_dtypes(include=[np.number])
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:65`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+non_numeric_features = features_df.select_dtypes(exclude=[np.number])
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:103`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+self.logger.info(f"🔍 Analyzing {len(features_df.columns)} features for redundancy")
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:106`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+'original_features': list(features_df.columns),
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:107`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+'original_count': len(features_df.columns),
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:162`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+self._update_results(results, redundant_features, final_features, len(features_df.columns))
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:177`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+'remaining_features': features_df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:182`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+for feature_name in features_df.columns:
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:183`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+feature_variance = features_df[feature_name].var()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:208`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+correlation_matrix = features_df.corr().abs()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:227`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+for feature_name, cluster_id in zip(features_df.columns, cluster_labels):
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:276`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+X = features_df.copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:328`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+'selected_features': features_df.copy(),
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:334`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+features_to_keep = set(features_df.columns)
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:343`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+features_df[group_features], group_features
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `features/validation/redundancy_detector.py:387`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+final_features = features_df[list(features_to_keep)].copy()
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `targets/calculators/indicator_prediction_calculator.py:23`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+if indicator_col not in df.columns:
+```
+
+### data_lineage / FEATURE_WITHOUT_LOCAL_LINEAGE_HINT — `targets/calculators/indicator_prediction_calculator.py:27`
+**Problem:** Feature/enricher code updates data without nearby lineage/availability metadata.
+**Why:** Trading features need source, ticker/timeframe granularity, calculation window, and availability time.
+**Fix:** Add feature manifest entries or emit lineage metadata from each enricher.
+**Test:** Test that every emitted feature has source, window, granularity, availability_time, causal flag.
+**Confidence:** low  
+```python
+target_series = df[indicator_col].shift(shift)
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/analyzers/hedge_fund_analyzer.py:71`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/analyzers/hedge_fund_analyzer.py:119`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+min_idx = pd.Timestamp.now() - pd.Timedelta(days=365)
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/analyzers/hedge_fund_analyzer.py:124`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+max_idx = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/analyzers/performance_attribution_analyzer.py:82`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'analysis_timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/analyzers/performance_attribution_analyzer.py:262`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+f'{datetime.now().year}-01-01')
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/analyzers/risk_decomposition_analyzer.py:99`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'analysis_timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:95`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+model_type, 'registered_at': datetime.now(), 'activations':
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:351`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+battle.end_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:365`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/arena_battle.py:462`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'leaderboard': leaderboard, 'last_updated': datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/ensemble_performance_bridge.py:41`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+elapsed = (datetime.now() - self._last_sync).total_seconds()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/ensemble_performance_bridge.py:53`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"sync_time": datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/ensemble_performance_bridge.py:57`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self._last_sync = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/ensemble_performance_bridge.py:89`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"last_updated": datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/ensemble_performance_bridge.py:105`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": getattr(m, "timestamp", datetime.now()),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/ensemble_performance_bridge.py:133`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"last_updated": m.get("timestamp", datetime.now()),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/performance_tracker.py:110`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()})
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/performance_tracker.py:127`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(), accuracy=metrics.get('accuracy',
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/performance_tracker.py:144`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+stats['last_battle'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/performance_tracker.py:225`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+=float(avg_win_rate), last_updated=datetime.now())
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/performance_tracker.py:247`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_date = datetime.now() - timedelta(days=days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/arena/performance_tracker.py:360`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:101`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:145`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.last_cache_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:190`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/calculators/fama_french_factors.py:224`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.last_cache_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/context/ensemble_selector.py:99`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"selection_time": datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/context/market_context_analyzer.py:190`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+) else datetime.now().hour
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/context/market_context_analyzer.py:194`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+) else datetime.now().weekday()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/data_managers/model_results_manager.py:52`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df_to_save['ingestion_timestamp'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/reporting/automated_reports.py:30`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+filename = f"daily_{datetime.now().strftime('%Y%m%d')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/reporting/automated_reports.py:44`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"date": datetime.now().strftime("%Y-%m-%d"),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/reporting/automated_reports.py:79`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/reporting/automated_reports.py:87`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+filename = f"trends_{datetime.now().strftime('%Y%m%d')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/reporting/model_analyzer.py:63`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/reporting/model_analyzer.py:149`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+file_path = self.report_dir / f"{report_name}_{datetime.now().strftime('%Y%m%d_%H%M')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/reporting/results_manager.py:43`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `analytics/signals/signal_analytics.py:225`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'analysis_timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `backtesting/advanced/advanced_engine.py:268`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+report: dict[str, Any] = {'timestamp': datetime.now().isoformat
+```
+
+### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:117`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.calibration_history.append({'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:141`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+now = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `calibration/adaptive_confidence_calibrator.py:190`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.last_retrain_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `colab/memory/memory_monitor.py:17`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.start_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `colab/memory/memory_monitor.py:38`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/base_integration.py:44`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"last_check": datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/error_handling/error_handler.py:134`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+error_info = {'timestamp': datetime.now().isoformat(), 'error_type':
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/error_handling/error_handler.py:150`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+now = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/error_handling/error_handler.py:248`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+start_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/error_handling/error_handler.py:251`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+duration = datetime.now() - start_time
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/error_handling/error_handler.py:255`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+duration = datetime.now() - start_time
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/error_handling/error_handler.py:326`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.start_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/error_handling/error_handler.py:333`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+duration = datetime.now() - self.start_time
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/logging/logger.py:156`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/logging/logger.py:187`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+structured_data = {'message': message, 'timestamp': datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/system/archive_manager.py:32`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/system/batch_processor.py:232`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/system/version_manager.py:116`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M")
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/system/version_manager.py:124`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+run_id = f"run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/system/version_manager.py:181`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+date=datetime.now().strftime("%Y-%m-%d"),
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/validation/validators.py:109`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp: datetime = Field(default_factory=datetime.now)
+```
+
+### determinism / NON_INJECTED_CLOCK — `core/validation/validators.py:127`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp: datetime = Field(default_factory=datetime.now)
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/aaii_sentiment_collector.py:56`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df['collected_at'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/alternative_me_collector.py:129`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+date = datetime.now().strftime('%Y-%m-%d')
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/alternative_me_collector.py:134`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.fromtimestamp(timestamp).isoformat() if timestamp > 0 else datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/cftc_collector.py:73`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df['collected_at'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/cftc_collector.py:233`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+base_date = datetime.now() - timedelta(days=140)
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/economic_calendar_collector.py:108`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+start = datetime.now() - timedelta(days=days_back)
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/economic_calendar_collector.py:109`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+end = datetime.now() + timedelta(days=days_ahead)
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/fear_greed_collector.py:56`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df['collected_at'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/fred_collector.py:28`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return (datetime.now() - timedelta(days=years * 365)).strftime('%Y-%m-%d')
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/fred_collector.py:31`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/fred_collector.py:34`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return (datetime.now() - timedelta(days=365)).strftime('%Y-%m-%d')
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/put_call_ratio_collector.py:65`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df['collected_at'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/put_call_ratio_collector.py:115`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+base_date = datetime.now() - timedelta(days=60)
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/put_call_ratio_collector.py:154`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'date': datetime.now().strftime('%Y-%m-%d'),
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/put_call_ratio_collector.py:160`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/put_call_ratio_collector.py:176`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+base_date = datetime.now() - timedelta(days=60)
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/reddit_sentiment_collector.py:67`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df['collected_at'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/reddit_sentiment_collector.py:101`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+base_date = datetime.now() - timedelta(days=60)
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/rss_collector.py:190`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff = datetime.now(timezone.utc) - timedelta(days=self.
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/sec_filings_collector.py:76`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+run_date = kwargs.get("run_date", datetime.now())
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/vix_collector.py:84`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df['collected_at'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/yf_collector.py:52`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+end_date = end_date or datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/yf_collector.py:77`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+# Use reference_now from kwargs if provided for stable testing, otherwise datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/collectors/yf_collector.py:78`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+reference_now = kwargs.get('reference_now', datetime.now())
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/data_loader.py:73`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:92`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'description': description, 'created_at': datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:124`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+file_age = datetime.now() - current_mtime
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:136`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+metadata_age = datetime.now() - stored_mtime
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/management/data_versioning.py:267`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+report = {'generated_at': datetime.now().isoformat(), 'data_type':
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/quality/data_freshness_checker.py:62`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.metrics['last_check_time'] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `data/quality/data_freshness_checker.py:96`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+now = pd.Timestamp.now()  # This is tz-naive by default
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/analysis/news_decay_modeler.py:268`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/analysis/news_decay_modeler.py:305`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(days=days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/analysis/regime_importance_tracker.py:79`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/analysis/regime_importance_tracker.py:181`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(days=days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/enrichers/macro_features_enricher.py:109`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+end_date = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/feature_orchestrator.py:168`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+start_time = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/feature_orchestrator.py:178`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+end_time = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/feature_selection_cache.py:126`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+datetime.now().isoformat(), 'n_available_features': len(
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/monitoring/feature_drift_detector.py:77`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.metrics['last_check_time'] = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/monitoring/feature_drift_detector.py:137`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/monitoring/feature_drift_detector.py:212`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/news_dataset_builder.py:257`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+dataset_df['generated_at'] = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/news_dataset_builder.py:274`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'generated_at': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/nlp/processors/news_harmonizer.py:48`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+pub_dt = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/nlp/processors/news_processing.py:36`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+fname = f"clustered_news_{datetime.now().strftime('%Y%m%d_%H%M%S')}.parquet"
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/selection/enhanced_smart_selector.py:84`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/selection/smart_selector.py:146`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/utils/datetime_utils.py:81`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+df['datetime'] = pd.Timestamp.now().tz_localize(None)
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/validation/feature_leakage_guard.py:32`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.timestamp = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `features/validation/feature_leakage_guard.py:183`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:93`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self._cache_timestamps[cache_key] = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:145`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+age = (datetime.now() - cache_time).total_seconds()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:165`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:178`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:200`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:206`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(), 'pnl': 0.023},
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:208`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(), 'pnl': -0.015},
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:210`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(), 'pnl': 0.008}
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:213`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:239`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:248`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:272`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:276`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:291`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:321`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:331`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:347`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_rebalanced': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:370`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/dashboard_data_bridge.py:383`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/ensemble_performance_bridge.py:50`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+time_since_sync = datetime.now() - self._last_sync_time
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/ensemble_performance_bridge.py:71`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'sync_time': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/ensemble_performance_bridge.py:80`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self._last_sync_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/ensemble_performance_bridge.py:111`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `integration/ensemble_performance_bridge.py:148`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `integrations/base.py:47`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+datetime.now().isoformat(), 'error': error}
+```
+
+### determinism / NON_INJECTED_CLOCK — `integrations/data/bigquery_client.py:185`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+dates = [(datetime.now() - timedelta(days=i)).strftime('%Y%m%d') for
+```
+
+### determinism / NON_INJECTED_CLOCK — `integrations/data/bigquery_client.py:199`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+datetime.now(), periods=5, freq='D')), 'value': np.random.randn
+```
+
+### determinism / NON_INJECTED_CLOCK — `main/modes/web_ui.py:173`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'status': 'idle', 'last_update': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `main/modes/web_ui.py:201`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+10000000), 'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `main/modes/web_ui.py:213`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'recent_activity': [{'time': datetime.now().strftime(
+```
+
+### determinism / NON_INJECTED_CLOCK — `main/modes/web_ui.py:215`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'price': 245.5}, {'time': datetime.now().strftime('%H:%M'),
+```
+
+### determinism / NON_INJECTED_CLOCK — `main/modes/web_ui.py:217`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+178.25}, {'time': datetime.now().strftime('%H:%M'), 'action':
+```
+
+### determinism / NON_INJECTED_CLOCK — `main/modes/web_ui.py:233`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'disk_usage': 23.1, 'last_update': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/awareness/context/manager.py:59`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/awareness/context/storage.py:115`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/evolution/dual_loops.py:130`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+rule_id = f"RULE_{agent_id.upper()}_{datetime.now().strftime('%Y%m%d%H%M')}_{i}"
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/memory/diary_engine.py:72`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+decision_timestamp: int = field(default_factory=lambda: int(datetime.now(timezone.utc).timestamp()))
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/memory/diary_engine.py:178`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+decision_timestamp=int(datetime.now(timezone.utc).timestamp()),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/memory/diary_engine.py:227`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"decision_timestamp": int(pd.Timestamp.now().timestamp() * 1000),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/memory/diary_engine.py:393`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/real_time_learning.py:100`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': trade.get('timestamp', datetime.now()),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/real_time_learning.py:165`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_update': datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/real_time_learning.py:256`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+next_adaptation = datetime.now() + timedelta(hours=trades_until_adaptation * 0.5)
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/real_time_learning.py:311`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/agent_permissions.py:125`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+created_at=datetime.now(), last_active=datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/agent_permissions.py:437`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+now = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/agent_permissions.py:465`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+now = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/agent_permissions.py:503`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.action_counts[agent_id][action_type].append(datetime.now())
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/agent_permissions.py:505`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self._registered_agents[agent_id].last_active = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/agent_permissions.py:512`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+audit_entry = {'timestamp': datetime.now().isoformat(), 'agent_id':
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/agent_permissions.py:525`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+f"agent_audit_{datetime.now().strftime('%Y%m%d')}.json")
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/constraint_engine.py:139`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/constraint_engine.py:303`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+if v.timestamp > datetime.now() - timedelta(hours=1)
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/constraint_engine.py:316`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(hours=hours)
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/constraint_engine.py:488`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/constraint_engine.py:593`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `meta_learning/security/constraint_engine.py:612`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(hours=24)
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/analysis/baseline_dominance_detector.py:74`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/analysis/model_health_analyzer.py:41`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/analysis/overfitting_detection/manager.py:38`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/analysis/regime_winner_analyzer.py:101`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = current_time or datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/analysis/regime_winner_analyzer.py:273`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff = datetime.now() - timedelta(days=days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/dean/dean_bootstrap_system.py:161`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/dean/dean_bootstrap_system.py:216`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+simulation_id = f"sim_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/dean/dean_bootstrap_system.py:261`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/ensemble/correlation/correlation_engine.py:81`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/ensemble/correlation/correlation_engine.py:480`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(days=days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/ensemble/dynamic_weights.py:245`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'exported_at': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/ensemble/weight_stability/manager.py:42`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+if timestamp is None: timestamp = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/ensemble/weight_stability/manager.py:113`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff = datetime.now() - timedelta(days=days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/ensemble/weight_stability_monitor.py:43`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return monitor.update_weights(new_weights, datetime.now())
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/integrated_model_manager.py:100`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/model_selector/adaptive_selector.py:161`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.selection_history.append({'timestamp': datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/model_selector/adaptive_selector.py:310`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'last_updated': datetime.now().isoformat(), 'arena_integrated':
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/model_selector/adaptive_selector.py:360`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+performance_tracker.items()}, 'exported_at': datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/model_selector/heavy_light_comparator.py:84`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/model_selector/smart_selector.py:290`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+run_data = {'timestamp': pd.Timestamp.now().isoformat(), 'metrics':
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/monitoring/drift/alert_system.py:163`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/monitoring/drift/alert_system.py:223`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/monitoring/drift/alert_system.py:294`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/monitoring/drift/alert_system.py:330`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/monitoring/drift/alert_system.py:390`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/monitoring/prediction_drift_monitor.py:63`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/monitoring/prediction_drift_monitor.py:313`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(days=days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/persistent_pool.py:110`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'added_at': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/persistent_pool.py:246`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'updated_at': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/prototypes/prototype.py:64`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.created_at = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/quality/controller.py:111`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'updated_at': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/quality/controller.py:183`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/registry/model_registry.py:56`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'registered_at': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/registry/model_registry.py:132`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `models/statistics/model_statistics.py:106`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(days=30)
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/dashboard.py:450`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/dashboard.py:559`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/data_freshness_monitor.py:129`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/data_freshness_monitor.py:165`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/data_freshness_monitor.py:460`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = pd.Timestamp.now() - pd.Timedelta(hours=hours)
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/example_usage.py:87`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/example_usage.py:108`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/example_usage.py:145`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/example_usage.py:239`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/example_usage.py:288`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/example_usage.py:295`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/feature_drift_monitor.py:92`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.metrics['last_check_time'] = datetime.now()  # type: ignore
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/feature_drift_monitor.py:149`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:175`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'timestamp': datetime.now().isoformat(), 'metrics':
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:255`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+drift_detected, 'timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/health_hub.py:285`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff = datetime.now() - timedelta(days=window_days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/infrastructure/resource_monitor.py:81`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'timestamp': datetime.now().isoformat(), 'system': futures[
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:79`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+results = {'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:117`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'timestamp': datetime.now().isoformat(), 'metrics':
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:147`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff = datetime.now() - timedelta(days=window_days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/ml_analytics.py:178`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+datetime.now().hour), float(datetime.now().dayofweek)]
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:82`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'monitor_name': self.name, 'timestamp': datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:123`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+process_count, 'timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:158`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+alertstatus.ACTIVE.value, 'timestamp': datetime.now().isoformat
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:184`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+0.0, 'timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:210`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+alertstatus.ACTIVE.value, 'timestamp': datetime.now().isoformat
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:239`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+s in self.data_sources.values()), 'timestamp': datetime.now
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:263`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+alertstatus.ACTIVE.value, 'timestamp': datetime.now().isoformat
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:297`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+alert['resolved_at'] = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:312`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(hours=self.auto_resolve_hours)
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:370`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+dashboard_data: dict[str, Any] = {'timestamp': datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:400`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(hours=hours)
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/monitoring_system.py:503`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+get_active_alerts()), 'last_collection': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/reporting/performance_reports.py:47`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': (timestamp or datetime.now()).isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/reporting/performance_reports.py:104`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/tests.py:110`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/tests.py:172`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/tests.py:191`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/tests.py:212`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/tests.py:219`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `monitoring/tests.py:325`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `optimization/dynamic_config_updater.py:144`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `optimization/hyperparameter_searcher.py:305`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+f"hyperparameter_search_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `optimization/hyperparameter_searcher.py:309`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'trial_history': self.trial_history, 'timestamp': datetime.now(
+```
+
+### determinism / NON_INJECTED_CLOCK — `patterns/pattern_analyzer.py:36`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+f"pattern_{datetime.now().strftime('%H%M%S')}")
+```
+
+### determinism / NON_INJECTED_CLOCK — `patterns/pattern_analyzer.py:38`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.log('INFO', f'Start time: {datetime.now().isoformat()}')
+```
+
+### determinism / NON_INJECTED_CLOCK — `patterns/pattern_analyzer.py:44`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `patterns/pattern_analyzer.py:144`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `patterns/pattern_analyzer.py:235`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+results['analysis_timestamp'] = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/guards/macro_release_timing_guard.py:497`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/guards/safe_feature_combiner.py:359`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/guards/safe_feature_combiner.py:442`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/guards/temporal_leakage_guard.py:533`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/guards/temporal_target_guard.py:146`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return guard.generate_targets_safe(df, timeframe, pd.Timestamp.now(), configs)
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/guards/timeframe_alignment_guard.py:433`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+current_time = pd.Timestamp.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/cache_manager.py:58`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+days = (datetime.now() - datetime.fromisoformat(last_ts)).days
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/colab_manager.py:59`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/feature_selection_manager.py:85`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/feature_selection_validator.py:78`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+days = (datetime.now() - datetime.fromisoformat(last_ts)).days
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/feature_selection_validator.py:154`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_executor.py:194`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'timestamp': datetime.now().isoformat(), 'batch_name': self
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_executor.py:204`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+) / f"final_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_orchestrator.py:86`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/final_stages_orchestrator.py:95`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+output_path = self.output_dir / f"final_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/light_models_trainer.py:51`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/metadata_manager.py:94`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/metadata_manager.py:100`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/model_training_orchestrator.py:223`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/pipeline_executor.py:34`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/pipeline_metadata_manager.py:62`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+accumulated_results = {'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/hybrid/pipeline_runner.py:40`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/analytics.py:104`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": pd.Timestamp.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/backtest_adapter.py:24`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+price_pivot.index = [pd.Timestamp.now()]
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/backtest_adapter.py:33`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+price_pivot.index = [pd.Timestamp.now()]
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/backtest_analyzer.py:67`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+price_pivot.index = [pd.Timestamp.now()]
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/backtest_analyzer.py:77`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+price_pivot.index = [pd.Timestamp.now()]
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/backtest_analyzer.py:107`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+end_date = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/backtest_analyzer.py:144`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+dates = pd.date_range(end=datetime.now(), periods=2, freq='D')
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/backtest_analyzer.py:267`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+dates = pd.date_range(end=pd.Timestamp.now(), periods=2, freq='D')
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/report_generator.py:96`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/report_generator.py:116`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/evaluation/report_generator.py:160`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+file_path = save_dir / f"summary_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/feature_engineering/orchestrator.py:86`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/modeling/metrics.py:23`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/modeling/metrics.py:35`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/modeling/utils.py:31`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/modeling/utils.py:42`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/prediction/result_builder.py:116`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+ts_val = datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/prediction/result_builder.py:188`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+stage_5_results = {'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/processing/orchestrator.py:115`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/processing/storage.py:20`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/stage_4_modeling.py:129`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/stage_5_prediction.py:449`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+stage_5_results = {'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/stage_6_trading_execution.py:243`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now(timezone.utc)
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/stage_6_trading_execution.py:245`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now(timezone.utc)
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/stage_7_evaluation.py:174`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/trading/data_io.py:94`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+stage_6_results = {'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `pipeline/stages/trading/recommendation_engine.py:508`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `predictions/caching.py:114`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+if ttl_seconds and (datetime.now() - timestamp).total_seconds(
+```
+
+### determinism / NON_INJECTED_CLOCK — `predictions/caching.py:129`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.cache[cache_key] = result, datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `risk/elite_risk_metrics.py:235`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+position_risks, 'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `risk/elite_risk_metrics.py:491`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+violations, 'warnings': warnings, 'checked_at': datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `risk/kill_switch/alerts.py:16`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+ts = timestamp or datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `risk/kill_switch/manager.py:41`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `risk/kill_switch/manager.py:87`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+save_path = self.config_manager.storage_path / f"risk_event_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+```
+
+### determinism / NON_INJECTED_CLOCK — `risk/max_exposure_monitor.py:38`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/adaptive_parameter_manager.py:281`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': pd.Timestamp.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/consensus_engine.py:31`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp: datetime = field(default_factory=datetime.now)
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/live_adaptive_ensemble.py:99`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/live_adaptive_ensemble.py:124`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+(datetime.now() - self.last_reweight_time).days >= self.reweight_interval_days
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/live_adaptive_ensemble.py:129`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+cutoff_time = datetime.now() - timedelta(days=lookback_days)
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/live_adaptive_ensemble.py:207`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp=datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/live_adaptive_ensemble.py:253`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+self.last_reweight_time = datetime.now()
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/virtual_portfolio.py:113`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+performance_history, 'last_updated': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/virtual_portfolio.py:183`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+return {'timestamp': datetime.now(), 'type': 'BUY', 'ticker':
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/virtual_portfolio.py:203`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+total_cost / quantity, 'entry_time': datetime.now(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/virtual_portfolio.py:225`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+transaction = {'timestamp': datetime.now(), 'type': 'SELL',
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/virtual_portfolio.py:259`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+equity_curve[datetime.now()] = total_value
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/virtual_portfolio.py:272`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+positions_report, 'metrics': metrics, 'timestamp': datetime.now
+```
+
+### determinism / NON_INJECTED_CLOCK — `trading/virtual_portfolio.py:278`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+record = {'timestamp': datetime.now().isoformat(), 'total_value':
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/adaptive_training_manager.py:350`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'execution_phases']), 'timestamp': datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/adaptive_training_manager.py:357`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/base_trainer.py:387`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/pattern_aware_training.py:75`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(),
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/progressive_trainer.py:326`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/progressive_trainer.py:331`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/state/training_state_manager.py:100`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+"timestamp": datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/unified_training_manager.py:98`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+datetime.now().isoformat()}
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/unified_training_manager.py:169`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'timestamp': datetime.now().isoformat(), 'ticker_plans': {}})
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/unified_training_manager.py:204`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+f"unified_plan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+```
+
+### determinism / NON_INJECTED_CLOCK — `training/unified_training_manager.py:211`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+f"unified_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+```
+
+### determinism / NON_INJECTED_CLOCK — `utils/trading_calendar.py:16`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+def __init__(self, start_year: int=2020, end_year: int=datetime.now().
+```
+
+### determinism / NON_INJECTED_CLOCK — `validation/temporal_feature_separator.py:93`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'analysis_timestamp': datetime.now().isoformat()
+```
+
+### determinism / NON_INJECTED_CLOCK — `validation/temporal_feature_separator.py:287`
+**Problem:** Direct current-time call detected.
+**Why:** Runtime and tests become nondeterministic; relative dates can drift.
+**Fix:** Inject a clock/reference_now parameter or central time provider.
+**Test:** Freeze clock in tests and assert stable outputs.
+**Confidence:** medium  
+```python
+'generated_at': datetime.now().isoformat()
+```

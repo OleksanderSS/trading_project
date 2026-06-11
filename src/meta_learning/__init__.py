@@ -9,7 +9,8 @@ Meta-Learning Package - Continuous Learning & Improvement System.
 оптимізації стратегій (Learning Loops).
 """
 
-from .awareness.context_engine import ContextAwarenessEngine, EventImpact, EventType, MarketRegime
+from .awareness.context.models import EventImpact, EventType, MarketRegime
+from .awareness.context_engine import ContextAwarenessEngine
 from .evolution.dual_loops import LearningLoopsEngine, TradingRule
 from .memory.diary_engine import DecisionOutcome, DecisionRecord, DecisionType, DiaryEngine
 

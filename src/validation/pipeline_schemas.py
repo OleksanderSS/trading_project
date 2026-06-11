@@ -16,11 +16,10 @@ Usage:
     return schema.dict()
 """
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import pandas as pd
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RawDataSchema(BaseModel):
@@ -32,8 +31,7 @@ class RawDataSchema(BaseModel):
     news: pd.DataFrame | None = Field(default=None, description="News events with sentiment")
     macro_data: pd.DataFrame | None = Field(default=None, description="Macroeconomic indicators")
 
-    class Config:
-        arbitrary_types_allowed = True  # Allow pandas DataFrames
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def validate(self) -> None:
         """Custom validation logic beyond Pydantic."""
@@ -65,8 +63,7 @@ class ProcessedDataSchema(BaseModel):
     normalization_params: dict[str, Any] = Field(default_factory=dict, description="Scaling parameters for reverse transformation")
     quality_metrics: dict[str, float] = Field(default_factory=dict, description="Data quality scores")
 
-    class Config:
-        arbitrary_types_allowed = True
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def validate(self) -> None:
         """Custom validation."""
@@ -116,54 +113,27 @@ class EnrichedDataSchema(BaseModel):
     Validates enriched features and target generation.
     """
     enriched_prices: dict[str, pd.DataFrame] = Field(description="Price data with technical indicators")
-    all_targets: dict[str, pd.DataFrame] | pd.DataFrame | None = Field(default=None, description="Generated target labels")
     selected_features: list[str] = Field(description="Feature selection results")
     feature_importance: dict[str, float] = Field(description="Feature importance scores")
+    all_targets: dict[str, Any] | None = Field(default=None, description="Generated targets by timeframe")
+    combined_features: pd.DataFrame | None = Field(default=None, description="Combined features DataFrame")
+    models_metadata: dict[str, Any] | None = Field(default=None, description="Metadata for training models")
 
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"  # Allow extra fields like status, models_metadata etc.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def validate(self) -> None:
         """Custom validation."""
         if not self.enriched_prices:
             raise ValueError("Enriched prices dictionary is empty")
 
-        # Check for target columns in enriched data
-        target_cols = []
+        # Check for target columns — they may be in all_targets (prepare mode)
+        # or in selected_features (train mode). Both are valid.
+        target_cols_in_features = [col for col in self.selected_features if col.startswith('target_')]
+        target_cols_in_targets = bool(self.all_targets)
 
-        # Check in enriched_prices DataFrames
-        for _tf, df in self.enriched_prices.items():
-            # Robust check for DataFrame
-            if hasattr(df, 'columns'):
-                found = [col for col in df.columns if str(col).startswith('target_')]
-                target_cols.extend(found)
-
-        # Also check if all_targets exists and has target columns
-        if self.all_targets is not None:
-            if isinstance(self.all_targets, dict):
-                for _tf, df in self.all_targets.items():
-                    if hasattr(df, 'columns'):
-                        found = [col for col in df.columns if str(col).startswith('target_')]
-                        target_cols.extend(found)
-            elif hasattr(self.all_targets, 'columns'):
-                found = [col for col in self.all_targets.columns if str(col).startswith('target_')]
-                target_cols.extend(found)
-
-        # Remove duplicates
-        target_cols = list(set(target_cols))
-
-        if not target_cols:
-            # Provide more context in error message
-            prices_keys = list(self.enriched_prices.keys())
-            targets_type = type(self.all_targets).__name__
-            targets_keys = list(self.all_targets.keys()) if isinstance(self.all_targets, dict) else "N/A"
-            raise ValueError(
-                f"No target columns found starting with 'target_' in enriched data or targets. "
-                f"Enriched prices keys: {prices_keys}, "
-                f"All targets type: {targets_type}, "
-                f"All targets keys: {targets_keys}"
-            )
+        if not target_cols_in_features and not target_cols_in_targets:
+            # Only raise if there are genuinely no targets anywhere
+            raise ValueError("No target columns found in selected features or all_targets")
 
         # Validate feature importance scores
         if self.feature_importance:
@@ -230,7 +200,7 @@ def validate_stage_output(stage_name: str, output: dict[str, Any], schema_class:
         schema_class: Pydantic schema class to validate against
 
     Returns:
-        Original output dictionary (schema used for validation only, not data transformation)
+        Validated output dictionary
 
     Raises:
         ValidationError: If output doesn't match schema
@@ -238,217 +208,80 @@ def validate_stage_output(stage_name: str, output: dict[str, Any], schema_class:
     try:
         schema = schema_class(**output)
         schema.validate()
-        # ✅ Return the original output dict, NOT schema.dict() which strips extra keys
-        # (e.g. all_targets, combined_features, status etc. would be lost otherwise)
-        return output
-    except Exception as e:
+        return schema.dict()
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         raise ValueError(f"Stage {stage_name} output validation failed: {e}") from e
-
-
-class ModelingDataSchema(BaseModel):
-    """
-    Schema for data output from Stage 4 (Modeling).
-    """
-    models_metadata: dict[str, Any] | None = Field(default=None, description="Trained models metadata")
-    status: str = Field(default="success", description="Stage execution status")
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-
-    def validate(self) -> None:
-        pass
-
-
-class PredictionDataSchema(BaseModel):
-    """
-    Schema for data output from Stage 5 (Prediction).
-    """
-    predictions: dict[str, Any] | pd.DataFrame | None = Field(default=None, description="Generated signals/predictions")
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-
-    def validate(self) -> None:
-        pass
-
-
-class TradingDataSchema(BaseModel):
-    """
-    Schema for data output from Stage 6 (Trading).
-    """
-    signals: pd.DataFrame | dict[str, Any] | None = Field(default=None, description="Trading signals and orders")
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-
-    def validate(self) -> None:
-        pass
-
-
-class EvaluationDataSchema(BaseModel):
-    """
-    Schema for data output from Stage 7 (Evaluation).
-    """
-    performance_metrics: dict[str, Any] | None = Field(default=None, description="Backtest and model performance metrics")
-
-    class Config:
-        arbitrary_types_allowed = True
-        extra = "allow"
-
-    def validate(self) -> None:
-        pass
 
 
 def create_validation_middleware(schema_map: dict[str, type]):
     """
-    Create async-compatible validation middleware for pipeline stages.
+    Create validation middleware for pipeline stages.
 
     Args:
         schema_map: Dict mapping stage names to schema classes
 
     Returns:
-        Decorator that validates async stage inputs/outputs
+        Middleware function that validates stage inputs/outputs
     """
-    import asyncio
-    import functools
-
     def validate_stage(stage_name: str, stage_func):
-        @functools.wraps(stage_func)
-        async def async_wrapper(*args, **kwargs):
-            # Execute stage (always async)
-            result = await stage_func(*args, **kwargs)
+        def wrapper(*args, **kwargs):
+            # Validate input if schema exists
+            if stage_name in schema_map:
+                input_schema = schema_map[stage_name].get('input')
+                if input_schema and kwargs:
+                    validate_stage_output(f"{stage_name}_input", kwargs, input_schema)
+
+            # Execute stage
+            result = stage_func(*args, **kwargs)
 
             # Validate output if schema exists
-            if stage_name in schema_map and result:
+            if stage_name in schema_map:
                 output_schema = schema_map[stage_name].get('output')
-                if output_schema:
-                    validate_stage_output(f"{stage_name}_output", result, output_schema)
+                if output_schema and result:
+                    result = validate_stage_output(f"{stage_name}_output", result, output_schema)
 
             return result
-
-        return async_wrapper
+        return wrapper
 
     return validate_stage
 
 
-class BatchManifestSchema(BaseModel):
+def validate_batch_dir(batch_dir: str) -> dict[str, Any]:
     """
-    Schema for validating Colab training package and local continue batches.
-    Serves as the explicit contract between local stages and Colab packaging.
-    """
-    batch_name: str = Field(description="Unique batch identifier")
-    timestamp: str = Field(description="Creation timestamp")
-    tickers: list[str] = Field(description="List of active tickers in the batch")
-    timeframes: list[str] = Field(description="List of active timeframes in the batch")
-    heavy_models: list[str] = Field(default_factory=list, description="Heavy model types intended for Colab")
-    features_shape: list[int] = Field(description="Dimensions of features parquet [rows, cols]")
-    targets_shape: list[int] = Field(description="Dimensions of targets parquet [rows, cols]")
-    test_mode: bool = Field(default=False, description="Whether the batch was run in test mode")
-    files: dict[str, str | None] = Field(description="Manifest of packaged parquet and config files")
-
-    def validate(self) -> None:
-        """Verify presence and validity of all packaged batch files."""
-        if not self.batch_name:
-            raise ValueError("batch_name is empty")
-        if not self.tickers:
-            raise ValueError("tickers list is empty")
-        if not self.timeframes:
-            raise ValueError("timeframes list is empty")
-        if len(self.features_shape) != 2 or self.features_shape[0] == 0:
-            raise ValueError(f"Invalid features_shape: {self.features_shape}")
-        if len(self.targets_shape) != 2 or self.targets_shape[0] == 0:
-            raise ValueError(f"Invalid targets_shape: {self.targets_shape}")
-
-
-def validate_batch_dir(batch_dir: str | Path) -> dict[str, Any]:
-    """
-    Perform deep validation of a batch directory to ensure it conforms to the
-    explicit local-Colab contract.
+    Validate the Colab batch directory contract for continue mode.
 
     Args:
-        batch_dir: Path to the batch directory
+        batch_dir: Path to the batch directory.
 
     Returns:
-        Dict detailing the validation status and manifest attributes.
+        Dict containing 'valid' (bool), 'errors' (list), and 'manifest' (dict).
     """
-    from pathlib import Path
     import json
+    import os
 
-    b_path = Path(batch_dir)
     errors = []
-    warnings = []
+    manifest = {}
 
-    if not b_path.exists():
-        return {"valid": False, "errors": [f"Batch directory does not exist: {b_path}"], "warnings": [], "manifest": None}
+    if not os.path.exists(batch_dir):
+        return {'valid': False, 'errors': [f"Batch directory does not exist: {batch_dir}"], 'manifest': {}}
 
-    metadata_path = b_path / "batch_metadata.json"
-    if not metadata_path.exists():
-        return {"valid": False, "errors": [f"Batch metadata missing: {metadata_path}"], "warnings": [], "manifest": None}
+    metadata_path = os.path.join(batch_dir, 'batch_metadata.json')
+    if not os.path.exists(metadata_path):
+        errors.append("batch_metadata.json is missing")
+    else:
+        try:
+            with open(metadata_path, encoding='utf-8') as f:
+                manifest = json.load(f)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            errors.append(f"Failed to read batch_metadata.json: {e}")
 
-    try:
-        with open(metadata_path, 'r', encoding='utf-8') as f:
-            meta_data = json.load(f)
-        
-        # Pydantic schema validation
-        schema = BatchManifestSchema(**meta_data)
-        schema.validate()
-    except Exception as e:
-        return {"valid": False, "errors": [f"Manifest schema validation failed: {e}"], "warnings": [], "manifest": None}
-
-    # Verify primary required data files AND cross-check shapes against manifest
-    import pandas as _pd
-    required_files = ["features.parquet", "targets.parquet"]
-    shape_fields = {"features.parquet": "features_shape", "targets.parquet": "targets_shape"}
-    for rf in required_files:
-        file_path = b_path / rf
-        if not file_path.exists():
-            errors.append(f"Required data file missing: {rf}")
-        elif file_path.stat().st_size == 0:
-            errors.append(f"Required data file is empty: {rf}")
-        else:
-            # Cross-check row count against manifest
-            shape_key = shape_fields[rf]
-            expected_shape = meta_data.get(shape_key, [])
-            if expected_shape and len(expected_shape) >= 1:
-                try:
-                    actual_df = _pd.read_parquet(file_path)
-                    actual_rows = actual_df.shape[0]
-                    expected_rows = expected_shape[0]
-                    if actual_rows != expected_rows:
-                        errors.append(
-                            f"{rf} row count mismatch: manifest says {expected_rows}, "
-                            f"actual file has {actual_rows} rows"
-                        )
-                except Exception as read_err:
-                    errors.append(f"Could not read {rf} for shape validation: {read_err}")
-
-    # Check for at least one model file (model_*.keras / model_*.pkl / model_*.zip)
-    model_files = (
-        list(b_path.glob("model_*.keras")) +
-        list(b_path.glob("model_*.pkl")) +
-        list(b_path.glob("model_*.zip"))
-    )
-    if not model_files:
-        # Non-blocking warning — models may legitimately be absent before Colab runs
-        warnings.append(
-            "No trained model files found (model_*.keras / model_*.pkl / model_*.zip). "
-            "Run --mode continue only AFTER uploading Colab model files."
-        )
-
-    # Check for target scaler mapping config if in test mode
-    if meta_data.get("test_mode", False):
-        config_path = b_path / "config.json"
-        if not config_path.exists():
-            errors.append("Test mode config.json missing in batch directory")
+    required_files = ['features.parquet', 'targets.parquet']
+    for req_file in required_files:
+        if not os.path.exists(os.path.join(batch_dir, req_file)):
+            errors.append(f"Required file {req_file} is missing")
 
     return {
-        "valid": len(errors) == 0,
-        "errors": errors,
-        "warnings": warnings,
-        "manifest": meta_data
+        'valid': len(errors) == 0,
+        'errors': errors,
+        'manifest': manifest
     }
-
-

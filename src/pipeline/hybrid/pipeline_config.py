@@ -30,10 +30,6 @@ class FinalStagesParams:
     tickers: list[str] | None = None
     timeframes: list[str] | None = None
     batch_name: str | None = None
-    stages_to_run: list[int] | None = None
-    news_data: pd.DataFrame | None = None
-    economic_data: pd.DataFrame | None = None
-    market_indicators: pd.DataFrame | None = None
 
 
 @dataclass

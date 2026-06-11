@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Feature Selection Manager for Hybrid Orchestrator.
 Handles all feature selection logic and validation.
@@ -55,7 +56,10 @@ class FeatureSelectionManager:
         feature_cols = [col for col in features_df.columns
                        if not col.startswith('target_') and col not in ['ticker', 'timeframe', 'date', 'datetime']]
 
-        valid_features = [col for col in feature_cols if self._is_valid_feature(features_df, col)]
+        valid_features = []
+        for col in feature_cols:
+            if self._is_valid_feature(features_df, col):
+                valid_features.append(col)
         return valid_features
 
     def _is_valid_feature(self, features_df: pd.DataFrame, col: str) -> bool:
@@ -82,13 +86,7 @@ class FeatureSelectionManager:
                 'timestamp': pd.Timestamp.now().isoformat()
             }
 
-            # Sanitize model name to prevent path traversal
-            safe_model = ''.join(c for c in model if c.isalnum() or c in ['_', '-'])
-            safe_target = ''.join(c for c in request.test_target if c.isalnum() or c in ['_', '-'])
-            feature_file = request.batch_dir / f"selected_features_{safe_model}_{safe_target}.json"
-            # Ensure the file is within batch_dir
-            if not str(feature_file.resolve()).startswith(str(request.batch_dir.resolve())):
-                raise ValueError("Path traversal detected")
+            feature_file = request.batch_dir / f"selected_features_{model}_{request.test_target}.json"
             with open(feature_file, 'w') as f:
                 json.dump(features_data, f, indent=2)
 

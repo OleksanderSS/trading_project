@@ -1,0 +1,11 @@
+{
+  "batch_id": "QQQ_mlp_20260322_234245",
+  "ticker": "QQQ",
+  "model_name": "mlp",
+  "task_type": "regression",
+  "timeframe": "1h",
+  "target_name": "target_rsi14_1h",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T23:42:45.227153",
+  "status": "PENDING_COLAB"
+}

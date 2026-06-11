@@ -66,7 +66,7 @@ enrichment:
 
   significance_features:
     module: "src.features.enrichers.significance_features_enricher"
-    class: "SignificanceAnalyzer"
+    class: "SignificanceFeaturesEnricher"
     params:
       significance_col: "is_significant"
       mode: "feature_engineering"

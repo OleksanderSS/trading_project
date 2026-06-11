@@ -39,7 +39,7 @@ def create_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '--max-iterations',
         type=int,
-        default=None,
+        default=100,
         help='Maximum iterations for training'
     )
     parser.add_argument(
@@ -60,43 +60,9 @@ def create_argument_parser() -> argparse.ArgumentParser:
         help='Force execution even if validation fails'
     )
     parser.add_argument(
-        '--skip-colab',
-        action='store_true',
-        help='Skip Colab stage and run final stages locally using fallback features'
-    )
-    parser.add_argument(
-        '--force-training',
-        action='store_true',
-        help='Force retraining and refresh cached local data'
-    )
-    parser.add_argument(
-        '--force-feature-selection',
-        action='store_true',
-        help='Force feature selection even if existing selection is available'
-    )
-    parser.add_argument(
         '--n-trials',
         type=int,
         default=50,
         help='Number of Optuna trials for calibration mode'
-    )
-    # CLI-options for internal flags (Point 4)
-    parser.add_argument(
-        '--max-models',
-        type=int,
-        default=50,
-        help='Maximum models to keep in PersistentModelPool (default: 50)'
-    )
-    parser.add_argument(
-        '--drift-threshold',
-        type=float,
-        default=0.3,
-        help='Drift detection threshold for ModelQualityController (default: 0.3)'
-    )
-    parser.add_argument(
-        '--min-quality',
-        type=float,
-        default=0.5,
-        help='Minimum acceptable model quality score (default: 0.5)'
     )
     return parser

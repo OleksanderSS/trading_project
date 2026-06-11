@@ -62,7 +62,7 @@ class HypeEnricher(BaseEnricher):
 
         try:
             return self._process_hype_enrichment(df, news_df, time_col)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during hype enrichment: {e}", exc_info=True)
             return df
 
@@ -159,7 +159,8 @@ class HypeEnricher(BaseEnricher):
             return df_enriched
 
         df_enriched = df_enriched.merge(news_count, on=merge_keys, how='left')
-        df_enriched['hype_score'] = df_enriched['news_count'].fillna(0)
+        df_enriched['hype_available'] = df_enriched['news_count'].notna().astype(int)
+        df_enriched['hype_score'] = df_enriched['news_count'].where(df_enriched['news_count'].notna(), 0)
         df_enriched = df_enriched.drop(columns=['news_count'])
         logger.info(f"Added {hype_type} hype_score based on news count")
 
@@ -167,11 +168,7 @@ class HypeEnricher(BaseEnricher):
 
     def _aggregate_news_by_ticker(self, news_copy: pd.DataFrame, time_col: str) -> pd.DataFrame:
         """Aggregate news count by ticker and time."""
-        # Use 'type' column instead of 'ticker' for proper classification
-        if 'type' in news_copy.columns:
-            return news_copy.groupby(['type', pd.Grouper(key=time_col, freq='1h')]).size().reset_index(name='news_count')
-        else:
-            return news_copy.groupby(['ticker', pd.Grouper(key=time_col, freq='1h')]).size().reset_index(name='news_count')
+        return news_copy.groupby(['ticker', pd.Grouper(key=time_col, freq='1h')]).size().reset_index(name='news_count')
 
     def _aggregate_news_globally(self, news_copy: pd.DataFrame, time_col: str) -> pd.DataFrame:
         """Aggregate news count globally by time."""

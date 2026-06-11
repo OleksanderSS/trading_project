@@ -82,11 +82,11 @@ class MacroScoreCalculator:
         normalized_series = self._normalize_series(transformed_series, rolling_window)
         aligned_series = self._apply_directional_alignment(normalized_series, config)
 
-        return aligned_series.fillna(0)
+        return aligned_series
 
     def _transform_series(self, series: pd.Series, rolling_window: int) -> pd.Series:
         """Transform series using percentage change for momentum."""
-        return series.pct_change(periods=int(rolling_window/12)).fillna(0)
+        return series.pct_change(fill_method=None, periods=int(rolling_window / 12))
 
     def _normalize_series(self, series: pd.Series, rolling_window: int) -> pd.Series:
         """Normalize series using rolling Z-score."""
@@ -108,22 +108,43 @@ class MacroScoreCalculator:
 
     def _calculate_weighted_composite(self, scores_df: pd.DataFrame) -> pd.Series:
         """Calculate weighted composite score from individual scores."""
-        composite_score = pd.Series(0.0, index=scores_df.index)
+        weighted_sum = pd.Series(0.0, index=scores_df.index)
+        available_weight = pd.Series(0.0, index=scores_df.index)
         total_weight = sum(config['weight'] for config in self.indicators_config.values())
 
         if total_weight == 0:
             logger.warning("Total weight of indicators is zero. Composite score will be zero.")
-            return composite_score
+            return pd.Series(index=scores_df.index, dtype=float)
 
         for indicator, config in self.indicators_config.items():
             score_col = f"{indicator}_score"
             if score_col in scores_df.columns:
                 weight = config['weight'] / total_weight
-                composite_score += scores_df[score_col] * weight
+                valid_mask = scores_df[score_col].notna()
+                weighted_sum.loc[valid_mask] += scores_df.loc[valid_mask, score_col] * weight
+                available_weight.loc[valid_mask] += weight
 
+        composite_score = pd.Series(index=scores_df.index, dtype=float)
+        valid_weight = available_weight > 0
+        composite_score.loc[valid_weight] = weighted_sum.loc[valid_weight] / available_weight.loc[valid_weight]
         return composite_score
 
     def _scale_final_score(self, composite_score: pd.Series) -> pd.Series:
         """Scale final composite score to 0-100 range."""
-        scaled_values = minmax_scale(composite_score.fillna(0), feature_range=(0, 100))
-        return pd.Series(scaled_values, index=composite_score.index)
+        scaled_score = pd.Series(index=composite_score.index, dtype=float)
+        valid_score = composite_score.dropna()
+        if valid_score.empty:
+            return scaled_score
+        if valid_score.nunique(dropna=True) <= 1:
+            scaled_score.loc[valid_score.index] = 50.0
+            return scaled_score
+        scaled_values = minmax_scale(valid_score, feature_range=(0, 100))
+        # ✅ FIX: deduplicate index before assignment to avoid length mismatch
+        if valid_score.index.duplicated().any():
+            valid_score_dedup = valid_score[~valid_score.index.duplicated(keep='last')]
+            scaled_values_dedup = minmax_scale(valid_score_dedup, feature_range=(0, 100))
+            scaled_score = pd.Series(index=composite_score.index, dtype=float)
+            scaled_score.loc[valid_score_dedup.index] = scaled_values_dedup
+        else:
+            scaled_score.loc[valid_score.index] = scaled_values
+        return scaled_score

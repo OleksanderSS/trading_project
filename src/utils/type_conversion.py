@@ -17,7 +17,6 @@ Usage:
     pred = normalize_prediction(model_output)  # Always returns float
     features = ensure_array(input_data)        # Always returns numpy array
 """
-
 import logging
 from typing import Any
 
@@ -27,21 +26,21 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def _handle_none_nan(pred: Any) -> float | None:
+def _handle_none_nan(pred: Any) ->float | None:
     """Handle None and NaN values."""
-    if pred is None or (isinstance(pred, float) and np.isnan(pred)):
+    if pred is None or isinstance(pred, float) and np.isnan(pred):
         return 0.0
     return None
 
 
-def _convert_numeric_types(pred: Any) -> float | None:
+def _convert_numeric_types(pred: Any) ->float | None:
     """Convert direct numeric types."""
     if isinstance(pred, (int, float)):
         return float(pred)
     return None
 
 
-def _convert_numpy_array(pred: Any) -> float | None:
+def _convert_numpy_array(pred: Any) ->float | None:
     """Convert numpy arrays to float."""
     if isinstance(pred, np.ndarray):
         if pred.size == 0:
@@ -50,7 +49,7 @@ def _convert_numpy_array(pred: Any) -> float | None:
     return None
 
 
-def _convert_list_tuple(pred: Any) -> float | None:
+def _convert_list_tuple(pred: Any) ->float | None:
     """Convert lists and tuples to float."""
     if isinstance(pred, (list, tuple)):
         if not pred:
@@ -59,7 +58,7 @@ def _convert_list_tuple(pred: Any) -> float | None:
     return None
 
 
-def _convert_pandas_series(pred: Any) -> float | None:
+def _convert_pandas_series(pred: Any) ->float | None:
     """Convert pandas Series to float."""
     if isinstance(pred, pd.Series):
         if pred.empty:
@@ -68,32 +67,38 @@ def _convert_pandas_series(pred: Any) -> float | None:
     return None
 
 
-def _convert_numpy_scalar(pred: Any) -> float | None:
+def _convert_numpy_scalar(pred: Any) ->float | None:
     """Convert numpy scalars to float."""
-    if hasattr(pred, 'item'):  # numpy scalar
+    if hasattr(pred, 'item'):
         return float(pred.item())
     return None
 
 
-def _handle_unknown_type(pred: Any, strict: bool) -> float:
+def _handle_unknown_type(pred: Any, strict: bool) ->float:
     """Handle unknown prediction types."""
     if strict:
-        raise TypeError(f"Cannot convert prediction of type {type(pred)} to float")
+        raise TypeError(
+            f'Cannot convert prediction of type {type(pred)} to float')
     else:
-        logger.warning(f"Unknown prediction type {type(pred)}, returning 0.0")
+        logger.warning(f'Unknown prediction type {type(pred)}, returning 0.0')
         return 0.0
 
 
-def _handle_conversion_error(pred: Any, error: Exception, strict: bool) -> float:
+def _handle_conversion_error(pred: Any, error: Exception, strict: bool
+    ) ->float:
     """Handle conversion errors."""
     if strict:
-        raise TypeError(f"Failed to convert prediction {pred} to float: {error}") from error
+        raise TypeError(
+            f'Failed to convert prediction {pred} to float: {error}'
+            ) from error
     else:
-        logger.warning(f"Failed to convert prediction {pred} to float: {error}, returning 0.0")
+        logger.warning(
+            f'Failed to convert prediction {pred} to float: {error}, returning 0.0'
+            )
         return 0.0
 
 
-def normalize_prediction(pred: Any, strict: bool = False) -> float:
+def normalize_prediction(pred: Any, strict: bool=False) ->float:
     """
     Convert any prediction format to standardized float.
 
@@ -123,58 +128,44 @@ def normalize_prediction(pred: Any, strict: bool = False) -> float:
         0.7
     """
     try:
-        # Handle None/NaN
         result = _handle_none_nan(pred)
         if result is not None:
             return result
-
-        # Direct numeric types
         result = _convert_numeric_types(pred)
         if result is not None:
             return result
-
-        # Numpy arrays
         result = _convert_numpy_array(pred)
         if result is not None:
             return result
-
-        # Lists and tuples
         result = _convert_list_tuple(pred)
         if result is not None:
             return result
-
-        # Pandas Series
         result = _convert_pandas_series(pred)
         if result is not None:
             return result
-
-        # Numpy scalars
         result = _convert_numpy_scalar(pred)
         if result is not None:
             return result
-
-        # Unknown type
         return _handle_unknown_type(pred, strict)
-
     except (ValueError, IndexError, TypeError) as e:
         return _handle_conversion_error(pred, e, strict)
 
 
-def _convert_dataframe(data: Any) -> pd.DataFrame | None:
+def _convert_dataframe(data: Any) ->pd.DataFrame | None:
     """Handle already DataFrame input."""
     if isinstance(data, pd.DataFrame):
         return data.copy()
     return None
 
 
-def _convert_dict_to_dataframe(data: Any) -> pd.DataFrame | None:
+def _convert_dict_to_dataframe(data: Any) ->pd.DataFrame | None:
     """Convert dict of arrays/lists to DataFrame."""
     if isinstance(data, dict):
         return pd.DataFrame(data)
     return None
 
 
-def _convert_numpy_to_dataframe(data: Any, columns: list | None) -> pd.DataFrame | None:
+def _convert_numpy_to_dataframe(data: Any, columns: list | None) ->pd.DataFrame | None:
     """Convert numpy array to DataFrame."""
     if isinstance(data, np.ndarray):
         df = pd.DataFrame(data)
@@ -184,35 +175,28 @@ def _convert_numpy_to_dataframe(data: Any, columns: list | None) -> pd.DataFrame
     return None
 
 
-def _convert_list_to_dataframe(data: Any, columns: list | None) -> pd.DataFrame | None:
+def _convert_list_to_dataframe(data: Any, columns: list | None) ->pd.DataFrame | None:
     """Convert list data to DataFrame."""
     if not isinstance(data, list):
         return None
-
     if not data:
         return pd.DataFrame()
-
-    # List of dicts
     if isinstance(data[0], dict):
         return pd.DataFrame(data)
-
-    # List of lists
     elif isinstance(data[0], (list, tuple)):
         return pd.DataFrame(data, columns=columns)
-
-    # Simple list
     else:
         return pd.DataFrame(data, columns=columns or ['value'])
 
 
-def _convert_series_to_dataframe(data: Any) -> pd.DataFrame | None:
+def _convert_series_to_dataframe(data: Any) ->pd.DataFrame | None:
     """Convert pandas Series to DataFrame."""
     if isinstance(data, pd.Series):
         return data.to_frame()
     return None
 
 
-def ensure_dataframe(data: Any, columns: list | None = None) -> pd.DataFrame:
+def ensure_dataframe(data: Any, columns: list | None=None) ->pd.DataFrame:
     """
     Convert various data formats to pandas DataFrame.
 
@@ -239,39 +223,27 @@ def ensure_dataframe(data: Any, columns: list | None = None) -> pd.DataFrame:
         1  2  4
     """
     try:
-        # Already a DataFrame
         result = _convert_dataframe(data)
         if result is not None:
             return result
-
-        # Dict of arrays/lists
         result = _convert_dict_to_dataframe(data)
         if result is not None:
             return result
-
-        # Numpy array
         result = _convert_numpy_to_dataframe(data, columns)
         if result is not None:
             return result
-
-        # List data
         result = _convert_list_to_dataframe(data, columns)
         if result is not None:
             return result
-
-        # Pandas Series
         result = _convert_series_to_dataframe(data)
         if result is not None:
             return result
-
-        # Unknown type
-        raise ValueError(f"Cannot convert {type(data)} to DataFrame")
-
-    except Exception as e:
-        raise ValueError(f"Failed to convert data to DataFrame: {e}") from e
+        raise ValueError(f'Cannot convert {type(data)} to DataFrame')
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        raise ValueError(f'Failed to convert data to DataFrame: {e}') from e
 
 
-def ensure_array(data: Any, dtype: np.dtype = np.float32) -> np.ndarray:
+def ensure_array(data: Any, dtype: np.dtype=np.float32) ->np.ndarray:
     """
     Convert various data formats to numpy array.
 
@@ -294,31 +266,22 @@ def ensure_array(data: Any, dtype: np.dtype = np.float32) -> np.ndarray:
                [2., 4.]], dtype=float32)
     """
     try:
-        # Already a numpy array
         if isinstance(data, np.ndarray):
             return data.astype(dtype, copy=False)
-
-        # Pandas DataFrame/Series
         elif isinstance(data, (pd.DataFrame, pd.Series)):
             return data.values.astype(dtype)
-
-        # List/tuple
         elif isinstance(data, (list, tuple)):
             return np.array(data, dtype=dtype)
-
-        # Scalar
         elif isinstance(data, (int, float)):
             return np.array([data], dtype=dtype)
-
         else:
-            raise ValueError(f"Cannot convert {type(data)} to numpy array")
-
-    except Exception as e:
-        raise ValueError(f"Failed to convert data to numpy array: {e}") from e
+            raise ValueError(f'Cannot convert {type(data)} to numpy array')
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        raise ValueError(f'Failed to convert data to numpy array: {e}') from e
 
 
 def safe_divide(a: float | np.ndarray, b: float | np.ndarray,
-                default: float = 0.0) -> float | np.ndarray:
+    default: float=0.0) ->float | np.ndarray:
     """
     Safe division that handles division by zero.
 
@@ -337,7 +300,6 @@ def safe_divide(a: float | np.ndarray, b: float | np.ndarray,
         0.0
     """
     try:
-        # Handle numpy arrays
         if isinstance(b, np.ndarray):
             with np.errstate(divide='ignore', invalid='ignore'):
                 result = np.divide(a, b)
@@ -345,11 +307,13 @@ def safe_divide(a: float | np.ndarray, b: float | np.ndarray,
                 return result
         else:
             return a / b if b != 0 else default
-    except Exception:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        logger.exception(f'Виникла помилка: {e}')
         return default
 
 
-def clamp_value(value: float, min_val: float = -np.inf, max_val: float = np.inf) -> float:
+def clamp_value(value: float, min_val: float=-np.inf, max_val: float=np.inf
+    ) ->float:
     """
     Clamp value to specified range.
 
@@ -370,7 +334,7 @@ def clamp_value(value: float, min_val: float = -np.inf, max_val: float = np.inf)
     return max(min_val, min(max_val, value))
 
 
-def normalize_array(arr: np.ndarray, method: str = 'zscore') -> np.ndarray:
+def normalize_array(arr: np.ndarray, method: str='zscore') ->np.ndarray:
     """
     Normalize array using specified method.
 
@@ -388,23 +352,21 @@ def normalize_array(arr: np.ndarray, method: str = 'zscore') -> np.ndarray:
         mean = np.mean(arr)
         std = np.std(arr)
         return (arr - mean) / std if std > 0 else arr - mean
-
     elif method == 'minmax':
         min_val = np.min(arr)
         max_val = np.max(arr)
-        return (arr - min_val) / (max_val - min_val) if max_val > min_val else arr - min_val
-
+        return (arr - min_val) / (max_val - min_val
+            ) if max_val > min_val else arr - min_val
     elif method == 'robust':
         median = np.median(arr)
         mad = np.median(np.abs(arr - median))
         return (arr - median) / mad if mad > 0 else arr - median
-
     else:
-        raise ValueError(f"Unknown normalization method: {method}")
+        raise ValueError(f'Unknown normalization method: {method}')
 
 
-def validate_numeric_range(value: float, min_val: float | None = None,
-                          max_val: float | None = None, name: str = "value") -> None:
+def validate_numeric_range(value: float, min_val: float | None=None,
+    max_val: float | None=None, name: str='value') ->None:
     """
     Validate that numeric value is within acceptable range.
 
@@ -418,13 +380,12 @@ def validate_numeric_range(value: float, min_val: float | None = None,
         ValueError: If value is outside allowed range
     """
     if min_val is not None and value < min_val:
-        raise ValueError(f"{name} {value} is below minimum {min_val}")
-
+        raise ValueError(f'{name} {value} is below minimum {min_val}')
     if max_val is not None and value > max_val:
-        raise ValueError(f"{name} {value} is above maximum {max_val}")
+        raise ValueError(f'{name} {value} is above maximum {max_val}')
 
 
-def format_percentage(value: float, decimals: int = 1) -> str:
+def format_percentage(value: float, decimals: int=1) ->str:
     """
     Format float as percentage string.
 
@@ -441,4 +402,4 @@ def format_percentage(value: float, decimals: int = 1) -> str:
         >>> format_percentage(0.1, decimals=0)
         '10%'
     """
-    return f"{value * 100:.{decimals}f}%"
+    return f'{value * 100:.{decimals}f}%'

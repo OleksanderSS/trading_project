@@ -1,16 +1,16 @@
 import asyncio
 import os
 import sys
-from pathlib import Path
 
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.clients.http_client_factory import HttpClientFactory
-from src.data.management.data_manager import DataManager
-from src.data.collectors.fred_collector import FredCollector
 from src.core.error_handling.error_handler import ErrorHandler
+from src.data.collectors.fred_collector import FredCollector
+from src.data.management.data_manager import DataManager
+
 
 async def test_fred():
     print("Testing FredCollector...")

@@ -140,8 +140,9 @@ class MissingDataAnomalyDetector:
         """Detect sudden changes after fills."""
         anomalies = []
 
-        # Find transitions from NaN to filled values
-        fill_transitions = fill_mask & fill_mask.shift(-1).fillna(False)
+        # Find transitions from NaN to filled values, shifted by 1 to represent past transitions
+        shifted_fill_mask = fill_mask.shift(1)
+        fill_transitions = fill_mask & shifted_fill_mask.where(shifted_fill_mask.notna(), False)
 
         if not fill_transitions.any():
             return anomalies
@@ -158,7 +159,7 @@ class MissingDataAnomalyDetector:
 
             # Get previous value by positional index (works for any index type)
             try:
-                prev_idx = index_list[pos - 1]
+                index_list[pos - 1]
                 prev_val = filled_series.iloc[pos - 1]
             except (KeyError, IndexError):
                 prev_val = None
@@ -168,8 +169,8 @@ class MissingDataAnomalyDetector:
             if prev_val is not None and filled_val is not None:
                 change_magnitude = abs(filled_val - prev_val)
 
-                # Calculate Z-score based on recent volatility
-                recent_values = filled_series.loc[:idx].tail(20)
+                # Calculate Z-score based on recent volatility excluding current point
+                recent_values = filled_series.loc[:idx].shift(1).tail(20)
                 if len(recent_values) > 1:
                     recent_std = recent_values.std()
                     if recent_std > 0:
@@ -178,9 +179,8 @@ class MissingDataAnomalyDetector:
                         if z_score > self.anomaly_thresholds['sudden_change_z_score']:
                             anomalies.append({
                                 'type': 'sudden_change_after_fill',
-                                'column': col_name,
-                                'timestamp': idx,
-                                'change_magnitude': change_magnitude,
+                                'index': idx,
+                                'magnitude': change_magnitude,
                                 'z_score': z_score,
                                 'prev_value': prev_val,
                                 'filled_value': filled_val,
@@ -297,7 +297,7 @@ class MissingDataAnomalyDetector:
         # Check if many columns were filled at the same time (systematic issue)
         if len(fill_patterns) > 1:
             timestamp_counts = {}
-            for col, pattern in fill_patterns.items():
+            for _col, pattern in fill_patterns.items():
                 for timestamp in pattern['fill_timestamps']:
                     timestamp_counts[timestamp] = timestamp_counts.get(timestamp, 0) + 1
 

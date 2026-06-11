@@ -1,6 +1,7 @@
-# src/core/processing/parallel_processor.py
-
+import logging
 import multiprocessing as mp
+
+# src/core/processing/parallel_processor.py
 import time
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
@@ -26,7 +27,8 @@ class ParallelProcessor:
 
         # Initial memory check
         mem = psutil.virtual_memory()
-        self.logger.debug(f"ParallelProcessor initialized. System RAM: {mem.total / (1024**3):.2f} GB ({mem.percent}% used)")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"ParallelProcessor initialized. System RAM: {mem.total / (1024**3):.2f} GB ({mem.percent}% used)")
 
     def _get_executor(self):
         """Returns the appropriate executor based on the configuration."""
@@ -50,21 +52,19 @@ class ParallelProcessor:
             return []
 
         self.logger.info(f"Processing {len(items)} items in parallel (workers={self.max_workers}, processes={self.use_processes})")
-        # Pre-allocate results to guarantee exact index alignment with original input items
-        results = [None] * len(items)
+        results = []
         start_time = time.time()
 
         with self._get_executor() as executor:
             future_to_item = {executor.submit(func, item, **kwargs): i for i, item in enumerate(items)}
 
             for future in as_completed(future_to_item):
-                idx = future_to_item[future]
                 try:
                     result = future.result()
-                    results[idx] = result
-                except Exception as e:
-                    self.logger.error(f"Error processing item #{idx}: {e}", exc_info=True)
-                    results[idx] = None  # Already None, but explicitly set for visual clarity
+                    results.append(result)
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                    self.logger.error(f"Error processing item #{future_to_item[future]}: {e}", exc_info=True)
+                    results.append(None) # Append None to maintain order
 
         elapsed = time.time() - start_time
         self.logger.info(f"Parallel processing of {len(items)} items completed in {elapsed:.2f}s")

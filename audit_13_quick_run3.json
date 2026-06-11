@@ -1,0 +1,231 @@
+{
+  "root": "src",
+  "file_count_scanned": 606,
+  "issues": [
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/colab/models/architectures.py",
+      "line": 1,
+      "message": "Heavy import 'torch' at module import time can slow startup/tests.",
+      "code": "import torch",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/colab/models/architectures.py",
+      "line": 2,
+      "message": "Heavy import 'torch' at module import time can slow startup/tests.",
+      "code": "import torch.nn as nn",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/feature_engineering/transformers/__init__.py",
+      "line": 1,
+      "message": "Heavy import 'transformers' at module import time can slow startup/tests.",
+      "code": "from src.feature_engineering.transformers.transformers import (",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/extractors/entity_extractor.py",
+      "line": 4,
+      "message": "Heavy import 'spacy' at module import time can slow startup/tests.",
+      "code": "import spacy",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/models/finbert_pipeline.py",
+      "line": 3,
+      "message": "Heavy import 'transformers' at module import time can slow startup/tests.",
+      "code": "from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/models/finbert_pipeline.py",
+      "line": 4,
+      "message": "Heavy import 'torch' at module import time can slow startup/tests.",
+      "code": "import torch",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/models/roberta_sentiment.py",
+      "line": 2,
+      "message": "Heavy import 'torch' at module import time can slow startup/tests.",
+      "code": "import torch",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/models/roberta_sentiment.py",
+      "line": 3,
+      "message": "Heavy import 'transformers' at module import time can slow startup/tests.",
+      "code": "from transformers import AutoTokenizer, AutoModelForSequenceClassification",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/models/sentiment_core.py",
+      "line": 6,
+      "message": "Heavy import 'transformers' at module import time can slow startup/tests.",
+      "code": "from transformers import AutoModelForSequenceClassification",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/scoring/summarizer.py",
+      "line": 5,
+      "message": "Heavy import 'torch' at module import time can slow startup/tests.",
+      "code": "import torch",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/features/nlp/scoring/summarizer.py",
+      "line": 6,
+      "message": "Heavy import 'transformers' at module import time can slow startup/tests.",
+      "code": "from transformers import pipeline, Pipeline",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/ensemble/enhanced_ensemble.py",
+      "line": 9,
+      "message": "Heavy import 'torch' at module import time can slow startup/tests.",
+      "code": "import torch",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/autoencoder_model.py",
+      "line": 4,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "import tensorflow as tf",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/autoencoder_model.py",
+      "line": 5,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "from tensorflow.keras import layers, models",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/base_neural.py",
+      "line": 7,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "import tensorflow as tf",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/cnn_model.py",
+      "line": 5,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "import tensorflow as tf",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/cnn_model.py",
+      "line": 6,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "from tensorflow.keras import Sequential",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/cnn_model.py",
+      "line": 7,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "from tensorflow.keras.layers import Input, Conv1D, MaxPooling1D, Flatten, Dense, Dropout",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/gru_model.py",
+      "line": 4,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "import tensorflow as tf",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/gru_model.py",
+      "line": 5,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "from tensorflow.keras import layers, models",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/lstm_model.py",
+      "line": 4,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "import tensorflow as tf",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/lstm_model.py",
+      "line": 5,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "from tensorflow.keras import layers, models",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/mlp_model.py",
+      "line": 4,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "import tensorflow as tf",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/models/neural/mlp_model.py",
+      "line": 5,
+      "message": "Heavy import 'tensorflow' at module import time can slow startup/tests.",
+      "code": "from tensorflow.keras import layers, models",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    },
+    {
+      "area": "Imports",
+      "severity": "MEDIUM",
+      "file": "src/predictions/deep_predict.py",
+      "line": 4,
+      "message": "Heavy import 'torch' at module import time can slow startup/tests.",
+      "code": "import torch",
+      "hint": "Prefer lazy imports inside functions or optional-dependency guards."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "batch_id": "TSLA_cnn_20260323_092434",
+  "ticker": "TSLA",
+  "model_name": "cnn",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_atr14_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T09:24:34.096072",
+  "status": "PENDING_COLAB"
+}

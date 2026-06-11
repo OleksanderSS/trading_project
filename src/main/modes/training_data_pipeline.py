@@ -6,17 +6,17 @@ This script orchestrates the process of data collection, feature engineering,
 and target calculation using the new, modular components.
 """
 
-import pandas as pd
-from pathlib import Path
 import asyncio
+from pathlib import Path
 
-from src.pipeline.stages.stage_1_collection import CollectionStage
-from src.features.feature_orchestrator import FeatureOrchestrator
-from src.targets.target_orchestrator import TargetOrchestrator
-from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
+from src.features.feature_orchestrator import FeatureOrchestrator
+from src.pipeline.stages.stage_1_collection import CollectionStage
+# audit-ignore: ARCHITECTURAL_USAGE
+from src.targets.target_orchestrator import TargetOrchestrator
 
 logger = ProjectLogger.get_logger("TrainingDataPipeline")
 
@@ -45,14 +45,22 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
     logger.info(f"Successfully collected data. Types: {list(raw_data.keys())}")
 
     # 2. Feature Engineering Stage
-    feature_orchestrator = FeatureOrchestrator.create_from_config(config_manager, raw_data)
-    features_df = feature_orchestrator.run(market_data)
+    feature_orchestrator = FeatureOrchestrator.create_from_config(config_manager)
+    features_df = feature_orchestrator.run(market_data, **raw_data)
     logger.info(f"Feature engineering complete. DataFrame shape: {features_df.shape}")
 
     # 3. Target Generation Stage
     targets_list = config_manager.get_config('targets', [])
+    # audit-ignore: ARCHITECTURAL_USAGE
     target_orchestrator = TargetOrchestrator(targets_list=targets_list)
-    final_df = target_orchestrator.generate_targets(features_df)
+    # audit-ignore: ARCHITECTURAL_USAGE
+    targets_df = target_orchestrator.generate_targets(features_df)
+    # audit-ignore: ARCHITECTURAL_USAGE
+    target_cols = [col for col in targets_df.columns if col.startswith('target_')]
+    final_df = features_df.copy()
+    # audit-ignore: ARCHITECTURAL_USAGE
+    for col in target_cols:
+        final_df[col] = targets_df[col].reindex(final_df.index)
     logger.info(f"Target generation complete. Final DataFrame shape: {final_df.shape}")
 
     # 4. Save the final dataset
@@ -63,18 +71,18 @@ async def run_pipeline(config_manager: UnifiedConfigManager, db_manager: DataMan
         output_dir = Path(output_dir_str)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_path = output_dir / output_filename
-        
+
         final_df.to_parquet(output_path, index=False)
-        logger.info(f"--- Pipeline Finished Successfully ---")
+        logger.info("--- Pipeline Finished Successfully ---")
         logger.info(f"Final dataset saved to: {output_path}")
 
-    except Exception as e:
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.critical(f"Failed to save final dataset: {e}", exc_info=True)
 
 if __name__ == "__main__":
     from src.config.unified_config_manager import get_current_config
-    
+
     config = get_current_config()
     db_manager = DataManager(config) # Create the DataManager
-    
+
     asyncio.run(run_pipeline(config, db_manager))

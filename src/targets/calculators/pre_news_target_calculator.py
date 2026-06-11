@@ -21,6 +21,66 @@ class PreNewsTargetCalculator:
     - Розраховує return від тієї свічки до моменту публікації новини
     """
 
+    def _filter_by_timeframe(self, df: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+        """Filter data by timeframe."""
+        if 'interval' in df.columns:
+            return df[df['interval'] == timeframe].copy()
+        else:
+            return df.copy()
+
+    def _ensure_datetime_column(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Ensure datetime column exists."""
+        if 'datetime' not in df.columns:
+            if isinstance(df.index, pd.DatetimeIndex):
+                df = df.reset_index()
+                df = df.rename(columns={'index': 'datetime'})
+        return df
+
+    def _get_upcoming_news(self, ticker: str, current_time: pd.Timestamp, news_df: pd.DataFrame, timeframe: str) -> pd.DataFrame:
+        """Find upcoming news for a ticker."""
+        ticker_news = news_df[
+            (news_df['ticker'] == ticker) | (news_df.get('news_type', 'general') == 'general')
+        ]
+
+        time_window = pd.Timedelta(hours=24) if timeframe == '1d' else pd.Timedelta(hours=1)
+        return ticker_news[
+            (ticker_news['published_date'] >= current_time) &
+            (ticker_news['published_date'] <= current_time + time_window)
+        ]
+
+    def _calculate_target_return(self, df_tf: pd.DataFrame, ticker: str, current_time: pd.Timestamp,
+                                 current_price: float, news_df: pd.DataFrame, candle_num: int, timeframe: str) -> float:
+        """Calculate target return from pre-news candle to news time."""
+        upcoming_news = self._get_upcoming_news(ticker, current_time, news_df, timeframe)
+
+        if upcoming_news.empty:
+            return np.nan
+
+        upcoming_news = upcoming_news.sort_values('published_date')
+        news_time = upcoming_news.iloc[0]['published_date']
+
+        past_candles = df_tf[
+            (df_tf['ticker'] == ticker) &
+            (df_tf['datetime'] < news_time)
+        ].tail(candle_num)
+
+        if len(past_candles) < candle_num:
+            return np.nan
+
+        target_candle = past_candles.iloc[0]
+        past_price = target_candle['close']
+
+        news_candle = df_tf[
+            (df_tf['ticker'] == ticker) &
+            (df_tf['datetime'] >= news_time)
+        ].head(1)
+
+        if news_candle.empty:
+            return np.nan
+
+        news_price = news_candle.iloc[0]['close']
+        return (news_price - past_price) / past_price
+
     def calculate(self, df: pd.DataFrame, **kwargs) -> pd.Series:
         """
         Розрахувати pre-news таргет
@@ -35,7 +95,6 @@ class PreNewsTargetCalculator:
         Returns:
             Series з таргетами
         """
-        # Отримати параметри
         timeframe = kwargs.get('timeframe', '1d')
         candle_num = kwargs.get('candle_num', 1)
         news_df = kwargs.get('news_df')
@@ -44,23 +103,14 @@ class PreNewsTargetCalculator:
             logger.warning("No news data provided for pre_news target")
             return pd.Series(np.nan, index=df.index)
 
-        # Фільтруємо дані по таймфрейму
-        if 'interval' in df.columns:
-            df_tf = df[df['interval'] == timeframe].copy()
-        else:
-            df_tf = df.copy()
+        df_tf = self._filter_by_timeframe(df, timeframe)
 
         if df_tf.empty:
             logger.warning(f"No data for timeframe {timeframe}")
             return pd.Series(np.nan, index=df.index)
 
-        # Переконуємося що datetime є колонкою
-        if 'datetime' not in df_tf.columns:
-            if isinstance(df_tf.index, pd.DatetimeIndex):
-                df_tf = df_tf.copy()
-                df_tf['datetime'] = df_tf.index
+        df_tf = self._ensure_datetime_column(df_tf)
 
-        # Розрахувати таргети для кожного рядка
         targets = []
 
         for _idx, row in df_tf.iterrows():
@@ -72,55 +122,7 @@ class PreNewsTargetCalculator:
                 targets.append(np.nan)
                 continue
 
-            # Знайти новини для цього тікера близько до поточного часу
-            # (в межах 1 свічки вперед)
-            ticker_news = news_df[
-                (news_df['ticker'] == ticker) | (news_df.get('news_type', 'general') == 'general')
-            ]
-
-            # Знайти новини що будуть опубліковані незабаром після поточної свічки
-            time_window = pd.Timedelta(hours=24) if timeframe == '1d' else pd.Timedelta(hours=1)
-            upcoming_news = ticker_news[
-                (ticker_news['published_date'] >= current_time) &
-                (ticker_news['published_date'] <= current_time + time_window)
-            ]
-
-            if upcoming_news.empty:
-                targets.append(np.nan)
-                continue
-
-            # Взяти найближчу новину
-            upcoming_news = upcoming_news.sort_values('published_date')
-            news_time = upcoming_news.iloc[0]['published_date']
-
-            # Знайти N-у свічку ДО новини
-            past_candles = df_tf[
-                (df_tf['ticker'] == ticker) &
-                (df_tf['datetime'] < news_time)
-            ].tail(candle_num)
-
-            if len(past_candles) < candle_num:
-                targets.append(np.nan)
-                continue
-
-            # Взяти ціну N-ої свічки до новини
-            target_candle = past_candles.iloc[0]  # Найдавніша з останніх N
-            past_price = target_candle['close']
-
-            # Знайти ціну на момент новини (або найближчу)
-            news_candle = df_tf[
-                (df_tf['ticker'] == ticker) &
-                (df_tf['datetime'] >= news_time)
-            ].head(1)
-
-            if news_candle.empty:
-                targets.append(np.nan)
-                continue
-
-            news_price = news_candle.iloc[0]['close']
-
-            # Розрахувати return від минулої свічки до новини
-            target_return = (news_price - past_price) / past_price
+            target_return = self._calculate_target_return(df_tf, ticker, current_time, current_price, news_df, candle_num, timeframe)
             targets.append(target_return)
 
         return pd.Series(targets, index=df_tf.index)

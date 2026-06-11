@@ -1,0 +1,15 @@
+{
+  "root": "src",
+  "file_count_scanned": 606,
+  "issues": [
+    {
+      "area": "NaN",
+      "severity": "HIGH",
+      "file": "src/analytics/calculators/macro_score_calculator.py",
+      "line": 90,
+      "message": "pct_change() without explicit fill_method can forward-fill by default (pandas).",
+      "code": "return series.pct_change(periods=int(rolling_window / 12), fill_method=None)",
+      "hint": "Prefer pct_change(fill_method=None) and decide fill/drop explicitly."
+    }
+  ]
+}

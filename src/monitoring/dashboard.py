@@ -1,4 +1,4 @@
-"""Monitoring Dashboard.
+"""Monitoring Dashboard - Monitoring Dashboard.
 
 Generates interactive dashboards for visualizing system,
 model, and data metrics.
@@ -8,7 +8,7 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import Any, cast, Optional
+from typing import Any
 
 from src.core.logging.logger import ProjectLogger
 
@@ -29,405 +29,414 @@ try:
 except ImportError:
     PLOTLY_AVAILABLE = False
     # Define dummy components for type safety
-    html = cast(Any, type('html', (), {'Div': lambda *args, **kwargs: None, 'H1': lambda *args, **kwargs: None, 'H2': lambda *args, **kwargs: None, 'Th': lambda *args, **kwargs: None, 'Thead': lambda *args, **kwargs: None, 'Tr': lambda *args, **kwargs: None, 'Br': lambda *args, **kwargs: None, 'Span': lambda *args, **kwargs: None, 'Table': lambda *args, **kwargs: None, 'Td': lambda *args, **kwargs: None, 'Tbody': lambda *args, **kwargs: None}))
-    dcc = cast(Any, type('dcc', (), {'Interval': lambda *args, **kwargs: None, 'Graph': lambda *args, **kwargs: None}))
-    Input = cast(Any, lambda *args, **kwargs: None)
-    Output = cast(Any, lambda *args, **kwargs: None)
+    html = type('html', (), {'Div': lambda *args, **kwargs: None, 'H1': lambda *args, **kwargs: None, 'H2': lambda *args, **kwargs: None, 'Th': lambda *args, **kwargs: None, 'Thead': lambda *args, **kwargs: None, 'Tr': lambda *args, **kwargs: None, 'Br': lambda *args, **kwargs: None, 'Span': lambda *args, **kwargs: None, 'Table': lambda *args, **kwargs: None, 'Td': lambda *args, **kwargs: None, 'Tbody': lambda *args, **kwargs: None})()
+    dcc = type('dcc', (), {'Interval': lambda *args, **kwargs: None, 'Graph': lambda *args, **kwargs: None})()
+    Input = None
+    Output = None
     logger.warning("Plotly and Dash not available. Dashboard will use text-based output.")
 
-class MonitoringDashboardApp:
-    """Monitoring dashboard web app."""
+if PLOTLY_AVAILABLE:
+    class MonitoringDashboardApp:
+        """Monitoring dashboard web app."""
 
-    def __init__(
-        self,
-        monitoring_system: MonitoringSystem,
-        config: dict[str, Any] | None = None,
-    ):
-        if not PLOTLY_AVAILABLE:
-            raise ImportError("Plotly and Dash are required for MonitoringDashboardApp")
-            
-        self.monitoring_system = monitoring_system
-        self.config = config or {}
-        self.logger = ProjectLogger.get_logger("MonitoringDashboardApp")
-        self.port = self.config.get('port', 8050)
-        self.host = self.config.get('host', 'localhost')
-        update_ms = self.config.get('update_interval', 5000)
-        self.update_interval = update_ms  # ms
-
-        self.app = dash.Dash(__name__, title="Trading System Monitor")
-        self._setup_layout()
-        self._setup_callbacks()
-
-    def _setup_layout(self):
-        """Dashboard layout configuration"""
-        self.app.layout = html.Div([
-            html.H1("Trading System Monitoring Dashboard",
-                    style={'textAlign': 'center', 'marginBottom': 30}),
-
-            html.Div([
-                html.H2("System Status"),
-                html.Div(id='system-status', style={'fontSize': '24px', 'marginBottom': 20})
-            ]),
-
-            html.Div([
-                html.H2("Key Metrics"),
-                html.Div([
-                    dcc.Graph(id='cpu-memory-graph'),
-                    dcc.Graph(id='disk-network-graph'),
-                ], style={'display': 'flex', 'flexWrap': 'wrap'}),
-            ]),
-
-            html.Div([
-                html.H2("Model Performance"),
-                dcc.Graph(id='model-performance-graph'),
-            ]),
-
-            html.Div([
-                html.H2("Data Quality"),
-                dcc.Graph(id='data-quality-graph'),
-            ]),
-
-            html.Div([
-                html.H2("Active alerts"),
-                html.Div(id='alerts-table'),
-            ]),
-
-            dcc.Interval(
-                id='interval-component',
-                interval=self.update_interval,
-                n_intervals=0
+        def __init__(
+            self,
+            monitoring_system: MonitoringSystem,
+            config: dict[str, Any] | None = None,
+        ):
+            self.monitoring_system = monitoring_system
+            self.config = config or {}
+            self.logger = ProjectLogger.get_logger(
+                "MonitoringDashboardApp"
             )
-        ], style={'padding': '20px'})
+            self.port = self.config.get('port', 8050)
+            self.host = self.config.get('host', 'localhost')
+            update_ms = self.config.get('update_interval', 5000)
+            self.update_interval = update_ms  # ms
 
-    def _setup_callbacks(self):
-        """Callback functions configuration"""
+            self.app = dash.Dash(__name__, title="Trading System Monitor")
+            self._setup_layout()
+            self._setup_callbacks()
 
-        @self.app.callback(
-            [Output('system-status', 'children'),
-             Output('cpu-memory-graph', 'figure'),
-             Output('disk-network-graph', 'figure'),
-             Output('model-performance-graph', 'figure'),
-             Output('data-quality-graph', 'figure'),
-             Output('alerts-table', 'children')],
-            [Input('interval-component', 'n_intervals')]
-        )
-        def update_dashboard(n: int) -> tuple[Any, ...]:
-            """Update all dashboard components"""
-            try:
-                dashboard_data = self.monitoring_system.get_dashboard_data()
+        def _setup_layout(self):
+            """Dashboard layout configuration"""
+            self.app.layout = html.Div([
+                html.H1("Trading System Monitoring Dashboard",
+                       style={'textAlign': 'center', 'marginBottom': 30}),
 
                 # System status
-                system_status = dashboard_data.get('system_status', 'unknown')
-                status_color = {
-                    'healthy': 'green',
-                    'degraded': 'orange',
-                    'unhealthy': 'red',
-                    'critical': 'darkred'
-                }.get(system_status, 'gray')
+                html.Div([
+                    html.H2("System Status"),
+                    html.Div(id='system-status', style={'fontSize': '24px', 'marginBottom': 20})
+                ]),
 
-                status_div = html.Div([
-                    html.Span(
-                        f"Status: {system_status.upper()}",
-                        style={
-                            'color': status_color,
-                            'fontWeight': 'bold',
-                        },
+                # Key metrics
+                html.Div([
+                    html.H2("Key Metrics"),
+                    html.Div([
+                        dcc.Graph(id='cpu-memory-graph'),
+                        dcc.Graph(id='disk-network-graph'),
+                    ], style={'display': 'flex', 'flexWrap': 'wrap'}),
+                ]),
+
+                # Model performance
+                html.Div([
+                    html.H2("Model Performance"),
+                    dcc.Graph(id='model-performance-graph'),
+                ]),
+
+                # Data quality
+                html.Div([
+                    html.H2("Data Quality"),
+                    dcc.Graph(id='data-quality-graph'),
+                ]),
+
+                # alerts
+                html.Div([
+                    html.H2("Active alerts"),
+                    html.Div(id='alerts-table'),
+                ]),
+
+                # Update interval
+                dcc.Interval(
+                    id='interval-component',
+                    interval=self.update_interval,
+                    n_intervals=0
+                )
+            ], style={'padding': '20px'})
+
+        def _setup_callbacks(self):
+            """Callback functions configuration"""
+
+            @self.app.callback(
+                [Output('system-status', 'children'),
+                 Output('cpu-memory-graph', 'figure'),
+                 Output('disk-network-graph', 'figure'),
+                 Output('model-performance-graph', 'figure'),
+                 Output('data-quality-graph', 'figure'),
+                 Output('alerts-table', 'children')],
+                [Input('interval-component', 'n_intervals')]
+            )
+            def update_dashboard(n):
+                """Update all dashboard components"""
+                try:
+                    dashboard_data = self.monitoring_system.get_dashboard_data()
+
+                    # System status
+                    system_status = dashboard_data.get('system_status', 'unknown')
+                    status_color = {
+                        'healthy': 'green',
+                        'degraded': 'orange',
+                        'unhealthy': 'red',
+                        'critical': 'darkred'
+                    }.get(system_status, 'gray')
+
+                    status_div = html.Div([
+                        html.Span(
+                            f"Status: {system_status.upper()}",
+                            style={
+                                'color': status_color,
+                                'fontWeight': 'bold',
+                            },
+                        ),
+                        html.Br(),
+                        html.Span(
+                            f"Active Monitors: "
+                            f"{dashboard_data.get('summary', {}).get('active_monitors', 0)}"
+                        ),
+                        html.Br(),
+                        html.Span(
+                            f"Active alerts: "
+                            f"{len(dashboard_data.get('alerts', {}).get('active', []))}"
+                        ),
+                    ])
+
+                    # Charts
+                    cpu_memory_fig = self._create_cpu_memory_graph(dashboard_data)
+                    disk_network_fig = self._create_disk_network_graph(dashboard_data)
+                    model_perf_fig = self._create_model_performance_graph(dashboard_data)
+                    data_quality_fig = self._create_data_quality_graph(dashboard_data)
+
+                    # alerts table
+                    alerts_table = self._create_alerts_table(dashboard_data)
+
+                    return (
+                        status_div,
+                        cpu_memory_fig,
+                        disk_network_fig,
+                        model_perf_fig,
+                        data_quality_fig,
+                        alerts_table,
+                    )
+
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                    self.logger.error(f"Error updating dashboard: {e}")
+                    return "Error loading dashboard", {}, {}, {}, {}, "Error loading alerts"
+
+        def _create_cpu_memory_graph(
+            self, data: dict[str, Any]
+        ) -> go.Figure:
+            system_metrics = (
+                data.get('monitors', {})
+                .get('system_health', {})
+                .get('metrics', {})
+            )
+            if not system_metrics:
+                return go.Figure()
+
+            fig = make_subplots(
+                rows=1,
+                cols=2,
+                subplot_titles=('CPU Usage', 'Memory Usage'),
+            )
+            fig.add_trace(
+                go.Indicator(
+                    mode=GAUGE_NUMBER_MODE,
+                    value=system_metrics.get('cpu_percent', 0),
+                    title={'text': "CPU %"},
+                    gauge={
+                        'axis': {'range': [0, 100]},
+                        'bar': {'color': "darkblue"},
+                    },
+                    domain={'row': 0, 'column': 0},
+                ),
+                row=1,
+                col=1,
+            )
+
+            fig.add_trace(
+                go.Indicator(
+                    mode=GAUGE_NUMBER_MODE,
+                    value=system_metrics.get('memory_percent', 0),
+                    title={'text': "Memory %"},
+                    gauge={
+                        'axis': {'range': [0, 100]},
+                        'bar': {'color': "darkgreen"},
+                    },
+                    domain={'row': 0, 'column': 1},
+                ),
+                row=1,
+                col=2,
+            )
+            fig.update_layout(height=300)
+            return fig
+
+        def _create_disk_network_graph(
+            self, data: dict[str, Any]
+        ) -> go.Figure:
+            system_metrics = (
+                data.get('monitors', {})
+                .get('system_health', {})
+                .get('metrics', {})
+            )
+            if not system_metrics:
+                return go.Figure()
+
+            fig = make_subplots(
+                rows=1,
+                cols=2,
+                subplot_titles=('Disk Usage', 'Network I/O'),
+            )
+            fig.add_trace(
+                go.Indicator(
+                    mode=GAUGE_NUMBER_MODE,
+                    value=system_metrics.get('disk_percent', 0),
+                    title={'text': "Disk %"},
+                    gauge={
+                        'axis': {'range': [0, 100]},
+                        'bar': {'color': "darkred"},
+                    },
+                    domain={'row': 0, 'column': 0},
+                ),
+                row=1,
+                col=1,
+            )
+
+            network_sent = (
+                system_metrics.get('network_bytes_sent', 0) / (1024**2)
+            )
+            network_recv = (
+                system_metrics.get('network_bytes_recv', 0) / (1024**2)
+            )
+
+            fig.add_trace(
+                go.Bar(
+                    x=['Sent', 'Received'],
+                    y=[network_sent, network_recv],
+                    marker_color=['lightblue', 'lightgreen'],
+                    showlegend=False,
+                ),
+                row=1,
+                col=2,
+            )
+            fig.update_layout(height=300)
+            return fig
+
+        def _create_model_performance_graph(
+            self, data: dict[str, Any]
+        ) -> go.Figure:
+            model_metrics = (
+                data.get('monitors', {})
+                .get('model_performance', {})
+                .get('metrics', {})
+            )
+            if not model_metrics:
+                return go.Figure()
+
+            fig = go.Figure()
+            metrics_data = [
+                model_metrics.get('total_models', 0),
+                model_metrics.get('active_models', 0),
+                model_metrics.get('models_with_drift', 0),
+                model_metrics.get('average_accuracy', 0) * 100,
+            ]
+            fig.add_trace(
+                go.Bar(
+                    x=[
+                        'Total Models',
+                        'Active Models',
+                        'Models with Drift',
+                        'Avg Accuracy %',
+                    ],
+                    y=metrics_data,
+                    marker_color=['blue', 'green', 'orange', 'red'],
+                )
+            )
+            fig.update_layout(
+                title="Model Performance Overview", height=400
+            )
+            return fig
+
+        def _create_data_quality_graph(
+            self, data: dict[str, Any]
+        ) -> go.Figure:
+            data_metrics = (
+                data.get('monitors', {})
+                .get('data_quality', {})
+                .get('metrics', {})
+            )
+            if not data_metrics:
+                return go.Figure()
+
+            fig = make_subplots(
+                rows=1,
+                cols=2,
+                subplot_titles=('Data Completeness', 'Data Sources'),
+            )
+            completeness = (
+                data_metrics.get('average_completeness', 1.0) * 100
+            )
+            fig.add_trace(
+                go.Indicator(
+                    mode=GAUGE_NUMBER_MODE,
+                    value=completeness,
+                    title={'text': "Avg Completeness %"},
+                    gauge={
+                        'axis': {'range': [0, 100]},
+                        'bar': {'color': "darkcyan"},
+                    },
+                    domain={'row': 0, 'column': 0},
+                ),
+                row=1,
+                col=1,
+            )
+
+            sources_total = data_metrics.get('total_sources', 0)
+            sources_issues = data_metrics.get(
+                'sources_with_issues', 0
+            )
+            fig.add_trace(
+                go.Pie(
+                    labels=['Healthy Sources', 'Sources with Issues'],
+                    values=[
+                        sources_total - sources_issues,
+                        sources_issues,
+                    ],
+                    marker_colors=['lightgreen', 'salmon'],
+                    domain={'row': 0, 'column': 1},
+                ),
+                row=1,
+                col=2,
+            )
+            fig.update_layout(height=400)
+            return fig
+
+        def _create_alerts_table(
+            self, data: dict[str, Any]
+        ) -> html.Div:
+            alerts = data.get('alerts', {}).get('active', [])
+            if not alerts:
+                return html.Div("No active alerts")
+
+            table_header = [
+                html.Thead(
+                    html.Tr([
+                        html.Th("Severity"),
+                        html.Th("Monitor"),
+                        html.Th("Message"),
+                        html.Th("Time"),
+                    ])
+                )
+            ]
+
+            table_rows = []
+            for alert in alerts[:10]:
+                severity = alert.get('severity', 'unknown')
+                color_map = {
+                    'info': 'blue',
+                    'warning': 'orange',
+                    'error': 'red',
+                    'critical': 'darkred',
+                }
+                color = color_map.get(severity, 'black')
+                row = html.Tr([
+                    html.Td(
+                        html.Span(
+                            severity.upper(),
+                            style={
+                                'color': color,
+                                'fontWeight': 'bold',
+                            },
+                        )
                     ),
-                    html.Br(),
-                    html.Span(
-                        f"Active Monitors: "
-                        f"{dashboard_data.get('summary', {}).get('active_monitors', 0)}"
-                    ),
-                    html.Br(),
-                    html.Span(
-                        f"Active alerts: "
-                        f"{len(dashboard_data.get('alerts', {}).get('active', []))}"
-                    ),
+                    html.Td(alert.get('monitor', 'unknown')),
+                    html.Td(alert.get('message', 'No message')),
+                    html.Td(alert.get('timestamp', 'unknown')[:19]),
                 ])
+                table_rows.append(row)
 
-                # Charts
-                cpu_memory_fig = self._create_cpu_memory_graph(dashboard_data)
-                disk_network_fig = self._create_disk_network_graph(dashboard_data)
-                model_perf_fig = self._create_model_performance_graph(dashboard_data)
-                data_quality_fig = self._create_data_quality_graph(dashboard_data)
+            table_body = [html.Tbody(table_rows)]
+            return html.Table(
+                table_header + table_body,
+                style={
+                    'width': '100%',
+                    'borderCollapse': 'collapse',
+                },
+            )
 
-                # alerts table
-                alerts_table = self._create_alerts_table(dashboard_data)
-
-                return (
-                    status_div,
-                    cpu_memory_fig,
-                    disk_network_fig,
-                    model_perf_fig,
-                    data_quality_fig,
-                    alerts_table,
+        def run_server(self, debug: bool = False):
+            try:
+                msg = (
+                    f"Starting dashboard server on {self.host}:{self.port}"
+                )
+                self.logger.info(msg)
+                self.app.run_server(
+                    host=self.host,
+                    port=self.port,
+                    debug=debug,
+                )
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                self.logger.error(
+                    f"Error running dashboard server: {e}"
                 )
 
-            except Exception as e:
-                self.logger.error(f"Error updating dashboard: {e}")
-                return ("Error loading dashboard", {}, {}, {}, {}, "Error loading alerts")
-
-    def _create_cpu_memory_graph(
-        self, data: dict[str, Any]
-    ) -> go.Figure:
-        system_metrics = (
-            data.get('monitors', {})
-            .get('system_health', {})
-            .get('metrics', {})
-        )
-        if not system_metrics:
-            return go.Figure()
-
-        fig = make_subplots(
-            rows=1,
-            cols=2,
-            subplot_titles=('CPU Usage', 'Memory Usage'),
-        )
-        fig.add_trace(
-            go.Indicator(
-                mode=GAUGE_NUMBER_MODE,
-                value=system_metrics.get('cpu_percent', 0),
-                title={'text': "CPU %"},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': "darkblue"},
-                },
-                domain={'row': 0, 'column': 0},
-            ),
-            row=1,
-            col=1,
-        )
-
-        fig.add_trace(
-            go.Indicator(
-                mode=GAUGE_NUMBER_MODE,
-                value=system_metrics.get('memory_percent', 0),
-                title={'text': "Memory %"},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': "darkgreen"},
-                },
-                domain={'row': 0, 'column': 1},
-            ),
-            row=1,
-            col=2,
-        )
-        fig.update_layout(height=300)
-        return fig
-
-    def _create_disk_network_graph(
-        self, data: dict[str, Any]
-    ) -> go.Figure:
-        system_metrics = (
-            data.get('monitors', {})
-            .get('system_health', {})
-            .get('metrics', {})
-        )
-        if not system_metrics:
-            return go.Figure()
-
-        fig = make_subplots(
-            rows=1,
-            cols=2,
-            subplot_titles=('Disk Usage', 'Network I/O'),
-        )
-        fig.add_trace(
-            go.Indicator(
-                mode=GAUGE_NUMBER_MODE,
-                value=system_metrics.get('disk_percent', 0),
-                title={'text': "Disk %"},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': "darkred"},
-                },
-                domain={'row': 0, 'column': 0},
-            ),
-            row=1,
-            col=1,
-        )
-
-        network_sent = (
-            system_metrics.get('network_bytes_sent', 0) / (1024**2)
-        )
-        network_recv = (
-            system_metrics.get('network_bytes_recv', 0) / (1024**2)
-        )
-
-        fig.add_trace(
-            go.Bar(
-                x=['Sent', 'Received'],
-                y=[network_sent, network_recv],
-                marker_color=['lightblue', 'lightgreen'],
-                showlegend=False,
-            ),
-            row=1,
-            col=2,
-        )
-        fig.update_layout(height=300)
-        return fig
-
-    def _create_model_performance_graph(
-        self, data: dict[str, Any]
-    ) -> go.Figure:
-        model_metrics = (
-            data.get('monitors', {})
-            .get('model_performance', {})
-            .get('metrics', {})
-        )
-        if not model_metrics:
-            return go.Figure()
-
-        fig = go.Figure()
-        metrics_data = [
-            model_metrics.get('total_models', 0),
-            model_metrics.get('active_models', 0),
-            model_metrics.get('models_with_drift', 0),
-            model_metrics.get('average_accuracy', 0) * 100,
-        ]
-        fig.add_trace(
-            go.Bar(
-                x=[
-                    'Total Models',
-                    'Active Models',
-                    'Models with Drift',
-                    'Avg Accuracy %',
-                ],
-                y=metrics_data,
-                marker_color=['blue', 'green', 'orange', 'red'],
-            )
-        )
-        fig.update_layout(
-            title="Model Performance Overview", height=400
-        )
-        return fig
-
-    def _create_data_quality_graph(
-        self, data: dict[str, Any]
-    ) -> go.Figure:
-        data_metrics = (
-            data.get('monitors', {})
-            .get('data_quality', {})
-            .get('metrics', {})
-        )
-        if not data_metrics:
-            return go.Figure()
-
-        fig = make_subplots(
-            rows=1,
-            cols=2,
-            subplot_titles=('Data Completeness', 'Data Sources'),
-        )
-        completeness = (
-            data_metrics.get('average_completeness', 1.0) * 100
-        )
-        fig.add_trace(
-            go.Indicator(
-                mode=GAUGE_NUMBER_MODE,
-                value=completeness,
-                title={'text': "Avg Completeness %"},
-                gauge={
-                    'axis': {'range': [0, 100]},
-                    'bar': {'color': "darkcyan"},
-                },
-                domain={'row': 0, 'column': 0},
-            ),
-            row=1,
-            col=1,
-        )
-
-        sources_total = data_metrics.get('total_sources', 0)
-        sources_issues = data_metrics.get(
-            'sources_with_issues', 0
-        )
-        fig.add_trace(
-            go.Pie(
-                labels=['Healthy Sources', 'Sources with Issues'],
-                values=[
-                    sources_total - sources_issues,
-                    sources_issues,
-                ],
-                marker_colors=['lightgreen', 'salmon'],
-                domain={'row': 0, 'column': 1},
-            ),
-            row=1,
-            col=2,
-        )
-        fig.update_layout(height=400)
-        return fig
-
-    def _create_alerts_table(
-        self, data: dict[str, Any]
-    ) -> Any:
-        alerts = data.get('alerts', {}).get('active', [])
-        if not alerts:
-            return html.Div("No active alerts")
-
-        table_header = html.Thead(
-            html.Tr([
-                html.Th("Severity"),
-                html.Th("Monitor"),
-                html.Th("Message"),
-                html.Th("Time"),
-            ])
-        )
-
-        table_rows = []
-        for alert in alerts[:10]:
-            severity = alert.get('severity', 'unknown')
-            color_map = {
-                'info': 'blue',
-                'warning': 'orange',
-                'error': 'red',
-                'critical': 'darkred',
-            }
-            color = color_map.get(severity, 'black')
-            row = html.Tr([
-                html.Td(
-                    html.Span(
-                        severity.upper(),
-                        style={
-                            'color': color,
-                            'fontWeight': 'bold',
-                        },
-                    )
-                ),
-                html.Td(alert.get('monitor', 'unknown')),
-                html.Td(alert.get('message', 'No message')),
-                html.Td(alert.get('timestamp', 'unknown')[:19]),
-            ])
-            table_rows.append(row)
-
-        table_body = html.Tbody(table_rows)
-        return html.Table(
-            [table_header, table_body],
-            style={
-                'width': '100%',
-                'borderCollapse': 'collapse',
-            },
-        )
-
-    def run_server(self, debug: bool = False):
-        try:
+else:
+    class MonitoringDashboardApp:
+        def __init__(self, *args, **kwargs):
             msg = (
-                f"Starting dashboard server on {self.host}:{self.port}"
+                "Plotly and Dash are required for MonitoringDashboardApp"
             )
-            self.logger.info(msg)
-            self.app.run_server(
-                host=self.host,
-                port=self.port,
-                debug=debug,
-            )
-        except Exception as e:
-            self.logger.error(
-                f"Error running dashboard server: {e}"
-            )
-
-class DummyMonitoringDashboardApp:
-    def __init__(self, *args: Any, **kwargs: Any):
-        msg = (
-            "Plotly and Dash are required for MonitoringDashboardApp"
-        )
-        raise ImportError(msg)
+            raise ImportError(msg)
 
 class TextBasedDashboard:
     """Text dashboard for console output"""
@@ -477,7 +486,7 @@ class TextBasedDashboard:
                 ])
 
             return "\n".join(report_lines)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating text report: {e}")
             return f"Error: {e}"
 
@@ -491,7 +500,7 @@ class TextBasedDashboard:
             with open(filepath, 'w', encoding='utf-8') as f:
                 f.write(report)
             self.logger.info(f"Report saved to {filepath}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error saving report: {e}")
 
 class MonitoringDashboardGenerator:
@@ -510,7 +519,7 @@ class MonitoringDashboardGenerator:
 
         if PLOTLY_AVAILABLE:
             web_config = self.config.get('web', {})
-            self.web_dashboard: Optional[MonitoringDashboardApp] = MonitoringDashboardApp(
+            self.web_dashboard = MonitoringDashboardApp(
                 monitoring_system, web_config
             )
         else:
@@ -526,7 +535,7 @@ class MonitoringDashboardGenerator:
         if self.auto_save:
             os.makedirs(self.save_path, exist_ok=True)
 
-        self.save_thread: Optional[threading.Thread] = None
+        self.save_thread = None
         self.is_running = False
 
     def start_auto_save(self):
@@ -552,7 +561,7 @@ class MonitoringDashboardGenerator:
                 filepath = os.path.join(self.save_path, f"monitoring_report_{timestamp}.txt")
                 self.text_dashboard.save_report(filepath)
                 time.sleep(self.save_interval)
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Error in auto-save: {e}")
                 time.sleep(60)
 

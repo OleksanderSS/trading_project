@@ -1,6 +1,7 @@
 
-import duckdb
 import os
+
+import duckdb
 
 db_path = "d:/trading_project/data/trading_data.duckdb"
 if os.path.exists(db_path):

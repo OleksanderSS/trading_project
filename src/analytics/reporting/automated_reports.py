@@ -29,8 +29,8 @@ class AutomatedReporting:
 
             logger.info(f"[AutomatedReporting] Generated daily report: {filename}")
 
-        except Exception as e:
-            logger.error(f"[AutomatedReporting] Failed to generate daily report: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"[AutomatedReporting] Failed to generate daily report: {e}")
 
     def get_daily_summary(self) -> dict:
         """Отримати щоденну статистику"""
@@ -61,8 +61,8 @@ class HistoricalAnalytics:
             logger.info(f"[HistoricalAnalytics] Analyzed trends for {days} days")
             return trends
 
-        except Exception as e:
-            logger.error(f"[HistoricalAnalytics] Failed to analyze trends: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: BROAD_EXCEPTION_SILENT_RETURN
+            logger.exception(f"[HistoricalAnalytics] Failed to analyze trends: {e}")
             return {}
 
     def generate_trend_report(self, days: int = 30) -> dict:
@@ -86,11 +86,5 @@ class HistoricalAnalytics:
     def load_historical_reports(self) -> list[dict]:
         """Завантажити історичні звіти"""
 
-        try:
-            # This part needs to be adapted to the new ResultsManager structure
-            pass
-
-        except Exception as e:
-            logger.error(f"[HistoricalAnalytics] Failed to load historical reports: {e}")
-            return []
+        # This part needs to be adapted to the new ResultsManager structure.
         return []

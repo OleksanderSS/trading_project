@@ -1,0 +1,41 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+exclude:
+  global:
+    - pytest-cache-files-*
+    - pytest-cache-files-*/**
+    - .pytest_cache/**
+    - __pycache__/**
+    - .mypy_cache/**
+    - .ruff_cache/**
+    - .venv/**
+    - venv/**
+    - node_modules/**
+version: v1.25.1
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-PYTHON-MLFLOW-15325638:
+    - '*':
+        reason: 'Немає оновлення, ризик задокументовано'
+        expires: 2026-07-06T15:04:34.033Z
+        created: 2026-06-06T15:04:34.094Z
+  SNYK-PYTHON-MLFLOWSKINNY-16698156:
+    - '*':
+        reason: 'Немає оновлення, ризик задокументовано'
+        expires: 2026-07-06T15:04:38.655Z
+        created: 2026-06-06T15:04:38.669Z
+  SNYK-PYTHON-TORCH-10332643:
+    - '*':
+        reason: 'Немає оновлення, ризик задокументовано'
+        expires: 2026-07-06T15:04:43.449Z
+        created: 2026-06-06T15:04:43.454Z
+  SNYK-PYTHON-TRANSFORMERS-14560695:
+    - '*':
+        reason: 'Немає оновлення, ризик задокументовано'
+        expires: 2026-07-06T15:04:46.341Z
+        created: 2026-06-06T15:04:46.350Z
+  SNYK-PYTHON-STREAMLIT-17176399:
+    - '*':
+        reason: 'Немає оновлення, ризик задокументовано'
+        expires: 2026-07-06T15:04:51.372Z
+        created: 2026-06-06T15:04:51.379Z
+patch: {}

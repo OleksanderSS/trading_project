@@ -1,11 +1,11 @@
 import asyncio
 import logging
-import pandas as pd
+
 from src.config.unified_config_manager import UnifiedConfigManager
-from src.data.collectors.collector_factory import CollectorFactory
-from src.data.management.data_manager import DataManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.error_handling.error_handler import ErrorHandler
+from src.data.collectors.collector_factory import CollectorFactory
+from src.data.management.data_manager import DataManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("CollectorDiagnostic")

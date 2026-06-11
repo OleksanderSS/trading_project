@@ -1,0 +1,17 @@
+{
+  "autoencoder": 42,
+  "catboost": 42,
+  "cnn": 42,
+  "ensemble": 42,
+  "gru": 42,
+  "knn": 42,
+  "lightgbm": 42,
+  "linear": 42,
+  "lstm": 42,
+  "mlp": 42,
+  "random_forest": 42,
+  "svm": 42,
+  "tabnet": 42,
+  "transformer": 42,
+  "xgboost": 42
+}

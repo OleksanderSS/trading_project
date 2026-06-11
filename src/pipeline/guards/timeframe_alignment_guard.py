@@ -32,28 +32,6 @@ class TimeframeAlignmentGuard:
     MARKET_OPEN = time(9, 30)  # 9:30 AM EST
     MARKET_CLOSE = time(16, 0)   # 4:00 PM EST
 
-    # Timeframe configurations
-    TIMEFRAME_CONFIGS = {
-        '15m': {
-            'frequency': '15T',
-            'market_hours_sensitive': True,
-            'requires_daily_close': False,
-            'max_future_lookahead': pd.Timedelta(minutes=15)
-        },
-        '60m': {
-            'frequency': '1H',
-            'market_hours_sensitive': True,
-            'requires_daily_close': False,
-            'max_future_lookahead': pd.Timedelta(hours=1)
-        },
-        '1d': {
-            'frequency': '1D',
-            'market_hours_sensitive': False,  # Daily close is fixed
-            'requires_daily_close': True,
-            'max_future_lookahead': pd.Timedelta(days=1)
-        }
-    }
-
     def __init__(self, strict_mode: bool = True):
         """Initialize the TimeframeAlignmentGuard.
 
@@ -63,6 +41,121 @@ class TimeframeAlignmentGuard:
         """
         self.logger = logger
         self.strict_mode = strict_mode
+
+        # Timeframe configurations
+        self.TIMEFRAME_CONFIGS = {
+            '15m': {
+                'frequency': '15T',
+                'market_hours_sensitive': True,
+                'requires_daily_close': False,
+                'max_future_lookahead': pd.Timedelta(minutes=15)
+            },
+            '60m': {
+                'frequency': '1H',
+                'market_hours_sensitive': True,
+                'requires_daily_close': False,
+                'max_future_lookahead': pd.Timedelta(hours=1)
+            },
+            '1d': {
+                'frequency': '1D',
+                'market_hours_sensitive': False,  # Daily close is fixed
+                'requires_daily_close': True,
+                'max_future_lookahead': pd.Timedelta(days=1)
+            }
+        }
+
+    def _ensure_datetime_column(self, df: pd.DataFrame, tf: str) -> tuple:
+        """Ensure datetime column exists and return (df_with_datetime, error_message)."""
+        if 'datetime' not in df.columns:
+            if isinstance(df.index, pd.DatetimeIndex):
+                df = df.reset_index()
+                df = df.rename(columns={'index': 'datetime'})
+                return df, None
+            else:
+                return df, "No datetime column or index"
+        return df, None
+
+    def _check_future_data(self, tf: str, latest_timestamp: pd.Timestamp, current_time: pd.Timestamp) -> str | None:
+        """Check for future data usage."""
+        if latest_timestamp > current_time:
+            return f"Uses future data (latest: {latest_timestamp}, current: {current_time})"
+        return None
+
+    def _check_daily_close_timing(self, tf: str, latest_timestamp: pd.Timestamp) -> str | None:
+        """Check daily close timing."""
+        if tf == '1d':
+            daily_close_issue = self._validate_daily_close_timing(latest_timestamp)
+            return daily_close_issue
+        return None
+
+    def _check_intraday_compatibility(self, tf: str, latest_timestamp: pd.Timestamp, current_time: pd.Timestamp) -> str | None:
+        """Check intraday vs daily compatibility."""
+        if tf in ['15m', '60m']:
+            intraday_issue = self._validate_intraday_daily_compatibility(latest_timestamp, current_time)
+            return intraday_issue
+        return None
+
+    def _check_data_freshness(self, tf: str, latest_timestamp: pd.Timestamp, current_time: pd.Timestamp) -> str | None:
+        """Check data freshness."""
+        freshness_issue = self._validate_data_freshness(tf, latest_timestamp, current_time)
+        return freshness_issue
+
+    def _validate_single_timeframe(self, tf: str, df: pd.DataFrame, current_time: pd.Timestamp) -> tuple:
+        """Validate a single timeframe and return (is_valid, issue_message, warning_message)."""
+        if tf not in self.TIMEFRAME_CONFIGS:
+            return False, "Unknown timeframe", None
+
+        if df.empty:
+            return False, None, "Empty dataframe"
+
+        df, datetime_error = self._ensure_datetime_column(df, tf)
+        if datetime_error:
+            return False, datetime_error, None
+
+        latest_timestamp = pd.to_datetime(df['datetime'].max())
+
+        # Validation 1: Check for future data usage
+        future_data_issue = self._check_future_data(tf, latest_timestamp, current_time)
+        if future_data_issue:
+            return False, future_data_issue, None
+
+        # Validation 2: Check daily close timing
+        daily_close_issue = self._check_daily_close_timing(tf, latest_timestamp)
+        if daily_close_issue:
+            return False, daily_close_issue, None
+
+        # Validation 3: Check intraday vs daily compatibility
+        intraday_issue = self._check_intraday_compatibility(tf, latest_timestamp, current_time)
+        if intraday_issue:
+            return False, intraday_issue, None
+
+        # Validation 4: Check data freshness
+        freshness_issue = self._check_data_freshness(tf, latest_timestamp, current_time)
+        warning = freshness_issue if freshness_issue else None
+
+        return True, None, warning
+
+    def _build_validation_result(self, status: str, valid_timeframes: list, issues: list, warnings: list,
+                                current_time: pd.Timestamp, total_timeframes: int) -> dict:
+        """Build validation result dictionary."""
+        return {
+            'status': status,
+            'valid_timeframes': valid_timeframes,
+            'issues': issues,
+            'warnings': warnings,
+            'current_time': current_time,
+            'total_timeframes': total_timeframes,
+            'valid_count': len(valid_timeframes)
+        }
+
+    def _log_validation_results(self, status: str, valid_timeframes: list, issues: list) -> None:
+        """Log validation results."""
+        if status == 'valid':
+            self.logger.info(f"✅ All {len(valid_timeframes)} timeframes are temporally valid")
+        else:
+            self.logger.error(f"❌ Timeframe validation failed: {len(issues)} issues found")
+            for issue in issues:
+                self.logger.error(f"   {issue}")
 
     def validate_timeframe_compatibility(self,
                                        features_by_tf: dict[str, pd.DataFrame],
@@ -86,77 +179,25 @@ class TimeframeAlignmentGuard:
         self.logger.info(f"🔍 Validating timeframe compatibility for {current_time}")
 
         for tf, df in features_by_tf.items():
-            if tf not in self.TIMEFRAME_CONFIGS:
-                issues.append(f"❌ {tf}: Unknown timeframe")
+            is_valid, issue, warning = self._validate_single_timeframe(tf, df, current_time)
+
+            if issue:
+                issues.append(f"❌ {tf}: {issue}")
                 continue
 
-            if df.empty:
-                warnings.append(f"⚠️ {tf}: Empty dataframe")
-                continue
+            if warning:
+                warnings.append(f"⚠️ {tf}: {warning}")
 
-            # Ensure datetime column exists
-            if 'datetime' not in df.columns:
-                if isinstance(df.index, pd.DatetimeIndex):
-                    df = df.reset_index()
-                    df = df.rename(columns={'index': 'datetime'})
-                else:
-                    issues.append(f"❌ {tf}: No datetime column or index")
-                    continue
-
-            # Get latest timestamp for this timeframe
-            latest_timestamp = pd.to_datetime(df['datetime'].max())
-
-            # Validation 1: Check for future data usage
-            if latest_timestamp > current_time:
-                issues.append(
-                    f"❌ {tf}: Uses future data "
-                    f"(latest: {latest_timestamp}, current: {current_time})"
-                )
-                continue
-
-            # Validation 2: Check daily close timing
-            if tf == '1d':
-                daily_close_issue = self._validate_daily_close_timing(latest_timestamp)
-                if daily_close_issue:
-                    issues.append(f"❌ {tf}: {daily_close_issue}")
-                    continue
-
-            # Validation 3: Check intraday vs daily compatibility
-            if tf in ['15m', '60m']:
-                intraday_issue = self._validate_intraday_daily_compatibility(
-                    latest_timestamp, current_time
-                )
-                if intraday_issue:
-                    issues.append(f"❌ {tf}: {intraday_issue}")
-                    continue
-
-            # Validation 4: Check data freshness
-            freshness_issue = self._validate_data_freshness(tf, latest_timestamp, current_time)
-            if freshness_issue:
-                warnings.append(f"⚠️ {tf}: {freshness_issue}")
-
-            valid_timeframes.append(tf)
-            self.logger.info(f"✅ {tf}: Valid (latest: {latest_timestamp})")
+            if is_valid:
+                valid_timeframes.append(tf)
+                latest_timestamp = pd.to_datetime(df['datetime'].max())
+                self.logger.info(f"✅ {tf}: Valid (latest: {latest_timestamp})")
 
         # Determine overall status
         status = 'valid' if not issues else 'invalid'
 
-        result = {
-            'status': status,
-            'valid_timeframes': valid_timeframes,
-            'issues': issues,
-            'warnings': warnings,
-            'current_time': current_time,
-            'total_timeframes': len(features_by_tf),
-            'valid_count': len(valid_timeframes)
-        }
-
-        if status == 'valid':
-            self.logger.info(f"✅ All {len(valid_timeframes)} timeframes are temporally valid")
-        else:
-            self.logger.error(f"❌ Timeframe validation failed: {len(issues)} issues found")
-            for issue in issues:
-                self.logger.error(f"   {issue}")
+        result = self._build_validation_result(status, valid_timeframes, issues, warnings, current_time, len(features_by_tf))
+        self._log_validation_results(status, valid_timeframes, issues)
 
         return result
 
@@ -189,8 +230,8 @@ class TimeframeAlignmentGuard:
             self.MARKET_CLOSE.hour, self.MARKET_CLOSE.minute
         )
 
-        # If current time is before market close, intraday shouldn't use daily data
-        if current_time < today_close:
+        # Same-day intraday rows should not consume the current daily close before it exists.
+        if intraday_timestamp.normalize() == current_time.normalize() and current_time < today_close:
             return f"Using data before market close (current: {current_time}, close: {today_close})"
 
         return None
@@ -202,8 +243,6 @@ class TimeframeAlignmentGuard:
         """Validate data freshness for each timeframe."""
 
         age = current_time - latest_timestamp
-        self.TIMEFRAME_CONFIGS[tf]
-
         # Define maximum acceptable age for each timeframe
         max_ages = {
             '15m': pd.Timedelta(minutes=30),  # 30 minutes

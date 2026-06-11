@@ -1,0 +1,7 @@
+# Module Diagnostic Summary
+
+- **python_files**: 611
+- **classes**: 673
+- **functions**: 4484
+- **risk_findings**: 958
+- **orphans_static**: 235

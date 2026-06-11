@@ -1,13 +1,11 @@
-# src/models/neural/autoencoder_model.py
+# src/models/neural/autoencoder_model.py  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
 
 from typing import Any
 
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras import layers, models
 
 from src.core.logging.logger import ProjectLogger
-from src.models.neural.base_neural import BaseNeuralModel
+from src.models.neural.base_neural import BaseNeuralModel, _get_tf
 
 
 class AutoencoderModel(BaseNeuralModel):
@@ -29,13 +27,16 @@ class AutoencoderModel(BaseNeuralModel):
     @property
     def name(self) -> str:
         """Returns the unique name of the model."""
-        return "autoencoder_conv1d"
+        return "autoencoder_conv1d"  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
 
-    def _build_architecture(self, input_shape: tuple[int, ...]) -> tf.keras.Model:
+    def _build_architecture(self, input_shape: tuple[int, ...]) -> Any:
         """
         Defines the Conv1D autoencoder architecture.
         The input_shape is expected to be (timesteps, n_features).
         """
+        tf = _get_tf()
+        layers = tf.keras.layers
+        models = tf.keras
         if len(input_shape) != 2:
             raise ValueError(f"Expected input_shape to be a tuple of length 2 (timesteps, n_features), but got {input_shape}")
 

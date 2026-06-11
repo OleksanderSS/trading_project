@@ -1,14 +1,15 @@
-# src/utils/feature_preparation.py
-"""
-Utility functions for feature preparation and model-feature alignment.
-Ensures consistency between raw datasets and architecture-specific input requirements.
-"""
-
+import logging
 
 import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+
+# src/utils/feature_preparation.py
+"""
+Utility functions for feature preparation and model-feature alignment.
+Ensures consistency between raw datasets and architecture-specific input requirements.
+"""
 
 # Initialize standardized project logger
 logger = ProjectLogger.get_logger("FeaturePreparation")
@@ -26,7 +27,7 @@ def prepare_features_for_training(
     Args:
         features_df: Input DataFrame containing features and metadata.
         remove_metadata: If True, drops predefined non-feature columns.
-        fill_na: If True, replaces missing values with zeros.
+        fill_na: If True, imputes missing values with per-feature medians.
         verbose: If True, logs detailed diagnostic information.
 
     Returns:
@@ -71,7 +72,8 @@ def _prune_metadata_columns(df: pd.DataFrame, verbose: bool) -> pd.DataFrame:
         if cols_to_drop:
             df = df.drop(columns=cols_to_drop)
             if verbose:
-                logger.debug(f"Metadata pruning: Dropped {len(cols_to_drop)} columns ({cols_to_drop})")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Metadata pruning: Dropped {len(cols_to_drop)} columns ({cols_to_drop})")
         return df
 
 def _extract_numeric_features(df: pd.DataFrame, verbose: bool) -> tuple[pd.DataFrame, list[str]]:
@@ -81,88 +83,42 @@ def _extract_numeric_features(df: pd.DataFrame, verbose: bool) -> tuple[pd.DataF
 
         if verbose:
             logger.info(f"Feature Vectorization: Identified {len(numeric_cols)} numeric signals.")
-            logger.debug(f"Pre-cleansing shape: {df_numeric.shape}")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Pre-cleansing shape: {df_numeric.shape}")
 
         return df_numeric, numeric_cols
 
 def _clean_numeric_data(df: pd.DataFrame, fill_na: bool, verbose: bool) -> pd.DataFrame:
-    """Handle missing values and infinity in numeric data using smart filling."""
-    # Handle missing values with intelligent filling
-    if fill_na:
-        try:
-            # Use SmartMissingDataHandler instead of destructive zero-filling
-            from .smart_missing_data_handler import SmartMissingDataHandler
+        """Handle missing values and infinity in numeric data."""
+        df = df.replace([np.inf, -np.inf], np.nan)
 
-            smart_handler = SmartMissingDataHandler()
-            df = smart_handler.handle_missing_data(df, verbose=verbose)
+        # Handle missing values
+        if fill_na:
+            feature_medians = df.median()
+            valid_cols = feature_medians.dropna().index
+            df = df[valid_cols].fillna(feature_medians[valid_cols])
 
-            if verbose:
-                # Get fill statistics for monitoring
-                stats = smart_handler.get_fill_statistics(
-                    df.copy().fillna(np.nan),  # Original with NaNs
-                    df  # Filled version
-                )
-                logger.info(f"SmartMissingDataHandler: Fill efficiency {stats['fill_efficiency']:.2%}")
-                logger.info(f"SmartMissingDataHandler: Filled {stats['columns_filled']}/{stats['total_columns']} columns")
+        if verbose:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Post-cleansing shape: {df.shape}")
+            total_missing = df.isna().sum().sum()
+            total_inf = np.isinf(df.values).sum()
 
-                # Detect fill anomalies for quality monitoring
-                try:
-                    from .missing_data_anomaly_detector import MissingDataAnomalyDetector
-                    anomaly_detector = MissingDataAnomalyDetector()
-                    anomalies = anomaly_detector.detect_fill_anomalies(
-                        df.copy().fillna(np.nan),  # Original with NaNs
-                        df  # Filled version
-                    )
+            if total_missing > 0 or total_inf > 0:
+                logger.warning(f"Integrity Guard: Detected {total_missing} NaNs and {total_inf} Infs post-cleansing.")
 
-                    if anomalies:
-                        anomaly_report = anomaly_detector.generate_anomaly_report(anomalies)
-                        logger.warning(f"SmartMissingDataHandler: Detected {len(anomalies)} fill anomalies")
-                        logger.warning(f"Quality score: {anomaly_report['quality_score']:.1f}/100")
-
-                        # Log top anomalies
-                        for anomaly in anomalies[:3]:
-                            logger.warning(f"  {anomaly['type']} in {anomaly['column']}: {anomaly.get('severity', 'unknown')}")
-
-                        # Log recommendations
-                        for rec in anomaly_report['recommendations'][:3]:
-                            logger.info(f"  Recommendation: {rec}")
-                    else:
-                        logger.info("SmartMissingDataHandler: No fill anomalies detected - quality is excellent")
-
-                except ImportError:
-                    logger.debug("MissingDataAnomalyDetector not available - skipping anomaly detection")
-                except Exception as e:
-                    logger.error(f"Error in anomaly detection: {e}")
-
-        except ImportError:
-            # Fallback to original zero-fill if smart handler not available
-            logger.warning("SmartMissingDataHandler not available, using zero-fill fallback")
-            df = df.fillna(0.0)
-        except Exception as e:
-            logger.error(f"SmartMissingDataHandler failed: {e}, using zero-fill fallback")
-            df = df.fillna(0.0)
-
-    # Clamp infinity values to maintain numeric stability during gradient updates
-    df = df.replace([np.inf, -np.inf], 0.0)
-
-    if verbose:
-        logger.debug(f"Post-cleansing shape: {df.shape}")
-        total_missing = df.isna().sum().sum()
-        total_inf = np.isinf(df.values).sum()
-
-        if total_missing > 0 or total_inf > 0:
-            logger.warning(f"Integrity Guard: Detected {total_missing} NaNs and {total_inf} Infs post-cleansing.")
-
-    return df
+        return df
 
 def _audit_primary_signals(numeric_cols: list[str]) -> None:
         """Audit critical feature presence for logging."""
         primary_signals = ['news_sentiment', 'AMD_15m_close', 'AMD_1h_close']
         for signal in primary_signals:
             if signal in numeric_cols:
-                logger.debug(f"Signal Audit: {signal} validated and included.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Signal Audit: {signal} validated and included.")
             else:
-                logger.debug(f"Signal Audit: {signal} is absent from the current batch mapping.")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Signal Audit: {signal} is absent from the current batch mapping.")
 
 
 def align_features_with_model(

@@ -1,0 +1,335 @@
+{
+  "stats": {
+    "files": 617,
+    "lines": 92685,
+    "issues": 398,
+    "by_severity": {
+      "MEDIUM": 165,
+      "LOW": 229,
+      "INFO": 4
+    },
+    "by_category": {
+      "FEAT": 120,
+      "LOGIC": 183,
+      "STATE": 32,
+      "MATH": 39,
+      "ASYNC": 9,
+      "RES": 8,
+      "API": 7
+    }
+  },
+  "issues": [
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "analytics\\context\\ensemble_selector.py",
+      "line": 230,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "LOW",
+      "file": "analytics\\signals\\significance_detector.py",
+      "line": 35,
+      "message": "pct_change()   NaN   ",
+      "fix_hint": "df.pct_change().fillna(0)  .dropna()"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "calibration\\adaptive_confidence_calibrator.py",
+      "line": 259,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "data\\management\\data_versioning.py",
+      "line": 265,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 272,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 276,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 206,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 94,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 191,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\context_aware_feature_selector.py",
+      "line": 255,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\context_map_enricher.py",
+      "line": 182,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\enrichers\\news_quality_enricher.py",
+      "line": 97,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\feature_selection_cache.py",
+      "line": 128,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\news_clusterer.py",
+      "line": 97,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "features\\news_clusterer.py",
+      "line": 172,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "main\\modes\\backtest.py",
+      "line": 150,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "main\\modes\\backtest.py",
+      "line": 151,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "main\\modes\\backtest.py",
+      "line": 153,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 438,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 141,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 151,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\adapters\\sentiment_integration.py",
+      "line": 164,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\analysis\\regime\\patterns.py",
+      "line": 94,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\analysis\\regime\\stability.py",
+      "line": 58,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\analysis\\regime_winner_analyzer.py",
+      "line": 288,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\weight_stability\\calculator.py",
+      "line": 159,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensemble\\weight_stability\\manager.py",
+      "line": 121,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\ensembling\\composer.py",
+      "line": 35,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "models\\prototypes\\registry.py",
+      "line": 224,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\guards\\safe_feature_combiner.py",
+      "line": 296,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\evaluation\\metrics_calculator.py",
+      "line": 211,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 42,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_3_improvements.py",
+      "line": 163,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "pipeline\\stages\\stage_3_improvements.py",
+      "line": 164,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "processing\\filters\\price_filter.py",
+      "line": 72,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "trading\\live_adaptive_ensemble.py",
+      "line": 194,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "training\\adaptive_training_manager.py",
+      "line": 162,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "training\\batch\\batch_processor.py",
+      "line": 201,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    },
+    {
+      "category": "MATH",
+      "severity": "MEDIUM",
+      "file": "validation\\time_series_validator.py",
+      "line": 406,
+      "message": "  len()    len() > 0",
+      "fix_hint": "if n > 0: result = total / n else: result = 0"
+    }
+  ]
+}

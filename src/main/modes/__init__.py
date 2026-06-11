@@ -1,14 +1,20 @@
+from .backtest import BacktestMode
+from .base import BaseMode
+from .monster_test import MonsterTestMode
+from .train import TrainMode
+
 """
 Modes package - різні режими роботи системи
 """
 
-from .base import BaseMode
-from .train import TrainMode
-from .monster_test import MonsterTestMode
-from .backtest import BacktestMode
-# from .analyze import AnalyzeMode # Цей режим було видалено або перейменовано
-# from .batch_training import BatchTrainingMode # Цей режим було видалено або перейменовано
-# from .progressive import ProgressiveMode # Цей режим було видалено або перейменовано
+"""
+Modes package - різні режими роботи системи
+
+Legacy modes (removed/consolidated in previous refactoring):
+- AnalyzeMode → Merged into BacktestMode + MonsterTestMode
+- BatchTrainingMode → Replaced by src.training.batch_trainer + UnifiedTrainingManager
+- ProgressiveMode → Replaced by src.training.progressive_trainer + UnifiedTrainingManager
+"""
 
 __all__ = [
     'BaseMode',

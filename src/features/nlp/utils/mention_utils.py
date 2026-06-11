@@ -33,7 +33,8 @@ def safe_get(data: dict | Any, key: str, default: Any = None) -> Any:
         else:
             return getattr(data, key, default)
     except (AttributeError, TypeError) as e:
-        logger.debug(f"Failed to get {key}: {e}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Failed to get {key}: {e}")
         return default
 
 def compute_mention_score(text: str, tickers: list[str]) -> int:

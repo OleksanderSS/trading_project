@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def add_time_features(
     df: pd.DataFrame,
     timestamp_col: str = 'timestamp',
-    enabled_features: list[str] | None = None
+    enabled_features: list[str] = None
 ) -> pd.DataFrame:
     """
     Adds specified time-based features to the DataFrame.

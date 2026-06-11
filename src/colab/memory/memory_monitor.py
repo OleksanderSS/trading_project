@@ -3,6 +3,10 @@
 import json
 from datetime import datetime
 
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger(__name__)
+
 
 class MemoryMonitor:
     """Моніторинг та управління пам'яттю в Colab"""
@@ -43,19 +47,19 @@ class MemoryMonitor:
 
         status = 'ok'
         if info['percent'] >= self.critical_threshold:
-            print(
+            logger.error(
                 f"🚨 CRITICAL MEMORY: {info['percent']:.1f}% "
-                f"({info['used_gb']:.1f}GB / {info['total_gb']:.1f}GB)")
-            print(f"   Context: {context}")
+                f"({info['used_gb']:.1f}GB / {info['total_gb']:.1f}GB)\n"
+                f"   Context: {context}")
             status = 'critical'
         elif info['percent'] >= self.warning_threshold:
-            print(
+            logger.warning(
                 f"⚠️ WARNING MEMORY: {info['percent']:.1f}% "
-                f"({info['used_gb']:.1f}GB / {info['total_gb']:.1f}GB)")
-            print(f"   Context: {context}")
+                f"({info['used_gb']:.1f}GB / {info['total_gb']:.1f}GB)\n"
+                f"   Context: {context}")
             status = 'warning'
         else:
-            print(
+            logger.info(
                 f"✅ Memory OK: {info['percent']:.1f}% "
                 f"({info['used_gb']:.1f}GB / {info['total_gb']:.1f}GB)")
 
@@ -65,10 +69,10 @@ class MemoryMonitor:
         """Примусова збірка сміття"""
         import gc
         gc.collect()
-        print("🧹 Garbage collection triggered")
+        logger.info("🧹 Garbage collection triggered")
 
     def save_log(self, filepath):
         """Зберегти лог пам'яті у файл"""
         with open(filepath, 'w') as f:
             json.dump(self.memory_log, f, indent=2)
-        print(f"💾 Memory log saved to {filepath}")
+        logger.info(f"💾 Memory log saved to {filepath}")

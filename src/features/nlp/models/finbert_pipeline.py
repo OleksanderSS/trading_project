@@ -1,20 +1,18 @@
 # src/feature_engineering/nlp/finbert_pipeline.py
 
 from threading import Lock
-
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+from typing import Any
 
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("TradingProjectLogger")
 
-_FINBERT_PIPELINE: pipeline | None = None
+_FINBERT_PIPELINE: Any | None = None
 _LOCK = Lock()
 _DEVICE = None
 
 
-def get_finbert_pipeline(device_preference: str = "auto") -> pipeline | None:
+def get_finbert_pipeline(device_preference: str = "auto") -> Any | None:
     """
     Synchronously returns FinBERT pipeline.
     - Lazy loading, blocks on lock.
@@ -30,6 +28,9 @@ def get_finbert_pipeline(device_preference: str = "auto") -> pipeline | None:
             return _FINBERT_PIPELINE
 
         try:
+            import torch
+            from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+
             if device_preference == "auto":
                 _DEVICE = 0 if torch.cuda.is_available() else -1
             elif device_preference == "cpu":
@@ -48,7 +49,7 @@ def get_finbert_pipeline(device_preference: str = "auto") -> pipeline | None:
                 device=_DEVICE
             )
             logger.info(f"[OK] FinBERT loaded ({'cuda' if _DEVICE == 0 else 'cpu'})")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"[ERROR] Error loading FinBERT: {e}")
             _FINBERT_PIPELINE = None
             raise RuntimeError("FinBERT pipeline loading failed") from e

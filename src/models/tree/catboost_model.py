@@ -75,7 +75,7 @@ class CatBoostModel(BaseModel):
             self.logger.info(f"CatBoost trained successfully ({self.task_type}, iterations={self.iterations}, depth={self.depth})")
             return self.get_model_info()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"CatBoost training failed: {e}")
             raise
 
@@ -87,7 +87,7 @@ class CatBoostModel(BaseModel):
         try:
             x_clean = self._prepare_data(X)
             return self.model.predict(x_clean)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"CatBoost prediction failed: {e}")
             raise
 
@@ -102,7 +102,7 @@ class CatBoostModel(BaseModel):
         try:
             x_clean = self._prepare_data(X)
             return self.model.predict_proba(x_clean)
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"CatBoost probability prediction failed: {e}")
             raise
 
@@ -116,23 +116,27 @@ class CatBoostModel(BaseModel):
             self.model.save_model(path)
             self.logger.info(f"CatBoost model saved to {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to save CatBoost model: {e}")
             return False
 
     def load_model(self, path: str) -> bool:
         """Loads the model from a file."""
         try:
+            trusted_path = self._resolve_model_artifact_path(
+                path,
+                allowed_suffixes=None,
+            )
             if self.task_type == "classification":
                 self.model = CatBoostClassifier()
             else:
                 self.model = CatBoostRegressor()
 
-            self.model.load_model(path)
+            self.model.load_model(str(trusted_path))
             self.is_trained = True
-            self.logger.info(f"CatBoost model loaded from {path}")
+            self.logger.info(f"CatBoost model loaded from {trusted_path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to load CatBoost model: {e}")
             return False
 
@@ -143,6 +147,6 @@ class CatBoostModel(BaseModel):
 
         try:
             return self.model.get_feature_importance()
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to get feature importance: {e}")
-            return None
+            raise RuntimeError("Failed to get CatBoost feature importance") from e

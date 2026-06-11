@@ -70,22 +70,24 @@ class OrchestratorInterface:
             'existing_files': len(feature_files)
         }
 
-    async def prepare_colab_data(self, batch_dir: Path, batch_name: str,
-                               features_df: pd.DataFrame, targets_df: pd.DataFrame,
-                               prices_dict: dict[str, pd.DataFrame] | None = None,
-                               tickers: list[str] | None = None, timeframes: list[str] | None = None,
-                               test_ticker: str | None = None, test_target: str | None = None,
-                               test_model: str | None = None, epochs: int | None = None,
-                               max_iterations: int | None = None, **kwargs) -> dict[str, Any]:
+
+    async def prepare_colab_data(self, features_df: pd.DataFrame = None,
+                                  targets_df: pd.DataFrame = None,
+                                  tickers: list[str] = None,
+                                  timeframes: list[str] = None,
+                                  test_ticker: str | None = None,
+                                  test_target: str | None = None,
+                                  test_model: str | None = None,
+                                  epochs: int | None = None,
+                                  max_iterations: int | None = None,
+                                  batch_name: str | None = None,
+                                  **kwargs) -> dict[str, Any]:
         """
         Prepare data for Colab training.
 
         Args:
-            batch_dir: Directory path for the batch
-            batch_name: Name of the batch
-            features_df: Features DataFrame
-            targets_df: Targets DataFrame
-            prices_dict: Dictionary of price DataFrames by timeframe
+            features_df: Computed features DataFrame from local pipeline
+            targets_df: Computed targets DataFrame from local pipeline
             tickers: List of ticker symbols
             timeframes: List of timeframes
             test_ticker: Optional test ticker for test mode
@@ -100,12 +102,16 @@ class OrchestratorInterface:
         """
         self.logger.info("   Delegating to colab_manager to save batch data...")
 
+        # Use provided DataFrames or create empty ones
+        features_df = features_df if features_df is not None else pd.DataFrame()
+        targets_df = targets_df if targets_df is not None else pd.DataFrame()
+
         # Create BatchPreparationConfig
         from src.pipeline.hybrid.colab_manager import BatchPreparationConfig
 
         config = BatchPreparationConfig(
-            tickers=tickers if tickers is not None else [],
-            timeframes=timeframes if timeframes is not None else [],
+            tickers=tickers,
+            timeframes=timeframes,
             batch_name=batch_name,
             accumulate=kwargs.get('accumulate', True),
             force_feature_selection=kwargs.get('force_feature_selection', False),
@@ -118,29 +124,15 @@ class OrchestratorInterface:
         )
 
         # Delegate to colab_manager to package and save the data
-        if (features_df is None or features_df.empty) and (targets_df is None or targets_df.empty):
-            self.logger.warning("Empty features/targets passed to prepare_colab_data. Loading from Parquet fallback.")
-            try:
-                features_df = pd.read_parquet("data/processed/features/enriched_features.parquet")
-                targets_df = pd.read_parquet("data/processed/features/targets.parquet")
-            except Exception as e:
-                self.logger.error(f"❌ Failed to load fallback data from Parquet: {e}")
-                return {}
-
-        result = self.orchestrator.colab_manager.prepare_colab_batch(
+        return self.orchestrator.colab_manager.prepare_colab_batch(
             features_df=features_df,
             targets_df=targets_df,
-            prices_dict=prices_dict or {}, # Pass prices_dict to colab_manager
-            config=config,
-            news_df=kwargs.get('news_df'),
-            economic_df=kwargs.get('economic_df')
+            config=config
         )
-        return result if result is not None else {}
 
     def load_colab_results(self, batch_name: str) -> dict[str, Any]:
         """Loads training results from Colab."""
-        result = self.orchestrator.colab_manager.load_colab_results(batch_name)
-        return result if result is not None else {}
+        return self.orchestrator.colab_manager.load_colab_results(batch_name)
 
     def extract_batch_name_from_path(self, path_str: str) -> str | None:
         """Extract batch name from path."""
@@ -166,19 +158,14 @@ class OrchestratorInterface:
             force_feature_selection=force_feature_selection
         )
 
-        result = await self.orchestrator.pipeline_manager.run_full_hybrid_pipeline(params)
-        return result if result is not None else {}
+        return await self.orchestrator.pipeline_manager.run_full_hybrid_pipeline(params)
 
     async def run_final_stages(self, features_df: pd.DataFrame | None, targets_df: pd.DataFrame | None,
                               colab_results: dict[str, Any] | None = None,
                               light_results: dict[str, Any] | None = None,
                               tickers: list[str] | None = None,
                               timeframes: list[str] | None = None,
-                              batch_name: str | None = None,
-                              news_data: pd.DataFrame | None = None,
-                              economic_data: pd.DataFrame | None = None,
-                              market_indicators: pd.DataFrame | None = None,
-                              stages_to_run: list[int] | None = None) -> dict[str, Any]:
+                              batch_name: str | None = None) -> dict[str, Any]:
         """Run final stages of the pipeline."""
         params = FinalStagesParams(
             features_df=features_df,
@@ -187,12 +174,7 @@ class OrchestratorInterface:
             light_results=light_results,
             tickers=tickers,
             timeframes=timeframes,
-            batch_name=batch_name,
-            stages_to_run=stages_to_run,
-            news_data=news_data,
-            economic_data=economic_data,
-            market_indicators=market_indicators
+            batch_name=batch_name
         )
 
-        result = await self.orchestrator.pipeline_manager.run_final_stages(params)
-        return result if result is not None else {}
+        return await self.orchestrator.pipeline_manager.run_final_stages(params)

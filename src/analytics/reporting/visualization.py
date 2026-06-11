@@ -34,10 +34,10 @@ class Visualizer:
             plt.close(fig)
             logger.info(f"Successfully saved plot: {full_path}")
             return full_path
-        except Exception as e:
-            logger.error(f"Failed to save plot {filename}: {e}", exc_info=True)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to save plot {filename}: {e}")
             plt.close(fig)
-            return None
+            raise RuntimeError(f"Failed to save plot {filename}") from e
 
     def plot_price_history(self, df: pd.DataFrame, price_col: str, title: str, filename: str) -> Path | None:
         """

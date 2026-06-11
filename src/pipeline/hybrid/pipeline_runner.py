@@ -4,6 +4,7 @@ Pipeline Runner - Handles pipeline execution logic
 
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -21,7 +22,7 @@ class PipelineRunner:
     def __init__(self, config_manager, output_dir: str, batch_name: str,
                  feature_processor, metadata_manager: MetadataManager):
         self.config_manager = config_manager
-        self.output_dir = output_dir
+        self.output_dir = Path(output_dir)
         self.batch_name = batch_name
         self.feature_processor = feature_processor
         self.metadata_manager = metadata_manager
@@ -103,9 +104,10 @@ class PipelineRunner:
         if 'enriched_data' in results:
             enriched_result = self._process_enriched_data(results['enriched_data'])
             if enriched_result:
-                results['enriched_data'] = enriched_result['data']
-                results['features_df'] = enriched_result['features']
-                results['targets_df'] = enriched_result['targets']
+                proc_data = enriched_result['data']
+                results['enriched_data'] = proc_data['data']
+                results['features_df'] = proc_data['features']
+                results['targets_df'] = proc_data['targets']
                 saved_files['features'] = enriched_result['paths']['features']
 
         return saved_files

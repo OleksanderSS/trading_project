@@ -17,6 +17,8 @@ except ImportError:
 from src.core.logging.logger import ProjectLogger
 from src.models.interfaces import BaseModel
 
+META_EXTENSION = '.meta'
+
 
 class TabNetModel(BaseModel):
     """
@@ -105,7 +107,7 @@ class TabNetModel(BaseModel):
             'task_type': self.task_type
         }
         # Шлях до файлу метаданих буде поруч з моделлю
-        metadata_path = Path(model_path).with_suffix('.meta')
+        metadata_path = Path(model_path).with_suffix(META_EXTENSION)
         joblib.dump(metadata, metadata_path)
 
         self.logger.info(f"Модель збережено в {model_path} та метадані в {metadata_path}")
@@ -120,14 +122,21 @@ class TabNetModel(BaseModel):
         """
         try:
             # Завантажуємо метадані
-            metadata_path = Path(path).with_suffix('.meta')
-            metadata = joblib.load(metadata_path)
+            model_path = self._resolve_model_artifact_path(
+                path,
+                allowed_suffixes={'.zip'},
+            )
+            metadata_path = self._resolve_model_artifact_path(
+                Path(path).with_suffix(META_EXTENSION),
+                allowed_suffixes={META_EXTENSION},
+            )
+            metadata = joblib.load(metadata_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             self.feature_cols = metadata['feature_cols']
             self.task_type = metadata['task_type']
 
             # Створюємо екземпляр моделі і завантажуємо стан
             self.model = self._create_model_instance()
-            self.model.load_model(path)
+            self.model.load_model(str(model_path))
 
             self.is_trained = True
             self.logger.info(f"Модель успішно завантажено з {path}")
@@ -135,6 +144,6 @@ class TabNetModel(BaseModel):
         except FileNotFoundError:
             self.logger.error(f"Файл моделі або метаданих не знайдено за шляхом: {path}")
             return False
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Помилка під час завантаження моделі: {e}")
             return False

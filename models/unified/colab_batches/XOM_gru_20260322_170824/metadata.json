@@ -1,0 +1,11 @@
+{
+  "batch_id": "XOM_gru_20260322_170824",
+  "ticker": "XOM",
+  "model_name": "gru",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_return_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T17:08:24.207835",
+  "status": "PENDING_COLAB"
+}

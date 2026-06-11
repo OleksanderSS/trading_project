@@ -4,12 +4,9 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Conv1D, Dense, Dropout, Flatten, Input, MaxPooling1D
 
 from src.core.logging.logger import ProjectLogger
-from src.models.neural.base_neural import BaseNeuralModel
+from src.models.neural.base_neural import BaseNeuralModel, _get_tf
 
 
 class CNNModel(BaseNeuralModel):
@@ -29,10 +26,18 @@ class CNNModel(BaseNeuralModel):
         """Повертає ім'я моделі."""
         return "cnn"
 
-    def _build_architecture(self, input_shape: tuple) -> Sequential:
+    def _build_architecture(self, input_shape: tuple) -> Any:
         """
         Визначає архітектуру CNN для обробки послідовностей даних.
         """
+        tf = _get_tf()
+        Sequential = tf.keras.Sequential
+        Input = tf.keras.layers.Input
+        Conv1D = tf.keras.layers.Conv1D
+        Dense = tf.keras.layers.Dense
+        Dropout = tf.keras.layers.Dropout
+        Flatten = tf.keras.layers.Flatten
+        MaxPooling1D = tf.keras.layers.MaxPooling1D
         timesteps, n_features = input_shape
 
         layers = [
@@ -66,7 +71,7 @@ class CNNModel(BaseNeuralModel):
         try:
             # Фіксація seed для відтворюваності
             np.random.seed(self.random_state)
-            tf.random.set_seed(self.random_state)
+            _get_tf().random.set_seed(self.random_state)
 
             # Підготовка та нормалізація даних
             # Перетворення в numpy з правильними типами
@@ -104,7 +109,7 @@ class CNNModel(BaseNeuralModel):
 
             return self.get_model_info()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"[ERROR] Помилка під час навчання CNN: {e}", exc_info=True)
             raise
 
@@ -133,7 +138,7 @@ class CNNModel(BaseNeuralModel):
 
             return predictions.flatten()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"[ERROR] Помилка під час виконання прогнозу CNN: {e}")
             raise
 

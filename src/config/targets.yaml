@@ -17,6 +17,14 @@ targets:
       shift: -1
       threshold: 0.005
 
+  target_up_5d:
+    type: "classification_binary"
+    params:
+      description: "Price goes up by > 2% in the next 5 periods? (0=No, 1=Yes)"
+      base_col: "close"
+      shift: -5
+      threshold: 0.02
+
   # --- Multiclass Classification Targets ---
   target_multi_1d:
     type: "classification_multiclass"
@@ -25,6 +33,14 @@ targets:
       base_col: "close"
       shift: -1
       thresholds: [-0.01, 0.01]
+
+  target_multi_5d:
+    type: "classification_multiclass"
+    params:
+      description: "Price movement in 5 periods vs 3% thold (0=Down, 1=Flat, 2=Up)"
+      base_col: "close"
+      shift: -5
+      thresholds: [-0.03, 0.03]
 
   # ===================================================================
   # Targets for "Light" Models (LGBM, XGBoost, RF, Linear, etc.)
@@ -46,24 +62,12 @@ targets:
         slippage_pct: 0.001    # 0.1% slippage
         # Total margin: ~0.25% per operation (buy+sell = 0.5%)
 
-  target_hourly_return_1h:
+  target_return_5d:
     type: "regression"
     params:
-      description: "Future return over the next hour."
+      description: "Future return over the next 5 periods."
       base_col: "close"
-      shift: -1  # 1 × 60min = 1 hour
-      adjust_for_costs: true
-      transaction_costs:
-        commission_pct: 0.001
-        spread_pct: 0.0005
-        slippage_pct: 0.001
-
-  target_intraday_return_15m:
-    type: "regression"
-    params:
-      description: "Future return over the next 15 minutes."
-      base_col: "close"
-      shift: -1
+      shift: -5
       adjust_for_costs: true
       transaction_costs:
         commission_pct: 0.001
@@ -132,16 +136,28 @@ targets:
       shift: -1
       threshold: 0.001
 
+  target_intraday_return_15m:
+    type: "regression"
+    params:
+      description: "Future return over next 15min."
+      base_col: "close"
+      shift: -1
+      adjust_for_costs: true
+      transaction_costs:
+        commission_pct: 0.001
+        spread_pct: 0.0005
+        slippage_pct: 0.001
+
   target_intraday_volatility_15m:
     type: "regression"
     params:
-      description: "Predict volatility in next 15min."
-      base_col: "true_range"
+      description: "Predict volatility in next 15min (via high-low range as proxy)."
+      base_col: "high"
       shift: -1
       window: 3
 
   # ===================================================================
-  # Additional Hourly Targets (60m timeframe)
+  # NEW: Additional Hourly Targets (60m timeframe)
   # ===================================================================
   
   target_hourly_up_1h:
@@ -149,15 +165,27 @@ targets:
     params:
       description: "Price goes up by > 0.3% in next hour? (0=No, 1=Yes)"
       base_col: "close"
-      shift: -1  # 1 × 60min = 1 hour
+      shift: -4  # 4 × 15min = 1 hour
       threshold: 0.003
+
+  target_hourly_return_1h:
+    type: "regression"
+    params:
+      description: "Future return over next hour."
+      base_col: "close"
+      shift: -4
+      adjust_for_costs: true
+      transaction_costs:
+        commission_pct: 0.001
+        spread_pct: 0.0005
+        slippage_pct: 0.001
 
   target_hourly_volume_spike_1h:
     type: "classification_binary"
     params:
       description: "Volume spike > 2x average in next hour? (0=No, 1=Yes)"
       base_col: "volume"
-      shift: -1
+      shift: -4
       threshold: 2.0
       compare_to: "average"
 
@@ -166,7 +194,7 @@ targets:
     params:
       description: "Price breaks Bollinger Bands in next hour? (0=No, 1=Yes)"
       base_col: "close"
-      shift: -1
+      shift: -4
       indicator_col: "BB_Upper"
       threshold: 0.0
 
@@ -174,6 +202,26 @@ targets:
   # NEW: Additional Daily Targets (1d timeframe)
   # ===================================================================
   
+  target_weekly_up_1w:
+    type: "classification_binary"
+    params:
+      description: "Price goes up by > 3% in next week? (0=No, 1=Yes)"
+      base_col: "close"
+      shift: -7  # 7 days = 1 week
+      threshold: 0.03
+
+  target_weekly_return_1w:
+    type: "regression"
+    params:
+      description: "Future return over next week."
+      base_col: "close"
+      shift: -7
+      adjust_for_costs: true
+      transaction_costs:
+        commission_pct: 0.001
+        spread_pct: 0.0005
+        slippage_pct: 0.001
+
   target_daily_trend_strength_1d:
     type: "regression"
     params:

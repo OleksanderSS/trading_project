@@ -57,8 +57,8 @@ class PostNewsTargetCalculator:
         # Переконуємося що datetime є колонкою
         if 'datetime' not in df_tf.columns:
             if isinstance(df_tf.index, pd.DatetimeIndex):
-                df_tf = df_tf.copy()
-                df_tf['datetime'] = df_tf.index
+                df_tf = df_tf.reset_index()
+                df_tf = df_tf.rename(columns={'index': 'datetime'})
 
         # Розрахувати таргети для кожного рядка
         targets = []

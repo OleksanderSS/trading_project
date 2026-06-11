@@ -1,10 +1,4 @@
-# src/analytics/calculators/fama_french_factors.py
-"""
-Fama-French Factor Provider
-Provides accessibility to systematic risk factors including Market, Size, Value, and Momentum.
-Uses Yahoo Finance as the primary data source for benchmark ETF proxies.
-"""
-
+import logging
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -12,12 +6,24 @@ import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
-try:
-    import yfinance as yf
-except ImportError:
-    yf = None
+# src/analytics/calculators/fama_french_factors.py
+"""
+Fama-French Factor Provider
+Provides accessibility to systematic risk factors including Market, Size, Value, and Momentum.
+Uses Yahoo Finance as the primary data source for benchmark ETF proxies.
+"""
 
 logger = ProjectLogger.get_logger(__name__)
+
+
+def _load_yfinance():
+    try:
+        import yfinance as yf
+    except ImportError as exc:
+        raise ImportError(
+            "yfinance dependency missing. Required for systematic factor retrieval."
+        ) from exc
+    return yf
 
 class FamaFrenchFactors:
     """
@@ -33,9 +39,6 @@ class FamaFrenchFactors:
             benchmark_tickers: Custom ticker mapping for proxy ETFs.
             use_cache: Enables temporal caching of downloaded market data.
         """
-        if yf is None:
-            raise ImportError("yfinance dependency missing. Required for systematic factor retrieval.")
-
         # Default ETF proxies for Fama-French factors
         self.benchmark_tickers = benchmark_tickers or {
             'market': '^GSPC',      # S&P 500 Index (Market Baseline)
@@ -77,7 +80,7 @@ class FamaFrenchFactors:
                 logger.info("Factor calculation skipped: Insufficient historical depth (Benchmark dataset empty).")
                 return None
 
-            returns = prices.pct_change().dropna()
+            returns = prices.pct_change(fill_method=None).dropna()
 
             if not self._validate_ticker_coverage(returns):
                 return None
@@ -88,9 +91,9 @@ class FamaFrenchFactors:
             logger.info(f"Fama-French factor calculation successful ({len(factors_df)} points).")
             return factors_df
 
-        except Exception as e:
-            logger.error(f"Systematic factor computation failed: {e}", exc_info=True)
-            return None
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception("Systematic factor computation failed")
+            raise RuntimeError(f"Systematic factor computation failed: {e}") from e
 
     def _check_factor_cache(self, cache_key: str) -> pd.DataFrame | None:
         """Check if factors are cached and valid."""
@@ -162,8 +165,8 @@ class FamaFrenchFactors:
             if not result.empty:
                 self._update_cache(cache_key, result)
             return result
-        except Exception as e:
-            logger.error(f"Remote benchmark ingestion failed (yfinance): {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception("Remote benchmark ingestion failed (yfinance)")
             return self._get_fallback_cache(cache_key)
 
     def _validate_date_range(self, start_date: str, end_date: str) -> bool:
@@ -175,8 +178,8 @@ class FamaFrenchFactors:
                 logger.info(f"Temporal range too narrow for factor analysis: {start_date} to {end_date}")
                 return False
             return True
-        except Exception as e:
-            logger.error(f"Temporal parameters malformed: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+            logger.exception("Temporal parameters malformed")
             return False
 
     def _check_cache(self, cache_key: str, start_date: str) -> pd.DataFrame | None:
@@ -185,7 +188,8 @@ class FamaFrenchFactors:
             return None
 
         if self.last_cache_time and (datetime.now() - self.last_cache_time) < self.cache_expiry:
-            logger.debug(f"Utilizing cached benchmark data for {start_date} period.")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Utilizing cached benchmark data for {start_date} period.")
             return self.cache[cache_key]
 
         return None
@@ -193,6 +197,7 @@ class FamaFrenchFactors:
     def _download_from_yfinance(self, tickers: list[str], start_date: str, end_date: str) -> pd.DataFrame:
         """Download data from yfinance"""
         logger.info(f"Ingesting historical benchmarks from yfinance ({len(tickers)} assets)...")
+        yf = _load_yfinance()
         data = yf.download(tickers, start=start_date, end=end_date, progress=False, auto_adjust=True, group_by='ticker')
 
         if len(tickers) == 1:
@@ -229,15 +234,21 @@ class FamaFrenchFactors:
         """Calculates statistical properties of the systematic factor streams."""
         performance_stats = {}
         for factor_name in factors.columns:
-            f_series = factors[factor_name]
+            f_series = pd.to_numeric(factors[factor_name], errors='coerce').replace([np.inf, -np.inf], np.nan).dropna()
             if f_series.empty:
                 continue
+            factor_std = f_series.std()
+            annualized_sharpe = (
+                float((f_series.mean() / factor_std) * np.sqrt(252))
+                if np.isfinite(factor_std) and factor_std > 1e-12
+                else np.nan
+            )
 
             performance_stats[factor_name] = {
                 'mean_return': float(f_series.mean()),
-                'volatility': float(f_series.std()),
-                'annualized_sharpe': float((f_series.mean() / f_series.std()) * np.sqrt(252)) if f_series.std() != 0 else 0.0,
+                'volatility': float(factor_std),
+                'annualized_sharpe': annualized_sharpe,
                 'annualized_return': float(f_series.mean() * 252),
-                'annualized_vol': float(f_series.std() * np.sqrt(252))
+                'annualized_vol': float(factor_std * np.sqrt(252))
             }
         return performance_stats

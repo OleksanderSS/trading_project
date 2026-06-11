@@ -1,0 +1,87 @@
+{
+  "stats": {
+    "files": 617,
+    "lines": 92685,
+    "issues": 398,
+    "by_severity": {
+      "MEDIUM": 165,
+      "LOW": 229,
+      "INFO": 4
+    },
+    "by_category": {
+      "FEAT": 120,
+      "LOGIC": 183,
+      "STATE": 32,
+      "MATH": 39,
+      "ASYNC": 9,
+      "RES": 8,
+      "API": 7
+    }
+  },
+  "issues": [
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "data\\management\\data_manager.py",
+      "line": 104,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "data\\management\\data_manager.py",
+      "line": 128,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "data\\management\\handlers\\connection_handler.py",
+      "line": 58,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "data\\management\\handlers\\connection_handler.py",
+      "line": 74,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\awareness\\context\\storage.py",
+      "line": 20,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "RES",
+      "severity": "MEDIUM",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 58,
+      "message": "DB connection   close()  context manager",
+      "fix_hint": "with duckdb.connect(path) as con: ...  con.close()  finally"
+    },
+    {
+      "category": "RES",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 544,
+      "message": "threading.Thread  daemon=True  .join()     ",
+      "fix_hint": "daemon=True  background threads  t.join()  "
+    },
+    {
+      "category": "RES",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 462,
+      "message": "threading.Thread  daemon=True  .join()     ",
+      "fix_hint": "daemon=True  background threads  t.join()  "
+    }
+  ]
+}

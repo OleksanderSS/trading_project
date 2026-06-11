@@ -37,7 +37,7 @@ class LinearModel(BaseModel):
 
             return self.get_model_info()
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Linear model training failed: {e}")
             raise
 
@@ -67,17 +67,37 @@ class LinearModel(BaseModel):
             joblib.dump(self, path)
             self.logger.info(f"Linear model saved to {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to save model: {e}")
             return False
 
     def load_model(self, path: str) -> bool:
         """Loads a model from a file using joblib."""
         try:
-            loaded_model = joblib.load(path)
+            from pathlib import Path
+
+            from src.config.unified_config_manager import get_current_config
+            from src.utils.artifact_security import resolve_trusted_artifact_path
+
+            # Security validation: Ensure path is within expected data or models directories
+            trusted_path = resolve_trusted_artifact_path(
+                path,
+                allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+                must_exist=True,
+            )
+
+            # Validate against configured model storage paths
+            config = get_current_config()
+            base_model_path = config.get('models.dual_model_manager.base_path', 'data/models')
+
+            if not trusted_path.resolve().is_relative_to(Path(base_model_path).resolve()):
+                self.logger.warning(f"🚫 Blocking unsafe Linear model load attempt from: {path}")
+                raise ValueError(f"Unsafe path for loading: {path}")
+
+            loaded_model = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             self.__dict__.update(loaded_model.__dict__)
-            self.logger.info(f"Linear model loaded from {path}")
+            self.logger.info(f"Linear model loaded from {trusted_path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to load model: {e}")
             return False

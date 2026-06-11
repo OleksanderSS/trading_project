@@ -1,0 +1,218 @@
+{
+  "stats": {
+    "files": 605,
+    "lines": 89829,
+    "issues": 481,
+    "by_severity": {
+      "MEDIUM": 211,
+      "LOW": 242,
+      "HIGH": 21,
+      "INFO": 4,
+      "CRITICAL": 3
+    },
+    "by_category": {
+      "FEAT": 155,
+      "MATH": 80,
+      "LOGIC": 179,
+      "STATE": 32,
+      "API": 11,
+      "ASYNC": 11,
+      "RES": 8,
+      "LEAK": 5
+    }
+  },
+  "issues": [
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "algorithms\\bias_detector.py",
+      "line": 29,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "algorithms\\bias_detector.py",
+      "line": 30,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "algorithms\\bias_detector.py",
+      "line": 36,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "algorithms\\bias_detector.py",
+      "line": 106,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "analytics\\analyzers\\causal_event_finder.py",
+      "line": 19,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "analytics\\analyzers\\causal_event_finder.py",
+      "line": 113,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "MATH",
+      "severity": "HIGH",
+      "file": "analytics\\analyzers\\performance_attribution_analyzer.py",
+      "line": 230,
+      "message": "Mean of means       ",
+      "fix_hint": " : (sum * count).sum() / count.sum()"
+    },
+    {
+      "category": "MATH",
+      "severity": "HIGH",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 339,
+      "message": "Mean of means       ",
+      "fix_hint": " : (sum * count).sum() / count.sum()"
+    },
+    {
+      "category": "MATH",
+      "severity": "HIGH",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 517,
+      "message": "Mean of means       ",
+      "fix_hint": " : (sum * count).sum() / count.sum()"
+    },
+    {
+      "category": "LEAK",
+      "severity": "HIGH",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 135,
+      "message": "shift(-N)     (temporal leakage)",
+      "fix_hint": " .shift(1)  rolling/expanding   look-ahead bias"
+    },
+    {
+      "category": "LEAK",
+      "severity": "HIGH",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 136,
+      "message": "shift(-N)     (temporal leakage)",
+      "fix_hint": " .shift(1)  rolling/expanding   look-ahead bias"
+    },
+    {
+      "category": "LEAK",
+      "severity": "HIGH",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 137,
+      "message": "shift(-N)     (temporal leakage)",
+      "fix_hint": " .shift(1)  rolling/expanding   look-ahead bias"
+    },
+    {
+      "category": "LEAK",
+      "severity": "HIGH",
+      "file": "data\\synthetic\\data_generator.py",
+      "line": 149,
+      "message": "shift(-N)     (temporal leakage)",
+      "fix_hint": " .shift(1)  rolling/expanding   look-ahead bias"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 22,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "features\\validation\\feature_leakage_guard.py",
+      "line": 23,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "MATH",
+      "severity": "HIGH",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 147,
+      "message": "Mean of means       ",
+      "fix_hint": " : (sum * count).sum() / count.sum()"
+    },
+    {
+      "category": "MATH",
+      "severity": "HIGH",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 150,
+      "message": "Mean of means       ",
+      "fix_hint": " : (sum * count).sum() / count.sum()"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "pipeline\\guards\\temporal_leakage_guard.py",
+      "line": 38,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "LEAK",
+      "severity": "CRITICAL",
+      "file": "pipeline\\stages\\feature_engineering\\orchestrator.py",
+      "line": 112,
+      "message": "Target   feature matrix  target leakage",
+      "fix_hint": " target_ : X = df[[c for c in df.columns if not c.startswith('target_')]]"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 136,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 154,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "FEAT",
+      "severity": "HIGH",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 156,
+      "message": "  'future/next/tomorrow'  features   target leakage",
+      "fix_hint": "   ,   feature: prefix 'target_'"
+    },
+    {
+      "category": "ASYNC",
+      "severity": "CRITICAL",
+      "file": "utils\\async_timeout.py",
+      "line": 21,
+      "message": "await    async_timeout()  SyntaxError  RuntimeError",
+      "fix_hint": "async def async_timeout(...)"
+    },
+    {
+      "category": "ASYNC",
+      "severity": "CRITICAL",
+      "file": "utils\\async_timeout.py",
+      "line": 21,
+      "message": "await    decorator()  SyntaxError  RuntimeError",
+      "fix_hint": "async def decorator(...)"
+    }
+  ]
+}

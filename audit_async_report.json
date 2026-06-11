@@ -1,0 +1,95 @@
+{
+  "stats": {
+    "files": 617,
+    "lines": 92685,
+    "issues": 398,
+    "by_severity": {
+      "MEDIUM": 165,
+      "LOW": 229,
+      "INFO": 4
+    },
+    "by_category": {
+      "FEAT": 120,
+      "LOGIC": 183,
+      "STATE": 32,
+      "MATH": 39,
+      "ASYNC": 9,
+      "RES": 8,
+      "API": 7
+    }
+  },
+  "issues": [
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "config\\unified_config_manager.py",
+      "line": 467,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\cache\\cache_manager.py",
+      "line": 30,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\logging\\logger.py",
+      "line": 33,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\logging\\notifier.py",
+      "line": 116,
+      "message": "create_task/ensure_future   reference  task   garbage collected",
+      "fix_hint": "task = asyncio.create_task(coro())    "
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\monitoring\\memory_profiler.py",
+      "line": 218,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "core\\system\\batch_processor.py",
+      "line": 49,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "models\\model_pool.py",
+      "line": 238,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "utils\\rate_limiter.py",
+      "line": 43,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    },
+    {
+      "category": "ASYNC",
+      "severity": "MEDIUM",
+      "file": "utils\\rate_limiter.py",
+      "line": 44,
+      "message": "Lock()      deadlock  ",
+      "fix_hint": "async with lock: ...  with lock: ..."
+    }
+  ]
+}

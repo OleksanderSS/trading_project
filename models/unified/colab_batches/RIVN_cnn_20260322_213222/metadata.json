@@ -1,0 +1,11 @@
+{
+  "batch_id": "RIVN_cnn_20260322_213222",
+  "ticker": "RIVN",
+  "model_name": "cnn",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_macd_hist_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T21:32:22.466969",
+  "status": "PENDING_COLAB"
+}

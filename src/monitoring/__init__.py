@@ -29,29 +29,19 @@ from .monitoring_system import (
     alertstatus,
 )
 
-# ... (imports)
-from .config import MonitoringConfig, create_config_file, get_monitoring_config
-
-# ✅ NEW: Data Freshness Monitor
-from .data_freshness_monitor import (
-    DataFreshnessMonitor,
-    check_freshness_quick,
-    get_data_freshness_monitor,
-)
-
-# ✅ NEW: Feature Drift Monitor
-from .feature_drift_monitor import (
-    FeatureDriftMonitor,
-    check_feature_drift,
-    get_feature_drift_monitor,
-)
-
-# Optional Dashboard components
 try:
     from .dashboard import MonitoringDashboardGenerator, TextBasedDashboard
 except ImportError:
-    MonitoringDashboardGenerator = Any
-    TextBasedDashboard = Any
+    MonitoringDashboardGenerator = None
+    TextBasedDashboard = None
+
+from .config import MonitoringConfig, create_config_file, get_monitoring_config
+
+# ✅ NEW: Data Freshness Monitor
+from .data_freshness_monitor import DataFreshnessMonitor, check_freshness_quick, get_data_freshness_monitor
+
+# ✅ NEW: Feature Drift Monitor
+from .feature_drift_monitor import FeatureDriftMonitor, check_feature_drift, get_feature_drift_monitor
 
 #
 from .health_hub import HealthHub

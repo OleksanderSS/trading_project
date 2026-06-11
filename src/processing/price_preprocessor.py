@@ -1,6 +1,6 @@
+import logging
+
 # src/processing/price_preprocessor.py
-
-
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
@@ -28,15 +28,20 @@ class PricePreprocessor:
         df = df.copy()
 
         # DEBUG: Log what columns we actually have
-        logger.debug(f"PricePreprocessor input shape: {df.shape}, columns: {df.columns.tolist()}")
-        logger.debug(f"Looking for metrics: {metrics}")
-        logger.debug(f"Target columns: {target_columns}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"PricePreprocessor input shape: {df.shape}, columns: {df.columns.tolist()}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Looking for metrics: {metrics}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Target columns: {target_columns}")
 
         if self._is_already_normalized(df, target_columns):
-            logger.debug("DataFrame is already normalized")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("DataFrame is already normalized")
             processed_df = self._preserve_metadata_columns(df, target_columns, preserve_columns)
         else:
-            logger.debug("DataFrame needs normalization")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("DataFrame needs normalization")
             processed_df = self._normalize_structure(df, metrics, target_columns)
 
         processed_df = self._finalize_dataframe(processed_df, metrics, target_columns, preserve_columns)
@@ -49,7 +54,8 @@ class PricePreprocessor:
 
     def _preserve_metadata_columns(self, df: pd.DataFrame, target_columns: list[str], preserve_columns: list[str]) -> pd.DataFrame:
         """Preserve interval and other metadata columns."""
-        logger.debug("DataFrame is already in normalized format. Validating metrics...")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("DataFrame is already in normalized format. Validating metrics...")
         columns_to_keep = target_columns.copy()
         current_cols = set(df.columns)
 
@@ -90,7 +96,7 @@ class PricePreprocessor:
             tidy = self._melt_dataframe(df, metrics)
             processed_df = self._pivot_to_format(tidy)
             return processed_df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to normalize price DataFrame structure: {e}")
             # Instead of returning empty DataFrame, try to preserve what we have
             logger.warning("Returning original DataFrame with warning")

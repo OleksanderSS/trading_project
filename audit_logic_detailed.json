@@ -1,0 +1,1487 @@
+{
+  "stats": {
+    "files": 617,
+    "lines": 92695,
+    "issues": 397,
+    "by_severity": {
+      "MEDIUM": 164,
+      "LOW": 229,
+      "INFO": 4
+    },
+    "by_category": {
+      "FEAT": 120,
+      "LOGIC": 183,
+      "STATE": 32,
+      "MATH": 38,
+      "ASYNC": 9,
+      "RES": 8,
+      "API": 7
+    }
+  },
+  "issues": [
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "algorithms\\bias_detector.py",
+      "line": 85,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "algorithms\\regime_detector.py",
+      "line": 31,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "algorithms\\risk_parity_allocator.py",
+      "line": 322,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "algorithms\\walk_forward_optimizer.py",
+      "line": 101,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "algorithms\\walk_forward_optimizer.py",
+      "line": 102,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\hedge_fund_analyzer.py",
+      "line": 135,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\hedge_fund_analyzer.py",
+      "line": 174,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\hedge_fund_analyzer.py",
+      "line": 176,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\knn_similarity_finder.py",
+      "line": 73,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\knn_similarity_finder.py",
+      "line": 87,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\performance_attribution_analyzer.py",
+      "line": 263,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\analyzers\\wrappers.py",
+      "line": 40,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\battle_groups.py",
+      "line": 89,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\ensemble_performance_bridge.py",
+      "line": 76,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\arena\\ensemble_performance_bridge.py",
+      "line": 80,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\calculators\\macro_score_calculator.py",
+      "line": 124,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\context\\counterfactual_generator.py",
+      "line": 72,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\context\\ensemble_selector.py",
+      "line": 90,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\context\\propensity_score_methods.py",
+      "line": 33,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\reporting\\results_manager.py",
+      "line": 44,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "analytics\\unified_analytics_engine.py",
+      "line": 60,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "backtesting\\advanced\\advanced_engine.py",
+      "line": 255,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\argument_validator.py",
+      "line": 61,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_data_loader.py",
+      "line": 78,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_data_loader.py",
+      "line": 79,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 66,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 264,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 331,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 337,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 346,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "cli\\pipeline_executor.py",
+      "line": 385,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "colab\\config\\config_loader.py",
+      "line": 21,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "colab\\utils\\utils.py",
+      "line": 72,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "config\\tickers.py",
+      "line": 396,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "core\\error_handling\\error_handler.py",
+      "line": 178,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "core\\logging\\log_standards.py",
+      "line": 37,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "core\\logging\\log_standards.py",
+      "line": 70,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\collectors\\base_collector.py",
+      "line": 21,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\collectors\\collector_factory.py",
+      "line": 23,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\collectors\\collector_factory.py",
+      "line": 52,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\collectors\\collector_factory.py",
+      "line": 83,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\collectors\\yf_collector.py",
+      "line": 128,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 83,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "data\\management\\asset_manager.py",
+      "line": 113,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "ensembling\\stacked_ensemble.py",
+      "line": 393,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "factories\\model_factory.py",
+      "line": 71,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "factories\\model_factory.py",
+      "line": 95,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\analysis\\regime_adapter.py",
+      "line": 83,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\analysis\\regime_importance_tracker.py",
+      "line": 46,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\analysis\\regime_importance_tracker.py",
+      "line": 204,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\analysis\\regime_importance_tracker.py",
+      "line": 243,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\builders\\news_event\\enricher.py",
+      "line": 44,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\context_aware_feature_selector.py",
+      "line": 237,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\advanced_analytics_enricher.py",
+      "line": 35,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\context_map_enricher.py",
+      "line": 179,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\derived_features_enricher.py",
+      "line": 152,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\enrichers\\keyword_entity_enricher.py",
+      "line": 26,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\feature_orchestrator.py",
+      "line": 312,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\feature_orchestrator.py",
+      "line": 313,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\monitoring\\feature_drift_detector.py",
+      "line": 114,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\news_clusterer.py",
+      "line": 50,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\extractors\\keyword_extractor.py",
+      "line": 70,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\finbert_pipeline.py",
+      "line": 44,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\roberta_sentiment.py",
+      "line": 49,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\roberta_sentiment.py",
+      "line": 92,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\roberta_sentiment.py",
+      "line": 97,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\models\\sentiment_core.py",
+      "line": 43,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 36,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 48,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 54,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 84,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\article_processor.py",
+      "line": 89,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\nlp\\processors\\news_harmonizer.py",
+      "line": 57,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\validation\\redundancy_detector.py",
+      "line": 365,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "features\\validation\\redundancy_detector.py",
+      "line": 489,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "integration\\ensemble_performance_bridge.py",
+      "line": 196,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\modes\\backtest.py",
+      "line": 62,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\modes\\backtest.py",
+      "line": 69,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\modes\\training_data_pipeline.py",
+      "line": 49,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "main\\system_orchestrator.py",
+      "line": 139,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "meta_learning\\awareness\\context\\manager.py",
+      "line": 70,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "meta_learning\\evolution\\dual_loops.py",
+      "line": 111,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "meta_learning\\real_time_learning.py",
+      "line": 31,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "meta_learning\\security\\agent_permissions.py",
+      "line": 233,
+      "message": "`is True` / `is False`   `== True`   `if x:`",
+      "fix_hint": "if x:  if x is True:"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "meta_learning\\security\\constraint_engine.py",
+      "line": 84,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\adapters\\data_preparation.py",
+      "line": 48,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\adapters\\unified_model_adapter.py",
+      "line": 28,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\baseline\\comparison.py",
+      "line": 27,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\baselines\\models.py",
+      "line": 66,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\analysis\\regime\\patterns.py",
+      "line": 23,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\correlation\\correlation_engine.py",
+      "line": 433,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\correlation\\correlation_engine.py",
+      "line": 517,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\correlation\\correlation_visualizer.py",
+      "line": 156,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\dynamic_weights.py",
+      "line": 134,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\weight_stability\\calculator.py",
+      "line": 62,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\ensemble\\weight_stability\\calculator.py",
+      "line": 95,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\health\\model_health_evaluator.py",
+      "line": 39,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\health\\model_health_evaluator.py",
+      "line": 48,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\health\\model_health_evaluator.py",
+      "line": 54,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\health\\model_health_evaluator.py",
+      "line": 62,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\health\\model_health_evaluator.py",
+      "line": 127,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\health\\model_health_evaluator.py",
+      "line": 133,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\health\\model_health_evaluator.py",
+      "line": 139,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\loader.py",
+      "line": 341,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 22,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 279,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\model_selector\\smart_selector.py",
+      "line": 280,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\drift\\alert_system.py",
+      "line": 114,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\drift\\alert_system.py",
+      "line": 352,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\drift\\drift_visualizer.py",
+      "line": 233,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\drift\\drift_visualizer.py",
+      "line": 240,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 337,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\monitoring\\prediction_drift_monitor.py",
+      "line": 349,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\neural\\transformer_model.py",
+      "line": 334,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "models\\persistent_pool.py",
+      "line": 287,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\base.py",
+      "line": 37,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\dashboard.py",
+      "line": 521,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\example_usage.py",
+      "line": 186,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\example_usage.py",
+      "line": 250,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\example_usage.py",
+      "line": 278,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\infrastructure\\resource_monitor.py",
+      "line": 165,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 154,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\ml_analytics.py",
+      "line": 303,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 441,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\monitoring_system.py",
+      "line": 448,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\reporting\\performance_reports.py",
+      "line": 131,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\run_dashboard.py",
+      "line": 16,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "monitoring\\tests.py",
+      "line": 380,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 197,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "optimization\\hyperparameter_searcher.py",
+      "line": 207,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_executor.py",
+      "line": 70,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_executor.py",
+      "line": 158,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_executor.py",
+      "line": 162,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_orchestrator.py",
+      "line": 40,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_orchestrator.py",
+      "line": 45,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\final_stages_orchestrator.py",
+      "line": 55,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\orchestrator_config.py",
+      "line": 99,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\orchestrator_config.py",
+      "line": 100,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\hybrid\\storage_helpers.py",
+      "line": 90,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 45,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 324,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 325,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 326,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 327,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\pipeline_orchestrator.py",
+      "line": 328,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\evaluation\\backtest_analyzer.py",
+      "line": 256,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\feature_engineering\\guards.py",
+      "line": 49,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\metrics.py",
+      "line": 14,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 30,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 84,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\modeling\\orchestration.py",
+      "line": 97,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\anomaly_engine.py",
+      "line": 61,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\anomaly_engine.py",
+      "line": 98,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\data_preparation_service.py",
+      "line": 61,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\prediction\\model_selection_service.py",
+      "line": 171,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\processing\\orchestrator.py",
+      "line": 39,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\processing\\orchestrator.py",
+      "line": 71,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\stage_4_modeling.py",
+      "line": 117,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "pipeline\\stages\\trading\\recommendation_engine.py",
+      "line": 377,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "predictions\\deep_predict.py",
+      "line": 20,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "predictions\\models_predict.py",
+      "line": 74,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "predictions\\models_predict.py",
+      "line": 79,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "processing\\filters\\orchestrator.py",
+      "line": 76,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "risk\\elite_risk_metrics.py",
+      "line": 469,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "risk\\max_exposure_monitor.py",
+      "line": 23,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "risk\\metrics.py",
+      "line": 55,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "risk\\risk_manager.py",
+      "line": 88,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\consensus_engine.py",
+      "line": 302,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\elite_risk_sizer.py",
+      "line": 78,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\portfolio_manager.py",
+      "line": 199,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "trading\\virtual_portfolio.py",
+      "line": 35,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\base_trainer.py",
+      "line": 370,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\batch\\batch_processor.py",
+      "line": 166,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\batch\\batch_processor.py",
+      "line": 182,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\light_model_trainer.py",
+      "line": 76,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\pattern_aware_training.py",
+      "line": 55,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\portfolio_optimizer.py",
+      "line": 173,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 110,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 303,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "training\\progressive_trainer.py",
+      "line": 304,
+      "message": ".get('status')  default   None   ",
+      "fix_hint": ".get('status', 'unknown') == 'success'"
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "validation\\data_leakage_detector.py",
+      "line": 74,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "validation\\time_series_validator.py",
+      "line": 327,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    },
+    {
+      "category": "LOGIC",
+      "severity": "LOW",
+      "file": "validation\\time_series_validator.py",
+      "line": 349,
+      "message": "    `|=`  `or=`  union ",
+      "fix_hint": ""
+    }
+  ]
+}

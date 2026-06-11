@@ -1,5 +1,4 @@
 
-import os
 
 def patch_models_yaml():
     path = r'D:\trading_project\src\config\models.yaml'

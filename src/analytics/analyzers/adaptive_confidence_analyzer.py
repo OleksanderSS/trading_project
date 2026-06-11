@@ -1,5 +1,6 @@
 from typing import Any
 
+from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 
 from ..interfaces import IAnalyzer
@@ -43,8 +44,8 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
             try:
                 if self._evaluate_rule_conditions(rule.get('if', {}), data):
                     confidence_threshold = self._apply_rule_action(rule.get('then', {}), confidence_threshold)
-            except Exception as e:
-                logger.error(f"Error processing rule '{rule.get('name', 'Unnamed')}': {e}", exc_info=True)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                raise DataProcessingError(f"Error processing rule '{rule.get('name', 'Unnamed')}': {e}") from e
 
         # Cap the confidence threshold to a reasonable maximum
         final_threshold = min(confidence_threshold, self.config.get('max_confidence', 0.85))
@@ -88,10 +89,10 @@ class AdaptiveConfidenceAnalyzer(IAnalyzer):
         Applies the action from a rule's 'then' block, modifying the threshold.
         """
         if action.get('action') == 'increase_threshold':
-            return current_threshold + float(action.get('value', 0.0))
+            return current_threshold + action.get('value', 0.0)
         if action.get('action') == 'decrease_threshold':
-            return current_threshold - float(action.get('value', 0.0))
+            return current_threshold - action.get('value', 0.0)
         if action.get('action') == 'set_threshold':
-            return float(action.get('value', current_threshold))
+            return action.get('value', current_threshold)
 
         return current_threshold

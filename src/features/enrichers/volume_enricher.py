@@ -9,6 +9,7 @@ from .base import BaseEnricher
 
 logger = ProjectLogger.get_logger("VolumeEnricher")
 
+
 class VolumeEnricher(BaseEnricher):
     """
     Volume analysis enricher.
@@ -29,33 +30,47 @@ class VolumeEnricher(BaseEnricher):
 
     def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """Enrich DataFrame with volume indicators."""
-        try:
-            df_enriched = df.copy()
+        df_enriched = df.copy()
 
-            if 'volume' in df_enriched.columns and 'close' in df_enriched.columns:
-                # Volume Moving Averages
-                df_enriched['volume_sma_5'] = df_enriched['volume'].rolling(window=5).mean()
-                df_enriched['volume_sma_10'] = df_enriched['volume'].rolling(window=10).mean()
+        if "volume" in df_enriched.columns and "close" in df_enriched.columns:
+            # Volume Moving Averages
+            volume_history = df_enriched["volume"].shift(1)
+            df_enriched["volume_sma_5"] = (
+                volume_history.rolling(window=5, min_periods=1).mean().fillna(df_enriched["volume"])
+            )
+            df_enriched["volume_sma_10"] = (
+                volume_history.rolling(window=10, min_periods=1).mean().fillna(df_enriched["volume"])
+            )
 
-                # Volume Rate of Change
-                df_enriched['volume_roc'] = df_enriched['volume'].pct_change(periods=5)
+            # Volume Rate of Change
+            df_enriched["volume_roc"] = (
+                df_enriched["volume"]
+                .pct_change(periods=5, fill_method=None)
+                .replace([np.inf, -np.inf], np.nan)
+            )
 
-                # Price-Volume indicators
-                df_enriched['price_volume_trend'] = df_enriched['volume'] * df_enriched['close'].pct_change()
+            # Price-Volume indicators
+            close_returns = (
+                df_enriched["close"]
+                .pct_change(fill_method=None)
+                .replace([np.inf, -np.inf], np.nan)
+            )
+            df_enriched["price_volume_trend"] = (
+                df_enriched["volume"] * close_returns
+            )
 
-                # On-Balance Volume
-                price_change = df_enriched['close'].diff()
-                obv = np.where(price_change > 0, df_enriched['volume'],
-                             np.where(price_change < 0, -df_enriched['volume'], 0))
-                df_enriched['obv'] = pd.Series(obv).cumsum()
+            # On-Balance Volume
+            price_change = df_enriched["close"].diff()
+            obv = np.where(
+                price_change > 0, df_enriched["volume"], np.where(price_change < 0, -df_enriched["volume"], 0)
+            )
+            df_enriched["obv"] = pd.Series(obv, index=df_enriched.index).cumsum()
 
-                # Volume Relative Strength
-                df_enriched['volume_rs'] = df_enriched['volume'] / df_enriched['volume_sma_10']
+            # Volume Relative Strength
+            df_enriched["volume_rs"] = (
+                df_enriched["volume"] / df_enriched["volume_sma_10"].replace(0, np.nan)
+            ).replace([np.inf, -np.inf], np.nan)
 
-                logger.info(f"✅ Added {6} volume indicators")
+            logger.info(f"✅ Added {6} volume indicators")
 
-            return df_enriched
-
-        except Exception as e:
-            logger.error(f"❌ Error in volume enrichment: {e}", exc_info=True)
-            return df
+        return df_enriched

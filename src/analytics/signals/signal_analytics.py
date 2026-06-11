@@ -229,7 +229,8 @@ def _generate_final_summary(model_performance: dict, analysis: dict) -> None:
 
 def _find_best_combination(performance: dict) -> dict:
     """Finds the best performing combination for a model based on accuracy."""
-    if not performance['accuracy_scores']: return {}
+    if not performance['accuracy_scores']:
+        return {}
     best_idx = np.argmax(performance['accuracy_scores'])
     return {
         'combination': performance['combinations'][best_idx],
@@ -241,7 +242,8 @@ def _find_best_combination(performance: dict) -> dict:
 
 def _find_worst_combination(performance: dict) -> dict:
     """Finds the worst performing combination for a model based on accuracy."""
-    if not performance['accuracy_scores']: return {}
+    if not performance['accuracy_scores']:
+        return {}
     worst_idx = np.argmin(performance['accuracy_scores'])
     return {
         'combination': performance['combinations'][worst_idx],
@@ -253,12 +255,14 @@ def _find_worst_combination(performance: dict) -> dict:
 
 def _find_best_overall_model(models: dict) -> str:
     """Finds the best overall model based on average accuracy."""
-    if not models: return "N/A"
+    if not models:
+        return "N/A"
     return str(max(models.keys(), key=lambda x: models[x]['avg_accuracy']))
 
 def _find_worst_overall_model(models: dict) -> str:
     """Finds the worst overall model based on average accuracy."""
-    if not models: return "N/A"
+    if not models:
+        return "N/A"
     return str(min(models.keys(), key=lambda x: models[x]['avg_accuracy']))
 
 def _generate_recommendations(analysis: dict) -> list[str]:

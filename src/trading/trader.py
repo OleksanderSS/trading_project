@@ -57,4 +57,4 @@ class Trader:
         else:
             # In live trading, this is where the broker API call would happen.
             self.logger.critical("[LIVE] FAILED to execute order: Live trading is not implemented.")
-            raise NotImplementedError("Live trading functionality is a placeholder and not implemented. Cannot execute real orders.")
+            raise NotImplementedError("Live trading is intentionally disabled until a broker adapter is configured. Cannot execute real orders.")

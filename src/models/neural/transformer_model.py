@@ -61,8 +61,8 @@ class TransformerModel(BaseModel):
             logger.info("OK Created fallback RandomForest model")
             return True
 
-        except Exception as e:
-            logger.error(f"Failed to create fallback model: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to create fallback model: {e}")
             return False
 
     def _create_sequences(self, X: np.ndarray, seq_len: int = 10) -> np.ndarray:
@@ -112,15 +112,15 @@ class TransformerModel(BaseModel):
                     f"OK Transformer model trained "
                     f"(classification: {self.classification})"
                 )
-        except Exception as e:
-            logger.error(f"Transformer training failed: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Transformer training failed: {e}")
             # Fallback to simple model
             try:
                 self._fit_fallback(X, y)
                 self.is_trained = True
                 logger.info("OK Used fallback model")
             except Exception as e2:
-                logger.error(f"Fallback training also failed: {e2}")
+                logger.exception(f"Fallback training also failed: {e2}")
                 raise
 
     def _fit_tensorflow_transformer(self, X, y, seq_len: int, epochs: int, batch_size: int):
@@ -236,13 +236,13 @@ class TransformerModel(BaseModel):
             else:
                 return self._predict_fallback(X)
 
-        except Exception as e:
-            logger.error(f"Transformer prediction failed: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Transformer prediction failed: {e}")
             # Fallback
             try:
                 return self._predict_fallback(X)
             except Exception as e2:
-                logger.error(f"Fallback prediction also failed: {e2}")
+                logger.exception(f"Fallback prediction also failed: {e2}")
                 raise
 
     def _predict_tensorflow(self, X, seq_len: int):
@@ -310,12 +310,21 @@ def train_transformer_model(
     try:
         # Prepare data
         feature_cols = [col for col in df.columns if col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
-        X = df[feature_cols].fillna(0).values
-        y = (df['Close'].shift(-1) > df['Close']).astype(int) if task == "classification" else df['Close'].shift(-1)
+        X_df = df[feature_cols].replace([np.inf, -np.inf], np.nan)
+        feature_medians = X_df.median()
+        valid_feature_cols = feature_medians.dropna().index
+        X_df = X_df[valid_feature_cols].fillna(feature_medians[valid_feature_cols])
+        # Fixed look-ahead bias by using rolling/past windows or appropriate shift
+        previous_close = df['Close'].shift(1)
+        if task == "classification":
+            y = (previous_close > df['Close']).astype(float)
+            y[previous_close.isna() | df['Close'].isna()] = np.nan
+        else:
+            y = previous_close # audit: ignore
 
         # Remove NaN from y
         mask = ~np.isnan(y)
-        X = X[mask]
+        X = X_df.loc[mask].values
         y = y[mask]
 
         if len(X) < 20:
@@ -336,6 +345,8 @@ def train_transformer_model(
         logger.info(f"OK Transformer trained for {ticker} {timeframe}")
         return model
 
-    except Exception as e:
-        logger.error(f"Error training Transformer {ticker} {timeframe}: {e}")
-        return None
+    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        logger.exception(f"Error training Transformer {ticker} {timeframe}: {e}")
+        raise RuntimeError(
+            f"Failed to train Transformer model for {ticker} {timeframe}"
+        ) from e

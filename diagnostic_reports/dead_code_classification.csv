@@ -1,0 +1,621 @@
+path,category_guess,imported_by_count,risk_count,status,recommendation
+__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+algorithms/adaptive_position_sizer.py,risk,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+algorithms/advanced_backtest_engine.py,risk,0,3,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+algorithms/bias_detector.py,detector,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+algorithms/regime_detector.py,calculator,3,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+algorithms/risk_parity_allocator.py,risk,1,21,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+algorithms/transaction_cost_model.py,model,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+algorithms/walk_forward_optimizer.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+algorithms/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+analytics/analyzer_registry.py,factory,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+analytics/interfaces.py,analyzer,7,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/unified_analytics_engine.py,analyzer,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+calibration/adaptive_confidence_calibrator.py,calculator,0,9,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+calibration/calibration_engine.py,risk,1,8,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+calibration/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+cli/argument_parser.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+cli/argument_validator.py,target_calculator,0,7,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+cli/batch_manager.py,utility_or_unknown,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+cli/pipeline_data_loader.py,orchestrator,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+cli/pipeline_executor.py,orchestrator,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+colab/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+config/model_registry.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+config/sentiment_config.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+config/tickers.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+config/unified_config_manager.py,model,74,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+config/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/base_integration.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/exceptions.py,model,49,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+core/version_checker.py,validator,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+core/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/data_loader.py,utility_or_unknown,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data_sources/local_file_data_source.py,collector,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+data_sources/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+devtools/rule_generator.py,utility_or_unknown,2,12,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+devtools/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+ensembling/stacked_ensemble.py,utility_or_unknown,5,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+factories/model_factory.py,model,6,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+factories/tree_model_factory.py,model,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/colab_context_integration.py,model,0,8,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/context_aware_feature_selector.py,selector,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/feature_cache.py,utility_or_unknown,2,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/feature_orchestrator.py,enricher,4,14,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/feature_selection_cache.py,utility_or_unknown,0,34,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/feature_selector.py,target_calculator,1,10,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/news_clusterer.py,model,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/news_dataset_builder.py,utility_or_unknown,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/news_impact_classifier.py,utility_or_unknown,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+feature_engineering/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+integration/dashboard_data_bridge.py,calculator,0,9,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+integration/ensemble_performance_bridge.py,calculator,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+integration/ensemble_selector.py,selector,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+integrations/base.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+main/system_orchestrator.py,orchestrator,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+main/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+meta_learning/base.py,utility_or_unknown,3,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+meta_learning/real_time_learning.py,risk,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+meta_learning/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+metrics/base.py,calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+metrics/calculator.py,calculator,4,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+models/enhanced_factory.py,factory,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+models/feature_selector.py,model,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/integrated_model_manager.py,model,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/interfaces.py,model,15,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+models/loader.py,model,1,8,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/model_pool.py,model,2,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/persistent_pool.py,model,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+monitoring/base.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+monitoring/config.py,risk,0,2,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+monitoring/dashboard.py,model,3,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+monitoring/data_freshness_monitor.py,calculator,2,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+monitoring/drift_detector.py,detector,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+monitoring/example_usage.py,model,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+monitoring/feature_drift_monitor.py,calculator,3,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+monitoring/health_hub.py,calculator,2,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+monitoring/ml_analytics.py,calculator,1,9,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+monitoring/monitoring_system.py,calculator,3,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+monitoring/performance_monitor.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+monitoring/run_dashboard.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+monitoring/tests.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+monitoring/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+optimization/base.py,utility_or_unknown,3,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+optimization/dynamic_config_updater.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+optimization/factory.py,factory,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+optimization/hyperparameter_searcher.py,utility_or_unknown,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+optimization/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+patterns/pattern_analyzer.py,analyzer,0,1,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+pipeline/constants.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/hybrid_orchestrator.py,orchestrator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/pipeline_factory.py,factory,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+pipeline/pipeline_orchestrator.py,orchestrator,8,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stage_loader.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+predictions/caching.py,model,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+predictions/deep_predict.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+predictions/models_predict.py,model,0,10,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+predictions/prediction_utils.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+processing/cleaners.py,utility_or_unknown,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+processing/data_filter.py,model,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+processing/deduplication_utils.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+processing/normalization_manager.py,utility_or_unknown,3,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+processing/parallel_processor.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+processing/price_preprocessor.py,calculator,1,15,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+processing/sampling.py,utility_or_unknown,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+processing/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+risk/elite_risk_metrics.py,risk,3,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+risk/exposure_calculator.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+risk/kill_switch_manager.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+risk/max_exposure_monitor.py,risk,0,1,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+risk/metrics.py,calculator,0,6,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+risk/risk_manager.py,calculator,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+risk_management/var_calculator.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+risk_management/__init__.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+sentiment/sentiment_models.py,model,2,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+simulation/simulation_engine.py,risk,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+simulation/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+targets/target_orchestrator.py,target_calculator,2,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+trading/adaptive_parameter_manager.py,risk,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+trading/consensus_engine.py,model,3,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+trading/elite_risk_sizer.py,risk,1,10,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+trading/live_adaptive_ensemble.py,calculator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+trading/portfolio_manager.py,risk,2,14,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+trading/post_inference_filter.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+trading/signal_processor.py,model,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+trading/trader.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+trading/trading_orchestrator.py,model,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+trading/virtual_portfolio.py,utility_or_unknown,6,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+trading/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+training/adaptive_training_manager.py,calculator,1,48,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+training/base_trainer.py,model,5,12,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+training/batch_trainer.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+training/constants.py,utility_or_unknown,4,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+training/light_model_trainer.py,model,1,12,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+training/pattern_aware_training.py,target_calculator,0,11,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+training/portfolio_optimizer.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+training/progressive_trainer.py,utility_or_unknown,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+training/run_training.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+training/unified_training_manager.py,model,2,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+utils/artifact_security.py,utility_or_unknown,22,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+utils/async_timeout.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+utils/checkpoint_manager.py,utility_or_unknown,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+utils/collector_fixes.py,collector,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+utils/data_safety.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+utils/dynamic_module_loader.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+utils/feature_preparation.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+utils/json_utils.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+utils/math_safe.py,utility_or_unknown,3,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+utils/math_utils.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+utils/metrics.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+utils/missing_data_anomaly_detector.py,detector,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+utils/path_utils.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+utils/rate_limiter.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+utils/resource_limiter.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+utils/smart_missing_data_handler.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+utils/trading_calendar.py,utility_or_unknown,3,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+utils/type_conversion.py,utility_or_unknown,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+utils/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+validation/data_leakage_detector.py,detector,0,19,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+validation/pipeline_schemas.py,orchestrator,2,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+validation/temporal_feature_separator.py,target_calculator,0,20,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+validation/time_series_validator.py,validator,0,5,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+validation/validators.py,validator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+validation/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+algorithms/regime/clustering.py,model,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+algorithms/regime/metrics.py,calculator,2,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+algorithms/regime/rules.py,utility_or_unknown,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+algorithms/regime/types.py,utility_or_unknown,3,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/analyzers/adaptive_confidence_analyzer.py,analyzer,0,1,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+analytics/analyzers/causal_event_finder.py,analyzer,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/analyzers/drift_analyzer.py,analyzer,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/analyzers/hedge_fund_analyzer.py,calculator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/analyzers/knn_similarity_finder.py,analyzer,1,14,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/analyzers/model_comparison_analyzer.py,calculator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/analyzers/news_impact_analyzer.py,analyzer,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/analyzers/performance_attribution_analyzer.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+analytics/analyzers/risk_decomposition_analyzer.py,analyzer,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+analytics/analyzers/shap_analyzer.py,analyzer,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/analyzers/wrappers.py,analyzer,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/arena/arena_battle.py,calculator,4,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/arena/arena_orchestrator.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+analytics/arena/battle_groups.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/arena/ensemble_performance_bridge.py,calculator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/arena/performance_tracker.py,model,1,10,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/arena/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+analytics/calculators/advanced_econometrics_calculator.py,calculator,0,21,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+analytics/calculators/drawdown_calculator.py,calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/calculators/econometrics_calculator.py,calculator,1,21,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/calculators/explainability_calculator.py,calculator,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/calculators/fama_french_factors.py,calculator,2,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/calculators/macro_score_calculator.py,calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/calculators/risk_reward_calculator.py,risk,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/calculators/sentiment_stats_calculator.py,calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/calculators/volatility_calculator.py,calculator,3,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/context/causal_effect_methods.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/context/causal_engine.py,utility_or_unknown,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+analytics/context/contextual_model_selector.py,model,1,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/context/counterfactual_generator.py,utility_or_unknown,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+analytics/context/difference_in_differences_methods.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/context/ensemble_selector.py,selector,2,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/context/macro_context_analyzer.py,analyzer,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+analytics/context/market_context_analyzer.py,analyzer,2,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/context/market_phase_analyzer.py,analyzer,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/context/market_regime_analyzer.py,analyzer,0,1,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+analytics/context/prediction_adjuster.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/context/propensity_score_methods.py,risk,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/context/synthetic_control_methods.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/data_managers/model_results_manager.py,model,6,17,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/detectors/anomaly_detector.py,detector,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/detectors/critical_signal_detector.py,detector,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/engines/causal_engine.py,model,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/reporting/automated_reports.py,utility_or_unknown,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/reporting/model_analyzer.py,calculator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/reporting/reporting_orchestrator.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+analytics/reporting/results_manager.py,utility_or_unknown,1,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+analytics/reporting/visualization.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+analytics/reporting/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+analytics/signals/signal_analytics.py,calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/signals/significance_detector.py,detector,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/utils/analytics_math.py,calculator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+analytics/utils/knn_model_wrapper.py,model,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+backtesting/advanced/advanced_engine.py,risk,3,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+colab/config/config_loader.py,utility_or_unknown,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+colab/config/training_config.py,utility_or_unknown,0,6,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+colab/config/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/environment/colab_environment.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/environment/setup.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/environment/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/memory/memory_monitor.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/memory/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/models/architectures.py,model,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+colab/models/model_factory.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/models/sklearn_fallback.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/models/torch_models.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/models/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/utils/batch_size.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/utils/data_signature.py,utility_or_unknown,16,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+colab/utils/metrics.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/utils/retry.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+colab/utils/utils.py,calculator,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+colab/utils/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/cache/cache_manager.py,utility_or_unknown,19,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/cache/object_cache.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+core/cache/query_cache.py,utility_or_unknown,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+core/cache/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/clients/http_client_factory.py,factory,22,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+core/cloud/gcs_manager.py,utility_or_unknown,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/cloud/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/error_handling/error_handler.py,orchestrator,18,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/error_handling/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/file_management/file_manager.py,utility_or_unknown,5,8,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/file_management/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/logging/exception_decorator.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+core/logging/logger.py,utility_or_unknown,370,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/logging/log_standards.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/logging/notifier.py,utility_or_unknown,3,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/logging/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/monitoring/memory_profiler.py,utility_or_unknown,2,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/security/path_validator.py,validator,4,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/security/secure_secrets_manager.py,utility_or_unknown,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/system/archive_manager.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+core/system/batch_processor.py,utility_or_unknown,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+core/system/connection_registry.py,factory,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+core/system/version_manager.py,model,0,6,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+core/utils/lazy_loader.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/utils/math_utils.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/utils/path_utils.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+core/utils/prediction_utils.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+core/validation/validators.py,validator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/aaii_sentiment_collector.py,collector,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/alternative_me_collector.py,collector,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/base_collector.py,collector,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+data/collectors/bigquery_collector.py,collector,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/cftc_collector.py,collector,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/collector_factory.py,collector,2,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/custom_csv_collector.py,collector,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/economic_calendar_collector.py,collector,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/fear_greed_collector.py,collector,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/fred_collector.py,collector,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/free_google_trends_collector.py,collector,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/google_news_collector.py,collector,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/huggingface_collector.py,collector,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/insider_collector.py,collector,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/local_file_collector.py,collector,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/market_data_collector.py,collector,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/newsapi_collector.py,collector,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/put_call_ratio_collector.py,collector,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/reddit_sentiment_collector.py,collector,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/rss_collector.py,collector,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/sec_filings_collector.py,collector,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/synthetic_generator.py,collector,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/collectors/vix_collector.py,collector,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/collectors/yf_collector.py,collector,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/collectors/__init__.py,collector,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/management/asset_manager.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/management/data_cleaner.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/management/data_manager.py,utility_or_unknown,34,12,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+data/management/data_versioning.py,utility_or_unknown,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/management/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/quality/data_freshness_checker.py,calculator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/quality/news_price_availability_filter.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/quality/temporal_alignment_checker.py,validator,0,1,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+data/quality/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+data/synthetic/data_generator.py,target_calculator,0,4,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+data/validation/event_dataset_validator.py,target_calculator,0,14,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+data/management/connectors/bigquery_connector.py,utility_or_unknown,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+data/management/handlers/connection_handler.py,utility_or_unknown,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+ensembling/ensemble/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/analysis/importance_stability_analyzer.py,analyzer,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/analysis/market_conditions_analyzer.py,analyzer,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/analysis/news_decay_modeler.py,model,1,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/analysis/regime_adapter.py,utility_or_unknown,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/analysis/regime_importance_tracker.py,utility_or_unknown,2,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/analysis/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/builders/news_event_dataset_builder.py,target_calculator,0,2,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+features/builders/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/enrichers/advanced_analytics_enricher.py,enricher,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/base.py,enricher,12,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/enrichers/context_map_enricher.py,enricher,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/decay_features_enricher.py,enricher,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/enrichers/derived_features_enricher.py,enricher,0,31,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/hype_enricher.py,enricher,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/keyword_entity_enricher.py,enricher,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/macro_features_enricher.py,enricher,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/market_context_enricher.py,enricher,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/news_impact_enricher.py,enricher,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/news_quality_enricher.py,enricher,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/nlp_features_enricher.py,enricher,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/sentiment_features_enricher.py,enricher,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/significance_features_enricher.py,enricher,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/enrichers/technical_analysis_enricher.py,calculator,0,14,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/enrichers/time_features_enricher.py,enricher,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/enrichers/volatility_enricher.py,enricher,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/enrichers/volume_enricher.py,enricher,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/enrichers/__init__.py,enricher,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/monitoring/feature_drift_detector.py,calculator,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/nlp/deduplication_service.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/nlp/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/selection/enhanced_smart_selector.py,calculator,2,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/selection/smart_selector.py,selector,1,22,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/selection/volatility_driver_selector.py,selector,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/selection/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/utils/datetime_utils.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/utils/modular_adaptive_technical_indicators.py,calculator,0,6,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/utils/technical_indicators_lib.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/utils/time_utils.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/utils/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/validation/feature_leakage_guard.py,validator,0,14,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+features/validation/redundancy_detector.py,detector,1,18,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/validation/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/analysis/decay/decay_function_registry.py,factory,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/analysis/decay/decay_model_fitter.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/analysis/decay/decay_predictor.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/builders/news_event/candle_seeker.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/builders/news_event/enricher.py,enricher,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/builders/news_event/filter.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/nlp/extractors/entity_extractor.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/nlp/extractors/keyword_extractor.py,utility_or_unknown,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/nlp/extractors/news_ticker_detector.py,detector,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+features/nlp/models/finbert_pipeline.py,model,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/nlp/models/roberta_sentiment.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/nlp/models/sentiment_core.py,model,16,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/nlp/processors/article_processor.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/nlp/processors/news_analyzer.py,analyzer,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/nlp/processors/news_harmonizer.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/nlp/processors/news_processing.py,utility_or_unknown,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+features/nlp/scoring/keyword_features.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/nlp/scoring/news_score.py,utility_or_unknown,17,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/nlp/scoring/news_scorer.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/nlp/scoring/simple_sentiment.py,analyzer,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+features/nlp/scoring/summarizer.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+features/nlp/utils/gdelt_utils.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+features/nlp/utils/mention_utils.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+feature_engineering/transformers/transformers.py,utility_or_unknown,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+feature_engineering/transformers/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+integrations/data/bigquery_client.py,utility_or_unknown,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+main/modes/backtest.py,orchestrator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+main/modes/base.py,utility_or_unknown,4,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+main/modes/intelligent.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+main/modes/monster_test.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+main/modes/predict.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+main/modes/train.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+main/modes/training_data_pipeline.py,orchestrator,1,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+main/modes/web_ui.py,calculator,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+main/modes/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+meta_learning/awareness/context_engine.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+meta_learning/evolution/dual_loops.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+meta_learning/memory/contextual_weight_calculator.py,calculator,2,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+meta_learning/memory/diary_engine.py,calculator,5,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+meta_learning/memory/knn_context_finder.py,model,1,17,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+meta_learning/security/agent_permissions.py,risk,0,8,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+meta_learning/security/constraint_engine.py,risk,0,5,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+meta_learning/security/constraint_validators.py,validator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+meta_learning/awareness/context/analyzer.py,analyzer,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+meta_learning/awareness/context/manager.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+meta_learning/awareness/context/models.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+meta_learning/awareness/context/scanner.py,utility_or_unknown,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+meta_learning/awareness/context/storage.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+meta_learning/awareness/context/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+meta_learning/evolution/optimization/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+metrics/financial/financial_metrics_library.py,risk,0,12,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+metrics/financial/portfolio_metrics.py,calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+metrics/model/ml_evaluator.py,calculator,2,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+metrics/utils/calculation_tools.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+models/actions/action_trigger.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/adapters/categorical_helper.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/adapters/data_preparation.py,model,2,17,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/adapters/sentiment_integration.py,calculator,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/adapters/unified_model_adapter.py,model,0,16,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/baseline_dominance_detector.py,model,2,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/analysis/model_analyzer.py,calculator,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/analysis/model_health_analyzer.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/analysis/overfitting_detector.py,model,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+models/analysis/regime_winner_analyzer.py,calculator,2,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/analysis/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/dean/dean_bootstrap_system.py,model,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+models/ensemble/confidence_calibrator.py,calculator,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/ensemble/dynamic_weights.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/enhanced_ensemble.py,model,0,15,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/ensemble/ensemble_model.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/ensemble/model_correlation_analyzer.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/weight_stability_monitor.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensembling/composer.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/health/model_health_evaluator.py,model,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/linear/knn_model.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/linear/linear_model.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/linear/svm_model.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/model_selector/adaptive_selector.py,model,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/model_selector/fingerprint_selector.py,model,1,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/model_selector/heavy_light_comparator.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/model_selector/smart_selector.py,model,1,21,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/model_selector/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/monitoring/prediction_drift_monitor.py,model,3,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/monitoring/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/neural/autoencoder_model.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/neural/base_neural.py,model,5,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/neural/cnn_model.py,model,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/neural/gru_model.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/neural/lstm_model.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/neural/mlp_model.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/neural/tabnet_model.py,model,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/neural/transformer_model.py,model,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/prototypes/prototype.py,model,3,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/prototypes/registry.py,model,2,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/prototypes/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/quality/controller.py,model,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+models/quality/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/registry/model_registry.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/statistics/model_statistics.py,model,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/tree/catboost_model.py,model,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/tree/lightgbm_model.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/tree/random_forest_model.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/tree/xgboost_model.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/analysis/baseline/comparison.py,model,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/analysis/baseline/recommendations.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/analysis/baselines/base.py,calculator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/baselines/models.py,model,0,12,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/baselines/strategies.py,model,0,14,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/baselines/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/analysis/overfitting_detection/analyzer.py,model,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/overfitting_detection/config.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/analysis/overfitting_detection/manager.py,model,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/overfitting_detection/metrics.py,calculator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/overfitting_detection/visualizer.py,model,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/overfitting_detection/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/analysis/regime/detector.py,model,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/regime/metrics.py,calculator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/regime/patterns.py,model,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/regime/recommendations.py,model,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/regime/stability.py,model,0,2,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/analysis/regime/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/calibration/base.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/calibration/strategies.py,model,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/ensemble/correlation/correlation_engine.py,calculator,0,17,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/ensemble/correlation/correlation_visualizer.py,calculator,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/ensemble/correlation/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/weight_stability/analyzer.py,model,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/ensemble/weight_stability/calculator.py,calculator,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/ensemble/weight_stability/config.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/weight_stability/manager.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/weight_stability/stabilizer.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/ensemble/weight_stability/visualizer.py,calculator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+models/ensemble/weight_stability/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+models/monitoring/drift/alert_system.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/monitoring/drift/analyzer.py,model,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/monitoring/drift/drift_calculator.py,calculator,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/monitoring/drift/drift_visualizer.py,model,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/monitoring/drift/history.py,model,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+models/monitoring/drift/__init__.py,model,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+monitoring/infrastructure/resource_monitor.py,calculator,4,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+monitoring/reporting/performance_reports.py,model,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+optimization/hyperparameters/bayesian.py,utility_or_unknown,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+optimization/portfolio/optimizer.py,risk,1,16,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/cache/results_cache_manager.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/guards/macro_release_timing_guard.py,validator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/guards/safe_feature_combiner.py,validator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/guards/temporal_leakage_guard.py,target_calculator,1,19,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/guards/temporal_target_guard.py,calculator,1,21,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/guards/timeframe_alignment_guard.py,validator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/guards/__init__.py,validator,0,3,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+pipeline/hybrid/cache_manager.py,orchestrator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/colab_manager.py,orchestrator,4,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/colab_workflow_manager.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/component_factory.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/context_builder.py,orchestrator,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/contracts.py,orchestrator,4,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/hybrid/data_batch_manager.py,orchestrator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/data_cache_manager.py,orchestrator,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/data_components_context.py,orchestrator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/hybrid/data_manager.py,target_calculator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/data_processor.py,target_calculator,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/data_utils.py,target_calculator,1,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/feature_loader.py,orchestrator,0,9,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/hybrid/feature_processor.py,target_calculator,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/feature_selection_manager.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/feature_selection_validator.py,validator,2,4,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/final_stages_executor.py,orchestrator,1,16,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/final_stages_orchestrator.py,orchestrator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/hybrid/hybrid_dataclasses.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/hybrid/light_models_trainer.py,model,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/metadata_manager.py,orchestrator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/hybrid/model_training_orchestrator.py,orchestrator,1,35,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/orchestrator_config.py,orchestrator,2,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/orchestrator_context.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/hybrid/orchestrator_interface.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/hybrid/pipeline_config.py,orchestrator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/hybrid/pipeline_executor.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/pipeline_manager.py,orchestrator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/hybrid/pipeline_metadata_manager.py,model,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/pipeline_runner.py,orchestrator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/hybrid/results_processor.py,model,2,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/selected_features_processor.py,orchestrator,1,9,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/storage_helpers.py,orchestrator,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/hybrid/storage_manager.py,orchestrator,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/test_mode_manager.py,target_calculator,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/hybrid/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/base_stage.py,orchestrator,8,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/stages/stage_0_data_generation.py,orchestrator,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/stage_0_setup.py,orchestrator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/stage_1_collection.py,orchestrator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+pipeline/stages/stage_2_processing.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/stage_3_feature_engineering.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/stage_3_improvements.py,orchestrator,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/stage_4_modeling.py,orchestrator,0,10,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/stage_5_prediction.py,orchestrator,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/stage_6_trading_execution.py,orchestrator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/stage_7_evaluation.py,orchestrator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/cache/feature_cache_manager.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/evaluation/analytics.py,orchestrator,1,3,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/evaluation/backtest_adapter.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/evaluation/backtest_analyzer.py,orchestrator,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/evaluation/data_recovery.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/evaluation/io.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/evaluation/metrics_calculator.py,calculator,1,5,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/evaluation/reporting.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/evaluation/report_generator.py,orchestrator,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/evaluation/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/features/orchestrator_manager.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/feature_engineering/enricher.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/feature_engineering/guards.py,orchestrator,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/feature_engineering/orchestrator.py,orchestrator,0,22,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/feature_engineering/targets.py,orchestrator,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/feature_engineering/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/modeling/dataclasses.py,orchestrator,2,7,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/modeling/io.py,orchestrator,3,20,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/modeling/metrics.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/modeling/orchestration.py,orchestrator,0,27,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/modeling/training.py,orchestrator,1,12,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/modeling/utils.py,orchestrator,0,4,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/modeling/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/monitoring/feature_monitoring.py,orchestrator,0,3,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/news/news_manager.py,orchestrator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/prediction/anomaly_engine.py,orchestrator,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/prediction/data_preparation_service.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/prediction/data_preparer.py,orchestrator,0,25,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/prediction/model_resolver.py,orchestrator,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/prediction/model_selection_service.py,orchestrator,1,6,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/prediction/prediction_context_manager.py,orchestrator,1,1,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/prediction/prediction_generator.py,orchestrator,0,7,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/prediction/result_builder.py,orchestrator,0,9,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/prediction/result_request.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/prediction/scaler_service.py,orchestrator,1,9,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/prediction/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/processing/data_handler.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/processing/orchestrator.py,orchestrator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/processing/storage.py,orchestrator,0,1,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+pipeline/stages/processing/validator.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/processing/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/trading/data_io.py,orchestrator,2,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/trading/recommendation_engine.py,orchestrator,1,19,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/trading/__init__.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+pipeline/stages/utils/collection_manager.py,orchestrator,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.
+pipeline/stages/utils/data_schema_mapper.py,orchestrator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+processing/filters/news_filter.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+processing/filters/orchestrator.py,orchestrator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+processing/filters/pattern_extractor.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+processing/filters/price_filter.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+processing/filters/social_filter.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+processing/filters/__init__.py,utility_or_unknown,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+risk/analyzers/concentration_analyzer.py,analyzer,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+risk/analyzers/correlation_analyzer.py,analyzer,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+risk/kill_switch/alerts.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+risk/kill_switch/calculator.py,calculator,0,5,UNUSED_RISKY_QUARANTINE,Not imported and risky. Do not integrate without tests.
+risk/kill_switch/config.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+risk/kill_switch/executor.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+risk/kill_switch/manager.py,risk,0,2,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+risk/kill_switch/__init__.py,risk,0,0,UNUSED_USEFUL_CANDIDATE,"Orphan statically, but category may contain reusable production logic."
+targets/calculators/base_news_target_calculator.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+targets/calculators/classification_calculator.py,target_calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+targets/calculators/indicator_prediction_calculator.py,calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+targets/calculators/post_news_target_calculator.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+targets/calculators/pre_news_target_calculator.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+targets/calculators/regression_calculator.py,target_calculator,2,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+targets/calculators/__init__.py,calculator,0,0,UNUSED_DELETE_CANDIDATE,No static imports. Confirm config/runtime usage before deletion.
+training/batch/batch_processor.py,calculator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+training/security/path_security_validator.py,validator,1,0,ACTIVE_UNTESTED_OR_OK,Used by source. Check tests/runtime before declaring OK.
+training/state/training_state_manager.py,utility_or_unknown,1,2,ACTIVE_BUGGY_OR_RISKY,Used by source and has risk findings. Review/fix first.

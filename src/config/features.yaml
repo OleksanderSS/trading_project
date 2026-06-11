@@ -19,9 +19,8 @@ features:
     advanced_analytics: true        # Advanced analytics - sentiment stats, macro score, market phase (NEW) - FIXED NAME
     context_map: true               # Generates a dynamic context fingerprint for each data point
     market_context: true            # Adds macro/market indicators (yield curve, Fed Funds, breadth, etc.) (NEW)
-    technical: true                 # Basic technical indicators (SMA, EMA, RSI, Bollinger Bands) (NEW)
-    volume: true                   # Volume-based indicators (volume SMA, ROC, OBV) (NEW)
-    volatility: true               # Volatility indicators (historical vol, ATR, Garman-Klass) (NEW)
+    volatility: true                # Volatility indicators (historical volatility, ATR, Garman-Klass, volatility regime) - NEW
+    volume: true                    # Volume indicators (volume MA, volume ROC, OBV, volume relative strength) - NEW
 
 # Detailed configuration for the Technical Analysis enricher.
 # This corresponds to the 'technical_analysis' key in enabled_enrichers.
@@ -97,58 +96,3 @@ market_context:
     - "market_breadth"           # Advance/decline ratio
     - "dollar_strength"          # DXY index
     - "put_call_ratio"           # Put/Call ratio (fear gauge)
-
-# Configuration for new basic technical indicators enricher
-technical:
-  enabled: true
-  indicators:
-    sma:
-      enabled: true
-      periods: [5, 10, 20]
-    ema:
-      enabled: true
-      periods: [5, 10]
-    rsi:
-      enabled: true
-      period: 14
-    bollinger_bands:
-      enabled: true
-      period: 20
-      std_dev: 2
-
-# Configuration for volume indicators enricher
-volume:
-  enabled: true
-  indicators:
-    volume_sma:
-      enabled: true
-      periods: [5, 10]
-    volume_roc:
-      enabled: true
-      period: 5
-    price_volume_trend:
-      enabled: true
-    on_balance_volume:
-      enabled: true
-    volume_relative_strength:
-      enabled: true
-      comparison_period: 10
-
-# Configuration for volatility indicators enricher
-volatility:
-  enabled: true
-  indicators:
-    historical_volatility:
-      enabled: true
-      periods: [5, 10, 20]
-      annualization_factor: 252
-    average_true_range:
-      enabled: true
-      period: 14
-    garman_klass:
-      enabled: true
-      window: 20
-    volatility_regime:
-      enabled: true
-      bins: [0.15, 0.25, 0.35]
-      labels: ['low', 'normal', 'high', 'extreme']

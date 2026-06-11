@@ -4,6 +4,7 @@ Safe Feature Combiner - Temporal-Safe Multi-Timeframe Feature Combination
 Prevents temporal leakage when combining features from different timeframes.
 """
 
+import logging
 from typing import Any
 
 import pandas as pd
@@ -168,7 +169,8 @@ class SafeFeatureCombiner:
         metadata['prefix'] = prefix
         metadata['renamed_columns'] = len(rename_dict)
 
-        self.logger.debug(f"📝 Prepared {timeframe} DataFrame: {df_prepared.shape} with prefix '{prefix}'")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"📝 Prepared {timeframe} DataFrame: {df_prepared.shape} with prefix '{prefix}'")
 
         return df_prepared, metadata
 
@@ -219,8 +221,9 @@ class SafeFeatureCombiner:
             # Remove duplicate columns if any
             dup_cols = [col for col in combined.columns if col.endswith('_dup')]
             if dup_cols:
-                combined.drop(columns=dup_cols, inplace=True)
-                self.logger.debug(f"🗑️ Removed {len(dup_cols)} duplicate columns from {timeframe} merge")
+                combined = combined.drop(columns=dup_cols)
+                if self.logger.isEnabledFor(logging.DEBUG):
+                    self.logger.debug(f"🗑️ Removed {len(dup_cols)} duplicate columns from {timeframe} merge")
 
         # Sort by datetime (and ticker if exists)
         sort_cols = ['datetime']
@@ -249,7 +252,7 @@ class SafeFeatureCombiner:
         Returns:
             Validation result
         """
-        validation_result: dict[str, Any] = {
+        validation_result = {
             'status': 'valid',
             'issues': [],
             'warnings': [],

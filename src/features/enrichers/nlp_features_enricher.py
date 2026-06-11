@@ -26,7 +26,6 @@ class NLPFeaturesEnricher(BaseEnricher):
             n_clusters=self.config.get('n_clusters', 5),
             max_features=self.config.get('max_features', 1000)
         )
-        self._analysis_cache = {}  # Cache for analyzed news results
         logger.info(f"NLPFeaturesEnricher initialized with {self.config.get('n_clusters', 5)} clusters.")
 
     @property
@@ -61,36 +60,7 @@ class NLPFeaturesEnricher(BaseEnricher):
         logger.info(f"News columns: {news_df.columns.tolist() if news_df is not None else []}")
 
         try:
-            # ✅ OPTIMIZATION: Cache analysis results based on news_df hash (in-memory + disk cache)
-            import hashlib
-            from pathlib import Path
-
-            news_hash = hashlib.sha256(pd.util.hash_pandas_object(news_df, index=True).values.tobytes()).hexdigest()
-
-            # Disk cache path
-            cache_dir = Path("data/cache/nlp")
-            cache_dir.mkdir(parents=True, exist_ok=True)
-            cache_file = cache_dir / f"nlp_analysis_{news_hash}.parquet"
-
-            if cache_file.exists():
-                logger.info("🚀 Using disk-cached NLP analysis results! (Saved 12 minutes)")
-                analyzed_news = pd.read_parquet(cache_file)
-                # Populate in-memory cache
-                self._analysis_cache[news_hash] = analyzed_news
-            elif news_hash in self._analysis_cache:
-                logger.info("🚀 Using in-memory cached NLP analysis results")
-                analyzed_news = self._analysis_cache[news_hash]
-            else:
-                logger.info(f"🔄 Performing fresh NLP analysis for {len(news_df)} items (This may take a while on the first run...)")
-                analyzed_news = self._analyze_news(news_df)
-                self._analysis_cache[news_hash] = analyzed_news
-                # Save to disk cache
-                try:
-                    analyzed_news.to_parquet(cache_file, index=True)
-                    logger.info(f"💾 Saved NLP analysis results to disk cache: {cache_file}")
-                except Exception as cache_err:
-                    logger.warning(f"⚠️ Failed to save NLP analysis to disk cache: {cache_err}")
-
+            analyzed_news = self._analyze_news(news_df)
             if analyzed_news.empty:
                 return df
 
@@ -103,7 +73,7 @@ class NLPFeaturesEnricher(BaseEnricher):
 
             return final_df
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Error during NLP feature enrichment: {e}", exc_info=True)
             return df
 
@@ -241,8 +211,7 @@ class NLPFeaturesEnricher(BaseEnricher):
         final_df = pd.concat(result_dfs).sort_index()
 
         # Log added features
-        # Fix: Handle None values in columns
-        nlp_cols = [col for col in final_df.columns if col and isinstance(col, str) and col.startswith('nlp_')]
+        nlp_cols = [col for col in final_df.columns if col.startswith('nlp_')]
         logger.info(f"NLP enrichment complete. Added features: {nlp_cols}")
 
         return final_df

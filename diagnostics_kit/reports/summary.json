@@ -1,0 +1,37 @@
+{
+  "counts": {
+    "py_files": 620,
+    "pyc_files": 642,
+    "classes": 687,
+    "functions": 4434,
+    "parse_errors": []
+  },
+  "category_counts": {
+    "enricher": 21,
+    "calculator": 34,
+    "validator": 35,
+    "collector": 25,
+    "model": 155,
+    "factory": 14,
+    "analyzer": 40,
+    "detector": 18,
+    "selector": 18,
+    "agent": 5,
+    "optimizer": 8,
+    "splitter": 1
+  },
+  "risk_counts": {
+    "target_col_in_feature": 848,
+    "broad_except": 878,
+    "negative_shift": 21,
+    "return_none_empty": 597,
+    "pickle_joblib_load": 35,
+    "path_user_input": 355,
+    "combined_synthetic_score": 5,
+    "top_tensorflow_import": 19,
+    "heavy_import": 47,
+    "future_target_fill": 4,
+    "fillna_zero": 12
+  },
+  "orphan_count": 257
+}

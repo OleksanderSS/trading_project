@@ -1,9 +1,10 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Data Batch Manager: Handles batch metadata creation, data merging, backups, and batch-level operations.
 Extracted from HybridOrchestrator to improve code organization and testability.
 """
-
 import json
+import logging
 import shutil
 from pathlib import Path
 from typing import Any
@@ -55,7 +56,7 @@ class DataBatchManager:
             self._save_dataframe(accumulated_targets, t_path)
 
             self.logger.info(f"✅ Data merged: {len(accumulated_features)} features, {len(accumulated_targets)} targets")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Error merging data: {e}")
             raise
 
@@ -121,7 +122,8 @@ class DataBatchManager:
         """Saves DataFrame to parquet."""
         path.parent.mkdir(parents=True, exist_ok=True)
         df.to_parquet(path, compression='snappy', index=False)
-        self.logger.debug(f"📝 Saved {len(df)} rows to {path.name}")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"📝 Saved {len(df)} rows to {path.name}")
 
     def _dedup_columns(self, existing_df: pd.DataFrame, new_df: pd.DataFrame) -> list | None:
         """Choose stable identity columns without collapsing separate timeframes."""

@@ -3,7 +3,7 @@ data_sources:
   # Configuration for loading data from a local file
   - name: "local_file_source"
     type: "local"
-    module: "src.data_sources.local_file_data_source.LocalFileDataSource"
+    module: "src.data_sources.local_file_data_source"
     class: "LocalFileDataSource"
     params:
       # Default path to the data file. This can be overridden at runtime.

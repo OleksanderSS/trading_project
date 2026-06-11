@@ -1,7 +1,8 @@
 
-import pandas as pd
 import json
 import os
+
+import pandas as pd
 
 files = [
     "data/processed/features/enriched_features.parquet",

@@ -14,12 +14,8 @@ engine:
       data_mapping: ["price_data", "market_indicators"]
     - name: "causal_event_finder"
       module: "src.analytics.analyzers.causal_event_finder"
-      class: "CausalEventFinder"
+      class: "CausalEngine"
       data_mapping: ["target_series", "causal_series"]
-      params:
-        treatment: "signal"
-        outcome: "predicted_return"
-        common_causes: ["confidence", "anomaly_score"]
     - name: "knn_similarity"
       module: "src.analytics.analyzers.knn_similarity_finder"
       class: "KnnSimilarityFinder"
@@ -50,37 +46,19 @@ engine:
       module: "src.analytics.detectors.critical_signal_detector"
       class: "CriticalSignalDetector"
       data_mapping: ["price_data"]
-    - name: "shap_explainability"
-      module: "src.analytics.analyzers.shap_analyzer"
-      class: "ShapAnalyzer"
-      data_mapping: ["models_metadata", "features_data"]
-      params:
-        summary_only: true
-        enabled: true
-    - name: "arena_battle"
-      module: "src.analytics.arena.arena_battle"
-      class: "TradingModelArena"
-      params:
-        enabled: true
-        min_samples: 10
-    - name: "significance_filter"
-      module: "src.features.enrichers.significance_features_enricher"
-      class: "SignificanceAnalyzer"
-      params:
-        threshold: 0.8
-        enabled: true
-    - name: "drift_monitoring"
-      module: "src.analytics.analyzers.drift_analyzer"
-      class: "DriftAnalyzer"
-      data_mapping: ["features_data"]
-      params:
-        drift_threshold: 0.35
     - name: "pattern_analysis"
       module: "src.patterns.pattern_analyzer"
       class: "PatternAnalyzer"
-      data_mapping: ["price_data", "news_data"]
+      data_mapping: ["price_data"]
       params:
-        enable_debug: false
+        fractal_window: 20
+        min_pattern_bars: 5
+    - name: "risk_decomposition"
+      module: "src.analytics.analyzers.risk_decomposition_analyzer"
+      class: "RiskDecompositionAnalyzer"
+      data_mapping: ["portfolio_data", "market_data"]
+      params:
+        n_components: 5
 
 calculators_config:
   volatility:
@@ -104,8 +82,8 @@ calculators_config:
     module: "src.analytics.calculators.sentiment_stats_calculator"
     class: "SentimentStatsCalculator"
   market_regime_calc:
-    module: "src.analytics.calculators.market_regime_calculator"
-    class: "MarketRegimeCalculator"
+    module: "src.algorithms.regime_detector"
+    class: "MarketRegimeDetector"
   macro_score:
     module: "src.analytics.calculators.macro_score_calculator"
     class: "MacroScoreCalculator"

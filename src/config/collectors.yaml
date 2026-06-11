@@ -58,7 +58,33 @@ collectors:
       - DSPIC96
       max_retries: 3
   google_news:
-    enabled: false  # Disabled: gnews library cannot reach Google News from this environment (all requests timeout)
+    enabled: true
+    type: google_news
+    data_type: news
+    critical: false
+    table_name: google_news
+    cache_ttl: 3600
+    cache_duration_minutes: 60
+    max_concurrent_terms: 5
+    delay: 0.3
+    filter:
+      min_source_quality: 0.0
+      require_keywords_in_title: false
+      exclude_title_keywords:
+      - horoscope
+      - celebrity
+      - sports score
+      - weather
+      - recipe
+      allowed_domains: []
+    params:
+      period: 60d
+      language: en
+      country: US
+      max_results: 10
+    deduplication:
+      n_clusters: 10
+      max_features: 500
   rss:
     enabled: true
     type: rss
@@ -76,7 +102,7 @@ collectors:
       - sports
     params:
       period: 60d
-      limit_per_feed: 100
+      limit_per_feed: 20
     deduplication:
       n_clusters: 10
       max_features: 300
@@ -89,7 +115,7 @@ collectors:
     cache_ttl: 3600
     cache_duration_minutes: 60
     requires_api_key: true
-    api_key_env: NEWS_API_KEY
+    api_key_name: NEWS_API_KEY
     base_url: https://newsapi.org/v2/everything
     language: en
     page_size: 20
@@ -101,7 +127,6 @@ collectors:
       exclude_title_keywords:
       - horoscope
       - celebrity
-
   economic_calendar:
     enabled: false
     type: economic_calendar
@@ -169,17 +194,16 @@ collectors:
       col_5: price
     user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
   hugging_face:
-    enabled: false
+    enabled: true
     type: huggingface
     critical: false
     table_name: huggingface_data
     cache_ttl: 604800
     cache_duration_minutes: 10080
-    dataset_name: wikitext
-    subset_name: wikitext-103-v1
+    dataset_name: m-ric/financial-news-2024
     split: train
     hash_keys:
-    - text
+    - content
   bigquery:
     enabled: false
     type: bigquery
@@ -300,4 +324,4 @@ collectors:
     - stocks
     - investing
     timeout: 30
-    use_synthetic_data: true
+    use_synthetic_data: false

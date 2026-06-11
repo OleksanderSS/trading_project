@@ -127,7 +127,8 @@ def log_cache_hit(logger: logging.Logger, cache_type: str, key_info: str,
         context: Optional context
     """
     context_str = _format_context(context)
-    logger.debug(f"🚀 {cache_type.title()} cache hit: {key_info}{context_str}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"🚀 {cache_type.title()} cache hit: {key_info}{context_str}")
 
 
 def log_cache_miss(logger: logging.Logger, cache_type: str, key_info: str,
@@ -142,7 +143,8 @@ def log_cache_miss(logger: logging.Logger, cache_type: str, key_info: str,
         context: Optional context
     """
     context_str = _format_context(context)
-    logger.debug(f"🔄 {cache_type.title()} cache miss: {key_info}{context_str}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"🔄 {cache_type.title()} cache miss: {key_info}{context_str}")
 
 
 def log_memory_usage(logger: logging.Logger, operation: str, memory_mb: float,
@@ -161,7 +163,8 @@ def log_memory_usage(logger: logging.Logger, operation: str, memory_mb: float,
         delta_str = f" ({sign}{delta_mb:.1f}MB)"
     else:
         delta_str = ""
-    logger.debug(f"🧠 {operation}: {memory_mb:.1f}MB{delta_str}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"🧠 {operation}: {memory_mb:.1f}MB{delta_str}")
 
 
 def log_model_loaded(logger: logging.Logger, model_id: str, source: str,

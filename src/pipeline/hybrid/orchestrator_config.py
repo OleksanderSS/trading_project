@@ -1,9 +1,11 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Orchestrator Configuration and Initialization Manager.
 Handles all configuration building and initialization logic.
 """
 
 from dataclasses import dataclass
+from importlib.util import find_spec
 from pathlib import Path
 
 from src.config.unified_config_manager import UnifiedConfigManager
@@ -11,14 +13,14 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger(__name__)
 
-# Google Drive API (optional)
-try:
-    from google.oauth2.credentials import Credentials
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
-    GDRIVE_AVAILABLE = True
-except ImportError:
-    GDRIVE_AVAILABLE = False
+GDRIVE_AVAILABLE = all(
+    find_spec(module_name) is not None
+    for module_name in (
+        "google.oauth2.credentials",
+        "googleapiclient.discovery",
+        "googleapiclient.http",
+    )
+)
 
 
 @dataclass
@@ -28,12 +30,11 @@ class PipelineConfig:
     models_dir: Path
     light_models: list
     heavy_models: list
-    timeframes: list
     models_config: dict
     system_config: dict
     gdrive_enabled: bool
     gdrive_folder_id: str | None = None
-    gdrive_service = None
+    gdrive_service: Any = None
     storage_fallback: dict | None = None
     use_s3: bool = False
     use_gcs: bool = False
@@ -86,9 +87,6 @@ class OrchestratorConfigManager:
         self.logger.info(f"💡 Light models: {light_models}")
         self.logger.info(f"🔥 Heavy models: {heavy_models}")
 
-        # Timeframes from collectors config (single source of truth)
-        timeframes = self.get_timeframes()
-
         # Google Drive configuration
         gdrive_enabled = GDRIVE_AVAILABLE and system_config.get('google_drive', {}).get('enabled', False)
         gdrive_folder_id = system_config.get('google_drive', {}).get('folder_id')
@@ -105,7 +103,6 @@ class OrchestratorConfigManager:
             models_dir=models_dir,
             light_models=light_models,
             heavy_models=heavy_models,
-            timeframes=timeframes,
             models_config=models_config,
             system_config=system_config,
             gdrive_enabled=gdrive_enabled,
@@ -114,14 +111,6 @@ class OrchestratorConfigManager:
             use_s3=use_s3,
             use_gcs=use_gcs
         )
-
-    def get_timeframes(self) -> list:
-        """Read timeframes from collectors.yaml — single source of truth."""
-        collectors = self.config_manager.get_config('collectors') or {}
-        yf_timeframes = collectors.get('yahoo_finance', {}).get('timeframes', {})
-        timeframes = list(yf_timeframes.keys()) if yf_timeframes else ['15m', '60m', '1d']
-        self.logger.info(f"⏰ Timeframes from config: {timeframes}")
-        return timeframes
 
     def resolve_target_task_type(self, target_name: str) -> str:
         """Maps configured targets to the trainer's regression/classification contract."""

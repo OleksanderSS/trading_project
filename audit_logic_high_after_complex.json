@@ -1,0 +1,22 @@
+{
+  "stats": {
+    "files": 605,
+    "lines": 89756,
+    "issues": 445,
+    "by_severity": {
+      "MEDIUM": 211,
+      "LOW": 230,
+      "INFO": 4
+    },
+    "by_category": {
+      "FEAT": 143,
+      "MATH": 63,
+      "LOGIC": 179,
+      "STATE": 32,
+      "API": 11,
+      "ASYNC": 9,
+      "RES": 8
+    }
+  },
+  "issues": []
+}

@@ -1,181 +1,265 @@
 """
-Моніторинг дрифту фіч
+Feature Drift Monitor using Evidently AI
+Detects feature distribution changes over time.
 """
 
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
-from scipy import stats
+
+from src.core.exceptions import DataProcessingError
+from src.core.logging.logger import ProjectLogger
+
+logger = ProjectLogger.get_logger("FeatureDriftMonitor")
+
+# Try to import Evidently AI
+try:
+    from evidently.metric_preset import DataDriftPreset
+    from evidently.metrics import DatasetDriftMetric
+    from evidently.report import Report
+    EVIDENTLY_AVAILABLE = True
+except ImportError:
+    EVIDENTLY_AVAILABLE = False
+    logger.warning("⚠️ Evidently AI not installed. Install with: pip install evidently")
 
 
 class FeatureDriftMonitor:
-    """Моніторинг дрифту фіч"""
+    """
+    Monitors feature drift using Evidently AI.
 
-    def __init__(self, threshold: float = 0.05):
-        self.threshold = threshold
-        self.reference_stats: dict[str, dict[str, Any]] = {}
-        self.drift_history: dict[str, list[dict[str, Any]]] = {}
+    Audit Point: FEATURE LAYER → Feature Drift Detection
+    """
 
-    def fit(self, X: pd.DataFrame, feature_names: list[str] | None = None) -> 'FeatureDriftMonitor':
-        """Навчання на референсних даних"""
-        if feature_names is None:
-            feature_names = list(X.columns)
+    def __init__(
+        self,
+        reference_data: pd.DataFrame | None = None,
+        drift_threshold: float = 0.5,
+        report_dir: str = "reports/drift"
+    ):
+        """
+        Initialize drift monitor.
 
-        self.reference_stats = {}
+        Args:
+            reference_data: Reference dataset (training data)
+            drift_threshold: Threshold for drift detection (0-1)
+            report_dir: Directory to save drift reports
+        """
+        self.reference_data = reference_data
+        self.drift_threshold = drift_threshold
+        self.report_dir = Path(report_dir)
+        self.report_dir.mkdir(parents=True, exist_ok=True)
 
-        for feature in feature_names:
-            if feature in X.columns:
-                feature_data = X[feature].dropna()
-                if len(feature_data) > 0:
-                    self.reference_stats[feature] = {
-                        'mean': float(feature_data.mean()),
-                        'std': float(feature_data.std()),
-                        'min': float(feature_data.min()),
-                        'max': float(feature_data.max()),
-                        'median': float(feature_data.median()),
-                        'q25': float(feature_data.quantile(0.25)),
-                        'q75': float(feature_data.quantile(0.75))
+        self.drift_history: list[dict[str, Any]] = []
+        self.metrics = {
+            'checks_performed': 0,
+            'drifts_detected': 0,
+            'last_check_time': None,
+            'last_drift_score': None
+        }
+
+        if not EVIDENTLY_AVAILABLE:
+            logger.error("❌ Evidently AI not available. Drift monitoring disabled.")
+
+    def set_reference_data(self, reference_data: pd.DataFrame):
+        """Set or update reference data."""
+        self.reference_data = reference_data.copy()
+        logger.info(f"✅ Reference data set: {len(reference_data)} rows, {len(reference_data.columns)} columns")
+
+    def check_drift(
+        self,
+        current_data: pd.DataFrame,
+        feature_columns: list[str] | None = None
+    ) -> dict[str, Any]:
+        """
+        Check for feature drift between reference and current data.
+
+        Args:
+            current_data: Current production data
+            feature_columns: Specific columns to check (None = all numeric)
+
+        Returns:
+            Dict with drift results
+        """
+        if not EVIDENTLY_AVAILABLE:
+            raise DataProcessingError("Evidently AI not installed")
+
+        if self.reference_data is None:
+            raise DataProcessingError("No reference data set")
+
+        self.metrics['checks_performed'] = (self.metrics.get('checks_performed', 0) or 0) + 1  # type: ignore
+        self.metrics['last_check_time'] = datetime.now()  # type: ignore
+
+        # Select feature columns
+        if feature_columns is None:
+            # Use all numeric columns except targets
+            feature_columns = [
+                col for col in current_data.select_dtypes(include=[np.number]).columns
+                # audit-ignore: ARCHITECTURAL_USAGE
+                if not col.startswith('target_') and col not in ['hash', 'interval']
+            ]
+
+        # Ensure columns exist in both datasets
+        common_columns = list(set(feature_columns) & set(self.reference_data.columns) & set(current_data.columns))
+
+        if not common_columns:
+            raise DataProcessingError("No common columns between reference and current data")
+
+        logger.info(f"🔍 Checking drift for {len(common_columns)} features...")
+
+        # Prepare data
+        ref_data = self.reference_data[common_columns].copy()
+        cur_data = current_data[common_columns].copy()
+
+        # Create Evidently report
+        try:
+            report = Report(metrics=[
+                DataDriftPreset(),
+                DatasetDriftMetric()
+            ])
+
+            report.run(reference_data=ref_data, current_data=cur_data)
+
+            # Extract results
+            report_dict = report.as_dict()
+
+            # Get dataset drift score
+            dataset_drift = report_dict['metrics'][1]['result']
+            drift_score = dataset_drift.get('drift_share', 0.0)
+            drift_detected = dataset_drift.get('dataset_drift', False)
+
+            self.metrics['last_drift_score'] = drift_score
+
+            if drift_detected:
+                self.metrics['drifts_detected'] = (self.metrics.get('drifts_detected', 0) or 0) + 1  # type: ignore
+
+            # Get per-column drift
+            column_drifts = {}
+            for metric in report_dict['metrics']:
+                if metric['metric'] == 'ColumnDriftMetric':
+                    col_name = metric['result']['column_name']
+                    col_drift = metric['result']['drift_detected']
+                    drift_score_col = metric['result'].get('drift_score', 0.0)
+                    column_drifts[col_name] = {
+                        'drift_detected': col_drift,
+                        'drift_score': drift_score_col
                     }
 
-        return self
+            # Save report
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            report_path = self.report_dir / f"drift_report_{timestamp}.html"
+            report.save_html(str(report_path))
 
-    def detect_drift(self, X: pd.DataFrame, feature_names: list[str] | None = None) -> dict[str, dict[str, Any]]:
-        """Детекція дрифту"""
-        if feature_names is None:
-            feature_names = list(X.columns)
+            # Log results
+            if drift_detected:
+                logger.warning(f"⚠️ DRIFT DETECTED: {drift_score:.1%} of features drifted")
+                logger.warning(f"   Drifted features: {sum(1 for d in column_drifts.values() if d['drift_detected'])}/{len(column_drifts)}")
+            else:
+                logger.info(f"✅ No significant drift detected (drift score: {drift_score:.1%})")
 
-        drift_results = {}
+            result = {
+                'status': 'OK',
+                'drift_detected': drift_detected,
+                'drift_score': drift_score,
+                'drifted_features_count': sum(1 for d in column_drifts.values() if d['drift_detected']),
+                'total_features': len(column_drifts),
+                'column_drifts': column_drifts,
+                'report_path': str(report_path),
+                'timestamp': timestamp
+            }
 
-        for feature in feature_names:
-            if feature in X.columns and feature in self.reference_stats:
-                current_data = X[feature].dropna()
-                if len(current_data) > 0:
-                    drift_info = self._calculate_feature_drift(feature, current_data)
-                    drift_results[feature] = drift_info
+            self.drift_history.append(result)
 
-        return drift_results
+            return result
 
-    def _calculate_feature_drift(self, feature: str, current_data: pd.Series) -> dict[str, Any]:
-        """Розрахунок дрифту для фічі"""
-        ref_stats = self.reference_stats[feature]
-
-        # KS test для числових фіч
-        if pd.api.types.is_numeric_dtype(current_data):
-            # Створення референсної вибірки (припускаємо нормальний розподіл)
-            ref_mean = ref_stats['mean']
-            ref_std = ref_stats['std']
-
-            if ref_std > 0:
-                ref_sample = np.random.normal(ref_mean, ref_std, len(current_data))
-
-                # KS test
-                ks_statistic, p_value = stats.ks_2samp(current_data, ref_sample)
-
-                # Population Stability Index (PSI)
-                psi = self._calculate_psi(current_data, ref_sample)
-
-                drift_detected = p_value < self.threshold
-
-                return {
-                    'drift_detected': drift_detected,
-                    'ks_statistic': ks_statistic,
-                    'p_value': p_value,
-                    'psi': psi,
-                    'current_mean': current_data.mean(),
-                    'reference_mean': ref_mean,
-                    'mean_diff': current_data.mean() - ref_mean,
-                    'current_std': current_data.std(),
-                    'reference_std': ref_std
-                }
-
-        return {
-            'drift_detected': False,
-            'ks_statistic': 0.0,
-            'p_value': 1.0,
-            'psi': 0.0,
-            'current_mean': current_data.mean() if len(current_data) > 0 else None,
-            'reference_mean': ref_stats['mean'],
-            'mean_diff': 0.0
-        }
-
-    def _calculate_psi(self, current_data: pd.Series, reference_data: pd.Series, bins: int = 10) -> float:
-        """Розрахунок Population Stability Index"""
-        # Об'єднання даних для визначення бінів
-        combined_data = np.concatenate([current_data, reference_data])
-
-        if len(np.unique(combined_data)) < 2:
-            return 0.0
-
-        # Створення бінів
-        _, bin_edges = np.histogram(combined_data, bins=bins)
-
-        # Розрахунок частот
-        current_hist, _ = np.histogram(current_data, bins=bin_edges)
-        ref_hist, _ = np.histogram(reference_data, bins=bin_edges)
-
-        # Нормалізація
-        current_percents = current_hist / len(current_data)
-        ref_percents = ref_hist / len(reference_data)
-
-        # Додавання невеликих значень для уникнення ділення на 0
-        current_percents = np.where(current_percents == 0, 0.0001, current_percents)
-        ref_percents = np.where(ref_percents == 0, 0.0001, ref_percents)
-
-        # Розрахунок PSI
-        psi = np.sum((current_percents - ref_percents) * np.log(current_percents / ref_percents))
-
-        return psi
-
-    def get_drifted_features(self, X: pd.DataFrame, feature_names: list[str] = None) -> list[str]:
-        """Отримати список фіч з дрифтом"""
-        drift_results = self.detect_drift(X, feature_names)
-
-        drifted = [feature for feature, result in drift_results.items()
-                  if result.get('drift_detected', False)]
-
-        return drifted
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"❌ Error checking drift: {e}")
+            raise DataProcessingError(f"Error checking drift: {e}") from e
 
     def get_drift_summary(self) -> dict[str, Any]:
-        """Отримати підсумок дрифту"""
+        """Get summary of drift monitoring."""
         if not self.drift_history:
-            return {}
+            return {
+                'total_checks': self.metrics['checks_performed'],
+                'drifts_detected': 0,
+                'drift_rate': 0.0,
+                'last_check': self.metrics['last_check_time']
+            }
 
-        summary = {
-            'total_checks': len(self.drift_history),
-            'drift_detected_count': sum(1 for result in self.drift_history.values()
-                                     if result.get('drift_detected', False)),
-            'last_check': max(self.drift_history.keys()) if self.drift_history else None
+        checks_performed = self.metrics.get('checks_performed', 0)
+        drifts_detected = self.metrics.get('drifts_detected', 0)
+
+        return {
+            'total_checks': checks_performed,
+            'drifts_detected': drifts_detected,
+            'drift_rate': drifts_detected / checks_performed if checks_performed > 0 else 0.0,  # type: ignore
+            'last_check': self.metrics['last_check_time'],
+            'last_drift_score': self.metrics['last_drift_score'],
+            'avg_drift_score': np.mean([h['drift_score'] for h in self.drift_history if h['status'] == 'OK'])  # type: ignore
         }
 
-        return summary
+    def get_metrics(self) -> dict[str, Any]:
+        """Get monitoring metrics."""
+        return self.metrics.copy()
 
-# Глобальний екземпляр
-_global_monitor = None
 
-def check_feature_drift(X: pd.DataFrame, feature_names: list[str] = None, threshold: float = 0.05) -> dict[str, dict[str, Any]]:
-    """Швидка перевірка дрифту фіч
+def check_feature_drift(
+    reference_data: pd.DataFrame,
+    current_data: pd.DataFrame,
+    feature_columns: list[str] | None = None,
+    drift_threshold: float = 0.5
+) -> dict[str, Any]:
+    """
+    Quick function to check feature drift.
 
     Args:
-        X: DataFrame з фічами для перевірки
-        feature_names: Список назв фіч для перевірки
-        threshold: Поріг для детекції дрифту
+        reference_data: Reference dataset (training data)
+        current_data: Current production data
+        feature_columns: Specific columns to check
+        drift_threshold: Threshold for drift detection
 
     Returns:
-        Dict з результатами перевірки дрифту
+        Drift check result
     """
-    try:
-        monitor = get_feature_drift_monitor(threshold)
-        return monitor.detect_drift(X, feature_names)
-    except Exception:
-        # Якщо щось пішло не так, повертаємо пустий результат
-        return {}
+    monitor = FeatureDriftMonitor(
+        reference_data=reference_data,
+        drift_threshold=drift_threshold
+    )
+    return monitor.check_drift(current_data, feature_columns)
 
-def get_feature_drift_monitor(threshold: float = 0.05) -> FeatureDriftMonitor:
-    """Отримати глобальний монітор дрифту фіч"""
-    global _global_monitor
 
-    if _global_monitor is None:
-        _global_monitor = FeatureDriftMonitor(threshold)
+# Singleton instance
+_feature_drift_monitor_instance: FeatureDriftMonitor | None = None
 
-    return _global_monitor
+
+def get_feature_drift_monitor(
+    reference_data: pd.DataFrame | None = None,
+    drift_threshold: float = 0.5,
+    report_dir: str = "reports/drift"
+) -> FeatureDriftMonitor:
+    """
+    Get or create singleton FeatureDriftMonitor instance.
+
+    Args:
+        reference_data: Reference dataset (training data)
+        drift_threshold: Threshold for drift detection
+        report_dir: Directory to save drift reports
+
+    Returns:
+        FeatureDriftMonitor instance
+    """
+    global _feature_drift_monitor_instance
+
+    if _feature_drift_monitor_instance is None:
+        _feature_drift_monitor_instance = FeatureDriftMonitor(
+            reference_data=reference_data,
+            drift_threshold=drift_threshold,
+            report_dir=report_dir
+        )
+    elif reference_data is not None:
+        # Update reference data if provided
+        _feature_drift_monitor_instance.set_reference_data(reference_data)
+
+    return _feature_drift_monitor_instance

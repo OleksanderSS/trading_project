@@ -1,10 +1,10 @@
 
-import pandas as pd
 import hashlib
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class QueryCache:
         """Generates a unique and filesystem-safe key from an SQL query."""
         return hashlib.md5(query.encode()).hexdigest()
 
-    def get(self, query: str, max_age_hours: int = 24) -> Optional[pd.DataFrame]:
+    def get(self, query: str, max_age_hours: int = 24) -> pd.DataFrame | None:
         """
         Retrieves a DataFrame from the cache if it exists and is not expired.
 
@@ -50,7 +50,7 @@ class QueryCache:
             df = pd.read_parquet(cache_file)
             logger.debug(f"Loaded DataFrame from cache for query hash: {cache_key}")
             return df
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.warning(f"Failed to read cache file {cache_file}: {e}. Removing corrupt file.")
             cache_file.unlink()
             return None
@@ -72,7 +72,7 @@ class QueryCache:
         try:
             data.to_parquet(cache_file, compression='snappy', index=False)
             logger.debug(f"Saved DataFrame to cache for query hash: {cache_key}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save data to cache file {cache_file}: {e}", exc_info=True)
 
     def clear(self):

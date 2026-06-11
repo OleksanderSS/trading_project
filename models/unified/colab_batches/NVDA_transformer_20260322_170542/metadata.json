@@ -1,0 +1,11 @@
+{
+  "batch_id": "NVDA_transformer_20260322_170542",
+  "ticker": "NVDA",
+  "model_name": "transformer",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_macd_hist_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T17:05:42.657263",
+  "status": "PENDING_COLAB"
+}

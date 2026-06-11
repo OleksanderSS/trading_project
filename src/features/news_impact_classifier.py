@@ -2,11 +2,10 @@
 News Impact Classifier
 Класифікує вплив новин на тікери та таймфрейми
 """
-
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, cast
 
 import yaml
 
@@ -41,37 +40,33 @@ class NewsImpactClassifier:
 
         logger.info(f"NewsImpactClassifier initialized with {len(self.impact_config)} impact types")
 
-    def _load_impact_config(self) -> dict[str, Any]:
-        """Завантажує конфігурацію впливу з безпечною типізацією."""
-        config = self.config_manager.get_config("news_impact") or {}
-        return cast(dict[str, Any], config)
-
-    def _get_list_from_config(self, key: str) -> list[str]:
-        """Допоміжний метод для безпечного отримання списку рядків."""
-        raw_value: Any = self.impact_config.get(key, [])
-        
-        # Перевірка на список і на те, що всі елементи - рядки
-        if isinstance(raw_value, list) and all(isinstance(item, str) for item in raw_value):
-            # Явне приведення до цільового типу
-            result: list[str] = raw_value
-            return result
-        
-        logger.warning(f"Конфігурація для '{key}' не є списком рядків, повертаю порожній список.")
-        return []
+    def _load_impact_config(self) -> dict:
+        """Завантажити конфігурацію впливу новин"""
+        try:
+            config_path = Path(__file__).parent.parent / "config" / "news_impact_classification.yaml"
+            with open(config_path, encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+            return config['news_impact_classification']
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to load impact config: {e}")
+            raise RuntimeError("Failed to load news impact classification config") from e
 
     def _load_sector_mapping(self) -> dict[str, list[str]]:
-        """Завантажує мапінг секторів з перевіркою типів."""
-        mapping: Any = self.impact_config.get("sector_mapping", {})
-        
-        if isinstance(mapping, dict):
-            # Створюємо новий словник, гарантуючи типи
-            validated_mapping: dict[str, list[str]] = {
-                str(k): (v if isinstance(v, list) and all(isinstance(i, str) for i in v) else []) 
-                for k, v in mapping.items()
-            }
-            return validated_mapping
-            
-        return {}
+        """Завантажити маппінг секторів та тікерів"""
+        try:
+            assets_config = self.config_manager.get_config('assets', default={})
+            sectors = assets_config.get('sectors', {})
+
+            sector_mapping = {}
+            for sector_name, sector_data in sectors.items():
+                if isinstance(sector_data, dict) and 'assets' in sector_data:
+                    sector_mapping[sector_name] = sector_data['assets']
+
+            logger.info(f"Loaded {len(sector_mapping)} sectors with ticker mappings")
+            return sector_mapping
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to load sector mapping: {e}")
+            raise RuntimeError("Failed to load news impact sector mapping") from e
 
     def classify_impact(self, news_text: str, news_type: str = "general") -> NewsImpact:
         """
@@ -145,7 +140,8 @@ class NewsImpactClassifier:
             # Перевіряємо чи є ключові слова в тексті
             for keyword in keywords:
                 if keyword.lower() in normalized_text:
-                    logger.debug(f"Found impact type: {impact_type} (keyword: {keyword})")
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.debug(f"Found impact type: {impact_type} (keyword: {keyword})")
                     return impact_type
 
         # Якщо не знайдено ключових слів, використовуємо тип новини
@@ -156,11 +152,7 @@ class NewsImpactClassifier:
         else:
             return "market_wide"  # Default
 
-    def _get_affected_tickers(
-        self,
-        normalized_text: str,
-        impact_config: dict[str, Any]
-    ) -> list[str]:
+    def _get_affected_tickers(self, normalized_text: str, impact_config: dict) -> list[str]:
         """Визначити уражені тікери"""
         affected_tickers = impact_config.get('affected_tickers', 'all')
 
@@ -176,15 +168,8 @@ class NewsImpactClassifier:
             return self._extract_tickers_from_text(normalized_text)
 
         else:
-            if isinstance(affected_tickers, list) and all(
-                isinstance(t, str) for t in affected_tickers
-            ):
-                return affected_tickers
-
-            logger.warning(
-                "affected_tickers is not list[str], returning empty list"
-            )
-            return []
+            # Повертаємо список з конфігурації
+            return affected_tickers
 
     def _extract_tickers_from_text(self, normalized_text: str) -> list[str]:
         """Витягти тікери з тексту новини"""
@@ -217,7 +202,8 @@ class NewsImpactClassifier:
         for company, ticker in company_to_ticker.items():
             if company in normalized_text:
                 found_tickers.append(ticker)
-                logger.debug(f"Found ticker {ticker} from company name '{company}'")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Found ticker {ticker} from company name '{company}'")
 
         # Шукаємо прямі тікери
         ticker_pattern = r'\b[A-Z]{1,4}\b'
@@ -231,15 +217,12 @@ class NewsImpactClassifier:
         for ticker in potential_tickers:
             if ticker in all_known_tickers and ticker not in found_tickers:
                 found_tickers.append(ticker)
-                logger.debug(f"Found ticker {ticker} directly in text")
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(f"Found ticker {ticker} directly in text")
 
         return found_tickers
 
-    def _get_affected_sectors(
-        self,
-        affected_tickers: list[str],
-        impact_config: dict[str, Any]
-    ) -> list[str]:
+    def _get_affected_sectors(self, affected_tickers: list[str], impact_config: dict) -> list[str]:
         """Визначити уражені сектори"""
         affected_sectors = impact_config.get('affected_sectors', 'all')
 
@@ -255,15 +238,7 @@ class NewsImpactClassifier:
             return list(sectors)
 
         else:
-            if isinstance(affected_sectors, list) and all(
-                isinstance(s, str) for s in affected_sectors
-            ):
-                return affected_sectors
-
-            logger.warning(
-                "affected_sectors is not list[str], returning empty list"
-            )
-            return []
+            return affected_sectors
 
     def _get_priority_and_retention(self, impact_strength: str) -> tuple[str, int]:
         """Отримати пріоритет та час актуальності"""
@@ -287,7 +262,8 @@ class NewsImpactClassifier:
             for timeframe in news_impact.timeframes:
                 combinations.append((ticker, timeframe))
 
-        logger.debug(f"Generated {len(combinations)} relevant combinations for {news_impact.impact_type}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Generated {len(combinations)} relevant combinations for {news_impact.impact_type}")
         return combinations
 
     def log_impact_analysis(self, news_text: str, news_impact: NewsImpact):

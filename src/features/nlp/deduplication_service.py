@@ -10,24 +10,25 @@ logger = ProjectLogger.get_logger(__name__)
 
 class DeduplicationService:
     """
-    A service to deduplicate news articles based on semantic similarity using TF-IDF and Cosine Similarity.
+    A service to deduplicate news articles based on semantic similarity using TF-IDF and KMeans.
     """
 
-    def __init__(self, similarity_threshold: float = 0.85, max_features: int = 1000):
+    def __init__(self, n_clusters: int = 10, max_features: int = 1000):
         """
         Initializes the DeduplicationService.
 
         Args:
-            similarity_threshold (float): Cosine similarity threshold above which articles are considered duplicates.
+            n_clusters (int): The number of clusters to form.
             max_features (int): The maximum number of features to use for TF-IDF.
         """
-        self.similarity_threshold = similarity_threshold
+        self.n_clusters = n_clusters
         self.max_features = max_features
         self.vectorizer = TfidfVectorizer(stop_words='english', max_features=self.max_features)
+        self.kmeans = KMeans(n_clusters=self.n_clusters, random_state=42, n_init=10)
 
     def deduplicate(self, df: pd.DataFrame, text_column: str = 'content') -> pd.DataFrame:
         """
-        Deduplicates a DataFrame of news articles based on cosine similarity of TF-IDF vectors.
+        Deduplicates a DataFrame of news articles.
 
         Args:
             df (pd.DataFrame): The DataFrame to deduplicate.
@@ -42,52 +43,40 @@ class DeduplicationService:
 
         # 1. Drop exact duplicates
         df_deduped = df.drop_duplicates(subset=[text_column])
+
+        # Reset index to avoid issues with indexing later
         df_deduped = df_deduped.reset_index(drop=True)
 
         texts = df_deduped[text_column].fillna('').astype(str)
         non_empty_mask = texts.str.strip() != ""
 
         if non_empty_mask.sum() < 2:
-            logger.warning("[DeduplicationService] Not enough content to perform semantic deduplication.")
+            logger.warning("[DeduplicationService] Not enough content to perform clustering.")
             return df_deduped
 
-        # 2. Compute Cosine Similarity between articles
+        # 2. Cluster remaining articles
         try:
             tfidf_matrix = self.vectorizer.fit_transform(texts[non_empty_mask])
-            
-            from sklearn.metrics.pairwise import cosine_similarity
-            import numpy as np
-            
-            sim_matrix = cosine_similarity(tfidf_matrix)
-            n_samples = sim_matrix.shape[0]
-            to_remove = set()
-            non_empty_indices = df_deduped[non_empty_mask].index.tolist()
 
-            for i in range(n_samples):
-                if i in to_remove:
-                    continue
-                # Find all articles similar to current article i
-                similar_indices = np.where(sim_matrix[i] >= self.similarity_threshold)[0]
-                for idx in similar_indices:
-                    if idx != i:
-                        # Keep the longer article to preserve context/details
-                        len_i = len(texts.iloc[non_empty_indices[i]])
-                        len_idx = len(texts.iloc[non_empty_indices[idx]])
-                        if len_idx <= len_i:
-                            to_remove.add(idx)
-                        else:
-                            to_remove.add(i)
-                            break
+            # Adjust n_clusters if there are fewer articles than clusters
+            n_clusters = min(self.n_clusters, tfidf_matrix.shape[0])
+            self.kmeans.n_clusters = n_clusters
 
-            # Map the indices to remove back to original df_deduped indices
-            removed_original_indices = [non_empty_indices[idx] for idx in to_remove]
-            final_df = df_deduped.drop(index=removed_original_indices)
+            clusters = self.kmeans.fit_predict(tfidf_matrix)
 
-            logger.info(f"[DeduplicationService] Semantic deduplication removed {len(df) - len(final_df)} duplicate articles. Remaining: {len(final_df)}")
-            return final_df.reset_index(drop=True)
+            df_clustered = df_deduped[non_empty_mask].copy()
+            df_clustered['cluster'] = clusters
 
-        except Exception as e:
-            logger.error(f"[DeduplicationService] Error during semantic deduplication: {e}", exc_info=True)
-            return df_deduped
+            # 3. Select one representative article from each cluster (e.g., the longest one)
+            unique_articles_idx = df_clustered.groupby('cluster')[text_column].apply(lambda x: x.str.len().idxmax())
 
+            # Get the original indices from the non-empty dataframe
+            final_df = df_deduped.loc[unique_articles_idx]
+
+            logger.info(f"[DeduplicationService] Deduplicated {len(df)} articles down to {len(final_df)} unique articles.")
+            return final_df
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.error(f"[DeduplicationService] Error during clustering: {e}", exc_info=True)
+            return df_deduped # Return the dataframe with only exact duplicates removed
 

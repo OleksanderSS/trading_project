@@ -1,0 +1,47 @@
+[project]
+name = "trading-project"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = ["E501"] # Ignore long lines (handled by formatter)
+
+[tool.ruff.lint.per-file-ignores]
+# data_manager uses _quote_identifier() for all table names — S608 are false positives
+"src/data/management/data_manager.py" = ["S608"]
+# cache_manager — table names from config, pickle for internal use only
+"src/core/cache/cache_manager.py" = ["S608", "S301"]
+"src/core/cache/object_cache.py" = ["S301"]
+"src/models/loader.py" = ["S301"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
+
+[tool.bandit]
+exclude_dirs = ["tests", "venv", ".gemini"]
+tests = ["B201", "B301"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=src --cov-report=xml --cov-report=lcov"

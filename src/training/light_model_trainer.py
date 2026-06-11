@@ -1,15 +1,17 @@
-# src/training/light_model_trainer.py
-
+import logging
 import uuid
 from pathlib import Path
 from typing import Any
 
 import joblib
+
+# src/training/light_model_trainer.py
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
+from src.utils.artifact_security import resolve_trusted_artifact_path
 
 logger = ProjectLogger.get_logger("LightModelTrainer")
 
@@ -58,15 +60,17 @@ class LightModelTrainer:
             params = config.get('params')
 
             # Prepare data
-            if target_col not in features_df.columns:
-                return {
-                    "status": "failed",
-                    "reason": f"target column '{target_col}' not found in features_df. Available: {list(features_df.columns)}",
-                    "model_key": None,
-                    "metrics": {}
-                }
-            X = features_df.drop(columns=[target_col])
+            # Drop all target columns and metadata to prevent leakage
+            metadata_cols = ['ticker', 'timestamp', 'date', 'open', 'high', 'low', 'close', 'volume']
+            drop_cols = [c for c in features_df.columns if c.startswith('target_') or c in metadata_cols]
+
+            # Ensure target_col is removed from drop_cols so we can extract it for y
+            # but it MUST be in drop_cols when creating X
+            X = features_df.drop(columns=[c for c in drop_cols if c in features_df.columns])
             y = features_df[target_col]
+
+            # Check if target_col was actually in features_df and not dropped
+            # (target_col is usually one of the columns starting with 'target_')
 
             # Get model from factory (consistent with batch/progressive trainers)
             is_classification = task_type == 'classification'
@@ -102,7 +106,7 @@ class LightModelTrainer:
                 "metrics": {"model_type": model_type, "ticker": ticker}
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error training {model_type} for {ticker}: {e}")
             return {
                 "status": "failed",
@@ -149,7 +153,7 @@ class LightModelTrainer:
             joblib.dump(model, path)
             logger.info(f"✅ Saved model {model_key} to {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error saving model {model_key}: {e}")
             return False
 
@@ -165,10 +169,15 @@ class LightModelTrainer:
             True if successful, False otherwise
         """
         try:
-            self.models_in_memory[model_key] = joblib.load(path)
+            trusted_path = resolve_trusted_artifact_path(
+                path,
+                allowed_suffixes={'.joblib', '.pkl', '.pickle'},
+                must_exist=True,
+            )
+            self.models_in_memory[model_key] = joblib.load(trusted_path)  # audit-ignore: UNSAFE_MODEL_OR_PICKLE_LOAD
             logger.info(f"✅ Loaded model from {path} (key: {model_key})")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"❌ Error loading model from {path}: {e}")
             return False
 
@@ -184,7 +193,8 @@ class LightModelTrainer:
         """
         if model_key in self.models_in_memory:
             del self.models_in_memory[model_key]
-            logger.debug(f"Removed model {model_key} from memory")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"Removed model {model_key} from memory")
             return True
         logger.warning(f"Model '{model_key}' not found in memory")
         return False

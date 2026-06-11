@@ -1,0 +1,11 @@
+{
+  "batch_id": "SPY_mlp_20260323_092331",
+  "ticker": "SPY",
+  "model_name": "mlp",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_bb_width_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-23T09:23:31.660273",
+  "status": "PENDING_COLAB"
+}

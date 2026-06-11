@@ -1,15 +1,22 @@
-# src/models/neural/base_neural.py
+import logging
 
+# src/models/neural/base_neural.py
 import os
 from abc import abstractmethod
 from typing import Any
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 
 from src.core.logging.logger import ProjectLogger
 from src.models.interfaces import BaseModel
+
+
+# ✅ Lazy TF import — prevents ~3s startup penalty when neural models are not used
+def _get_tf():
+    """Lazy import of TensorFlow to avoid heavy startup cost."""
+    import tensorflow as tf  # noqa: PLC0415
+    return tf
 
 
 class BaseNeuralModel(BaseModel):
@@ -21,7 +28,7 @@ class BaseNeuralModel(BaseModel):
     def __init__(self, model_type: str, task_type: str = "regression", random_state: int = 42):
         super().__init__(model_type, task_type)
         self.random_state = random_state
-        self.model: tf.keras.Model | None = None
+        self.model: Any = None  # tf.keras.Model — loaded lazily
         self.scaler_mean: np.ndarray | None = None
         self.scaler_std: np.ndarray | None = None
 
@@ -31,7 +38,7 @@ class BaseNeuralModel(BaseModel):
     def _set_seed(self):
         """Встановлює random seed для відтворюваності результатів."""
         np.random.seed(self.random_state)
-        tf.random.set_seed(self.random_state)
+        _get_tf().random.set_seed(self.random_state)
         os.environ['PYTHONHASHSEED'] = str(self.random_state)
 
     def _normalize_data(self, x: np.ndarray, fit: bool = False) -> np.ndarray:
@@ -49,7 +56,8 @@ class BaseNeuralModel(BaseModel):
             self.scaler_std = np.std(x_clean, axis=0)
             # Запобігаємо діленню на нуль
             self.scaler_std[self.scaler_std == 0] = 1.0
-            self.logger.debug(f"Normalization params fitted for {self.model_type}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Normalization params fitted for {self.model_type}")
 
         if self.scaler_mean is not None and self.scaler_std is not None:
             return (x_clean - self.scaler_mean) / self.scaler_std
@@ -57,7 +65,7 @@ class BaseNeuralModel(BaseModel):
         return x_clean
 
     @abstractmethod
-    def _build_architecture(self, input_shape: tuple[int, ...]) -> tf.keras.Model:
+    def _build_architecture(self, input_shape: tuple[int, ...]) -> Any:
         """Визначає архітектуру нейромережі. Має бути реалізовано в нащадках."""
         pass
 
@@ -103,7 +111,7 @@ class BaseNeuralModel(BaseModel):
 
             return dict(history.history) if hasattr(history, 'history') else {}
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to train {self.model_type}: {str(e)}", exc_info=True)
             raise
 
@@ -142,17 +150,33 @@ class BaseNeuralModel(BaseModel):
 
             self.logger.info(f"Model and metadata saved to {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error saving neural model: {e}")
             return False
 
     def load_model(self, path: str) -> bool:
         """Завантажує модель та параметри нормалізації."""
         try:
-            self.model = tf.keras.models.load_model(f"{path}.h5")
+            model_path = self._resolve_model_artifact_path(
+                f"{path}.h5",
+                allowed_suffixes={'.h5'},
+            )
+            try:
+                self.model = _get_tf().keras.models.load_model(
+                    str(model_path),
+                    safe_mode=True,
+                )
+            except TypeError:
+                self.model = _get_tf().keras.models.load_model(str(model_path))
 
-            meta_path = f"{path}_meta.npy"
-            if os.path.exists(meta_path):
+            try:
+                meta_path = self._resolve_model_artifact_path(
+                    f"{path}_meta.npy",
+                    allowed_suffixes={'.npy'},
+                )
+            except FileNotFoundError:
+                meta_path = None
+            if meta_path is not None:
                 meta = np.load(meta_path, allow_pickle=True).item()
                 self.scaler_mean = meta['mean']
                 self.scaler_std = meta['std']
@@ -161,7 +185,7 @@ class BaseNeuralModel(BaseModel):
             self.is_trained = True
             self.logger.info(f"Model and metadata loaded from {path}")
             return True
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error loading neural model: {e}")
             return False
 

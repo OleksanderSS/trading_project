@@ -20,9 +20,8 @@ class BaseEnricher(ABC):
     All enrichers now follow consistent error handling, logging, and fallback behavior.
     """
 
-    def __init__(self, strict: bool = False):
+    def __init__(self):
         self.logger = logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
-        self.strict = strict
 
     @property
     @abstractmethod
@@ -33,33 +32,65 @@ class BaseEnricher(ABC):
     @property
     @abstractmethod
     def priority(self) -> int:
-        """Determines execution order."""
+        """
+        Determines the execution order in the FeatureOrchestrator.
+        Lower values are executed first (e.g., 0 runs before 100).
+        """
         pass
 
     def enrich(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:
         """
-        Template method for DataFrame enrichment.
-        If strict=True, errors propagate instead of returning original DF.
+        Template method for DataFrame enrichment with standardized error handling.
+
+        Process:
+        1. Log enrichment start
+        2. Call subclass implementation (_enrich_impl)
+        3. Validate result
+        4. Handle errors with appropriate logging and fallback
+        5. Log completion
+
+        Args:
+            df: The input DataFrame to enrich.
+            **kwargs: Additional keyword arguments for specific implementations.
+
+        Returns:
+            A DataFrame with added features, or original df on error.
+
+        Raises:
+            EnricherError: For unexpected errors that should propagate.
         """
         try:
-            self.logger.debug(f"🔄 Starting enrichment with {self.__class__.__name__}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"🔄 Starting enrichment with {self.__class__.__name__}")
+
+            # Call subclass implementation
             result = self._enrich_impl(df, **kwargs)
 
+            # Validate result
             if not isinstance(result, pd.DataFrame):
                 raise ValueError(f"Enricher must return DataFrame, got {type(result)}")
 
             if len(result) == 0:
                 raise ValueError("Enricher cannot return empty DataFrame")
 
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"✅ {self.__class__.__name__} completed: {result.shape[1] - df.shape[1]} features added")
             return result
 
-        except Exception as e:
-            if self.strict:
-                self.logger.error(f"❌ {self.__class__.__name__} failed in STRICT mode: {e}")
-                raise EnricherError(f"Strict Enricher {self.__class__.__name__} failed: {e}") from e
-            else:
-                self.logger.warning(f"⚠️ {self.__class__.__name__} error (non-strict): {e}")
-                return df
+        except KeyError as e:
+            # Missing column - log warning and return original
+            self.logger.warning(f"⚠️ {self.__class__.__name__} missing required column: {e}")
+            return df
+
+        except ValueError as e:
+            # Data validation error - log warning and return original
+            self.logger.warning(f"⚠️ {self.__class__.__name__} validation error: {e}")
+            return df
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            # Unexpected error - log error and raise EnricherError
+            self.logger.error(f"❌ {self.__class__.__name__} unexpected error: {e}", exc_info=True)
+            raise EnricherError(f"Enricher {self.__class__.__name__} failed: {e}") from e
 
     @abstractmethod
     def _enrich_impl(self, df: pd.DataFrame, **kwargs) -> pd.DataFrame:

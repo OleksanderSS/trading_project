@@ -45,7 +45,8 @@ class NewsScorer:
         self.primary_tickers: set[str] = {ticker.upper() for ticker in primary_tickers} if primary_tickers else set()
 
         logger.info(f"NewsScorer initialized with primary tickers: {self.primary_tickers or 'None'}")
-        logger.debug(f"Scorer weights: {self.weights}, parameters: {self.params}")
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Scorer weights: {self.weights}, parameters: {self.params}")
 
     def _calculate_directional_sentiment(self, sentiment_details: dict[str, float]) -> float:
         """
@@ -55,11 +56,9 @@ class NewsScorer:
         if not sentiment_details:
             return 0.0
 
-        # Create a lowercase key dictionary for case-insensitive access
-        details_lower = {k.lower(): v for k, v in sentiment_details.items() if k is not None}
-
-        pos_score = details_lower.get('positive', 0.0)
-        neg_score = details_lower.get('negative', 0.0)
+        # Assumes details contain 'positive' and 'negative' scores.
+        pos_score = sentiment_details.get('positive', 0.0)
+        neg_score = sentiment_details.get('negative', 0.0)
 
         return pos_score - neg_score
 
@@ -87,18 +86,7 @@ class NewsScorer:
         if not entities:
             return 0.0
 
-        entity_set = set()
-        for ent in entities:
-            if isinstance(ent, str):
-                entity_set.add(ent.upper())
-            elif isinstance(ent, dict):
-                text_val = ent.get('text') or ent.get('name') or ent.get('word')
-                if text_val:
-                    entity_set.add(str(text_val).upper())
-            elif isinstance(ent, (list, tuple)) and len(ent) > 0:
-                entity_set.add(str(ent[0]).upper())
-            elif ent is not None:
-                entity_set.add(str(ent).upper())
+        entity_set = {ent.upper() for ent in entities}
 
         # Check for intersection with high-value primary tickers first.
         if self.primary_tickers and not entity_set.isdisjoint(self.primary_tickers):
@@ -110,38 +98,7 @@ class NewsScorer:
 
         return 0.0
 
-    def _adjust_sentiment_for_surprise(self, sentiment_direction: float, keywords: list[str], text: str | None = None) -> float:
-        """
-        Adjusts sentiment direction based on consensus / expectation triggers (e.g. miss, beat).
-        """
-        # If no text is provided, build a pseudo-text from keywords to keep backward compatibility
-        text_content = text.lower() if text else " ".join(keywords).lower()
-
-        # Miss / Underperformance triggers (positive sentiment but missed estimates -> invert to negative)
-        if sentiment_direction > 0:
-            miss_triggers = [
-                "missed estimates", "missed consensus", "short of expectations", 
-                "below estimates", "slashed guidance", "underperformed", 
-                "missed forecast", "disappointing results"
-            ]
-            if any(trigger in text_content for trigger in miss_triggers):
-                logger.info("⚠️ NewsScorer Surprise Adjuster: Positive sentiment inverted due to missed expectations.")
-                return -sentiment_direction * 0.8  # Soft inversion
-
-        # Beat / Outperformance triggers (negative sentiment but beat estimates -> invert to positive)
-        elif sentiment_direction < 0:
-            beat_triggers = [
-                "beat estimates", "exceeded consensus", "raised guidance", 
-                "above expectations", "outperformed", "beat forecast", 
-                "stronger than expected"
-            ]
-            if any(trigger in text_content for trigger in beat_triggers):
-                logger.info("🚀 NewsScorer Surprise Adjuster: Negative sentiment inverted due to outperformance.")
-                return -sentiment_direction * 0.8  # Soft inversion
-
-        return sentiment_direction
-
-    def score(self, sentiment_details: dict[str, float], keywords: list[str], entities: list[str], text: str | None = None) -> float:
+    def score(self, sentiment_details: dict[str, float], keywords: list[str], entities: list[str]) -> float:
         """
         Computes the final, comprehensive score for a news item.
 
@@ -149,7 +106,6 @@ class NewsScorer:
             sentiment_details (Dict[str, float]): The detailed sentiment scores (e.g., {'positive': 0.8, ...}).
             keywords (List[str]): A list of keywords extracted from the text.
             entities (List[str]): A list of named entities (like 'ORG' or 'GPE') from the text.
-            text (Optional[str]): The raw text of the article for context surprise analysis.
 
         Returns:
             float: A final score, where sign is sentiment and magnitude is relevance/significance.
@@ -157,9 +113,6 @@ class NewsScorer:
         """
         # 1. Determine the direction and base magnitude of sentiment (-1 to +1)
         sentiment_direction = self._calculate_directional_sentiment(sentiment_details)
-
-        # Apply the Surprise Adjustment to the sentiment direction
-        adjusted_direction = self._adjust_sentiment_for_surprise(sentiment_direction, keywords, text)
 
         # 2. Calculate the non-directional magnitude of relevance and significance (0 to 1)
         relevance_magnitude = self._calculate_relevance_score(keywords)
@@ -172,14 +125,18 @@ class NewsScorer:
         # Weighted average of the two magnitude scores
         total_magnitude = (relevance_magnitude * w_relevance) + (significance_magnitude * w_significance)
 
-        # 4. Amplify the adjusted sentiment direction by the calculated magnitude.
-        final_score = adjusted_direction * (1 + total_magnitude)
+        # 4. Amplify the sentiment direction by the calculated magnitude.
+        # The formula is: Direction * (1 + Magnitude) to scale the score.
+        # This means a highly relevant article (magnitude > 0) will have its sentiment amplified.
+        # An article with zero relevance and significance will just have its base sentiment score.
+        final_score = sentiment_direction * (1 + total_magnitude)
 
         # Clamp the result to a standard [-1, 1] range for consistency.
         final_score = max(-1.0, min(final_score, 1.0))
 
-        logger.debug(
-            f"Scoring complete: Direction={sentiment_direction:.2f} (Adjusted={adjusted_direction:.2f}), "
-            f"Relevance={relevance_magnitude:.2f}, Significance={significance_magnitude:.2f} -> Final Score={final_score:.2f}"
-        )
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                f"Scoring complete: Direction={sentiment_direction:.2f}, Relevance={relevance_magnitude:.2f}, "
+                f"Significance={significance_magnitude:.2f} -> Final Score={final_score:.2f}"
+            )
         return round(final_score, 4)

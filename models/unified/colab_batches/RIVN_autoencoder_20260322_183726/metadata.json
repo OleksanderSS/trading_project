@@ -1,0 +1,11 @@
+{
+  "batch_id": "RIVN_autoencoder_20260322_183726",
+  "ticker": "RIVN",
+  "model_name": "autoencoder",
+  "task_type": "regression",
+  "timeframe": "1d",
+  "target_name": "target_macd_hist_1d",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T18:37:26.937631",
+  "status": "PENDING_COLAB"
+}

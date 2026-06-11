@@ -78,7 +78,8 @@ class ComprehensiveReporter:
 
         for model in df['model'].unique():
             model_df = df[df['model'] == model]
-            if len(model_df) < 2: continue
+            if len(model_df) < 2:
+                continue
 
             baseline = model_df['accuracy'].iloc[:-1].mean()
             current = model_df['accuracy'].iloc[-1]
@@ -115,8 +116,8 @@ class ComprehensiveReporter:
             with open(output_path, 'w') as f:
                 json.dump(report, f, indent=4)
             logger.info(f"Comprehensive report saved to {output_path}")
-        except Exception as e:
-            logger.error(f"Failed to save report: {e}")
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Failed to save report: {e}")
 
         self._print_console_summary(report)
         return report

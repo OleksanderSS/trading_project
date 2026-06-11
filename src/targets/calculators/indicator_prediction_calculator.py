@@ -25,5 +25,9 @@ class IndicatorPredictionCalculator:
             logger.warning(f"Indicator column '{indicator_col}' not found for target generation. Returning NaNs.")
             return pd.Series(index=df.index, dtype=float)
 
+        if shift >= 0:
+            logger.error(f"Shift must be negative for future targets. Got shift={shift}.")
+            raise ValueError(f"Shift must be negative for future targets. Got shift={shift}.")
+
         target_series = df[indicator_col].shift(shift)
         return target_series

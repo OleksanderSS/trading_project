@@ -1,7 +1,3 @@
-"""
-Specialized filter for social data (News, Reddit, etc.).
-Handles content validation, deduplication, and sentiment sanity checks.
-"""
 from typing import Any
 
 import pandas as pd
@@ -11,47 +7,30 @@ from src.core.logging.logger import ProjectLogger
 logger = ProjectLogger.get_logger("SocialFilter")
 
 class SocialFilter:
+    """Specialized filter for social media data (Reddit, etc.)."""
+
     def __init__(self, config: dict[str, Any]):
-        self.min_title_len = config.get('news_title_min_len', 10)
-        self.min_content_len = config.get('news_content_min_len', 50)
-        self.reddit_score_min = config.get('reddit_score_threshold', 1)
+        self.reddit_score_threshold = config.get('reddit_score_threshold', 1)
+        self.reddit_text_min_len = config.get('reddit_text_min_len', 10)
 
-    def filter_news(self, df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
-        if df.empty: return df, {'status': 'empty'}
+    def filter_reddit_data(self, reddit_data: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+        """Intelligently filters Reddit sentiment data."""
+        if not isinstance(reddit_data, pd.DataFrame) or reddit_data.empty:
+            return pd.DataFrame(), {'status': 'empty', 'posts': 0}
 
-        initial_len = len(df)
-        # 1. Content length filter
-        if 'title' in df.columns:
-            df = df[df['title'].str.len() >= self.min_title_len]
+        initial_count = len(reddit_data)
 
-        # 2. Deduplication (by title/content hash)
-        if 'hash' in df.columns:
-            df = df.drop_duplicates(subset=['hash'])
-        elif 'title' in df.columns:
-            df = df.drop_duplicates(subset=['title'])
-
-        return df, {
-            'status': 'accepted',
-            'original_count': initial_len,
-            'filtered_count': len(df),
-            'removed': initial_len - len(df)
-        }
-
-    def filter_reddit(self, df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Any]]:
-        if df.empty: return df, {'status': 'empty'}
-
-        initial_len = len(df)
         # 1. Score filter
-        if 'score' in df.columns:
-            df = df[df['score'] >= self.reddit_score_min]
+        if 'score' in reddit_data.columns:
+            reddit_data = reddit_data[reddit_data['score'] >= self.reddit_score_threshold]
 
-        # 2. Content filter
-        if 'text' in df.columns:
-            df = df[df['text'].str.len() >= 20] # Hardcoded reasonable minimum
+        # 2. Text length filter
+        if 'text' in reddit_data.columns:
+            reddit_data = reddit_data[reddit_data['text'].str.len() >= self.reddit_text_min_len]
 
-        return df, {
+        return reddit_data, {
             'status': 'accepted',
-            'original_count': initial_len,
-            'filtered_count': len(df),
-            'removed': initial_len - len(df)
+            'initial_posts': initial_count,
+            'final_posts': len(reddit_data),
+            'removed': initial_count - len(reddit_data)
         }

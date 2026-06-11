@@ -18,12 +18,28 @@ def sanitize_filename(filename: str) -> str:
         Sanitized filename safe for file system
     """
     # Remove path separators and dangerous characters
-    safe_chars = re.sub(r'[^\w\-_\.]', '_', filename)
+    safe_chars = re.sub(r"[^\w\-_\.]", "_", filename)
     # Remove consecutive underscores
-    safe_chars = re.sub(r'_+', '_', safe_chars)
+    safe_chars = re.sub(r"_+", "_", safe_chars)
     # Remove leading/trailing underscores
-    safe_chars = safe_chars.strip('_')
-    return safe_chars or 'unnamed'
+    safe_chars = safe_chars.strip("_")
+    return safe_chars or "unnamed"
+
+def sanitize_path_input(path_input: str) -> str:
+    """
+    Sanitize path input to prevent path traversal attacks.
+
+    Args:
+        path_input: Input string that will be used in file paths
+
+    Returns:
+        Sanitized string safe for path construction
+    """
+    if not path_input:
+        return ""
+
+    # Remove path traversal characters
+    return re.sub(r'[./\\]', '_', path_input)
 
 
 def validate_path_within_directory(file_path: str | Path, base_dir: str | Path) -> Path:
@@ -48,10 +64,10 @@ def validate_path_within_directory(file_path: str | Path, base_dir: str | Path) 
         file_path.relative_to(base_dir)
         return file_path
     except ValueError:
-        raise ValueError(f"Path traversal detected: {file_path} is not within {base_dir}")
+        raise ValueError(f"Path traversal detected: {file_path} is not within {base_dir}") from None
 
 
-def safe_file_operation(base_dir: str | Path, filename: str, operation: str = 'create') -> Path:
+def safe_file_operation(base_dir: str | Path, filename: str, operation: str = "create") -> Path:
     """
     Create a safe file path within base_dir.
 

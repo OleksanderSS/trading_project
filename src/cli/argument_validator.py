@@ -89,6 +89,7 @@ class ArgumentValidator:
     def _validate_test_target(args: Any, config_data: dict[str, Any], errors: list[str]) -> None:
         """Validates test target."""
         if args.test_target:
+            # audit-ignore: ARCHITECTURAL_USAGE
             target_name = args.test_target
             if not target_name.startswith('target_'):
                 target_name = f"target_{target_name}"

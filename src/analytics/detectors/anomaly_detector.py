@@ -27,6 +27,8 @@ class AnomalyDetector:
             n_estimators=100
         )
         self._is_fitted = False
+        self.feature_columns: list[str] = []
+        self.feature_medians = pd.Series(dtype=float)
 
     def fit(self, features: pd.DataFrame):
         """
@@ -45,6 +47,8 @@ class AnomalyDetector:
             logger.warning("All rows contained NaNs after selection. The model was not fitted.")
             return
 
+        self.feature_columns = list(numeric_features.columns)
+        self.feature_medians = numeric_features.median(numeric_only=True)
         self.isolation_forest.fit(numeric_features)
         self._is_fitted = True
         logger.info("Isolation Forest training complete.")
@@ -65,16 +69,24 @@ class AnomalyDetector:
             logger.warning("No numeric features found for anomaly detection.")
             return pd.Series(0, index=features.index, dtype=int)
 
-        # The model expects the same columns it was trained on.
-        # We will predict on the numeric columns and fill NaNs with 0.
-        # A more robust solution might involve column alignment and imputation.
-        anomaly_labels = self.isolation_forest.predict(numeric_features.fillna(0))
+        numeric_features = numeric_features.reindex(columns=self.feature_columns)
+        prediction_features = self._impute_with_training_medians(numeric_features)
+        anomaly_labels = self.isolation_forest.predict(prediction_features)
 
         # Convert labels from -1 (anomaly)/1 (normal) to 1 (anomaly)/0 (normal)
         anomaly_flags = (anomaly_labels == -1).astype(int)
 
         logger.info(f"Detected {anomaly_flags.sum()} anomalies out of {len(anomaly_flags)} records.")
         return pd.Series(anomaly_flags, index=features.index)
+
+    def _impute_with_training_medians(self, numeric_features: pd.DataFrame) -> pd.DataFrame:
+        imputed = numeric_features.copy()
+        for column in imputed.columns:
+            median = self.feature_medians.get(column, np.nan)
+            if not np.isfinite(median):
+                median = 0.0
+            imputed[column] = imputed[column].mask(imputed[column].isna(), median)
+        return imputed
 
     @staticmethod
     def calculate_anomaly_impact_weights(anomaly_flags: pd.Series,

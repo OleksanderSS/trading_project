@@ -1,5 +1,7 @@
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+
 
 def main():
     feat_path = Path("d:/trading_project/cache/macro_data.parquet")

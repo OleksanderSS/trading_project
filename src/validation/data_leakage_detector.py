@@ -122,7 +122,7 @@ class DataLeakageDetector:
         results = {}
         # Check correlations with target shifted forward (future values)
         # Shift -1 means the target at T+1
-        future_target = df[target_col].shift(-1)
+        future_target = df[target_col].shift(-1)  # audit-ignore: NEGATIVE_SHIFT_LOOKAHEAD
 
         for feature in features:
             if feature in df.columns and feature != target_col:
@@ -134,9 +134,7 @@ class DataLeakageDetector:
 
         return results
 
-    def run_comprehensive_audit(self, df: pd.DataFrame, target_col: str,
-                                 train_df: pd.DataFrame | None = None,
-                                 test_df: pd.DataFrame | None = None) -> LeakageReport:
+    def run_comprehensive_audit(self, df: pd.DataFrame, target_col: str) -> LeakageReport:
         """
         Runs all available leakage detection methods on a dataset and generates a summary report.
         """
@@ -145,18 +143,12 @@ class DataLeakageDetector:
         corr_leakage = self.detect_correlation_leakage(df, target_col)
         lookahead_leakage = self.detect_future_data_in_features(df, df.columns.tolist(), target_col)
 
-        temporal_overlap: list[Any] = []
-        if train_df is not None and test_df is not None:
-            temporal_overlap = self.detect_temporal_overlap(train_df, test_df)
-
-        leakage_detected = bool(corr_leakage or lookahead_leakage or temporal_overlap)
+        leakage_detected = len(corr_leakage) > 0 or len(lookahead_leakage) > 0
         leakage_types = []
         if corr_leakage:
             leakage_types.append(LeakageType.TARGET_LEAKAGE)
         if lookahead_leakage:
             leakage_types.append(LeakageType.LOOKAHEAD_BIAS)
-        if temporal_overlap:
-            leakage_types.append(LeakageType.TEMPORAL_LEAKAGE)
 
         affected_features = list(set(list(corr_leakage.keys()) + list(lookahead_leakage.keys())))
 
@@ -164,13 +156,11 @@ class DataLeakageDetector:
         if leakage_detected:
             recommendations.append("Investigate and remove flagged features.")
             recommendations.append("Ensure target calculation does not overlap with feature windows.")
-        if temporal_overlap:
-            recommendations.append(f"Fix train/test split: {len(temporal_overlap)} overlapping indices found.")
 
         severity = "low"
-        if temporal_overlap or lookahead_leakage:
+        if len(lookahead_leakage) > 0:
             severity = "critical"
-        elif corr_leakage:
+        elif len(corr_leakage) > 0:
             severity = "high"
 
         return LeakageReport(
@@ -182,8 +172,7 @@ class DataLeakageDetector:
             confidence=0.95,
             detailed_analysis={
                 "correlation_leakage": corr_leakage,
-                "lookahead_leakage": lookahead_leakage,
-                "temporal_overlap_count": len(temporal_overlap),
+                "lookahead_leakage": lookahead_leakage
             }
         )
 

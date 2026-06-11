@@ -1,0 +1,11 @@
+{
+  "batch_id": "XOM_cnn_20260322_190059",
+  "ticker": "XOM",
+  "model_name": "cnn",
+  "task_type": "regression",
+  "timeframe": "15m",
+  "target_name": "target_direction_15m",
+  "hyperparameters": {},
+  "created_at": "2026-03-22T19:00:59.452425",
+  "status": "PENDING_COLAB"
+}

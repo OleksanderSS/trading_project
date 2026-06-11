@@ -1,8 +1,9 @@
-# utils/json_utils.py
-
+import logging
 from datetime import datetime
 
 import numpy as np
+
+# utils/json_utils.py
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
@@ -15,7 +16,8 @@ def sanitize_timestamps(df: pd.DataFrame) -> pd.DataFrame:
     for col in df_out.columns:
         if pd.api.types.is_datetime64_any_dtype(df_out[col]):
             df_out[col] = df_out[col].apply(lambda x: x.isoformat() if pd.notna(x) else None)
-            logger.debug(f"[json_utils] Column '{col}' converted to ISO format")
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(f"[json_utils] Column '{col}' converted to ISO format")
     return df_out
 
 def _convert_timestamp(value):
@@ -55,5 +57,6 @@ def _convert_value(value):
 def sanitize_record_for_json(record: dict) -> dict:
     """Recursively converts a dictionary to a JSON-compatible format."""
     sanitized = {k: _convert_value(v) for k, v in record.items()}
-    logger.debug(f"[json_utils] Dictionary sanitized for JSON: keys={list(sanitized.keys())}")
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug(f"[json_utils] Dictionary sanitized for JSON: keys={list(sanitized.keys())}")
     return sanitized

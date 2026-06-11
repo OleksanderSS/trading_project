@@ -226,14 +226,6 @@ analysis:
         class: "CriticalSignalDetector"
         data_mapping:
           - "price_data"
-      - name: "market_regime"
-        module: "src.analytics.context.market_regime_analyzer"
-        class: "MarketRegimeAnalyzer"
-        params:
-          window_size: 20
-          entropy_window: 50
-        data_mapping:
-          - "price_data"
       - name: "macro_context_analyzer"
         module: "src.analytics.context.macro_context_analyzer" # PATH VERIFIED
         class: "MacroContextAnalyzer"

@@ -1,0 +1,5017 @@
+{
+  "stats": {
+    "files": 540,
+    "lines": 99983,
+    "issues": 3032,
+    "by_severity": {
+      "LOW": 1832,
+      "HIGH": 432,
+      "MEDIUM": 768
+    },
+    "by_category": {
+      "IMP": 567,
+      "CMX": 242,
+      "TYP": 248,
+      "SEC": 262,
+      "ARC": 7,
+      "BUG": 113,
+      "CFG": 29,
+      "LOG": 940,
+      "DUP": 624
+    }
+  },
+  "issues": [
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\cli\\batch_manager.py",
+      "line": 72,
+      "message": "   5 : src\\cli\\batch_manager.py:72, scripts\\core\\fix_data_quality.py:20, scripts\\core\\train_consensus_model.py:18, scripts\\core\\train_light_models_locally.py:29",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\cli\\batch_manager.py",
+      "line": 73,
+      "message": "   5 : src\\cli\\batch_manager.py:73, scripts\\core\\fix_data_quality.py:21, scripts\\core\\train_consensus_model.py:19, scripts\\core\\train_light_models_locally.py:30",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\cli\\batch_manager.py",
+      "line": 74,
+      "message": "   5 : src\\cli\\batch_manager.py:74, scripts\\core\\fix_data_quality.py:22, scripts\\core\\train_consensus_model.py:20, scripts\\core\\train_light_models_locally.py:31",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\cli\\batch_manager.py",
+      "line": 84,
+      "message": "   5 : src\\cli\\batch_manager.py:84, scripts\\core\\fix_data_quality.py:30, scripts\\core\\train_consensus_model.py:28, scripts\\core\\train_light_models_locally.py:39",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\cli\\pipeline_executor.py",
+      "line": 9,
+      "message": "   2 : src\\cli\\pipeline_executor.py:9, src\\cli\\pipeline_executor.py:10, src\\pipeline\\hybrid\\colab_manager.py:12",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\__init__.py",
+      "line": 8,
+      "message": "   2 : src\\colab\\__init__.py:8, src\\colab\\utils\\__init__.py:2",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\__init__.py",
+      "line": 9,
+      "message": "   2 : src\\colab\\__init__.py:9, src\\colab\\utils\\__init__.py:3",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\__init__.py",
+      "line": 10,
+      "message": "   2 : src\\colab\\__init__.py:10, src\\colab\\utils\\__init__.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\__init__.py",
+      "line": 11,
+      "message": "   2 : src\\colab\\__init__.py:11, src\\colab\\utils\\__init__.py:5",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 9,
+      "message": "   2 : src\\devtools\\rule_generator.py:9, scripts\\rule_generator.py:8",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 10,
+      "message": "   2 : src\\devtools\\rule_generator.py:10, scripts\\rule_generator.py:9",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 22,
+      "message": "   2 : src\\devtools\\rule_generator.py:22, scripts\\rule_generator.py:22",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 31,
+      "message": "   2 : src\\devtools\\rule_generator.py:31, scripts\\rule_generator.py:31",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 32,
+      "message": "   2 : src\\devtools\\rule_generator.py:32, scripts\\rule_generator.py:32",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 33,
+      "message": "   2 : src\\devtools\\rule_generator.py:33, scripts\\rule_generator.py:33",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 34,
+      "message": "   2 : src\\devtools\\rule_generator.py:34, scripts\\rule_generator.py:34",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 35,
+      "message": "   2 : src\\devtools\\rule_generator.py:35, scripts\\rule_generator.py:35",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 36,
+      "message": "   2 : src\\devtools\\rule_generator.py:36, scripts\\rule_generator.py:36",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 37,
+      "message": "   2 : src\\devtools\\rule_generator.py:37, scripts\\rule_generator.py:37",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 38,
+      "message": "   2 : src\\devtools\\rule_generator.py:38, scripts\\rule_generator.py:38",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 39,
+      "message": "   2 : src\\devtools\\rule_generator.py:39, scripts\\rule_generator.py:39",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 40,
+      "message": "   2 : src\\devtools\\rule_generator.py:40, scripts\\rule_generator.py:40",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 41,
+      "message": "   2 : src\\devtools\\rule_generator.py:41, scripts\\rule_generator.py:41",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 42,
+      "message": "   2 : src\\devtools\\rule_generator.py:42, scripts\\rule_generator.py:42",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 43,
+      "message": "   2 : src\\devtools\\rule_generator.py:43, scripts\\rule_generator.py:43",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 44,
+      "message": "   2 : src\\devtools\\rule_generator.py:44, scripts\\rule_generator.py:44",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 45,
+      "message": "   2 : src\\devtools\\rule_generator.py:45, scripts\\rule_generator.py:45",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 46,
+      "message": "   2 : src\\devtools\\rule_generator.py:46, scripts\\rule_generator.py:46",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 47,
+      "message": "   2 : src\\devtools\\rule_generator.py:47, scripts\\rule_generator.py:47",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 48,
+      "message": "   2 : src\\devtools\\rule_generator.py:48, scripts\\rule_generator.py:48",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 49,
+      "message": "   2 : src\\devtools\\rule_generator.py:49, scripts\\rule_generator.py:49",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 50,
+      "message": "   2 : src\\devtools\\rule_generator.py:50, scripts\\rule_generator.py:50",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 51,
+      "message": "   2 : src\\devtools\\rule_generator.py:51, scripts\\rule_generator.py:51",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 52,
+      "message": "   2 : src\\devtools\\rule_generator.py:52, scripts\\rule_generator.py:52",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 53,
+      "message": "   2 : src\\devtools\\rule_generator.py:53, scripts\\rule_generator.py:53",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 54,
+      "message": "   2 : src\\devtools\\rule_generator.py:54, scripts\\rule_generator.py:54",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 57,
+      "message": "   2 : src\\devtools\\rule_generator.py:57, scripts\\rule_generator.py:57",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 58,
+      "message": "   2 : src\\devtools\\rule_generator.py:58, scripts\\rule_generator.py:58",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 59,
+      "message": "   2 : src\\devtools\\rule_generator.py:59, src\\devtools\\rule_generator.py:60, scripts\\rule_generator.py:59, scripts\\rule_generator.py:60",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 69,
+      "message": "   2 : src\\devtools\\rule_generator.py:69, scripts\\rule_generator.py:69",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 70,
+      "message": "   2 : src\\devtools\\rule_generator.py:70, scripts\\rule_generator.py:70",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 71,
+      "message": "   2 : src\\devtools\\rule_generator.py:71, scripts\\rule_generator.py:71",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 72,
+      "message": "   2 : src\\devtools\\rule_generator.py:72, scripts\\rule_generator.py:72",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 73,
+      "message": "   2 : src\\devtools\\rule_generator.py:73, scripts\\rule_generator.py:73",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 74,
+      "message": "   2 : src\\devtools\\rule_generator.py:74, scripts\\rule_generator.py:74",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 75,
+      "message": "   2 : src\\devtools\\rule_generator.py:75, scripts\\rule_generator.py:75",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 76,
+      "message": "   2 : src\\devtools\\rule_generator.py:76, scripts\\rule_generator.py:76",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 77,
+      "message": "   2 : src\\devtools\\rule_generator.py:77, scripts\\rule_generator.py:77",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 78,
+      "message": "   2 : src\\devtools\\rule_generator.py:78, scripts\\rule_generator.py:78",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 79,
+      "message": "   2 : src\\devtools\\rule_generator.py:79, scripts\\rule_generator.py:79",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 80,
+      "message": "   2 : src\\devtools\\rule_generator.py:80, scripts\\rule_generator.py:80",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 81,
+      "message": "   2 : src\\devtools\\rule_generator.py:81, scripts\\rule_generator.py:81",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 82,
+      "message": "   2 : src\\devtools\\rule_generator.py:82, scripts\\rule_generator.py:82",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 91,
+      "message": "   2 : src\\devtools\\rule_generator.py:91, scripts\\rule_generator.py:91",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 92,
+      "message": "   2 : src\\devtools\\rule_generator.py:92, scripts\\rule_generator.py:92",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 93,
+      "message": "   2 : src\\devtools\\rule_generator.py:93, scripts\\rule_generator.py:93",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 94,
+      "message": "   2 : src\\devtools\\rule_generator.py:94, scripts\\rule_generator.py:94",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 95,
+      "message": "   2 : src\\devtools\\rule_generator.py:95, scripts\\rule_generator.py:95",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 96,
+      "message": "   2 : src\\devtools\\rule_generator.py:96, scripts\\rule_generator.py:96",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 97,
+      "message": "   2 : src\\devtools\\rule_generator.py:97, scripts\\rule_generator.py:97",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 98,
+      "message": "   2 : src\\devtools\\rule_generator.py:98, scripts\\rule_generator.py:98",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 99,
+      "message": "   2 : src\\devtools\\rule_generator.py:99, scripts\\rule_generator.py:99",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 100,
+      "message": "   2 : src\\devtools\\rule_generator.py:100, scripts\\rule_generator.py:100",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 101,
+      "message": "   2 : src\\devtools\\rule_generator.py:101, scripts\\rule_generator.py:101",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 102,
+      "message": "   2 : src\\devtools\\rule_generator.py:102, scripts\\rule_generator.py:102",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 103,
+      "message": "   2 : src\\devtools\\rule_generator.py:103, scripts\\rule_generator.py:103",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 104,
+      "message": "   2 : src\\devtools\\rule_generator.py:104, scripts\\rule_generator.py:104",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 105,
+      "message": "   2 : src\\devtools\\rule_generator.py:105, scripts\\rule_generator.py:105",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 106,
+      "message": "   2 : src\\devtools\\rule_generator.py:106, scripts\\rule_generator.py:106",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 107,
+      "message": "   2 : src\\devtools\\rule_generator.py:107, src\\devtools\\rule_generator.py:108, scripts\\rule_generator.py:107, scripts\\rule_generator.py:108",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 109,
+      "message": "   2 : src\\devtools\\rule_generator.py:109, scripts\\rule_generator.py:109",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 110,
+      "message": "   2 : src\\devtools\\rule_generator.py:110, scripts\\rule_generator.py:110",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 111,
+      "message": "   2 : src\\devtools\\rule_generator.py:111, scripts\\rule_generator.py:111",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 112,
+      "message": "   2 : src\\devtools\\rule_generator.py:112, scripts\\rule_generator.py:112",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 113,
+      "message": "   2 : src\\devtools\\rule_generator.py:113, scripts\\rule_generator.py:113",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 114,
+      "message": "   2 : src\\devtools\\rule_generator.py:114, scripts\\rule_generator.py:114",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 115,
+      "message": "   2 : src\\devtools\\rule_generator.py:115, scripts\\rule_generator.py:115",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 116,
+      "message": "   2 : src\\devtools\\rule_generator.py:116, scripts\\rule_generator.py:116",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 117,
+      "message": "   2 : src\\devtools\\rule_generator.py:117, scripts\\rule_generator.py:117",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 118,
+      "message": "   2 : src\\devtools\\rule_generator.py:118, scripts\\rule_generator.py:118",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 119,
+      "message": "   2 : src\\devtools\\rule_generator.py:119, scripts\\rule_generator.py:119",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 120,
+      "message": "   2 : src\\devtools\\rule_generator.py:120, scripts\\rule_generator.py:120",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 121,
+      "message": "   2 : src\\devtools\\rule_generator.py:121, scripts\\rule_generator.py:121",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 122,
+      "message": "   2 : src\\devtools\\rule_generator.py:122, scripts\\rule_generator.py:122",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 123,
+      "message": "   2 : src\\devtools\\rule_generator.py:123, scripts\\rule_generator.py:123",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 124,
+      "message": "   2 : src\\devtools\\rule_generator.py:124, scripts\\rule_generator.py:124",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 125,
+      "message": "   2 : src\\devtools\\rule_generator.py:125, scripts\\rule_generator.py:125",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 126,
+      "message": "   2 : src\\devtools\\rule_generator.py:126, scripts\\rule_generator.py:126",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 127,
+      "message": "   2 : src\\devtools\\rule_generator.py:127, scripts\\rule_generator.py:127",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 128,
+      "message": "   2 : src\\devtools\\rule_generator.py:128, scripts\\rule_generator.py:128",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 129,
+      "message": "   2 : src\\devtools\\rule_generator.py:129, scripts\\rule_generator.py:129",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 130,
+      "message": "   2 : src\\devtools\\rule_generator.py:130, src\\devtools\\rule_generator.py:131, scripts\\rule_generator.py:130, scripts\\rule_generator.py:131",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 132,
+      "message": "   2 : src\\devtools\\rule_generator.py:132, scripts\\rule_generator.py:132",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 133,
+      "message": "   2 : src\\devtools\\rule_generator.py:133, scripts\\rule_generator.py:133",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 134,
+      "message": "   2 : src\\devtools\\rule_generator.py:134, scripts\\rule_generator.py:134",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 143,
+      "message": "   2 : src\\devtools\\rule_generator.py:143, scripts\\rule_generator.py:143",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\devtools\\rule_generator.py",
+      "line": 144,
+      "message": "   2 : src\\devtools\\rule_generator.py:144, scripts\\rule_generator.py:144",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\context_aware_feature_selector.py",
+      "line": 8,
+      "message": "   2 : src\\features\\context_aware_feature_selector.py:8, src\\validation\\temporal_feature_separator.py:10",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\context_aware_feature_selector.py",
+      "line": 10,
+      "message": "   4 : src\\features\\context_aware_feature_selector.py:10, src\\features\\context_aware_feature_selector.py:11, src\\meta_learning\\real_time_learning.py:9, src\\utils\\json_utils.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\enhanced_factory.py",
+      "line": 131,
+      "message": "   2 : src\\models\\enhanced_factory.py:131, src\\models\\prototypes\\registry.py:69",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\enhanced_factory.py",
+      "line": 132,
+      "message": "   2 : src\\models\\enhanced_factory.py:132, src\\models\\prototypes\\registry.py:70",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\integrated_model_manager.py",
+      "line": 633,
+      "message": "   2 : src\\models\\integrated_model_manager.py:633, src\\models\\ensemble\\weight_stability_monitor.py:790",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\loader.py",
+      "line": 413,
+      "message": "   3 : src\\models\\loader.py:413, src\\colab\\models\\model_factory.py:156, src\\colab\\models\\torch_models.py:79, src\\colab\\models\\torch_models.py:80",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\loader.py",
+      "line": 415,
+      "message": "   3 : src\\models\\loader.py:415, src\\colab\\models\\model_factory.py:157, src\\colab\\models\\torch_models.py:81",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\loader.py",
+      "line": 416,
+      "message": "   3 : src\\models\\loader.py:416, src\\colab\\models\\model_factory.py:158, src\\colab\\models\\torch_models.py:82",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\loader.py",
+      "line": 417,
+      "message": "   3 : src\\models\\loader.py:417, src\\colab\\models\\model_factory.py:159, src\\colab\\models\\torch_models.py:83",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\loader.py",
+      "line": 418,
+      "message": "   3 : src\\models\\loader.py:418, src\\colab\\models\\model_factory.py:160, src\\colab\\models\\torch_models.py:84",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\loader.py",
+      "line": 419,
+      "message": "   3 : src\\models\\loader.py:419, src\\colab\\models\\model_factory.py:161, src\\colab\\models\\torch_models.py:85",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\monitoring\\health_hub.py",
+      "line": 187,
+      "message": "   2 : src\\monitoring\\health_hub.py:187, src\\monitoring\\ml_analytics.py:161",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\monitoring\\health_hub.py",
+      "line": 188,
+      "message": "   2 : src\\monitoring\\health_hub.py:188, src\\monitoring\\ml_analytics.py:162",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 28,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:28, src\\pipeline\\hybrid\\hybrid_dataclasses.py:14",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 29,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:29, src\\pipeline\\hybrid\\hybrid_dataclasses.py:15",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 37,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:37, src\\pipeline\\hybrid\\colab_manager.py:27",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 48,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:48, src\\pipeline\\hybrid\\pipeline_config.py:14",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 96,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:96, src\\pipeline\\hybrid\\pipeline_config.py:27",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 101,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:101, src\\pipeline\\hybrid\\hybrid_dataclasses.py:55",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 197,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:197, src\\pipeline\\hybrid\\storage_manager.py:46",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 198,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:198, src\\pipeline\\hybrid\\storage_manager.py:47",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 213,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:213, src\\pipeline\\hybrid\\storage_manager.py:61",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 214,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:214, src\\pipeline\\hybrid\\storage_manager.py:62",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 215,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:215, src\\pipeline\\hybrid\\storage_manager.py:63",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid_orchestrator.py",
+      "line": 216,
+      "message": "   2 : src\\pipeline\\hybrid_orchestrator.py:216, src\\pipeline\\hybrid\\storage_manager.py:64",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\utils\\json_utils.py",
+      "line": 3,
+      "message": "   2 : src\\utils\\json_utils.py:3, src\\features\\nlp\\processors\\news_processing.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\validation\\temporal_feature_separator.py",
+      "line": 6,
+      "message": "   3 : src\\validation\\temporal_feature_separator.py:6, src\\models\\ensemble\\confidence_calibrator.py:5, src\\models\\ensemble\\dynamic_weights.py:19",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\analytics\\arena\\arena_battle.py",
+      "line": 32,
+      "message": "   2 : src\\analytics\\arena\\arena_battle.py:32, src\\analytics\\arena\\performance_tracker.py:19",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\analytics\\arena\\arena_battle.py",
+      "line": 33,
+      "message": "   2 : src\\analytics\\arena\\arena_battle.py:33, src\\analytics\\arena\\performance_tracker.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 25,
+      "message": "   2 : src\\colab\\models\\model_factory.py:25, src\\colab\\models\\sklearn_fallback.py:5",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 26,
+      "message": "   2 : src\\colab\\models\\model_factory.py:26, src\\colab\\models\\sklearn_fallback.py:6",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 27,
+      "message": "   2 : src\\colab\\models\\model_factory.py:27, src\\colab\\models\\sklearn_fallback.py:7",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 28,
+      "message": "   2 : src\\colab\\models\\model_factory.py:28, src\\colab\\models\\sklearn_fallback.py:8",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 29,
+      "message": "   2 : src\\colab\\models\\model_factory.py:29, src\\colab\\models\\sklearn_fallback.py:9",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 30,
+      "message": "   2 : src\\colab\\models\\model_factory.py:30, src\\colab\\models\\sklearn_fallback.py:10",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 31,
+      "message": "   2 : src\\colab\\models\\model_factory.py:31, src\\colab\\models\\sklearn_fallback.py:11",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 32,
+      "message": "   2 : src\\colab\\models\\model_factory.py:32, src\\colab\\models\\sklearn_fallback.py:12",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 33,
+      "message": "   2 : src\\colab\\models\\model_factory.py:33, src\\colab\\models\\sklearn_fallback.py:13",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 34,
+      "message": "   2 : src\\colab\\models\\model_factory.py:34, src\\colab\\models\\sklearn_fallback.py:14",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 35,
+      "message": "   2 : src\\colab\\models\\model_factory.py:35, src\\colab\\models\\sklearn_fallback.py:15",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 36,
+      "message": "   2 : src\\colab\\models\\model_factory.py:36, src\\colab\\models\\sklearn_fallback.py:16",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 37,
+      "message": "   2 : src\\colab\\models\\model_factory.py:37, src\\colab\\models\\sklearn_fallback.py:17",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 38,
+      "message": "   2 : src\\colab\\models\\model_factory.py:38, src\\colab\\models\\sklearn_fallback.py:18",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 39,
+      "message": "   2 : src\\colab\\models\\model_factory.py:39, src\\colab\\models\\sklearn_fallback.py:19",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 40,
+      "message": "   2 : src\\colab\\models\\model_factory.py:40, src\\colab\\models\\sklearn_fallback.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 41,
+      "message": "   2 : src\\colab\\models\\model_factory.py:41, src\\colab\\models\\sklearn_fallback.py:21",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 42,
+      "message": "   2 : src\\colab\\models\\model_factory.py:42, src\\colab\\models\\sklearn_fallback.py:22",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 43,
+      "message": "   3 : src\\colab\\models\\model_factory.py:43, src\\colab\\models\\model_factory.py:219, src\\colab\\models\\sklearn_fallback.py:23, src\\colab\\models\\torch_models.py:144",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 44,
+      "message": "   3 : src\\colab\\models\\model_factory.py:44, src\\colab\\models\\model_factory.py:220, src\\colab\\models\\sklearn_fallback.py:24, src\\colab\\models\\torch_models.py:145",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 45,
+      "message": "   3 : src\\colab\\models\\model_factory.py:45, src\\colab\\models\\model_factory.py:221, src\\colab\\models\\sklearn_fallback.py:25, src\\colab\\models\\torch_models.py:146",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 46,
+      "message": "   2 : src\\colab\\models\\model_factory.py:46, src\\colab\\models\\sklearn_fallback.py:26",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 56,
+      "message": "   2 : src\\colab\\models\\model_factory.py:56, src\\colab\\models\\sklearn_fallback.py:34",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 57,
+      "message": "   2 : src\\colab\\models\\model_factory.py:57, src\\colab\\models\\sklearn_fallback.py:35",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 58,
+      "message": "   2 : src\\colab\\models\\model_factory.py:58, src\\colab\\models\\sklearn_fallback.py:36",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 59,
+      "message": "   2 : src\\colab\\models\\model_factory.py:59, src\\colab\\models\\sklearn_fallback.py:37",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 60,
+      "message": "   2 : src\\colab\\models\\model_factory.py:60, src\\colab\\models\\model_factory.py:61, src\\colab\\models\\sklearn_fallback.py:38, src\\colab\\models\\sklearn_fallback.py:39",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 62,
+      "message": "   2 : src\\colab\\models\\model_factory.py:62, src\\colab\\models\\sklearn_fallback.py:40",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 63,
+      "message": "   2 : src\\colab\\models\\model_factory.py:63, src\\colab\\models\\sklearn_fallback.py:41",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 64,
+      "message": "   2 : src\\colab\\models\\model_factory.py:64, src\\colab\\models\\sklearn_fallback.py:42",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 65,
+      "message": "   2 : src\\colab\\models\\model_factory.py:65, src\\colab\\models\\sklearn_fallback.py:43",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 66,
+      "message": "   2 : src\\colab\\models\\model_factory.py:66, src\\colab\\models\\model_factory.py:67, src\\colab\\models\\sklearn_fallback.py:44, src\\colab\\models\\sklearn_fallback.py:45",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 68,
+      "message": "   2 : src\\colab\\models\\model_factory.py:68, src\\colab\\models\\sklearn_fallback.py:46",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 69,
+      "message": "   2 : src\\colab\\models\\model_factory.py:69, src\\colab\\models\\sklearn_fallback.py:47",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 70,
+      "message": "   2 : src\\colab\\models\\model_factory.py:70, src\\colab\\models\\sklearn_fallback.py:48",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 71,
+      "message": "   2 : src\\colab\\models\\model_factory.py:71, src\\colab\\models\\sklearn_fallback.py:49",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 72,
+      "message": "   2 : src\\colab\\models\\model_factory.py:72, src\\colab\\models\\sklearn_fallback.py:50",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 73,
+      "message": "   2 : src\\colab\\models\\model_factory.py:73, src\\colab\\models\\sklearn_fallback.py:51",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 74,
+      "message": "   2 : src\\colab\\models\\model_factory.py:74, src\\colab\\models\\sklearn_fallback.py:52",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 75,
+      "message": "   2 : src\\colab\\models\\model_factory.py:75, src\\colab\\models\\sklearn_fallback.py:53",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 76,
+      "message": "   2 : src\\colab\\models\\model_factory.py:76, src\\colab\\models\\sklearn_fallback.py:54",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 98,
+      "message": "   2 : src\\colab\\models\\model_factory.py:98, src\\colab\\models\\torch_models.py:19",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 99,
+      "message": "   2 : src\\colab\\models\\model_factory.py:99, src\\colab\\models\\torch_models.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 108,
+      "message": "   2 : src\\colab\\models\\model_factory.py:108, src\\colab\\models\\torch_models.py:29",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 109,
+      "message": "   2 : src\\colab\\models\\model_factory.py:109, src\\colab\\models\\torch_models.py:30",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 110,
+      "message": "   2 : src\\colab\\models\\model_factory.py:110, src\\colab\\models\\torch_models.py:31",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 111,
+      "message": "   2 : src\\colab\\models\\model_factory.py:111, src\\colab\\models\\torch_models.py:32",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 112,
+      "message": "   2 : src\\colab\\models\\model_factory.py:112, src\\colab\\models\\torch_models.py:33",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 113,
+      "message": "   2 : src\\colab\\models\\model_factory.py:113, src\\colab\\models\\torch_models.py:34",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 114,
+      "message": "   2 : src\\colab\\models\\model_factory.py:114, src\\colab\\models\\torch_models.py:35",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 123,
+      "message": "   2 : src\\colab\\models\\model_factory.py:123, src\\colab\\models\\torch_models.py:44",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 124,
+      "message": "   2 : src\\colab\\models\\model_factory.py:124, src\\colab\\models\\torch_models.py:46",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 125,
+      "message": "   2 : src\\colab\\models\\model_factory.py:125, src\\colab\\models\\torch_models.py:47",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 126,
+      "message": "   2 : src\\colab\\models\\model_factory.py:126, src\\colab\\models\\torch_models.py:48",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 127,
+      "message": "   2 : src\\colab\\models\\model_factory.py:127, src\\colab\\models\\torch_models.py:49",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 128,
+      "message": "   2 : src\\colab\\models\\model_factory.py:128, src\\colab\\models\\torch_models.py:50",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 129,
+      "message": "   2 : src\\colab\\models\\model_factory.py:129, src\\colab\\models\\torch_models.py:51",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 130,
+      "message": "   2 : src\\colab\\models\\model_factory.py:130, src\\colab\\models\\torch_models.py:52",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 139,
+      "message": "   2 : src\\colab\\models\\model_factory.py:139, src\\colab\\models\\torch_models.py:61",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 140,
+      "message": "   2 : src\\colab\\models\\model_factory.py:140, src\\colab\\models\\torch_models.py:63",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 141,
+      "message": "   2 : src\\colab\\models\\model_factory.py:141, src\\colab\\models\\torch_models.py:64",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 142,
+      "message": "   2 : src\\colab\\models\\model_factory.py:142, src\\colab\\models\\torch_models.py:65",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 143,
+      "message": "   2 : src\\colab\\models\\model_factory.py:143, src\\colab\\models\\torch_models.py:66",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 144,
+      "message": "   2 : src\\colab\\models\\model_factory.py:144, src\\colab\\models\\torch_models.py:67",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 145,
+      "message": "   2 : src\\colab\\models\\model_factory.py:145, src\\colab\\models\\torch_models.py:68",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 146,
+      "message": "   2 : src\\colab\\models\\model_factory.py:146, src\\colab\\models\\torch_models.py:69",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 162,
+      "message": "   2 : src\\colab\\models\\model_factory.py:162, src\\colab\\models\\torch_models.py:86",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 163,
+      "message": "   2 : src\\colab\\models\\model_factory.py:163, src\\colab\\models\\model_factory.py:164, src\\colab\\models\\torch_models.py:87, src\\colab\\models\\torch_models.py:88",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 165,
+      "message": "   2 : src\\colab\\models\\model_factory.py:165, src\\colab\\models\\torch_models.py:89",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 175,
+      "message": "   2 : src\\colab\\models\\model_factory.py:175, src\\colab\\models\\torch_models.py:100",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 176,
+      "message": "   2 : src\\colab\\models\\model_factory.py:176, src\\colab\\models\\torch_models.py:101",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 177,
+      "message": "   2 : src\\colab\\models\\model_factory.py:177, src\\colab\\models\\torch_models.py:102",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 178,
+      "message": "   2 : src\\colab\\models\\model_factory.py:178, src\\colab\\models\\torch_models.py:103",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 179,
+      "message": "   2 : src\\colab\\models\\model_factory.py:179, src\\colab\\models\\torch_models.py:104",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 180,
+      "message": "   2 : src\\colab\\models\\model_factory.py:180, src\\colab\\models\\torch_models.py:105",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 181,
+      "message": "   2 : src\\colab\\models\\model_factory.py:181, src\\colab\\models\\torch_models.py:106",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 182,
+      "message": "   2 : src\\colab\\models\\model_factory.py:182, src\\colab\\models\\torch_models.py:107",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 183,
+      "message": "   2 : src\\colab\\models\\model_factory.py:183, src\\colab\\models\\model_factory.py:184, src\\colab\\models\\torch_models.py:108, src\\colab\\models\\torch_models.py:109",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 193,
+      "message": "   2 : src\\colab\\models\\model_factory.py:193, src\\colab\\models\\torch_models.py:118",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 194,
+      "message": "   2 : src\\colab\\models\\model_factory.py:194, src\\colab\\models\\torch_models.py:119",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 195,
+      "message": "   2 : src\\colab\\models\\model_factory.py:195, src\\colab\\models\\torch_models.py:120",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 196,
+      "message": "   2 : src\\colab\\models\\model_factory.py:196, src\\colab\\models\\torch_models.py:121",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 197,
+      "message": "   2 : src\\colab\\models\\model_factory.py:197, src\\colab\\models\\torch_models.py:122",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 206,
+      "message": "   2 : src\\colab\\models\\model_factory.py:206, src\\colab\\models\\torch_models.py:131",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 207,
+      "message": "   2 : src\\colab\\models\\model_factory.py:207, src\\colab\\models\\torch_models.py:132",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 208,
+      "message": "   2 : src\\colab\\models\\model_factory.py:208, src\\colab\\models\\torch_models.py:133",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 209,
+      "message": "   2 : src\\colab\\models\\model_factory.py:209, src\\colab\\models\\torch_models.py:134",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 210,
+      "message": "   2 : src\\colab\\models\\model_factory.py:210, src\\colab\\models\\torch_models.py:135",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 211,
+      "message": "   2 : src\\colab\\models\\model_factory.py:211, src\\colab\\models\\torch_models.py:136",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 212,
+      "message": "   2 : src\\colab\\models\\model_factory.py:212, src\\colab\\models\\torch_models.py:137",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 213,
+      "message": "   2 : src\\colab\\models\\model_factory.py:213, src\\colab\\models\\torch_models.py:138",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 214,
+      "message": "   2 : src\\colab\\models\\model_factory.py:214, src\\colab\\models\\torch_models.py:139",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 215,
+      "message": "   2 : src\\colab\\models\\model_factory.py:215, src\\colab\\models\\torch_models.py:140",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 216,
+      "message": "   2 : src\\colab\\models\\model_factory.py:216, src\\colab\\models\\torch_models.py:141",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 217,
+      "message": "   2 : src\\colab\\models\\model_factory.py:217, src\\colab\\models\\torch_models.py:142",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 218,
+      "message": "   2 : src\\colab\\models\\model_factory.py:218, src\\colab\\models\\torch_models.py:143",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 222,
+      "message": "   2 : src\\colab\\models\\model_factory.py:222, src\\colab\\models\\torch_models.py:147",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 223,
+      "message": "   2 : src\\colab\\models\\model_factory.py:223, src\\colab\\models\\torch_models.py:148",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 224,
+      "message": "   2 : src\\colab\\models\\model_factory.py:224, src\\colab\\models\\torch_models.py:149",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 225,
+      "message": "   2 : src\\colab\\models\\model_factory.py:225, src\\colab\\models\\torch_models.py:150",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 226,
+      "message": "   2 : src\\colab\\models\\model_factory.py:226, src\\colab\\models\\torch_models.py:151",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 227,
+      "message": "   2 : src\\colab\\models\\model_factory.py:227, src\\colab\\models\\torch_models.py:152",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 229,
+      "message": "   2 : src\\colab\\models\\model_factory.py:229, src\\colab\\models\\torch_models.py:154",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 231,
+      "message": "   2 : src\\colab\\models\\model_factory.py:231, src\\colab\\models\\torch_models.py:155",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 235,
+      "message": "   2 : src\\colab\\models\\model_factory.py:235, src\\colab\\models\\model_factory.py:236, src\\colab\\models\\torch_models.py:160",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 247,
+      "message": "   2 : src\\colab\\models\\model_factory.py:247, src\\colab\\models\\torch_models.py:171",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 248,
+      "message": "   2 : src\\colab\\models\\model_factory.py:248, src\\colab\\models\\torch_models.py:172",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 249,
+      "message": "   2 : src\\colab\\models\\model_factory.py:249, src\\colab\\models\\torch_models.py:173",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 250,
+      "message": "   2 : src\\colab\\models\\model_factory.py:250, src\\colab\\models\\torch_models.py:174",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 251,
+      "message": "   2 : src\\colab\\models\\model_factory.py:251, src\\colab\\models\\torch_models.py:175",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 252,
+      "message": "   2 : src\\colab\\models\\model_factory.py:252, src\\colab\\models\\torch_models.py:176",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 253,
+      "message": "   2 : src\\colab\\models\\model_factory.py:253, src\\colab\\models\\torch_models.py:177",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\models\\model_factory.py",
+      "line": 254,
+      "message": "   2 : src\\colab\\models\\model_factory.py:254, src\\colab\\models\\torch_models.py:178",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 2,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:2, src\\colab\\utils\\utils.py:15",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 3,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:3, src\\colab\\utils\\utils.py:16",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 4,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:4, src\\colab\\utils\\utils.py:17",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 5,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:5, src\\colab\\utils\\utils.py:18",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 6,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:6, src\\colab\\utils\\utils.py:19",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 7,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:7, src\\colab\\utils\\utils.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 8,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:8, src\\colab\\utils\\utils.py:21",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 9,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:9, src\\colab\\utils\\utils.py:22",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 10,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:10, src\\colab\\utils\\utils.py:23",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 11,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:11, src\\colab\\utils\\utils.py:24",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 12,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:12, src\\colab\\utils\\utils.py:25",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\batch_size.py",
+      "line": 13,
+      "message": "   2 : src\\colab\\utils\\batch_size.py:13, src\\colab\\utils\\utils.py:26",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 5,
+      "message": "   2 : src\\colab\\utils\\retry.py:5, src\\colab\\utils\\utils.py:82",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 6,
+      "message": "   2 : src\\colab\\utils\\retry.py:6, src\\colab\\utils\\utils.py:83",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 7,
+      "message": "   2 : src\\colab\\utils\\retry.py:7, src\\colab\\utils\\utils.py:84",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 8,
+      "message": "   2 : src\\colab\\utils\\retry.py:8, src\\colab\\utils\\utils.py:85",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 9,
+      "message": "   2 : src\\colab\\utils\\retry.py:9, src\\colab\\utils\\utils.py:86",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 10,
+      "message": "   2 : src\\colab\\utils\\retry.py:10, src\\colab\\utils\\utils.py:87",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 11,
+      "message": "   2 : src\\colab\\utils\\retry.py:11, src\\colab\\utils\\utils.py:88",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 12,
+      "message": "   2 : src\\colab\\utils\\retry.py:12, src\\colab\\utils\\utils.py:89",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 13,
+      "message": "   2 : src\\colab\\utils\\retry.py:13, src\\colab\\utils\\utils.py:90",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 14,
+      "message": "   2 : src\\colab\\utils\\retry.py:14, src\\colab\\utils\\utils.py:91",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 15,
+      "message": "   2 : src\\colab\\utils\\retry.py:15, src\\colab\\utils\\utils.py:92",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 16,
+      "message": "   2 : src\\colab\\utils\\retry.py:16, src\\colab\\utils\\utils.py:93",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 17,
+      "message": "   2 : src\\colab\\utils\\retry.py:17, src\\colab\\utils\\utils.py:94",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\colab\\utils\\retry.py",
+      "line": 18,
+      "message": "   2 : src\\colab\\utils\\retry.py:18, src\\colab\\utils\\utils.py:95",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\aaii_sentiment_collector.py",
+      "line": 4,
+      "message": "   3 : src\\data\\collectors\\aaii_sentiment_collector.py:4, src\\data\\collectors\\cftc_collector.py:6, src\\data\\collectors\\put_call_ratio_collector.py:6",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\aaii_sentiment_collector.py",
+      "line": 5,
+      "message": "   3 : src\\data\\collectors\\aaii_sentiment_collector.py:5, src\\data\\collectors\\cftc_collector.py:7, src\\data\\collectors\\put_call_ratio_collector.py:7",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\aaii_sentiment_collector.py",
+      "line": 18,
+      "message": "   2 : src\\data\\collectors\\aaii_sentiment_collector.py:18, src\\data\\collectors\\fear_greed_collector.py:17",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\aaii_sentiment_collector.py",
+      "line": 51,
+      "message": "   2 : src\\data\\collectors\\aaii_sentiment_collector.py:51, src\\data\\collectors\\fear_greed_collector.py:51",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\aaii_sentiment_collector.py",
+      "line": 187,
+      "message": "   2 : src\\data\\collectors\\aaii_sentiment_collector.py:187, src\\data\\collectors\\fear_greed_collector.py:159",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\aaii_sentiment_collector.py",
+      "line": 188,
+      "message": "   2 : src\\data\\collectors\\aaii_sentiment_collector.py:188, src\\data\\collectors\\fear_greed_collector.py:160",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\alternative_me_collector.py",
+      "line": 5,
+      "message": "   2 : src\\data\\collectors\\alternative_me_collector.py:5, src\\data\\collectors\\vix_collector.py:2",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\alternative_me_collector.py",
+      "line": 6,
+      "message": "   3 : src\\data\\collectors\\alternative_me_collector.py:6, src\\data\\collectors\\fred_collector.py:1, src\\data\\collectors\\vix_collector.py:3",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\alternative_me_collector.py",
+      "line": 7,
+      "message": "   3 : src\\data\\collectors\\alternative_me_collector.py:7, src\\data\\collectors\\fred_collector.py:2, src\\data\\collectors\\vix_collector.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\alternative_me_collector.py",
+      "line": 8,
+      "message": "   4 : src\\data\\collectors\\alternative_me_collector.py:8, src\\data\\collectors\\fear_greed_collector.py:3, src\\data\\collectors\\fred_collector.py:3, src\\data\\collectors\\vix_collector.py:5",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\alternative_me_collector.py",
+      "line": 9,
+      "message": "   5 : src\\data\\collectors\\alternative_me_collector.py:9, src\\data\\collectors\\economic_calendar_collector.py:5, src\\data\\collectors\\fear_greed_collector.py:4, src\\data\\collectors\\fred_collector.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 1,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:1, src\\data\\collectors\\cftc_collector.py:2, src\\data\\collectors\\put_call_ratio_collector.py:1, src\\data\\collectors\\put_call_ratio_collector.py:2",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 3,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:3, src\\data\\collectors\\put_call_ratio_collector.py:3",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 4,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:4, src\\data\\collectors\\put_call_ratio_collector.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 5,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:5, src\\data\\collectors\\put_call_ratio_collector.py:5",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 63,
+      "message": "   4 : src\\data\\collectors\\cftc_collector.py:63, src\\data\\collectors\\put_call_ratio_collector.py:55, src\\data\\collectors\\reddit_sentiment_collector.py:55, src\\data\\collectors\\vix_collector.py:60",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 64,
+      "message": "   4 : src\\data\\collectors\\cftc_collector.py:64, src\\data\\collectors\\put_call_ratio_collector.py:56, src\\data\\collectors\\reddit_sentiment_collector.py:56, src\\data\\collectors\\vix_collector.py:61",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 65,
+      "message": "   4 : src\\data\\collectors\\cftc_collector.py:65, src\\data\\collectors\\cftc_collector.py:66, src\\data\\collectors\\put_call_ratio_collector.py:57, src\\data\\collectors\\put_call_ratio_collector.py:58",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 67,
+      "message": "   4 : src\\data\\collectors\\cftc_collector.py:67, src\\data\\collectors\\put_call_ratio_collector.py:59, src\\data\\collectors\\reddit_sentiment_collector.py:59, src\\data\\collectors\\vix_collector.py:64",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 68,
+      "message": "   4 : src\\data\\collectors\\cftc_collector.py:68, src\\data\\collectors\\cftc_collector.py:69, src\\data\\collectors\\put_call_ratio_collector.py:60, src\\data\\collectors\\put_call_ratio_collector.py:61",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 264,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:264, src\\data\\collectors\\put_call_ratio_collector.py:202",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 265,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:265, src\\data\\collectors\\put_call_ratio_collector.py:203",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 266,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:266, src\\data\\collectors\\put_call_ratio_collector.py:204",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 267,
+      "message": "   2 : src\\data\\collectors\\cftc_collector.py:267, src\\data\\collectors\\put_call_ratio_collector.py:205",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\cftc_collector.py",
+      "line": 268,
+      "message": "   4 : src\\data\\collectors\\cftc_collector.py:268, src\\data\\collectors\\put_call_ratio_collector.py:206, src\\data\\collectors\\reddit_sentiment_collector.py:167, src\\data\\collectors\\vix_collector.py:148",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\economic_calendar_collector.py",
+      "line": 30,
+      "message": "   2 : src\\data\\collectors\\economic_calendar_collector.py:30, src\\data\\collectors\\rss_collector.py:70",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\economic_calendar_collector.py",
+      "line": 31,
+      "message": "   2 : src\\data\\collectors\\economic_calendar_collector.py:31, src\\data\\collectors\\rss_collector.py:71",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\economic_calendar_collector.py",
+      "line": 32,
+      "message": "   2 : src\\data\\collectors\\economic_calendar_collector.py:32, src\\data\\collectors\\rss_collector.py:72",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\google_news_collector.py",
+      "line": 20,
+      "message": "   3 : src\\data\\collectors\\google_news_collector.py:20, src\\data\\collectors\\insider_collector.py:24, src\\data\\collectors\\newsapi_collector.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\google_news_collector.py",
+      "line": 21,
+      "message": "   3 : src\\data\\collectors\\google_news_collector.py:21, src\\data\\collectors\\insider_collector.py:25, src\\data\\collectors\\newsapi_collector.py:21",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\google_news_collector.py",
+      "line": 22,
+      "message": "   2 : src\\data\\collectors\\google_news_collector.py:22, src\\data\\collectors\\insider_collector.py:26",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\google_news_collector.py",
+      "line": 98,
+      "message": "   3 : src\\data\\collectors\\google_news_collector.py:98, src\\data\\collectors\\insider_collector.py:166, src\\data\\collectors\\sec_filings_collector.py:82",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\google_news_collector.py",
+      "line": 99,
+      "message": "   3 : src\\data\\collectors\\google_news_collector.py:99, src\\data\\collectors\\insider_collector.py:167, src\\data\\collectors\\sec_filings_collector.py:83",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\google_news_collector.py",
+      "line": 159,
+      "message": "   2 : src\\data\\collectors\\google_news_collector.py:159, src\\data\\collectors\\insider_collector.py:216",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\insider_collector.py",
+      "line": 192,
+      "message": "   2 : src\\data\\collectors\\insider_collector.py:192, src\\data\\collectors\\insider_collector.py:193, src\\data\\collectors\\insider_collector.py:194, src\\data\\collectors\\newsapi_collector.py:122",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\insider_collector.py",
+      "line": 195,
+      "message": "   2 : src\\data\\collectors\\insider_collector.py:195, src\\data\\collectors\\newsapi_collector.py:125",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\put_call_ratio_collector.py",
+      "line": 225,
+      "message": "   3 : src\\data\\collectors\\put_call_ratio_collector.py:225, src\\data\\collectors\\reddit_sentiment_collector.py:186, src\\data\\collectors\\vix_collector.py:169",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\collectors\\reddit_sentiment_collector.py",
+      "line": 166,
+      "message": "   2 : src\\data\\collectors\\reddit_sentiment_collector.py:166, src\\data\\collectors\\vix_collector.py:147",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 15,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:15, src\\data\\synthetic\\data_generator.py:16, src\\pipeline\\stages\\stage_0_data_generation.py:16, src\\pipeline\\stages\\stage_0_data_generation.py:17",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 17,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:17, src\\pipeline\\stages\\stage_0_data_generation.py:18",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 18,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:18, src\\pipeline\\stages\\stage_0_data_generation.py:19",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 19,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:19, src\\pipeline\\stages\\stage_0_data_generation.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 20,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:20, src\\pipeline\\stages\\stage_0_data_generation.py:21",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 21,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:21, src\\pipeline\\stages\\stage_0_data_generation.py:22",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 30,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:30, src\\pipeline\\stages\\stage_0_data_generation.py:31",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 31,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:31, src\\pipeline\\stages\\stage_0_data_generation.py:32",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 32,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:32, src\\data\\synthetic\\data_generator.py:33, src\\pipeline\\stages\\stage_0_data_generation.py:33, src\\pipeline\\stages\\stage_0_data_generation.py:34",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 34,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:34, src\\pipeline\\stages\\stage_0_data_generation.py:35",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 35,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:35, src\\pipeline\\stages\\stage_0_data_generation.py:36",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 36,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:36, src\\pipeline\\stages\\stage_0_data_generation.py:37",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 37,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:37, src\\pipeline\\stages\\stage_0_data_generation.py:38",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 38,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:38, src\\pipeline\\stages\\stage_0_data_generation.py:39",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 39,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:39, src\\pipeline\\stages\\stage_0_data_generation.py:40",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 40,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:40, src\\pipeline\\stages\\stage_0_data_generation.py:41",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 41,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:41, src\\pipeline\\stages\\stage_0_data_generation.py:42",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 42,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:42, src\\pipeline\\stages\\stage_0_data_generation.py:43",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 43,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:43, src\\pipeline\\stages\\stage_0_data_generation.py:44",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 44,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:44, src\\pipeline\\stages\\stage_0_data_generation.py:45",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 45,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:45, src\\pipeline\\stages\\stage_0_data_generation.py:46",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 46,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:46, src\\pipeline\\stages\\stage_0_data_generation.py:47",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 47,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:47, src\\pipeline\\stages\\stage_0_data_generation.py:48",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 48,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:48, src\\pipeline\\stages\\stage_0_data_generation.py:49",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 49,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:49, src\\pipeline\\stages\\stage_0_data_generation.py:50",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 50,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:50, src\\data\\synthetic\\data_generator.py:51, src\\pipeline\\stages\\stage_0_data_generation.py:51, src\\pipeline\\stages\\stage_0_data_generation.py:52",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 52,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:52, src\\pipeline\\stages\\stage_0_data_generation.py:53",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 53,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:53, src\\pipeline\\stages\\stage_0_data_generation.py:54",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 54,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:54, src\\data\\synthetic\\data_generator.py:55, src\\pipeline\\stages\\stage_0_data_generation.py:55, src\\pipeline\\stages\\stage_0_data_generation.py:56",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 56,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:56, src\\pipeline\\stages\\stage_0_data_generation.py:57",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 57,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:57, src\\pipeline\\stages\\stage_0_data_generation.py:58",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 59,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:59, src\\pipeline\\stages\\stage_0_data_generation.py:60",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 60,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:60, src\\pipeline\\stages\\stage_0_data_generation.py:61",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 61,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:61, src\\pipeline\\stages\\stage_0_data_generation.py:62",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 62,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:62, src\\pipeline\\stages\\stage_0_data_generation.py:63",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 63,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:63, src\\pipeline\\stages\\stage_0_data_generation.py:64",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 64,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:64, src\\data\\synthetic\\data_generator.py:65, src\\data\\synthetic\\data_generator.py:66, src\\pipeline\\stages\\stage_0_data_generation.py:65",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 101,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:101, src\\pipeline\\stages\\stage_0_data_generation.py:102",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 102,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:102, src\\pipeline\\stages\\stage_0_data_generation.py:103",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 103,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:103, src\\pipeline\\stages\\stage_0_data_generation.py:104",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 104,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:104, src\\pipeline\\stages\\stage_0_data_generation.py:105",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 105,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:105, src\\pipeline\\stages\\stage_0_data_generation.py:106",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 106,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:106, src\\pipeline\\stages\\stage_0_data_generation.py:107",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 107,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:107, src\\data\\synthetic\\data_generator.py:108, src\\pipeline\\stages\\stage_0_data_generation.py:108, src\\pipeline\\stages\\stage_0_data_generation.py:109",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 109,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:109, src\\pipeline\\stages\\stage_0_data_generation.py:110",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 110,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:110, src\\pipeline\\stages\\stage_0_data_generation.py:111",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 111,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:111, src\\pipeline\\stages\\stage_0_data_generation.py:112",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 113,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:113, src\\pipeline\\stages\\stage_0_data_generation.py:114",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 114,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:114, src\\pipeline\\stages\\stage_0_data_generation.py:115",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 115,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:115, src\\data\\synthetic\\data_generator.py:116, src\\pipeline\\stages\\stage_0_data_generation.py:116, src\\pipeline\\stages\\stage_0_data_generation.py:117",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 117,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:117, src\\pipeline\\stages\\stage_0_data_generation.py:118",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 118,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:118, src\\pipeline\\stages\\stage_0_data_generation.py:119",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 119,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:119, src\\data\\synthetic\\data_generator.py:120, src\\pipeline\\stages\\stage_0_data_generation.py:120, src\\pipeline\\stages\\stage_0_data_generation.py:121",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 121,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:121, src\\pipeline\\stages\\stage_0_data_generation.py:122",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 122,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:122, src\\pipeline\\stages\\stage_0_data_generation.py:123",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 123,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:123, src\\data\\synthetic\\data_generator.py:124, src\\pipeline\\stages\\stage_0_data_generation.py:124, src\\pipeline\\stages\\stage_0_data_generation.py:125",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 125,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:125, src\\pipeline\\stages\\stage_0_data_generation.py:126",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 127,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:127, src\\pipeline\\stages\\stage_0_data_generation.py:129",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 129,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:129, src\\data\\synthetic\\data_generator.py:130, src\\pipeline\\stages\\stage_0_data_generation.py:130, src\\pipeline\\stages\\stage_0_data_generation.py:131",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 131,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:131, src\\pipeline\\stages\\stage_0_data_generation.py:133",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 132,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:132, src\\pipeline\\stages\\stage_0_data_generation.py:134",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 133,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:133, src\\pipeline\\stages\\stage_0_data_generation.py:135",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 134,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:134, src\\pipeline\\stages\\stage_0_data_generation.py:136",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 135,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:135, src\\pipeline\\stages\\stage_0_data_generation.py:137",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 145,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:145, src\\data\\synthetic\\data_generator.py:146, src\\pipeline\\stages\\stage_0_data_generation.py:147, src\\pipeline\\stages\\stage_0_data_generation.py:148",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 147,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:147, src\\pipeline\\stages\\stage_0_data_generation.py:149",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 148,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:148, src\\pipeline\\stages\\stage_0_data_generation.py:150",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 149,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:149, src\\pipeline\\stages\\stage_0_data_generation.py:151",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 150,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:150, src\\pipeline\\stages\\stage_0_data_generation.py:152",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 151,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:151, src\\pipeline\\stages\\stage_0_data_generation.py:153",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 152,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:152, src\\data\\synthetic\\data_generator.py:153, src\\data\\synthetic\\data_generator.py:154, src\\pipeline\\stages\\stage_0_data_generation.py:154",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 155,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:155, src\\pipeline\\stages\\stage_0_data_generation.py:157",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 156,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:156, src\\pipeline\\stages\\stage_0_data_generation.py:158",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 157,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:157, src\\pipeline\\stages\\stage_0_data_generation.py:159",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 158,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:158, src\\pipeline\\stages\\stage_0_data_generation.py:160",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 159,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:159, src\\pipeline\\stages\\stage_0_data_generation.py:161",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 161,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:161, src\\pipeline\\stages\\stage_0_data_generation.py:163",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 162,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:162, src\\pipeline\\stages\\stage_0_data_generation.py:164",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 163,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:163, src\\data\\synthetic\\data_generator.py:164, src\\pipeline\\stages\\stage_0_data_generation.py:165, src\\pipeline\\stages\\stage_0_data_generation.py:166",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 165,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:165, src\\pipeline\\stages\\stage_0_data_generation.py:167",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 166,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:166, src\\pipeline\\stages\\stage_0_data_generation.py:168",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 167,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:167, src\\pipeline\\stages\\stage_0_data_generation.py:169",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 168,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:168, src\\pipeline\\stages\\stage_0_data_generation.py:170",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 169,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:169, src\\pipeline\\stages\\stage_0_data_generation.py:171",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 170,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:170, src\\pipeline\\stages\\stage_0_data_generation.py:172",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 171,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:171, src\\pipeline\\stages\\stage_0_data_generation.py:173",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 172,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:172, src\\pipeline\\stages\\stage_0_data_generation.py:174",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 173,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:173, src\\pipeline\\stages\\stage_0_data_generation.py:175",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 174,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:174, src\\data\\synthetic\\data_generator.py:175, src\\pipeline\\stages\\stage_0_data_generation.py:176, src\\pipeline\\stages\\stage_0_data_generation.py:177",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 176,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:176, src\\pipeline\\stages\\stage_0_data_generation.py:178",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 177,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:177, src\\pipeline\\stages\\stage_0_data_generation.py:179",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 178,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:178, src\\pipeline\\stages\\stage_0_data_generation.py:180",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 179,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:179, src\\pipeline\\stages\\stage_0_data_generation.py:181",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 180,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:180, src\\pipeline\\stages\\stage_0_data_generation.py:182",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 181,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:181, src\\pipeline\\stages\\stage_0_data_generation.py:183",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 182,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:182, src\\pipeline\\stages\\stage_0_data_generation.py:184",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 183,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:183, src\\pipeline\\stages\\stage_0_data_generation.py:185",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 184,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:184, src\\pipeline\\stages\\stage_0_data_generation.py:186",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 185,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:185, src\\pipeline\\stages\\stage_0_data_generation.py:187",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 186,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:186, src\\pipeline\\stages\\stage_0_data_generation.py:188",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 187,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:187, src\\pipeline\\stages\\stage_0_data_generation.py:189",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 188,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:188, src\\pipeline\\stages\\stage_0_data_generation.py:190",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 189,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:189, src\\pipeline\\stages\\stage_0_data_generation.py:191",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 190,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:190, src\\pipeline\\stages\\stage_0_data_generation.py:192",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 191,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:191, src\\pipeline\\stages\\stage_0_data_generation.py:193",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 192,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:192, src\\pipeline\\stages\\stage_0_data_generation.py:194",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 193,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:193, src\\pipeline\\stages\\stage_0_data_generation.py:195",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 194,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:194, src\\pipeline\\stages\\stage_0_data_generation.py:196",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 195,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:195, src\\pipeline\\stages\\stage_0_data_generation.py:197",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 196,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:196, src\\pipeline\\stages\\stage_0_data_generation.py:198",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 197,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:197, src\\pipeline\\stages\\stage_0_data_generation.py:199",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 198,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:198, src\\pipeline\\stages\\stage_0_data_generation.py:200",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 199,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:199, src\\pipeline\\stages\\stage_0_data_generation.py:201",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 200,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:200, src\\pipeline\\stages\\stage_0_data_generation.py:202",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 201,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:201, src\\pipeline\\stages\\stage_0_data_generation.py:203",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 202,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:202, src\\pipeline\\stages\\stage_0_data_generation.py:204",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 203,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:203, src\\pipeline\\stages\\stage_0_data_generation.py:205",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 204,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:204, src\\pipeline\\stages\\stage_0_data_generation.py:206",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 205,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:205, src\\pipeline\\stages\\stage_0_data_generation.py:207",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 206,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:206, src\\pipeline\\stages\\stage_0_data_generation.py:208",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 207,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:207, src\\pipeline\\stages\\stage_0_data_generation.py:209",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\data\\synthetic\\data_generator.py",
+      "line": 208,
+      "message": "   2 : src\\data\\synthetic\\data_generator.py:208, src\\pipeline\\stages\\stage_0_data_generation.py:210",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 125,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:125, src\\models\\analysis\\regime_winner_analyzer.py:114",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 126,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:126, src\\models\\analysis\\regime_winner_analyzer.py:115",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 127,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:127, src\\models\\analysis\\regime_winner_analyzer.py:116",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 128,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:128, src\\models\\analysis\\regime_winner_analyzer.py:117",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 129,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:129, src\\models\\analysis\\regime_winner_analyzer.py:118",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 130,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:130, src\\models\\analysis\\regime_winner_analyzer.py:119",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 140,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:140, src\\models\\analysis\\regime_winner_analyzer.py:129",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 141,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:141, src\\models\\analysis\\regime_winner_analyzer.py:130",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 142,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:142, src\\models\\analysis\\regime_winner_analyzer.py:131",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 143,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:143, src\\models\\analysis\\regime_winner_analyzer.py:132",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 144,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:144, src\\models\\analysis\\regime_winner_analyzer.py:133",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 145,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:145, src\\models\\analysis\\regime_winner_analyzer.py:134",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\analysis\\regime_importance_tracker.py",
+      "line": 552,
+      "message": "   2 : src\\features\\analysis\\regime_importance_tracker.py:552, src\\models\\analysis\\regime_winner_analyzer.py:584",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\enrichers\\context_map_enricher.py",
+      "line": 1,
+      "message": "   3 : src\\features\\enrichers\\context_map_enricher.py:1, src\\features\\enrichers\\volatility_enricher.py:1, src\\features\\enrichers\\volume_enricher.py:1",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\enrichers\\context_map_enricher.py",
+      "line": 2,
+      "message": "   3 : src\\features\\enrichers\\context_map_enricher.py:2, src\\features\\enrichers\\volatility_enricher.py:2, src\\features\\enrichers\\volume_enricher.py:2",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\enrichers\\hype_enricher.py",
+      "line": 116,
+      "message": "   2 : src\\features\\enrichers\\hype_enricher.py:116, src\\features\\enrichers\\news_quality_enricher.py:97",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\enrichers\\hype_enricher.py",
+      "line": 130,
+      "message": "   2 : src\\features\\enrichers\\hype_enricher.py:130, src\\features\\enrichers\\news_quality_enricher.py:230",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\enrichers\\news_impact_enricher.py",
+      "line": 336,
+      "message": "   2 : src\\features\\enrichers\\news_impact_enricher.py:336, src\\features\\enrichers\\news_quality_enricher.py:59",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\enrichers\\news_impact_enricher.py",
+      "line": 337,
+      "message": "   2 : src\\features\\enrichers\\news_impact_enricher.py:337, src\\features\\enrichers\\news_quality_enricher.py:60",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\features\\enrichers\\news_impact_enricher.py",
+      "line": 434,
+      "message": "   2 : src\\features\\enrichers\\news_impact_enricher.py:434, src\\features\\enrichers\\news_quality_enricher.py:180",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\ensemble\\dynamic_weights.py",
+      "line": 24,
+      "message": "   2 : src\\models\\ensemble\\dynamic_weights.py:24, src\\models\\quality\\controller.py:30",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 52,
+      "message": "   4 : src\\models\\linear\\knn_model.py:52, src\\models\\linear\\linear_model.py:42, src\\models\\linear\\svm_model.py:58, src\\models\\tree\\lightgbm_model.py:63",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 53,
+      "message": "   4 : src\\models\\linear\\knn_model.py:53, src\\models\\linear\\linear_model.py:43, src\\models\\linear\\svm_model.py:59, src\\models\\tree\\lightgbm_model.py:64",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 54,
+      "message": "   4 : src\\models\\linear\\knn_model.py:54, src\\models\\linear\\linear_model.py:44, src\\models\\linear\\svm_model.py:60, src\\models\\tree\\lightgbm_model.py:65",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 55,
+      "message": "   4 : src\\models\\linear\\knn_model.py:55, src\\models\\linear\\linear_model.py:45, src\\models\\linear\\svm_model.py:61, src\\models\\tree\\lightgbm_model.py:66",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 56,
+      "message": "   4 : src\\models\\linear\\knn_model.py:56, src\\models\\linear\\linear_model.py:46, src\\models\\linear\\svm_model.py:62, src\\models\\tree\\lightgbm_model.py:67",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 57,
+      "message": "   4 : src\\models\\linear\\knn_model.py:57, src\\models\\linear\\linear_model.py:47, src\\models\\linear\\svm_model.py:63, src\\models\\tree\\lightgbm_model.py:68",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 58,
+      "message": "   6 : src\\models\\linear\\knn_model.py:58, src\\models\\linear\\linear_model.py:48, src\\models\\linear\\svm_model.py:64, src\\models\\tree\\lightgbm_model.py:69",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 59,
+      "message": "   6 : src\\models\\linear\\knn_model.py:59, src\\models\\linear\\linear_model.py:49, src\\models\\linear\\svm_model.py:65, src\\models\\tree\\lightgbm_model.py:70",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 60,
+      "message": "   6 : src\\models\\linear\\knn_model.py:60, src\\models\\linear\\linear_model.py:50, src\\models\\linear\\svm_model.py:66, src\\models\\tree\\lightgbm_model.py:71",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 61,
+      "message": "   6 : src\\models\\linear\\knn_model.py:61, src\\models\\linear\\linear_model.py:51, src\\models\\linear\\svm_model.py:67, src\\models\\tree\\lightgbm_model.py:72",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 62,
+      "message": "   6 : src\\models\\linear\\knn_model.py:62, src\\models\\linear\\linear_model.py:52, src\\models\\linear\\svm_model.py:68, src\\models\\tree\\lightgbm_model.py:73",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 63,
+      "message": "   6 : src\\models\\linear\\knn_model.py:63, src\\models\\linear\\linear_model.py:53, src\\models\\linear\\svm_model.py:69, src\\models\\tree\\lightgbm_model.py:74",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 64,
+      "message": "   6 : src\\models\\linear\\knn_model.py:64, src\\models\\linear\\linear_model.py:54, src\\models\\linear\\svm_model.py:70, src\\models\\tree\\lightgbm_model.py:75",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 65,
+      "message": "   6 : src\\models\\linear\\knn_model.py:65, src\\models\\linear\\linear_model.py:55, src\\models\\linear\\svm_model.py:71, src\\models\\tree\\lightgbm_model.py:76",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 66,
+      "message": "   6 : src\\models\\linear\\knn_model.py:66, src\\models\\linear\\linear_model.py:56, src\\models\\linear\\svm_model.py:72, src\\models\\tree\\lightgbm_model.py:77",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 67,
+      "message": "   6 : src\\models\\linear\\knn_model.py:67, src\\models\\linear\\knn_model.py:68, src\\models\\linear\\linear_model.py:57, src\\models\\linear\\linear_model.py:58",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 69,
+      "message": "   6 : src\\models\\linear\\knn_model.py:69, src\\models\\linear\\linear_model.py:59, src\\models\\linear\\svm_model.py:75, src\\models\\tree\\lightgbm_model.py:80",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 70,
+      "message": "   6 : src\\models\\linear\\knn_model.py:70, src\\models\\linear\\linear_model.py:60, src\\models\\linear\\svm_model.py:76, src\\models\\tree\\lightgbm_model.py:81",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 79,
+      "message": "   6 : src\\models\\linear\\knn_model.py:79, src\\models\\linear\\linear_model.py:69, src\\models\\linear\\svm_model.py:85, src\\models\\tree\\lightgbm_model.py:90",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 80,
+      "message": "   6 : src\\models\\linear\\knn_model.py:80, src\\models\\linear\\linear_model.py:70, src\\models\\linear\\svm_model.py:86, src\\models\\tree\\lightgbm_model.py:91",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\linear\\knn_model.py",
+      "line": 81,
+      "message": "   6 : src\\models\\linear\\knn_model.py:81, src\\models\\linear\\linear_model.py:71, src\\models\\linear\\svm_model.py:87, src\\models\\tree\\lightgbm_model.py:92",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\autoencoder_model.py",
+      "line": 1,
+      "message": "   3 : src\\models\\neural\\autoencoder_model.py:1, src\\models\\neural\\gru_model.py:1, src\\models\\neural\\lstm_model.py:1",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\autoencoder_model.py",
+      "line": 2,
+      "message": "   3 : src\\models\\neural\\autoencoder_model.py:2, src\\models\\neural\\gru_model.py:2, src\\models\\neural\\lstm_model.py:2",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\autoencoder_model.py",
+      "line": 3,
+      "message": "   3 : src\\models\\neural\\autoencoder_model.py:3, src\\models\\neural\\gru_model.py:3, src\\models\\neural\\lstm_model.py:3",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\autoencoder_model.py",
+      "line": 4,
+      "message": "   3 : src\\models\\neural\\autoencoder_model.py:4, src\\models\\neural\\autoencoder_model.py:5, src\\models\\neural\\gru_model.py:4, src\\models\\neural\\gru_model.py:5",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\autoencoder_model.py",
+      "line": 37,
+      "message": "   3 : src\\models\\neural\\autoencoder_model.py:37, src\\models\\neural\\gru_model.py:33, src\\models\\neural\\lstm_model.py:33",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\autoencoder_model.py",
+      "line": 38,
+      "message": "   3 : src\\models\\neural\\autoencoder_model.py:38, src\\models\\neural\\gru_model.py:34, src\\models\\neural\\lstm_model.py:34",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\autoencoder_model.py",
+      "line": 39,
+      "message": "   2 : src\\models\\neural\\autoencoder_model.py:39, src\\models\\neural\\lstm_model.py:35",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 45,
+      "message": "   2 : src\\models\\neural\\gru_model.py:45, src\\models\\neural\\mlp_model.py:42",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 46,
+      "message": "   2 : src\\models\\neural\\gru_model.py:46, src\\models\\neural\\mlp_model.py:43",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 47,
+      "message": "   2 : src\\models\\neural\\gru_model.py:47, src\\models\\neural\\gru_model.py:48, src\\models\\neural\\mlp_model.py:44, src\\models\\neural\\mlp_model.py:45",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 49,
+      "message": "   2 : src\\models\\neural\\gru_model.py:49, src\\models\\neural\\mlp_model.py:46",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 50,
+      "message": "   2 : src\\models\\neural\\gru_model.py:50, src\\models\\neural\\mlp_model.py:47",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 51,
+      "message": "   2 : src\\models\\neural\\gru_model.py:51, src\\models\\neural\\mlp_model.py:48",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 65,
+      "message": "   2 : src\\models\\neural\\gru_model.py:65, src\\models\\neural\\lstm_model.py:67",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 68,
+      "message": "   2 : src\\models\\neural\\gru_model.py:68, src\\models\\neural\\gru_model.py:69, src\\models\\neural\\lstm_model.py:69, src\\models\\neural\\lstm_model.py:70",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 70,
+      "message": "   2 : src\\models\\neural\\gru_model.py:70, src\\models\\neural\\gru_model.py:71, src\\models\\neural\\lstm_model.py:72",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 72,
+      "message": "   2 : src\\models\\neural\\gru_model.py:72, src\\models\\neural\\lstm_model.py:73",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 73,
+      "message": "   2 : src\\models\\neural\\gru_model.py:73, src\\models\\neural\\lstm_model.py:74",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 82,
+      "message": "   2 : src\\models\\neural\\gru_model.py:82, src\\models\\neural\\lstm_model.py:83",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 83,
+      "message": "   2 : src\\models\\neural\\gru_model.py:83, src\\models\\neural\\lstm_model.py:84",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 84,
+      "message": "   2 : src\\models\\neural\\gru_model.py:84, src\\models\\neural\\lstm_model.py:85",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 85,
+      "message": "   2 : src\\models\\neural\\gru_model.py:85, src\\models\\neural\\gru_model.py:86, src\\models\\neural\\lstm_model.py:86, src\\models\\neural\\lstm_model.py:87",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\neural\\gru_model.py",
+      "line": 87,
+      "message": "   2 : src\\models\\neural\\gru_model.py:87, src\\models\\neural\\lstm_model.py:88",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\tree\\random_forest_model.py",
+      "line": 58,
+      "message": "   2 : src\\models\\tree\\random_forest_model.py:58, src\\models\\tree\\xgboost_model.py:67",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\tree\\random_forest_model.py",
+      "line": 59,
+      "message": "   2 : src\\models\\tree\\random_forest_model.py:59, src\\models\\tree\\xgboost_model.py:68",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\tree\\random_forest_model.py",
+      "line": 60,
+      "message": "   2 : src\\models\\tree\\random_forest_model.py:60, src\\models\\tree\\xgboost_model.py:69",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\tree\\random_forest_model.py",
+      "line": 61,
+      "message": "   2 : src\\models\\tree\\random_forest_model.py:61, src\\models\\tree\\xgboost_model.py:70",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\tree\\random_forest_model.py",
+      "line": 62,
+      "message": "   2 : src\\models\\tree\\random_forest_model.py:62, src\\models\\tree\\xgboost_model.py:71",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\models\\tree\\random_forest_model.py",
+      "line": 63,
+      "message": "   2 : src\\models\\tree\\random_forest_model.py:63, src\\models\\tree\\xgboost_model.py:72",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\guards\\macro_release_timing_guard.py",
+      "line": 152,
+      "message": "   2 : src\\pipeline\\guards\\macro_release_timing_guard.py:152, src\\pipeline\\guards\\temporal_leakage_guard.py:144",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\guards\\macro_release_timing_guard.py",
+      "line": 331,
+      "message": "   2 : src\\pipeline\\guards\\macro_release_timing_guard.py:331, src\\pipeline\\guards\\macro_release_timing_guard.py:332, src\\pipeline\\guards\\temporal_leakage_guard.py:168, src\\pipeline\\guards\\temporal_leakage_guard.py:169",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\guards\\macro_release_timing_guard.py",
+      "line": 333,
+      "message": "   2 : src\\pipeline\\guards\\macro_release_timing_guard.py:333, src\\pipeline\\guards\\temporal_leakage_guard.py:170",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\guards\\macro_release_timing_guard.py",
+      "line": 334,
+      "message": "   2 : src\\pipeline\\guards\\macro_release_timing_guard.py:334, src\\pipeline\\guards\\temporal_leakage_guard.py:171",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\guards\\macro_release_timing_guard.py",
+      "line": 465,
+      "message": "   2 : src\\pipeline\\guards\\macro_release_timing_guard.py:465, src\\pipeline\\guards\\macro_release_timing_guard.py:466, src\\pipeline\\guards\\temporal_leakage_guard.py:468",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 39,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:39, src\\pipeline\\hybrid\\feature_selection_validator.py:58",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 40,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:40, src\\pipeline\\hybrid\\feature_selection_validator.py:59",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 41,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:41, src\\pipeline\\hybrid\\feature_selection_validator.py:60",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 42,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:42, src\\pipeline\\hybrid\\feature_selection_validator.py:61",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 51,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:51, src\\pipeline\\hybrid\\feature_selection_validator.py:70",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 52,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:52, src\\pipeline\\hybrid\\feature_selection_validator.py:71",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 53,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:53, src\\pipeline\\hybrid\\feature_selection_validator.py:72",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 54,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:54, src\\pipeline\\hybrid\\feature_selection_validator.py:73",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 65,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:65, src\\pipeline\\hybrid\\feature_selection_validator.py:85",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 66,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:66, src\\pipeline\\hybrid\\feature_selection_validator.py:86",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 67,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:67, src\\pipeline\\hybrid\\feature_selection_validator.py:87",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 68,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:68, src\\pipeline\\hybrid\\feature_selection_validator.py:88",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 69,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:69, src\\pipeline\\hybrid\\feature_selection_validator.py:89",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 70,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:70, src\\pipeline\\hybrid\\feature_selection_validator.py:90",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 71,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:71, src\\pipeline\\hybrid\\feature_selection_validator.py:91",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 72,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:72, src\\pipeline\\hybrid\\feature_selection_validator.py:92",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 73,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:73, src\\pipeline\\hybrid\\feature_selection_validator.py:93",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\cache_manager.py",
+      "line": 94,
+      "message": "   2 : src\\pipeline\\hybrid\\cache_manager.py:94, src\\pipeline\\hybrid\\data_manager.py:92",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\colab_workflow_manager.py",
+      "line": 43,
+      "message": "   2 : src\\pipeline\\hybrid\\colab_workflow_manager.py:43, src\\pipeline\\hybrid\\pipeline_manager.py:110",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\colab_workflow_manager.py",
+      "line": 44,
+      "message": "   2 : src\\pipeline\\hybrid\\colab_workflow_manager.py:44, src\\pipeline\\hybrid\\pipeline_manager.py:111",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\colab_workflow_manager.py",
+      "line": 45,
+      "message": "   2 : src\\pipeline\\hybrid\\colab_workflow_manager.py:45, src\\pipeline\\hybrid\\pipeline_manager.py:112",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\colab_workflow_manager.py",
+      "line": 46,
+      "message": "   2 : src\\pipeline\\hybrid\\colab_workflow_manager.py:46, src\\pipeline\\hybrid\\pipeline_manager.py:113",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\colab_workflow_manager.py",
+      "line": 47,
+      "message": "   2 : src\\pipeline\\hybrid\\colab_workflow_manager.py:47, src\\pipeline\\hybrid\\pipeline_manager.py:114",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\contracts.py",
+      "line": 14,
+      "message": "   2 : src\\pipeline\\hybrid\\contracts.py:14, src\\pipeline\\hybrid\\hybrid_dataclasses.py:40",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\contracts.py",
+      "line": 15,
+      "message": "   2 : src\\pipeline\\hybrid\\contracts.py:15, src\\pipeline\\hybrid\\hybrid_dataclasses.py:41",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\contracts.py",
+      "line": 16,
+      "message": "   2 : src\\pipeline\\hybrid\\contracts.py:16, src\\pipeline\\hybrid\\hybrid_dataclasses.py:42",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\contracts.py",
+      "line": 17,
+      "message": "   2 : src\\pipeline\\hybrid\\contracts.py:17, src\\pipeline\\hybrid\\hybrid_dataclasses.py:43",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\contracts.py",
+      "line": 18,
+      "message": "   2 : src\\pipeline\\hybrid\\contracts.py:18, src\\pipeline\\hybrid\\hybrid_dataclasses.py:44",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\contracts.py",
+      "line": 19,
+      "message": "   2 : src\\pipeline\\hybrid\\contracts.py:19, src\\pipeline\\hybrid\\hybrid_dataclasses.py:45",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\contracts.py",
+      "line": 20,
+      "message": "   2 : src\\pipeline\\hybrid\\contracts.py:20, src\\pipeline\\hybrid\\hybrid_dataclasses.py:46",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 19,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:19, src\\pipeline\\hybrid\\data_utils.py:57, src\\pipeline\\hybrid\\feature_processor.py:53",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 20,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:20, src\\pipeline\\hybrid\\data_utils.py:58, src\\pipeline\\hybrid\\feature_processor.py:54",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 21,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:21, src\\pipeline\\hybrid\\data_utils.py:59, src\\pipeline\\hybrid\\feature_processor.py:55",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 22,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:22, src\\pipeline\\hybrid\\data_utils.py:60, src\\pipeline\\hybrid\\feature_processor.py:56",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 23,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:23, src\\pipeline\\hybrid\\data_utils.py:61, src\\pipeline\\hybrid\\feature_processor.py:57",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 24,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:24, src\\pipeline\\hybrid\\data_utils.py:62, src\\pipeline\\hybrid\\feature_processor.py:58",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 25,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:25, src\\pipeline\\hybrid\\data_utils.py:63, src\\pipeline\\hybrid\\feature_processor.py:59",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 26,
+      "message": "   3 : src\\pipeline\\hybrid\\data_processor.py:26, src\\pipeline\\hybrid\\data_utils.py:64, src\\pipeline\\hybrid\\feature_processor.py:60",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 27,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:27, src\\pipeline\\hybrid\\data_utils.py:65",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 28,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:28, src\\pipeline\\hybrid\\data_utils.py:66",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 29,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:29, src\\pipeline\\hybrid\\data_utils.py:67",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 30,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:30, src\\pipeline\\hybrid\\data_utils.py:68",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 31,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:31, src\\pipeline\\hybrid\\data_utils.py:69",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 32,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:32, src\\pipeline\\hybrid\\data_processor.py:33, src\\pipeline\\hybrid\\data_utils.py:70, src\\pipeline\\hybrid\\data_utils.py:71",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 34,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:34, src\\pipeline\\hybrid\\data_utils.py:72",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\data_processor.py",
+      "line": 47,
+      "message": "   2 : src\\pipeline\\hybrid\\data_processor.py:47, src\\pipeline\\hybrid\\data_processor.py:48, src\\pipeline\\hybrid\\data_utils.py:49, src\\pipeline\\hybrid\\data_utils.py:50",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\metadata_manager.py",
+      "line": 111,
+      "message": "   2 : src\\pipeline\\hybrid\\metadata_manager.py:111, src\\pipeline\\hybrid\\orchestrator_interface.py:134",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\hybrid\\orchestrator_interface.py",
+      "line": 8,
+      "message": "   2 : src\\pipeline\\hybrid\\orchestrator_interface.py:8, src\\pipeline\\hybrid\\pipeline_manager.py:9",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 26,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:26, src\\pipeline\\stages\\modeling\\dataclasses.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 27,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:27, src\\pipeline\\stages\\modeling\\dataclasses.py:5",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 36,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:36, src\\pipeline\\stages\\modeling\\dataclasses.py:14",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 37,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:37, src\\pipeline\\stages\\modeling\\dataclasses.py:15",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 56,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:56, src\\pipeline\\stages\\modeling\\dataclasses.py:34",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 57,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:57, src\\pipeline\\stages\\modeling\\dataclasses.py:35",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 58,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:58, src\\pipeline\\stages\\modeling\\dataclasses.py:36",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 59,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:59, src\\pipeline\\stages\\modeling\\dataclasses.py:37",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 60,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:60, src\\pipeline\\stages\\modeling\\dataclasses.py:38",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 61,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:61, src\\pipeline\\stages\\modeling\\dataclasses.py:19, src\\pipeline\\stages\\modeling\\dataclasses.py:39",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 62,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:62, src\\pipeline\\stages\\modeling\\dataclasses.py:40",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 63,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:63, src\\pipeline\\stages\\modeling\\dataclasses.py:41",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 64,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:64, src\\pipeline\\stages\\modeling\\dataclasses.py:42",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 65,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:65, src\\pipeline\\stages\\modeling\\dataclasses.py:43",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 66,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:66, src\\pipeline\\stages\\modeling\\dataclasses.py:44",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 78,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:78, src\\pipeline\\stages\\modeling\\dataclasses.py:56",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 93,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:93, src\\pipeline\\stages\\modeling\\dataclasses.py:71",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 101,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:101, src\\pipeline\\stages\\modeling\\dataclasses.py:80",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 102,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:102, src\\pipeline\\stages\\modeling\\dataclasses.py:81",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 103,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:103, src\\pipeline\\stages\\modeling\\dataclasses.py:82",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 104,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:104, src\\pipeline\\stages\\modeling\\dataclasses.py:83",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 105,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:105, src\\pipeline\\stages\\modeling\\dataclasses.py:84",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 106,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:106, src\\pipeline\\stages\\modeling\\dataclasses.py:85",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 107,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:107, src\\pipeline\\stages\\modeling\\dataclasses.py:86",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 108,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:108, src\\pipeline\\stages\\modeling\\dataclasses.py:87",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 109,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:109, src\\pipeline\\stages\\modeling\\dataclasses.py:88",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 110,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:110, src\\pipeline\\stages\\modeling\\dataclasses.py:89",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 111,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:111, src\\pipeline\\stages\\modeling\\dataclasses.py:90",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_4_modeling.py",
+      "line": 112,
+      "message": "   2 : src\\pipeline\\stages\\stage_4_modeling.py:112, src\\pipeline\\stages\\modeling\\dataclasses.py:91",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\pipeline\\stages\\stage_6_trading_execution.py",
+      "line": 227,
+      "message": "   2 : src\\pipeline\\stages\\stage_6_trading_execution.py:227, src\\pipeline\\stages\\prediction\\model_resolver.py:275",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 9,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:9, src\\targets\\calculators\\pre_news_target_calculator.py:9",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 10,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:10, src\\targets\\calculators\\pre_news_target_calculator.py:10",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 11,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:11, src\\targets\\calculators\\pre_news_target_calculator.py:11",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 12,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:12, src\\targets\\calculators\\pre_news_target_calculator.py:12",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 13,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:13, src\\targets\\calculators\\pre_news_target_calculator.py:13",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 14,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:14, src\\targets\\calculators\\pre_news_target_calculator.py:14",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 15,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:15, src\\targets\\calculators\\pre_news_target_calculator.py:15",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 16,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:16, src\\targets\\calculators\\pre_news_target_calculator.py:16",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 17,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:17, src\\targets\\calculators\\pre_news_target_calculator.py:17",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 18,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:18, src\\targets\\calculators\\pre_news_target_calculator.py:18",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 19,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:19, src\\targets\\calculators\\pre_news_target_calculator.py:19",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "src\\targets\\calculators\\post_news_target_calculator.py",
+      "line": 20,
+      "message": "   2 : src\\targets\\calculators\\post_news_target_calculator.py:20, src\\targets\\calculators\\pre_news_target_calculator.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\check_enrichers_integration.py",
+      "line": 10,
+      "message": "   2 : scripts\\check_enrichers_integration.py:10, scripts\\test_attribution.py:2",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_analytics.py",
+      "line": 4,
+      "message": "   2 : scripts\\diagnose_analytics.py:4, scripts\\diagnose_features.py:6",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_analytics.py",
+      "line": 5,
+      "message": "   2 : scripts\\diagnose_analytics.py:5, scripts\\diagnose_features.py:7",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_analytics.py",
+      "line": 6,
+      "message": "   2 : scripts\\diagnose_analytics.py:6, scripts\\diagnose_features.py:8",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_analytics.py",
+      "line": 7,
+      "message": "   2 : scripts\\diagnose_analytics.py:7, scripts\\diagnose_features.py:9",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 6,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:6, scripts\\diagnose_zero_features.py:6",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 7,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:7, scripts\\diagnose_feature_selection.py:8, scripts\\diagnose_zero_features.py:7, scripts\\diagnose_zero_features.py:8",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 9,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:9, scripts\\diagnose_zero_features.py:9",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 10,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:10, scripts\\diagnose_zero_features.py:10",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 11,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:11, scripts\\diagnose_zero_features.py:11",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 12,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:12, scripts\\diagnose_zero_features.py:12",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 13,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:13, scripts\\diagnose_zero_features.py:13",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 14,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:14, scripts\\diagnose_zero_features.py:14",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 15,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:15, scripts\\diagnose_feature_selection.py:16, scripts\\diagnose_zero_features.py:15, scripts\\diagnose_zero_features.py:16",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 17,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:17, scripts\\diagnose_zero_features.py:17",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 40,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:40, scripts\\diagnose_zero_features.py:38",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 41,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:41, scripts\\diagnose_zero_features.py:39",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\diagnose_feature_selection.py",
+      "line": 42,
+      "message": "   2 : scripts\\diagnose_feature_selection.py:42, scripts\\diagnose_feature_selection.py:43, scripts\\diagnose_zero_features.py:40, scripts\\diagnose_zero_features.py:41",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\fix_yaml_integration.py",
+      "line": 6,
+      "message": "   2 : scripts\\fix_yaml_integration.py:6, scripts\\core\\test_calibration.py:10",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\fix_yaml_integration.py",
+      "line": 7,
+      "message": "   2 : scripts\\fix_yaml_integration.py:7, scripts\\core\\test_calibration.py:11",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\verify_data_quality.py",
+      "line": 7,
+      "message": "   2 : scripts\\verify_data_quality.py:7, scripts\\analysis\\check_data_coverage.py:4",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\accumulate_real_data.py",
+      "line": 329,
+      "message": "   2 : scripts\\core\\accumulate_real_data.py:329, scripts\\core\\accumulate_real_data.py:330, scripts\\core\\accumulate_real_data.py:331, scripts\\core\\generate_synthetic_data.py:495",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\accumulate_real_data.py",
+      "line": 332,
+      "message": "   2 : scripts\\core\\accumulate_real_data.py:332, scripts\\core\\generate_synthetic_data.py:498",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 19,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:19, scripts\\core\\train_consensus_model.py:17, scripts\\core\\train_light_models_locally.py:28, scripts\\core\\verify_enriched_dataset.py:20",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 23,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:23, scripts\\core\\train_consensus_model.py:21, scripts\\core\\train_light_models_locally.py:32, scripts\\core\\verify_enriched_dataset.py:24",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 24,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:24, scripts\\core\\train_consensus_model.py:22, scripts\\core\\train_light_models_locally.py:33, scripts\\core\\verify_enriched_dataset.py:25",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 25,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:25, scripts\\core\\train_consensus_model.py:23, scripts\\core\\train_light_models_locally.py:34, scripts\\core\\verify_enriched_dataset.py:26",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 26,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:26, scripts\\core\\train_consensus_model.py:24, scripts\\core\\train_light_models_locally.py:35, scripts\\core\\verify_enriched_dataset.py:27",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 27,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:27, scripts\\core\\train_consensus_model.py:25, scripts\\core\\train_light_models_locally.py:36, scripts\\core\\verify_enriched_dataset.py:28",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 28,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:28, scripts\\core\\train_consensus_model.py:26, scripts\\core\\train_light_models_locally.py:37, scripts\\core\\verify_enriched_dataset.py:29",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 29,
+      "message": "   4 : scripts\\core\\fix_data_quality.py:29, scripts\\core\\train_consensus_model.py:27, scripts\\core\\train_light_models_locally.py:38, scripts\\core\\verify_enriched_dataset.py:30",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\fix_data_quality.py",
+      "line": 47,
+      "message": "   2 : scripts\\core\\fix_data_quality.py:47, scripts\\core\\train_light_models_locally.py:76, scripts\\core\\train_light_models_locally.py:77",
+      "fix_hint": "   /"
+    },
+    {
+      "category": "DUP",
+      "severity": "MEDIUM",
+      "file": "scripts\\core\\train_consensus_model.py",
+      "line": 16,
+      "message": "   2 : scripts\\core\\train_consensus_model.py:16, scripts\\core\\train_light_models_locally.py:27",
+      "fix_hint": "   /"
+    }
+  ]
+}

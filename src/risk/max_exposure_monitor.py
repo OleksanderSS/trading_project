@@ -52,7 +52,7 @@ class MaxExposureMonitor:
             # Update returns history for elite metrics
             for symbol in symbols:
                 if symbol in market_data.columns:
-                    self.elite_metrics.update_returns(symbol, market_data[symbol].pct_change().dropna())
+                    self.elite_metrics.update_returns(symbol, market_data[symbol].pct_change(fill_method=None).dropna())
 
             results['analysis']['elite_risk'] = self.elite_metrics.get_risk_report(
                 positions={s: p.get('quantity', 0) for s, p in portfolio_data.items()},
@@ -67,6 +67,21 @@ class MaxExposureMonitor:
 
             return results
 
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"❌ Exposure monitoring failed: {e}", exc_info=True)
             return {'status': 'error', 'message': str(e)}
+
+    def _check_exposure_breaches(self, analysis: dict[str, Any]) -> list[str]:
+        """Check for breaches in the analysis report."""
+        breaches = []
+        if analysis.get('total_exposure', 0) > self.config.get('risk_limits', {}).get('max_total_exposure', 1.0):
+            breaches.append("Total exposure breach")
+        return breaches
+
+    def _get_most_frequent_breach(self, events: list[dict[str, Any]]) -> str:
+        """Find the most frequent breach type from event history."""
+        if not events:
+            return "none"
+        from collections import Counter
+        counts = Counter(event['type'] for event in events)
+        return counts.most_common(1)[0][0]

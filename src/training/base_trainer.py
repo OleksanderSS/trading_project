@@ -8,23 +8,20 @@ All trainer implementations share common workflow:
 2. Train each group (parallel vs sequential)
 3. Generate results summary
 """
-
+import logging
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import asyncio
 import joblib
 import numpy as np
-import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.metrics.model.ml_evaluator import MLEvaluator
-from src.models.integrated_model_manager import get_integrated_model_manager
 
 
 class TrainingException(Exception):
@@ -122,7 +119,6 @@ class BaseTrainer(ABC):
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
 
         self.model_factory = ModelFactory()
-        self.model_manager = get_integrated_model_manager(self.config_manager)
         self.diary = DiaryEngine()
         self.evaluator = MLEvaluator()
 
@@ -132,7 +128,7 @@ class BaseTrainer(ABC):
             self.output_dir = Path(models_path)
             self.output_dir.mkdir(parents=True, exist_ok=True)
             self.logger.info(f"Output directory: {self.output_dir}")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to initialize output directory: {e}")
             raise TrainingConfigException(f"Cannot initialize output directory: {e}") from e
 
@@ -167,7 +163,8 @@ class BaseTrainer(ABC):
 
             # Step 1: Prepare ticker groups (batch vs progressive logic)
             ticker_groups = self._prepare_ticker_groups(plan)
-            self.logger.debug(f"Created {len(ticker_groups)} ticker groups")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Created {len(ticker_groups)} ticker groups")
 
             # Step 2: Train each group
             results = {}
@@ -195,14 +192,10 @@ class BaseTrainer(ABC):
                 "training_summary": summary
             }
 
-        except Exception as e:
+        except (ValueError, TypeError, Exception) as e:
             self.logger.error(f"❌ Training failed: {e}", exc_info=True)
-            return {
-                "status": "failed",
-                "reason": str(e),
-                "tickers_results": {},
-                "training_summary": {}
-            }
+            self.error_handler.handle_error(e, context={'plan': plan})
+            raise TrainingException(f"Training failed: {e}") from e
 
     def execute_batch_training(self, plan: dict[str, Any], data_context: dict[str, Any]) -> dict[str, Any]:
         """Alias for execute_training for batch strategy."""
@@ -271,9 +264,9 @@ class BaseTrainer(ABC):
             # 4. Finalize results
             return self._finalize_ticker_results(results, winner_name, best_score)
 
-        except Exception as e:
-            self.logger.error(f"Error during training for {ticker}: {e}")
-            return {"status": "failed", "ticker": ticker, "reason": str(e)}
+        except (ValueError, TypeError, Exception) as e:
+            self.logger.error(f"Error during training for {ticker}: {e}", exc_info=True)
+            raise TrainingException(f"Training failed for {ticker}: {e}") from e
 
     def _prepare_model_training_list(self, ticker: str, data: dict[str, Any]) -> list[str]:
         """Determines the set of model types to train for this ticker."""
@@ -282,7 +275,8 @@ class BaseTrainer(ABC):
         model_types = ticker_plan.get('models')
 
         if not model_types:
-            model_types = self.config_manager.get_config('models.enabled_types', ['lgbm', 'rf', 'xgb', 'linear'])
+            from src.factories.model_factory import ModelFactory
+            model_types = self.config_manager.get_config('models.enabled_types', ModelFactory.get_available_models())
         return list(model_types) if model_types else []
 
     def _execute_model_training_cycle(self, ticker: str, model_types: list[str],
@@ -299,7 +293,7 @@ class BaseTrainer(ABC):
                 if score_val > best_score:
                     best_score = score_val
                     winner_name = m_type
-            except Exception as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Failed to train {m_type} for {ticker}: {e}")
                 continue
 
@@ -314,66 +308,28 @@ class BaseTrainer(ABC):
             is_classification=is_classif
         )
 
-        X_train, y_train = data['X_train'], data['y_train']
-        X_test, y_test = data['X_test'], data['y_test']
+        model.train(data['X_train'], data['y_train'])
+        preds = model.predict(data['X_test'])
 
-        # Train the model
-        model.train(X_train, y_train)
-        preds = model.predict(X_test)
-
-        # Basic metrics
         score = self.evaluator.calculate(
-            y_test, preds,
+            data['y_test'], preds,
             task_type="classification" if is_classif else "regression"
         )
 
         score_val = float(score.get('F1' if is_classif else 'R2', 0.0))
-
-        # 🛡️ COMPREHENSIVE ANALYSIS (NEW)
-        try:
-            # Convert to pandas for IntegratedModelManager
-            X_train_df = pd.DataFrame(X_train) if isinstance(X_train, np.ndarray) else X_train
-            y_train_sr = pd.Series(y_train) if isinstance(y_train, np.ndarray) else y_train
-            X_test_df = pd.DataFrame(X_test) if isinstance(X_test, np.ndarray) else X_test
-            y_test_sr = pd.Series(y_test) if isinstance(y_test, np.ndarray) else y_test
-
-            analysis = asyncio.run(self.model_manager.comprehensive_model_analysis(
-                model=model,
-                model_name=f"{ticker}_{m_type}",
-                X_train=X_train_df,
-                y_train=y_train_sr,
-                X_val=X_test_df,
-                y_val=y_test_sr,
-                predictions=preds,
-                actuals=y_test
-            ))
-
-            # Store advanced analysis in results
-            results['metrics'][m_type] = {
-                'score': score_val,
-                'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
-                'mse': float(score.get('MSE', 0.0)) if not is_classif else None,
-                'advanced_analysis': analysis
-            }
-
-            # If baseline dominance detected, log it
-            if analysis.get('baseline_dominance', {}).get('is_dominated', False):
-                self.logger.warning(f"⚠️ {m_type} for {ticker} is DOMINATED by baseline. Performance might be illusory.")
-
-        except Exception as ae:
-            self.logger.warning(f"⚠️ Advanced analysis failed for {m_type}: {ae}")
-            # Fallback to basic metrics
-            results['metrics'][m_type] = {
-                'score': score_val,
-                'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
-                'mse': float(score.get('MSE', 0.0)) if not is_classif else None
-            }
+        results['metrics'][m_type] = {
+            'score': score_val,
+            'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
+            'mse': float(score.get('MSE', 0.0)) if not is_classif else None
+        }
 
         # Side effects: Champion saving and logging
         self._save_champion(model, ticker, data.get('target_name', 'unknown'))
         self.diary.log_event(
             ticker=ticker, model_name=m_type, target=data.get('target_name', 'unknown'),
-            metrics=score_val, context_fingerprint=data.get('context_fingerprint', 'default')
+            metrics=score_val,
+            context_fingerprint=data.get('context_fingerprint', 'default'),
+            context_pattern_seq=data.get('context_pattern_seq')
         )
 
         return score_val
@@ -391,9 +347,11 @@ class BaseTrainer(ABC):
         path = self.output_dir / filename
         try:
             joblib.dump(model, path)
-            self.logger.debug(f"Champion saved: {path}")
-        except Exception as e:
-            self.logger.error(f"Error saving champion {filename}: {e}")
+            if self.logger.isEnabledFor(logging.DEBUG):
+                self.logger.debug(f"Champion saved: {path}")
+        except (OSError, TypeError, Exception) as e:
+            self.logger.error(f"Error saving champion {filename}: {e}", exc_info=True)
+            raise TrainingException(f"Failed to save champion {filename}: {e}") from e
 
     def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """

@@ -1,9 +1,9 @@
 
-import pickle
 import logging
+import pickle
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ class ObjectCache:
         safe_key = "".join(c for c in key if c.isalnum() or c in ('_', '-'))
         return self.cache_dir / f"{safe_key}.pkl"
 
-    def get(self, key: str, max_age_hours: int = 24*7) -> Optional[Any]:
+    def get(self, key: str, max_age_hours: int = 24*7) -> Any | None:
         """
         Retrieves an object from the cache if it exists and is not expired.
 
@@ -48,6 +48,13 @@ class ObjectCache:
             return None
 
         try:
+            # Security: Validate path is within cache directory to prevent traversal
+            resolved_path = cache_file.resolve()
+            cache_dir = self.cache_dir.resolve()
+            if not str(resolved_path).startswith(str(cache_dir)):
+                logger.error(f"Security: Attempted to load pickle from outside cache directory: {cache_file}")
+                return None
+            
             with open(cache_file, "rb") as f:
                 obj = pickle.load(f)
             logger.debug(f"Loaded object from cache for key: '{key}'")
@@ -71,10 +78,10 @@ class ObjectCache:
             with open(cache_file, "wb") as f:
                 pickle.dump(obj, f)
             logger.debug(f"Saved object to cache for key: '{key}'")
-        except Exception as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f"Failed to save object to cache file {cache_file}: {e}", exc_info=True)
 
-    def clear(self, key: Optional[str] = None):
+    def clear(self, key: str | None = None):
         """
         Clears the cache.
 

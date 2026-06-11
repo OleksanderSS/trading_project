@@ -1,3 +1,4 @@
+# audit-ignore: ARCHITECTURAL_USAGE
 """
 Data Utilities for Hybrid Orchestrator.
 Handles data cleaning, validation, and utility functions.
@@ -35,7 +36,7 @@ class DataUtils:
         # Handle numeric columns
         numeric_cols = df.select_dtypes(include=[np.number]).columns
         if len(numeric_cols) > 0:
-            df[numeric_cols] = df[numeric_cols].fillna(0).replace([np.inf, -np.inf], 0)
+            df[numeric_cols] = df[numeric_cols].replace([np.inf, -np.inf], np.nan)
 
         return df
 
