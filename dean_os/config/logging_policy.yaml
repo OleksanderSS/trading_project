@@ -1,0 +1,10 @@
+decision_log:
+  path: logs/dean_os/decisions.jsonl
+  retention_days: 365
+  archive_after_days: 90
+  compress_snapshots: true
+
+memory:
+  ttl_days: 90
+  archive_after_days: 30
+  max_entries_per_type: 1000
