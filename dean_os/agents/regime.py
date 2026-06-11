@@ -1,0 +1,215 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from dean_os.base import BaseAgent
+from dean_os.regime_context import RegimeContextBuilder, normalize_context_tags
+from dean_os.schemas import MarketContext, MarketRegimeSnapshot, PipelineReport
+
+
+class RegimeAgent(BaseAgent):
+    """Turns local market regime context into a soft pipeline report."""
+
+    version = "0.1.0"
+    branch = "pipeline"
+
+    async def run(self, context: MarketContext) -> PipelineReport:
+        snapshot = build_regime_snapshot(
+            context=context,
+            engine=str(self.config.get("engine", "fallback")),
+            market_data_path=self.config.get("market_data_path"),
+            latest_processed_prices=self.config.get("latest_processed_prices"),
+            ticker=self.config.get("ticker") or (context.tickers[0] if context.tickers else None),
+            close_col=str(self.config.get("close_col", "close")),
+            volume_col=self.config.get("volume_col", "volume"),
+            manual_regime=self.config.get("manual_regime"),
+            manual_tags=self.config.get("manual_tags", []),
+        )
+
+        context.metadata["regime_context"] = snapshot.model_dump(mode="json")
+        regime_tags = normalize_context_tags(
+            [*context.metadata.get("regime_tags", []), *snapshot.context_tags]
+        )
+        context.metadata["regime_tags"] = regime_tags
+
+        signal_strength = _regime_signal(snapshot)
+        verdict = "clear" if snapshot.regime != "UNKNOWN" and not snapshot.warnings else "caution"
+        reasons = [_regime_reason(snapshot, signal_strength)]
+        risks = []
+        if snapshot.warnings:
+            risks.extend(snapshot.warnings)
+        if snapshot.regime in {"CRISIS", "VOLATILE"}:
+            risks.append("Risk sizing and model interpretation should account for elevated regime stress.")
+
+        return PipelineReport(
+            agent_name=self.name,
+            agent_version=self.version,
+            verdict=verdict,
+            confidence=snapshot.confidence,
+            data_quality_score=0.75 if verdict == "clear" else 0.45,
+            signal_strength=signal_strength,
+            reasons=reasons,
+            risks=risks,
+            blind_spots=[
+                "Regime classification is a context signal only; it does not validate model forecasts or execute trades."
+            ],
+            evidence=[
+                self.evidence("metric", snapshot.source, "regime", snapshot.regime),
+                self.evidence("metric", snapshot.source, "confidence", snapshot.confidence),
+                self.evidence("metric", snapshot.source, "context_tags", snapshot.context_tags),
+                self.evidence("metric", snapshot.source, "metrics", snapshot.metrics),
+            ],
+            input_hash=self.context_hash(context),
+            metrics_snapshot=snapshot.model_dump(mode="json"),
+        )
+
+
+def build_regime_snapshot(
+    context: MarketContext,
+    engine: str = "fallback",
+    market_data_path: str | Path | None = None,
+    latest_processed_prices: str | None = None,
+    ticker: str | None = None,
+    close_col: str = "close",
+    volume_col: str | None = "volume",
+    manual_regime: str | None = None,
+    manual_tags: list[str] | tuple[str, ...] | None = None,
+) -> MarketRegimeSnapshot:
+    builder = RegimeContextBuilder()
+    if manual_regime:
+        snapshot = builder.from_analyzer_result(
+            {"regime": manual_regime, "confidence": 0.5, "tags": list(manual_tags or []), "manual": True},
+            source="manual",
+        )
+        snapshot.warnings.append("Manual regime context. Use for review/smoke runs, not as market evidence.")
+        return snapshot
+
+    existing = context.metadata.get("regime_context")
+    if existing:
+        if isinstance(existing, MarketRegimeSnapshot):
+            return existing
+        if isinstance(existing, dict):
+            return MarketRegimeSnapshot(**existing)
+
+    frame = _resolve_market_frame(
+        context=context,
+        market_data_path=market_data_path,
+        latest_processed_prices=latest_processed_prices,
+        ticker=ticker,
+    )
+    if frame is None:
+        return MarketRegimeSnapshot(
+            source="regime_agent",
+            warnings=["No regime context or market price frame was supplied."],
+        )
+
+    if engine == "project":
+        resolved_close_col = _resolve_column(frame, close_col)
+        analyzer_frame = frame.rename(columns={resolved_close_col: "close"}) if resolved_close_col else frame
+        snapshot = builder.from_project_analyzer(analyzer_frame)
+    else:
+        snapshot = builder.from_price_frame(frame, close_col=_resolve_column(frame, close_col), volume_col=_resolve_column(frame, volume_col))
+    if market_data_path:
+        snapshot.metrics["market_data_path"] = str(market_data_path)
+    if ticker:
+        snapshot.metrics["ticker"] = str(ticker).upper()
+    return snapshot
+
+
+def _resolve_market_frame(
+    context: MarketContext,
+    market_data_path: str | Path | None,
+    latest_processed_prices: str | None,
+    ticker: str | None,
+) -> Any | None:
+    if market_data_path or latest_processed_prices:
+        path = _resolve_market_data_path(market_data_path, latest_processed_prices)
+        if path is None or not path.exists():
+            return None
+        frame = _read_market_frame(path)
+        return _filter_ticker(frame, ticker)
+
+    for key in ("market", "prices", "features"):
+        frame = context.dataframes.get(key)
+        if frame is not None:
+            return _filter_ticker(frame, ticker)
+    return None
+
+
+def _resolve_market_data_path(raw_path: str | Path | None, latest_interval: str | None) -> Path | None:
+    if raw_path:
+        return Path(raw_path)
+    if not latest_interval:
+        return None
+    candidates = sorted(
+        Path("data/processed").glob(f"prices_{latest_interval}_*.parquet"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    return candidates[0] if candidates else None
+
+
+def _read_market_frame(path: Path) -> Any:
+    import pandas as pd
+
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
+        return pd.read_csv(path)
+    if suffix in {".parquet", ".pq"}:
+        return pd.read_parquet(path)
+    raise ValueError(f"Unsupported market data file type: {path.suffix}. Use .csv or .parquet.")
+
+
+def _filter_ticker(frame: Any, ticker: str | None) -> Any:
+    if not ticker or not hasattr(frame, "columns"):
+        return frame
+    ticker_col = _first_existing_column(frame, ["ticker", "symbol", "Ticker", "Symbol"])
+    if ticker_col is None:
+        return frame
+    filtered = frame[frame[ticker_col].astype(str).str.upper() == str(ticker).upper()]
+    return filtered if not filtered.empty else frame
+
+
+def _resolve_column(frame: Any, requested: str | None) -> str | None:
+    if requested is None or not hasattr(frame, "columns"):
+        return requested
+    if requested in frame.columns:
+        return requested
+    lowered = {str(column).lower(): column for column in frame.columns}
+    return lowered.get(requested.lower(), requested)
+
+
+def _first_existing_column(frame: Any, candidates: list[str]) -> str | None:
+    lowered = {str(column).lower(): column for column in frame.columns}
+    for candidate in candidates:
+        if candidate in frame.columns:
+            return candidate
+        if candidate.lower() in lowered:
+            return lowered[candidate.lower()]
+    return None
+
+
+def _regime_signal(snapshot: MarketRegimeSnapshot) -> float:
+    base_by_regime = {
+        "BULL_MARKET": 0.25,
+        "TRENDING_UP": 0.25,
+        "MOMENTUM": 0.2,
+        "BREAKOUT": 0.2,
+        "NORMAL": 0.05,
+        "RANGING": 0.0,
+        "SIDEWAYS": 0.0,
+        "VOLATILE": -0.15,
+        "TRENDING_DOWN": -0.25,
+        "BEAR_MARKET": -0.3,
+        "CRISIS": -0.45,
+    }
+    return round(base_by_regime.get(snapshot.regime, 0.0) * snapshot.confidence, 4)
+
+
+def _regime_reason(snapshot: MarketRegimeSnapshot, signal_strength: float) -> str:
+    tags = ", ".join(snapshot.context_tags) or "none"
+    return (
+        f"Regime context is {snapshot.regime} with confidence {snapshot.confidence:.2f}; "
+        f"tags: {tags}; signal_strength: {signal_strength:.3f}."
+    )

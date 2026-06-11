@@ -1,0 +1,239 @@
+agents:
+  pipeline_audit:
+    class_path: dean_os.agents.pipeline_audit:PipelineAuditAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 5
+    findings_path: audit_reports/findings.json
+    required_inputs:
+      - audit_reports/findings.json
+      - audit_reports/triage_P0_P1.md
+    max_findings_age_hours: 24
+    blocker_severities:
+      - P0
+    caution_severities:
+      - P1
+
+  data_quality:
+    class_path: dean_os.agents.data_quality:DataQualityAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 10
+    max_missing_ratio: 0.25
+
+  risk:
+    class_path: dean_os.agents.risk:RiskAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 10
+    max_drawdown_limit: 0.20
+    max_daily_var_95: 0.08
+    max_gross_exposure: 1.0
+
+  model_performance:
+    class_path: dean_os.agents.model_performance:ModelPerformanceAgent
+    branch: pipeline
+    veto_level: soft
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    min_validation_score: 0.55
+    min_sharpe: 0.0
+    max_drawdown: 0.25
+    min_sample_count: 50
+    max_age_hours: 720
+
+  regime:
+    class_path: dean_os.agents.regime:RegimeAgent
+    branch: pipeline
+    veto_level: soft
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    engine: fallback
+    latest_processed_prices: 1d
+    close_col: close
+    volume_col: volume
+
+  tuning:
+    class_path: dean_os.agents.tuning:TuningAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+
+  chief_review:
+    class_path: dean_os.agents.chief_review:ChiefReviewAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+    autonomy_mode: paper_supervised
+
+  paper_portfolio:
+    class_path: dean_os.agents.paper_portfolio:PaperPortfolioAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+    store_path: data/dean_os/paper_trades.sqlite
+    latest_processed_prices: 1d
+    initial_cash: 100000
+    position_size_pct: 0.05
+    include_watchlist: false
+    slippage_bps: 5
+    commission_bps: 1
+    max_drawdown_limit: 0.10
+
+  diary_bridge:
+    class_path: dean_os.agents.diary_bridge:DiaryBridgeAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+    experience_diary_path: logs/experience_diary.csv
+    paper_store_path: data/dean_os/paper_trades.sqlite
+    candidate_limit: 20
+
+  source_routing:
+    class_path: dean_os.agents.source_routing:SourceRoutingAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+
+  operations_proposal:
+    class_path: dean_os.agents.operations:OperationsProposalAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+
+  research_ingestion:
+    class_path: dean_os.agents.research_agents:ResearchIngestionAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 20
+    corpus_path: data/dean_os/research_corpus.sqlite
+    chunk_size: 1200
+
+  specialist_research:
+    class_path: dean_os.agents.research_agents:SpecialistResearchAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 20
+    corpus_path: data/dean_os/research_corpus.sqlite
+    horizon_days: 365
+    corpus_search_limit: 20
+
+  financial_nlp:
+    class_path: dean_os.agents.financial_nlp:FinancialNLPAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 20
+    finbert_model: null
+
+  evidence_synthesis:
+    class_path: dean_os.agents.synthesis:EvidenceSynthesisAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 20
+    topic: evidence_synthesis
+
+  macro_policy:
+    class_path: dean_os.agents.domain_research:MacroPolicyAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 1.5
+
+  geopolitical:
+    class_path: dean_os.agents.domain_research:GeoPoliticalAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 2.0
+
+  news_catalyst:
+    class_path: dean_os.agents.domain_research:NewsCatalystAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 0.5
+
+  sector_cycle:
+    class_path: dean_os.agents.domain_research:SectorCycleAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 1.0
+
+  industry_map:
+    class_path: dean_os.agents.domain_research:IndustryMapAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 2.0
+
+  historical_analogies:
+    class_path: dean_os.agents.domain_research:HistoricalAnalogiesAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 3.0
+
+  value_screening:
+    class_path: dean_os.agents.domain_research:ValueScreeningAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 3.0
+
+  contrarian_thesis:
+    class_path: dean_os.agents.domain_research:ContrarianThesisAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 2.0
