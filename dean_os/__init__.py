@@ -19,6 +19,7 @@ from dean_os.paper_portfolio import PaperPortfolioSimulator
 from dean_os.paper_trading import PaperTradeEvaluationRunner, PaperTradeStore
 from dean_os.pipeline_adapter import HybridPipelineAdapter
 from dean_os.recommendation_memory import RecommendationMemoryStore
+from dean_os.replay_price_normalizer import ReplayPriceNormalizer
 from dean_os.regime_context import RegimeContextBuilder, normalize_context_tags
 from dean_os.agents.chief_review import ChiefReviewAgent
 from dean_os.agents.collector_inventory import CollectorInventoryAgent
@@ -105,6 +106,7 @@ __all__ = [
     "PipelineActionProposal",
     "RecommendationMemoryRecord",
     "RecommendationMemoryStore",
+    "ReplayPriceNormalizer",
     "RegimeContextBuilder",
     "RegimeAgent",
     "ResearchChunk",

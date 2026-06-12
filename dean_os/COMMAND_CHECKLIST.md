@@ -356,6 +356,21 @@ Interpretation:
 - `--normalize-daily-bars` collapses multiple rows per ticker/day into one OHLCV bar before scoring.
 - If `price_quality.warnings` is non-empty, treat hit/miss as diagnostic, not as learning truth.
 
+## 10k. Replay Price Normalizer
+
+Create a reusable normalized daily OHLCV artifact before trusting historical replay hit/miss results:
+
+```powershell
+python run_agent_replay_price_normalizer.py data\colab\backup_20260510_153551\stage2_prices_1d_20260505_151233.parquet --tickers AMD NVDA MSFT AAPL TSM QQQ SPY --compare-replay --as-of 2026-03-01T00:00:00+00:00 --lookback-days 180 --horizon-days 60 --news-data data\colab\backup_20260510_153551\stage2_news_20260505_151233.parquet --macro-data data\colab\backup_20260510_153551\stage2_macro_20260507_191104.parquet
+```
+
+Share the `artifact`, `quality`, `learning_gate`, `replay_comparison`, and `recommendations` sections.
+
+Interpretation:
+- This is data normalization only; it does not create paper trades or write learning memory.
+- Use the saved artifact path as `price_data_path` for future historical replay batches.
+- If `learning_gate.status` is `blocked`, replay outcomes remain diagnostic even if a single run looks correct.
+
 ## 11. Tests
 
 ```powershell
