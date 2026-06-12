@@ -3,16 +3,19 @@ Unified Model Adapter
 Consolidates logic from multiple legacy adapters (integrated, dynamic, simple).
 Provides a robust bridge between FeatureSelector and ML models.
 """
+
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
+from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 from src.features.feature_selector import FeatureSelector
 
 logger = ProjectLogger.get_logger("UnifiedModelAdapter")
+
 
 class UnifiedModelAdapter:
     """
@@ -22,50 +25,78 @@ class UnifiedModelAdapter:
 
     def __init__(self, config: dict[str, Any] | None = None):
         self.config_manager = get_current_config()
-        self.config = config or self.config_manager.get_config('models', {}).get('adapter', {})
+        self.config = config or self.config_manager.get_config("models", {}).get("adapter", {})
         self.feature_selector = FeatureSelector()
 
         # Default target feature counts per model type (legacy '42' fallback)
-        self.model_feature_counts = self.config.get('feature_counts', {
-            'mlp': 42,
-            'lstm': 42,
-            'gru': 42,
-            'cnn': 42,
-            'transformer': 42,
-            'catboost': 64,
-            'lightgbm': 64,
-            'xgboost': 64,
-            'random_forest': 42,
-            'ensemble': 42,
-            'linear': 20
-        })
+        self.model_feature_counts = self.config.get(
+            "feature_counts",
+            {
+                "mlp": 42,
+                "lstm": 42,
+                "gru": 42,
+                "cnn": 42,
+                "transformer": 42,
+                "catboost": 64,
+                "lightgbm": 64,
+                "xgboost": 64,
+                "random_forest": 42,
+                "ensemble": 42,
+                "linear": 20,
+            },
+        )
 
         # Heuristic priority list for fallback selection
         self.priority_features = [
-            'open', 'high', 'low', 'close', 'volume',
-            'sma_5', 'sma_10', 'sma_20',
-            'ema_5', 'ema_10', 'ema_20',
-            'rsi_14', 'rsi_7',
-            'bb_upper', 'bb_lower', 'bb_middle',
-            'atr_14', 'macd', 'macd_signal',
-            'volume_sma_5', 'volume_sma_10',
-            'hour_of_day', 'day_of_week', 'month',
-            'news_sentiment', 'news_impact_score',
-            'sentiment_score', 'sentiment_ma_5',
-            'price_change_1d', 'price_change_5d',
-            'volatility_5d', 'volatility_20d',
-            'momentum_5d', 'momentum_10d',
-            'trend_5d', 'trend_20d',
-            'state_market_regime', 'state_volatility_regime'
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "sma_5",
+            "sma_10",
+            "sma_20",
+            "ema_5",
+            "ema_10",
+            "ema_20",
+            "rsi_14",
+            "rsi_7",
+            "bb_upper",
+            "bb_lower",
+            "bb_middle",
+            "atr_14",
+            "macd",
+            "macd_signal",
+            "volume_sma_5",
+            "volume_sma_10",
+            "hour_of_day",
+            "day_of_week",
+            "month",
+            "news_sentiment",
+            "news_impact_score",
+            "sentiment_score",
+            "sentiment_ma_5",
+            "price_change_1d",
+            "price_change_5d",
+            "volatility_5d",
+            "volatility_20d",
+            "momentum_5d",
+            "momentum_10d",
+            "trend_5d",
+            "trend_20d",
+            "state_market_regime",
+            "state_volatility_regime",
         ]
 
-    def get_features_for_model(self,
-                               features_df: pd.DataFrame,
-                               targets_df: pd.DataFrame,
-                               ticker: str,
-                               target_col: str,
-                               model_type: str,
-                               market_regime: str = 'normal') -> tuple[np.ndarray, list[str]]:
+    def get_features_for_model(
+        self,
+        features_df: pd.DataFrame,
+        targets_df: pd.DataFrame,
+        ticker: str,
+        target_col: str,
+        model_type: str,
+        market_regime: str = "normal",
+    ) -> tuple[np.ndarray, list[str]]:
         """
         Primary entry point for getting adapted features for a specific model.
 
@@ -88,20 +119,22 @@ class UnifiedModelAdapter:
                 ticker=ticker,
                 target_col=target_col,
                 model_type=model_type,
-                market_regime=market_regime
+                market_regime=market_regime,
             )
 
             # 2. If selection failed or returned too few features, use fallback
             target_count = self.model_feature_counts.get(model_type, 42)
             if len(selected_names) < 5:
-                logger.warning(f"⚠️ Feature selection returned too few features ({len(selected_names)}). Using heuristic fallback.")
+                logger.warning(
+                    f"⚠️ Feature selection returned too few features ({len(selected_names)}). Using heuristic fallback."
+                )
                 return self._fallback_selection(features_df, ticker, target_count)
 
             return selected_array, selected_names
 
         except Exception as e:
             logger.error(f"❌ Error in UnifiedModelAdapter: {e}", exc_info=True)
-            return self._fallback_selection(features_df, ticker, 42)
+            raise DataProcessingError(f"Error in UnifiedModelAdapter: {e}") from e
 
     def _fallback_selection(self, df: pd.DataFrame, ticker: str, target_count: int) -> tuple[np.ndarray, list[str]]:
         """
@@ -126,10 +159,12 @@ class UnifiedModelAdapter:
         # If still need more, add high-variance numeric features
         if len(selected) < target_count:
             numeric_cols = ticker_df.select_dtypes(include=[np.number]).columns
-            remaining = [c for c in numeric_cols if c not in selected and c not in ['datetime', 'ticker', 'hash', 'interval']]
+            remaining = [
+                c for c in numeric_cols if c not in selected and c not in ["datetime", "ticker", "hash", "interval"]
+            ]
 
             variances = ticker_df[remaining].var().sort_values(ascending=False)
-            additional = variances.index[:target_count - len(selected)].tolist()
+            additional = variances.index[: target_count - len(selected)].tolist()
             selected.extend(additional)
 
         final_list = selected[:target_count]
@@ -146,13 +181,13 @@ class UnifiedModelAdapter:
 
     def _filter_for_ticker(self, df: pd.DataFrame, ticker: str) -> pd.DataFrame:
         """Filter DataFrame by ticker (supports column or multi-index)."""
-        if 'ticker' in df.columns:
-            return df[df['ticker'] == ticker].copy()
-        elif hasattr(df.index, 'levels') and 'ticker' in df.index.names:
+        if "ticker" in df.columns:
+            return df[df["ticker"] == ticker].copy()
+        elif hasattr(df.index, "levels") and "ticker" in df.index.names:
             try:
-                return df.xs(ticker, level='ticker')
-            except KeyError:
-                pass
+                return df.xs(ticker, level="ticker")
+            except KeyError as e:
+                logger.debug(f"Ticker {ticker} not found in index, returning full dataframe: {e}")
         return df
 
     def adapt_for_heavy_model(self, X: np.ndarray, seq_len: int) -> np.ndarray:

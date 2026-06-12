@@ -14,6 +14,7 @@ Uses:
 - Інтеграційні тести
 """
 
+import logging
 import os
 import tempfile
 import time
@@ -498,8 +499,7 @@ class TestMonitoringDashboardGenerator(unittest.TestCase):
         self.assertEqual(summary['active_monitors'], 2)
 
 if __name__ == '__main__':
-    import logging
-    # Configure logging
+# Configure logging
     logging.basicConfig(level=logging.WARNING)
 
 #

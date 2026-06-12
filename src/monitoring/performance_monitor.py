@@ -48,11 +48,11 @@ class PerformanceMonitor:
         for name, values in self.metrics.items():
             if isinstance(values[0], (int, float)):
                 summary[name] = {
-                    'mean': np.mean(values),
-                    'std': np.std(values),
-                    'min': np.min(values),
-                    'max': np.max(values),
-                    'count': len(values)
+                    "mean": np.mean(values),
+                    "std": np.std(values),
+                    "min": np.min(values),
+                    "max": np.max(values),
+                    "count": len(values),
                 }
 
         return summary

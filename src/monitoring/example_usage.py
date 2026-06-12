@@ -13,6 +13,7 @@ Uses:
 - Demonstration of all features
 """
 
+import logging
 import os
 import random
 import time
@@ -173,81 +174,91 @@ def simulate_system_load():
             try:
                 os.unlink(temp_file)
             except OSError:
-                pass
+                ProjectLogger.get_logger("MonitoringDemo").warning("Failed to remove temp file %s", temp_file, exc_info=True)
+
+def _initialize_monitoring_system():
+    """Initialize monitoring system and dashboard generator."""
+    logger = ProjectLogger.get_logger("MonitoringDemo")
+    logger.info("Starting Monitoring System Demo")
+
+    config = create_sample_config()
+    monitoring = MonitoringSystem(config)
+    dashboard_gen = MonitoringDashboardGenerator(monitoring, config.get('dashboard', {}))
+
+    return logger, monitoring, dashboard_gen
+
+
+def _run_demo_loop(monitoring, logger, demo_duration=60):
+    """Run main demo loop with simulations."""
+    model_names = ['price_predictor', 'trend_analyzer', 'risk_model', 'portfolio_optimizer']
+    data_sources = ['market_data', 'economic_indicators', 'news_feed', 'social_sentiment']
+
+    start_time = time.time()
+    iteration = 0
+
+    while time.time() - start_time < demo_duration:
+        iteration += 1
+        logger.info(f"Demo iteration {iteration}")
+
+        # Model training simulation (every 15 seconds)
+        if iteration % 3 == 0:
+            simulate_model_training(monitoring, random.sample(model_names, random.randint(1, 2)))
+
+        # Data processing simulation (every 10 seconds)
+        if iteration % 2 == 0:
+            simulate_data_processing(monitoring, random.sample(data_sources, random.randint(1, 2)))
+
+        # System load simulation (every 20 seconds)
+        if iteration % 4 == 0:
+            logger.info("Simulating system load...")
+            simulate_system_load()
+
+        # Output status every 10 seconds
+        if iteration % 2 == 0:
+            health_report = monitoring.get_health_report()
+            logger.info(f"System health: {health_report['system_status']}, "
+                      f"Active alerts: {health_report['active_alerts']}")
+
+        # Delay between iterations
+        time.sleep(5)
+
+
+def _generate_final_report(dashboard_gen, logger):
+    """Generate and save final monitoring report."""
+    logger.info("Generating final monitoring report...")
+
+    # Text report
+    text_report = dashboard_gen.generate_text_report()
+    print("\n" + "="*80)
+    print("MONITORING SYSTEM DEMO REPORT")
+    print("="*80)
+    print(text_report)
+    print("="*80)
+
+    # Save report
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    report_file = f'monitoring_demo_report_{timestamp}.txt'
+    dashboard_gen.save_current_report(report_file)
+    logger.info(f"Report saved to: {report_file}")
+
+    # Dashboard summary output
+    summary = dashboard_gen.get_dashboard_summary()
+    logger.info(f"Demo completed. Final summary: {summary}")
 
 def run_monitoring_demo():
     """Start monitoring system demo"""
-    logger = ProjectLogger.get_logger("MonitoringDemo")
-
-    logger.info("Starting Monitoring System Demo")
-
-    # Create configuration
-    config = create_sample_config()
-
-    # Initialize monitoring system
-    monitoring = MonitoringSystem(config)
-    dashboard_gen = MonitoringDashboardGenerator(monitoring, config.get('dashboard', {}))
+    logger, monitoring, dashboard_gen = _initialize_monitoring_system()
 
     try:
         # Start monitoring
         monitoring.start()
         logger.info("Monitoring system started")
 
-        # List of models and data sources for simulation
-        model_names = ['price_predictor', 'trend_analyzer', 'risk_model', 'portfolio_optimizer']
-        data_sources = ['market_data', 'economic_indicators', 'news_feed', 'social_sentiment']
-
         # Main demo loop
-        demo_duration = 60  # 60 seconds
-        start_time = time.time()
-
-        iteration = 0
-        while time.time() - start_time < demo_duration:
-            iteration += 1
-            logger.info(f"Demo iteration {iteration}")
-
-            # Model training simulation (every 15 seconds)
-            if iteration % 3 == 0:
-                simulate_model_training(monitoring, random.sample(model_names, random.randint(1, 2)))
-
-            # Data processing simulation (every 10 seconds)
-            if iteration % 2 == 0:
-                simulate_data_processing(monitoring, random.sample(data_sources, random.randint(1, 2)))
-
-            # System load simulation (every 20 seconds)
-            if iteration % 4 == 0:
-                logger.info("Simulating system load...")
-                simulate_system_load()
-
-            # Output status every 10 seconds
-            if iteration % 2 == 0:
-                health_report = monitoring.get_health_report()
-                logger.info(f"System health: {health_report['system_status']}, "
-                          f"Active alerts: {health_report['active_alerts']}")
-
-            # Delay between iterations
-            time.sleep(5)
+        _run_demo_loop(monitoring, logger)
 
         # Final report generation
-        logger.info("Generating final monitoring report...")
-
-        # Text report
-        text_report = dashboard_gen.text_dashboard.generate_report()
-        print("\n" + "="*80)
-        print("MONITORING SYSTEM DEMO REPORT")
-        print("="*80)
-        print(text_report)
-        print("="*80)
-
-        # Save report
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_file = f'monitoring_demo_report_{timestamp}.txt'
-        dashboard_gen.text_dashboard.save_report(report_file)
-        logger.info(f"Report saved to: {report_file}")
-
-        # Dashboard summary output
-        summary = dashboard_gen.monitoring_system.get_dashboard_data()
-        logger.info(f"Demo completed. Final summary: {summary}")
+        _generate_final_report(dashboard_gen, logger)
 
     except KeyboardInterrupt:
         logger.info("Demo interrupted by user")
@@ -318,7 +329,7 @@ def main():
         run_monitoring_demo()
 
 if __name__ == '__main__':
-    import logging
+    # Configure logging
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
