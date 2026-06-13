@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import atexit
 from contextlib import contextmanager
 
 import duckdb
@@ -28,11 +29,12 @@ class ConnectionHandler:
                 conn.close()
                 logger.info(f"Closed connection to '{db_path}'")
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.error(f'Виникла помилка: {e}', exc_info=True)
                 logger.warning(f"Error closing connection to '{db_path}': {e}")
-                raise
         cls._connections.clear()
         cls._connection_lock.clear()
+
+# Реєстрація автоматичного закриття при виході
+atexit.register(ConnectionHandler.close_all_connections)
 
     @classmethod
     def get_connection(cls, db_path: str, force_new: bool=False,
