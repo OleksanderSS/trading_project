@@ -153,4 +153,3 @@ async def process_successful_training(stage, config: SuccessfulTrainingConfig
     stage._log_to_diary(champion_info, config.timeframe)
     for light_info in light_models_trained.values():
         stage._log_to_diary(light_info, config.timeframe)
-ig.timeframe)

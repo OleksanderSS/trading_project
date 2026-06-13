@@ -116,7 +116,7 @@ class AutoAccumulatorGuard:
             return
 
         tasks = [c.run() for c in collectors]
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     def run_guard_cycle(self):
         """Проводить повну перевірку та виправлення дірок для всіх активів."""

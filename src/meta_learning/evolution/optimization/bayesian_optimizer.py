@@ -1,6 +1,6 @@
 
 import numpy as np
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import TimeSeriesSplit, cross_val_score
 import logging
 
 try:
@@ -37,7 +37,7 @@ class BayesianOptimizer:
         model = self.model_func(**params)
         
         # Using cross-validation to get a robust score
-        scores = cross_val_score(model, X, y, cv=self.cv, scoring=self.scoring)
+        scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.cv), scoring=self.scoring)
         return scores.mean()
 
     def optimize(self, X, y):

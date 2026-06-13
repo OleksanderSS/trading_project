@@ -11,7 +11,6 @@ from dean_os.historical_replay import (
     HistoricalReplayRunner,
     _price_quality_summary,
     guard_replay_frame,
-    render_historical_replay_markdown,
 )
 from dean_os.outcome_evaluation import _prepare_market_frame, _read_market_frame
 from dean_os.schemas import utc_now_iso
@@ -72,6 +71,7 @@ class ReplayPriceNormalizer:
                 datetime_col="datetime",
                 neutral_band=neutral_band,
             )
+            _apply_replay_comparison_gate(payload)
             payload["recommendations"] = _recommendations(payload)
             self.save_report(payload)
         return payload
@@ -444,6 +444,24 @@ def _learning_gate(quality: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _apply_replay_comparison_gate(payload: dict[str, Any]) -> None:
+    comparison = payload.get("replay_comparison", {})
+    normalized_warnings = comparison.get("normalized", {}).get("price_warnings", [])
+    if not normalized_warnings:
+        return
+    quality = payload.setdefault("quality", {})
+    quality["comparison_window_warnings"] = normalized_warnings
+    existing_warnings = list(quality.get("warnings", []))
+    merged_warnings = _unique_strings([*existing_warnings, *normalized_warnings])
+    quality["warnings"] = merged_warnings
+    payload["learning_gate"] = {
+        "status": "blocked",
+        "can_write_learning_memory": False,
+        "reason": "The normalized artifact is clean globally, but the requested replay window still has price-quality warnings.",
+        "warnings": merged_warnings,
+    }
+
+
 def _recommendations(payload: dict[str, Any]) -> list[str]:
     gate = payload.get("learning_gate", {})
     quality = payload.get("quality", {})
@@ -534,3 +552,14 @@ def _comparison_interpretation(raw: dict[str, Any], normalized: dict[str, Any]) 
     if raw.get("ticker") != normalized.get("ticker") or raw.get("action") != normalized.get("action"):
         return "Replay thesis changed after normalization; review rankings before trusting either run."
     return "Raw and normalized replay summaries match at the decision/outcome level."
+
+
+def _unique_strings(values: Iterable[Any]) -> list[str]:
+    unique: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = str(value)
+        if text not in seen:
+            seen.add(text)
+            unique.append(text)
+    return unique

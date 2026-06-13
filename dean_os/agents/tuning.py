@@ -77,6 +77,10 @@ class TuningAgent(BaseAgent):
         weak_contexts = _matching_weak_contexts(context_performance, regime_tags)
         tickers = self.config.get("tickers") or context.tickers or ["<approved>"]
         timeframes = self.config.get("timeframes") or context.timeframes or ([context.timeframe] if context.timeframe else ["<approved>"])
+        control_surface = _as_dict(context.metadata.get("pipeline_control_surface"))
+        surface = _as_dict(control_surface.get("surface"))
+        proposal_gate = _as_dict(control_surface.get("proposal_gate"))
+        allowed_variation = _as_dict(surface.get("allowed_variation"))
 
         plan: dict[str, Any] = {
             "status": "no_action",
@@ -91,6 +95,9 @@ class TuningAgent(BaseAgent):
             "regime": regime,
             "regime_tags": regime_tags,
             "weak_contexts": weak_contexts,
+            "control_surface_status": surface.get("status"),
+            "control_surface_gate": proposal_gate.get("status"),
+            "allowed_variation": allowed_variation,
             "experiment_scope": {
                 "tickers": tickers,
                 "timeframes": timeframes,
@@ -106,6 +113,23 @@ class TuningAgent(BaseAgent):
             ],
             "proposals": [],
         }
+
+        if control_surface and not proposal_gate.get("can_propose_tuning", False):
+            plan["status"] = "control_surface_blocked"
+            plan["data_quality_score"] = 0.35
+            plan["reasons"].append(
+                f"Pipeline control surface blocks tuning proposals: {proposal_gate.get('reason', 'no reason supplied')}."
+            )
+            plan["risks"].append("Tuning outside the approved control surface can overfit or bypass data-quality gates.")
+            plan["proposals"].append(self._validation_proposal(plan, target="pipeline_control_surface"))
+            return plan
+
+        if self.config.get("require_control_surface") and not control_surface:
+            plan["status"] = "validate_control_surface_first"
+            plan["data_quality_score"] = 0.45
+            plan["reasons"].append("Pipeline control surface is required before tuning proposals can be created.")
+            plan["proposals"].append(self._validation_proposal(plan, target="pipeline_control_surface"))
+            return plan
 
         if stale_sources:
             plan["status"] = "validate_inputs_first"
@@ -149,6 +173,8 @@ class TuningAgent(BaseAgent):
     def _tuning_proposal(self, plan: dict[str, Any], model_performance: dict[str, Any]) -> PipelineActionProposal:
         tickers = " ".join(str(ticker) for ticker in plan["experiment_scope"]["tickers"])
         timeframes = " ".join(str(timeframe) for timeframe in plan["experiment_scope"]["timeframes"])
+        variation = plan.get("allowed_variation") or {}
+        variation_preview = _variation_preview(variation)
         return PipelineActionProposal(
             agent_name=self.name,
             action_type="tune",
@@ -157,6 +183,7 @@ class TuningAgent(BaseAgent):
             command_preview=(
                 "approved experiment only: walk-forward tuning "
                 f"--tickers {tickers} --timeframes {timeframes} --locked-holdout --no-production-write"
+                f"{variation_preview}"
             ),
             expected_effect="Produce candidate hyperparameter or model-selection changes for review, not automatic promotion.",
             risks=plan["risks"],
@@ -164,6 +191,8 @@ class TuningAgent(BaseAgent):
                 self.evidence("metric", "context.metadata.model_performance", "threshold_failures", plan["model_failures"]),
                 self.evidence("metric", "context.metadata.model_performance", "performance_score", model_performance.get("performance_score")),
                 self.evidence("metric", "context.metadata.regime_context", "regime_tags", plan["regime_tags"]),
+                self.evidence("metric", "context.metadata.pipeline_control_surface", "proposal_gate", plan.get("control_surface_gate")),
+                self.evidence("metric", "context.metadata.pipeline_control_surface", "allowed_variation", variation),
             ],
         )
 
@@ -179,6 +208,7 @@ class TuningAgent(BaseAgent):
             evidence=[
                 self.evidence("metric", "context.metadata.model_performance", "threshold_failures", plan["model_failures"]),
                 self.evidence("metric", "context.metadata.data_freshness", "stale_sources", plan["stale_sources"]),
+                self.evidence("metric", "context.metadata.pipeline_control_surface", "proposal_gate", plan.get("control_surface_gate")),
             ],
         )
 
@@ -215,3 +245,18 @@ def _matching_weak_contexts(context_performance: dict[str, Any], regime_tags: li
 
 def _as_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def _variation_preview(variation: dict[str, Any]) -> str:
+    if not variation:
+        return ""
+    pieces = []
+    if variation.get("max_trials") is not None:
+        pieces.append(f"--max-trials {variation['max_trials']}")
+    if variation.get("parameter_delta_pct") is not None:
+        pieces.append(f"--parameter-delta-pct {variation['parameter_delta_pct']}")
+    if variation.get("max_feature_additions") is not None:
+        pieces.append(f"--max-feature-additions {variation['max_feature_additions']}")
+    if not pieces:
+        return ""
+    return " " + " ".join(pieces)

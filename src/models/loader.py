@@ -232,14 +232,14 @@ class ModelLoaderStrategy:
             trusted_path = resolve_trusted_artifact_path(path,
                 allowed_suffixes={'.pkl', '.pickle'}, must_exist=True)
             return joblib.load(str(trusted_path))  # NOSONAR
-        except Exception as e1:
+        except (joblib.externals.loky.process_executor.TerminatedWorkerError, EOFError, ImportError, AttributeError) as e1:
             try:
                 import pickle
                 trusted_path = resolve_trusted_artifact_path(path,
                     allowed_suffixes={'.pkl', '.pickle'}, must_exist=True)
                 with open(trusted_path, 'rb') as f:
                     return pickle.load(f)  # NOSONAR
-            except Exception as e2:
+            except (pickle.UnpicklingError, EOFError, ImportError, AttributeError) as e2:
                 raise ModelLoadingError(
                     f'Failed to load pickle model at {path} via both joblib ({e1}) and standard pickle ({e2})'
                     ) from e2
@@ -362,7 +362,7 @@ class ModelLoaderStrategy:
                 # Fallback for older torch versions, trusted_path is validated by resolve_trusted_artifact_path
                 # trust path is verified by resolve_trusted_artifact_path
                 loaded_obj = torch.load(trusted_path, map_location='cpu')  # NOSONAR
-            except Exception as e:
+            except (EOFError, ImportError, AttributeError, RuntimeError, OSError) as e:
                 self.logger.warning(f'Initial torch.load failed: {e}')
                 if not meta.get('allow_full_torch_object_load', False):
                     raise

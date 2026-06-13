@@ -30,8 +30,8 @@ class MarketRegimeCalculator:
         logger.info(f"Calculating market regime with window size {window}...")
 
         # Calculate indicators
-        rolling_std = price_series.pct_change().rolling(window=window).std()
-        rolling_mean = price_series.pct_change().rolling(window=window).mean()
+        rolling_std = price_series.pct_change(fill_method=None).fillna(0).rolling(window=window).std()
+        rolling_mean = price_series.pct_change(fill_method=None).fillna(0).rolling(window=window).mean()
 
         # Define regime thresholds (these might be calibrated)
         volatility_threshold_high = rolling_std.quantile(0.75)

@@ -419,8 +419,8 @@ class GitHubActionsClient(BaseIntegration):
                         "line_coverage": coverage_data.get("totals", {}).get("covered_lines", 0),
                         "missing_lines": coverage_data.get("totals", {}).get("missing_lines", 0)
                     }
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to parse coverage: {e}")
             
             # Альтернативний розрахунок
             return {
@@ -509,8 +509,8 @@ class GitHubActionsClient(BaseIntegration):
                         "warning_count": len([v for v in violations if v.get("code", "").startswith("W")]),
                         "violations": violations[:10]  # Перші 10
                     }
-            except:
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to parse coverage: {e}")
             
             # Альтернативні дані
             return {

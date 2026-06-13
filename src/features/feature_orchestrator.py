@@ -397,4 +397,3 @@ class FeatureOrchestrator:
             logger.error(f'Dynamic context feature selection failed: {e}',
                 exc_info=True)
         return df
-      return df

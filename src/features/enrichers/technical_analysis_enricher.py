@@ -408,4 +408,4 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             return float(poly[0] * 2.0)
         except Exception:
             return 0.5
-     return 0.5
+        return 0.5

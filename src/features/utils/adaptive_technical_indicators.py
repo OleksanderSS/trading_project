@@ -103,7 +103,7 @@ class AdaptiveTechnicalIndicators:
         """
         # Calculate market regime (trending vs ranging)
         returns = prices.pct_change(fill_method=None)
-        returns_clean = returns.fillna(0)
+        returns_clean = returns.ffill().fillna(0) # Forward fill then zero fill if needed
         trend_strength = abs(returns_clean.rolling(self.regime_window).mean())
 
         # Normalize trend strength to 0.7-1.3 range
@@ -262,7 +262,7 @@ class AdaptiveTechnicalIndicators:
 
         # Adaptive VWAP (Volume Weighted Average Price)
         # Use adaptive period based on volume volatility
-        volume_volatility = volume.pct_change().rolling(self.volatility_window).std()
+        volume_volatility = volume.pct_change(fill_method=None).fillna(0).rolling(self.volatility_window).std()
         vwap_period = (20 * (1 + volume_volatility * 2)).astype(int)
         vwap_period = vwap_period.clip(10, 50)
 
@@ -306,7 +306,7 @@ class AdaptiveTechnicalIndicators:
         momentum = prices - prices.shift(adaptive_period)
 
         # 3. Rate of Acceleration (second derivative of momentum)
-        momentum_roc = momentum.pct_change() * 100
+        momentum_roc = momentum.pct_change(fill_method=None).fillna(0) * 100
 
         return roc, momentum, momentum_roc
 

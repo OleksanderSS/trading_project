@@ -27,6 +27,10 @@ class OutcomeEvaluationRunner:
         apply_updates: bool = False,
         neutral_band: float = 0.01,
         limit: int | None = None,
+        record_ids: list[str] | None = None,
+        agent_names: list[str] | None = None,
+        metadata_filters: dict[str, Any] | None = None,
+        require_metadata_flag: str | None = None,
     ) -> dict[str, Any]:
         try:
             import pandas as pd
@@ -48,6 +52,13 @@ class OutcomeEvaluationRunner:
         as_of_dt = _parse_datetime(as_of) if as_of else _frame_latest_datetime(frame)
         store = LearningStore(self.learning_path)
         records = [record for record in store.list_records() if record.outcome_label is None]
+        records = _filter_records(
+            records=records,
+            record_ids=record_ids or [],
+            agent_names=agent_names or [],
+            metadata_filters=metadata_filters or {},
+            require_metadata_flag=require_metadata_flag,
+        )
         if limit is not None:
             records = records[:limit]
 
@@ -72,6 +83,12 @@ class OutcomeEvaluationRunner:
             "as_of": as_of_dt.isoformat(),
             "allow_early": allow_early,
             "apply_updates": apply_updates,
+            "filters": {
+                "record_ids": record_ids or [],
+                "agent_names": agent_names or [],
+                "metadata_filters": metadata_filters or {},
+                "require_metadata_flag": require_metadata_flag,
+            },
             "pending_record_count": len(records),
             "updated_count": status_counts.get("updated", 0),
             "evaluable_count": status_counts.get("evaluable", 0),
@@ -240,6 +257,42 @@ def _record_tickers(record: AgentLearningRecord, fallback_tickers: list[str]) ->
     if metadata_tickers and fallback:
         return sorted(set(metadata_tickers).intersection(fallback))
     return metadata_tickers or fallback
+
+
+def _filter_records(
+    records: list[AgentLearningRecord],
+    record_ids: list[str],
+    agent_names: list[str],
+    metadata_filters: dict[str, Any],
+    require_metadata_flag: str | None,
+) -> list[AgentLearningRecord]:
+    allowed_ids = {str(record_id) for record_id in record_ids if str(record_id).strip()}
+    allowed_agents = {str(agent_name) for agent_name in agent_names if str(agent_name).strip()}
+    filtered: list[AgentLearningRecord] = []
+    for record in records:
+        if allowed_ids and record.record_id not in allowed_ids:
+            continue
+        if allowed_agents and record.agent_name not in allowed_agents:
+            continue
+        if require_metadata_flag and not bool(record.metadata.get(require_metadata_flag)):
+            continue
+        if metadata_filters and not _metadata_matches(record.metadata, metadata_filters):
+            continue
+        filtered.append(record)
+    return filtered
+
+
+def _metadata_matches(metadata: dict[str, Any], filters: dict[str, Any]) -> bool:
+    for key, expected in filters.items():
+        actual = metadata.get(key)
+        if isinstance(actual, list):
+            expected_values = expected if isinstance(expected, list) else [expected]
+            if not any(value in actual for value in expected_values):
+                return False
+            continue
+        if actual != expected:
+            return False
+    return True
 
 
 def _frame_latest_datetime(frame: Any) -> datetime:
