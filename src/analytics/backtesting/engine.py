@@ -153,7 +153,9 @@ class AdvancedBacktester:
                     signal = 0.0
 
                 # Max allocated value for this asset
-                target_asset_value = new_total_value * signal * (self.max_position_size / len(tickers)) * adaptive_multiplier
+                num_tickers = len(tickers)
+                ticker_weight = (self.max_position_size / num_tickers) if num_tickers > 0 else 0.0
+                target_asset_value = new_total_value * signal * ticker_weight * adaptive_multiplier
                 current_asset_value = portfolio.iloc[i][f'{ticker}_val']
                 
                 trade_value = target_asset_value - current_asset_value
