@@ -346,16 +346,22 @@ class TemporalFeatureAnalyzer:
         # Часова сandбandльнandсть (внутрandшньоwhereнна)
         df['date'] = df['datetime'].dt.date
         df['hour'] = df['datetime'].dt.hour
-        hourly_stability = df.groupby('hour')[feature].std().mean()
+        
+        # Використовуємо зважене середнє для коректного розрахунку
+        grouped_hour = df.groupby('hour')[feature]
+        hourly_stability = (grouped_hour.std() * grouped_hour.count()).sum() / grouped_hour.count().sum()
         
         # Деnotва сandбandльнandсть
-        daily_stability = df.groupby('date')[feature].std().mean()
+        grouped_date = df.groupby('date')[feature]
+        daily_stability = (grouped_date.std() * grouped_date.count()).sum() / grouped_date.count().sum()
         
         # Тижnotва сandбandльнandсть
-        weekly_stability = df.groupby('week')[feature].std().mean()
+        grouped_week = df.groupby('week')[feature]
+        weekly_stability = (grouped_week.std() * grouped_week.count()).sum() / grouped_week.count().sum()
         
         # Мandсячна сandбandльнandсть
-        monthly_stability = df.groupby('month')[feature].std().mean()
+        grouped_month = df.groupby('month')[feature]
+        monthly_stability = (grouped_month.std() * grouped_month.count()).sum() / grouped_month.count().sum()
         
         # Предиктивна сandбandльнandсть
         if len(df) >= 20:

@@ -8,13 +8,14 @@ import pandas as pd
 from src.algorithms.bias_detector import BiasDetector
 from src.algorithms.transaction_cost_model import TransactionCostModel
 from src.algorithms.walk_forward_optimizer import WalkForwardOptimizer
+from src.algorithms.metrics_mixin import PerformanceMetricsMixin
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger('AdvancedBacktesting')
 
 
-class AdvancedBacktestEngine:
+class AdvancedBacktestEngine(PerformanceMetricsMixin):
     """Розширена система бектестингу з урахуванням витрат та перевіркою на витоки"""
 
     def __init__(self, config_manager: Any=None):
@@ -79,14 +80,18 @@ class AdvancedBacktestEngine:
 
     def _calculate_sharpe(self, equity: pd.Series, risk_free_rate: float=0.02
         ) ->float:
-        returns = equity.pct_change(fill_method=None).dropna()
+        returns = equity.pct_change(fill_method=None).fillna(0)
         if len(returns) < 2:
             return 0.0
         excess_returns = returns - risk_free_rate / 252
         std_val = excess_returns.std()
+        
+        # Безпечний розрахунок
         if not np.isfinite(std_val) or std_val <= 1e-12:
             return 0.0
-        return float(np.sqrt(252) * excess_returns.mean() / std_val)
+        
+        sharpe = (np.sqrt(252) * excess_returns.mean()) / std_val
+        return float(sharpe) if np.isfinite(sharpe) else 0.0
 
     def _calculate_max_drawdown(self, equity: pd.Series) ->float:
         rolling_max = equity.cummax()
