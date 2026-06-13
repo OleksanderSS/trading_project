@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import time
+import atexit
 from contextlib import contextmanager
 from typing import Any
 
@@ -66,6 +67,9 @@ class DataManager(IDatabaseManager):
         self._initialize_connection(force_new=False)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"DataManager instance configured with shared connection to '{self.db_path}'.")
+
+# Реєстрація автоматичного закриття при виході
+atexit.register(DataManager.close_all_connections)
 
     @classmethod
     def close_all_connections(cls):
