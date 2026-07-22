@@ -231,11 +231,13 @@ def render_paper_autonomy_markdown(payload: dict[str, Any]) -> str:
 
 
 def _load_or_build_review_snapshot(review_snapshot_path: str | Path | None) -> dict[str, Any]:
+    from dean_os.dean_paths import DeanPaths
+
     if review_snapshot_path:
-        path = Path(review_snapshot_path)
-        if path.exists():
-            return json.loads(path.read_text(encoding="utf-8"))
-        return {"available": False, "error": f"Review snapshot does not exist: {path}"}
+        try:
+            return DeanPaths.load_json(review_snapshot_path)
+        except Exception as exc:
+            return {"available": False, "error": f"Review snapshot error: {exc}"}
     try:
         return AgentReviewBuilder().build()
     except Exception as exc:

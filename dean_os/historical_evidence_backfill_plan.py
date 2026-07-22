@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import json
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
-
 
 DEFAULT_READINESS_REPORT = "reports/dean_os/replay_calibration_readiness_gate_after_step14_research/latest.json"
 DEFAULT_RESEARCH_BATCH = "reports/dean_os/historical_research_replay_batch_repaired_expanded_step14/latest.json"
@@ -244,9 +243,11 @@ def _window_audit(frame: Any, run: dict[str, Any], tickers: list[str], lookback_
 
 
 def _ticker_hits(frame: Any, tickers: list[str]) -> dict[str, int]:
+    if frame.empty:
+        return dict.fromkeys(tickers, 0)
     text_cols = [column for column in TEXT_COLUMNS if column in frame.columns]
     if not text_cols:
-        return {ticker: 0 for ticker in tickers}
+        return dict.fromkeys(tickers, 0)
     combined = frame[text_cols].fillna("").astype(str).apply(lambda row: " ".join(row), axis=1).str.lower()
     return {ticker: int(combined.str.contains(ticker.lower(), regex=False).sum()) for ticker in tickers}
 
@@ -405,29 +406,24 @@ def _requested_tickers(payload: dict[str, Any], tickers: list[str] | None) -> li
 
 
 def _load_optional_json(path: str | Path | None) -> dict[str, Any]:
+    from dean_os.dean_paths import DeanPaths
+
     if path is None:
         return {"path": None, "loaded": False, "payload": {}, "error": "not_provided"}
-    resolved = Path(path)
-    if not resolved.exists():
-        return {"path": str(resolved), "loaded": False, "payload": {}, "error": "missing"}
     try:
-        payload = json.loads(resolved.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return {"path": str(resolved), "loaded": False, "payload": {}, "error": f"invalid_json: {exc}"}
-    return {"path": str(resolved), "loaded": True, "payload": payload if isinstance(payload, dict) else {"items": payload}}
+        payload = DeanPaths.load_json(path)
+        return {"path": str(path), "loaded": True, "payload": payload if isinstance(payload, dict) else {"items": payload}}
+    except Exception as exc:
+        return {"path": str(path), "loaded": False, "payload": {}, "error": str(exc)}
 
 
 def _read_table(pd: Any, path: Path) -> Any:
-    suffix = path.suffix.lower()
-    if suffix == ".csv":
-        return pd.read_csv(path)
-    if suffix in {".parquet", ".pq"}:
-        return pd.read_parquet(path)
-    if suffix == ".json":
-        return pd.read_json(path)
-    if suffix == ".jsonl":
-        return pd.read_json(path, lines=True)
-    raise ValueError(f"Unsupported table type: {path.suffix}")
+    from dean_os.dean_paths import DeanPaths
+
+    try:
+        return DeanPaths.load_data_file(path)
+    except Exception as exc:
+        raise ValueError(f"Failed to load table from {path}: {exc}")
 
 
 def _first_column(frame: Any, candidates: tuple[str, ...]) -> str | None:

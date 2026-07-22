@@ -1,0 +1,112 @@
+registry_version: dean_macro_series_registry_v1
+review_status: initial_static_mapping_requires_operator_confirmation
+source_family: FRED
+series:
+  BAMLH0A0HYM2:
+    context_key: high_yield_oas
+    name: ICE BofA US High Yield Index Option-Adjusted Spread
+    unit: percentage_points
+  CCSA:
+    context_key: continued_claims
+    name: Continued Claims
+    unit: persons
+  CPIAUCSL:
+    context_key: cpi
+    name: Consumer Price Index for All Urban Consumers
+    unit: index_1982_1984_100
+  DCOILWTICO:
+    context_key: wti_crude_oil
+    name: Crude Oil Prices West Texas Intermediate
+    unit: usd_per_barrel
+  DEXCHUS:
+    context_key: usd_cny
+    name: Chinese Yuan Renminbi to U.S. Dollar Exchange Rate
+    unit: chinese_yuan_per_usd
+  DEXUSEU:
+    context_key: usd_eur
+    name: U.S. Dollar to Euro Exchange Rate
+    unit: usd_per_euro
+  DGORDER:
+    context_key: durable_goods_orders
+    name: Manufacturers New Orders Durable Goods
+    unit: millions_usd
+  DGS10:
+    context_key: treasury_10y_daily
+    name: Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity
+    unit: percent
+  DSPIC96:
+    context_key: real_disposable_personal_income
+    name: Real Disposable Personal Income
+    unit: billions_chained_2017_usd
+  FEDFUNDS:
+    context_key: fed_funds_rate
+    name: Effective Federal Funds Rate
+    unit: percent
+  GS10:
+    context_key: treasury_10y_monthly
+    name: Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity
+    unit: percent
+  GS2:
+    context_key: treasury_2y_monthly
+    name: Market Yield on U.S. Treasury Securities at 2-Year Constant Maturity
+    unit: percent
+  HOUST:
+    context_key: housing_starts
+    name: Housing Starts
+    unit: thousands_units
+  INDPRO:
+    context_key: industrial_production
+    name: Industrial Production Total Index
+    unit: index_2017_100
+  MANEMP:
+    context_key: manufacturing_employment
+    name: All Employees Manufacturing
+    unit: thousands_persons
+  PAYEMS:
+    context_key: nonfarm_payrolls
+    name: All Employees Total Nonfarm
+    unit: thousands_persons
+  PCEPI:
+    context_key: pce_price_index
+    name: Personal Consumption Expenditures Price Index
+    unit: index_2017_100
+  PCEPILFE:
+    context_key: core_pce_price_index
+    name: Personal Consumption Expenditures Excluding Food and Energy
+    unit: index_2017_100
+  PERMIT:
+    context_key: building_permits
+    name: New Privately-Owned Housing Units Authorized by Building Permits
+    unit: thousands_units
+  PPIACO:
+    context_key: producer_price_index
+    name: Producer Price Index by Commodity All Commodities
+    unit: index_1982_100
+  RSAFS:
+    context_key: retail_sales
+    name: Advance Retail Sales Retail Trade
+    unit: millions_usd
+  T10Y2Y:
+    context_key: yield_curve_10y_2y
+    name: 10-Year Treasury Constant Maturity Minus 2-Year Treasury Constant Maturity
+    unit: percentage_points
+  TOTALSA:
+    context_key: total_vehicle_sales
+    name: Total Vehicle Sales
+    unit: millions_units
+  UMCSENT:
+    context_key: consumer_sentiment
+    name: University of Michigan Consumer Sentiment
+    unit: index_1966_q1_100
+  UNRATE:
+    context_key: unemployment_rate
+    name: Unemployment Rate
+    unit: percent
+  VIXCLS:
+    context_key: vix
+    name: CBOE Volatility Index
+    unit: index_points
+  WALCL:
+    context_key: federal_reserve_total_assets
+    name: Federal Reserve Total Assets
+    unit: millions_usd

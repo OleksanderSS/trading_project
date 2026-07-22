@@ -8,7 +8,6 @@ from typing import Any, Literal
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
 
-
 ReviewIntent = Literal["mark_reviewed", "needs_more_data"]
 DEFAULT_PACKET_PATH = "reports/dean_os/review_decision_packet/latest.json"
 
@@ -303,9 +302,12 @@ def _quote_value(value: str) -> str:
 
 
 def _load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"JSON artifact must be an object: {path}")
+    from dean_os.dean_paths import DeanPaths
+
+    # The caller explicitly supplies the packet path, so its parent directory
+    # is an allowed root in addition to the project root.
+    allowed_roots = [path.resolve().parent, DeanPaths.get_project_root()]
+    payload = DeanPaths.load_json(path, allowed_roots=allowed_roots)
     return payload
 
 

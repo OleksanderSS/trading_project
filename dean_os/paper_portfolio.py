@@ -5,11 +5,9 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from dean_os.market_data_api import parse_datetime, prepare_market_frame, read_market_frame
 from dean_os.outcome_evaluation import (
     _frame_latest_datetime,
-    _parse_datetime,
-    _prepare_market_frame,
-    _read_market_frame,
     _resolve_market_data_path,
 )
 from dean_os.paper_trading import PaperTradeStore
@@ -40,6 +38,8 @@ class PaperPortfolioSimulator:
         datetime_col: str = "datetime",
         statuses: list[str] | None = None,
         limit: int | None = None,
+        max_gross_exposure: float = 1.0,
+        max_net_exposure: float = 1.0,
     ) -> dict[str, Any]:
         try:
             import pandas as pd
@@ -52,16 +52,16 @@ class PaperPortfolioSimulator:
         if not resolved_path.exists():
             raise FileNotFoundError(f"Market data file does not exist: {resolved_path}")
 
-        frame = _prepare_market_frame(
+        frame = prepare_market_frame(
             pd=pd,
-            frame=_read_market_frame(pd, resolved_path),
+            frame=read_market_frame(pd, resolved_path),
             close_col=close_col,
             datetime_col=datetime_col,
         )
         if frame.empty:
             raise ValueError("No usable market rows after parsing close/datetime columns.")
 
-        as_of_dt = _parse_datetime(as_of) if as_of else _frame_latest_datetime(frame)
+        as_of_dt = parse_datetime(as_of) if as_of else _frame_latest_datetime(frame)
         store = PaperTradeStore(self.store_path)
         records = _select_records(store=store, statuses=statuses)
         if limit is not None:
@@ -71,6 +71,10 @@ class PaperPortfolioSimulator:
         cost_rate = (float(slippage_bps) + float(commission_bps)) / 10_000.0
         positions: list[dict[str, Any]] = []
         skipped: list[dict[str, Any]] = []
+
+        # Track aggregate exposure for enforcement
+        aggregate_gross_exposure = 0.0
+        aggregate_net_exposure = 0.0
 
         for record in records:
             simulated = _simulate_record(
@@ -84,7 +88,17 @@ class PaperPortfolioSimulator:
                 watchlist_position_size_pct=float(watchlist_position_size_pct),
                 confidence_weighting=confidence_weighting,
                 cost_rate=cost_rate,
+                max_gross_exposure=float(max_gross_exposure),
+                max_net_exposure=float(max_net_exposure),
+                current_gross_exposure=aggregate_gross_exposure,
+                current_net_exposure=aggregate_net_exposure,
             )
+
+            # Update aggregate exposure with positions that passed validation
+            for position in simulated["positions"]:
+                aggregate_gross_exposure += abs(float(position["notional"]))
+                aggregate_net_exposure += float(position["notional"]) * float(position["side_multiplier"])
+
             positions.extend(simulated["positions"])
             skipped.extend(simulated["skipped"])
 
@@ -116,6 +130,8 @@ class PaperPortfolioSimulator:
                 "slippage_bps": float(slippage_bps),
                 "commission_bps": float(commission_bps),
                 "round_trip_cost_bps": round(cost_rate * 20_000.0, 6),
+                "max_gross_exposure": float(max_gross_exposure),
+                "max_net_exposure": float(max_net_exposure),
             },
             "record_count": len(records),
             "positions": positions,
@@ -142,6 +158,10 @@ def _simulate_record(
     watchlist_position_size_pct: float,
     confidence_weighting: bool,
     cost_rate: float,
+    max_gross_exposure: float = 1.0,
+    max_net_exposure: float = 1.0,
+    current_gross_exposure: float = 0.0,
+    current_net_exposure: float = 0.0,
 ) -> dict[str, list[dict[str, Any]]]:
     base_payload = _record_payload(record)
     record_tickers = _record_tickers(record, requested_tickers)
@@ -175,7 +195,7 @@ def _simulate_record(
             "skipped": [{**base_payload, "tickers": record_tickers, "status": "neutral_direction", "reason": "Neutral records do not open positions."}],
         }
 
-    start_at = _parse_datetime(record.created_at)
+    start_at = parse_datetime(record.created_at)
     due_at = start_at + timedelta(days=record.horizon_days)
     target_at = min(as_of, due_at)
     if target_at < start_at:
@@ -196,6 +216,36 @@ def _simulate_record(
                     "tickers": record_tickers,
                     "status": "zero_notional",
                     "reason": "Configured position sizing produced zero notional.",
+                }
+            ],
+        }
+
+    # Check if adding this position would exceed exposure limits
+    new_gross_exposure = current_gross_exposure + (abs(notional_per_ticker) * len(record_tickers))
+    new_net_exposure = current_net_exposure + (notional_per_ticker * side * len(record_tickers))
+
+    if new_gross_exposure > initial_cash * max_gross_exposure:
+        return {
+            "positions": [],
+            "skipped": [
+                {
+                    **base_payload,
+                    "tickers": record_tickers,
+                    "status": "exceeds_gross_exposure_limit",
+                    "reason": f"Position would exceed gross exposure limit: {new_gross_exposure:.2f} > {initial_cash * max_gross_exposure:.2f}",
+                }
+            ],
+        }
+
+    if abs(new_net_exposure) > initial_cash * max_net_exposure:
+        return {
+            "positions": [],
+            "skipped": [
+                {
+                    **base_payload,
+                    "tickers": record_tickers,
+                    "status": "exceeds_net_exposure_limit",
+                    "reason": f"Position would exceed net exposure limit: {abs(new_net_exposure):.2f} > {initial_cash * max_net_exposure:.2f}",
                 }
             ],
         }
@@ -288,7 +338,7 @@ def _build_equity_curve(
     if not positions:
         return []
 
-    intervals = [(_parse_datetime(position["entry_at"]), _parse_datetime(position["exit_at"])) for position in positions]
+    intervals = [(parse_datetime(position["entry_at"]), parse_datetime(position["exit_at"])) for position in positions]
     first_at = min(start for start, _ in intervals)
     last_at = max(end for _, end in intervals)
     relevant_frame = frame[(frame["_dean_datetime"] >= first_at) & (frame["_dean_datetime"] <= last_at)]
@@ -305,8 +355,8 @@ def _build_equity_curve(
         net_exposure = 0.0
         active_count = 0
         for position in positions:
-            entry_at = _parse_datetime(position["entry_at"])
-            exit_at = _parse_datetime(position["exit_at"])
+            entry_at = parse_datetime(position["entry_at"])
+            exit_at = parse_datetime(position["exit_at"])
             if timestamp < entry_at:
                 continue
             if timestamp >= exit_at:
@@ -337,7 +387,7 @@ def _build_equity_curve(
 def _marked_position_pnl(frame: Any, position: dict[str, Any], timestamp: datetime, cost_rate: float) -> float | None:
     ticker_frame = frame[
         (frame["_dean_ticker"] == position["ticker"])
-        & (frame["_dean_datetime"] >= _parse_datetime(position["entry_at"]))
+        & (frame["_dean_datetime"] >= parse_datetime(position["entry_at"]))
         & (frame["_dean_datetime"] <= timestamp)
     ]
     if ticker_frame.empty:
@@ -462,6 +512,10 @@ def _recommendations(summary: dict[str, Any]) -> list[str]:
         recommendations.append("The first usable entry price is after as_of for at least one record; rerun with newer data.")
     if summary["skipped_by_status"].get("watchlist_only"):
         recommendations.append("Use --include-watchlist only when watchlist ideas should be treated as paper positions.")
+    if summary["skipped_by_status"].get("exceeds_gross_exposure_limit"):
+        recommendations.append("Some positions were skipped due to gross exposure limits; consider increasing max_gross_exposure or reducing position_size_pct.")
+    if summary["skipped_by_status"].get("exceeds_net_exposure_limit"):
+        recommendations.append("Some positions were skipped due to net exposure limits; consider increasing max_net_exposure or reducing position_size_pct.")
     if summary["open_position_count"]:
         recommendations.append("Some paper positions are still open; treat PnL as mark-to-market, not final outcome.")
     if summary["max_drawdown"] > 0.1:

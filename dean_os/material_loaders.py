@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from bs4 import BeautifulSoup
 
@@ -13,6 +13,64 @@ from dean_os.schemas import ResearchDocument
 ResearchSourceType = Literal["news", "article", "book", "report", "filing", "transcript"]
 
 SUPPORTED_EXTENSIONS = {".txt", ".md", ".markdown", ".html", ".htm", ".json", ".pdf", ".docx"}
+SENTIMENT_EXCLUDED_QUARANTINE_FLAGS = frozenset(
+    {"legal_disclaimer", "third_party_rating", "advertising_navigation_author_bio"}
+)
+
+QUARANTINE_PATTERNS: tuple[tuple[str, tuple[re.Pattern[str], ...]], ...] = (
+    (
+        "legal_disclaimer",
+        (
+            re.compile(r"\bforward-looking statements?\b", re.IGNORECASE),
+            re.compile(r"\bsafe harbor\b", re.IGNORECASE),
+            re.compile(r"\bactual results may differ\b", re.IGNORECASE),
+            re.compile(r"\bundertakes? no obligation to update\b", re.IGNORECASE),
+            re.compile(r"\bno obligation to update\b", re.IGNORECASE),
+            re.compile(r"\bnot (?:financial|investment) advice\b", re.IGNORECASE),
+            re.compile(r"\bnot a recommendation\b", re.IGNORECASE),
+            re.compile(r"\bfor informational purposes only\b", re.IGNORECASE),
+            re.compile(r"\brisks and uncertainties\b", re.IGNORECASE),
+            re.compile(r"\brisk factors\b.*\bsec filings\b", re.IGNORECASE),
+            re.compile(r"\blegal notice\b", re.IGNORECASE),
+        ),
+    ),
+    (
+        "third_party_rating",
+        (
+            re.compile(r"\bthird[- ]party rating\b", re.IGNORECASE),
+            re.compile(r"\banalyst rating\b", re.IGNORECASE),
+            re.compile(r"\bbroker rating\b", re.IGNORECASE),
+            re.compile(r"\bconsensus rating\b", re.IGNORECASE),
+            re.compile(r"\bprice target\b", re.IGNORECASE),
+            re.compile(r"\bmaintains?\s+(?:buy|sell|hold|outperform|underperform)\s+rating\b", re.IGNORECASE),
+            re.compile(r"\b(?:upgrades?|downgrades?)\s+(?:to|from)\s+(?:buy|sell|hold|outperform|underperform)\b", re.IGNORECASE),
+            re.compile(r"\bzacks rank\b", re.IGNORECASE),
+            re.compile(r"\bmorningstar rating\b", re.IGNORECASE),
+            re.compile(r"\btipranks\b", re.IGNORECASE),
+        ),
+    ),
+    (
+        "advertising_navigation_author_bio",
+        (
+            re.compile(r"\badvertisement\b", re.IGNORECASE),
+            re.compile(r"\bsponsored content\b", re.IGNORECASE),
+            re.compile(r"\bsubscribe now\b", re.IGNORECASE),
+            re.compile(r"\bsign up\b.*\bnewsletter\b", re.IGNORECASE),
+            re.compile(r"\bclick here to\b", re.IGNORECASE),
+            re.compile(r"\bcookie policy\b", re.IGNORECASE),
+            re.compile(r"\bprivacy policy\b", re.IGNORECASE),
+            re.compile(r"\bterms of use\b", re.IGNORECASE),
+            re.compile(r"\ball rights reserved\b", re.IGNORECASE),
+            re.compile(r"\babout the author\b", re.IGNORECASE),
+            re.compile(r"\bauthor bio\b", re.IGNORECASE),
+            re.compile(r"\bfollow us\b", re.IGNORECASE),
+            re.compile(r"\brelated articles\b", re.IGNORECASE),
+        ),
+    ),
+)
+
+_PARAGRAPH_RE = re.compile(r"\S[\s\S]*?(?=\n\s*\n|\Z)")
+_SENTENCE_RE = re.compile(r"[^.!?\n]+(?:[.!?]+|$)")
 
 
 class MaterialLoadError(RuntimeError):
@@ -42,16 +100,18 @@ def load_research_document(
         title, text = _extract_html(raw_html, fallback_title=file_path.stem)
     elif suffix == ".json":
         title, text, metadata = _extract_json(file_path)
-        return ResearchDocument(
-            title=title,
-            source_type=source_type or _infer_source_type(file_path),
-            text=text,
-            uri=str(file_path),
-            tickers=tickers or metadata.get("tickers", []),
-            sectors=sectors or metadata.get("sectors", []),
-            tags=tags or metadata.get("tags", []),
-            published_at=metadata.get("published_at"),
-            metadata={"path": str(file_path), **metadata},
+        return annotate_quarantine(
+            ResearchDocument(
+                title=title,
+                source_type=source_type or _infer_source_type(file_path),
+                text=text,
+                uri=str(file_path),
+                tickers=tickers or metadata.get("tickers", []),
+                sectors=sectors or metadata.get("sectors", []),
+                tags=tags or metadata.get("tags", []),
+                published_at=metadata.get("published_at"),
+                metadata={"path": str(file_path), **metadata},
+            )
         )
     elif suffix == ".pdf":
         title = file_path.stem
@@ -65,15 +125,17 @@ def load_research_document(
     if not text.strip():
         raise MaterialLoadError(f"No extractable text found in: {file_path}")
 
-    return ResearchDocument(
-        title=title,
-        source_type=source_type or _infer_source_type(file_path),
-        text=text,
-        uri=str(file_path),
-        tickers=tickers or [],
-        sectors=sectors or [],
-        tags=tags or [],
-        metadata={"path": str(file_path), "extension": suffix},
+    return annotate_quarantine(
+        ResearchDocument(
+            title=title,
+            source_type=source_type or _infer_source_type(file_path),
+            text=text,
+            uri=str(file_path),
+            tickers=tickers or [],
+            sectors=sectors or [],
+            tags=tags or [],
+            metadata={"path": str(file_path), "extension": suffix},
+        )
     )
 
 
@@ -138,12 +200,127 @@ def ingest_research_path(
 
 
 def _read_text_file(path: Path) -> str:
-    for encoding in ("utf-8", "utf-8-sig", "cp1251", "latin-1"):
-        try:
-            return path.read_text(encoding=encoding)
-        except UnicodeDecodeError:
+    from dean_os.dean_paths import DeanPaths
+
+    return DeanPaths.load_text_file(path)
+
+
+def annotate_quarantine(document: ResearchDocument) -> ResearchDocument:
+    """Attach document-level quarantine metadata without changing source text."""
+    quarantine_blocks = detect_quarantine_blocks(document.text)
+    quarantine_flags = sorted(
+        {
+            flag
+            for block in quarantine_blocks
+            for flag in block.get("quarantine_flags", [])
+        }
+    )
+    quality_precheck = "quarantine_detected" if quarantine_flags else "passed"
+    metadata = {
+        **document.metadata,
+        "quarantine_blocks": quarantine_blocks,
+        "quarantine_block_count": len(quarantine_blocks),
+        "quarantine_flags": quarantine_flags,
+        "quality_precheck": quality_precheck,
+    }
+    return document.model_copy(
+        update={
+            "metadata": metadata,
+            "quarantine_flags": quarantine_flags,
+            "quality_precheck": quality_precheck,
+        }
+    )
+
+
+def detect_quarantine_blocks(text: str) -> list[dict[str, Any]]:
+    blocks: list[dict[str, Any]] = []
+    for block_index, partition in enumerate(partition_text_by_quarantine(text)):
+        flags = partition["quarantine_flags"]
+        if not flags:
             continue
-    raise MaterialLoadError(f"Could not decode text file: {path}")
+        block_text = partition["text"]
+        blocks.append(
+            {
+                "block_index": block_index,
+                "start": partition["start"],
+                "end": partition["end"],
+                "quarantine_flags": flags,
+                "text_preview": block_text[:240],
+            }
+        )
+    return blocks
+
+
+def quarantine_flags_for_text(text: str) -> list[str]:
+    flags: list[str] = []
+    for flag, patterns in QUARANTINE_PATTERNS:
+        if any(pattern.search(text) for pattern in patterns):
+            flags.append(flag)
+    return flags
+
+
+def partition_text_by_quarantine(text: str) -> list[dict[str, Any]]:
+    partitions: list[dict[str, Any]] = []
+    for unit in _analysis_units(text):
+        unit_text = _clean_text(unit["text"])
+        if not unit_text:
+            continue
+        flags = quarantine_flags_for_text(unit_text)
+        if partitions and partitions[-1]["quarantine_flags"] == flags:
+            partitions[-1]["text"] = f"{partitions[-1]['text']} {unit_text}".strip()
+            partitions[-1]["end"] = unit["end"]
+            continue
+        partitions.append(
+            {
+                "text": unit_text,
+                "start": unit["start"],
+                "end": unit["end"],
+                "quarantine_flags": flags,
+                "quality_precheck": "quarantined" if flags else "passed",
+            }
+        )
+    return partitions
+
+
+def filter_quarantined_text(
+    text: str,
+    excluded_flags: set[str] | frozenset[str] = SENTIMENT_EXCLUDED_QUARANTINE_FLAGS,
+) -> tuple[str, list[dict[str, Any]]]:
+    kept: list[str] = []
+    removed: list[dict[str, Any]] = []
+    for partition in partition_text_by_quarantine(text):
+        flags = set(partition["quarantine_flags"])
+        if flags.intersection(excluded_flags):
+            removed.append(partition)
+            continue
+        kept.append(partition["text"])
+    return _clean_text(" ".join(kept)), removed
+
+
+def sentiment_safe_text(document: ResearchDocument) -> str:
+    safe_text, _removed = filter_quarantined_text(document.text)
+    return safe_text
+
+
+def _analysis_units(text: str) -> list[dict[str, Any]]:
+    if not text:
+        return []
+    paragraphs = [
+        {"text": match.group(0), "start": match.start(), "end": match.end()}
+        for match in _PARAGRAPH_RE.finditer(text)
+        if match.group(0).strip()
+    ]
+    if len(paragraphs) > 1:
+        return paragraphs
+
+    units: list[dict[str, Any]] = []
+    for match in _SENTENCE_RE.finditer(text):
+        sentence = match.group(0)
+        if sentence.strip():
+            units.append({"text": sentence, "start": match.start(), "end": match.end()})
+    if units:
+        return units
+    return [{"text": text, "start": 0, "end": len(text)}]
 
 
 def _title_from_markdown(text: str) -> str | None:

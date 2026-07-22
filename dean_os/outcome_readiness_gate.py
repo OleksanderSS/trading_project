@@ -5,7 +5,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from dean_os.analyst_outcome_evaluation_loop import ANALYST_LEARNING_FLAG
+from dean_os.analyst_core.analyst_outcome_evaluation_loop import ANALYST_LEARNING_FLAG
 from dean_os.learning import LearningStore
 from dean_os.outcome_evaluation import OutcomeEvaluationRunner
 from dean_os.schemas import AgentLearningRecord, utc_now_iso

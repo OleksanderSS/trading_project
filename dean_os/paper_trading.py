@@ -8,18 +8,17 @@ from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from dean_os.learning import classify_outcome
+from dean_os.market_data_api import parse_datetime, prepare_market_frame, read_market_frame
 from dean_os.outcome_evaluation import (
     _frame_latest_datetime,
-    _parse_datetime,
-    _prepare_market_frame,
-    _read_market_frame,
     _resolve_market_data_path,
     _ticker_return,
 )
 from dean_os.regime_context import normalize_context_tags
-from dean_os.schemas import PaperTradeRecord
+from dean_os.schemas import PaperTradeRecord, utc_now_iso
 
 
 class PaperTradeStore:
@@ -31,17 +30,24 @@ class PaperTradeStore:
         self._init_db()
 
     def add_record(self, record: PaperTradeRecord) -> str:
+        payload = json.dumps(record.model_dump(mode="json"), ensure_ascii=True)
         with self._connect() as conn:
+            cur = conn.execute(
+                "SELECT COALESCE(MAX(revision), 0) FROM paper_trades WHERE trade_id = ?",
+                (record.trade_id,),
+            )
+            next_revision = (cur.fetchone()[0] or 0) + 1
             conn.execute(
                 """
-                INSERT OR REPLACE INTO paper_trades
-                (trade_id, source_type, source_id, agent_name, action, tickers, expected_direction,
+                INSERT INTO paper_trades
+                (trade_id, revision, source_type, source_id, agent_name, action, tickers, expected_direction,
                  horizon_days, thesis, confidence, context_tags, regime_tags, status, created_at,
                  outcome_at, realized_return, outcome_label, metadata, payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.trade_id,
+                    next_revision,
                     record.source_type,
                     record.source_id,
                     record.agent_name,
@@ -59,30 +65,58 @@ class PaperTradeStore:
                     record.realized_return,
                     record.outcome_label,
                     json.dumps(record.metadata, ensure_ascii=True),
-                    json.dumps(record.model_dump(mode="json"), ensure_ascii=True),
+                    payload,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO paper_trade_events
+                (event_id, trade_id, revision, actor, reason, payload, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    uuid4().hex,
+                    record.trade_id,
+                    next_revision,
+                    record.metadata.get("actor", "system"),
+                    record.metadata.get("reason", "paper trade write"),
+                    payload,
+                    utc_now_iso(),
                 ),
             )
         return record.trade_id
 
     def get_record(self, trade_id: str) -> PaperTradeRecord | None:
         with self._connect() as conn:
-            row = conn.execute("SELECT payload FROM paper_trades WHERE trade_id = ?", (trade_id,)).fetchone()
+            row = conn.execute(
+                "SELECT payload FROM paper_trades WHERE trade_id = ? ORDER BY revision DESC LIMIT 1",
+                (trade_id,),
+            ).fetchone()
         if row is None:
             return None
         return PaperTradeRecord(**json.loads(row["payload"]))
 
     def list_records(self, status: str | None = None, agent_name: str | None = None) -> list[PaperTradeRecord]:
+        latest_sql = """
+            SELECT pt.payload
+            FROM paper_trades pt
+            INNER JOIN (
+                SELECT trade_id, MAX(revision) AS max_rev
+                FROM paper_trades
+                GROUP BY trade_id
+            ) latest ON pt.trade_id = latest.trade_id AND pt.revision = latest.max_rev
+        """
         clauses = []
         params: list[Any] = []
         if status:
-            clauses.append("status = ?")
+            clauses.append("pt.status = ?")
             params.append(status)
         if agent_name:
-            clauses.append("agent_name = ?")
+            clauses.append("pt.agent_name = ?")
             params.append(agent_name)
         where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         with self._connect() as conn:
-            rows = conn.execute(f"SELECT payload FROM paper_trades{where} ORDER BY rowid", tuple(params)).fetchall()
+            rows = conn.execute(latest_sql + where + " ORDER BY pt.rowid", tuple(params)).fetchall()
         return [PaperTradeRecord(**json.loads(row["payload"])) for row in rows]
 
     def update_outcome(
@@ -138,7 +172,9 @@ class PaperTradeStore:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS paper_trades (
-                    trade_id TEXT PRIMARY KEY,
+                    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                    trade_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
                     source_type TEXT NOT NULL,
                     source_id TEXT NOT NULL,
                     agent_name TEXT NOT NULL,
@@ -159,6 +195,25 @@ class PaperTradeStore:
                     payload TEXT NOT NULL
                 )
                 """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_paper_trades_id ON paper_trades(trade_id)"
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS paper_trade_events (
+                    event_id TEXT PRIMARY KEY,
+                    trade_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_paper_trade_events_id ON paper_trade_events(trade_id)"
             )
 
     @contextmanager
@@ -205,13 +260,13 @@ class PaperTradeEvaluationRunner:
         if not resolved_path.exists():
             raise FileNotFoundError(f"Market data file does not exist: {resolved_path}")
 
-        frame = _prepare_market_frame(
+        frame = prepare_market_frame(
             pd=pd,
-            frame=_read_market_frame(pd, resolved_path),
+            frame=read_market_frame(pd, resolved_path),
             close_col=close_col,
             datetime_col=datetime_col,
         )
-        as_of_dt = _parse_datetime(as_of) if as_of else _frame_latest_datetime(frame)
+        as_of_dt = parse_datetime(as_of) if as_of else _frame_latest_datetime(frame)
         store = PaperTradeStore(self.store_path)
         records = store.list_records(status="pending")
         if limit is not None:
@@ -274,7 +329,7 @@ class PaperTradeEvaluationRunner:
         if not record_tickers:
             return {**base_payload, "status": "missing_tickers", "reason": "Paper record has no tickers."}
 
-        start_at = _parse_datetime(record.created_at)
+        start_at = parse_datetime(record.created_at)
         due_at = start_at + timedelta(days=record.horizon_days)
         latest_price_at = _frame_latest_datetime(frame)
         if latest_price_at < start_at:

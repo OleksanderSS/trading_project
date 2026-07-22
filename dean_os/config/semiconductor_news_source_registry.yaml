@@ -1,0 +1,49 @@
+registry_version: semiconductor_news_sources_v1
+review_status: initial_static_mapping_requires_operator_confirmation
+default_tier: tier_4_weak_or_unverified
+
+source_tiers:
+  tier_1_core_evidence:
+    - nvidia newsroom
+    - amd newsroom
+    - intel newsroom
+    - tsmc
+    - u.s. department of commerce
+    - bis
+  tier_2_strong_context:
+    - reuters
+    - bloomberg
+    - cnbc
+    - financial times
+    - the wall street journal
+    - wall street journal
+  tier_3_event_context:
+    - yahoo finance
+    - yahoo_finance_general
+    - marketwatch
+    - barron's
+    - investor's business daily
+    - bbc
+    - the verge
+    - techcrunch
+    - tom's hardware
+    - ee times
+    - investopedia
+  tier_4_weak_or_unverified:
+    - seeking alpha
+    - zerohedge
+    - the motley fool
+    - quiver quantitative
+    - marketbeat
+    - benzinga
+    - tipranks
+    - zacks investment research
+    - stocktwits
+
+lane_eligibility:
+  eligible_source_tiers:
+    - tier_1_core_evidence
+    - tier_2_strong_context
+  min_independent_sources: 2
+  max_age_days: 120
+

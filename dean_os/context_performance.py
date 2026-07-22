@@ -9,7 +9,6 @@ from dean_os.recommendation_memory import RecommendationMemoryStore
 from dean_os.regime_context import normalize_context_tags
 from dean_os.utils import clamp
 
-
 COMPLETED_OUTCOMES = {"hit", "miss", "inconclusive"}
 REGIME_CONTEXT_TAGS = {
     "calm_market",
@@ -99,6 +98,9 @@ class AgentPerformanceByContext:
 
     def _learning_records(self) -> list[dict[str, Any]]:
         records = []
+        # Performance reporting must include completed outcomes.  The
+        # eligibility view is for learning/promotion candidates and excludes
+        # records after they have been evaluated.
         for record in LearningStore(self.learning_path).list_records():
             metadata = record.metadata or {}
             context_tags = normalize_context_tags(metadata.get("context_tags", []))

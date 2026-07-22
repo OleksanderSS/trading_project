@@ -6,12 +6,12 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 from dean_os.event_log import EventLog
 from dean_os.operation_queue import OperationQueue
-from dean_os.schemas import EvidenceItem, PipelineActionProposal, ReviewActionRecord
+from dean_os.schemas import EvidenceItem, PipelineActionProposal, ReviewActionRecord, utc_now_iso
 from dean_os.utils import json_ready
-
 
 PLACEHOLDER_SOURCE_IDS = {
     "RUN_ID_HERE",
@@ -69,16 +69,23 @@ class ReviewActionStore:
         self._init_db()
 
     def add_action(self, action: ReviewActionRecord) -> str:
+        payload = json.dumps(json_ready(action), ensure_ascii=True)
         with self._connect() as conn:
+            cur = conn.execute(
+                "SELECT COALESCE(MAX(revision), 0) FROM review_actions WHERE action_id = ?",
+                (action.action_id,),
+            )
+            next_revision = (cur.fetchone()[0] or 0) + 1
             conn.execute(
                 """
-                INSERT OR REPLACE INTO review_actions
-                (action_id, source_type, source_id, action_type, status, reviewer,
+                INSERT INTO review_actions
+                (action_id, revision, source_type, source_id, action_type, status, reviewer,
                  linked_proposal_id, created_at, payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     action.action_id,
+                    next_revision,
                     action.source_type,
                     action.source_id,
                     action.action_type,
@@ -86,7 +93,23 @@ class ReviewActionStore:
                     action.reviewer,
                     action.linked_proposal_id,
                     action.created_at,
-                    json.dumps(json_ready(action), ensure_ascii=True),
+                    payload,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO review_action_events
+                (event_id, action_id, revision, actor, reason, payload, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    uuid4().hex,
+                    action.action_id,
+                    next_revision,
+                    action.reviewer,
+                    action.notes or "review action write",
+                    payload,
+                    utc_now_iso(),
                 ),
             )
         self._log("review_action_recorded", action.model_dump(mode="json"))
@@ -97,22 +120,34 @@ class ReviewActionStore:
         source_type: str | None = None,
         action_type: str | None = None,
     ) -> list[ReviewActionRecord]:
+        latest_sql = """
+            SELECT ra.payload
+            FROM review_actions ra
+            INNER JOIN (
+                SELECT action_id, MAX(revision) AS max_rev
+                FROM review_actions
+                GROUP BY action_id
+            ) latest ON ra.action_id = latest.action_id AND ra.revision = latest.max_rev
+        """
         clauses = []
         params: list[Any] = []
         if source_type:
-            clauses.append("source_type = ?")
+            clauses.append("ra.source_type = ?")
             params.append(source_type)
         if action_type:
-            clauses.append("action_type = ?")
+            clauses.append("ra.action_type = ?")
             params.append(action_type)
         where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         with self._connect() as conn:
-            rows = conn.execute(f"SELECT payload FROM review_actions{where} ORDER BY rowid", params).fetchall()
+            rows = conn.execute(latest_sql + where + " ORDER BY ra.rowid", params).fetchall()
         return [ReviewActionRecord(**json.loads(row["payload"])) for row in rows]
 
     def get_action(self, action_id: str) -> ReviewActionRecord | None:
         with self._connect() as conn:
-            row = conn.execute("SELECT payload FROM review_actions WHERE action_id = ?", (action_id,)).fetchone()
+            row = conn.execute(
+                "SELECT payload FROM review_actions WHERE action_id = ? ORDER BY revision DESC LIMIT 1",
+                (action_id,),
+            ).fetchone()
         if row is None:
             return None
         return ReviewActionRecord(**json.loads(row["payload"]))
@@ -218,7 +253,9 @@ class ReviewActionStore:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS review_actions (
-                    action_id TEXT PRIMARY KEY,
+                    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
                     source_type TEXT NOT NULL,
                     source_id TEXT NOT NULL,
                     action_type TEXT NOT NULL,
@@ -229,6 +266,25 @@ class ReviewActionStore:
                     payload TEXT NOT NULL
                 )
                 """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_review_actions_id ON review_actions(action_id)"
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS review_action_events (
+                    event_id TEXT PRIMARY KEY,
+                    action_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_review_action_events_id ON review_action_events(action_id)"
             )
 
     @contextmanager

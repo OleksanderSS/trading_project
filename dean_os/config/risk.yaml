@@ -1,0 +1,5 @@
+{
+  "max_drawdown_limit": 0.30,
+  "max_daily_var_95": 0.10,
+  "max_gross_exposure": 1.2
+}

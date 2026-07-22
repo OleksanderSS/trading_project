@@ -16,25 +16,48 @@ class PaperPortfolioAgent(BaseAgent):
     branch = "pipeline"
 
     async def run(self, context: MarketContext) -> PipelineReport:
-        simulation = PaperPortfolioSimulator(
-            self.config.get("store_path", "data/dean_os/paper_trades.sqlite")
-        ).simulate(
-            market_data_path=self.config.get("market_data_path"),
-            latest_processed_prices=self.config.get("latest_processed_prices", "1d"),
-            tickers=self.config.get("tickers") or context.tickers,
-            as_of=self.config.get("as_of"),
-            initial_cash=float(self.config.get("initial_cash", 100_000.0)),
-            position_size_pct=float(self.config.get("position_size_pct", 0.05)),
-            include_watchlist=bool(self.config.get("include_watchlist", False)),
-            watchlist_position_size_pct=float(self.config.get("watchlist_position_size_pct", 0.0)),
-            confidence_weighting=bool(self.config.get("confidence_weighting", False)),
-            slippage_bps=float(self.config.get("slippage_bps", 5.0)),
-            commission_bps=float(self.config.get("commission_bps", 1.0)),
-            close_col=self.config.get("close_col", "close"),
-            datetime_col=self.config.get("datetime_col", "datetime"),
-            statuses=list(self.config.get("statuses", ["pending", "evaluated"])),
-            limit=self.config.get("limit"),
-        )
+        try:
+            simulation = PaperPortfolioSimulator(
+                self.config.get("store_path", "data/dean_os/paper_trades.sqlite")
+            ).simulate(
+                market_data_path=self.config.get("market_data_path"),
+                latest_processed_prices=self.config.get("latest_processed_prices", "1d"),
+                tickers=self.config.get("tickers") or context.tickers,
+                as_of=self.config.get("as_of"),
+                initial_cash=float(self.config.get("initial_cash", 100_000.0)),
+                position_size_pct=float(self.config.get("position_size_pct", 0.05)),
+                include_watchlist=bool(self.config.get("include_watchlist", False)),
+                watchlist_position_size_pct=float(self.config.get("watchlist_position_size_pct", 0.0)),
+                confidence_weighting=bool(self.config.get("confidence_weighting", False)),
+                slippage_bps=float(self.config.get("slippage_bps", 5.0)),
+                commission_bps=float(self.config.get("commission_bps", 1.0)),
+                close_col=self.config.get("close_col", "close"),
+                datetime_col=self.config.get("datetime_col", "datetime"),
+                statuses=list(self.config.get("statuses", ["pending", "evaluated"])),
+                limit=self.config.get("limit"),
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            if (
+                isinstance(exc, ValueError)
+                and "Provide market_data_path" not in str(exc)
+            ):
+                raise
+            return PipelineReport(
+                agent_name=self.name,
+                agent_version=self.version,
+                verdict="needs_more_data",
+                confidence=0.0,
+                data_quality_score=0.0,
+                reasons=[
+                    "No market price data available for portfolio "
+                    f"simulation: {exc}"
+                ],
+                risks=["Paper portfolio cannot be simulated without market price data."],
+                blind_spots=["Agent autonomy cannot be calibrated without price coverage."],
+                evidence=[],
+                input_hash=self.context_hash(context),
+                metrics_snapshot={"simulation_skipped": True},
+            )
         context.metadata["paper_portfolio"] = simulation
 
         summary = simulation["summary"]

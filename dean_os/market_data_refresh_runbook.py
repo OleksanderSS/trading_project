@@ -9,7 +9,6 @@ from typing import Any
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
 
-
 DEFAULT_COVERAGE_PLAN_PATH = "reports/dean_os/outcome_price_coverage_plan/latest.json"
 DEFAULT_COLLECTOR_INVENTORY_PATH = "reports/dean_os/collector_inventory/latest.json"
 DEFAULT_PRICE_GLOBS = [
@@ -165,14 +164,13 @@ def render_market_data_refresh_runbook_markdown(payload: dict[str, Any]) -> str:
 
 
 def _load_optional_json(path: str | Path | None) -> dict[str, Any]:
+    from dean_os.dean_paths import DeanPaths
+
     if not path:
         return {}
-    resolved = Path(path)
-    if not resolved.exists():
-        return {}
     try:
-        return json.loads(resolved.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+        return DeanPaths.load_json(path)
+    except Exception:
         return {}
 
 

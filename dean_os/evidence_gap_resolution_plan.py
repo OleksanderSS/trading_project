@@ -9,7 +9,6 @@ from typing import Any
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
 
-
 DEFAULT_REVIEW_ACTION_PATH = "reports/dean_os/review_action_apply_ceremony/latest.json"
 DEFAULT_DECISION_PACKET_PATH = "reports/dean_os/review_decision_packet/latest.json"
 

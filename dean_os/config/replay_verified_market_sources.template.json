@@ -1,0 +1,40 @@
+{
+  "contract": "dean_verified_market_source_policy_v1",
+  "providers": [
+    {
+      "provider_id": "yahoo_finance",
+      "rank": 1,
+      "adapter_type": "network_collector",
+      "automatic_execution_allowed": true,
+      "maximum_attempts_per_task": 1,
+      "allowed_timeframes": ["1d"],
+      "required_validation": [
+        "source_ticker_identity",
+        "timezone_aware_timestamp",
+        "finite_ohlcv",
+        "daily_session_coverage"
+      ]
+    },
+    {
+      "provider_id": "local_validated_snapshot",
+      "rank": 2,
+      "adapter_type": "local_artifact",
+      "automatic_execution_allowed": false,
+      "maximum_attempts_per_task": 1,
+      "allowed_timeframes": ["1d"],
+      "required_validation": [
+        "sha256_binding",
+        "declared_ticker_coverage",
+        "timezone_aware_timestamp",
+        "finite_close",
+        "post_due_closed_session"
+      ]
+    }
+  ],
+  "failover_policy": {
+    "maximum_total_provider_attempts_per_task": 2,
+    "automatic_multi_provider_loop_allowed": false,
+    "provider_order_may_be_changed_after_outcome": false,
+    "pipeline_context_can_replace_primary_outcome": false
+  }
+}

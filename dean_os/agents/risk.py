@@ -23,15 +23,44 @@ class RiskAgent(BaseAgent):
             self.evidence("metric", "risk", "max_drawdown", risk["max_drawdown"]),
             self.evidence("metric", "risk", "daily_var_95", risk["daily_var_95"]),
             self.evidence("metric", "risk", "gross_exposure", risk["gross_exposure"]),
+            self.evidence(
+                "metric",
+                "risk",
+                "returns_offline_only",
+                bool(context.metadata.get("returns_offline_only")),
+            ),
         ]
 
-        if not risk["has_inputs"]:
-            verdict = "caution"
-            reasons = ["No returns or positions supplied to RiskAgent"]
-            risks = ["Risk gate cannot validate drawdown, VaR, or exposure before pipeline execution"]
-            signal_strength = 0.0
-            confidence = 0.65
-            quality = 0.35
+        if (
+            context.phase == "pre_trade"
+            and context.metadata.get("returns_offline_only") is True
+        ):
+            verdict = "blocked"
+            reasons = [
+                "Supervised target labels cannot serve as realized returns in pre-trade risk review"
+            ]
+            risks = [
+                "Target leakage would make drawdown and VaR evidence invalid"
+            ]
+            signal_strength = -1.0
+            confidence = 1.0
+            quality = 0.0
+        elif not risk["has_inputs"]:
+            # For pre_trade phase, missing risk data is a hard block
+            if context.phase == "pre_trade":
+                verdict = "blocked"
+                reasons = ["No returns or positions supplied to RiskAgent in pre_trade phase"]
+                risks = ["Risk gate cannot validate drawdown, VaR, or exposure before trade execution - hard block"]
+                signal_strength = -1.0
+                confidence = 1.0
+                quality = 0.0
+            else:
+                verdict = "caution"
+                reasons = ["No returns or positions supplied to RiskAgent"]
+                risks = ["Risk gate cannot validate drawdown, VaR, or exposure before pipeline execution"]
+                signal_strength = 0.0
+                confidence = 0.65
+                quality = 0.35
         elif risk["gross_exposure"] > max_gross_exposure:
             verdict = "blocked"
             reasons = [f"Gross exposure {risk['gross_exposure']:.2f} exceeds {max_gross_exposure:.2f}"]
@@ -93,7 +122,18 @@ class RiskAgent(BaseAgent):
                 "gross_exposure": gross_exposure,
                 "sample_count": 0,
             }
-        equity = (1.0 + series.fillna(0.0)).cumprod()
+
+        series = series.replace([float('inf'), float('-inf')], float('nan')).dropna()
+        if series.empty:
+            return {
+                "has_inputs": bool(positions),
+                "max_drawdown": 0.0,
+                "daily_var_95": 0.0,
+                "gross_exposure": gross_exposure,
+                "sample_count": 0,
+            }
+
+        equity = (1.0 + series).cumprod()
         drawdown = equity / equity.cummax() - 1.0
         daily_var_95 = abs(float(series.quantile(0.05)))
         return {

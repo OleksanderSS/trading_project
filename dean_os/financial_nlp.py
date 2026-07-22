@@ -3,9 +3,9 @@ from __future__ import annotations
 from collections import Counter
 from typing import Protocol
 
+from dean_os.material_loaders import filter_quarantined_text
 from dean_os.schemas import FinancialNLPResult, ResearchDocument, SourceCitation
 from dean_os.utils import clamp
-
 
 POSITIVE_TERMS = (
     "beat",
@@ -72,7 +72,8 @@ class RuleBasedFinancialNLP:
     """
 
     def analyze_document(self, document: ResearchDocument, agent_name: str) -> FinancialNLPResult:
-        text = document.text.lower()
+        safe_text, removed_quarantine_blocks = filter_quarantined_text(document.text)
+        text = safe_text.lower()
         positive_hits = _term_counts(text, POSITIVE_TERMS)
         negative_hits = _term_counts(text, NEGATIVE_TERMS)
         risk_hits = _term_counts(text, RISK_TERMS)
@@ -99,6 +100,17 @@ class RuleBasedFinancialNLP:
             citations=[_citation(document)],
             metadata={
                 "method": "rule_based",
+                "sentiment_source": "quarantine_filtered_text",
+                "sentiment_text_empty": not bool(text.strip()),
+                "document_quarantine_flags": document.quarantine_flags,
+                "removed_quarantine_block_count": len(removed_quarantine_blocks),
+                "removed_quarantine_flags": sorted(
+                    {
+                        flag
+                        for block in removed_quarantine_blocks
+                        for flag in block.get("quarantine_flags", [])
+                    }
+                ),
                 "positive_hits": positive_hits,
                 "negative_hits": negative_hits,
                 "risk_hits": risk_hits,
@@ -122,7 +134,10 @@ class OptionalLocalFinBERT:
     def analyze_document(self, document: ResearchDocument, agent_name: str) -> FinancialNLPResult:
         try:
             pipeline = self._load_pipeline()
-            text = document.text[:4000]
+            safe_text, _removed_quarantine_blocks = filter_quarantined_text(document.text)
+            if not safe_text.strip():
+                raise ValueError("No non-quarantined text available for local FinBERT analysis")
+            text = safe_text[:4000]
             raw = pipeline(text)
             result = self.fallback.analyze_document(document, agent_name)
             result.metadata["finbert_raw"] = raw

@@ -8,9 +8,8 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dean_os.event_log import EventLog
-from dean_os.schemas import AgentLabRunReport, PipelineActionProposal
+from dean_os.schemas import AgentLabRunReport, ApprovalReceipt, PipelineActionProposal, utc_now_iso
 from dean_os.utils import json_ready
-
 
 ProposalStatus = Literal["proposed", "approved", "rejected", "expired", "executed"]
 
@@ -32,11 +31,12 @@ class OperationQueue:
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT OR REPLACE INTO proposals
-                (proposal_id, agent_name, action_type, target, status, created_at, payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO proposal_transitions
+                (transition_id, proposal_id, agent_name, action_type, target, status, created_at, payload, reviewer, reason, evidence_ref)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
+                    self._generate_transition_id(),
                     proposal.proposal_id,
                     proposal.agent_name,
                     proposal.action_type,
@@ -44,6 +44,9 @@ class OperationQueue:
                     proposal.status,
                     proposal.created_at,
                     json.dumps(json_ready(proposal), ensure_ascii=True),
+                    None,  # reviewer
+                    None,  # reason
+                    None,  # evidence_ref
                 ),
             )
         self._log(
@@ -61,7 +64,9 @@ class OperationQueue:
         return [self.add_proposal(proposal) for proposal in proposals]
 
     def import_agent_lab_report(self, report_path: str | Path) -> list[str]:
-        payload = json.loads(Path(report_path).read_text(encoding="utf-8"))
+        from dean_os.dean_paths import DeanPaths
+
+        payload = DeanPaths.load_json(report_path)
         report = AgentLabRunReport(**payload)
         proposal_ids = self.add_many(report.action_proposals)
         self._log(
@@ -83,40 +88,155 @@ class OperationQueue:
         clauses = []
         params: list[Any] = []
         if status:
-            clauses.append("status = ?")
+            clauses.append("current_status.status = ?")
             params.append(status)
         if action_type:
-            clauses.append("action_type = ?")
+            clauses.append("current_status.action_type = ?")
             params.append(action_type)
         where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         with self._connect() as conn:
-            rows = conn.execute(f"SELECT payload FROM proposals{where} ORDER BY rowid", params).fetchall()
+            rows = conn.execute(
+                f"""
+                SELECT current_status.payload
+                FROM proposal_transitions AS current_status
+                INNER JOIN (
+                    SELECT proposal_id, MAX(created_at) as latest_created_at
+                    FROM proposal_transitions
+                    GROUP BY proposal_id
+                ) AS latest
+                ON current_status.proposal_id = latest.proposal_id
+                AND current_status.created_at = latest.latest_created_at
+                {where}
+                ORDER BY current_status.created_at DESC
+                """,
+                params
+            ).fetchall()
         return [PipelineActionProposal(**json.loads(row["payload"])) for row in rows]
 
     def get_proposal(self, proposal_id: str) -> PipelineActionProposal | None:
         with self._connect() as conn:
-            row = conn.execute("SELECT payload FROM proposals WHERE proposal_id = ?", (proposal_id,)).fetchone()
+            row = conn.execute(
+                """
+                SELECT payload
+                FROM proposal_transitions
+                WHERE proposal_id = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (proposal_id,)
+            ).fetchone()
         if row is None:
             return None
         return PipelineActionProposal(**json.loads(row["payload"]))
 
-    def set_status(self, proposal_id: str, status: ProposalStatus) -> PipelineActionProposal:
+    def set_status(self, proposal_id: str, status: ProposalStatus, reviewer: str | None = None, reason: str | None = None, evidence_ref: str | None = None) -> PipelineActionProposal:
+        if status == "executed":
+            raise ValueError(
+                "Setting status to 'executed' is not allowed via set_status. "
+                "Use mark_executed() with an execution receipt."
+            )
         proposal = self.get_proposal(proposal_id)
         if proposal is None:
             raise KeyError(f"Operation proposal not found: {proposal_id}")
-        updated = PipelineActionProposal(**{**proposal.model_dump(mode="json"), "status": status})
-        self.add_proposal(updated)
+        updated = PipelineActionProposal(**{**proposal.model_dump(mode="json"), "status": status, "created_at": utc_now_iso()})
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO proposal_transitions
+                (transition_id, proposal_id, agent_name, action_type, target, status, created_at, payload, reviewer, reason, evidence_ref)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    self._generate_transition_id(),
+                    updated.proposal_id,
+                    updated.agent_name,
+                    updated.action_type,
+                    updated.target,
+                    updated.status,
+                    updated.created_at,
+                    json.dumps(json_ready(updated), ensure_ascii=True),
+                    reviewer,
+                    reason,
+                    evidence_ref,
+                ),
+            )
         self._log(
             "operation_proposal_status_changed",
-            {"proposal_id": proposal_id, "old_status": proposal.status, "new_status": status},
+            {"proposal_id": proposal_id, "old_status": proposal.status, "new_status": status, "reviewer": reviewer, "reason": reason},
         )
         return updated
 
-    def approve(self, proposal_id: str) -> PipelineActionProposal:
-        return self.set_status(proposal_id, "approved")
+    def mark_executed(
+        self,
+        proposal_id: str,
+        execution_receipt: dict[str, Any] | ApprovalReceipt,
+        reviewer: str | None = None,
+        reason: str | None = None,
+        evidence_ref: str | None = None,
+    ) -> PipelineActionProposal:
+        """Mark a proposal as executed only with a valid execution receipt.
 
-    def reject(self, proposal_id: str) -> PipelineActionProposal:
-        return self.set_status(proposal_id, "rejected")
+        `executed` without a receipt is forbidden (fail-closed authority boundary).
+        """
+        if isinstance(execution_receipt, ApprovalReceipt):
+            receipt = execution_receipt
+        else:
+            receipt = ApprovalReceipt(**{**execution_receipt, "transition_type": "operation"})
+        if not receipt.approved:
+            raise ValueError("Execution receipt must be approved")
+        proposal = self.get_proposal(proposal_id)
+        if proposal is None:
+            raise KeyError(f"Operation proposal not found: {proposal_id}")
+        if proposal.status != "approved":
+            raise ValueError(
+                f"Cannot mark proposal {proposal_id} executed: current status is {proposal.status}, expected 'approved'"
+            )
+        updated = PipelineActionProposal(**{**proposal.model_dump(mode="json"), "status": "executed", "created_at": utc_now_iso()})
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO proposal_transitions
+                (transition_id, proposal_id, agent_name, action_type, target, status, created_at, payload, reviewer, reason, evidence_ref)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    self._generate_transition_id(),
+                    updated.proposal_id,
+                    updated.agent_name,
+                    updated.action_type,
+                    updated.target,
+                    updated.status,
+                    updated.created_at,
+                    json.dumps(json_ready(updated), ensure_ascii=True),
+                    reviewer or receipt.reviewer,
+                    reason or receipt.reason,
+                    evidence_ref or receipt.evidence_ref,
+                ),
+            )
+        self._log(
+            "operation_proposal_executed",
+            {
+                "proposal_id": proposal_id,
+                "receipt_id": receipt.receipt_id,
+                "reviewer": receipt.reviewer,
+                "reason": receipt.reason,
+            },
+        )
+        return updated
+
+    def approve(self, proposal_id: str, reviewer: str, reason: str, evidence_ref: str | None = None) -> PipelineActionProposal:
+        if not reviewer:
+            raise ValueError("Approval requires reviewer")
+        if not reason:
+            raise ValueError("Approval requires reason")
+        return self.set_status(proposal_id, "approved", reviewer=reviewer, reason=reason, evidence_ref=evidence_ref)
+
+    def reject(self, proposal_id: str, reviewer: str, reason: str, evidence_ref: str | None = None) -> PipelineActionProposal:
+        if not reviewer:
+            raise ValueError("Rejection requires reviewer")
+        if not reason:
+            raise ValueError("Rejection requires reason")
+        return self.set_status(proposal_id, "rejected", reviewer=reviewer, reason=reason, evidence_ref=evidence_ref)
 
     def dry_run(self, proposal_id: str) -> dict[str, Any]:
         proposal = self.get_proposal(proposal_id)
@@ -144,17 +264,39 @@ class OperationQueue:
         with self._connect() as conn:
             conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS proposals (
-                    proposal_id TEXT PRIMARY KEY,
+                CREATE TABLE IF NOT EXISTS proposal_transitions (
+                    transition_id TEXT PRIMARY KEY,
+                    proposal_id TEXT NOT NULL,
                     agent_name TEXT NOT NULL,
                     action_type TEXT NOT NULL,
                     target TEXT NOT NULL,
                     status TEXT NOT NULL,
                     created_at TEXT NOT NULL,
-                    payload TEXT NOT NULL
+                    payload TEXT NOT NULL,
+                    reviewer TEXT,
+                    reason TEXT,
+                    evidence_ref TEXT
                 )
                 """
             )
+            # Create index for faster queries
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_proposal_id
+                ON proposal_transitions(proposal_id)
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_created_at
+                ON proposal_transitions(created_at)
+                """
+            )
+
+    def _generate_transition_id(self) -> str:
+        """Generate a unique transition ID."""
+        from uuid import uuid4
+        return uuid4().hex
 
     @contextmanager
     def _connect(self) -> Iterator[sqlite3.Connection]:

@@ -8,7 +8,6 @@ from dean_os.operation_queue import OperationQueue
 from dean_os.schemas import EvidenceItem, PipelineActionProposal, utc_now_iso
 from dean_os.utils import json_ready
 
-
 READY_STATUSES = {"ready_for_review"}
 CAUTION_STATUSES = {"ready_with_caution"}
 

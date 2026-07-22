@@ -1,0 +1,76 @@
+contract: dean_system_topology_v2
+topology_id: dean_full_review_system_v2
+branches:
+  - branch_id: artifact_intake
+    title: Saved pipeline and external evidence intake
+    plane: data
+    depends_on: []
+    minimum_profile: data_only
+    input_contracts: [clean_market_15m_60m_1d, saved_producer_artifacts]
+    output_contracts: [hash_bound_artifact_inventory]
+    forbidden_actions: [mutate_source_artifact, use_future_evidence, trade]
+  - branch_id: pipeline_control
+    title: Pipeline quality, leakage and timeframe control
+    plane: control
+    depends_on: [artifact_intake]
+    minimum_profile: data_only
+    input_contracts: [pipeline_timeframe_context, pipeline_metrics]
+    output_contracts: [pipeline_control_state]
+    forbidden_actions: [ungated_config_write, model_promotion, trade]
+  - branch_id: evidence_intelligence
+    title: Point-in-time evidence, provenance and deduplication
+    plane: data
+    depends_on: [artifact_intake]
+    minimum_profile: data_only
+    input_contracts: [saved_news, saved_macro, saved_filings, research_corpus]
+    output_contracts: [accepted_evidence_set, rejected_evidence_set]
+    forbidden_actions: [headline_as_fact, future_evidence, learning_write]
+  - branch_id: domain_analysis
+    title: Shareable domain analyst instance
+    plane: analysis
+    depends_on: [pipeline_control, evidence_intelligence]
+    minimum_profile: analysis_ready
+    input_contracts: [market_context, accepted_evidence_set, domain_profile]
+    output_contracts: [sector_report, hypotheses, evidence_gaps]
+    forbidden_actions: [unsupported_probability, direct_trade]
+  - branch_id: world_model
+    title: Typed transmission graph and scenario state
+    plane: analysis
+    depends_on: [domain_analysis]
+    minimum_profile: analysis_ready
+    input_contracts: [sector_report, pipeline_context, historical_analogs]
+    output_contracts: [world_model_packet, scenario_graph]
+    forbidden_actions: [rewrite_history, causal_claim_from_association]
+  - branch_id: replay_evaluation
+    title: Prospective replay, outcomes and calibration
+    plane: evaluation
+    depends_on: [world_model]
+    required: false
+    minimum_profile: replay_ready
+    input_contracts: [hypothesis_replay_plan, checkpoint_monitor]
+    output_contracts: [outcome_review, calibration_proposal]
+    forbidden_actions: [early_outcome_scoring, automatic_learning]
+  - branch_id: governance_review
+    title: Human review, VoI and decision state
+    plane: governance
+    depends_on: [pipeline_control, world_model, replay_evaluation]
+    minimum_profile: analysis_ready
+    input_contracts: [review_packet, unknown_voi, replay_state]
+    output_contracts: [review_decision_state]
+    forbidden_actions: [approval_without_current_hash, bypass_review]
+  - branch_id: operations_authorization
+    title: Hash-bound operational authorization ledger
+    plane: governance
+    depends_on: [governance_review]
+    minimum_profile: analysis_ready
+    input_contracts: [accumulation_schedule, authorization_ledger]
+    output_contracts: [authorization_status]
+    forbidden_actions: [infer_approval_from_due_state, execute_without_approval]
+  - branch_id: system_audit
+    title: Cross-branch immutable system manifest
+    plane: audit
+    depends_on: [operations_authorization]
+    minimum_profile: data_only
+    input_contracts: [all_branch_records]
+    output_contracts: [system_run_manifest]
+    forbidden_actions: [hide_required_failure, mutate_prior_manifest]

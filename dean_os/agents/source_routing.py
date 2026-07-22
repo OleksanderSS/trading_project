@@ -9,7 +9,6 @@ from dean_os.base import BaseAgent
 from dean_os.material_loaders import SUPPORTED_EXTENSIONS
 from dean_os.schemas import MarketContext, PipelineReport
 
-
 RESEARCH_CORPUS_TYPES = {"article", "book", "filing", "news", "report", "transcript"}
 SPECIALIST_AGENT_ROUTES = {
     "financial_nlp": {"news", "article", "filing", "transcript", "report"},

@@ -1,0 +1,66 @@
+{
+  "contract": "dean_domain_context_binding_policy_v1",
+  "candidate_selection": {
+    "automatic_filesystem_discovery": false,
+    "automatic_collection_execution": false,
+    "unique_valid_candidate_may_be_proposed": true,
+    "human_binding_acceptance_required": true,
+    "artifact_sha256_required": true,
+    "future_artifacts_forbidden": true,
+    "cross_domain_reuse_forbidden": true
+  },
+  "families": [
+    {
+      "family_id": "news",
+      "required_contract": "dean_domain_scoped_news_envelope_v1",
+      "legacy_contracts": [],
+      "suggested_adapter": "domain_scoped_news_envelope",
+      "required_validation": ["domain_identity", "as_of", "source_lineage", "source_registry_identity", "trigger_only_semantics", "review_only_safety"]
+    },
+    {
+      "family_id": "official_policy",
+      "required_contract": "dean_domain_scoped_official_policy_envelope_v1",
+      "legacy_contracts": [],
+      "suggested_adapter": "domain_scoped_official_policy_envelope",
+      "required_validation": ["domain_identity", "as_of", "official_source_identity", "raw_document_lineage", "source_registry_identity", "domain_news_envelope_corroboration", "non_directional_policy_semantics", "review_only_safety"]
+    },
+    {
+      "family_id": "macro",
+      "required_contract": "dean_domain_scoped_macro_evidence_envelope_v1",
+      "legacy_contracts": [],
+      "suggested_adapter": "domain_scoped_macro_evidence_envelope",
+      "required_validation": ["domain_identity", "as_of", "series_lineage", "review_only_safety"]
+    },
+    {
+      "family_id": "fundamentals",
+      "required_contract": "dean_domain_scoped_fundamentals_envelope_v1",
+      "legacy_contracts": [],
+      "suggested_adapter": "domain_scoped_fundamentals_envelope",
+      "required_validation": ["domain_identity", "as_of", "issuer_identity", "filing_lineage", "review_only_safety"]
+    },
+    {
+      "family_id": "sector_market",
+      "required_contract": "dean_domain_scoped_sector_market_envelope_v1",
+      "legacy_contracts": [],
+      "suggested_adapter": "domain_scoped_sector_market_envelope",
+      "required_validation": ["domain_identity", "as_of", "universe_identity", "market_source_lineage", "review_only_safety"]
+    },
+    {
+      "family_id": "pipeline_context",
+      "required_contract": "dean_domain_scoped_pipeline_context_envelope_v1",
+      "legacy_contracts": [],
+      "suggested_adapter": "domain_scoped_pipeline_context_envelope",
+      "required_validation": ["domain_identity", "as_of", "pipeline_run_lineage", "context_only_boundary"]
+    }
+  ],
+  "authority_boundary": {
+    "may_propose_reuse": true,
+    "may_propose_collection_task": true,
+    "may_execute_collection": false,
+    "may_accept_binding": false,
+    "may_invoke_domain_analysis": false,
+    "may_approve_hypothesis": false,
+    "may_write_learning_memory": false,
+    "may_trade": false
+  }
+}

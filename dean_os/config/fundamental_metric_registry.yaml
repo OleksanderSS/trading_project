@@ -1,0 +1,122 @@
+registry_version: dean_sec_companyfacts_metric_registry_v1
+review_status: initial_reviewed_mapping
+source_family: sec_companyfacts
+selection_rule: >-
+  Facts must match the verified filing accession. Duration facts must match
+  the filing report end and an admissible quarterly or annual duration.
+  Instant facts must match the filing report end. Ambiguous facts fail closed.
+
+issuer_reporting_units:
+  "0000002488": USD
+  "0000050863": USD
+  "0001045810": USD
+  "0001046179": TWD
+
+metrics:
+  revenue:
+    statement_role: income_statement
+    period_type: duration
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: RevenueFromContractWithCustomerExcludingAssessedTax
+      - taxonomy: us-gaap
+        concept: Revenues
+      - taxonomy: us-gaap
+        concept: SalesRevenueNet
+      - taxonomy: ifrs-full
+        concept: Revenue
+      - taxonomy: ifrs-full
+        concept: RevenueFromContractsWithCustomers
+
+  operating_income:
+    statement_role: income_statement
+    period_type: duration
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: OperatingIncomeLoss
+      - taxonomy: ifrs-full
+        concept: ProfitLossFromOperatingActivities
+
+  net_income:
+    statement_role: income_statement
+    period_type: duration
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: NetIncomeLoss
+      - taxonomy: us-gaap
+        concept: ProfitLoss
+      - taxonomy: ifrs-full
+        concept: ProfitLoss
+
+  assets:
+    statement_role: balance_sheet
+    period_type: instant
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: Assets
+      - taxonomy: ifrs-full
+        concept: Assets
+
+  liabilities:
+    statement_role: balance_sheet
+    period_type: instant
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: Liabilities
+      - taxonomy: ifrs-full
+        concept: Liabilities
+
+  equity:
+    statement_role: balance_sheet
+    period_type: instant
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: StockholdersEquity
+      - taxonomy: us-gaap
+        concept: StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest
+      - taxonomy: ifrs-full
+        concept: Equity
+
+  cash_and_equivalents:
+    statement_role: balance_sheet
+    period_type: instant
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: CashAndCashEquivalentsAtCarryingValue
+      - taxonomy: us-gaap
+        concept: CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents
+      - taxonomy: ifrs-full
+        concept: CashAndCashEquivalents
+
+  inventory:
+    statement_role: balance_sheet
+    period_type: instant
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: InventoryNet
+      - taxonomy: us-gaap
+        concept: Inventory
+      - taxonomy: us-gaap
+        concept: Inventories
+      - taxonomy: ifrs-full
+        concept: Inventories
+
+  capital_expenditure:
+    statement_role: cash_flow
+    period_type: duration
+    accepted_units: [USD, TWD]
+    concepts:
+      - taxonomy: us-gaap
+        concept: PaymentsToAcquirePropertyPlantAndEquipment
+      - taxonomy: ifrs-full
+        concept: PurchaseOfPropertyPlantAndEquipment
+      - taxonomy: ifrs-full
+        concept: PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities

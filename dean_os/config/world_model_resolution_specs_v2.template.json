@@ -1,0 +1,65 @@
+{
+  "contract": "dean_world_model_hypothesis_resolution_specs_v2",
+  "reviewer": "measurement_policy_draft_pending_review",
+  "source_packet": {
+    "run_id": "REPLACE_WITH_SOURCE_PACKET_RUN_ID",
+    "sha256": "REPLACE_WITH_SOURCE_PACKET_SHA256"
+  },
+  "source_review_gate": {
+    "run_id": "REPLACE_WITH_SOURCE_REVIEW_GATE_RUN_ID",
+    "sha256": "REPLACE_WITH_SOURCE_REVIEW_GATE_SHA256"
+  },
+  "resolutions": {
+    "REPLACE_WITH_HYPOTHESIS_ID": {
+      "resolution_action": "retain_claim_or_replace_claim",
+      "resolved_hypothesis": "REPLACE_WITH_REVIEWED_DIRECTIONAL_CLAIM",
+      "expected_observations": [
+        "REPLACE_WITH_PRIMARY_HORIZON_OBSERVATION"
+      ],
+      "invalidation_signals": [
+        "REPLACE_WITH_PRIMARY_HORIZON_INVALIDATION"
+      ],
+      "measurement_spec": {
+        "primary_horizon_days": 20,
+        "comparison": "pre_event_baseline_to_checkpoint",
+        "target_metrics": [
+          "basket_relative_total_return"
+        ],
+        "relative_return_expected_direction": "negative_or_positive",
+        "assessment_rule": "Use the attached direction contract: support, neutral, or contradict. Missing evidence is unresolved.",
+        "measurement_context": {
+          "context_contract": "dean_hypothesis_measurement_context_v1",
+          "context_as_of": "REPLACE_WITH_TIMEZONE_AWARE_TRIGGER_TIMESTAMP",
+          "trigger_event_at": "REPLACE_WITH_TIMEZONE_AWARE_TRIGGER_TIMESTAMP",
+          "capital_equipment_basket": {
+            "members": [
+              "REPLACE_WITH_TICKER_1",
+              "REPLACE_WITH_TICKER_2",
+              "REPLACE_WITH_TICKER_3"
+            ],
+            "weighting": "equal_weight",
+            "minimum_checkpoint_coverage": 3,
+            "benchmark": "REPLACE_WITH_BENCHMARK",
+            "return_field": "adjusted_close_total_return_when_available_else_explicit_quality_flag"
+          },
+          "baseline_sources": [
+            {
+              "published_at": "REPLACE_WITH_PRE_TRIGGER_TIMESTAMP",
+              "source_locator": "https://REPLACE_WITH_VERIFIED_BASELINE_SOURCE"
+            }
+          ],
+          "automatic_outcome_scoring_allowed": false
+        }
+      },
+      "registration_blockers": []
+    }
+  },
+  "safety": {
+    "manual_resolution_spec": true,
+    "automatic_claim_approval": false,
+    "replay_registration_performed": false,
+    "learning_memory_write_performed": false,
+    "production_rule_update_performed": false,
+    "can_trade": false
+  }
+}

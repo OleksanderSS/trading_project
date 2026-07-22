@@ -6,7 +6,6 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-
 Verdict = Literal[
     "clear",
     "caution",
@@ -34,6 +33,7 @@ DecisionType = Literal[
 Branch = Literal["pipeline", "analytical"]
 DataQuality = Literal["strong", "partial", "weak"]
 PositionBias = Literal["bullish", "bearish", "neutral", "insufficient_data"]
+ContextPhase = Literal["pre_pipeline", "post_pipeline", "pre_trade"]
 
 
 def utc_now_iso() -> str:
@@ -62,6 +62,15 @@ class EvidenceItem(BaseModel):
         "fundamental",
         "macro",
         "sector",
+        "news_event",
+        "news_analysis",
+        "world_state",
+        "dependency_graph",
+        "unknown",
+        "historical_match",
+        "data_loader",
+        "outcome_tracker",
+        "calibration",
     ]
     source: str
     key: str
@@ -90,6 +99,8 @@ class MarketContext(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    phase: ContextPhase = "pre_pipeline"
+    as_of: str | None = None
     tickers: list[str] = Field(default_factory=list)
     timeframes: list[str] = Field(default_factory=list)
     timeframe: str | None = None
@@ -100,10 +111,10 @@ class MarketContext(BaseModel):
     fundamentals: dict[str, dict[str, Any]] = Field(default_factory=dict)
     macro: dict[str, Any] = Field(default_factory=dict)
     sector_data: dict[str, Any] = Field(default_factory=dict)
-    research_documents: list["ResearchDocument"] = Field(default_factory=list)
-    research_notes: list["ResearchNote"] = Field(default_factory=list)
-    nlp_results: list["FinancialNLPResult"] = Field(default_factory=list)
-    action_proposals: list["PipelineActionProposal"] = Field(default_factory=list)
+    research_documents: list[ResearchDocument] = Field(default_factory=list)
+    research_notes: list[ResearchNote] = Field(default_factory=list)
+    nlp_results: list[FinancialNLPResult] = Field(default_factory=list)
+    action_proposals: list[PipelineActionProposal] = Field(default_factory=list)
     pipeline_result: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -178,10 +189,14 @@ class ConsensusDecision(BaseModel):
     blind_spots: list[str] = Field(default_factory=list)
     evidence: list[EvidenceItem] = Field(default_factory=list)
     risk_context: dict[str, Any] | None = None
+    world_state: dict[str, Any] | None = None
     agent_report_hashes: dict[str, str] = Field(default_factory=dict)
     config_hash: str = ""
     narrative: str = ""
     timestamp: str = Field(default_factory=utc_now_iso)
+    # Anxiety Kill-Switch fields
+    anxiety_kill_switch_triggered: bool = False
+    kill_switch_reasons: list[str] = Field(default_factory=list)
 
     @property
     def trade_allowed(self) -> bool:
@@ -189,7 +204,14 @@ class ConsensusDecision(BaseModel):
 
 
 class ExecutionOutcome(BaseModel):
-    status: Literal["blocked", "paper_traded", "queued_for_review", "executed"]
+    status: Literal[
+        "blocked",
+        "paper_trade_preview",
+        "paper_trade_logged",
+        "queued_for_review",
+        "blocked_no_adapter",
+        "executed",
+    ]
     decision_id: str
     decision: DecisionType
     details: dict[str, Any] = Field(default_factory=dict)
@@ -219,6 +241,8 @@ class ResearchDocument(BaseModel):
     sectors: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    quarantine_flags: list[str] = Field(default_factory=list)
+    quality_precheck: str | None = None
     ingested_at: str = Field(default_factory=utc_now_iso)
 
 
@@ -230,6 +254,8 @@ class ResearchChunk(BaseModel):
     token_estimate: int = 0
     citations: list[SourceCitation] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    quarantine_flags: list[str] = Field(default_factory=list)
+    quality_precheck: str | None = None
 
 
 class ResearchNote(BaseModel):
@@ -263,6 +289,8 @@ class FinancialNLPResult(BaseModel):
     risk_score: float = Field(..., ge=0.0, le=1.0)
     event_types: list[str] = Field(default_factory=list)
     key_terms: list[str] = Field(default_factory=list)
+    extracted_facts: list[ExtractedFact] = Field(default_factory=list)
+    extracted_events: list[ExtractedEvent] = Field(default_factory=list)
     summary: str = ""
     citations: list[SourceCitation] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -280,6 +308,13 @@ class AgentLearningRecord(BaseModel):
     realized_return: float | None = None
     outcome_label: Literal["hit", "miss", "inconclusive"] | None = None
     calibration_delta: float | None = None
+    lifecycle_status: Literal[
+        "draft", "validated", "rejected", "superseded", "human-corrected"
+    ] = "draft"
+    lifecycle_updated_at: str | None = None
+    lifecycle_actor: str | None = None
+    lifecycle_reason: str = ""
+    supersedes_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -349,6 +384,13 @@ class RecommendationMemoryRecord(BaseModel):
     lesson: str = ""
     confidence_before: float | None = Field(default=None, ge=0.0, le=1.0)
     confidence_after: float | None = Field(default=None, ge=0.0, le=1.0)
+    lifecycle_status: Literal[
+        "draft", "validated", "rejected", "superseded", "human-corrected"
+    ] = "draft"
+    lifecycle_updated_at: str | None = None
+    lifecycle_actor: str | None = None
+    lifecycle_reason: str = ""
+    supersedes_id: str | None = None
     created_at: str = Field(default_factory=utc_now_iso)
     outcome_at: str | None = None
 
@@ -365,3 +407,70 @@ class AgentLabRunReport(BaseModel):
     action_proposals: list[PipelineActionProposal] = Field(default_factory=list)
     summary: dict[str, Any] = Field(default_factory=dict)
     created_at: str = Field(default_factory=utc_now_iso)
+
+
+class ApprovalReceipt(BaseModel):
+    """Receipt for approving a transition (learning/config/paper/apply).
+
+    Provides audit trail for authority boundaries and ensures that
+    sensitive transitions require explicit human approval with evidence.
+    """
+    receipt_id: str = Field(default_factory=lambda: uuid4().hex)
+    transition_type: Literal["learning", "config", "paper", "apply", "operation"]
+    source_id: str
+    source_type: Literal["agent_lab_report", "learning_record", "operation_proposal", "config_change", "paper_trade"]
+    reviewer: str = "human"
+    reviewer_role: Literal["human", "chief_review_agent", "system"] = "human"
+    approved: bool = True
+    reason: str = ""
+    evidence_ref: str | None = None
+    conditions: list[str] = Field(default_factory=list)
+    expires_at: str | None = None
+    created_at: str = Field(default_factory=utc_now_iso)
+
+    @model_validator(mode="after")
+    def approval_requires_reason(self) -> ApprovalReceipt:
+        if self.approved and not self.reason:
+            raise ValueError("Approval requires a reason")
+        return self
+
+
+class ExtractedFact(BaseModel):
+    """A strictly typed fact extracted from a ResearchChunk. Replaces generic NLP sentiment."""
+    fact_id: str = Field(default_factory=lambda: uuid4().hex)
+    chunk_id: str
+    fact_type: Literal["claim", "entity_resolution"]
+    description: str
+    is_trading_signal: bool = False  # Always False from extraction
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    source_citation: SourceCitation | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    extracted_at: str = Field(default_factory=utc_now_iso)
+
+
+class ExtractedEvent(BaseModel):
+    """A strictly typed event extracted from a ResearchChunk."""
+    event_id: str = Field(default_factory=lambda: uuid4().hex)
+    chunk_id: str
+    event_type: str
+    description: str
+    date: str | None = None
+    is_trading_signal: bool = False  # Always False from extraction
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    source_citation: SourceCitation | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    extracted_at: str = Field(default_factory=utc_now_iso)
+
+
+class ExtractedFundamentalMetric(BaseModel):
+    """Normalized financial statement value or ratio for Graham/Buffett agents."""
+    metric_id: str = Field(default_factory=lambda: uuid4().hex)
+    ticker: str
+    metric_name: str
+    value: float
+    unit: Literal["USD", "ratio", "percent", "shares"]
+    period: str
+    is_trading_signal: bool = False  # Always False
+    source_citation: SourceCitation | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    extracted_at: str = Field(default_factory=utc_now_iso)

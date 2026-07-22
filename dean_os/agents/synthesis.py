@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dean_os.base import AnalyticalAgent
 from dean_os.agents.research_agents import memory_context_warnings
+from dean_os.base import AnalyticalAgent
 from dean_os.schemas import AnalyticalReport, MarketContext, ResearchNote
 from dean_os.synthesis import EvidenceBoundSynthesizer
 from dean_os.utils import clamp
@@ -18,6 +18,27 @@ class EvidenceSynthesisAgent(AnalyticalAgent):
             nlp_results=context.nlp_results,
             topic=self.config.get("topic", "evidence_synthesis"),
         )
+
+        # Inject Quantitative Macro Data summary
+        if context.dataframes:
+            macro_summary = []
+            for df_name, df in context.dataframes.items():
+                if not df.empty:
+                    # Try to extract the last available row value if it's a known macro metric like VIX
+                    val_str = ""
+                    val_col = "vix_current" if "vix_current" in df.columns else ("Close" if "Close" in df.columns else None)
+                    if val_col:
+                        try:
+                            val_str = f", latest: {float(df.iloc[-1][val_col]):.2f}"
+                        except Exception:
+                            pass
+                    macro_summary.append(f"{df_name} (rows: {len(df)}{val_str})")
+
+            if macro_summary:
+                synthesis_note.thesis += f"\n\n[Quantitative Context Added] Collector Data: {', '.join(macro_summary)}"
+                synthesis_note.evidence.append(
+                    self.evidence("metric", "collector_data", "dataframe_count", len(context.dataframes))
+                )
         memory_snapshot = context.metadata.get("recommendation_memory", {})
         memory_risks, memory_blind_spots = memory_context_warnings(memory_snapshot)
         if memory_snapshot:

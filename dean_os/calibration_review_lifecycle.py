@@ -9,7 +9,6 @@ from dean_os.operation_queue import OperationQueue
 from dean_os.schemas import PipelineActionProposal, utc_now_iso
 from dean_os.utils import json_ready
 
-
 CALIBRATION_TARGET_PREFIX = "analyst_calibration:"
 CALIBRATION_AGENT_NAME = "calibration_proposal_agent"
 
@@ -173,7 +172,13 @@ def _set_status(
             "status": "skipped_non_calibration",
             "target": proposal.target,
         }
-    updated = queue.approve(proposal_id) if status == "approved" else queue.reject(proposal_id)
+    reviewer = "calibration_review_lifecycle"
+    reason = "Manual calibration lifecycle status action."
+    updated = (
+        queue.approve(proposal_id, reviewer=reviewer, reason=reason)
+        if status == "approved"
+        else queue.reject(proposal_id, reviewer=reviewer, reason=reason)
+    )
     return {
         "proposal_id": proposal_id,
         "requested_status": status,

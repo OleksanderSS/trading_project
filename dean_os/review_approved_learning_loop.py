@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from dean_os.analyst_learning_promotion_bridge import AnalystLearningPromotionBridge
+from dean_os.analyst_core.analyst_learning_promotion_bridge import AnalystLearningPromotionBridge
 from dean_os.context_performance import AgentPerformanceByContext
 from dean_os.review_actions import ReviewActionStore
 from dean_os.schemas import ReviewActionRecord, utc_now_iso

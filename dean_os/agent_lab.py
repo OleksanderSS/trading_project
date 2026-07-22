@@ -5,6 +5,10 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
+from dean_os.agents.domain_research import (
+    MacroPolicyAgent,
+    ValueScreeningAgent,
+)
 from dean_os.agents.financial_nlp import FinancialNLPAgent
 from dean_os.agents.operations import OperationsProposalAgent
 from dean_os.agents.research_agents import ResearchIngestionAgent, SpecialistResearchAgent
@@ -16,7 +20,16 @@ from dean_os.operation_queue import OperationQueue
 from dean_os.recommendation_memory import RecommendationMemoryStore
 from dean_os.regime_context import normalize_context_tags
 from dean_os.research_corpus import ResearchCorpus
-from dean_os.schemas import AgentLabRunReport, MarketContext, MarketRegimeSnapshot, ResearchDocument
+from dean_os.schemas import (
+    AgentLabRunReport,
+    MarketContext,
+    MarketRegimeSnapshot,
+    ResearchDocument,
+    utc_now_iso,
+)
+from dean_os.structured_context_provenance import (
+    apply_market_context_structured_boundary,
+)
 from dean_os.utils import json_ready
 
 
@@ -60,7 +73,11 @@ class AgentLabRunner:
         regime_context: MarketRegimeSnapshot | dict[str, Any] | None = None,
         source_type: str | None = None,
         fundamentals: dict[str, dict[str, Any]] | None = None,
+        fundamental_gate: dict[str, Any] | None = None,
+        fundamental_provenance: dict[str, Any] | None = None,
         macro: dict[str, Any] | None = None,
+        macro_provenance: dict[str, Any] | None = None,
+        as_of: str | None = None,
         include_financial_nlp: bool = True,
         include_synthesis: bool = True,
         create_learning_records: bool = True,
@@ -72,6 +89,10 @@ class AgentLabRunner:
             [*(regime_tags or []), *((regime_snapshot.context_tags if regime_snapshot else []) or [])]
         )
         context_tags = normalize_context_tags([*(tags or []), *normalized_regime_tags])
+        fundamental_gate_summary = _fundamental_gate_summary(
+            fundamental_gate,
+            has_fundamentals=bool(fundamentals),
+        )
         self._log(
             "agent_lab_run_started",
             run_id,
@@ -102,14 +123,22 @@ class AgentLabRunner:
                 "load_errors": load_errors,
             },
         )
+        analysis_as_of = as_of or utc_now_iso()
         context = MarketContext(
+            as_of=analysis_as_of,
             tickers=tickers or [],
             research_documents=loaded_documents,
             fundamentals=fundamentals or {},
             macro=macro or {},
             metadata={
                 "agent_lab": True,
+                "analysis_as_of": analysis_as_of,
                 "load_errors": load_errors,
+                "fundamental_input_readiness_gate": fundamental_gate_summary,
+                "fundamental_evidence_provenance": (
+                    fundamental_provenance or {}
+                ),
+                "macro_evidence_provenance": macro_provenance or {},
                 "context_tags": context_tags,
                 "material_tags": normalize_context_tags(tags or []),
                 "regime_tags": normalized_regime_tags,
@@ -121,6 +150,54 @@ class AgentLabRunner:
                 ),
             },
         )
+        structured_audit = apply_market_context_structured_boundary(
+            context
+        )
+        fundamental_gate_summary[
+            "structured_point_in_time_status"
+        ] = structured_audit["status"]
+        fundamental_gate_summary[
+            "structured_accepted_fundamental_count"
+        ] = structured_audit.get("family_counts", {}).get(
+            "fundamental",
+            0,
+        )
+        fundamental_gate_summary[
+            "context_structured_accepted_fingerprint"
+        ] = structured_audit["accepted_fingerprint"]
+        gate_fingerprint = fundamental_gate_summary.get(
+            "gate_structured_accepted_fingerprint"
+        )
+        fundamental_gate_summary[
+            "structured_fingerprint_matches_context"
+        ] = bool(
+            gate_fingerprint
+            and gate_fingerprint
+            == structured_audit["accepted_fingerprint"]
+        )
+        if fundamentals and not context.fundamentals:
+            fundamental_gate_summary[
+                "can_feed_value_screening_after_manual_review"
+            ] = False
+            fundamental_gate_summary["readiness_status"] = (
+                "blocked_structured_point_in_time_contract"
+            )
+        elif (
+            fundamentals
+            and fundamental_gate_summary.get(
+                "can_feed_value_screening_after_manual_review"
+            )
+            is True
+            and not fundamental_gate_summary[
+                "structured_fingerprint_matches_context"
+            ]
+        ):
+            fundamental_gate_summary[
+                "can_feed_value_screening_after_manual_review"
+            ] = False
+            fundamental_gate_summary["readiness_status"] = (
+                "blocked_fundamental_gate_context_fingerprint_mismatch"
+            )
 
         ingestion = ResearchIngestionAgent(
             name="research_ingestion",
@@ -137,6 +214,17 @@ class AgentLabRunner:
             reports.append(await nlp_agent.run(context))
 
         reports.append(await specialist.run(context))
+
+        if context.macro:
+            macro_policy = MacroPolicyAgent(
+                name="macro_policy",
+                config={},
+            )
+            reports.append(await macro_policy.run(context))
+
+        if fundamentals:
+            value_screen = ValueScreeningAgent(name="value_screening", config={})
+            reports.append(await value_screen.run(context))
 
         if include_synthesis:
             synthesis = EvidenceSynthesisAgent(name="evidence_synthesis", config={})
@@ -276,9 +364,29 @@ class AgentLabRunner:
             "queued_proposal_count": queued_proposal_count,
             "memory_relevant_count": context.metadata.get("recommendation_memory", {}).get("relevant_count", 0),
             "memory_miss_count": context.metadata.get("recommendation_memory", {}).get("miss_count", 0),
+            "fundamental_input_readiness_gate": context.metadata.get("fundamental_input_readiness_gate", {}),
+            "fundamental_evidence_provenance": context.metadata.get(
+                "fundamental_evidence_provenance",
+                {},
+            ),
             "context_tags": context.metadata.get("context_tags", []),
             "regime_tags": context.metadata.get("regime_tags", []),
             "regime_context": context.metadata.get("regime_context"),
+            "analysis_as_of": context.as_of,
+            "news_point_in_time_audit": context.metadata.get(
+                "news_point_in_time_audit",
+                {},
+            ),
+            "structured_context_point_in_time_audit": (
+                context.metadata.get(
+                    "structured_context_point_in_time_audit",
+                    {},
+                )
+            ),
+            "macro_evidence_provenance": context.metadata.get(
+                "macro_evidence_provenance",
+                {},
+            ),
         }
 
     def _avg_nlp_sentiment(self, context: MarketContext) -> float | None:
@@ -299,6 +407,48 @@ class AgentLabRunner:
         if isinstance(regime_context, MarketRegimeSnapshot):
             return regime_context
         return MarketRegimeSnapshot(**regime_context)
+
+
+def _fundamental_gate_summary(fundamental_gate: dict[str, Any] | None, has_fundamentals: bool) -> dict[str, Any]:
+    if not has_fundamentals:
+        return {
+            "gate_attached": bool(fundamental_gate),
+            "readiness_status": "not_applicable_no_fundamentals",
+            "can_feed_value_screening_after_manual_review": False,
+            "warning_count": 0,
+            "fail_count": 0,
+        }
+    if not fundamental_gate:
+        return {
+            "gate_attached": False,
+            "readiness_status": "not_attached",
+            "can_feed_value_screening_after_manual_review": None,
+            "warning_count": None,
+            "fail_count": None,
+        }
+    summary = fundamental_gate.get("summary", {})
+    guidance = fundamental_gate.get("decision_guidance", {})
+    return {
+        "gate_attached": True,
+        "run_id": fundamental_gate.get("run_id"),
+        "readiness_status": summary.get("readiness_status"),
+        "can_enter_manual_fundamental_review": summary.get("can_enter_manual_fundamental_review"),
+        "can_feed_value_screening_after_manual_review": summary.get("can_feed_value_screening_after_manual_review"),
+        "metric_count": summary.get("metric_count"),
+        "source_citation_missing_count": summary.get("source_citation_missing_count"),
+        "period_missing_count": summary.get("period_missing_count"),
+        "availability_timestamp_missing_count": summary.get(
+            "availability_timestamp_missing_count"
+        ),
+        "structured_point_in_time_status": summary.get(
+            "structured_point_in_time_status"
+        ),
+        "gate_structured_accepted_fingerprint": summary.get(
+            "structured_accepted_fingerprint"
+        ),
+        "warning_count": guidance.get("warning_count"),
+        "fail_count": guidance.get("fail_count"),
+    }
 
 
 def render_agent_lab_markdown(report: AgentLabRunReport) -> str:
@@ -323,6 +473,7 @@ def render_agent_lab_markdown(report: AgentLabRunReport) -> str:
         f"- Average NLP sentiment: {report.summary.get('avg_nlp_sentiment')}",
         f"- Action proposals: {report.summary.get('proposal_count', 0)}",
         f"- Queued proposals: {report.summary.get('queued_proposal_count', 0)}",
+        f"- Fundamental gate: {report.summary.get('fundamental_input_readiness_gate', {}).get('readiness_status')}",
         "",
         "## Research Notes",
         "",

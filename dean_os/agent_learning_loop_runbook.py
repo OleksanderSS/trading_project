@@ -7,7 +7,6 @@ from typing import Any
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
 
-
 DEFAULT_STAGE_PATHS = {
     "evidence_pack": "reports/dean_os/analyst_evidence_pack/latest.json",
     "analyst_profiles": "reports/dean_os/analyst_profiles/latest.json",

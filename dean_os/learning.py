@@ -6,10 +6,11 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Literal
+from uuid import uuid4
 
 from dean_os.schemas import AgentLearningRecord, ResearchNote
 from dean_os.utils import clamp
-
+from dean_os.schemas import utc_now_iso
 
 Direction = Literal["bullish", "bearish", "neutral"]
 
@@ -28,12 +29,19 @@ class LearningStore:
         expected_direction: Direction,
         horizon_days: int | None = None,
         metadata: dict[str, Any] | None = None,
+        lifecycle_status: str = "draft",
+        lifecycle_actor: str | None = None,
+        lifecycle_reason: str = "",
     ) -> AgentLearningRecord:
         record = AgentLearningRecord(
             agent_name=note.agent_name,
             note_id=note.note_id,
             expected_direction=expected_direction,
             horizon_days=horizon_days or note.horizon_days or 365,
+            lifecycle_status=lifecycle_status,
+            lifecycle_updated_at=utc_now_iso(),
+            lifecycle_actor=lifecycle_actor,
+            lifecycle_reason=lifecycle_reason,
             metadata={
                 "topic": note.topic,
                 "confidence": note.confidence,
@@ -45,16 +53,23 @@ class LearningStore:
         return record
 
     def add_record(self, record: AgentLearningRecord) -> str:
+        payload = json.dumps(record.model_dump(mode="json"), ensure_ascii=True)
         with self._connect() as conn:
+            cur = conn.execute(
+                "SELECT COALESCE(MAX(revision), 0) FROM learning_records WHERE record_id = ?",
+                (record.record_id,),
+            )
+            next_revision = (cur.fetchone()[0] or 0) + 1
             conn.execute(
                 """
-                INSERT OR REPLACE INTO learning_records
-                (record_id, agent_name, note_id, expected_direction, horizon_days, created_at,
+                INSERT INTO learning_records
+                (record_id, revision, agent_name, note_id, expected_direction, horizon_days, created_at,
                  outcome_at, realized_return, outcome_label, calibration_delta, metadata, payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.record_id,
+                    next_revision,
                     record.agent_name,
                     record.note_id,
                     record.expected_direction,
@@ -65,7 +80,24 @@ class LearningStore:
                     record.outcome_label,
                     record.calibration_delta,
                     json.dumps(record.metadata, ensure_ascii=True),
-                    json.dumps(record.model_dump(mode="json"), ensure_ascii=True),
+                    payload,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO learning_record_events
+                (event_id, record_id, revision, actor, reason, evidence_ref, payload, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    uuid4().hex,
+                    record.record_id,
+                    next_revision,
+                    record.lifecycle_actor or "system",
+                    record.lifecycle_reason or "record write",
+                    None,
+                    payload,
+                    utc_now_iso(),
                 ),
             )
         return record.record_id
@@ -90,31 +122,50 @@ class LearningStore:
 
     def get_record(self, record_id: str) -> AgentLearningRecord | None:
         with self._connect() as conn:
-            row = conn.execute("SELECT payload FROM learning_records WHERE record_id = ?", (record_id,)).fetchone()
+            row = conn.execute(
+                "SELECT payload FROM learning_records WHERE record_id = ? ORDER BY revision DESC LIMIT 1",
+                (record_id,),
+            ).fetchone()
         if row is None:
             return None
         return AgentLearningRecord(**json.loads(row["payload"]))
 
     def list_records(self, agent_name: str | None = None) -> list[AgentLearningRecord]:
+        latest_sql = """
+            SELECT l.payload
+            FROM learning_records l
+            INNER JOIN (
+                SELECT record_id, MAX(revision) AS max_rev
+                FROM learning_records
+                GROUP BY record_id
+            ) latest ON l.record_id = latest.record_id AND l.revision = latest.max_rev
+        """
         if agent_name:
-            sql = "SELECT payload FROM learning_records WHERE agent_name = ? ORDER BY rowid"
+            sql = latest_sql + " WHERE l.agent_name = ? ORDER BY l.rowid"
             params: tuple[Any, ...] = (agent_name,)
         else:
-            sql = "SELECT payload FROM learning_records ORDER BY rowid"
+            sql = latest_sql + " ORDER BY l.rowid"
             params = ()
         with self._connect() as conn:
             rows = conn.execute(sql, params).fetchall()
         return [AgentLearningRecord(**json.loads(row["payload"])) for row in rows]
 
     def score_agent(self, agent_name: str) -> dict[str, Any]:
-        all_records = self.list_records(agent_name)
+        raw_records = self.list_records(agent_name)
+        all_records = [
+            record
+            for record in raw_records
+            if record.lifecycle_status in {"validated", "human-corrected"}
+        ]
         records = [record for record in all_records if record.outcome_label is not None]
         pending_count = len(all_records) - len(records)
         if not records:
             return {
                 "agent_name": agent_name,
                 "record_count": 0,
-                "total_record_count": len(all_records),
+                "total_record_count": len(raw_records),
+                "eligible_record_count": len(all_records),
+                "lifecycle_excluded_count": len(raw_records) - len(all_records),
                 "pending_record_count": pending_count,
                 "hit_rate": None,
                 "miss_rate": None,
@@ -132,7 +183,9 @@ class LearningStore:
         return {
             "agent_name": agent_name,
             "record_count": count,
-            "total_record_count": len(all_records),
+            "total_record_count": len(raw_records),
+            "eligible_record_count": len(all_records),
+            "lifecycle_excluded_count": len(raw_records) - len(all_records),
             "pending_record_count": pending_count,
             "hit_rate": hit_rate,
             "miss_rate": miss_rate,
@@ -140,12 +193,46 @@ class LearningStore:
             "suggested_weight": suggested_weight,
         }
 
+    def eligible_records(
+        self, agent_name: str | None = None
+    ) -> list[AgentLearningRecord]:
+        return [
+            record
+            for record in self.list_records(agent_name)
+            if record.lifecycle_status in {"validated", "human-corrected"}
+        ]
+
+    def transition_lifecycle(
+        self,
+        record_id: str,
+        status: str,
+        *,
+        actor: str,
+        reason: str,
+        supersedes_id: str | None = None,
+    ) -> AgentLearningRecord:
+        record = self.get_record(record_id)
+        if record is None:
+            raise KeyError(f"Learning record not found: {record_id}")
+        _validate_lifecycle_transition(
+            record.lifecycle_status, status, actor=actor, reason=reason
+        )
+        record.lifecycle_status = status
+        record.lifecycle_updated_at = utc_now_iso()
+        record.lifecycle_actor = actor.strip()
+        record.lifecycle_reason = reason.strip()
+        record.supersedes_id = supersedes_id
+        self.add_record(record)
+        return record
+
     def _init_db(self) -> None:
         with self._connect() as conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS learning_records (
-                    record_id TEXT PRIMARY KEY,
+                    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                    record_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
                     agent_name TEXT NOT NULL,
                     note_id TEXT NOT NULL,
                     expected_direction TEXT NOT NULL,
@@ -159,6 +246,26 @@ class LearningStore:
                     payload TEXT NOT NULL
                 )
                 """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_learning_records_id ON learning_records(record_id)"
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS learning_record_events (
+                    event_id TEXT PRIMARY KEY,
+                    record_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    evidence_ref TEXT,
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_learning_events_id ON learning_record_events(record_id)"
             )
 
     @contextmanager
@@ -201,3 +308,19 @@ def calibration_delta(expected_direction: Direction, realized_return: float) -> 
     if expected_direction == "bearish":
         return clamp(-realized_return, -1.0, 1.0)
     return clamp(-abs(realized_return), -1.0, 0.0)
+
+
+def _validate_lifecycle_transition(
+    current: str, target: str, *, actor: str, reason: str
+) -> None:
+    allowed = {
+        "draft": {"validated", "rejected", "superseded", "human-corrected"},
+        "validated": {"rejected", "superseded", "human-corrected"},
+        "rejected": {"human-corrected", "superseded"},
+        "human-corrected": {"validated", "rejected", "superseded"},
+        "superseded": set(),
+    }
+    if target not in allowed.get(current, set()):
+        raise ValueError(f"Invalid memory lifecycle transition: {current} -> {target}")
+    if not actor.strip() or not reason.strip():
+        raise ValueError("Memory lifecycle transition requires actor and reason")

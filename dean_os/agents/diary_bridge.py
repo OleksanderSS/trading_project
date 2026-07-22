@@ -9,7 +9,6 @@ from dean_os.base import BaseAgent
 from dean_os.paper_trading import PaperTradeStore
 from dean_os.schemas import MarketContext, PaperTradeRecord, PipelineActionProposal, PipelineReport
 
-
 DECISION_DIARY_COLUMNS = {
     "agent_id",
     "decision_timestamp",

@@ -3,7 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 from dean_os.base import AnalyticalAgent
+from dean_os.context_evidence_provenance import (
+    audit_market_context_news,
+)
 from dean_os.schemas import AnalyticalReport, MarketContext
+from dean_os.structured_context_provenance import (
+    apply_market_context_structured_boundary,
+)
 from dean_os.utils import clamp
 
 
@@ -17,7 +23,16 @@ class KeywordDomainAgent(AnalyticalAgent):
     asset_or_sector = "market"
 
     async def run(self, context: MarketContext) -> AnalyticalReport:
-        texts = self._news_texts(context.news)
+        structured_audit = apply_market_context_structured_boundary(
+            context
+        )
+        news_audit = audit_market_context_news(context)
+        context.metadata["news_point_in_time_audit"] = {
+            key: value
+            for key, value in news_audit.items()
+            if key != "accepted"
+        }
+        texts = self._news_texts(news_audit["accepted"])
         keyword_hits = self._count_terms(texts, self.keywords)
         bullish_hits = self._count_terms(texts, self.bullish_terms)
         bearish_hits = self._count_terms(texts, self.bearish_terms)
@@ -51,6 +66,30 @@ class KeywordDomainAgent(AnalyticalAgent):
                 self.evidence("news", "context.news", "keyword_hits", keyword_hits),
                 self.evidence("news", "context.news", "bullish_hits", bullish_hits),
                 self.evidence("news", "context.news", "bearish_hits", bearish_hits),
+                self.evidence(
+                    "news",
+                    "context.news",
+                    "point_in_time_accepted_count",
+                    news_audit["accepted_count"],
+                ),
+                self.evidence(
+                    "news",
+                    "context.news",
+                    "point_in_time_excluded_count",
+                    news_audit["excluded_count"],
+                ),
+                self.evidence(
+                    "audit_finding",
+                    "context.metadata.structured_context_point_in_time_audit",
+                    "point_in_time_accepted_count",
+                    structured_audit["accepted_count"],
+                ),
+                self.evidence(
+                    "audit_finding",
+                    "context.metadata.structured_context_point_in_time_audit",
+                    "point_in_time_excluded_count",
+                    structured_audit["excluded_count"],
+                ),
             ],
             input_hash=self.context_hash(context),
         )
@@ -203,15 +242,6 @@ class NewsCatalystAgent(KeywordDomainAgent):
     asset_or_sector = "news_catalyst"
 
 
-class HistoricalAnalogiesAgent(KeywordDomainAgent):
-    keywords = ("similar to", "since", "after", "cycle", "precedent", "historical", "analogy")
-    bullish_terms = ("post-crisis recovery", "early cycle", "rearmament", "infrastructure cycle")
-    bearish_terms = ("bubble", "late cycle", "stagflation", "credit crunch")
-    default_horizon_years = 3.0
-    thesis_template = "Historical precedent suggests the market may underprice a slow-moving structural shift."
-    asset_or_sector = "historical_analogy"
-
-
 class ContrarianThesisAgent(KeywordDomainAgent):
     keywords = ("undervalued", "ignored", "underappreciated", "selloff", "discount", "unloved", "mispriced")
     bullish_terms = ("undervalued", "underappreciated", "discount", "mispriced", "margin of safety")
@@ -226,9 +256,41 @@ class ValueScreeningAgent(KeywordDomainAgent):
     asset_or_sector = "value"
 
     async def run(self, context: MarketContext) -> AnalyticalReport:
+        structured_audit = apply_market_context_structured_boundary(
+            context
+        )
+        gate = _fundamental_gate(context)
+        if (
+            structured_audit["input_count"] > 0
+            and not context.fundamentals
+        ):
+            return self._blocked_by_structured_boundary(
+                context,
+                structured_audit,
+            )
+        if not context.fundamentals:
+            return self._blocked_missing_screening_metrics(
+                context,
+                gate,
+            )
         scores = self._score_fundamentals(context.fundamentals)
         if not scores:
-            return await super().run(context)
+            # No valuation ratios are present, so value screening cannot score.
+            # This is the primary blocker regardless of gate cleanliness.
+            return self._blocked_missing_screening_metrics(
+                context,
+                gate,
+            )
+        if (
+            gate.get("can_feed_value_screening_after_manual_review")
+            is not True
+        ):
+            return self._blocked_by_fundamental_gate(context, gate)
+        gate_fingerprint = (
+            gate.get("gate_structured_accepted_fingerprint")
+            or gate.get("structured_accepted_fingerprint")
+            or (gate.get("structured_context_audit") or {}).get("accepted_fingerprint")
+        )
         average_score = sum(scores.values()) / len(scores)
         best_ticker = max(scores, key=scores.get)
         best_score = scores[best_ticker]
@@ -258,22 +320,209 @@ class ValueScreeningAgent(KeywordDomainAgent):
                 f"Best supplied value score: {best_ticker}={best_score:.2f}",
                 f"Average value score across supplied fundamentals: {average_score:.2f}",
             ],
-            risks=["Fundamental data feed is caller-supplied and not independently verified"],
-            blind_spots=["No SEC filing parser or full financial statement normalization is active yet"],
-            evidence=[self.evidence("fundamental", "context.fundamentals", "value_scores", scores)],
+            risks=_fundamental_gate_risks(gate),
+            blind_spots=[
+                "No SEC filing parser or full financial statement normalization is active yet",
+                "No ratio computation, ratio interpretation, valuation, recommendation, allocation, or trading is authorized.",
+            ],
+            evidence=[
+                self.evidence("fundamental", "context.fundamentals", "value_scores", scores),
+                self.evidence("fundamental", "context.metadata.fundamental_input_readiness_gate", "gate", gate),
+            ],
             input_hash=self.context_hash(context),
         )
+
+    def _blocked_missing_screening_metrics(
+        self,
+        context: MarketContext,
+        gate: dict[str, Any],
+    ) -> AnalyticalReport:
+        return AnalyticalReport(
+            agent_name=self.name,
+            agent_version=self.version,
+            verdict="needs_more_data",
+            confidence=0.2,
+            data_quality_score=0.4,
+            signal_strength=0.0,
+            ticker=(
+                ",".join(context.tickers)
+                if context.tickers
+                else None
+            ),
+            asset_or_sector="value",
+            horizon_years=float(
+                self.config.get(
+                    "horizon_years",
+                    self.default_horizon_years,
+                )
+            ),
+            thesis=(
+                "Source-bound statement facts are available, but the "
+                "required value-screening ratios are not."
+            ),
+            data_quality="partial",
+            position_bias="insufficient_data",
+            valuation_gap=None,
+            watchlist_score=0.0,
+            catalysts=[],
+            tailwinds=[],
+            headwinds=[],
+            reasons=[
+                (
+                    "Value screening requires at least one of pe, pb, "
+                    "debt_to_equity, fcf_yield, or roe."
+                ),
+                (
+                    "Raw revenue, income, assets, liabilities, equity, "
+                    "cash, or capex are evidence inputs, not valuation "
+                    "scores."
+                ),
+            ],
+            risks=_fundamental_gate_risks(gate),
+            blind_spots=[
+                (
+                    "No reviewed ratio computation or market-price "
+                    "alignment is active."
+                ),
+                (
+                    "No valuation, recommendation, allocation, or "
+                    "trading action is authorized."
+                ),
+            ],
+            evidence=[
+                self.evidence(
+                    "fundamental",
+                    "context.fundamentals",
+                    "available_metric_names",
+                    {
+                        ticker: sorted(
+                            key
+                            for key in metrics
+                            if not str(key).startswith("_")
+                        )
+                        for ticker, metrics in sorted(
+                            context.fundamentals.items()
+                        )
+                    },
+                ),
+                self.evidence(
+                    "fundamental",
+                    (
+                        "context.metadata."
+                        "fundamental_input_readiness_gate"
+                    ),
+                    "gate",
+                    gate,
+                ),
+            ],
+            input_hash=self.context_hash(context),
+        )
+
+    def _blocked_by_structured_boundary(
+        self,
+        context: MarketContext,
+        audit: dict[str, Any],
+    ) -> AnalyticalReport:
+        return AnalyticalReport(
+            agent_name=self.name,
+            agent_version=self.version,
+            verdict="needs_more_data",
+            confidence=0.1,
+            data_quality_score=0.1,
+            signal_strength=0.0,
+            ticker=",".join(context.tickers) if context.tickers else None,
+            asset_or_sector="value",
+            horizon_years=float(
+                self.config.get(
+                    "horizon_years",
+                    self.default_horizon_years,
+                )
+            ),
+            thesis=(
+                "Fundamental value screen is blocked because no supplied "
+                "metric satisfies the point-in-time semantic contract."
+            ),
+            data_quality="weak",
+            position_bias="insufficient_data",
+            valuation_gap=None,
+            watchlist_score=0.0,
+            catalysts=[],
+            tailwinds=[],
+            headwinds=[],
+            reasons=[
+                f"Structured context status: {audit.get('status')}",
+                (
+                    "Every metric needs value, unit, period, availability "
+                    "timestamp, and source locator."
+                ),
+            ],
+            risks=[
+                "Rejected fundamental values were not used for scoring."
+            ],
+            blind_spots=[
+                "No ratio computation, valuation, recommendation, allocation, or trading is authorized."
+            ],
+            evidence=[
+                self.evidence(
+                    "fundamental",
+                    "context.metadata.structured_context_point_in_time_audit",
+                    "audit",
+                    context.metadata.get(
+                        "structured_context_point_in_time_audit",
+                        {},
+                    ),
+                )
+            ],
+            input_hash=self.context_hash(context),
+        )
+
+    def _blocked_by_fundamental_gate(self, context: MarketContext, gate: dict[str, Any]) -> AnalyticalReport:
+        return AnalyticalReport(
+            agent_name=self.name,
+            agent_version=self.version,
+            verdict="needs_more_data",
+            confidence=0.2,
+            data_quality_score=0.2,
+            signal_strength=0.0,
+            ticker=",".join(context.tickers) if context.tickers else None,
+            asset_or_sector="value",
+            horizon_years=float(self.config.get("horizon_years", self.default_horizon_years)),
+            thesis="Fundamental value screen is blocked until the fundamental input readiness gate is clean.",
+            data_quality="weak",
+            position_bias="insufficient_data",
+            valuation_gap=None,
+            watchlist_score=0.0,
+            catalysts=[],
+            tailwinds=[],
+            headwinds=[],
+            reasons=[
+                f"Fundamental input gate status: {gate.get('readiness_status')}",
+                "Value screening requires a clean reviewed fundamental input gate when one is attached.",
+            ],
+            risks=_fundamental_gate_risks(gate),
+            blind_spots=[
+                "Fundamental values were not used for scoring.",
+                "No ratio computation, ratio interpretation, valuation, recommendation, allocation, or trading is authorized.",
+            ],
+            evidence=[self.evidence("fundamental", "context.metadata.fundamental_input_readiness_gate", "gate", gate)],
+            input_hash=self.context_hash(context),
+        )
+
+    def _extract_value(self, raw: Any) -> float | None:
+        if isinstance(raw, dict):
+            raw = raw.get("value")
+        return self._as_float(raw)
 
     def _score_fundamentals(self, fundamentals: dict[str, dict[str, Any]]) -> dict[str, float]:
         scores: dict[str, float] = {}
         for ticker, metrics in fundamentals.items():
             points = 0.0
             checks = 0
-            pe = self._as_float(metrics.get("pe") or metrics.get("price_to_earnings"))
-            pb = self._as_float(metrics.get("pb") or metrics.get("price_to_book"))
-            debt_to_equity = self._as_float(metrics.get("debt_to_equity"))
-            fcf_yield = self._as_float(metrics.get("fcf_yield"))
-            roe = self._as_float(metrics.get("roe"))
+            pe = self._extract_value(metrics.get("pe") or metrics.get("price_to_earnings"))
+            pb = self._extract_value(metrics.get("pb") or metrics.get("price_to_book"))
+            debt_to_equity = self._extract_value(metrics.get("debt_to_equity"))
+            fcf_yield = self._extract_value(metrics.get("fcf_yield"))
+            roe = self._extract_value(metrics.get("roe"))
             if pe is not None:
                 checks += 1
                 points += 1.0 if pe > 0 and pe <= 15 else 0.0
@@ -298,3 +547,33 @@ class ValueScreeningAgent(KeywordDomainAgent):
             return float(value)
         except (TypeError, ValueError):
             return None
+
+
+def _fundamental_gate(context: MarketContext) -> dict[str, Any]:
+    gate = context.metadata.get("fundamental_input_readiness_gate")
+    if not isinstance(gate, dict):
+        return {"gate_attached": False, "readiness_status": "not_attached"}
+    summary = gate.get("summary") or {}
+    gate_enhanced = {
+        "gate_attached": True,
+        "can_feed_value_screening_after_manual_review": (
+            summary.get("can_feed_value_screening_after_manual_review") or False
+        ),
+        "structured_accepted_fingerprint": (
+            summary.get("structured_accepted_fingerprint")
+            or (gate.get("structured_context_audit") or {}).get("accepted_fingerprint")
+        ),
+        "readiness_status": summary.get("readiness_status", "not_attached"),
+    }
+    return gate_enhanced
+
+
+def _fundamental_gate_risks(gate: dict[str, Any]) -> list[str]:
+    risks = ["Fundamental data feed is caller-supplied and not independently verified"]
+    if gate.get("gate_attached") is not True:
+        risks.append("No FundamentalInputReadinessGate artifact is attached.")
+    elif gate.get("can_feed_value_screening_after_manual_review") is not True:
+        risks.append("Attached FundamentalInputReadinessGate is not clean enough for value screening.")
+    else:
+        risks.append("FundamentalInputReadinessGate is attached and clean, but still review-only.")
+    return risks

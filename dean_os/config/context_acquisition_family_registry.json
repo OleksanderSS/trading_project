@@ -1,0 +1,365 @@
+{
+  "contract": "dean_context_acquisition_family_registry_v1",
+  "state_order": [
+    "idle",
+    "gap_identified",
+    "request_prepared",
+    "execution_authorized",
+    "execution_completed",
+    "retrieval_verified",
+    "awaiting_binding_decision"
+  ],
+  "authority_boundary": {
+    "automatic_multi_stage_loop_allowed": false,
+    "automatic_retry_allowed": false,
+    "binding_acceptance_allowed": false,
+    "analyst_invocation_allowed": false,
+    "hypothesis_approval_allowed": false,
+    "learning_write_allowed": false,
+    "trading_allowed": false
+  },
+  "families": {
+    "macro": {
+      "status": "implemented",
+      "adapter": "declarative_artifact_adapter_v1",
+      "stages": [
+        {
+          "stage_id": "candidate_verified",
+          "from_state": "idle",
+          "to_state": "awaiting_binding_decision",
+          "artifact_contract": "dean_domain_scoped_macro_evidence_envelope_v1",
+          "artifact_mode": "domain_scoped_macro_evidence_envelope",
+          "status_path": "summary.status",
+          "allowed_statuses": [
+            "domain_macro_binding_candidate_ready",
+            "domain_macro_binding_candidate_ready_with_scope_gaps"
+          ],
+          "required_true": [
+            "summary.adapter_run_performed",
+            "summary.source_lineage_verified",
+            "summary.candidate_ready_for_binding_review"
+          ],
+          "required_false": [
+            "summary.binding_accepted",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_approve_hypothesis",
+            "summary.can_write_learning_memory",
+            "summary.can_trade"
+          ]
+        },
+        {
+          "stage_id": "gap_identified",
+          "from_state": "idle",
+          "to_state": "gap_identified",
+          "artifact_contract": "dean_domain_macro_binding_quality_review_v1",
+          "artifact_mode": "domain_macro_binding_quality_review",
+          "status_path": "summary.status",
+          "allowed_statuses": ["quality_review_ready_recommendation_only"],
+          "required_in": {
+            "summary.recommendation": ["replace_candidate", "defer"]
+          },
+          "required_false": [
+            "summary.decision_recorded",
+            "summary.binding_accepted",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_trade"
+          ]
+        },
+        {
+          "stage_id": "request_prepared",
+          "from_state": "gap_identified",
+          "to_state": "request_prepared",
+          "artifact_contract": "dean_domain_macro_collection_request_v1",
+          "artifact_mode": "domain_macro_collection_request",
+          "status_path": "summary.status",
+          "allowed_statuses": ["macro_collection_request_ready"],
+          "required_true": ["summary.request_required"],
+          "required_false": [
+            "summary.execution_authorized",
+            "summary.collector_run_performed",
+            "summary.binding_accepted",
+            "summary.can_trade"
+          ],
+          "previous_artifact_sha_path": "inputs.quality_review_sha256"
+        },
+        {
+          "stage_id": "execution_authorized",
+          "from_state": "request_prepared",
+          "to_state": "execution_authorized",
+          "artifact_contract": "dean_domain_macro_collection_execution_gate_v1",
+          "artifact_mode": "domain_macro_collection_execution_gate",
+          "status_path": "summary.status",
+          "allowed_statuses": ["macro_collection_execution_ready_single_run"],
+          "required_true": [
+            "summary.single_run_authorized",
+            "summary.execution_ticket_issued"
+          ],
+          "required_false": [
+            "summary.automatic_retry_allowed",
+            "summary.collector_run_performed",
+            "summary.binding_accepted",
+            "summary.can_trade"
+          ],
+          "required_equals": {
+            "summary.maximum_collection_runs": 1,
+            "execution_ticket.maximum_collection_runs": 1,
+            "execution_ticket.automatic_retry_allowed": false,
+            "execution_ticket.consumed": false
+          },
+          "previous_artifact_sha_path": "inputs.request_sha256"
+        },
+        {
+          "stage_id": "execution_completed",
+          "from_state": "execution_authorized",
+          "to_state": "execution_completed",
+          "artifact_contract": "dean_domain_macro_collection_executor_v1",
+          "artifact_mode": "domain_macro_collection_executor",
+          "status_path": "summary.status",
+          "allowed_statuses": [
+            "macro_collection_execution_completed_candidate_ready",
+            "macro_collection_execution_completed_envelope_not_ready"
+          ],
+          "required_true": [
+            "summary.ticket_claimed",
+            "summary.ticket_consumed",
+            "summary.collector_run_performed",
+            "summary.snapshot_written"
+          ],
+          "required_false": [
+            "summary.second_run_allowed",
+            "summary.automatic_retry_allowed",
+            "summary.binding_accepted",
+            "summary.can_trade"
+          ],
+          "previous_artifact_sha_path": "inputs.gate_sha256"
+        },
+        {
+          "stage_id": "retrieval_verified",
+          "from_state": "execution_completed",
+          "to_state": "retrieval_verified",
+          "artifact_contract": "dean_domain_macro_retrieval_receipt_v1",
+          "artifact_mode": "domain_macro_retrieval_receipt",
+          "status_path": "summary.status",
+          "allowed_statuses": ["macro_retrieval_receipt_completed_candidate_ready"],
+          "required_true": [
+            "summary.retrieval_timestamp_applied",
+            "summary.snapshot_written",
+            "summary.candidate_ready_for_binding_review"
+          ],
+          "required_false": [
+            "summary.network_access_performed",
+            "summary.second_collection_performed",
+            "summary.binding_accepted",
+            "summary.can_trade"
+          ],
+          "previous_artifact_sha_path": "inputs.executor_sha256"
+        },
+        {
+          "stage_id": "quality_recommended",
+          "from_state": "retrieval_verified",
+          "to_state": "awaiting_binding_decision",
+          "artifact_contract": "dean_domain_macro_binding_quality_review_v1",
+          "artifact_mode": "domain_macro_binding_quality_review",
+          "status_path": "summary.status",
+          "allowed_statuses": ["quality_review_ready_recommendation_only"],
+          "required_in": {
+            "summary.recommendation": ["accept_binding", "replace_candidate", "defer"]
+          },
+          "required_false": [
+            "summary.decision_recorded",
+            "summary.binding_accepted",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_approve_hypothesis",
+            "summary.can_write_learning_memory",
+            "summary.can_trade"
+          ],
+          "referenced_artifact": {
+            "current_path": "inputs.candidate_path",
+            "current_sha256": "inputs.candidate_sha256",
+            "previous_declared_path": "envelope.candidate_path"
+          }
+        }
+      ]
+    },
+    "news": {
+      "status": "implemented",
+      "adapter": "declarative_artifact_adapter_v1",
+      "route_class": "local_reuse_validation",
+      "stages": [
+        {
+          "stage_id": "candidate_verified",
+          "from_state": "idle",
+          "to_state": "awaiting_binding_decision",
+          "artifact_contract": "dean_domain_scoped_news_envelope_v1",
+          "artifact_mode": "domain_scoped_news_envelope",
+          "status_path": "summary.status",
+          "allowed_statuses": [
+            "domain_news_candidate_ready",
+            "domain_news_candidate_ready_with_gaps"
+          ],
+          "required_true": [
+            "summary.source_reuse_performed",
+            "summary.source_lineage_verified",
+            "summary.domain_identity_verified",
+            "summary.trigger_semantics_preserved",
+            "summary.candidate_ready_for_binding_review"
+          ],
+          "required_false": [
+            "summary.producer_run_performed",
+            "summary.collector_run_performed",
+            "summary.network_access_performed",
+            "summary.llm_call_performed",
+            "summary.binding_accepted",
+            "summary.hypothesis_confirmed",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_approve_hypothesis",
+            "summary.can_write_learning_memory",
+            "summary.can_train",
+            "summary.can_trade"
+          ]
+        }
+      ]
+    },
+    "official_policy": {
+      "status": "implemented",
+      "adapter": "declarative_artifact_adapter_v1",
+      "route_class": "local_reuse_validation",
+      "depends_on": ["news"],
+      "stages": [
+        {
+          "stage_id": "candidate_verified",
+          "from_state": "idle",
+          "to_state": "awaiting_binding_decision",
+          "artifact_contract": "dean_domain_scoped_official_policy_envelope_v1",
+          "artifact_mode": "domain_scoped_official_policy_envelope",
+          "status_path": "summary.status",
+          "allowed_statuses": [
+            "domain_official_policy_candidate_ready",
+            "domain_official_policy_candidate_ready_with_gaps"
+          ],
+          "required_true": [
+            "summary.source_reuse_performed",
+            "summary.source_lineage_verified",
+            "summary.official_source_identity_verified",
+            "summary.news_corroboration_lineage_verified",
+            "summary.policy_fact_established",
+            "summary.candidate_ready_for_binding_review"
+          ],
+          "required_false": [
+            "summary.producer_run_performed",
+            "summary.collector_run_performed",
+            "summary.network_access_performed",
+            "summary.llm_call_performed",
+            "summary.binding_accepted",
+            "summary.hypothesis_confirmed",
+            "summary.directional_market_claim_created",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_approve_hypothesis",
+            "summary.can_write_learning_memory",
+            "summary.can_train",
+            "summary.can_trade"
+          ]
+        }
+      ]
+    },
+    "fundamentals": {
+      "status": "implemented",
+      "adapter": "declarative_artifact_adapter_v1",
+      "route_class": "local_reuse_validation",
+      "stages": [
+        {
+          "stage_id": "candidate_verified",
+          "from_state": "idle",
+          "to_state": "awaiting_binding_decision",
+          "artifact_contract": "dean_domain_scoped_fundamentals_envelope_v1",
+          "artifact_mode": "domain_scoped_fundamentals_envelope",
+          "status_path": "summary.status",
+          "allowed_statuses": [
+            "domain_fundamentals_candidate_ready",
+            "domain_fundamentals_candidate_ready_with_gaps"
+          ],
+          "required_true": [
+            "summary.source_reuse_performed",
+            "summary.source_lineage_verified",
+            "summary.issuer_identity_verified",
+            "summary.candidate_ready_for_binding_review"
+          ],
+          "required_false": [
+            "summary.producer_run_performed",
+            "summary.collector_run_performed",
+            "summary.network_access_performed",
+            "summary.valuation_performed",
+            "summary.prediction_feature_created",
+            "summary.binding_accepted",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_approve_hypothesis",
+            "summary.can_write_learning_memory",
+            "summary.can_trade"
+          ]
+        }
+      ]
+    },
+    "sector_market": {
+      "status": "implemented",
+      "adapter": "declarative_artifact_adapter_v1",
+      "route_class": "local_reuse_validation",
+      "stages": [
+        {
+          "stage_id": "candidate_verified",
+          "from_state": "idle",
+          "to_state": "awaiting_binding_decision",
+          "artifact_contract": "dean_domain_scoped_sector_market_envelope_v1",
+          "artifact_mode": "domain_scoped_sector_market_envelope",
+          "status_path": "summary.status",
+          "allowed_statuses": ["domain_sector_market_candidate_ready"],
+          "required_true": [
+            "summary.source_reuse_performed",
+            "summary.source_lineage_verified",
+            "summary.candidate_ready_for_binding_review"
+          ],
+          "required_false": [
+            "summary.producer_run_performed",
+            "summary.pipeline_stage_run_performed",
+            "summary.binding_accepted",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_approve_hypothesis",
+            "summary.can_write_learning_memory",
+            "summary.can_trade"
+          ]
+        }
+      ]
+    },
+    "pipeline_context": {
+      "status": "implemented",
+      "adapter": "declarative_artifact_adapter_v1",
+      "route_class": "local_reuse_validation",
+      "stages": [
+        {
+          "stage_id": "candidate_verified",
+          "from_state": "idle",
+          "to_state": "awaiting_binding_decision",
+          "artifact_contract": "dean_domain_scoped_pipeline_context_envelope_v1",
+          "artifact_mode": "domain_scoped_pipeline_context_envelope",
+          "status_path": "summary.status",
+          "allowed_statuses": [
+            "domain_pipeline_context_candidate_ready",
+            "domain_pipeline_context_candidate_ready_with_gaps"
+          ],
+          "required_true": [
+            "summary.source_reuse_performed",
+            "summary.candidate_ready_for_binding_review",
+            "lineage_verification.all_references_verified"
+          ],
+          "required_false": [
+            "summary.pipeline_stage_run_performed",
+            "summary.binding_accepted",
+            "summary.can_invoke_domain_analysis",
+            "summary.can_approve_hypothesis",
+            "summary.can_write_learning_memory",
+            "summary.can_trade"
+          ]
+        }
+      ]
+    }
+  }
+}

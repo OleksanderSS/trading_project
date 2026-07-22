@@ -9,7 +9,6 @@ from typing import Any
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
 
-
 TIMESTAMP_NAME_TOKENS = (
     "published",
     "timestamp",
@@ -284,15 +283,14 @@ def _audit_evidence_pack(
     collapse_share_threshold: float,
     collapse_min_rows: int,
 ) -> dict[str, Any]:
+    from dean_os.dean_paths import DeanPaths
+
     if not evidence_pack_path:
         return {"status": "not_provided", "issues": [], "warnings": []}
-    path = Path(evidence_pack_path)
-    if not path.exists():
-        return {"status": "timestamp_blocked", "path": str(path), "issues": ["Evidence pack file does not exist."], "warnings": []}
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
-        return {"status": "timestamp_blocked", "path": str(path), "issues": [f"Evidence pack JSON is invalid: {exc}"], "warnings": []}
+        payload = DeanPaths.load_json(evidence_pack_path)
+    except Exception as exc:
+        return {"status": "timestamp_blocked", "path": str(evidence_pack_path), "issues": [f"Evidence pack error: {exc}"], "warnings": []}
     coverage = payload.get("coverage", {})
     date_range = coverage.get("date_range", {}) if isinstance(coverage, dict) else {}
     document_count = int(coverage.get("document_count", 0) or 0) if isinstance(coverage, dict) else 0
@@ -328,7 +326,7 @@ def _audit_evidence_pack(
     status = "timestamp_blocked" if issues else "timestamp_suspicious" if warnings else "timestamp_ready"
     return {
         "status": status,
-        "path": str(path),
+        "path": str(evidence_pack_path),
         "document_count": document_count,
         "date_range": {
             "start": start.isoformat() if start else date_range.get("start"),

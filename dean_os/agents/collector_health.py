@@ -6,7 +6,6 @@ from typing import Any
 
 from dean_os.base import BaseAgent
 from dean_os.schemas import MarketContext, PipelineReport
-from dean_os.utils import clamp
 
 
 class CollectorHealthAgent(BaseAgent):

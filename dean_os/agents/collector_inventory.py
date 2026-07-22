@@ -7,7 +7,6 @@ from typing import Any
 from dean_os.base import BaseAgent
 from dean_os.schemas import MarketContext, PipelineReport
 
-
 PIPELINE_PRICE_TYPES = {"market_data", "yahoo_finance"}
 PIPELINE_NEWS_TYPES = {"google_news", "newsapi", "rss"}
 PIPELINE_MACRO_TYPES = {"fred", "economic_calendar"}

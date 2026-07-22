@@ -140,3 +140,32 @@ def test_replay_price_normalizer_blocks_learning_when_quality_warnings_remain(tm
     assert payload["learning_gate"]["status"] == "blocked"
     assert payload["learning_gate"]["can_write_learning_memory"] is False
     assert any("Benchmark SPY lookback return is extreme" in warning for warning in payload["quality"]["warnings"])
+
+
+def test_replay_price_normalizer_blocks_learning_when_compare_window_warns(tmp_path):
+    raw_path = tmp_path / "raw_prices.csv"
+    dates = pd.date_range("2026-01-01", periods=8, freq="D", tz="UTC")
+    spy_closes = [100.0, 80.0, 60.0, 40.0, 20.0, 30.0, 80.0, 120.0]
+    aapl_closes = [50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0]
+    rows = []
+    for dt, spy_close, aapl_close in zip(dates, spy_closes, aapl_closes, strict=True):
+        rows.append({"ticker": "SPY", "datetime": dt.isoformat(), "close": spy_close, "interval": "1d"})
+        rows.append({"ticker": "AAPL", "datetime": dt.isoformat(), "close": aapl_close, "interval": "1d"})
+    pd.DataFrame(rows).to_csv(raw_path, index=False)
+
+    payload = asyncio.run(
+        ReplayPriceNormalizer(output_dir=tmp_path / "reports", artifact_dir=tmp_path / "artifacts").run(
+            price_data_path=raw_path,
+            tickers=["AAPL", "SPY"],
+            output_path=tmp_path / "normalized.csv",
+            compare_replay=True,
+            as_of="2026-01-05T00:00:00+00:00",
+            lookback_days=10,
+            horizon_days=3,
+        )
+    )
+
+    assert payload["quality"]["normalized"]["warnings"] == []
+    assert payload["learning_gate"]["status"] == "blocked"
+    assert payload["quality"]["comparison_window_warnings"]
+    assert any("Benchmark SPY lookback return is extreme" in warning for warning in payload["learning_gate"]["warnings"])

@@ -4,10 +4,16 @@ from collections import Counter
 from typing import Any
 
 from dean_os.base import AnalyticalAgent
+from dean_os.context_evidence_provenance import (
+    audit_market_context_news,
+    audit_research_documents,
+)
 from dean_os.research_corpus import ResearchCorpus, chunk_document
 from dean_os.schemas import AnalyticalReport, MarketContext, ResearchDocument, ResearchNote, SourceCitation
+from dean_os.structured_context_provenance import (
+    apply_market_context_structured_boundary,
+)
 from dean_os.utils import clamp
-
 
 PATTERN_TERMS: dict[str, tuple[str, ...]] = {
     "defense_rearmament": ("defense budget", "rearmament", "munitions", "missile", "defense contract"),
@@ -94,6 +100,7 @@ class SpecialistResearchAgent(AnalyticalAgent):
     version = "0.1.0"
 
     async def run(self, context: MarketContext) -> AnalyticalReport:
+        apply_market_context_structured_boundary(context)
         documents = material_documents(context)
         corpus_chunks = self._load_corpus_chunks(context)
         texts = [document.text.lower() for document in documents]
@@ -245,12 +252,62 @@ class SpecialistResearchAgent(AnalyticalAgent):
 
 
 def material_documents(context: MarketContext) -> list[ResearchDocument]:
-    documents = list(context.research_documents)
-    for index, item in enumerate(context.news):
+    raw_documents = list(context.research_documents)
+    if context.as_of:
+        try:
+            document_audit = audit_research_documents(
+                raw_documents,
+                as_of=context.as_of,
+            )
+        except ValueError:
+            document_audit = {
+                "contract": "dean_context_evidence_point_in_time_v1",
+                "status": "blocked_context_as_of_invalid",
+                "input_count": len(raw_documents),
+                "accepted_count": 0,
+                "excluded_count": len(raw_documents),
+                "accepted": [],
+                "exclusions": [
+                    {
+                        "index": index,
+                        "status": "excluded",
+                        "reasons": ["context_as_of_invalid"],
+                    }
+                    for index in range(len(raw_documents))
+                ],
+            }
+    else:
+        document_audit = {
+            "contract": "dean_context_evidence_point_in_time_v1",
+            "status": "blocked_context_as_of_missing",
+            "input_count": len(raw_documents),
+            "accepted_count": 0,
+            "excluded_count": len(raw_documents),
+            "accepted": [],
+            "exclusions": [
+                {
+                    "index": index,
+                    "status": "excluded",
+                    "reasons": ["context_as_of_missing"],
+                }
+                for index in range(len(raw_documents))
+            ],
+        }
+    documents = list(document_audit["accepted"])
+    context.metadata["research_document_point_in_time_audit"] = {
+        key: value
+        for key, value in document_audit.items()
+        if key != "accepted"
+    }
+    news_audit = audit_market_context_news(context)
+    context.metadata["news_point_in_time_audit"] = {
+        key: value
+        for key, value in news_audit.items()
+        if key != "accepted"
+    }
+    for index, item in enumerate(news_audit["accepted"]):
         if isinstance(item, ResearchDocument):
             documents.append(item)
-        elif isinstance(item, str):
-            documents.append(ResearchDocument(title=f"News item {index}", source_type="news", text=item, tickers=context.tickers))
         elif isinstance(item, dict):
             title = str(item.get("title") or item.get("headline") or f"News item {index}")
             text = " ".join(
@@ -296,8 +353,6 @@ def metric_patterns_from_context(context: MarketContext) -> Counter:
             counts["pricing_power"] += 1
         if debt_to_equity is not None and debt_to_equity > 2.0:
             counts["balance_sheet_stress"] += 1
-    if any(str(key).lower() in {"cpi", "inflation", "rates", "fed"} for key in context.macro):
-        counts["policy_easing"] += 1
     return counts
 
 

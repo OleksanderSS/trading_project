@@ -9,7 +9,6 @@ from dean_os.review_actions import ReviewActionStore
 from dean_os.schemas import ReviewActionRecord, utc_now_iso
 from dean_os.utils import json_ready
 
-
 DEFAULT_DRY_RUN_PATH = "reports/dean_os/review_action_dry_run/latest.json"
 
 
@@ -318,9 +317,9 @@ def _operator_notes() -> list[str]:
 
 
 def _load_json(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError(f"JSON artifact must be an object: {path}")
+    from dean_os.dean_paths import DeanPaths
+
+    payload = DeanPaths.load_json(path)
     return payload
 
 

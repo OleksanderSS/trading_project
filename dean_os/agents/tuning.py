@@ -6,7 +6,6 @@ from dean_os.base import BaseAgent
 from dean_os.regime_context import normalize_context_tags
 from dean_os.schemas import MarketContext, PipelineActionProposal, PipelineReport
 
-
 ACTIONABLE_MODEL_FAILURES = {
     "validation_score_below_threshold",
     "sharpe_below_threshold",
@@ -19,6 +18,13 @@ VALIDATION_FIRST_FAILURES = {
     "evaluation_artifact_stale",
     "sample_count_below_threshold",
 }
+EXACT_SCOPE_FIELDS = (
+    "ticker",
+    "model",
+    "target_name",
+    "timeframe",
+    "context_fingerprint",
+)
 
 
 class TuningAgent(BaseAgent):
@@ -75,8 +81,29 @@ class TuningAgent(BaseAgent):
             [*context.metadata.get("regime_tags", []), *(regime_context.get("context_tags") or [])]
         )
         weak_contexts = _matching_weak_contexts(context_performance, regime_tags)
-        tickers = self.config.get("tickers") or context.tickers or ["<approved>"]
-        timeframes = self.config.get("timeframes") or context.timeframes or ([context.timeframe] if context.timeframe else ["<approved>"])
+        evaluation_scope = _as_dict(
+            model_performance.get("evaluation_scope")
+        )
+        scope_complete = all(
+            evaluation_scope.get(field)
+            for field in EXACT_SCOPE_FIELDS
+        )
+        tickers = (
+            [str(evaluation_scope["ticker"])]
+            if scope_complete
+            else []
+        )
+        timeframes = (
+            [str(evaluation_scope["timeframe"])]
+            if scope_complete
+            else []
+        )
+        scope_mismatches = _scope_mismatches(
+            evaluation_scope=evaluation_scope,
+            context=context,
+            configured_tickers=self.config.get("tickers"),
+            configured_timeframes=self.config.get("timeframes"),
+        )
         control_surface = _as_dict(context.metadata.get("pipeline_control_surface"))
         surface = _as_dict(control_surface.get("surface"))
         proposal_gate = _as_dict(control_surface.get("proposal_gate"))
@@ -95,6 +122,9 @@ class TuningAgent(BaseAgent):
             "regime": regime,
             "regime_tags": regime_tags,
             "weak_contexts": weak_contexts,
+            "evaluation_scope": evaluation_scope,
+            "evaluation_scope_complete": scope_complete,
+            "scope_mismatches": scope_mismatches,
             "control_surface_status": surface.get("status"),
             "control_surface_gate": proposal_gate.get("status"),
             "allowed_variation": allowed_variation,
@@ -103,6 +133,12 @@ class TuningAgent(BaseAgent):
                 "timeframes": timeframes,
                 "regime_tags": regime_tags,
                 "target": "walk_forward_tuning_experiment",
+                "model": evaluation_scope.get("model"),
+                "target_name": evaluation_scope.get("target_name"),
+                "context_fingerprint": evaluation_scope.get(
+                    "context_fingerprint"
+                ),
+                "domain_or_sector_scope_inherited": False,
             },
             "guardrails": [
                 "walk_forward_validation",
@@ -110,6 +146,7 @@ class TuningAgent(BaseAgent):
                 "no_production_config_write",
                 "risk_constraints",
                 "human_approval_required",
+                "single_exact_model_context_only",
             ],
             "proposals": [],
         }
@@ -148,6 +185,34 @@ class TuningAgent(BaseAgent):
 
         actionable_failures = [failure for failure in model_failures if failure in ACTIONABLE_MODEL_FAILURES]
         validation_failures = [failure for failure in model_failures if failure in VALIDATION_FIRST_FAILURES]
+        if actionable_failures and (
+            not scope_complete or scope_mismatches
+        ):
+            plan["status"] = "validate_exact_model_scope_first"
+            plan["data_quality_score"] = 0.35
+            if not scope_complete:
+                plan["reasons"].append(
+                    "Actionable model failures lack exact ticker, model, "
+                    "target, timeframe, and context-fingerprint lineage."
+                )
+            if scope_mismatches:
+                plan["reasons"].append(
+                    "Configured/context tuning scope conflicts with the "
+                    "evaluated model context: "
+                    + ", ".join(scope_mismatches)
+                    + "."
+                )
+            plan["risks"].append(
+                "A single ticker/model failure must never broaden into a "
+                "sector, domain, or multi-ticker tuning experiment."
+            )
+            plan["proposals"].append(
+                self._validation_proposal(
+                    plan,
+                    target="model_evaluation_scope",
+                )
+            )
+            return plan
         if actionable_failures:
             plan["status"] = "tuning_experiment_proposed"
             plan["reasons"].append(
@@ -245,6 +310,56 @@ def _matching_weak_contexts(context_performance: dict[str, Any], regime_tags: li
 
 def _as_dict(value: Any) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def _scope_mismatches(
+    *,
+    evaluation_scope: dict[str, Any],
+    context: MarketContext,
+    configured_tickers: Any,
+    configured_timeframes: Any,
+) -> list[str]:
+    if not evaluation_scope:
+        return []
+    mismatches: list[str] = []
+    ticker = str(evaluation_scope.get("ticker") or "")
+    timeframe = str(evaluation_scope.get("timeframe") or "")
+    context_tickers = {
+        str(item).upper() for item in context.tickers if str(item)
+    }
+    context_timeframes = {
+        str(item)
+        for item in (
+            context.timeframes
+            or ([context.timeframe] if context.timeframe else [])
+        )
+        if str(item)
+    }
+    if context_tickers and ticker.upper() not in context_tickers:
+        mismatches.append("evaluated_ticker_not_in_context")
+    if context_timeframes and timeframe not in context_timeframes:
+        mismatches.append("evaluated_timeframe_not_in_context")
+    if configured_tickers:
+        configured = {
+            str(item).upper()
+            for item in configured_tickers
+            if str(item)
+        }
+        if configured != {ticker.upper()}:
+            mismatches.append(
+                "configured_tickers_broaden_evaluated_scope"
+            )
+    if configured_timeframes:
+        configured = {
+            str(item)
+            for item in configured_timeframes
+            if str(item)
+        }
+        if configured != {timeframe}:
+            mismatches.append(
+                "configured_timeframes_broaden_evaluated_scope"
+            )
+    return mismatches
 
 
 def _variation_preview(variation: dict[str, Any]) -> str:

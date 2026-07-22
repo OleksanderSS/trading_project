@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from dean_os.agents.market_data_freshness import inspect_market_data_freshness
+from dean_os.market_data_api import parse_datetime
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
-
 
 DEFAULT_READINESS_PATH = "reports/dean_os/outcome_readiness_gate/latest.json"
 
@@ -171,12 +171,11 @@ def render_outcome_price_coverage_plan_markdown(payload: dict[str, Any]) -> str:
 
 
 def _load_optional_json(path: str | Path) -> dict[str, Any]:
-    resolved = Path(path)
-    if not resolved.exists():
-        return {}
+    from dean_os.dean_paths import DeanPaths
+
     try:
-        return json.loads(resolved.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
+        return DeanPaths.load_json(path)
+    except Exception:
         return {}
 
 
@@ -569,18 +568,8 @@ def _unique_upper(values: list[Any]) -> list[str]:
 
 
 def _parse_datetime(value: Any) -> datetime | None:
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        parsed = value
-    else:
-        try:
-            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-        except ValueError:
-            return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
+    """Parse datetime string with UTC timezone (deprecated: use market_data_api.parse_datetime)."""
+    return parse_datetime(value) if value else None
 
 
 def _iso(value: Any) -> str | None:

@@ -1,0 +1,45 @@
+{
+  "contract": "dean_domain_analyst_lifecycle_profile_v1",
+  "fixed_context_families": [
+    "news",
+    "official_policy",
+    "macro",
+    "fundamentals",
+    "sector_market",
+    "pipeline_context"
+  ],
+  "horizon_policy": {
+    "sector_thesis_days": [30, 90, 180],
+    "event_response_days": [1, 5, 20, 60, 120],
+    "rule": "Sector-thesis and event-response horizons are separate contracts and must not be substituted for each other."
+  },
+  "hypothesis_contract": {
+    "news_role": "trigger_evidence_not_automatic_confirmation",
+    "required_dispositions": ["accept_for_replay", "reformulate", "defer", "reject"],
+    "packet_sha256_binding_required": true,
+    "expectation_context_required": true,
+    "contradiction_review_required": true
+  },
+  "measurement_contract": {
+    "relative_total_return_formula": "ticker_total_return_minus_benchmark_total_return",
+    "direction_labels": ["support", "neutral", "contradict"],
+    "pre_trigger_historical_calibration_required": true,
+    "primary_outcome_requires_verified_market_data": true,
+    "pipeline_context_may_replace_primary_outcome": false
+  },
+  "outcome_contract": {
+    "intermediate_checkpoints_are_final": false,
+    "primary_outcome_triggers_reverse_analysis": true,
+    "reverse_analysis_contract": "dean_hypothesis_reverse_analysis_v1",
+    "journal_contract": "hash_chain_append_only",
+    "source_ingestion_is_separate_from_outcome": true
+  },
+  "authority_boundary": {
+    "automatic_hypothesis_approval": false,
+    "automatic_learning_rule_promotion": false,
+    "production_config_write": false,
+    "execution_recommendation": false,
+    "paper_trading": false,
+    "live_trading": false
+  }
+}

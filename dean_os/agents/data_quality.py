@@ -21,20 +21,37 @@ class DataQualityAgent(BaseAgent):
         ]
 
         if metrics["frame_count"] == 0:
-            return PipelineReport(
-                agent_name=self.name,
-                agent_version=self.version,
-                verdict="caution",
-                confidence=0.7,
-                data_quality_score=0.35,
-                signal_strength=0.0,
-                reasons=["No DataFrame inputs supplied to DataQualityAgent"],
-                risks=["Data quality gate cannot validate missingness, staleness, or synthetic fallback"],
-                blind_spots=["The main pipeline may still load data internally after this preflight check"],
-                evidence=evidence,
-                input_hash=self.context_hash(context),
-                metrics_snapshot=metrics,
-            )
+            # For pre_trade phase, missing data quality inputs is a hard block
+            if context.phase == "pre_trade":
+                return PipelineReport(
+                    agent_name=self.name,
+                    agent_version=self.version,
+                    verdict="blocked",
+                    confidence=1.0,
+                    data_quality_score=0.0,
+                    signal_strength=-1.0,
+                    reasons=["No DataFrame inputs supplied to DataQualityAgent in pre_trade phase"],
+                    risks=["Data quality gate cannot validate missingness, staleness, or synthetic fallback before trade execution - hard block"],
+                    blind_spots=["The main pipeline may still load data internally after this preflight check"],
+                    evidence=evidence,
+                    input_hash=self.context_hash(context),
+                    metrics_snapshot=metrics,
+                )
+            else:
+                return PipelineReport(
+                    agent_name=self.name,
+                    agent_version=self.version,
+                    verdict="caution",
+                    confidence=0.7,
+                    data_quality_score=0.35,
+                    signal_strength=0.0,
+                    reasons=["No DataFrame inputs supplied to DataQualityAgent"],
+                    risks=["Data quality gate cannot validate missingness, staleness, or synthetic fallback"],
+                    blind_spots=["The main pipeline may still load data internally after this preflight check"],
+                    evidence=evidence,
+                    input_hash=self.context_hash(context),
+                    metrics_snapshot=metrics,
+                )
 
         if metrics["empty_frames"]:
             verdict = "blocked"

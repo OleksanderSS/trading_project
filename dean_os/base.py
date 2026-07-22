@@ -31,6 +31,16 @@ class BaseAgent(ABC):
                 return False
         return True
 
+    def should_run_in_phase(self, context: MarketContext) -> bool:
+        run_phases = self.config.get("run_phases")
+        if not run_phases:
+            return True
+        return context.phase in {
+            str(phase).strip()
+            for phase in run_phases
+            if str(phase).strip()
+        }
+
     @abstractmethod
     async def run(self, context: MarketContext) -> BaseAgentReport:
         raise NotImplementedError
@@ -40,6 +50,8 @@ class BaseAgent(ABC):
 
     def context_hash(self, context: MarketContext) -> str:
         compact_context = {
+            "phase": context.phase,
+            "as_of": context.as_of,
             "tickers": context.tickers,
             "timeframes": context.timeframes,
             "timeframe": context.timeframe,

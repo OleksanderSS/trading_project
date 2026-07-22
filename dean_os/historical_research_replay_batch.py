@@ -5,7 +5,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from dean_os.historical_replay_batch import _resolve_as_of_dates
+from dean_os.replays.historical_replay_batch import resolve_as_of_dates
 from dean_os.historical_research_replay import HistoricalResearchReplayRunner
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
@@ -37,9 +37,11 @@ class HistoricalResearchReplayBatchRunner:
         neutral_band: float = 0.01,
         max_runs: int = 20,
         normalize_daily_bars: bool = False,
+        focused_overlay_path: str | Path | None = None,
+        apply_focused_overlay: bool = False,
     ) -> dict[str, Any]:
         horizons = _normalize_horizons(horizon_days)
-        dates = _resolve_as_of_dates(
+        dates = resolve_as_of_dates(
             price_data_path=price_data_path,
             as_of_dates=as_of_dates,
             start_as_of=start_as_of,
@@ -71,6 +73,8 @@ class HistoricalResearchReplayBatchRunner:
                     datetime_col=datetime_col,
                     neutral_band=neutral_band,
                     normalize_daily_bars=normalize_daily_bars,
+                    focused_overlay_path=focused_overlay_path,
+                    apply_focused_overlay=apply_focused_overlay,
                 )
                 compact_runs.append(_compact_run(replay))
 
@@ -95,6 +99,8 @@ class HistoricalResearchReplayBatchRunner:
                 "benchmark_ticker": benchmark_ticker.upper(),
                 "max_runs": max_runs,
                 "normalize_daily_bars": normalize_daily_bars,
+                "focused_overlay_path": str(focused_overlay_path) if focused_overlay_path else None,
+                "apply_focused_overlay": apply_focused_overlay,
             },
             "summary": summary,
             "learning_gate": _learning_gate(summary),
@@ -189,6 +195,14 @@ def _compact_run(payload: dict[str, Any]) -> dict[str, Any]:
         "realized_return": evaluation.get("realized_return"),
         "quality_status": "blocked" if warnings else "clear",
         "quality_warnings": warnings,
+        "focused_overlay_status": exam.get("focused_overlay_status"),
+        "focused_overlay_applied": bool(exam.get("focused_overlay_applied")),
+        "original_research_stance": payload.get("research_exam_original", {}).get("research_stance")
+        if payload.get("research_exam_original")
+        else None,
+        "original_exam_verdict": payload.get("research_exam_original", {}).get("exam_verdict")
+        if payload.get("research_exam_original")
+        else None,
         "saved_paths": payload.get("saved_paths", {}),
     }
 

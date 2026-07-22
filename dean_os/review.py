@@ -157,11 +157,16 @@ class AgentReviewBuilder:
         return json_path, md_path
 
     def _load_report(self, report_path: str | Path | None) -> AgentLabRunReport | None:
+        from dean_os.dean_paths import DeanPaths
+
         path = Path(report_path) if report_path else latest_agent_lab_report(self.reports_dir)
         if path is None:
             return None
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        return AgentLabRunReport(**payload)
+        try:
+            payload = DeanPaths.load_json(path)
+            return AgentLabRunReport(**payload)
+        except Exception:
+            return None
 
     def _report_summary(self, report: AgentLabRunReport | None) -> dict[str, Any]:
         if report is None:

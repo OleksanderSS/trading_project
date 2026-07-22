@@ -1,0 +1,78 @@
+{
+  "contract": "dean_domain_binding_dispatch_policy_v1",
+  "maximum_adapter_runs_per_dispatch": 1,
+  "automatic_multi_task_loop_allowed": false,
+  "explicit_local_inputs_required": true,
+  "dispatch_classes": [
+    "local_reuse_validation",
+    "existing_adapter_run",
+    "adapter_generalization_work"
+  ],
+  "adapters": {
+    "news": {
+      "priority": 5,
+      "depends_on": [],
+      "implementation": "DomainScopedNewsEnvelope",
+      "actual_contract": "dean_domain_scoped_news_envelope_v1",
+      "compatibility": "generic_offline_ready",
+      "reasons": ["legacy_semiconductor_producer_is_recursively_verified", "domain_and_registry_identity_are_bound_by_profile", "news_remains_trigger_evidence_only"],
+      "generalization_target": "domain_scoped_news_envelope"
+    },
+    "official_policy": {
+      "priority": 6,
+      "depends_on": ["news"],
+      "implementation": "DomainScopedOfficialPolicyEnvelope",
+      "actual_contract": "dean_domain_scoped_official_policy_envelope_v1",
+      "compatibility": "generic_offline_ready",
+      "reasons": ["legacy_policy_artifact_is_recursively_verified", "domain_news_envelope_replaces_semiconductor_news_dependency", "official_source_identity_and_hosts_are_profile_bound", "policy_fact_is_non_directional_by_itself"],
+      "generalization_target": "domain_scoped_official_policy_envelope"
+    },
+    "macro": {
+      "priority": 1,
+      "depends_on": [],
+      "implementation": "DomainScopedMacroEnvelopeCeremony",
+      "actual_contract": "dean_domain_scoped_macro_evidence_envelope_v1",
+      "compatibility": "generic_offline_ready",
+      "reasons": ["saved_macro_core_is_rebuilt_offline_from_explicit_source", "domain_series_scope_and_identity_are_profile_bound", "output_is_review_only"],
+      "generalization_target": "domain_scoped_macro_evidence_envelope"
+    },
+    "fundamentals": {
+      "priority": 4,
+      "depends_on": [],
+      "implementation": "DomainScopedFundamentalsEnvelope",
+      "actual_contract": "dean_domain_scoped_fundamentals_envelope_v1",
+      "compatibility": "generic_offline_ready",
+      "reasons": ["terminal_ratio_artifact_is_sha_bound_to_recursive_sec_lineage", "domain_identity_and_issuer_cik_scope_are_verified", "partial_profile_coverage_remains_explicit"],
+      "generalization_target": "domain_scoped_fundamentals_envelope"
+    },
+    "sector_market": {
+      "priority": 3,
+      "depends_on": [],
+      "implementation": "DomainScopedSectorMarketEnvelope",
+      "actual_contract": "dean_domain_scoped_sector_market_envelope_v1",
+      "compatibility": "generic_offline_ready",
+      "reasons": ["explicit_saved_source_is_recursively_verified", "domain_universe_and_benchmark_are_profile_bound", "output_is_review_only"],
+      "generalization_target": "domain_scoped_sector_market_envelope"
+    },
+    "pipeline_context": {
+      "priority": 2,
+      "depends_on": [],
+      "implementation": "DomainScopedPipelineContextEnvelope",
+      "actual_contract": "dean_domain_scoped_pipeline_context_envelope_v1",
+      "compatibility": "generic_offline_ready",
+      "reasons": ["explicit_saved_bundle_is_sha_bound", "ticker_scope_is_checked_against_domain", "analysis_cutoff_and_inventory_lineage_are verified"],
+      "generalization_target": "domain_scoped_pipeline_context_envelope"
+    }
+  },
+  "execution_boundary": {
+    "local_reuse_validation_may_read": true,
+    "existing_adapter_run_may_execute_when_allowlisted": true,
+    "adapter_generalization_may_execute": false,
+    "network_access_allowed": false,
+    "production_config_write_allowed": false,
+    "binding_acceptance_allowed": false,
+    "hypothesis_approval_allowed": false,
+    "learning_write_allowed": false,
+    "trading_allowed": false
+  }
+}

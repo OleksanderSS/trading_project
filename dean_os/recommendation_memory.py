@@ -7,8 +7,9 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
-from dean_os.schemas import RecommendationMemoryRecord
+from dean_os.schemas import RecommendationMemoryRecord, utc_now_iso
 from dean_os.utils import clamp, json_ready
 
 
@@ -21,16 +22,23 @@ class RecommendationMemoryStore:
         self._init_db()
 
     def add_record(self, record: RecommendationMemoryRecord) -> str:
+        payload = json.dumps(json_ready(record), ensure_ascii=True)
         with self._connect() as conn:
+            cur = conn.execute(
+                "SELECT COALESCE(MAX(revision), 0) FROM recommendation_memory WHERE memory_id = ?",
+                (record.memory_id,),
+            )
+            next_revision = (cur.fetchone()[0] or 0) + 1
             conn.execute(
                 """
-                INSERT OR REPLACE INTO recommendation_memory
-                (memory_id, source_type, source_id, agent_name, topic, expected_direction,
+                INSERT INTO recommendation_memory
+                (memory_id, revision, source_type, source_id, agent_name, topic, expected_direction,
                  outcome_label, created_at, outcome_at, context_tags, payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.memory_id,
+                    next_revision,
                     record.source_type,
                     record.source_id,
                     record.agent_name,
@@ -40,7 +48,23 @@ class RecommendationMemoryStore:
                     record.created_at,
                     record.outcome_at,
                     json.dumps(record.context_tags, ensure_ascii=True),
-                    json.dumps(json_ready(record), ensure_ascii=True),
+                    payload,
+                ),
+            )
+            conn.execute(
+                """
+                INSERT INTO recommendation_memory_events
+                (event_id, memory_id, revision, actor, reason, payload, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    uuid4().hex,
+                    record.memory_id,
+                    next_revision,
+                    record.lifecycle_actor or "system",
+                    record.lifecycle_reason or "memory write",
+                    payload,
+                    utc_now_iso(),
                 ),
             )
         return record.memory_id
@@ -62,6 +86,9 @@ class RecommendationMemoryStore:
         confidence_before: float | None = None,
         confidence_after: float | None = None,
         outcome_at: str | None = None,
+        lifecycle_status: str = "draft",
+        lifecycle_actor: str | None = None,
+        lifecycle_reason: str = "",
     ) -> RecommendationMemoryRecord:
         record = RecommendationMemoryRecord(
             source_type=source_type,
@@ -79,13 +106,20 @@ class RecommendationMemoryStore:
             confidence_before=confidence_before,
             confidence_after=confidence_after,
             outcome_at=outcome_at,
+            lifecycle_status=lifecycle_status,
+            lifecycle_updated_at=utc_now_iso(),
+            lifecycle_actor=lifecycle_actor,
+            lifecycle_reason=lifecycle_reason,
         )
         self.add_record(record)
         return record
 
     def get_record(self, memory_id: str) -> RecommendationMemoryRecord | None:
         with self._connect() as conn:
-            row = conn.execute("SELECT payload FROM recommendation_memory WHERE memory_id = ?", (memory_id,)).fetchone()
+            row = conn.execute(
+                "SELECT payload FROM recommendation_memory WHERE memory_id = ? ORDER BY revision DESC LIMIT 1",
+                (memory_id,),
+            ).fetchone()
         if row is None:
             return None
         return RecommendationMemoryRecord(**json.loads(row["payload"]))
@@ -96,17 +130,26 @@ class RecommendationMemoryStore:
         context_tag: str | None = None,
         outcome_label: str | None = None,
     ) -> list[RecommendationMemoryRecord]:
+        latest_sql = """
+            SELECT rm.payload
+            FROM recommendation_memory rm
+            INNER JOIN (
+                SELECT memory_id, MAX(revision) AS max_rev
+                FROM recommendation_memory
+                GROUP BY memory_id
+            ) latest ON rm.memory_id = latest.memory_id AND rm.revision = latest.max_rev
+        """
         clauses = []
         params: list[Any] = []
         if agent_name:
-            clauses.append("agent_name = ?")
+            clauses.append("rm.agent_name = ?")
             params.append(agent_name)
         if outcome_label:
-            clauses.append("outcome_label = ?")
+            clauses.append("rm.outcome_label = ?")
             params.append(outcome_label)
         where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
         with self._connect() as conn:
-            rows = conn.execute(f"SELECT payload FROM recommendation_memory{where} ORDER BY rowid", params).fetchall()
+            rows = conn.execute(latest_sql + where + " ORDER BY rm.rowid", params).fetchall()
         records = [RecommendationMemoryRecord(**json.loads(row["payload"])) for row in rows]
         if context_tag:
             records = [record for record in records if context_tag in record.context_tags]
@@ -135,7 +178,12 @@ class RecommendationMemoryStore:
         return record
 
     def summary(self) -> dict[str, Any]:
-        records = self.list_records()
+        all_records = self.list_records()
+        records = [
+            record
+            for record in all_records
+            if record.lifecycle_status in {"validated", "human-corrected"}
+        ]
         completed = [record for record in records if record.outcome_label in {"hit", "miss", "inconclusive"}]
         hits = sum(1 for record in completed if record.outcome_label == "hit")
         misses = sum(1 for record in completed if record.outcome_label == "miss")
@@ -172,6 +220,12 @@ class RecommendationMemoryStore:
 
         return {
             "record_count": len(records),
+            "total_record_count": len(all_records),
+            "eligible_record_count": len(records),
+            "lifecycle_excluded_count": len(all_records) - len(records),
+            "records_by_lifecycle_status": dict(
+                sorted(Counter(record.lifecycle_status for record in all_records).items())
+            ),
             "completed_count": len(completed),
             "pending_count": sum(1 for record in records if record.outcome_label == "pending"),
             "hit_count": hits,
@@ -194,7 +248,7 @@ class RecommendationMemoryStore:
         tickers = [item.upper() for item in tickers or []]
         sectors = [item.lower() for item in sectors or []]
         scored = []
-        for record in self.list_records():
+        for record in self.eligible_records():
             score = 0
             score += _overlap_count(context_tags, [tag.lower() for tag in record.context_tags]) * 3
             score += _overlap_count(tickers, [ticker.upper() for ticker in record.tickers]) * 2
@@ -203,6 +257,36 @@ class RecommendationMemoryStore:
                 scored.append((score, record.created_at, record))
         scored.sort(key=lambda item: (item[0], item[1]), reverse=True)
         return [record for _, _, record in scored[:limit]]
+
+    def eligible_records(self) -> list[RecommendationMemoryRecord]:
+        return [
+            record
+            for record in self.list_records()
+            if record.lifecycle_status in {"validated", "human-corrected"}
+        ]
+
+    def transition_lifecycle(
+        self,
+        memory_id: str,
+        status: str,
+        *,
+        actor: str,
+        reason: str,
+        supersedes_id: str | None = None,
+    ) -> RecommendationMemoryRecord:
+        record = self.get_record(memory_id)
+        if record is None:
+            raise KeyError(f"Recommendation memory record not found: {memory_id}")
+        _validate_lifecycle_transition(
+            record.lifecycle_status, status, actor=actor, reason=reason
+        )
+        record.lifecycle_status = status
+        record.lifecycle_updated_at = utc_now_iso()
+        record.lifecycle_actor = actor.strip()
+        record.lifecycle_reason = reason.strip()
+        record.supersedes_id = supersedes_id
+        self.add_record(record)
+        return record
 
     def context_snapshot(
         self,
@@ -253,7 +337,9 @@ class RecommendationMemoryStore:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS recommendation_memory (
-                    memory_id TEXT PRIMARY KEY,
+                    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                    memory_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
                     source_type TEXT NOT NULL,
                     source_id TEXT NOT NULL,
                     agent_name TEXT NOT NULL,
@@ -266,6 +352,25 @@ class RecommendationMemoryStore:
                     payload TEXT NOT NULL
                 )
                 """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_recommendation_memory_id ON recommendation_memory(memory_id)"
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS recommendation_memory_events (
+                    event_id TEXT PRIMARY KEY,
+                    memory_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    actor TEXT NOT NULL,
+                    reason TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_recommendation_memory_events_id ON recommendation_memory_events(memory_id)"
             )
 
     @contextmanager
@@ -284,3 +389,19 @@ class RecommendationMemoryStore:
 
 def _overlap_count(left: list[str], right: list[str]) -> int:
     return len(set(left).intersection(right))
+
+
+def _validate_lifecycle_transition(
+    current: str, target: str, *, actor: str, reason: str
+) -> None:
+    allowed = {
+        "draft": {"validated", "rejected", "superseded", "human-corrected"},
+        "validated": {"rejected", "superseded", "human-corrected"},
+        "rejected": {"human-corrected", "superseded"},
+        "human-corrected": {"validated", "rejected", "superseded"},
+        "superseded": set(),
+    }
+    if target not in allowed.get(current, set()):
+        raise ValueError(f"Invalid memory lifecycle transition: {current} -> {target}")
+    if not actor.strip() or not reason.strip():
+        raise ValueError("Memory lifecycle transition requires actor and reason")

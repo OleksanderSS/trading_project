@@ -6,9 +6,17 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
-from dean_os.schemas import ResearchChunk, ResearchDocument, ResearchNote, SourceCitation
+from dean_os.schemas import ResearchChunk, ResearchDocument, ResearchNote, SourceCitation, utc_now_iso
 from dean_os.utils import json_ready
+
+# Compatibility boundary: the historical corpus store is a module while the
+# governed hypothesis lifecycle lives in the sibling ``research_corpus/``
+# directory. Expose that directory as the module's submodule search path so
+# both public surfaces remain importable without copying the corpus store or
+# maintaining a second ledger implementation.
+__path__ = [str(Path(__file__).with_suffix(""))]
 
 
 class ResearchCorpus:
@@ -21,15 +29,22 @@ class ResearchCorpus:
 
     def add_document(self, document: ResearchDocument, chunk_size: int = 1200) -> list[ResearchChunk]:
         chunks = chunk_document(document, chunk_size=chunk_size)
+        doc_payload = json.dumps(json_ready(document.model_dump(mode="json")), ensure_ascii=True)
         with self._connect() as conn:
+            cur = conn.execute(
+                "SELECT COALESCE(MAX(revision), 0) FROM documents WHERE document_id = ?",
+                (document.document_id,),
+            )
+            doc_rev = (cur.fetchone()[0] or 0) + 1
             conn.execute(
                 """
-                INSERT OR REPLACE INTO documents
-                (document_id, title, source_type, uri, published_at, tickers, sectors, tags, metadata, text)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO documents
+                (document_id, revision, title, source_type, uri, published_at, tickers, sectors, tags, metadata, text)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     document.document_id,
+                    doc_rev,
                     document.title,
                     document.source_type,
                     document.uri,
@@ -41,37 +56,56 @@ class ResearchCorpus:
                     document.text,
                 ),
             )
-            conn.executemany(
+            conn.execute(
                 """
-                INSERT OR REPLACE INTO chunks
-                (chunk_id, document_id, chunk_index, text, token_estimate, citations, metadata)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO document_events
+                (event_id, document_id, revision, created_at)
+                VALUES (?, ?, ?, ?)
                 """,
-                [
+                (uuid4().hex, document.document_id, doc_rev, utc_now_iso()),
+            )
+            for chunk in chunks:
+                cur = conn.execute(
+                    "SELECT COALESCE(MAX(revision), 0) FROM chunks WHERE chunk_id = ?",
+                    (chunk.chunk_id,),
+                )
+                chunk_rev = (cur.fetchone()[0] or 0) + 1
+                conn.execute(
+                    """
+                    INSERT INTO chunks
+                    (chunk_id, revision, document_id, chunk_index, text, token_estimate, citations, metadata)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
                     (
                         chunk.chunk_id,
+                        chunk_rev,
                         chunk.document_id,
                         chunk.chunk_index,
                         chunk.text,
                         chunk.token_estimate,
                         json.dumps(json_ready(chunk.citations), ensure_ascii=True),
                         json.dumps(json_ready(chunk.metadata), ensure_ascii=True),
-                    )
-                    for chunk in chunks
-                ],
-            )
+                    ),
+                )
         return chunks
 
     def add_note(self, note: ResearchNote) -> str:
+        payload = json.dumps(note.model_dump(mode="json"), ensure_ascii=True)
         with self._connect() as conn:
+            cur = conn.execute(
+                "SELECT COALESCE(MAX(revision), 0) FROM notes WHERE note_id = ?",
+                (note.note_id,),
+            )
+            next_revision = (cur.fetchone()[0] or 0) + 1
             conn.execute(
                 """
-                INSERT OR REPLACE INTO notes
-                (note_id, agent_name, topic, thesis, patterns, tickers, sectors, confidence, data_quality, payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO notes
+                (note_id, revision, agent_name, topic, thesis, patterns, tickers, sectors, confidence, data_quality, payload)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     note.note_id,
+                    next_revision,
                     note.agent_name,
                     note.topic,
                     note.thesis,
@@ -80,8 +114,16 @@ class ResearchCorpus:
                     json.dumps(note.sectors, ensure_ascii=True),
                     note.confidence,
                     note.data_quality,
-                    json.dumps(note.model_dump(mode="json"), ensure_ascii=True),
+                    payload,
                 ),
+            )
+            conn.execute(
+                """
+                INSERT INTO note_events
+                (event_id, note_id, revision, created_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (uuid4().hex, note.note_id, next_revision, utc_now_iso()),
             )
         return note.note_id
 
@@ -109,15 +151,34 @@ class ResearchCorpus:
         )
 
     def list_documents(self) -> list[ResearchDocument]:
+        latest_sql = """
+            SELECT d.*
+            FROM documents d
+            INNER JOIN (
+                SELECT document_id, MAX(revision) AS max_rev
+                FROM documents
+                GROUP BY document_id
+            ) latest ON d.document_id = latest.document_id AND d.revision = latest.max_rev
+            ORDER BY d.rowid
+        """
         with self._connect() as conn:
-            rows = conn.execute("SELECT * FROM documents ORDER BY rowid").fetchall()
+            rows = conn.execute(latest_sql).fetchall()
         return [self._document_from_row(row) for row in rows]
 
     def search_chunks(self, query: str, limit: int = 20) -> list[ResearchChunk]:
         terms = [term.lower() for term in query.split() if term.strip()]
         if not terms:
             return []
-        sql = "SELECT * FROM chunks WHERE " + " OR ".join(["LOWER(text) LIKE ?" for _ in terms]) + " ORDER BY rowid LIMIT ?"
+        latest_sql = """
+            SELECT c.*
+            FROM chunks c
+            INNER JOIN (
+                SELECT chunk_id, MAX(revision) AS max_rev
+                FROM chunks
+                GROUP BY chunk_id
+            ) latest ON c.chunk_id = latest.chunk_id AND c.revision = latest.max_rev
+        """
+        sql = latest_sql + " WHERE " + " OR ".join(["LOWER(c.text) LIKE ?" for _ in terms]) + " ORDER BY c.rowid LIMIT ?"
         params = [f"%{term}%" for term in terms]
         params.append(limit)
         with self._connect() as conn:
@@ -125,11 +186,20 @@ class ResearchCorpus:
         return [self._chunk_from_row(row) for row in rows]
 
     def list_notes(self, agent_name: str | None = None) -> list[ResearchNote]:
+        latest_sql = """
+            SELECT n.payload
+            FROM notes n
+            INNER JOIN (
+                SELECT note_id, MAX(revision) AS max_rev
+                FROM notes
+                GROUP BY note_id
+            ) latest ON n.note_id = latest.note_id AND n.revision = latest.max_rev
+        """
         if agent_name:
-            sql = "SELECT payload FROM notes WHERE agent_name = ? ORDER BY rowid"
+            sql = latest_sql + " WHERE n.agent_name = ? ORDER BY n.rowid"
             params: tuple[Any, ...] = (agent_name,)
         else:
-            sql = "SELECT payload FROM notes ORDER BY rowid"
+            sql = latest_sql + " ORDER BY n.rowid"
             params = ()
         with self._connect() as conn:
             rows = conn.execute(sql, params).fetchall()
@@ -140,7 +210,9 @@ class ResearchCorpus:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS documents (
-                    document_id TEXT PRIMARY KEY,
+                    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                    document_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
                     title TEXT NOT NULL,
                     source_type TEXT NOT NULL,
                     uri TEXT,
@@ -154,9 +226,24 @@ class ResearchCorpus:
                 """
             )
             conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_documents_id ON documents(document_id)"
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS document_events (
+                    event_id TEXT PRIMARY KEY,
+                    document_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS chunks (
-                    chunk_id TEXT PRIMARY KEY,
+                    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                    chunk_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
                     document_id TEXT NOT NULL,
                     chunk_index INTEGER NOT NULL,
                     text TEXT NOT NULL,
@@ -167,9 +254,14 @@ class ResearchCorpus:
                 """
             )
             conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_chunks_id ON chunks(chunk_id)"
+            )
+            conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS notes (
-                    note_id TEXT PRIMARY KEY,
+                    rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                    note_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
                     agent_name TEXT NOT NULL,
                     topic TEXT NOT NULL,
                     thesis TEXT NOT NULL,
@@ -179,6 +271,19 @@ class ResearchCorpus:
                     confidence REAL NOT NULL,
                     data_quality TEXT NOT NULL,
                     payload TEXT NOT NULL
+                )
+                """
+            )
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_notes_id ON notes(note_id)"
+            )
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS note_events (
+                    event_id TEXT PRIMARY KEY,
+                    note_id TEXT NOT NULL,
+                    revision INTEGER NOT NULL,
+                    created_at TEXT NOT NULL
                 )
                 """
             )
@@ -197,6 +302,8 @@ class ResearchCorpus:
             conn.close()
 
     def _document_from_row(self, row) -> ResearchDocument:
+        metadata = json.loads(row["metadata"])
+        quarantine_flags = _quarantine_flags_from_metadata(metadata)
         return ResearchDocument(
             document_id=row["document_id"],
             title=row["title"],
@@ -207,10 +314,13 @@ class ResearchCorpus:
             tickers=json.loads(row["tickers"]),
             sectors=json.loads(row["sectors"]),
             tags=json.loads(row["tags"]),
-            metadata=json.loads(row["metadata"]),
+            metadata=metadata,
+            quarantine_flags=quarantine_flags,
+            quality_precheck=metadata.get("quality_precheck") or ("quarantine_detected" if quarantine_flags else None),
         )
 
     def _chunk_from_row(self, row) -> ResearchChunk:
+        metadata = json.loads(row["metadata"])
         return ResearchChunk(
             chunk_id=row["chunk_id"],
             document_id=row["document_id"],
@@ -218,44 +328,23 @@ class ResearchCorpus:
             text=row["text"],
             token_estimate=row["token_estimate"],
             citations=[SourceCitation(**item) for item in json.loads(row["citations"])],
-            metadata=json.loads(row["metadata"]),
+            metadata=metadata,
+            quarantine_flags=list(metadata.get("quarantine_flags", [])),
+            quality_precheck=metadata.get("quality_precheck"),
         )
 
 
 def chunk_document(document: ResearchDocument, chunk_size: int = 1200) -> list[ResearchChunk]:
-    text = " ".join(document.text.split())
-    if not text:
-        return []
-    chunks: list[ResearchChunk] = []
-    start = 0
-    index = 0
-    while start < len(text):
-        end = min(start + chunk_size, len(text))
-        if end < len(text):
-            boundary = text.rfind(" ", start, end)
-            if boundary > start:
-                end = boundary
-        chunk_text = text[start:end].strip()
-        if chunk_text:
-            citation = SourceCitation(
-                source_id=document.document_id,
-                source_type=document.source_type,
-                title=document.title,
-                uri=document.uri,
-                locator=f"chunk:{index}",
-                excerpt=chunk_text[:280],
-                timestamp=document.published_at,
-            )
-            chunks.append(
-                ResearchChunk(
-                    document_id=document.document_id,
-                    chunk_index=index,
-                    text=chunk_text,
-                    token_estimate=max(1, len(chunk_text.split())),
-                    citations=[citation],
-                    metadata={"title": document.title, "source_type": document.source_type},
-                )
-            )
-            index += 1
-        start = end + 1
-    return chunks
+    from dean_os.intake_normalizer import normalize_and_chunk
+    return normalize_and_chunk(document, chunk_size)
+
+
+def _quarantine_flags_from_metadata(metadata: dict[str, Any]) -> list[str]:
+    if isinstance(metadata.get("quarantine_flags"), list):
+        return sorted(str(flag) for flag in metadata["quarantine_flags"])
+    flags = {
+        flag
+        for block in metadata.get("quarantine_blocks", [])
+        for flag in block.get("quarantine_flags", [])
+    }
+    return sorted(flags)

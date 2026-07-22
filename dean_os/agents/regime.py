@@ -11,8 +11,34 @@ from dean_os.schemas import MarketContext, MarketRegimeSnapshot, PipelineReport
 class RegimeAgent(BaseAgent):
     """Turns local market regime context into a soft pipeline report."""
 
-    version = "0.1.0"
+    version = "0.2.0"
     branch = "pipeline"
+
+    def check_prerequisites(self, context: MarketContext) -> bool:
+        if not super().check_prerequisites(context):
+            return False
+        if not self.config.get(
+            "require_stage7_regime_review",
+            False,
+        ):
+            return True
+        run_phases = {
+            str(item)
+            for item in self.config.get(
+                "run_phases",
+                ["pre_trade"],
+            )
+        }
+        review = context.metadata.get("stage7_regime_review")
+        return (
+            context.phase in run_phases
+            and isinstance(review, dict)
+            and review.get("schema_version")
+            == "dean_stage7_regime_review_v1"
+            and review.get("status")
+            == "stage7_regime_contexts_recorded"
+            and bool(review.get("contexts"))
+        )
 
     async def run(self, context: MarketContext) -> PipelineReport:
         snapshot = build_regime_snapshot(
@@ -20,11 +46,24 @@ class RegimeAgent(BaseAgent):
             engine=str(self.config.get("engine", "fallback")),
             market_data_path=self.config.get("market_data_path"),
             latest_processed_prices=self.config.get("latest_processed_prices"),
-            ticker=self.config.get("ticker") or (context.tickers[0] if context.tickers else None),
+            ticker=(
+                self.config.get("ticker")
+                or (
+                    context.tickers[0]
+                    if len(context.tickers) == 1
+                    else None
+                )
+            ),
             close_col=str(self.config.get("close_col", "close")),
             volume_col=self.config.get("volume_col", "volume"),
             manual_regime=self.config.get("manual_regime"),
             manual_tags=self.config.get("manual_tags", []),
+            require_stage7_review=bool(
+                self.config.get(
+                    "require_stage7_regime_review",
+                    False,
+                )
+            ),
         )
 
         context.metadata["regime_context"] = snapshot.model_dump(mode="json")
@@ -33,9 +72,17 @@ class RegimeAgent(BaseAgent):
         )
         context.metadata["regime_tags"] = regime_tags
 
-        signal_strength = _regime_signal(snapshot)
+        shadow_mode = bool(self.config.get("shadow_mode", False))
+        observed_signal = _regime_signal(snapshot)
+        signal_strength = 0.0 if shadow_mode else observed_signal
         verdict = "clear" if snapshot.regime != "UNKNOWN" and not snapshot.warnings else "caution"
-        reasons = [_regime_reason(snapshot, signal_strength)]
+        reasons = [
+            _regime_reason(
+                snapshot,
+                observed_signal,
+                shadow_mode=shadow_mode,
+            )
+        ]
         risks = []
         if snapshot.warnings:
             risks.extend(snapshot.warnings)
@@ -61,7 +108,15 @@ class RegimeAgent(BaseAgent):
                 self.evidence("metric", snapshot.source, "metrics", snapshot.metrics),
             ],
             input_hash=self.context_hash(context),
-            metrics_snapshot=snapshot.model_dump(mode="json"),
+            metrics_snapshot={
+                **snapshot.model_dump(mode="json"),
+                "observed_signal_strength": observed_signal,
+                "decision_influence": not shadow_mode,
+                "supporting_review_only": shadow_mode,
+                "can_promote_model": False,
+                "can_write_learning_memory": False,
+                "can_trade": False,
+            },
         )
 
 
@@ -75,6 +130,7 @@ def build_regime_snapshot(
     volume_col: str | None = "volume",
     manual_regime: str | None = None,
     manual_tags: list[str] | tuple[str, ...] | None = None,
+    require_stage7_review: bool = False,
 ) -> MarketRegimeSnapshot:
     builder = RegimeContextBuilder()
     if manual_regime:
@@ -84,6 +140,29 @@ def build_regime_snapshot(
         )
         snapshot.warnings.append("Manual regime context. Use for review/smoke runs, not as market evidence.")
         return snapshot
+
+    stage7_review = context.metadata.get("stage7_regime_review")
+    if isinstance(stage7_review, dict):
+        return _snapshot_from_stage7_review(
+            builder=builder,
+            review=stage7_review,
+            ticker=ticker,
+            timeframe=context.timeframe
+            or (
+                context.timeframes[0]
+                if len(context.timeframes) == 1
+                else None
+            ),
+        )
+    if require_stage7_review:
+        return MarketRegimeSnapshot(
+            source="stage7_market_regime_review",
+            warnings=[
+                "Strict Stage 7 regime review was required; no review "
+                "contract was supplied. Filesystem and dataframe fallbacks "
+                "were not used."
+            ],
+        )
 
     existing = context.metadata.get("regime_context")
     if existing:
@@ -135,6 +214,82 @@ def _resolve_market_frame(
         if frame is not None:
             return _filter_ticker(frame, ticker)
     return None
+
+
+def _snapshot_from_stage7_review(
+    *,
+    builder: RegimeContextBuilder,
+    review: dict[str, Any],
+    ticker: str | None,
+    timeframe: str | None,
+) -> MarketRegimeSnapshot:
+    if (
+        review.get("schema_version")
+        != "dean_stage7_regime_review_v1"
+        or review.get("status")
+        != "stage7_regime_contexts_recorded"
+    ):
+        return MarketRegimeSnapshot(
+            source="stage7_market_regime_review",
+            warnings=[
+                "Stage 7 regime review is unavailable or not reviewable."
+            ],
+        )
+    ticker_value = str(ticker).upper() if ticker else None
+    timeframe_value = (
+        str(timeframe).lower() if timeframe else None
+    )
+    matches = []
+    for item in review.get("contexts", []):
+        if not isinstance(item, dict):
+            continue
+        item_ticker = (
+            str(item.get("ticker")).upper()
+            if item.get("ticker")
+            else None
+        )
+        item_timeframe = (
+            str(item.get("timeframe")).lower()
+            if item.get("timeframe")
+            else None
+        )
+        if ticker_value and item_ticker != ticker_value:
+            continue
+        if timeframe_value and item_timeframe != timeframe_value:
+            continue
+        if ticker_value is None and item_ticker is not None:
+            continue
+        if timeframe_value is None and item_timeframe is not None:
+            continue
+        matches.append(item)
+    if len(matches) != 1:
+        return MarketRegimeSnapshot(
+            source="stage7_market_regime_review",
+            warnings=[
+                "No unique Stage 7 regime context matches the requested "
+                f"ticker/timeframe: {ticker_value}/{timeframe_value}."
+            ],
+        )
+    selected = matches[0]
+    metrics = (
+        selected.get("metrics")
+        if isinstance(selected.get("metrics"), dict)
+        else {}
+    )
+    snapshot = builder.from_analyzer_result(
+        {
+            "regime": selected.get("regime"),
+            "confidence": selected.get("confidence"),
+            **metrics,
+            "context_key": selected.get("context_key"),
+            "ticker": selected.get("ticker"),
+            "timeframe": selected.get("timeframe"),
+            "evidence_class": review.get("evidence_class"),
+            "supporting_review_only": True,
+        },
+        source="stage7_market_regime_review",
+    )
+    return snapshot
 
 
 def _resolve_market_data_path(raw_path: str | Path | None, latest_interval: str | None) -> Path | None:
@@ -207,9 +362,20 @@ def _regime_signal(snapshot: MarketRegimeSnapshot) -> float:
     return round(base_by_regime.get(snapshot.regime, 0.0) * snapshot.confidence, 4)
 
 
-def _regime_reason(snapshot: MarketRegimeSnapshot, signal_strength: float) -> str:
+def _regime_reason(
+    snapshot: MarketRegimeSnapshot,
+    signal_strength: float,
+    *,
+    shadow_mode: bool = False,
+) -> str:
     tags = ", ".join(snapshot.context_tags) or "none"
+    influence = (
+        "shadow review only; no decision influence"
+        if shadow_mode
+        else "decision influence enabled"
+    )
     return (
         f"Regime context is {snapshot.regime} with confidence {snapshot.confidence:.2f}; "
-        f"tags: {tags}; signal_strength: {signal_strength:.3f}."
+        f"tags: {tags}; observed signal: {signal_strength:.3f}; "
+        f"{influence}."
     )

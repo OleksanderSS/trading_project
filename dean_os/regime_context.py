@@ -6,7 +6,6 @@ from typing import Any
 from dean_os.schemas import MarketRegimeSnapshot
 from dean_os.utils import clamp
 
-
 REGIME_TAG_MAP: dict[str, list[str]] = {
     "BULL_MARKET": ["rising_market"],
     "TRENDING_UP": ["rising_market"],
