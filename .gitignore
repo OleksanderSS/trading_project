@@ -76,8 +76,16 @@ Thumbs.db
 # Testing
 .pytest_cache/
 pytest-cache-files-*/
+.pytest_tmp/
+.pytest_tmp*/
+__pytest_tmp*/
+.tmp_pytest*/
+reports/pytest_tmp_*/
 .coverage
 htmlcov/
+
+# MLflow run artifacts (large binaries, not source)
+mlruns/
 
 # Static analysis caches
 .mypy_cache/

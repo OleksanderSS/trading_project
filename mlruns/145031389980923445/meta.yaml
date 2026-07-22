@@ -1,8 +1,0 @@
-artifact_location: file:///D:/trading_project/mlruns/145031389980923445
-creation_time: 1777666643397
-experiment_id: '145031389980923445'
-last_update_time: 1777666643397
-lifecycle_stage: active
-name: trading_ml_experiments
-trace_location: null
-workspace: default
