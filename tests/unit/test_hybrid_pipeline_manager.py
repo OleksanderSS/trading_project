@@ -93,8 +93,18 @@ def test_run_final_stages_uses_shared_contract_request():
             targets_df=pd.DataFrame({"target_return": [0.1]}),
             tickers=["AMD"],
             batch_name="main_database",
+            stages_to_run=[5, 6, 7],
+            execution_mode="paper",
+            evaluation_notification_authorized=True,
         )))
 
         assert result["status"] == "completed"
         assert isinstance(orchestrator.final_stages_orchestrator.request, HybridFinalStagesRequest)
         assert orchestrator.final_stages_orchestrator.request.tickers == ["AMD"]
+        assert orchestrator.final_stages_orchestrator.request.stages_to_run == [5, 6, 7]
+        assert orchestrator.final_stages_orchestrator.request.execution_mode == "paper"
+        assert (
+            orchestrator.final_stages_orchestrator.request
+            .evaluation_notification_authorized
+            is True
+        )

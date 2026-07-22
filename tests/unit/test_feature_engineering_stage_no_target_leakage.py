@@ -1,6 +1,8 @@
 import pytest
 import pandas as pd
 
+from src.pipeline.target_column_utils import is_target_like_column
+
 
 class _SelectorStub:
     def __init__(self):
@@ -29,6 +31,8 @@ async def test_feature_selection_never_sees_target_columns():
             "timestamp": pd.date_range("2024-01-01", periods=5, freq="D"),
             "target_up_1d": [0, 1, 0, 1, 0],
             "target_down_1d": [1, 0, 1, 0, 1],
+            "TARGET_RETURN_1P": [0.01, 0.02, -0.01, 0.03, -0.02],
+            "state_TARGET_RETURN_1P": [0.01, 0.02, -0.01, 0.03, -0.02],
         }
     )
 
@@ -44,7 +48,7 @@ async def test_feature_selection_never_sees_target_columns():
     y = stage.selector.last_y
     assert x is not None and y is not None
     assert "target_up_1d" not in x.columns
-    assert not any(col.startswith("target_") for col in x.columns)
+    assert not any(is_target_like_column(col) for col in x.columns)
     assert "timestamp" not in x.columns
     assert set(selected).issubset(set(df.columns))
     assert isinstance(importance, dict)

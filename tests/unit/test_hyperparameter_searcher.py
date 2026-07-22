@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.optimization.hyperparameter_searcher import HyperparameterSearcher
+from src.scripts.optimization.hyperparameter_searcher import HyperparameterSearcher
 
 
 def make_searcher():

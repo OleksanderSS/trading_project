@@ -1,6 +1,7 @@
 import pandas as pd
+import pytest
 
-from src.integration.dashboard_data_bridge import DashboardDataBridge
+from src.dashboard.dashboard_data_bridge import DashboardDataBridge
 
 
 class FakeDataManager:

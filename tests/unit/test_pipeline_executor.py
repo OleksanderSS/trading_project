@@ -100,6 +100,56 @@ def test_validate_continue_inputs_rejects_targets_without_target_columns():
     assert result == {"status": "failed", "reason": "missing_target_columns"}
 
 
+def test_validate_continue_inputs_accepts_uppercase_target_columns():
+    features_df = pd.DataFrame({"datetime": ["2026-05-08"], "ticker": ["AMD"], "f1": [1.0]})
+    targets_df = pd.DataFrame({"TARGET_RETURN_1P": [0.1], "ticker": ["AMD"]})
+    colab_results = {"status": "success", "models_metadata": {"m1": {"model_path": "model.pkl"}}}
+
+    result = PipelineExecutor._validate_continue_inputs(
+        features_df=features_df,
+        targets_df=targets_df,
+        colab_results=colab_results,
+        batch_name="main_database",
+    )
+
+    assert result is None
+
+
+def test_run_local_pipeline_extracts_uppercase_targets_and_drops_target_derived(monkeypatch, tmp_path):
+    cleaned_path = tmp_path / "cleaned.parquet"
+    cleaned_path.write_text("", encoding="utf-8")
+    cleaned_df = pd.DataFrame(
+        {
+            "datetime": ["2026-05-08"],
+            "ticker": ["AMD"],
+            "feature_a": [1.0],
+            "TARGET_RETURN_1P": [0.1],
+            "target_up_1d": [1],
+            "state_TARGET_RETURN_1P": [0.2],
+        }
+    )
+
+    class SavedCleanedDataOrchestrator:
+        async def run_local_pipeline(self, tickers, timeframes):
+            return {
+                "results": {"features_df": pd.DataFrame(), "targets_df": pd.DataFrame()},
+                "saved_files": {"cleaned_data": str(cleaned_path)},
+            }
+
+    monkeypatch.setattr("src.cli.pipeline_executor.pd.read_parquet", lambda _path: cleaned_df)
+
+    features_df, targets_df = asyncio.run(
+        PipelineExecutor._run_local_pipeline_and_extract_data(
+            SavedCleanedDataOrchestrator(),
+            tickers=["AMD"],
+            timeframes=["1d"],
+        )
+    )
+
+    assert list(features_df.columns) == ["datetime", "ticker", "feature_a"]
+    assert list(targets_df.columns) == ["TARGET_RETURN_1P", "target_up_1d"]
+
+
 def test_merge_results_data_initializes_models_metadata():
     merged = PipelineExecutor._merge_results_data(
         colab_results={},

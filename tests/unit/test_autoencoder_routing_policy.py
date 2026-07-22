@@ -7,7 +7,7 @@ import pytest
 
 from src.core.exceptions import DataProcessingError
 from src.pipeline.hybrid.final_stages_executor import FinalStagesExecutor
-from src.predictions.models_predict import get_predictions, predict_any
+from src.scripts.predictions.models_predict import get_predictions, predict_any
 
 
 class _Predictor:
@@ -66,7 +66,7 @@ def test_get_predictions_skips_autoencoder_models(monkeypatch):
         return SimpleNamespace(final_signal=np.array([1.0, 1.0]), stats={"ok": True})
 
     monkeypatch.setattr(
-        "src.predictions.models_predict.ensemble_forecast",
+        "src.scripts.predictions.models_predict.ensemble_forecast",
         fake_ensemble_forecast,
     )
 

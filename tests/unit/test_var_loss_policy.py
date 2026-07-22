@@ -6,7 +6,7 @@ from src.analytics.analyzers.risk_decomposition_analyzer import RiskDecompositio
 from src.analytics.calculators.risk_reward_calculator import RiskRewardCalculator, TradeConfig
 from src.metrics.financial.financial_metrics_library import FinancialMetricsLibrary
 from src.risk.elite_risk_metrics import EliteRiskMetrics
-from src.risk_management.var_calculator import VaRCalculator
+from src.risk.analyzers.var_calculator import VaRCalculator
 
 
 def test_risk_reward_var_cvar_is_loss_positive_with_thresholds():

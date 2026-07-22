@@ -153,3 +153,53 @@ def test_feature_engineering_selection_excludes_targets_and_metadata():
 
     assert selected == ["feature_signal"]
     assert importance == {"feature_signal": 1.0}
+
+
+def test_feature_engineering_restores_service_columns_dropped_by_enricher():
+    stage = object.__new__(FeatureEngineeringStage)
+    source = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01", periods=3, freq="15min"),
+        "ticker": ["AMD"] * 3,
+        "interval": ["15m"] * 3,
+        "close": [100.0, 101.0, 102.0],
+    })
+    enriched = pd.DataFrame({"feature_signal_15m": [0.1, 0.2, 0.3]})
+
+    restored = stage._restore_service_columns(enriched, source)
+
+    assert restored["datetime"].tolist() == source["datetime"].tolist()
+    assert restored["ticker"].tolist() == ["AMD"] * 3
+    assert restored["interval"].tolist() == ["15m"] * 3
+    assert restored["close"].tolist() == [100.0, 101.0, 102.0]
+
+
+def test_feature_engineering_initial_columns_never_include_targets():
+    stage = object.__new__(FeatureEngineeringStage)
+    frame = pd.DataFrame({
+        "datetime": pd.date_range("2024-01-01", periods=2),
+        "ticker": ["AMD", "AMD"],
+        "interval": ["15m", "15m"],
+        "feature_signal": [0.1, 0.2],
+        "target_intraday_up_15m": [0.0, 1.0],
+        "state_target_return_1d": [0.3, 0.4],
+    })
+
+    selected = stage._initial_feature_columns(frame)
+
+    assert selected == ["feature_signal"]
+
+
+def test_feature_guards_do_not_reorder_rows_without_a_temporal_key():
+    from src.pipeline.stages.feature_engineering.guards import FeatureGuards
+
+    guards = object.__new__(FeatureGuards)
+    source = pd.DataFrame({
+        "ticker": ["NVDA"] * 100,
+        "row_identity": list(range(100)),
+        "close": [100.0 + value for value in range(100)],
+    })
+
+    guarded = guards.apply_guards(source)
+
+    assert guarded["row_identity"].tolist() == source["row_identity"].tolist()
+    assert guarded["close"].tolist() == source["close"].tolist()

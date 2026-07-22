@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.algorithms.bias_detector import BiasDetector
+from src.analytics.detectors.bias_detector import BiasDetector
 from src.algorithms.risk_parity_allocator import RiskParityAllocator
 from src.algorithms.walk_forward_optimizer import WalkForwardOptimizer
 

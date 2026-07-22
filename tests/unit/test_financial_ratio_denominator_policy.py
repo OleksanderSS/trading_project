@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from src.analytics.calculators.risk_reward_calculator import RiskRewardCalculator
-from src.calibration.calibration_engine import CalibrationEngine
+from src.meta_learning.calibration.calibration_engine import CalibrationEngine
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.metrics.financial.financial_metrics_library import FinancialMetricsLibrary
 from src.monitoring.health_hub import HealthHub
-from src.optimization.portfolio.optimizer import PortfolioOptimizer
+from src.scripts.optimization.portfolio.optimizer import PortfolioOptimizer
 from src.pipeline.stages.evaluation.metrics_calculator import MetricsCalculator
 
 

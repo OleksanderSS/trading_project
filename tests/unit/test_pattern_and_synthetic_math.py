@@ -3,7 +3,7 @@ import pandas as pd
 
 from src.data.synthetic.data_generator import DataGenerator
 from src.features.enrichers.volume_enricher import VolumeEnricher
-from src.optimization.portfolio.optimizer import PortfolioOptimizer
+from src.scripts.optimization.portfolio.optimizer import PortfolioOptimizer
 from src.patterns.pattern_analyzer import PatternAnalyzer
 
 

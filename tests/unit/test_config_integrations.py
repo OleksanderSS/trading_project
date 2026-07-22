@@ -15,11 +15,11 @@ def _load_yaml(path):
 @pytest.mark.parametrize(
     "module_path,class_name",
     [
-        ("src.algorithms.regime_detector", "MarketRegimeDetector"),
+        ("src.analytics.detectors.regime_detector", "MarketRegimeDetector"),
         ("src.features.enrichers.significance_features_enricher", "SignificanceFeaturesEnricher"),
         ("src.data_sources.local_file_data_source", "LocalFileDataSource"),
-        ("src.feature_engineering.transformers.transformers", "StandardScalerTransformer"),
-        ("src.feature_engineering.transformers.transformers", "MinMaxScalerTransformer"),
+        ("src.features.transformers.transformers", "StandardScalerTransformer"),
+        ("src.features.transformers.transformers", "MinMaxScalerTransformer"),
     ],
 )
 def test_config_referenced_classes_are_importable(module_path, class_name):
@@ -60,7 +60,7 @@ def test_local_file_data_source_loads_csv():
 
 
 def test_transformer_config_compatibility_class_scales_dataframe():
-    from src.feature_engineering.transformers.transformers import StandardScalerTransformer
+    from src.features.transformers.transformers import StandardScalerTransformer
 
     df = pd.DataFrame({"close": [100.0, 110.0]})
 

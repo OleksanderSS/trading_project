@@ -5,7 +5,7 @@ import joblib
 from pathlib import Path
 import os
 import shutil
-from src.predictions.models_predict import predict_from_parquet
+from src.scripts.predictions.models_predict import predict_from_parquet
 
 # Mock class for a valid model
 class ValidModel:
@@ -47,7 +47,7 @@ class TestSecureModelLoading(unittest.TestCase):
         try:
             # We mock the get_predictions to just return a dummy
             from unittest.mock import patch
-            with patch('src.predictions.models_predict.get_predictions', return_value={}):
+            with patch('src.scripts.predictions.models_predict.get_predictions', return_value={}):
                 predict_from_parquet(str(self.parquet_path), str(self.test_dir))
         except Exception as e:
             # We expect some failure in get_predictions or ensemble, 
