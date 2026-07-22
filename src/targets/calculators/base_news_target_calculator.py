@@ -27,7 +27,7 @@ class BaseNewsTargetCalculator(ABC):
             filtered_news = ticker_news[ticker_news["published_date"] >= current_time - time_window]
         else:
             filtered_news = ticker_news[
-                (ticker_news["published_date"] >= current_time) & 
+                (ticker_news["published_date"] >= current_time) &
                 (ticker_news["published_date"] <= current_time + time_window)
             ]
         return ticker_news, filtered_news

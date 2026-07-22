@@ -8,6 +8,11 @@ from src.core.logging.logger import ProjectLogger
 from src.targets.calculators.classification_calculator import ClassificationCalculator
 from src.targets.calculators.indicator_prediction_calculator import IndicatorPredictionCalculator
 from src.targets.calculators.regression_calculator import RegressionCalculator
+from src.targets.timeframe_contract import (
+    mask_targets_across_time_boundaries,
+    resolve_target_timeframe_contract,
+    target_applies_to_timeframe,
+)
 
 logger = ProjectLogger.get_logger('TargetOrchestrator')
 
@@ -32,6 +37,7 @@ class TargetOrchestrator:
             'indicator_prediction': IndicatorPredictionCalculator}
         self.METHOD_MAPPING = {'classification_binary': 'calculate_binary',
             'classification_multiclass': 'calculate_multiclass'}
+        self.timeframe = timeframe
         if isinstance(targets_list, dict):
             self.targets = [{'name': name, **config} for name, config in
                 targets_list.items()]
@@ -86,22 +92,7 @@ class TargetOrchestrator:
 
     def _is_target_for_timeframe(self, target: dict[str, Any], timeframe: str) -> bool:
         """Check if a target is applicable for the given timeframe."""
-        name = target['name']
-
-        if timeframe == '15m':
-            return 'intraday_15m' in name or 'intraday' in name or not any(
-                timeframe_indicator in name for timeframe_indicator in ['hourly', 'weekly', 'daily']
-            )
-        elif timeframe == '60m':
-            return 'hourly_1h' in name or 'hourly' in name or not any(
-                timeframe_indicator in name for timeframe_indicator in ['weekly', 'daily', 'intraday']
-            )
-        elif timeframe == '1d':
-            return 'weekly' in name or 'daily' in name or not any(
-                timeframe_indicator in name for timeframe_indicator in ['hourly', 'intraday']
-            )
-        else:
-            return True
+        return target_applies_to_timeframe(target, timeframe)
 
     def _filter_targets_by_timeframe(self, timeframe: str) ->list:
         """
@@ -191,9 +182,22 @@ class TargetOrchestrator:
         calculation_method, params: dict) ->pd.Series:
         """Process target calculation by ticker groups."""
         target_series_list = []
-        for _ticker, group in df.groupby('ticker'):
+        group_columns = ['ticker']
+        if 'interval' in df.columns:
+            group_columns.append('interval')
+        for _identity, group in df.groupby(group_columns, dropna=False):
             sorted_group = self._sort_group_for_targets(group)
-            group_target = calculation_method(sorted_group, **params)
+            resolved_params, contract = resolve_target_timeframe_contract(
+                params,
+                sorted_group,
+                default_timeframe=self.timeframe,
+            )
+            group_target = calculation_method(sorted_group, **resolved_params)
+            group_target = mask_targets_across_time_boundaries(
+                sorted_group,
+                group_target,
+                contract,
+            )
             group_target.index = sorted_group.index
             target_series_list.append(group_target)
         if not target_series_list:
@@ -204,8 +208,8 @@ class TargetOrchestrator:
         """Sort each ticker group chronologically before future-shift target generation."""
         for col in ('datetime', 'timestamp', 'date'):
             if col in group.columns:
-                return group.sort_values(col).copy()
-        return group.sort_index().copy()
+                return group.sort_values(col, kind='mergesort').copy()
+        return group.sort_index(kind='mergesort').copy()
 
     def _create_targets_dataframe(self, targets_dict: dict) ->pd.DataFrame:
         """Create final targets DataFrame and log summary."""

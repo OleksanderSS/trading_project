@@ -89,13 +89,22 @@ class MacroFeaturesEnricher(BaseEnricher):
 
     def _prepare_macro_data(self, df: pd.DataFrame, **kwargs) ->pd.DataFrame:
         """Prepare macro data from Stage 1 or load from FRED API."""
+        offline_only = bool(kwargs.get('offline_only', False))
         macro_data = kwargs.get('macro_data')
         if macro_data is not None and isinstance(macro_data, pd.DataFrame) and not macro_data.empty:
             logger.info(f'Using macro_data from Stage 1 ({len(macro_data)} rows in long format)')
             pivoted = self._pivot_macro_data(macro_data)
             if not pivoted.empty:
+                # Normalize pivoted index to tz-naive
+                if isinstance(pivoted.index, pd.DatetimeIndex) and pivoted.index.tz is not None:
+                    pivoted.index = pivoted.index.tz_localize(None)
+                if offline_only:
+                    return pivoted
                 full_cache = self._load_full_macro_from_cache()
                 if not full_cache.empty:
+                    # Normalize cached index to tz-naive
+                    if isinstance(full_cache.index, pd.DatetimeIndex) and full_cache.index.tz is not None:
+                        full_cache.index = full_cache.index.tz_localize(None)
                     merged = pd.concat([full_cache, pivoted]).sort_index()
                     merged = merged[~merged.index.duplicated(keep='last')]
                     try:
@@ -105,7 +114,11 @@ class MacroFeaturesEnricher(BaseEnricher):
                         logger.exception(f'Failed to save macro cache: {e}')
                     return merged
                 return pivoted
-        
+
+        if offline_only:
+            logger.info('Offline-only mode has no provided macro data; skipping macro enrichment.')
+            return pd.DataFrame()
+
         logger.info('No macro_data in kwargs, loading from FRED API or cache...')
         start_date, end_date = self._determine_date_range(df)
         return self._load_macro_data(start_date, end_date)
@@ -122,7 +135,7 @@ class MacroFeaturesEnricher(BaseEnricher):
             logger.warning('No datetime index or column found, using default date range')
             start_date = pd.Timestamp('2020-01-01')
             end_date = pd.Timestamp.now()
-        
+
         # ✅ Strip timezone
         if hasattr(start_date, 'tzinfo') and start_date.tzinfo is not None:
             start_date = start_date.tz_localize(None)

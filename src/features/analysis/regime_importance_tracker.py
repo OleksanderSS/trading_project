@@ -234,7 +234,7 @@ class RegimeImportanceTracker:
                 'max': np.max(values),
                 'count': len(values)
             }
-        
+
         return {
             'record_count': len(regime_records),
             'feature_count': len(all_features),

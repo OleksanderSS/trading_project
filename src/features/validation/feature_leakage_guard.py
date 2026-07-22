@@ -17,6 +17,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.target_column_utils import is_direct_target_column, is_target_like_column
 
 logger = ProjectLogger.get_logger('FeatureLeakageGuard')
 _FORBIDDEN_PATTERNS = ['future_', 'next_close', 'next_open', 'next_high',
@@ -88,7 +89,7 @@ class FeatureLeakageGuard:
         """
         report = LeakageReport()
         if target_cols is None:
-            target_cols = [c for c in df.columns if c.startswith('target_')]
+            target_cols = [c for c in df.columns if is_direct_target_column(c)]
         if feature_cols is None:
             meta_cols = {'datetime', 'ticker', 'published_at', 'date'} | set(
                 target_cols)
@@ -129,8 +130,8 @@ class FeatureLeakageGuard:
         """Searches for forbidden column names (future patterns)."""
         forbidden = []
         for col in feature_cols:
-            col_lower = col.lower()
-            if any(pattern in col_lower for pattern in _FORBIDDEN_PATTERNS):
+            col_lower = str(col).lower()
+            if is_target_like_column(col) or any(pattern in col_lower for pattern in _FORBIDDEN_PATTERNS):
                 forbidden.append(col)
                 logger.warning(
                     f"[{ticker}] ⛔ Forbidden pattern found in column: '{col}'")
@@ -155,10 +156,14 @@ class FeatureLeakageGuard:
         if sample_df.empty:
             return high_corr
         try:
-            corr_matrix = sample_df[numeric_features].corrwith(sample_df[
-                numeric_targets[0]]).abs()
-            suspicious = corr_matrix[corr_matrix >= self.corr_threshold
-                ].index.tolist()
+            # Build suspicious set against ALL numeric targets, not just [0].
+            # A feature that leaks target_weekly_return_1w but not target_up_1d
+            # would be missed if we only checked the first target column.
+            suspicious: set[str] = set()
+            for tgt in numeric_targets:
+                corr_vec = sample_df[numeric_features].corrwith(sample_df[tgt]).abs()
+                suspicious.update(corr_vec[corr_vec >= self.corr_threshold].index.tolist())
+
             for feat in suspicious:
                 feat_corrs = {}
                 for tgt in numeric_targets:
@@ -185,7 +190,7 @@ class FeatureLeakageGuard:
             report_path = (self.report_dir /
                 f'leakage_report_{ticker}_{ts}.json')
             with open(report_path, 'w', encoding='utf-8') as f:
-                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
+                json.dump(report.to_dict(), f, indent=2, ensure_ascii=False, default=str)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'Leakage report saved: {report_path}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:

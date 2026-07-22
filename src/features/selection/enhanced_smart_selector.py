@@ -69,15 +69,25 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
         """
         self.logger.info(f"🧠 Starting enhanced feature selection for {context_id}")
 
-        # 0. Визначаємо поточний патерн контексту
+        # 0a. context_pattern_id — fingerprint послідовності патернів (sha256 хеш).
+        #     Використовується ТІЛЬКИ для кешування/фінгерпринтингу, а не для
+        #     визначення ринкового режиму.
         current_pattern = "normal"
         if 'context_pattern_id' in features_df.columns:
-            current_pattern = features_df['context_pattern_id'].iloc[-1]
-            self.logger.info(f"📍 Detected Context Pattern: {current_pattern}")
+            current_pattern = str(features_df['context_pattern_id'].iloc[-1])
+            self.logger.info(f"📍 Detected Context Pattern (fingerprint): {current_pattern}")
+
+        # 0b. market_regime — реальний ринковий режим з колонки MARKET_REGIME,
+        #     яку генерує TechnicalAnalysisEnricher._add_market_regime_features().
+        #     Очікувані значення: 'TRENDING_UP', 'TRENDING_DOWN', 'VOLATILE',
+        #     'RANGING', 'UNKNOWN'. Маппимо на vocab SmartFeatureSelector.
+        market_regime = self._resolve_market_regime(features_df)
+        self.logger.info(f"📊 Resolved market_regime for selection: {market_regime}")
 
         results: dict[str, Any] = {
             'context_id': context_id,
             'pattern_id': current_pattern,
+            'market_regime': market_regime,
             'timestamp': datetime.now(),
             'original_feature_count': len(features_df.columns),
             'selected_features': [],
@@ -97,14 +107,16 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
             else:
                 clean_features = features_df.copy()
 
-            # 2. Адаптивні ваги на основі патерна (Regime weights)
-            self._get_weights_for_pattern(current_pattern)
+            # 2. Адаптивні ваги на основі патерна.
+            #    Результат передається в базовий селектор через market_regime.
+            pattern_weights = self._get_weights_for_pattern(current_pattern)
+            if logger.isEnabledFor('DEBUG' if hasattr(logger, 'DEBUG') else 10):
+                self.logger.debug(f"Pattern weights for '{current_pattern}': {pattern_weights}")
 
-            # 3. Базова селекція з адаптивними вагами
-            # Ми передаємо current_pattern як market_regime для базового селектора
+            # 3. Базова селекція з реальним market_regime (не з context_pattern_id)
             selected_features = self.select(
                 clean_features, target_series, context_id,
-                market_regime=current_pattern, **kwargs
+                market_regime=market_regime, **kwargs
             )
 
             results['selected_features'] = selected_features
@@ -119,6 +131,25 @@ class EnhancedSmartFeatureSelector(SmartFeatureSelector):
             self.logger.error(f"Error in enhanced feature selection: {e}", exc_info=True)
             results['error'] = str(e)
             return results
+
+    def _resolve_market_regime(self, features_df: pd.DataFrame) -> str:
+        """
+        Визначає market_regime з колонки MARKET_REGIME features_df.
+
+        TechnicalAnalysisEnricher генерує колонку 'MARKET_REGIME' зі значеннями
+        'TRENDING_UP', 'TRENDING_DOWN', 'VOLATILE', 'RANGING', 'UNKNOWN'.
+        Маппимо на трирівневий vocab SmartFeatureSelector: normal / volatile / trending.
+        """
+        if 'MARKET_REGIME' not in features_df.columns:
+            return 'normal'
+
+        raw = str(features_df['MARKET_REGIME'].iloc[-1]).upper()
+
+        if 'VOLATILE' in raw or 'CRISIS' in raw:
+            return 'volatile'
+        if 'TRENDING' in raw or 'BULL' in raw or 'BEAR' in raw:
+            return 'trending'
+        return 'normal'
 
     def _get_weights_for_pattern(self, pattern_id: str) -> dict[str, float]:
         """Визначає ваги методів для конкретного патерна."""

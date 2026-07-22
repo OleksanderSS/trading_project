@@ -173,8 +173,8 @@ class UnifiedValidator:
         logger.info("Performing pre-training validation...")
 
         # Check for temporal overlap
-        overlap = self.ts_validator.check_leakage(x_train, x_val)
-        if overlap:
+        leakage_report = self.ts_validator.check_leakage(x_train, x_val)
+        if leakage_report.get('leakage_detected', False):
             logger.error("Data leakage detected: Overlapping indices between train and validation sets.")
             return False
 

@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
@@ -30,7 +31,6 @@ class TechnicalAnalysisEnricher(BaseEnricher):
     def _load_calculators(self):
         """Lazy load calculators only when needed."""
         if not self._calculators_loaded:
-            from src.algorithms.regime_detector import MarketRegimeDetector
             from src.analytics.calculators.drawdown_calculator import DrawdownCalculator
             from src.analytics.calculators.econometrics_calculator import EconometricsCalculator
             from src.analytics.calculators.explainability_calculator import ExplainabilityCalculator
@@ -39,6 +39,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             from src.analytics.calculators.risk_reward_calculator import RiskRewardCalculator
             from src.analytics.calculators.sentiment_stats_calculator import SentimentStatsCalculator
             from src.analytics.calculators.volatility_calculator import VolatilityCalculator
+            from src.analytics.detectors.regime_detector import MarketRegimeDetector
             self.VolatilityCalculator = VolatilityCalculator()
             self.MarketRegimeCalculator = MarketRegimeDetector()
             self.FamaFrenchFactors = FamaFrenchFactors()
@@ -245,6 +246,10 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 self._add_fama_french_features(df_enriched, returns)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 logger.exception(f'Error adding Fama-French features: {e}')
+            try:
+                self._add_adaptive_indicator_features(df_enriched)
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                logger.exception(f'Error adding adaptive indicator features: {e}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f'Error adding advanced calculator features: {e}')
 
@@ -266,24 +271,35 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             logger.info('Added volatility features')
 
     def _add_market_regime_features(self, df_enriched: pd.DataFrame, returns: pd.Series = None):
-        """Add market regime features (dual encoding: text + numeric)."""
+        """Add point-in-time market regime features from trailing returns only."""
         if 'close' in df_enriched.columns:
             if returns is None:
                 returns = df_enriched['close'].pct_change(fill_method=None)
-            valid_returns = returns.replace([float('inf'), float('-inf')], float('nan')).dropna()
-            if valid_returns.empty:
-                df_enriched['MARKET_REGIME'] = 'UNKNOWN'
-                df_enriched['MARKET_REGIME_ENCODED'] = float('nan')
-                return
-            regime_result = self.MarketRegimeCalculator.detect_regime(
-                valid_returns.values if hasattr(valid_returns, 'values') else valid_returns
+            clean_returns = returns.replace(
+                [float('inf'), float('-inf')],
+                float('nan'),
             )
-            df_enriched['MARKET_REGIME'] = regime_result.get('regime',
-                'UNKNOWN')
-            df_enriched['MARKET_REGIME_ENCODED'] = regime_result.get(
-                'confidence', 0.0)
+            clustering_floor = int(
+                getattr(self.MarketRegimeCalculator, 'min_samples_for_clustering', 252)
+            )
+            trailing_window = max(30, clustering_floor - 1)
+            regimes = []
+            confidence = []
+            for end in range(len(clean_returns)):
+                history = clean_returns.iloc[: end + 1].dropna().tail(trailing_window)
+                if history.empty:
+                    regimes.append('UNKNOWN')
+                    confidence.append(float('nan'))
+                    continue
+                regime_result = self.MarketRegimeCalculator.detect_regime(
+                    history.to_numpy(dtype=float)
+                )
+                regimes.append(regime_result.get('regime', 'UNKNOWN'))
+                confidence.append(regime_result.get('confidence', 0.0))
+            df_enriched['MARKET_REGIME'] = regimes
+            df_enriched['MARKET_REGIME_ENCODED'] = confidence
             logger.info(
-                'Added market regime features (text + numeric encoding)')
+                'Added causal trailing market regime features (text + numeric confidence)')
 
     def _add_drawdown_features(self, df_enriched: pd.DataFrame, returns: pd.Series = None):
         """Add drawdown features."""
@@ -332,7 +348,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 downside_returns[downside_returns > 0] = 0.0
                 rolling_downside_var = downside_returns.pow(2).rolling(window=window, min_periods=min_periods).mean()
                 rolling_downside_std = np.sqrt(rolling_downside_var)
-                
+
                 # Guard against zero/near-zero std to prevent inf/nan
                 sortino_denominator = rolling_downside_std.copy()
                 sortino_denominator[sortino_denominator < 1e-10] = np.nan
@@ -406,6 +422,80 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 tau.append(std if std > 0 else 1e-9)
             poly = np.polyfit(np.log(lags), np.log(tau), 1)
             return float(poly[0] * 2.0)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Error calculating Hurst exponent: {e}")
             return 0.5
         return 0.5
+
+    def _add_adaptive_indicator_features(self, df_enriched: pd.DataFrame) -> None:
+        """
+        Add volatility-adaptive technical indicator variants.
+
+        These complement the fixed-period indicators (RSI_14, ATR_14, etc.)
+        with adaptive-period equivalents that respond faster in turbulent
+        regimes and slower in calm ones:
+
+          ARSI_14        — Adaptive RSI (base period 14)
+          AATR_14        — Adaptive ATR (base period 14)
+          ABB_Upper/Mid/Lower — Adaptive Bollinger Bands (base period 20)
+          AEMA_20        — Adaptive EMA (base period 20)
+
+        All calculations are strictly point-in-time (trailing windows only).
+        Failures are logged as warnings and do not abort enrichment.
+        """
+        if 'close' not in df_enriched.columns:
+            return
+
+        min_bars = 30  # need enough history to estimate volatility
+        if len(df_enriched) < min_bars:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    f'Skipping adaptive indicators: only {len(df_enriched)} rows '
+                    f'(need ≥ {min_bars})'
+                )
+            return
+
+        from src.features.utils.adaptive_indicators import get_adaptive_indicators
+        ai = get_adaptive_indicators()
+
+        close = df_enriched['close']
+        added: list[str] = []
+
+        # --- Adaptive RSI ---
+        try:
+            df_enriched['ARSI_14'] = ai.adaptive_rsi(close, base_period=14)
+            added.append('ARSI_14')
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f'Could not compute ARSI_14: {e}')
+
+        # --- Adaptive ATR ---
+        if 'high' in df_enriched.columns and 'low' in df_enriched.columns:
+            try:
+                df_enriched['AATR_14'] = ai.adaptive_atr(
+                    df_enriched['high'], df_enriched['low'], close, base_period=14
+                )
+                added.append('AATR_14')
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f'Could not compute AATR_14: {e}')
+
+        # --- Adaptive Bollinger Bands ---
+        try:
+            upper, mid, lower = ai.adaptive_bollinger(close, base_period=20)
+            df_enriched['ABB_Upper'] = upper
+            df_enriched['ABB_Mid'] = mid
+            df_enriched['ABB_Lower'] = lower
+            added.extend(['ABB_Upper', 'ABB_Mid', 'ABB_Lower'])
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f'Could not compute adaptive Bollinger Bands: {e}')
+
+        # --- Adaptive EMA ---
+        try:
+            df_enriched['AEMA_20'] = ai.adaptive_moving_average(
+                close, base_period=20, ma_type='ema'
+            )
+            added.append('AEMA_20')
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f'Could not compute AEMA_20: {e}')
+
+        if added:
+            logger.info(f'Added {len(added)} adaptive indicator features: {added}')

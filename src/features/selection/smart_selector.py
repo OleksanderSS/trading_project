@@ -9,6 +9,7 @@ import pandas as pd
 from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.target_column_utils import is_target_like_column
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -62,7 +63,7 @@ class SmartFeatureSelector:
         try:
             os.makedirs(os.path.dirname(self.storage_path), exist_ok=True)
             with open(self.storage_path, 'w') as f:
-                json.dump(self.cache, f, indent=4)
+                json.dump(self.cache, f, indent=4, default=str)
         except OSError as e:
             logger.exception(f"Failed to save feature cache to {self.storage_path}: {e}")
 
@@ -78,10 +79,34 @@ class SmartFeatureSelector:
         return None
 
     def _pre_filter_data(self, features_df: pd.DataFrame, target_series: pd.Series, regime_context_id: str) -> pd.DataFrame | None:
-        """Pre-filter and clean data."""
+        """Pre-filter and clean data.
+
+        Strips all target-like columns before any voting method sees the data.
+        This is the single, authoritative leakage-prevention gate for the
+        selector — individual filter methods must not duplicate this check.
+        """
         if target_series.std() < self.min_volatility:
             logger.warning(f"Target volatility is below threshold for {regime_context_id}. Skipping.")
             return None
+
+        # Remove target-like columns using the canonical utility (covers
+        # target_* prefixed cols AND derived/state columns that carry forward
+        # information about the target window).
+        target_cols_present = [c for c in features_df.columns if is_target_like_column(c)]
+        
+        # Remove metadata columns to prevent them from being selected as features
+        metadata_cols = ['ticker', 'datetime', 'date', 'interval', 'timeframe', 'hash', 'symbol']
+        meta_cols_present = [c for c in metadata_cols if c in features_df.columns]
+        
+        cols_to_drop = target_cols_present + meta_cols_present
+        if cols_to_drop:
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug(
+                    f"[{regime_context_id}] Dropping {len(cols_to_drop)} "
+                    f"target-like and metadata column(s) before feature selection: "
+                    f"{cols_to_drop[:5]}{'...' if len(cols_to_drop) > 5 else ''}"
+                )
+            features_df = features_df.drop(columns=cols_to_drop, errors='ignore')
 
         features_clean = self._clean_data(features_df)
         if features_clean.empty:
@@ -294,8 +319,14 @@ class SmartFeatureSelector:
                     n_jobs=params.get('n_jobs', -1)
                 )
 
-            model.fit(features_df, target_series)
-            return pd.Series(model.feature_importances_, index=features_df.columns).sort_values(ascending=False)
+            # Leakage protection: drop target columns (centrally handled in
+            # _pre_filter_data, but kept here as a defensive second layer).
+            features_clean = features_df.drop(
+                columns=[c for c in features_df.columns if is_target_like_column(c)],
+                errors='ignore'
+            )
+            model.fit(features_clean, target_series)
+            return pd.Series(model.feature_importances_, index=features_clean.columns).sort_values(ascending=False)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Random Forest filter failed: {e}")
             raise RuntimeError("Random Forest feature importance filter failed") from e

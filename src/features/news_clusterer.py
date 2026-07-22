@@ -191,7 +191,7 @@ class NewsClusterer:
                 cluster_news.iloc[0]['title'], 'news_titles': cluster_news[
                 'title'].tolist() if 'title' in cluster_news.columns else []}
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(cluster_mapping, f, indent=2, ensure_ascii=False)
+            json.dump(cluster_mapping, f, indent=2, ensure_ascii=False, default=str)
         logger.info(f'✅ Cluster mapping saved to {output_path}')
 
 

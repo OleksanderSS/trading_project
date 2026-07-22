@@ -118,6 +118,11 @@ class EnrichedDataSchema(BaseModel):
     all_targets: dict[str, Any] | None = Field(default=None, description="Generated targets by timeframe")
     combined_features: pd.DataFrame | None = Field(default=None, description="Combined features DataFrame")
     models_metadata: dict[str, Any] | None = Field(default=None, description="Metadata for training models")
+    enriched_data: pd.DataFrame | None = Field(default=None, description="Enriched features DataFrame (required by pipeline_runner)")
+    timeframe_context_report: dict[str, Any] | None = Field(
+        default=None,
+        description="Point-in-time multi-timeframe assembly lineage and safety report",
+    )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -126,14 +131,17 @@ class EnrichedDataSchema(BaseModel):
         if not self.enriched_prices:
             raise ValueError("Enriched prices dictionary is empty")
 
-        # Check for target columns — they may be in all_targets (prepare mode)
-        # or in selected_features (train mode). Both are valid.
+        # Reject target_* columns in selected_features - targets belong in all_targets/target_manifest only
         target_cols_in_features = [col for col in self.selected_features if col.startswith('target_')]
-        target_cols_in_targets = bool(self.all_targets)
+        if target_cols_in_features:
+            raise ValueError(
+                f"Target columns found in selected_features: {target_cols_in_features}. "
+                "Targets should only be in all_targets/target_manifest, not in selected_features."
+            )
 
-        if not target_cols_in_features and not target_cols_in_targets:
-            # Only raise if there are genuinely no targets anywhere
-            raise ValueError("No target columns found in selected features or all_targets")
+        # Ensure targets are in all_targets
+        if not self.all_targets:
+            raise ValueError("No targets found in all_targets. Targets must be defined in all_targets/target_manifest.")
 
         # Validate feature importance scores
         if self.feature_importance:
@@ -208,7 +216,10 @@ def validate_stage_output(stage_name: str, output: dict[str, Any], schema_class:
     try:
         schema = schema_class(**output)
         schema.validate()
-        return schema.dict()
+        # Return the original output dict, NOT schema.dict().
+        # schema.dict() / model_dump() serializes DataFrames into plain dicts,
+        # which breaks downstream stages that rely on isinstance(x, pd.DataFrame).
+        return output
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         raise ValueError(f"Stage {stage_name} output validation failed: {e}") from e
 

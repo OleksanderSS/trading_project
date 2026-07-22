@@ -19,13 +19,14 @@ class ImprovedSentimentEnricher:
     def _handle_missing_sentiment(self, df: pd.DataFrame, sentiment_col: str) -> pd.DataFrame:
         """
         Handle missing sentiment data with smart interpolation.
+        Uses only historical data (no lookahead) to avoid data leakage.
         """
         # Instead of filling with 0, use smart interpolation
         df_enriched = df.copy()
 
         for ticker in df_enriched['ticker'].unique():
             ticker_mask = df_enriched['ticker'] == ticker
-            ticker_data = df_enriched[ticker_mask]
+            ticker_data = df_enriched[ticker_mask].copy()
 
             # Check if we have sentiment data
             if sentiment_col not in ticker_data.columns:
@@ -33,22 +34,23 @@ class ImprovedSentimentEnricher:
                 df_enriched.loc[ticker_mask, sentiment_col] = 0.5  # Neutral sentiment
                 continue
 
-            sentiment_series = ticker_data[sentiment_col]
+            sentiment_series = ticker_data[sentiment_col].copy()
 
-            # Use forward fill with limited window
-            filled_sentiment = sentiment_series.ffill(limit=5)
+            # Use causal forward-fill (only historical data, no lookahead)
+            # Iterate through rows and fill using only data up to current row
+            filled_sentiment = sentiment_series.copy()
+            for idx in range(len(filled_sentiment)):
+                if pd.isna(filled_sentiment.iloc[idx]):
+                    # Look back up to 5 rows for historical data (no future data)
+                    lookback_start = max(0, idx - 5)
+                    historical_values = filled_sentiment.iloc[lookback_start:idx].dropna()
+                    if not historical_values.empty:
+                        # Use the most recent historical value
+                        filled_sentiment.iloc[idx] = historical_values.iloc[-1]
 
-            # For remaining NaN values, use exponential decay from last known value
+            # For remaining NaN values at the beginning, use neutral sentiment
             if filled_sentiment.isna().any():
-                last_known = filled_sentiment.dropna().iloc[-1] if not filled_sentiment.dropna().empty else 0.5
-
-                # Apply exponential decay
-                decay_factor = 0.95
-                for i, (idx, val) in enumerate(filled_sentiment.items()):
-                    if pd.isna(val):
-                        days_since_last = i
-                        decayed_value = last_known * (decay_factor ** days_since_last)
-                        filled_sentiment.loc[idx] = max(0.0, min(1.0, decayed_value))
+                filled_sentiment = filled_sentiment.fillna(0.5)
 
             # Update cache
             self._update_sentiment_cache(ticker, filled_sentiment.iloc[-1])

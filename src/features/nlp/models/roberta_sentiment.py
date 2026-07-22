@@ -96,7 +96,7 @@ class RobertaSentimentAnalyzer:
         if self.model is None or self.tokenizer is None:
             try:
                 self._load_model()
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
                 logger.exception('Виникла помилка при завантаженні моделі')
                 return default_result
         if self.model is None or self.tokenizer is None:

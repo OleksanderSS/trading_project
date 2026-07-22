@@ -220,7 +220,7 @@ class FeatureDriftDetector:
         # Save JSON summary
         json_path = self.output_dir / f"drift_summary_{drift_status}_{timestamp}.json"
         with open(json_path, 'w') as f:
-            json.dump(drift_results, f, indent=2)
+            json.dump(drift_results, f, indent=2, default=str)
 
         logger.info(f"📄 Drift report saved: {html_path}")
 

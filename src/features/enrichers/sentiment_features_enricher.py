@@ -166,10 +166,14 @@ class SentimentFeaturesEnricher(BaseEnricher):
 
     def _aggregate_ticker_news(self, ticker_news: pd.DataFrame, time_col: str, sentiment_col: str) -> pd.DataFrame:
         """Aggregate ticker-specific news sentiment."""
+        # Convert sentiment to numeric, handling empty strings and non-numeric values
+        ticker_news[sentiment_col] = pd.to_numeric(ticker_news[sentiment_col], errors='coerce')
         return ticker_news.groupby(['ticker', pd.Grouper(key=time_col, freq='1h')])[sentiment_col].mean().reset_index()
 
     def _aggregate_general_news(self, general_news: pd.DataFrame, time_col: str, sentiment_col: str) -> pd.DataFrame:
         """Aggregate general news sentiment."""
+        # Convert sentiment to numeric, handling empty strings and non-numeric values
+        general_news[sentiment_col] = pd.to_numeric(general_news[sentiment_col], errors='coerce')
         general_sentiment = general_news.groupby(pd.Grouper(key=time_col, freq='1h'))[sentiment_col].mean().reset_index()
         general_sentiment['ticker'] = 'general'
         return general_sentiment
@@ -184,6 +188,8 @@ class SentimentFeaturesEnricher(BaseEnricher):
             sentiment_parts.append(self._aggregate_general_news(general_news, time_col, sentiment_col))
 
         if not ticker_news.empty:
+            # Convert sentiment to numeric before aggregation
+            ticker_news[sentiment_col] = pd.to_numeric(ticker_news[sentiment_col], errors='coerce')
             ticker_sentiment = ticker_news.groupby(['type', pd.Grouper(key=time_col, freq='1h')])[sentiment_col].mean().reset_index()
             ticker_sentiment = ticker_sentiment.rename(columns={'type': 'ticker'})
             sentiment_parts.append(ticker_sentiment)
@@ -217,6 +223,8 @@ class SentimentFeaturesEnricher(BaseEnricher):
         elif 'type' in news_df.columns:
             sentiment_parts.extend(self._aggregate_by_type_column(news_df, time_col, sentiment_col))
         else:
+            # Convert sentiment to numeric before aggregation
+            news_df[sentiment_col] = pd.to_numeric(news_df[sentiment_col], errors='coerce')
             global_sentiment = news_df.groupby(pd.Grouper(key=time_col, freq='1h'))[sentiment_col].mean().reset_index()
             global_sentiment['ticker'] = 'general'
             sentiment_parts.append(global_sentiment)

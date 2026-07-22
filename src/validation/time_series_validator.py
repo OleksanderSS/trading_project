@@ -48,30 +48,50 @@ class PurgedTimeSeriesSplit:
     """
     Advanced Time Series Cross-Validator with Purging and Embargo.
     Prevents data leakage by removing overlapping data points.
+    
+    Target-horizon aware: Accepts target_horizon to ensure proper temporal separation
+    between training features and test targets based on prediction horizon.
 
     Integrated from ValidationProtocolsEngine.
     """
 
     def __init__(self, n_splits: int=5, purge_window: int=0, embargo_period:
-        int=0):
+        int=0, target_horizon: int=1, timestamp_col: str='index', ticker_col: str | None=None):
         self.n_splits = n_splits
         self.purge_window = purge_window
         self.embargo_period = embargo_period
+        self.target_horizon = target_horizon
+        self.timestamp_col = timestamp_col
+        self.ticker_col = ticker_col
 
     def split(self, X: pd.DataFrame) ->Generator[tuple[np.ndarray, np.
         ndarray], None, None]:
+        """
+        Generate train/test splits with purging and embargo based on target horizon.
+        
+        Args:
+            X: Input DataFrame with datetime index or timestamp column
+            
+        Yields:
+            Tuple of (train_indices, test_indices) for each fold
+        """
         n_samples = len(X)
         test_size = n_samples // (self.n_splits + 1)
+
+        # Adjust purge window by target horizon to ensure no leakage
+        effective_purge = self.purge_window + self.target_horizon
+        effective_embargo = self.embargo_period + self.target_horizon
+
         for i in range(self.n_splits):
             train_end = (i + 1) * test_size
             test_start = train_end
             test_end = test_start + test_size
             if test_end > n_samples:
                 test_end = n_samples
-            purged_train_end = train_end - self.purge_window
+            purged_train_end = train_end - effective_purge
             if purged_train_end <= 0:
                 continue
-            embargoed_test_start = test_start + self.embargo_period
+            embargoed_test_start = test_start + effective_embargo
             if embargoed_test_start >= test_end:
                 continue
             train_indices = np.arange(0, purged_train_end)

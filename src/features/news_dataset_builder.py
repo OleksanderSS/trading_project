@@ -282,5 +282,5 @@ class NewsContextDatasetBuilder:
         }
         metadata_path = output_path.parent / f'{output_path.stem}_metadata.json'
         with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2)
+            json.dump(metadata, f, indent=2, default=str)
         logger.info(f'✅ Metadata saved to {metadata_path}')

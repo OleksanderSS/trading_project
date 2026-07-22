@@ -144,8 +144,9 @@ class FeatureOrchestrator:
                 result = name_prop.fget(dummy)
                 if result and isinstance(result, str):
                     return result
-            except (AttributeError, TypeError, RuntimeError):
-                pass  # intentional: fallback to full instantiation below
+            except (AttributeError, TypeError, RuntimeError) as e:
+                logger.warning(f'Could not get enricher ID for {name} using fget: {e}')
+                pass  # fallback to full instantiation below
 
         # Fallback: full instantiation (original behavior)
         try:
@@ -234,8 +235,8 @@ class FeatureOrchestrator:
                     before=df,
                     after=df_enriched,
                 )
-            except (AttributeError, TypeError, RuntimeError, KeyError):
-                pass  # never block pipeline due to tracking
+            except (AttributeError, TypeError, RuntimeError, KeyError) as e:
+                logger.warning(f"Lineage tracking failed: {e}") # never block pipeline due to tracking
 
         end_time = pd.Timestamp.now()
         duration = (end_time - start_time).total_seconds()

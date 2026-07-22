@@ -21,7 +21,7 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
     Handles:
     - Restores datetime from index if it's a DatetimeIndex
     - Renames published_at/timestamp/date to datetime if datetime missing
-    - Removes timezone info to avoid comparison errors
+    - Preserves timezone-aware values and normalizes them to UTC
     - Ensures column exists for groupby/merge operations
 
     Args:
@@ -38,15 +38,21 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
 
     # Check if datetime is already in columns
     if 'datetime' in df.columns:
-        # Ensure it's datetime type and remove timezone
-        df['datetime'] = pd.to_datetime(df['datetime'], utc=True)
-        df['datetime'] = df['datetime'].dt.tz_localize(None)
+        df['datetime'] = _normalize_datetime_values(
+            df['datetime'],
+            declared_timezone=df.attrs.get("datetime_timezone"),
+        )
+        _record_datetime_timezone(df)
         return df
 
     # Check if datetime is in index
     if df.index.name == 'datetime' and isinstance(df.index, pd.DatetimeIndex):
         df = df.reset_index()
-        df['datetime'] = df['datetime'].dt.tz_localize(None)
+        df['datetime'] = _normalize_datetime_values(
+            df['datetime'],
+            declared_timezone=df.attrs.get("datetime_timezone"),
+        )
+        _record_datetime_timezone(df)
         return df
 
     if isinstance(df.index, pd.DatetimeIndex):
@@ -55,16 +61,24 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
             df = df.rename(columns={'index': 'datetime'})
         elif df.columns[0] not in df.columns[1:]:  # Check if first col is already named 'datetime'
             df = df.rename(columns={df.columns[0]: 'datetime'})
-        df['datetime'] = pd.to_datetime(df['datetime'])
-        df['datetime'] = df['datetime'].dt.tz_localize(None)
+        df['datetime'] = _normalize_datetime_values(
+            df['datetime'],
+            declared_timezone=df.attrs.get("datetime_timezone"),
+        )
+        _record_datetime_timezone(df)
         return df
 
     # Try alternative datetime column names
     for alt_name in ['published_date', 'published_at', 'timestamp', 'date', 'created_at', 'updated_at', 'time']:
         if alt_name in df.columns:
             logger.info(f"✅ Using '{alt_name}' column as datetime")
-            df['datetime'] = pd.to_datetime(df[alt_name], utc=True)
-            df['datetime'] = df['datetime'].dt.tz_localize(None)
+            df['datetime'] = _normalize_datetime_values(
+                df[alt_name],
+                declared_timezone=df.attrs.get(
+                    "datetime_timezone"
+                ),
+            )
+            _record_datetime_timezone(df)
             return df
 
     # If datetime not found
@@ -77,8 +91,6 @@ def ensure_datetime_column(df: pd.DataFrame, raise_on_missing: bool = False) -> 
     logger.warning("No datetime column found in DataFrame")
     logger.warning(f"   Available columns: {df.columns.tolist()[:10]}")
 
-    # Create a default datetime if needed (timezone-naive to avoid comparison errors)
-    df['datetime'] = pd.Timestamp.now().tz_localize(None)
     return df
 
 
@@ -106,7 +118,9 @@ def normalize_metadata_columns(df: pd.DataFrame) -> pd.DataFrame:
     Ensures:
     - datetime column exists and is proper type
     - ticker column exists
-    - datetime has no timezone (UTC localization removed)
+    - timezone-aware datetime remains normalized to UTC
+    - timezone-naive datetime remains visibly unresolved unless source
+      metadata explicitly declares UTC
     - Both columns are accessible as DataFrame columns (not index)
 
     Args:
@@ -118,6 +132,31 @@ def normalize_metadata_columns(df: pd.DataFrame) -> pd.DataFrame:
     df = ensure_datetime_column(df, raise_on_missing=False)
     df = ensure_ticker_column(df)
     return df
+
+
+def _normalize_datetime_values(
+    values: pd.Series,
+    *,
+    declared_timezone: str | None,
+) -> pd.Series:
+    parsed = pd.to_datetime(values, errors="coerce")
+    timezone = getattr(parsed.dt, "tz", None)
+    if timezone is not None:
+        return parsed.dt.tz_convert("UTC")
+    if str(declared_timezone or "").upper() == "UTC":
+        return pd.to_datetime(values, errors="coerce", utc=True)
+    return parsed
+
+
+def _record_datetime_timezone(df: pd.DataFrame) -> None:
+    timezone = getattr(df["datetime"].dt, "tz", None)
+    if timezone is not None:
+        df.attrs["datetime_timezone"] = str(timezone)
+        df.attrs["datetime_timezone_status"] = "timezone_aware"
+    else:
+        df.attrs["datetime_timezone_status"] = (
+            "timezone_naive_unresolved"
+        )
 
 
 def split_datetime_ticker(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:

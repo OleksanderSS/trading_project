@@ -2,6 +2,7 @@
 import logging
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from src.features.enrichers.base import BaseEnricher
@@ -158,27 +159,49 @@ class SignificanceFeaturesEnricher(BaseEnricher):
 
         # Try to calculate significance based on available columns
         if 'returns' in df_out.columns:
-            # Use returns volatility
-            threshold = df_out['returns'].abs().quantile(0.80)  # Top 20%
-            df_out[col_name] = df_out['returns'].abs() >= threshold
-            logger.info(f"Created '{col_name}' based on returns (threshold: {threshold:.4f})")
+            signal = pd.to_numeric(df_out['returns'], errors='coerce').abs()
+            df_out[col_name] = self._causal_significance_flag(df_out, signal)
+            logger.info(f"Created '{col_name}' from the prior expanding return distribution")
         elif 'close' in df_out.columns:
-            # Calculate returns from close price
-            df_out['_temp_returns'] = (
-                df_out['close']
-                .pct_change(fill_method=None)
-                .replace([float('inf'), float('-inf')], float('nan'))
-            )
-            threshold = df_out['_temp_returns'].abs().quantile(0.80)
-            df_out[col_name] = df_out['_temp_returns'].abs() >= threshold
-            df_out = df_out.drop(columns=['_temp_returns'])
-            logger.info(f"Created '{col_name}' based on price changes (threshold: {threshold:.4f})")
+            if 'ticker' in df_out.columns:
+                returns = df_out.groupby('ticker', sort=False)['close'].pct_change(
+                    fill_method=None
+                )
+            else:
+                returns = df_out['close'].pct_change(fill_method=None)
+            signal = pd.to_numeric(returns, errors='coerce').abs()
+            df_out[col_name] = self._causal_significance_flag(df_out, signal)
+            logger.info(f"Created '{col_name}' from the prior expanding price-return distribution")
         elif 'VOLATILITY_20' in df_out.columns:
-            # Use existing volatility feature
-            threshold = df_out['VOLATILITY_20'].quantile(0.80)
-            df_out[col_name] = df_out['VOLATILITY_20'] >= threshold
-            logger.info(f"Created '{col_name}' based on VOLATILITY_20 (threshold: {threshold:.4f})")
+            signal = pd.to_numeric(df_out['VOLATILITY_20'], errors='coerce')
+            df_out[col_name] = self._causal_significance_flag(df_out, signal)
+            logger.info(f"Created '{col_name}' from the prior expanding volatility distribution")
         else:
             logger.warning("Cannot create significance column: no suitable columns found (returns, close, or VOLATILITY_20)")
 
         return df_out
+
+    @staticmethod
+    def _causal_significance_flag(
+        frame: pd.DataFrame,
+        signal: pd.Series,
+    ) -> pd.Series:
+        """Compare each value only with the distribution available before it."""
+        values = pd.to_numeric(signal, errors='coerce').abs()
+
+        def prior_threshold(group: pd.Series) -> pd.Series:
+            return group.shift(1).expanding(min_periods=1).quantile(0.80)
+
+        if 'ticker' in frame.columns:
+            threshold = values.groupby(
+                frame['ticker'],
+                sort=False,
+            ).transform(prior_threshold)
+        else:
+            threshold = prior_threshold(values)
+        return (
+            values.notna()
+            & threshold.notna()
+            & np.isfinite(values)
+            & values.ge(threshold)
+        )

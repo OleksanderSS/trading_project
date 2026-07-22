@@ -156,7 +156,7 @@ class NewsQualityEnricher(BaseEnricher):
 
         # Prepare dataframes for merge_asof
         df_reset = self._normalize_datetime_column(df_enriched.reset_index())
-        
+
         # ✅ FIX: after reset_index(), the index column may be named differently
         agg_reset = aggregated.reset_index()
         # Rename the first column (which was the index) to 'datetime' if needed
@@ -220,7 +220,8 @@ class NewsQualityEnricher(BaseEnricher):
             # Normalize timezone
             if hasattr(news_timestamps, 'dt') and hasattr(news_timestamps.dt, 'tz') and news_timestamps.dt.tz is not None:
                 news_timestamps = news_timestamps.dt.tz_convert(None)
-        except Exception:
+        except Exception as e:
+            self.logger.warning(f"Timestamp conversion failed, attempting fallback: {e}")
             news_timestamps = pd.to_datetime(news_timestamps, errors='coerce')
 
         for idx in df_index:

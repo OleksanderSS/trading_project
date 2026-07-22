@@ -223,13 +223,14 @@ class NewsImpactClassifier:
         return found_tickers
 
     def _get_affected_sectors(self, affected_tickers: list[str], impact_config: dict) -> list[str]:
-        """Визначити уражені сектори"""
-        affected_sectors = impact_config.get('affected_sectors', 'all')
+        """Визначити уражені сектори (tags)"""
+        # Змінено: читаємо affected_tags замість affected_sectors
+        affected_tags = impact_config.get('affected_tags', impact_config.get('affected_sectors', 'all'))
 
-        if affected_sectors == "all":
+        if affected_tags == "all":
             return list(self.sector_mapping.keys())
 
-        elif affected_sectors == "dynamic":
+        elif affected_tags == "dynamic":
             # Визначаємо сектори на основі тікерів
             sectors = set()
             for sector, tickers in self.sector_mapping.items():
@@ -238,7 +239,7 @@ class NewsImpactClassifier:
             return list(sectors)
 
         else:
-            return affected_sectors
+            return affected_tags
 
     def _get_priority_and_retention(self, impact_strength: str) -> tuple[str, int]:
         """Отримати пріоритет та час актуальності"""

@@ -130,7 +130,7 @@ class NewsEventDatasetBuilder:
             return False
         candle_before = candles_before[0]
 
-        # After candles
+        # After candles (only used for target calculation, not as features)
         candles_after = self.seeker.get_candles_after(ticker_df, pub_at, tf, n=2)
         if len(candles_after) < 2:
             self.filter.stats['filtered_insufficient_after'] += 1
@@ -141,11 +141,13 @@ class NewsEventDatasetBuilder:
             self.filter.stats['filtered_missing_data'] += 1
             return False
 
-        # Extract features
+        # Extract features from BEFORE candle only (historical data available at prediction time)
+        # After-candle features are NOT added to avoid lookahead bias
         record.update(self.seeker.extract_features(ticker, tf, candle_before, suffix=''))
         self._add_targets_from_candle(record, candle_before, ticker)
-        record.update(self.seeker.extract_features(ticker, tf, candles_after[0], suffix='_+1'))
-        record.update(self.seeker.extract_features(ticker, tf, candles_after[1], suffix='_+2'))
+
+        # Note: candles_after are available for target calculation if needed,
+        # but their features are NOT added to the record to prevent data leakage
 
         return True
 

@@ -2,7 +2,7 @@
 import hashlib
 import logging
 
-from src.config.sentiment_config import SENTIMENT_DEFAULTS
+from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.features.nlp.scoring.news_score import compute_news_score
 
@@ -26,7 +26,10 @@ def get_model():
     Loads FinBERT as a pure model (AutoModelForSequenceClassification),
     so that it can be called with tokenized tensors.
     """
-    model_name = SENTIMENT_DEFAULTS.get("model_name", "yiyanghkust/finbert-tone")
+    cfg_mgr = UnifiedConfigManager()
+    sentiment_cfg = cfg_mgr.get_specific_config("sentiment")
+    model_name = sentiment_cfg.get("analyzers", {}).get("distilbert", {}).get("model_name", "yiyanghkust/finbert-tone")
+    
     logger.info(f"[sentiment_score] Loading model: {model_name}")
     return _get_auto_model_class().from_pretrained(model_name)
 

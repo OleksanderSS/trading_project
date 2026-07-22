@@ -121,7 +121,9 @@ class ContextMapEnricher(BaseEnricher):
         champ_close = champ_data['close']
         champ_sma = champ_close.rolling(20, min_periods=1).mean()
         state = np.where(champ_close > champ_sma, 1, -1)
-        aligned_state = pd.Series(state, index=champ_data.index).reindex(df.index).ffill()
+        # Create Series with original index and reindex to df.index
+        champ_state = pd.Series(state, index=champ_data.index)
+        aligned_state = champ_state.reindex(df.index).ffill()
         return aligned_state.where(aligned_state.notna(), 0).astype(int)
 
     def _get_context_columns(self, df: pd.DataFrame) -> list[str]:
