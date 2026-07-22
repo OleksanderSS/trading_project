@@ -15,6 +15,7 @@ absent or untrusted.
 """
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 from dean_os.analyst_core.lens_contract import AnalysisPacket, AnalystLens, ModuleDelta
@@ -25,6 +26,7 @@ from dean_os.analyst_core.schemas import (
     RegimeDimensionState,
     Trend,
 )
+from dean_os.utils import sha256_json
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Event class → regime dimension mapping (note 04 §7 routing table).
@@ -37,34 +39,55 @@ from dean_os.analyst_core.schemas import (
 # ──────────────────────────────────────────────────────────────────────────────
 
 EVENT_CLASS_TO_DIMENSION: dict[str, str] = {
+    # Geopolitical
     "war_escalation": "geopolitical_state",
     "de_escalation": "geopolitical_state",
     "sanctions_change": "geopolitical_state",
+    "tariff": "geopolitical_state",
+    "regulation": "geopolitical_state",
+    "strategic_industrial_asset_mna": "geopolitical_state",
+    "political_transition": "geopolitical_state",
+    "trade_route_disruption": "geopolitical_state",
+    # Monetary / Liquidity
     "central_bank_decision": "liquidity_credit_context",
+    "liquidity_observation": "liquidity_credit_context",
+    "debt_crisis": "liquidity_credit_context",
+    # Inflation
     "inflation_release": "inflation_rates_context",
+    "inflation_observation": "inflation_rates_context",
+    # Economic phase
     "recession_risk": "economic_phase",
     "expansion_signal": "economic_phase",
+    "pandemic_health_shock": "economic_phase",
+    # AI / Tech cycle
     "ai_capex_announcement": "ai_tech_cycle",
+    "demand_driver": "ai_tech_cycle",
+    "supply_disruption": "ai_tech_cycle",
+    "capex_signal": "ai_tech_cycle",
     "memory_supply_constraint": "ai_tech_cycle",
     "power_grid_constraint": "ai_tech_cycle",
+    # Commodity stress
     "commodity_supply_shock": "commodity_stress",
     "oil_shock": "commodity_stress",
+    "climate_disaster": "commodity_stress",  # physical disruption hits energy/commodity prices
+    # Market state
     "risk_on_rotation": "market_state",
     "risk_off_rotation": "market_state",
+    "sector_rotation": "market_state",
+    # Safe haven
     "safe_haven_bid": "safe_haven_behavior",
-    "strategic_industrial_asset_mna": "geopolitical_state",
 }
 
 # Default conservative state labels per dimension when no event speaks to it.
 DEFAULT_DIMENSION_STATE: dict[str, str] = {
-    "geopolitical_state": "stable",
+    "geopolitical_state": "unknown",
     "economic_phase": "unknown",
     "inflation_rates_context": "unknown",
-    "liquidity_credit_context": "neutral",
+    "liquidity_credit_context": "unknown",
     "market_state": "unknown",
-    "commodity_stress": "low",
-    "ai_tech_cycle": "early_adoption",
-    "safe_haven_behavior": "none",
+    "commodity_stress": "unknown",
+    "ai_tech_cycle": "unknown",
+    "safe_haven_behavior": "unknown",
 }
 
 
@@ -91,29 +114,74 @@ class RegimeContextLens(AnalystLens):
         dimensions: dict[str, RegimeDimensionState] = {}
         dimension_evidence: dict[str, list[str]] = {dim: [] for dim in DEFAULT_DIMENSION_STATE}
 
-        # Walk events: each event nudges its mapped dimension.
+        events = packet.classified_events or packet.event_records
+
+        # Aggregate first. A dimension may receive many evidence items, so its
+        # state must not depend on whichever record happened to be last.
         touched_dimensions: set[str] = set()
-        for event in packet.event_records:
+        events_by_dimension: dict[str, list[dict[str, Any]]] = {
+            dim: [] for dim in DEFAULT_DIMENSION_STATE
+        }
+        for event in events:
             event_class = str(event.get("event_class") or "").strip().lower()
             dimension = EVENT_CLASS_TO_DIMENSION.get(event_class)
             if dimension is None:
                 continue
             touched_dimensions.add(dimension)
-
-            state = str(event.get("regime_state") or DEFAULT_DIMENSION_STATE.get(dimension, "unknown"))
-            # Intensity: derive from event strength if provided, else moderate.
-            intensity = self._clamp(float(event.get("intensity", 0.5)))
-            trend = self._parse_trend(event.get("trend"))
+            events_by_dimension[dimension].append(event)
             evidence_ids = self._collect_evidence_ids(event, evidence_by_id)
             dimension_evidence[dimension].extend(evidence_ids)
 
+        for dimension in sorted(touched_dimensions):
+            dimension_events = events_by_dimension[dimension]
+            class_counts = Counter(
+                str(event.get("event_class") or "other")
+                for event in dimension_events
+            )
+            dominant_class = sorted(
+                class_counts,
+                key=lambda name: (-class_counts[name], name),
+            )[0]
+            state = (
+                f"{dominant_class}_signal"
+                if len(class_counts) == 1
+                else "mixed_signals"
+            )
+            intensity_values = [
+                self._clamp(
+                    float(
+                        event.get("intensity")
+                        or event.get("materiality_score")
+                        or event.get("strength")
+                        or 0.0
+                    )
+                )
+                for event in dimension_events
+            ]
+            intensity = (
+                sum(intensity_values) / len(intensity_values)
+                if intensity_values
+                else 0.0
+            )
+            trends = {
+                self._parse_trend(event.get("trend"))
+                for event in dimension_events
+            }
+            trend = trends.pop() if len(trends) == 1 else Trend.UNKNOWN
+            evidence_ids = sorted(set(dimension_evidence[dimension]))
+            signal_summary = ", ".join(
+                f"{name}:{class_counts[name]}"
+                for name in sorted(class_counts)
+            )
             dimensions[dimension] = RegimeDimensionState(
                 state=state,
                 intensity=intensity,
                 trend=trend,
-                confidence=Confidence.MEDIUM if evidence_ids else Confidence.LOW,
-                evidence_ids=dimension_evidence[dimension],
-                notes=str(event.get("summary") or ""),
+                confidence=(
+                    Confidence.MEDIUM if evidence_ids else Confidence.LOW
+                ),
+                evidence_ids=evidence_ids,
+                notes=f"Evidence-backed signal counts: {signal_summary}.",
             )
 
         # Fill untouched dimensions with conservative defaults.
@@ -130,6 +198,15 @@ class RegimeContextLens(AnalystLens):
         overall_confidence = Confidence.MEDIUM if touched_dimensions else Confidence.LOW
 
         regime = RegimeContextVector(
+            regime_context_id="regime_" + sha256_json(
+                {
+                    "as_of": packet.as_of_date,
+                    "dimensions": {
+                        key: value.model_dump(mode="json")
+                        for key, value in dimensions.items()
+                    },
+                }
+            )[:24],
             as_of=packet.as_of_date,
             dimensions=dimensions,
             confidence=overall_confidence,
@@ -139,12 +216,13 @@ class RegimeContextLens(AnalystLens):
         return ModuleDelta(
             module_name=self.lens_name,
             module_version=self.lens_version,
+            as_of=packet.as_of_date,
             regime_context=regime,
             fields_added=["regime_context"],
             evidence_ids=sorted({eid for evs in dimension_evidence.values() for eid in evs}),
             confidence=0.5 if overall_confidence == Confidence.MEDIUM else 0.3,
             reason_for_change=(
-                f"Graded regime vector from {len(packet.event_records)} events "
+                f"Graded regime vector from {len(events)} classified events "
                 f"(touched {len(touched_dimensions)}/8 dimensions)."
             ),
         )

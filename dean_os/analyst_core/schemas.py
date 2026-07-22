@@ -19,19 +19,26 @@ checks) that any domain analyst produces.
 """
 from __future__ import annotations
 
+from datetime import UTC
 from enum import Enum
 from typing import Any
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from dean_os.causal_contracts import (
+    CausalClaimMetadata,
+    GraphEdgeDynamics,
+    metadata_for_edge_type,
+)
+
 try:
     from dean_os.schemas import utc_now_iso
 except Exception:  # pragma: no cover - keep analyst_core importable standalone
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     def utc_now_iso() -> str:
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -124,7 +131,7 @@ class RegimeDimensionState(BaseModel):
     notes: str = ""
 
     @model_validator(mode="after")
-    def _normalize(self) -> "RegimeDimensionState":
+    def _normalize(self) -> RegimeDimensionState:
         self.state = self.state.strip()
         if not self.state:
             raise ValueError("RegimeDimensionState.state cannot be empty")
@@ -148,7 +155,7 @@ class RegimeContextVector(BaseModel):
     safety: dict[str, bool] = Field(default_factory=_default_safety)
 
     @model_validator(mode="after")
-    def _ensure_all_dimensions(self) -> "RegimeContextVector":
+    def _ensure_all_dimensions(self) -> RegimeContextVector:
         for dim in REGIME_DIMENSIONS:
             self.dimensions.setdefault(
                 dim,
@@ -200,16 +207,22 @@ class ScenarioNode(BaseModel):
     as_of: str = Field(default_factory=utc_now_iso)
     # Probabilities are only meaningful on `scenario` nodes; 0 elsewhere.
     probability: float = Field(default=0.0, ge=0.0, le=1.0)
+    probability_kind: str = "not_applicable"
     confidence: Confidence = Confidence.LOW
+    impact: float | None = Field(default=None, ge=-1.0, le=1.0)
+    market_reaction: float | None = Field(default=None, ge=-1.0, le=1.0)
+    fundamental_change: float | None = Field(default=None, ge=-1.0, le=1.0)
     evidence_ids: list[str] = Field(default_factory=list)
     uncertainty_notes: str = ""
 
     @model_validator(mode="after")
-    def _validate(self) -> "ScenarioNode":
+    def _validate(self) -> ScenarioNode:
         if self.node_type not in SCENARIO_NODE_TYPES:
             raise ValueError(f"Unknown scenario node type: {self.node_type!r}")
         if self.node_type != "scenario" and self.probability > 0:
             raise ValueError("probability is only allowed on 'scenario' nodes")
+        if self.node_type == "scenario" and self.probability_kind == "not_applicable":
+            self.probability_kind = "review_prior"
         self.label = self.label.strip()
         if not self.label:
             raise ValueError("ScenarioNode.label cannot be empty")
@@ -226,13 +239,19 @@ class ScenarioEdge(BaseModel):
     rationale: str = ""
     evidence_ids: list[str] = Field(default_factory=list)
     confidence: Confidence = Confidence.LOW
+    causal_metadata: CausalClaimMetadata = Field(
+        default_factory=CausalClaimMetadata
+    )
+    dynamics: GraphEdgeDynamics = Field(default_factory=GraphEdgeDynamics)
 
     @model_validator(mode="after")
-    def _validate(self) -> "ScenarioEdge":
+    def _validate(self) -> ScenarioEdge:
         if self.edge_type not in SCENARIO_EDGE_TYPES:
             raise ValueError(f"Unknown scenario edge type: {self.edge_type!r}")
         if self.source_node_id == self.target_node_id:
             raise ValueError("self-loops are not allowed (graph must be acyclic)")
+        if self.causal_metadata == CausalClaimMetadata():
+            self.causal_metadata = metadata_for_edge_type(self.edge_type)
         self.source_node_id = self.source_node_id.strip()
         self.target_node_id = self.target_node_id.strip()
         return self
@@ -258,7 +277,7 @@ class ScenarioOutcomeGraph(BaseModel):
     safety: dict[str, bool] = Field(default_factory=_default_safety)
 
     @model_validator(mode="after")
-    def _validate_graph(self) -> "ScenarioOutcomeGraph":
+    def _validate_graph(self) -> ScenarioOutcomeGraph:
         node_ids = [node.node_id for node in self.nodes]
         if len(node_ids) != len(set(node_ids)):
             raise ValueError("duplicate node_id values in scenario graph")
@@ -324,7 +343,7 @@ class EvidenceGap(BaseModel):
     safety: dict[str, bool] = Field(default_factory=_default_safety)
 
     @model_validator(mode="after")
-    def _normalize(self) -> "EvidenceGap":
+    def _normalize(self) -> EvidenceGap:
         self.description = self.description.strip()
         if not self.description:
             raise ValueError("EvidenceGap.description cannot be empty")
@@ -348,6 +367,7 @@ class HypothesisLedgerEntry(BaseModel):
     as_of: str = Field(default_factory=utc_now_iso)
     hypothesis: str
     confidence: float = Field(default=0.5, ge=0.0, le=1.0)
+    trigger_evidence_ids: list[str] = Field(default_factory=list)
     supporting_evidence_ids: list[str] = Field(default_factory=list)
     contradicting_evidence_ids: list[str] = Field(default_factory=list)
     expected_observations: list[str] = Field(default_factory=list)
@@ -358,7 +378,7 @@ class HypothesisLedgerEntry(BaseModel):
     safety: dict[str, bool] = Field(default_factory=_default_safety)
 
     @model_validator(mode="after")
-    def _validate(self) -> "HypothesisLedgerEntry":
+    def _validate(self) -> HypothesisLedgerEntry:
         self.hypothesis = self.hypothesis.strip()
         if not self.hypothesis:
             raise ValueError("HypothesisLedgerEntry.hypothesis cannot be empty")
@@ -369,6 +389,9 @@ class HypothesisLedgerEntry(BaseModel):
                 "HypothesisLedgerEntry.invalidation_signals cannot be empty — "
                 "a hypothesis without a falsification path is not testable"
             )
+        self.trigger_evidence_ids = sorted(
+            {e.strip() for e in self.trigger_evidence_ids if e and e.strip()}
+        )
         self.supporting_evidence_ids = sorted({e.strip() for e in self.supporting_evidence_ids if e and e.strip()})
         self.contradicting_evidence_ids = sorted(
             {e.strip() for e in self.contradicting_evidence_ids if e and e.strip()}
@@ -416,7 +439,7 @@ class HistoricalOutcomeCheck(BaseModel):
     safety: dict[str, bool] = Field(default_factory=_default_safety)
 
     @model_validator(mode="after")
-    def _horizons_are_fixed(self) -> "HistoricalOutcomeCheck":
+    def _horizons_are_fixed(self) -> HistoricalOutcomeCheck:
         for horizon in self.outcomes_by_horizon:
             if horizon not in OUTCOME_HORIZONS:
                 raise ValueError(f"outcome horizon {horizon} is not one of the fixed horizons {OUTCOME_HORIZONS}")

@@ -29,7 +29,6 @@ from dean_os.analyst_core.schemas import (
     utc_now_iso,
 )
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 # AnalysisPacket — the shared state passed between lenses (note 04 §3.2)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -49,6 +48,7 @@ class AnalysisPacket(BaseModel):
     source_packet_ids: list[str] = Field(default_factory=list)
     event_records: list[dict[str, Any]] = Field(default_factory=list)
     entity_links: list[dict[str, Any]] = Field(default_factory=list)
+    classified_events: list[dict[str, Any]] = Field(default_factory=list)
 
     # Core reasoning objects. ``None`` means "no lens has populated this yet";
     # once populated they are replaced, not overwritten blindly (see ModuleDelta).
@@ -56,6 +56,7 @@ class AnalysisPacket(BaseModel):
     scenario_graph: ScenarioOutcomeGraph | None = None
     evidence_gaps: list[EvidenceGap] = Field(default_factory=list)
     hypotheses: list[HypothesisLedgerEntry] = Field(default_factory=list)
+    hypothesis_review_proposals: list[dict[str, Any]] = Field(default_factory=list)
 
     transmission_channels: list[dict[str, Any]] = Field(default_factory=list)
     expectation_gap: dict[str, Any] | None = None
@@ -79,7 +80,7 @@ class AnalysisPacket(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _enforce_review_only(self) -> "AnalysisPacket":
+    def _enforce_review_only(self) -> AnalysisPacket:
         # The packet is structurally incapable of carrying execution authority.
         # This is a defense-in-depth invariant, not just documentation.
         if not self.review_only:
@@ -107,8 +108,10 @@ class ModuleDelta(BaseModel):
     # Fields the lens set (only present if the lens produced them).
     regime_context: RegimeContextVector | None = None
     scenario_graph: ScenarioOutcomeGraph | None = None
+    classified_events_added: list[dict[str, Any]] = Field(default_factory=list)
     evidence_gaps_added: list[EvidenceGap] = Field(default_factory=list)
     hypotheses_added: list[HypothesisLedgerEntry] = Field(default_factory=list)
+    hypothesis_review_proposals_added: list[dict[str, Any]] = Field(default_factory=list)
     transmission_channels_added: list[dict[str, Any]] = Field(default_factory=list)
     expectation_gap: dict[str, Any] | None = None
     watch_signals_added: list[dict[str, Any]] = Field(default_factory=list)
@@ -122,7 +125,7 @@ class ModuleDelta(BaseModel):
     review_only: bool = True
 
     @model_validator(mode="after")
-    def _validate_delta(self) -> "ModuleDelta":
+    def _validate_delta(self) -> ModuleDelta:
         self.module_name = self.module_name.strip()
         if not self.module_name:
             raise ValueError("ModuleDelta.module_name cannot be empty")
