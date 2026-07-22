@@ -12,6 +12,8 @@ from src.core.utils.prediction_utils import normalize_prediction
 from src.models.registry.model_registry import ModelRegistry
 from src.risk.elite_risk_metrics import EliteRiskMetrics
 from src.trading.adaptive_parameter_manager import AdaptiveParameterManager, AssetClass, MarketRegime
+from src.agents.modular_pipeline.orchestrator import get_default_orchestrator
+import asyncio
 
 
 class TradingRecommendationEngine:
@@ -26,6 +28,9 @@ class TradingRecommendationEngine:
         self.regime_detector = regime_detector
         self.risk_metrics = risk_metrics
         self.adaptive_calibrator = adaptive_calibrator
+        
+        # Ініціалізуємо модульного аналітика замість старого veto_system
+        self.cognitive_orchestrator = get_default_orchestrator()
 
     def generate_recommendations(self, predictions: list[dict[str, Any]],
         current_prices: dict[str, float], models_metadata: dict[str, Any],
@@ -48,6 +53,41 @@ class TradingRecommendationEngine:
             self._generate_trading_recommendations(predictions,
                 current_prices, recommendations, news_impact_scores,
                 features_df=features_df)
+            
+            # --- COGNITIVE PIPELINE (Modular Lenses) ---
+            try:
+                # Отримуємо свіжі новини (якщо є)
+                latest_news_text = ""
+                if hasattr(news_data, 'to_string'):
+                    latest_news_text = news_data.head(5).to_string()
+                elif isinstance(news_data, dict):
+                    latest_news_text = str(news_data)[:500]
+
+                if latest_news_text:
+                    # Запускаємо оркестратор
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        import nest_asyncio
+                        nest_asyncio.apply()
+                    
+                    # Припустимо, ми витягнули теги (можна адаптувати classification_yaml)
+                    # Тимчасово прокидаємо wildcard або глобальні теги для аналізу
+                    analysis_packet = loop.run_until_complete(
+                        self.cognitive_orchestrator.analyze(latest_news_text, affected_tags=['market_wide'])
+                    )
+                    
+                    # Прокидаємо згенеровані сценарії у рекомендації, щоб PortfolioManager міг їх порізати
+                    cognitive_scenarios = analysis_packet.get("scenario_nodes", [])
+                    if cognitive_scenarios:
+                        for rec in recommendations['buy_recommendations']:
+                            rec['cognitive_scenarios'] = cognitive_scenarios
+                        for rec in recommendations['sell_recommendations']:
+                            rec['cognitive_scenarios'] = cognitive_scenarios
+                            
+            except Exception as e:
+                self.logger.error(f"Помилка в Cognitive Pipeline: {e}. Пропускаємо аналіз новин.")
+            # ----------------------------------------------------
+
             recommendations['consolidated_table'
                 ] = self._create_consolidated_table(recommendations[
                 'buy_recommendations'], recommendations[
@@ -104,8 +144,18 @@ class TradingRecommendationEngine:
 
     def _populate_champion_by_target(self, recommendations: dict[str, Any],
         heavy_models: dict[str, list[dict[str, Any]]], light_models: dict[
-        str, list[dict[str, Any]]]) ->None:
-        regime = 'ranging'
+        str, list[dict[str, Any]]], features_df: pd.DataFrame | None = None) ->None:
+        """Populate champion model metadata per target.
+
+        Previously hardcoded regime='ranging' here while _generate_trading_recommendations
+        correctly detected the real regime. Now uses _detect_global_regime so the
+        champion metadata reflects the actual market state.
+        """
+        try:
+            regime = self._detect_global_regime(features_df) if features_df is not None and not features_df.empty else 'ranging'
+        except Exception:  # noqa: BLE001 — regime detection is best-effort for metadata
+            regime = 'ranging'
+
         all_targets = set(heavy_models.keys()) | set(light_models.keys())
         for target_key in all_targets:
             champion = self._get_champion_model_for_target(target_key,
@@ -148,8 +198,10 @@ class TradingRecommendationEngine:
                         return dict(news_analysis['news_impact_scores'])
                 except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-                    self.logger.warning(f'News impact analysis error: {e}')
-                    raise
+                    self.logger.warning(f'News impact analysis error: {e}. Continuing without news impact.')
+                    # Graceful degradation: return empty scores instead of raising.
+                    # A news analysis failure should not degrade recommendations
+                    # for all tickers in the batch.
             elif isinstance(news_data, dict
                 ) and 'news_impact_scores' in news_data:
                 return dict(news_data['news_impact_scores'])
@@ -191,8 +243,9 @@ class TradingRecommendationEngine:
 
                 self.logger.info(f'📊 Dynamically detected global regime: {global_regime} (from {detected})')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.warning(f'⚠️ Failed to detect dynamic regime: {e}')
-            raise
+            self.logger.warning(f'⚠️ Failed to detect dynamic regime: {e}. Falling back to "ranging".')
+            # Graceful degradation: regime detection failure must not abort
+            # all recommendations for the entire batch of tickers.
 
         return global_regime
 
@@ -229,10 +282,10 @@ class TradingRecommendationEngine:
                 regime = 'volatile'
             else:
                 regime = 'ranging'
-        except Exception:
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'Regime detection failed for {ticker}', exc_info=True)
-            raise
+        except Exception as e:
+            self.logger.warning(f'Regime detection failed for {ticker}: {e}. Using global_regime "{global_regime}".')
+            # Graceful degradation: per-ticker regime failure falls back to
+            # the already-computed global regime rather than aborting the batch.
 
         return regime
 
@@ -249,8 +302,14 @@ class TradingRecommendationEngine:
 
     def _build_recommendation(self, ticker: str, pred_value: float, current_price: float,
                              news_warning: str, mc_confidence: float, var_95: float,
-                             pos_factor: float) -> dict:
-        """Build recommendation dictionary."""
+                             pos_factor: float, adaptive_params: object) -> dict:
+        """Build recommendation dictionary with Stop-Loss and Take-Profit."""
+        take_profit_mult = getattr(adaptive_params, 'take_profit_multiplier', 2.0)
+        stop_loss_mult = getattr(adaptive_params, 'stop_loss_multiplier', 1.0)
+
+        stop_loss_pct = var_95 * stop_loss_mult
+        take_profit_pct = var_95 * take_profit_mult
+
         return {
             'ticker': ticker,
             'predicted_return': pred_value,
@@ -259,6 +318,8 @@ class TradingRecommendationEngine:
             'news_warning': news_warning,
             'var_95': var_95,
             'position_size_factor': pos_factor,
+            'stop_loss_pct': stop_loss_pct,
+            'take_profit_pct': take_profit_pct,
             'champion_model': 'ensemble'
         }
 
@@ -291,10 +352,22 @@ class TradingRecommendationEngine:
             pred_value = self._extract_prediction_value(pred)
             news_warning = self._check_news_warning(ticker, news_impact_scores)
             mc_confidence, var_95, pos_factor = self._validate_with_monte_carlo(ticker)
+            
+            final_confidence = pred.get('confidence', mc_confidence)
+            
+            # Dynamic Position Sizing based on Final Confidence (Advanced Research Feature)
+            if final_confidence < 0.6:
+                pos_factor = 0.0 # Extreme doubt, do not trade
+                self.logger.info(f"🛡️ Dynamic Sizing: {ticker} confidence {final_confidence:.2f} < 0.60. Position cut to 0.0")
+            elif final_confidence < 0.75:
+                pos_factor *= 0.5 # Low confidence, half position
+            elif final_confidence > 0.9:
+                pos_factor = min(2.0, pos_factor * 1.5) # High confidence, boost position
+                self.logger.info(f"🔥 Dynamic Sizing: {ticker} confidence {final_confidence:.2f} > 0.90. Position boosted!")
 
             recommendation = self._build_recommendation(
                 ticker, pred_value, current_prices.get(ticker), news_warning,
-                mc_confidence, var_95, pos_factor
+                final_confidence, var_95, pos_factor, adaptive_params
             )
 
             self._classify_recommendation(recommendation, pred_value, adaptive_params, recommendations)
@@ -339,7 +412,41 @@ class TradingRecommendationEngine:
                     'confidence': 0.5, 'reason': 'Negative (Fallback)'})
         return recommendations
 
-    def _determine_asset_class(self, ticker: str) ->str:
+    def _determine_asset_class(self, ticker: str) -> str:
+        """Classify ticker into asset class for adaptive parameter selection.
+
+        Classification is rule-based using well-known ticker lists.
+        Defaults to 'large_cap' for unrecognised symbols.
+        """
+        t = ticker.upper()
+
+        # ETFs / indices
+        _etfs = {'SPY', 'QQQ', 'IWM', 'DIA', 'VTI', 'VOO', 'GLD', 'SLV',
+                 'TLT', 'IEF', 'HYG', 'LQD', 'XLK', 'XLF', 'XLE', 'XLV'}
+        if t in _etfs:
+            return 'etf'
+
+        # Crypto proxies (COIN, MSTR, MARA, RIOT are traded on equity exchanges)
+        _crypto_proxies = {'COIN', 'MSTR', 'MARA', 'RIOT', 'HUT', 'CLSK'}
+        if t in _crypto_proxies:
+            return 'crypto'
+
+        # Large-cap mega tech / well-known blue chips already in assets.yaml
+        _large_caps = {
+            'AAPL', 'MSFT', 'GOOGL', 'GOOG', 'AMZN', 'NVDA', 'META',
+            'TSLA', 'BRK', 'JPM', 'V', 'MA', 'UNH', 'XOM', 'CVX',
+            'BAC', 'WMT', 'KO', 'PEP', 'JNJ', 'PG', 'HD', 'MRK',
+            'GS', 'MS', 'TSM',
+        }
+        if t in _large_caps:
+            return 'large_cap'
+
+        # Mid-cap semiconductors / tech in assets.yaml
+        _mid_caps = {'AMD', 'INTC', 'QCOM', 'MU', 'AMAT', 'LRCX', 'KLAC'}
+        if t in _mid_caps:
+            return 'mid_cap'
+
+        # Default — treat unknown tickers conservatively as large_cap
         return 'large_cap'
 
     def _calculate_robust_confidence(self, ticker: str, target_key: str,
@@ -362,29 +469,85 @@ class TradingRecommendationEngine:
                 return max(0.01, min(1.0, calibrated_confidence))
             return max(0.01, min(1.0, confidence))
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.warning(f'Error calculating robust confidence: {e}')
-            raise
+            self.logger.warning(f'Error calculating robust confidence for {ticker}/{target_key}: {e}. Returning default 0.3.')
+            return 0.3
+
+    # Classification target type prefixes — used to pick the right sort metric.
+    _CLASSIFICATION_TARGET_PREFIXES = (
+        'target_up_', 'target_multi_', 'target_intraday_up_',
+        'target_hourly_up_', 'target_hourly_volume_spike_',
+        'target_hourly_breakout_', 'target_weekly_up_',
+    )
+
+    def _is_classification_target(self, target_name: str) -> bool:
+        """Return True when target_name is a classification (binary/multiclass) target."""
+        return any(target_name.startswith(p) for p in self._CLASSIFICATION_TARGET_PREFIXES)
 
     def _find_champion_model(self, ticker: str, target_key: str,
         models_metadata: dict[str, Any]) ->(dict[str, Any] | None):
+        """Find the best model for ticker+target pair.
+
+        For regression targets (target_return_*, target_rsi_*, etc.) rank by R².
+        For classification targets (target_up_*, target_multi_*, etc.) rank by
+        balanced_accuracy > accuracy > f1, falling back to 0.0 when absent.
+        Using R²=0.0 as the sort key for classifiers caused all candidates to
+        tie and the "champion" was effectively chosen by dict insertion order.
+        """
+        # Determine the bare target name without ticker prefix
+        # target_key may be "AAPL_target_up_1d" or just "target_up_1d"
+        bare_target = target_key.split('_', 1)[1] if '_' in target_key else target_key
+        is_clf = self._is_classification_target(bare_target)
+
         heavy_models_list = []
         for _context_id, meta in models_metadata.items():
-            if meta.get('target') == target_key.split('_', 1)[1]:
-                ticker_from_meta = meta.get('ticker', '')
-                if ticker_from_meta == ticker:
-                    test_metrics = meta.get('test_metrics', {})
-                    r2 = test_metrics.get('r2', 0.0)
-                    model_type = meta.get('model_type', '')
-                    heavy_models_list.append({'type': model_type, 'r2': r2,
-                        'meta': meta})
-        all_models = sorted(heavy_models_list, key=lambda x: x['r2'],
-            reverse=True)
-        return all_models[0] if all_models else None
+            if meta.get('target') != bare_target:
+                continue
+            if meta.get('ticker', '') != ticker:
+                continue
+
+            test_metrics = meta.get('test_metrics', {})
+            if is_clf:
+                # Prefer balanced_accuracy (handles imbalanced classes),
+                # fall back to accuracy then f1.
+                sort_score = (
+                    test_metrics.get('balanced_accuracy')
+                    or test_metrics.get('accuracy')
+                    or test_metrics.get('f1')
+                    or 0.0
+                )
+            else:
+                sort_score = test_metrics.get('r2', 0.0)
+
+            heavy_models_list.append({
+                'type': meta.get('model_type', ''),
+                'r2': test_metrics.get('r2', 0.0),   # kept for _calculate_base_confidence
+                'sort_score': float(sort_score),
+                'is_classification': is_clf,
+                'meta': meta,
+            })
+
+        if not heavy_models_list:
+            return None
+
+        all_models = sorted(heavy_models_list, key=lambda x: x['sort_score'], reverse=True)
+        return all_models[0]
 
     def _calculate_base_confidence(self, champion_data: (dict[str, Any] | None)
         ) ->float:
         if not champion_data:
             return 0.3
+
+        # For classification targets the meaningful quality metric is accuracy /
+        # balanced_accuracy (0..1), not R² which is always 0.0 for classifiers.
+        if champion_data.get('is_classification'):
+            score = champion_data.get('sort_score', 0.0)
+            # Map accuracy [0.5, 1.0] → confidence [0.1, 1.0]
+            # A random classifier gives ~0.5, so we anchor there.
+            if score <= 0.5:
+                return 0.1
+            return float(min(1.0, 0.1 + (score - 0.5) * 1.8))
+
+        # Regression: map R² → confidence
         r2 = champion_data.get('r2', 0.0)
         if r2 < -2:
             return 0.1
@@ -396,6 +559,12 @@ class TradingRecommendationEngine:
         ) ->dict[str, float]:
         if champion_data is None:
             return {'mae_ratio': 0.5, 'rmse_ratio': 0.5}
+
+        # For classification targets mae/rmse are not meaningful metrics.
+        # Return neutral 0.5 so they don't distort the final confidence formula.
+        if champion_data.get('is_classification'):
+            return {'mae_ratio': 0.5, 'rmse_ratio': 0.5}
+
         test_metrics = champion_data['meta'].get('test_metrics', {})
         rmse = test_metrics.get('rmse', 1.0)
         mae = test_metrics.get('mae', 1.0)
@@ -452,8 +621,11 @@ class TradingRecommendationEngine:
             return 0.5 * position_size_factor, var_95, position_size_factor
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
-                f'⚠️ Elite risk validation failed for {ticker}: {e}')
-            raise
+                f'⚠️ Elite risk validation failed for {ticker}: {e}. Using safe defaults.')
+            # Graceful degradation: VaR calculation failure for one ticker must
+            # not abort recommendations for the whole batch. Return safe defaults
+            # (50% confidence, 3% VaR, full position factor).
+            return 0.5, 0.03, 1.0
 
     def _create_consolidated_table(self, buy_recs: list[dict[str, Any]],
         sell_recs: list[dict[str, Any]], models_metadata: dict[str, Any],
@@ -506,7 +678,9 @@ class TradingRecommendationEngine:
                 'risk_score': self._calculate_risk_score(rec),
                 'news_warning': rec.get('news_warning'), 'var_95': rec.get(
                 'var_95', 0.03), 'position_size_factor': rec.get(
-                'position_size_factor', 1.0), 'reason': rec.get('reason'),
+                'position_size_factor', 1.0), 'stop_loss_pct': rec.get(
+                'stop_loss_pct', 0.05), 'take_profit_pct': rec.get(
+                'take_profit_pct', 0.1), 'reason': rec.get('reason'),
                 'composite_score': rec['confidence'] * consensus,
                 'timestamp': datetime.now().isoformat()}
         for rec in buy_recs:

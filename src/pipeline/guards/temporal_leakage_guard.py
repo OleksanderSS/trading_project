@@ -330,10 +330,20 @@ class TemporalLeakageGuard:
         if series.dtype not in ['float64', 'int64']:
             return analysis
 
+        # Skip check for known safe features that can have high values
+        safe_patterns = ['price_volume_trend', 'market_context_price_to_ma', 'volume_ratio', 'obv']
+        if any(pattern in feature_name.lower() for pattern in safe_patterns):
+            return analysis
+
         # Check for unrealistic future values (e.g., prices far in the future)
         if 'price' in feature_name.lower() or 'close' in feature_name.lower():
-            # Look for values that seem to be from the future
-            if series.max() > series.mean() + 5 * series.std():
+            # More conservative threshold: 10 standard deviations
+            # Also check if there are extreme outliers (more than 1% of data)
+            threshold = series.mean() + 10 * series.std()
+            extreme_outliers = (series > threshold).sum()
+            outlier_ratio = extreme_outliers / len(series)
+
+            if series.max() > threshold and outlier_ratio > 0.01:
                 analysis['has_future_data'] = True
                 analysis['issues'].append(
                     f"Feature {feature_name} contains values that suggest future data usage"

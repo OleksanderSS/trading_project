@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.target_column_utils import split_model_features_and_targets
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -58,11 +59,14 @@ class FeatureProcessor:
         return df
 
     def normalize_timezone(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Normalize timezone for datetime column."""
-        if 'datetime' in df.columns:
-            tmp_dt = pd.to_datetime(df['datetime'])
-            df['datetime'] = tmp_dt.dt.tz_localize(None) if tmp_dt.dt.tz is not None else tmp_dt
-        return df
+        """Preserve declared datetime semantics and normalize aware data to UTC."""
+        if 'datetime' not in df.columns:
+            return df
+        from src.features.utils.datetime_utils import (
+            ensure_datetime_column,
+        )
+
+        return ensure_datetime_column(df, raise_on_missing=True)
 
     def split_features_and_targets(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -71,8 +75,13 @@ class FeatureProcessor:
         CRITICAL: Targets DataFrame must contain ONLY target columns + minimal metadata
         to prevent data leakage.
         """
-        target_cols = [c for c in df.columns if c.startswith('target_')]
-        feature_cols = [c for c in df.columns if c not in target_cols]
+        feature_cols, target_cols, dropped_target_derived_cols = split_model_features_and_targets(df.columns)
+        if dropped_target_derived_cols:
+            self.logger.warning(
+                "Dropped %s target-derived column(s) from features: %s",
+                len(dropped_target_derived_cols),
+                list(dropped_target_derived_cols)[:5],
+            )
 
         features_df = df[feature_cols].copy()
 

@@ -13,6 +13,7 @@ from src.core.logging.logger import ProjectLogger
 from src.pipeline.hybrid.colab_manager import BatchPreparationConfig
 from src.pipeline.hybrid.contracts import HybridFinalStagesRequest
 
+from .pipeline_cache_checker import PipelineCacheChecker
 from .pipeline_config import FinalStagesParams, PipelineParams
 
 
@@ -22,6 +23,7 @@ class PipelineManager:
     def __init__(self, orchestrator):
         self.orchestrator = orchestrator
         self.logger = ProjectLogger.get_logger(__name__)
+        self.cache_checker = PipelineCacheChecker(self.orchestrator)
 
     async def run_full_hybrid_pipeline(self, params: PipelineParams | None = None) -> dict[str, Any]:
         """Full hybrid pipeline with smart caching logic."""
@@ -30,17 +32,24 @@ class PipelineManager:
 
         self.logger.info(f"Launching full hybrid pipeline for batch: {self.orchestrator.batch_name}")
 
-        # Step 1: Collect local data
-        local_res = await self._collect_local_data(params.tickers, params.timeframes)
-        if local_res['status'] != 'local_complete':
-            return local_res
+        # Step 1: Check cache before running pipeline
+        cached_data = self.cache_checker.check_cache_before_run(params.force_training)
+        if cached_data is not None:
+            self.logger.info("✅ Using cached data - skipping pipeline stages 0-3")
+            features_df, targets_df = cached_data
+        else:
+            self.logger.info("🔄 No valid cache found - running pipeline stages 0-3")
+            # Step 2: Collect local data
+            local_res = await self._collect_local_data(params.tickers, params.timeframes)
+            if local_res['status'] != 'local_complete':
+                return local_res
 
-        # Step 2: Check cache and handle data
-        features_df, targets_df = self._handle_data_caching(local_res, params.force_training)
-        if features_df is None or targets_df is None:
-            return {'status': 'no_data', 'message': 'No data collected'}
+            # Step 3: Check cache and handle data
+            features_df, targets_df = self._handle_data_caching(local_res, params.force_training)
+            if features_df is None or targets_df is None:
+                return {'status': 'no_data', 'message': 'No data collected'}
 
-        # Step 3: Prepare Colab package
+        # Step 4: Prepare Colab package
         self.logger.info("Preparing Colab package...")
         colab_config = BatchPreparationConfig(
             tickers=params.tickers or [],
@@ -55,7 +64,7 @@ class PipelineManager:
             colab_config,
         )
 
-        # Step 4: Handle Colab or skip path
+        # Step 5: Handle Colab or skip path
         if params.skip_colab:
             return await self._handle_skip_colab_path(
                 b_info,
@@ -79,7 +88,12 @@ class PipelineManager:
             light_results=params.light_results,
             tickers=params.tickers,
             timeframes=params.timeframes,
-            batch_name=params.batch_name or self.orchestrator.batch_name
+            batch_name=params.batch_name or self.orchestrator.batch_name,
+            stages_to_run=params.stages_to_run,
+            execution_mode=params.execution_mode,
+            evaluation_notification_authorized=(
+                params.evaluation_notification_authorized
+            ),
         )
 
         return cast(dict[str, Any], await self.orchestrator.final_stages_orchestrator.run_final_stages(request))
@@ -135,7 +149,7 @@ class PipelineManager:
         import json
         features_file = batch_dir / 'selected_features_fallback.json'
         with open(features_file, 'w', encoding='utf-8') as f:
-            json.dump({'features': selected_features, 'method': 'fallback'}, f, indent=2)
+            json.dump({'features': selected_features, 'method': 'fallback'}, f, indent=2, default=str)
 
     def _generate_colab_instructions(self, batch_info: dict[str, Any]) -> str:
         """Generates instructions for running in Colab."""

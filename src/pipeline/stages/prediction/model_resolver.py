@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 from src.core.logging.logger import ProjectLogger
 
@@ -108,20 +108,62 @@ class ModelResolver:
                 available_files[f.stem.lower()] = f
         return available_files
 
+    # Known multi-word model type suffixes, ordered longest-first so the most
+    # specific match wins (e.g. 'random_forest' before 'forest').
+    _KNOWN_MODEL_TYPES: ClassVar[list[str]] = [
+        'random_forest', 'neural_network', 'base_neural',
+        'lightgbm', 'catboost', 'xgboost', 'tabnet',
+        'autoencoder', 'transformer', 'lstm', 'gru', 'cnn',
+        'mlp', 'linear', 'ensemble', 'knn', 'svm',
+    ]
+
+    def _parse_model_stem(self, stem: str) -> tuple[str, str, str] | None:
+        """
+        Parse a model filename stem into (ticker, target, model_type).
+
+        Expected format: model_<TICKER>_<TARGET>_<MODEL_TYPE>
+        where MODEL_TYPE can be multi-word (e.g. random_forest).
+
+        Returns None if the stem cannot be parsed.
+        """
+        # Strip leading 'model_' prefix if present
+        s = stem.lower()
+        if s.startswith('model_'):
+            s = s[len('model_'):]
+
+        # Try to match a known model type suffix
+        for mt in self._KNOWN_MODEL_TYPES:
+            if s.endswith('_' + mt):
+                rest = s[: -(len(mt) + 1)]  # everything before _<model_type>
+                # rest = <ticker>_<target>
+                parts = rest.split('_', 1)
+                if len(parts) == 2:
+                    return parts[0], parts[1], mt
+        return None
+
     def _match_model_file(self, ticker: str, target: str, model_type: str,
                           available_files: dict[str, Path]) -> Path | None:
         """Match a model file based on ticker, target, and model type."""
+        expected_ticker = ticker.lower()
         expected_target = target.lower().replace('-', '_')
+        expected_model  = model_type.lower().replace('-', '_')
+
         for stem, fpath in available_files.items():
-            stem_lower = stem.lower()
-            stem_parts = stem_lower.split('_')
-            if len(stem_parts) >= 4:
-                file_ticker = stem_parts[1]
-                file_model_type = stem_parts[-1]
-                file_target = '_'.join(stem_parts[2:-1])
-                if file_ticker == ticker.lower() and file_model_type == model_type.lower():
-                    if file_target == expected_target:
-                        return fpath
+            parsed = self._parse_model_stem(stem)
+            if parsed is None:
+                continue
+            file_ticker, file_target, file_model_type = parsed
+            if (file_ticker == expected_ticker
+                    and file_model_type == expected_model
+                    and file_target == expected_target):
+                return fpath
+
+        # Fallback: loose substring match for flexibility
+        needle = f"{expected_ticker}_{expected_target}_{expected_model}"
+        for stem, fpath in available_files.items():
+            if needle in stem.lower():
+                return fpath
+
         return None
 
     def update_local_model_paths(self, models_meta: dict[str, Any],
@@ -186,6 +228,17 @@ class ModelResolver:
         if not model_path_str:
             return None
         direct_path = Path(model_path_str.replace('/', os.sep))
+
+        # If path is relative (just a filename), try to resolve it against
+        # the batch directory resolved from models_meta
+        if not direct_path.is_absolute() and not direct_path.exists():
+            batch_dir = self.resolve_batch_directory(models_meta)
+            if batch_dir:
+                candidate = batch_dir / direct_path.name
+                if candidate.exists():
+                    direct_path = candidate
+                    models_meta[context_id]['model_path'] = str(direct_path)
+
         if not direct_path.exists():
             return None
         try:
@@ -293,7 +346,8 @@ class ModelResolver:
         return {'model_id': model_name, 'model_path': model_path,
             'model_type': models_meta.get(context_id, {}).get('model_type',
             model_name), 'ticker': models_meta.get(context_id, {}).get(
-            'ticker'), 'target': models_meta.get(context_id, {}).get('target')}
+            'ticker'), 'target': models_meta.get(context_id, {}).get('target'),
+            'timeframe': models_meta.get(context_id, {}).get('timeframe')}
 
     def _read_runtime_params_if_exists(self, batch_dir: Path) ->None:
         runtime_params_path = batch_dir / 'runtime_params.json'
@@ -374,7 +428,8 @@ class ModelResolver:
                         context_key = f'{ticker}_{target}_{model_type}'
                         models_metadata[context_key] = {'ticker': ticker,
                             'target': target, 'winner': model_type,
-                            'model_type': model_type, 'model_category':
+                            'model_type': model_type, 'timeframe': _tf,
+                            'model_category':
                             'heavy', 'metrics': model_data.get('metrics', {
                             }), 'selected_features': model_data.get(
                             'selected_features', [])}

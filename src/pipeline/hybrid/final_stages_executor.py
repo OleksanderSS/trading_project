@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 from src.core.logging.logger import ProjectLogger
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
 
@@ -27,7 +29,7 @@ class FinalStagesExecutor:
         dict[str, Any] | None=None, light_results: dict[str, Any] | None=None, tickers: list[str] | None=None, timeframes: list[str] | None=None, batch_name: str | None=None) ->dict[str, Any]:
         """Runs final stages 4-7 after Colab results are loaded."""
         batch_name, stages_to_run = self._prepare_final_stages_params(
-            colab_results, batch_name, [4, 5, 6, 7])
+            colab_results, batch_name, [4, 5, 7])
         self.logger.info(
             f'Running final stages {stages_to_run} for batch: {batch_name}')
         if not colab_results or not self._has_heavy_models(colab_results):
@@ -85,7 +87,7 @@ class FinalStagesExecutor:
         self.logger.info('🔥 Training heavy models: CNN, LSTM, GRU, Transformer, TabNet')
         heavy_results: dict[str, Any] = {'ticker_results': {}}
         heavy_models = ['cnn', 'lstm', 'gru', 'transformer', 'tabnet']
-        
+
         for ticker in tickers[:3]:
             heavy_results['ticker_results'][ticker] = {'timeframes': {'all': {'results': {}}}}
             self._train_ticker_models(ticker, features_df, targets_df, heavy_models, heavy_results)
@@ -143,7 +145,7 @@ class FinalStagesExecutor:
             colab_results = {}
         batch_name = batch_name or colab_results.get('batch_name', self.
             batch_name)
-        stages_to_run = stages_to_run or [5, 6, 7]
+        stages_to_run = stages_to_run or [5, 7]
         if 6 in stages_to_run or 7 in stages_to_run:
             stages_to_run = sorted(set(stages_to_run) | {5})
         return batch_name, stages_to_run

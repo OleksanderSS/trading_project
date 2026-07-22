@@ -47,10 +47,23 @@ class DataCacheManager:
                 self.logger.warning(f'⚠️ Error loading cache: {e}')
                 return n_f, n_t
         else:
-            self.logger.info('New data found - updating cache.')
-            n_f.to_parquet(f_p, compression='snappy')
-            n_t.to_parquet(t_p, compression='snappy')
-            self.logger.info(f'New data saved to: {f_p}, {t_p}')
+            self.logger.info('New data found - APPENDING to cache.')
+            try:
+                old_f = pd.read_parquet(f_p)
+                old_t = pd.read_parquet(t_p)
+                # Concatenate old and new data
+                combined_f = pd.concat([old_f, n_f], ignore_index=True)
+                combined_t = pd.concat([old_t, n_t], ignore_index=True)
+                combined_f.to_parquet(f_p, compression='snappy')
+                combined_t.to_parquet(t_p, compression='snappy')
+                self.logger.info(f'Cache updated: old={len(old_f)} + new={len(n_f)} = {len(combined_f)} total rows')
+                return combined_f, combined_t
+            except Exception as e:
+                self.logger.error(f'Error appending to cache: {e}', exc_info=True)
+                self.logger.warning('Falling back to new data only')
+                n_f.to_parquet(f_p, compression='snappy')
+                n_t.to_parquet(t_p, compression='snappy')
+                return n_f, n_t
         return n_f, n_t
 
     def _has_new_data(self, features_path: Path, new_features: pd.DataFrame
@@ -58,12 +71,24 @@ class DataCacheManager:
         """Check if new data exists compared to cache."""
         try:
             old_features = pd.read_parquet(features_path)
-            old_datetime = pd.to_datetime(old_features['datetime']
-                ).dt.tz_localize(None)
-            new_datetime = pd.to_datetime(new_features['datetime']
-                ).dt.tz_localize(None)
-            known = set(zip(old_datetime, old_features.get('ticker', []), strict=False))
-            current = set(zip(new_datetime, new_features.get('ticker', []), strict=False))
+            # Check if datetime column exists, otherwise use index
+            if 'datetime' in old_features.columns and 'datetime' in new_features.columns:
+                old_datetime = pd.to_datetime(old_features['datetime']).dt.tz_localize(None)
+                new_datetime = pd.to_datetime(new_features['datetime']).dt.tz_localize(None)
+                known = set(zip(old_datetime, old_features.get('ticker', []), strict=False))
+                current = set(zip(new_datetime, new_features.get('ticker', []), strict=False))
+            else:
+                # Fall back to comparing shapes and ticker counts if datetime is missing
+                if old_features.shape != new_features.shape:
+                    self.logger.info(f'📊 Shape mismatch: old {old_features.shape} vs new {new_features.shape}')
+                    return True
+                # Compare ticker counts as a simple heuristic
+                old_tickers = old_features.get('ticker', [])
+                new_tickers = new_features.get('ticker', [])
+                if len(old_tickers) != len(new_tickers):
+                    self.logger.info(f'📊 Ticker count mismatch: {len(old_tickers)} vs {len(new_tickers)}')
+                    return True
+                return False
             has_new = len(current - known) > 0
             if has_new:
                 self.logger.info(

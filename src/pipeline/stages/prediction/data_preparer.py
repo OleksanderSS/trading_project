@@ -204,15 +204,20 @@ class PredictionDataPreparer:
             return ticker_df
         dropped = int((~complete_rows).sum())
         self.logger.warning(
-            f'Context {context_id} has {dropped} incomplete feature row(s); dropping instead of filling zeros.'
+            f'Context {context_id} has {dropped} incomplete feature row(s); filling missing values with zeros instead of dropping.'
             )
-        filtered = ticker_df.loc[complete_rows].copy()
-        if filtered.empty:
+        # Fill missing values with zeros instead of dropping rows
+        ticker_df = ticker_df.copy()
+        ticker_df[model_feature_cols] = ticker_df[model_feature_cols].fillna(0)
+
+        # Add validation to ensure we have data after filling
+        if ticker_df.empty:
             self.logger.error(
-                f'Context {context_id} has no complete feature rows; skipping prediction.'
-                )
+                f'Context {context_id} has no data after filling missing values; skipping prediction.'
+            )
             return None
-        return filtered
+
+        return ticker_df
 
     def adaptive_re_enrichment(self, df: pd.DataFrame, missing_features:
         list[str]) ->pd.DataFrame:

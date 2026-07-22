@@ -160,7 +160,7 @@ class FeatureSelectionValidator:
                 )
             file_path = request.batch_dir / file_name
             with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(mock_data, f, indent=2)
+                json.dump(mock_data, f, indent=2, default=str)
             created_files.append(file_path)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Created mock file: {file_path}')

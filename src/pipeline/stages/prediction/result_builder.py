@@ -8,6 +8,11 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.stages.prediction.lineage import (
+    prediction_observed_at,
+    prediction_timeframe_lineage,
+    trusted_context_fingerprint,
+)
 
 from .result_request import PredictionResultRequest
 
@@ -132,8 +137,9 @@ class PredictionResultBuilder:
         # Integrate autoencoder anomaly detection
         try:
             anomaly_score = self._integrate_autoencoder_anomaly(request, anomaly_score)
-        except Exception:
-            pass  # Fall back to original anomaly score
+        except (ValueError, TypeError, AttributeError, KeyError, OSError, RuntimeError) as e:
+            self.logger.warning(f'⚠️ Anomaly integration failed, falling back to original score: {e}')
+
 
         # Calculate ensemble confidence
         confidence_info = self.anomaly_engine.calculate_ensemble_confidence(
@@ -147,10 +153,29 @@ class PredictionResultBuilder:
         pred_value = self.prediction_generator.extract_prediction_value(request.adjusted_prediction)
         self.logger.info(f"Ensemble forecast for {request.ticker}: {pred_value:.4f} | Conf: {confidence_info.get('score'):.2%}")
 
-        ts_val = self._get_timestamp(request.ticker_df_clean)
+        ts_val = prediction_observed_at(request.ticker_df_clean)
+        timeframe_lineage = prediction_timeframe_lineage(
+            request.ticker_df_clean,
+            declared_timeframe=request.meta.get("timeframe"),
+        )
+        resolved_timeframe = timeframe_lineage.get(
+            "resolved_timeframe"
+        )
 
         return {
             'ticker': request.ticker,
+            'model_context_id': request.context_id,
+            'target_name': request.meta.get('target'),
+            'model_type': request.meta.get('model_type') or request.best_model_name,
+            'timeframe': resolved_timeframe,
+            'timeframe_lineage': timeframe_lineage,
+            'context_fingerprint': trusted_context_fingerprint(
+                request.meta.get("context_fingerprint"),
+                self._latest_context_fingerprint(
+                    request.ticker_df_clean
+                ),
+            ),
+            'model_output_contract': request.model_output_contract,
             'predictions': self._to_serializable(request.adjusted_prediction),
             'raw_forecast': self._to_serializable(request.raw_prediction),
             'predictions_by_model': {k: self._to_serializable(v) for k, v in request.model_contributions.items()},
@@ -159,8 +184,42 @@ class PredictionResultBuilder:
             'anomaly_score': float(anomaly_score),
             'last_price': self._get_last_price(request.ticker_df_clean, request.ticker) or 0.0,
             'shap_explanations': request.shap_explanations,
-            'timestamp': ts_val
+            'timestamp': ts_val,
+            'lineage_sources': {
+                'timeframe': (
+                    'model_and_feature_cadence_verified'
+                    if timeframe_lineage.get("status")
+                    == "timeframe_cadence_verified"
+                    else (
+                        'feature_frame_metadata'
+                        if resolved_timeframe
+                        else 'invalid_or_missing'
+                    )
+                ),
+                'prediction_as_of': (
+                    'feature_frame_metadata' if ts_val else 'missing'
+                ),
+                'context_fingerprint': (
+                    'model_or_feature_context_fingerprint'
+                    if trusted_context_fingerprint(
+                        request.meta.get("context_fingerprint"),
+                        self._latest_context_fingerprint(
+                            request.ticker_df_clean
+                        ),
+                    )
+                    else 'missing'
+                ),
+            },
         }
+
+    def _latest_context_fingerprint(self, ticker_df: pd.DataFrame) -> str | None:
+        for column in ("context_fingerprint", "context_pattern_id"):
+            if column not in ticker_df.columns or ticker_df.empty:
+                continue
+            value = ticker_df[column].dropna().iloc[-1] if not ticker_df[column].dropna().empty else None
+            if value is not None:
+                return str(value)
+        return None
 
     def _get_last_price(self, ticker_df: pd.DataFrame, ticker: str) ->(float |
         None):

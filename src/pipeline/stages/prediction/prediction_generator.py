@@ -55,19 +55,63 @@ class PredictionGenerator:
                         '   ⏭️ Skipping autoencoder (used only for anomaly detection)'
                         )
                 continue
+                
+            # Align features with model expectations to prevent shape mismatch errors
+            aligned_features = model_features.copy()
+            if hasattr(m_inst, 'model'):
+                expected = None
+                if hasattr(m_inst.model, 'feature_name_') and callable(m_inst.model.feature_name_):
+                    try: expected = m_inst.model.feature_name_()
+                    except Exception: pass
+                elif hasattr(m_inst.model, 'feature_names_in_'):
+                    expected = m_inst.model.feature_names_in_
+                elif hasattr(m_inst.model, 'feature_names_'):
+                    expected = m_inst.model.feature_names_
+
+                
+                if expected is not None:
+                    missing = [c for c in expected if c not in aligned_features.columns]
+                    if missing:
+                        for c in missing:
+                            aligned_features[c] = 0
+                    aligned_features = aligned_features[expected]
+
             model_preds[m_name
                 ] = self.ensemble_cache.get_or_compute_model_prediction(
-                features=model_features, model_id=m_name, model_fn=lambda
-                features=model_features, model=m_inst: model.predict(features))
+                features=aligned_features, model_id=m_name, model_fn=lambda
+                features=aligned_features, model=m_inst: model.predict(features))
         if not model_preds:
             self.logger.warning(
                 f'⚠️ No models for prediction (only autoencoder), skipping {context_id}'  # audit-ignore: AUTOENCODER_ROUTING_REVIEW
                 )
             return None, {}
         preds_df = pd.DataFrame(model_preds)
-        ensemble_result = self.ensemble_factory.predict(X=preds_df,
-            context_params={'ticker': ticker_df_clean.get('ticker',
-            'unknown'), 'regime': market_regime})
+        # Extract additional context for DynamicRouter
+        last_row = ticker_df_clean.iloc[-1] if not ticker_df_clean.empty else None
+        
+        hour_of_day = -1
+        day_of_week = -1
+        trend_state = -1
+        if last_row is not None:
+            if 'datetime' in last_row:
+                dt = pd.to_datetime(last_row['datetime'])
+                hour_of_day = dt.hour
+                day_of_week = dt.dayofweek
+            
+            sma20 = last_row.get('sma_20', 0)
+            sma50 = last_row.get('sma_50', 0)
+            if sma20 != 0 and sma50 != 0:
+                trend_state = 1 if sma20 > sma50 else 0
+        
+        context_params = {
+            'ticker': ticker_df_clean.get('ticker', 'unknown'), 
+            'regime': market_regime,
+            'hour_of_day': hour_of_day,
+            'day_of_week': day_of_week,
+            'trend_state': trend_state
+        }
+        
+        ensemble_result = self.ensemble_factory.predict(X=preds_df, context_params=context_params)
         return ensemble_result.final_signal, ensemble_result.active_weights
 
     def generate_single_model_prediction(self, models: dict[str, Any],
@@ -88,7 +132,28 @@ class PredictionGenerator:
             self.logger.debug(
                 f'   {best_model_name}: X shape={X.shape}, features={len(feature_cols)}'
                 )
-        raw_prediction = selected_model.predict(X)
+
+        # Align features with model expectations to prevent shape mismatch errors
+        aligned_X = X.copy()
+        if hasattr(selected_model, 'model'):
+            expected = None
+            if hasattr(selected_model.model, 'feature_name_') and callable(selected_model.model.feature_name_):
+                try: expected = selected_model.model.feature_name_()
+                except Exception: pass
+            elif hasattr(selected_model.model, 'feature_names_in_'):
+                expected = selected_model.model.feature_names_in_
+            elif hasattr(selected_model.model, 'feature_names_'):
+                expected = selected_model.model.feature_names_
+
+            
+            if expected is not None:
+                missing = [c for c in expected if c not in aligned_X.columns]
+                if missing:
+                    for c in missing:
+                        aligned_X[c] = 0
+                aligned_X = aligned_X[expected]
+
+        raw_prediction = selected_model.predict(aligned_X)
         pred_value = raw_prediction[-1] if isinstance(raw_prediction, np.
             ndarray) else raw_prediction
         return raw_prediction, {best_model_name: pred_value}

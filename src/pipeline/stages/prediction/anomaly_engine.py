@@ -128,7 +128,27 @@ class AnomalyEngine:
         raw_preds = []
         for m_inst in models.values():
             try:
-                p = m_inst.predict(X)
+                # Align features with model expectations to prevent shape mismatch errors
+                aligned_X = X.copy()
+                if hasattr(m_inst, 'model'):
+                    expected = None
+                    if hasattr(m_inst.model, 'feature_name_') and callable(m_inst.model.feature_name_):
+                        try: expected = m_inst.model.feature_name_()
+                        except Exception: pass
+                    elif hasattr(m_inst.model, 'feature_names_in_'):
+                        expected = m_inst.model.feature_names_in_
+                    elif hasattr(m_inst.model, 'feature_names_'):
+                        expected = m_inst.model.feature_names_
+
+                    
+                    if expected is not None:
+                        missing = [c for c in expected if c not in aligned_X.columns]
+                        if missing:
+                            for c in missing:
+                                aligned_X[c] = 0
+                        aligned_X = aligned_X[expected]
+
+                p = m_inst.predict(aligned_X)
                 val = float(p[-1]) if hasattr(p, '__len__') else float(p)
                 raw_preds.append(val)
             except (ValueError, TypeError, AttributeError):

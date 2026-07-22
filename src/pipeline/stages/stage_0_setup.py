@@ -74,7 +74,7 @@ class Stage0Setup(BaseStage):
         except KeyError as e:
             self.handle_stage_error(e, context='ConfigKey-paths', severity=
                 'error', should_raise=True)
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (ValueError, TypeError, AttributeError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.handle_stage_error(e, context='EnvironmentSetup', severity
                 ='error', should_raise=True)

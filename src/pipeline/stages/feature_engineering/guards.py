@@ -33,11 +33,18 @@ class FeatureGuards:
             return df
 
         guarded = df.loc[:, ~df.columns.duplicated()].copy()
-        sort_cols = [col for col in ('ticker', 'datetime', 'timestamp', 'date') if col in guarded.columns]
-        if sort_cols:
-            guarded = guarded.sort_values(sort_cols).reset_index(drop=True)
-
         datetime_col = next((col for col in ('datetime', 'timestamp', 'date') if col in guarded.columns), None)
+        if datetime_col:
+            sort_cols = [
+                col
+                for col in ('ticker', datetime_col)
+                if col in guarded.columns
+            ]
+            guarded = guarded.sort_values(
+                sort_cols,
+                kind='mergesort',
+            ).reset_index(drop=True)
+
         if datetime_col:
             current_time = pd.to_datetime(guarded[datetime_col], errors='coerce').max()
             timeframe = self._infer_timeframe(guarded)
@@ -58,8 +65,11 @@ class FeatureGuards:
                     ))
                 ]
                 message = f"Temporal leakage guard found {len(issues)} issues"
-                if self.strict_mode and actionable_issues:
-                    raise ValueError(message)
+                # Temporal leakage is ALWAYS fail-closed: lookahead bias
+                # silently inflates backtests and destroys live performance.
+                # Mode only downgrades non-leakage warnings, never leaks.
+                if actionable_issues:
+                    raise ValueError(f"{message}: {' | '.join(actionable_issues)}")
                 self.logger.warning(message)
 
         return guarded

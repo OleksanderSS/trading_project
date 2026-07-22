@@ -9,9 +9,10 @@ Handles model selection logic including:
 Extracted from stage_5_prediction.py to reduce coupling.
 """
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from src.core.logging.logger import ProjectLogger
+from src.models import constants
 
 
 class ModelSelectionService:
@@ -32,27 +33,103 @@ class ModelSelectionService:
         self.config_manager = config_manager
         self.logger = ProjectLogger.get_logger('ModelSelectionService')
 
+    # Known multi-word model type suffixes (longest-first so most specific wins).
+    _KNOWN_MODEL_TYPES: ClassVar[list[str]] = [
+        'random_forest', 'neural_network', 'base_neural',
+        'lightgbm', 'catboost', 'xgboost', 'tabnet',
+        'autoencoder', 'transformer', 'lstm', 'gru', 'cnn',
+        'mlp', 'linear', 'ensemble', 'knn', 'svm',
+    ]
+
     def get_available_model_types(self) -> set:
         """
-        Get available model types from ModelRegistry.
+        Get available model types by combining:
+        1. ModelRegistry registered model names/types
+        2. Actual model files (.pkl, .keras, .joblib) found in the batch directory
 
         Returns:
             Set of available model type strings
         """
         from src.models.registry.model_registry import ModelRegistry
 
-        # Get all registered models from the single source of truth
+        # 1. Collect types from ModelRegistry
+        model_types: set = set()
         available_models = ModelRegistry.get_all_model_names()
-
-        # Map them to their types
-        model_types = set()
         for name in available_models:
             config = ModelRegistry.get_model_config(name)
             if config:
                 model_types.add(config.get('type', 'light'))
+            # Also treat the model name itself as an available type
+            # so that metadata entries whose model_type matches the name pass through
+            model_types.add(name.lower())
 
-        self.logger.info(f'Available model types: {sorted(model_types)}')
-        return model_types if model_types else {'mlp', 'tabnet'}
+        # 2. Scan the batch directory for actual model files and infer types
+        batch_model_types = self._infer_model_types_from_batch_dir()
+        model_types.update(batch_model_types)
+
+        self.logger.info(f'Available model types (registry + batch scan): {sorted(model_types)}')
+        return model_types if model_types else {constants.MLP, constants.TABNET}
+
+    def _infer_model_types_from_batch_dir(self) -> set:
+        """
+        Scan the accumulated batch directory for model files and infer their types
+        from filenames.  Expected filename pattern:
+            model_<TICKER>_<TARGET>_<MODEL_TYPE>.pkl  (or .keras / .joblib)
+        """
+        from pathlib import Path
+
+        model_types: set = set()
+        model_extensions = {'.pkl', '.keras', '.h5', '.pt', '.joblib'}
+
+        try:
+            base_dir = Path(
+                self.config_manager.get(
+                    self.ACCUMULATION_OUTPUT_DIR_CONFIG,
+                    self.DEFAULT_ACCUMULATION_DIR,
+                )
+            )
+
+            # Collect candidate directories: the base dir itself plus any
+            # immediate subdirectories (one batch level deep).
+            candidate_dirs: list[Path] = []
+            if base_dir.exists():
+                candidate_dirs.append(base_dir)
+                for entry in base_dir.iterdir():
+                    if entry.is_dir():
+                        candidate_dirs.append(entry)
+                        models_subdir = entry / 'models'
+                        if models_subdir.is_dir():
+                            candidate_dirs.append(models_subdir)
+
+            for search_dir in candidate_dirs:
+                for f in search_dir.iterdir():
+                    if not f.is_file() or f.suffix.lower() not in model_extensions:
+                        continue
+                    inferred = self._infer_type_from_stem(f.stem)
+                    if inferred:
+                        model_types.add(inferred)
+
+        except Exception as e:
+            self.logger.warning(f'Could not scan batch dir for model types: {e}')
+
+        if model_types:
+            self.logger.info(f'Inferred model types from batch files: {sorted(model_types)}')
+        return model_types
+
+    def _infer_type_from_stem(self, stem: str) -> str | None:
+        """
+        Infer the model type from a filename stem such as
+        'model_AMD_target_up_1d_random_forest'.
+        Returns the model type string or None if it cannot be determined.
+        """
+        s = stem.lower()
+        if s.startswith('model_'):
+            s = s[len('model_'):]
+
+        for mt in self._KNOWN_MODEL_TYPES:
+            if s.endswith('_' + mt):
+                return mt
+        return None
 
     def filter_models_by_type(
         self,

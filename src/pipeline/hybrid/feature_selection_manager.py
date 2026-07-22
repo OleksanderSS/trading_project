@@ -88,7 +88,7 @@ class FeatureSelectionManager:
 
             feature_file = request.batch_dir / f"selected_features_{model}_{request.test_target}.json"
             with open(feature_file, 'w') as f:
-                json.dump(features_data, f, indent=2)
+                json.dump(features_data, f, indent=2, default=str)
 
             created_files.append(feature_file)
             self.logger.info(f"Created mock feature file: {feature_file}")

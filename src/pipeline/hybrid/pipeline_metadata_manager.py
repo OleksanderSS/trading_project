@@ -42,11 +42,11 @@ class PipelineMetadataManager:
         metadata_path = (self.output_dir /
             f'{self.batch_name}_metadata_{timestamp}.json')
         with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(metadata, f, indent=2)
+            json.dump(metadata, f, indent=2, default=str)
         batch_metadata = self._create_batch_metadata_dict(metadata, timestamp)
         batch_metadata_path = self.output_dir / self.batch_metadata_file
         with open(batch_metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(batch_metadata, f, indent=2)
+            json.dump(batch_metadata, f, indent=2, default=str)
         self.logger.info(f'📋 Metadata saved: {metadata_path}')
 
     def _create_batch_metadata_dict(self, metadata: dict[str, Any],

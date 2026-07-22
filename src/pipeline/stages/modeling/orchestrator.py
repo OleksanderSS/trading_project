@@ -1,0 +1,559 @@
+# audit-ignore: ARCHITECTURAL_USAGE
+import datetime
+import hashlib
+import json
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from src.analytics.analyzers.model_comparison_analyzer import ModelComparisonAnalyzer
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.logging.logger import ProjectLogger
+from src.models.adapters.data_preparation import prepare_data_for_models
+from src.pipeline.modeling_context import iter_model_contexts
+from src.pipeline.stages.base_stage import BaseStage
+from src.pipeline.stages.modeling import pipeline_control_artifacts
+from src.pipeline.stages.modeling.walk_forward_validation import (
+    PipelineWalkForwardValidationEvaluator,
+    WalkForwardValidationConfig,
+)
+from src.pipeline.stages.prediction.lineage import (
+    source_lineage_attrs,
+    trusted_context_fingerprint,
+)
+from src.pipeline.target_column_utils import is_direct_target_column
+from src.training.constants import (
+    BATCH_TRAINER_DEFAULT_BATCH_SIZE,
+    BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB,
+    DEFAULT_TEST_SIZE,
+)
+from src.training.unified_training_manager import TrainerConfig, TrainingStrategy, UnifiedTrainingManager
+
+logger = ProjectLogger.get_logger('ModelingStage')
+
+
+@dataclass
+class TargetProcessingConfig:
+    """Configuration for target processing."""
+    ticker: str
+    df: Any
+    target_name: str
+    timeframe: str
+    champions: dict[str, Any]
+
+
+class ModelingStage(BaseStage):
+    """
+    Stage 4: Advanced ML Arena with Pattern-Based Champions.
+
+    🎯 REGIME-SPECIFIC CHAMPIONS:
+    - Тренує та зберігає найкращі моделі для кожної пари (Ticker, Context Pattern).
+    - Використовує Purged Validation для чесного оцінювання.
+    """
+
+    def __init__(self, config_manager: UnifiedConfigManager, brain: dict[str, Any] | None = None, error_handler=None, **kwargs):
+        super().__init__(config_manager, error_handler, brain=brain, **kwargs)
+        self.modeling_config = self.config_manager.get_config('modeling') or {}
+        self.system_config = self.config_manager.get_config('system') or {}
+
+        strategy_str = self.modeling_config.get('strategy', 'hybrid').upper()
+        strategy = (TrainingStrategy[strategy_str] if strategy_str in
+            TrainingStrategy.__members__ else TrainingStrategy.HYBRID)
+
+        training_config = TrainerConfig(
+            strategy=strategy,
+            batch_size=self.modeling_config.get('batch_size', BATCH_TRAINER_DEFAULT_BATCH_SIZE),
+            max_memory_gb=self.modeling_config.get('max_memory_gb', BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB)
+        )
+
+        self.training_manager = UnifiedTrainingManager(training_config)
+        self.comparison_analyzer = ModelComparisonAnalyzer()
+        self.models_dir = self.config_manager.get_models_path()
+        self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
+        self._init_infrastructure()
+
+    def _init_infrastructure(self):
+        """Initializes the environment."""
+        self.models_dir.mkdir(parents=True, exist_ok=True)
+        if not self.diary_path.exists():
+            self.diary_path.parent.mkdir(parents=True, exist_ok=True)
+            columns = ['timestamp', 'ticker', 'tf', 'target', 'pattern_id', 'model_name', 'score', 'is_champion']
+            pd.DataFrame(columns=columns).to_csv(self.diary_path, index=False)
+
+    async def run(self, **kwargs) -> dict[str, Any]:
+        """Runs the full training cycle with Pattern-Aware logic."""
+        enriched_data = kwargs.get('enriched_data')
+        if enriched_data is None or (isinstance(enriched_data, pd.DataFrame) and enriched_data.empty):
+            logger.error('Enriched data not found. Skipping Modeling Stage.')
+            return {}
+
+        if kwargs.get("walk_forward_review_only"):
+            return self._run_walk_forward_review_only(
+                enriched_data,
+                **kwargs,
+            )
+
+        champions = {}
+        metric_artifacts: list[dict[str, Any]] = []
+        metric_artifact_dir = Path(
+            kwargs.get("pipeline_control_artifact_dir")
+            or self.system_config.get(
+                "pipeline_control_artifact_dir",
+                "data/results/pipeline_control_stage4_training",
+            )
+        )
+        logger.info('--- [Modeling Stage] Starting Regime-Aware Training Arena ---')
+
+        for ticker, timeframe, df in self._iter_model_contexts(enriched_data):
+            # ✅ ELITE FIX: Визначаємо домінуючий патерн для цього тікера у вибірці
+            current_pattern = df['context_pattern_id'].iloc[-1] if 'context_pattern_id' in df.columns else 'normal'
+            logger.info(
+                "Ticker %s/%s is currently in pattern: %s",
+                ticker,
+                timeframe,
+                current_pattern,
+            )
+
+            await self._process_ticker_with_async(
+                ticker,
+                df,
+                champions,
+                current_pattern,
+                timeframe=timeframe,
+                metric_artifacts=metric_artifacts,
+                metric_artifact_dir=metric_artifact_dir,
+            )
+
+        logger.info(f'Modeling Stage complete. Trained {len(champions)} expert models.')
+        manifests = sorted(
+            {
+                str(item["manifest"])
+                for item in metric_artifacts
+                if item.get("manifest")
+            }
+        )
+        return {
+            'models_metadata': champions,
+            'processed_data': enriched_data,
+            'pipeline_control_metric_artifacts': metric_artifacts,
+            'pipeline_control_metric_artifact_manifests': manifests,
+        }
+
+    def _run_walk_forward_review_only(
+        self,
+        stage_enriched_data,
+        **kwargs,
+    ) -> dict[str, Any]:
+        """Evaluate development folds without entering normal model training."""
+        if not kwargs.get("acknowledge_no_test"):
+            raise ValueError(
+                "walk_forward_review_only requires acknowledge_no_test=True."
+            )
+        target_name = kwargs.get("target_column")
+        if not target_name:
+            raise ValueError(
+                "walk_forward_review_only requires one explicit target_column."
+            )
+        config = WalkForwardValidationConfig(
+            min_train_rows=int(kwargs.get("min_train_rows", 360)),
+            validation_rows=int(kwargs.get("validation_rows", 120)),
+            step_rows=int(kwargs.get("step_rows", 120)),
+            purge_rows=int(kwargs.get("purge_rows", 5)),
+            max_folds=int(kwargs.get("max_folds", 4)),
+            max_features=int(kwargs.get("max_features", 40)),
+        )
+        evaluator = PipelineWalkForwardValidationEvaluator(config)
+        candidates: dict[str, Any] = {}
+        for ticker, timeframe, frame in self._iter_model_contexts(
+            stage_enriched_data
+        ):
+            if target_name not in frame.columns or not frame[target_name].notna().any():
+                continue
+            candidate = evaluator.evaluate(
+                frame,
+                ticker=ticker,
+                timeframe=timeframe,
+                target_name=target_name,
+                timeframe_context_report=kwargs.get(
+                    "timeframe_context_report"
+                ),
+                source_lineage=kwargs.get("source_lineage"),
+            )
+            candidates[f"{ticker}_{timeframe}_{target_name}"] = candidate
+        if not candidates:
+            raise ValueError(
+                f"No model context contains target {target_name}."
+            )
+        return {
+            "status": "walk_forward_review_only_complete",
+            "review_only": True,
+            "walk_forward_validation_candidates": candidates,
+            "models_metadata": {},
+            "processed_data": stage_enriched_data,
+            "timeframe_context_report": kwargs.get(
+                "timeframe_context_report"
+            ),
+            "can_promote_model": False,
+            "can_trade": False,
+        }
+
+    def _iter_model_contexts(self, enriched_data):
+        """Yield isolated ticker/timeframe frames for model preparation."""
+        yield from iter_model_contexts(enriched_data)
+
+    async def _process_ticker_with_async(
+        self,
+        ticker,
+        df,
+        champions,
+        current_pattern,
+        *,
+        timeframe=None,
+        metric_artifacts: list[dict[str, Any]] | None = None,
+        metric_artifact_dir: Path | None = None,
+    ):
+        """Process data for a single ticker."""
+        try:
+            logger.info(f"Ticker {ticker}: DataFrame columns: {list(df.columns[:20])}... (total {len(df.columns)} columns)")
+            target_cols = [
+                column
+                for column in df.columns
+                if is_direct_target_column(column) and df[column].notna().any()
+            ]
+            logger.info(f"Ticker {ticker}: Found {len(target_cols)} target columns: {target_cols}")
+            if not timeframe:
+                timeframe = source_lineage_attrs(df).get(
+                    "prediction_timeframe"
+                )
+            if not timeframe:
+                raise ValueError(
+                    f"Ticker {ticker} has no cadence-validated timeframe"
+                )
+
+            for target_name in target_cols:
+                # Готуємо дані з PURGED GAP
+                prepared_data = prepare_data_for_models(
+                    df=df, ticker=ticker, timeframe=timeframe,
+                    target_cols=[target_name],
+                    gap_size=10, # Обов'язковий розрив для чесності
+                    test_size=self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
+                )
+
+                if not prepared_data:
+                    continue
+
+                # Запускаємо уніфіковане тренування
+                context_fingerprint = self._build_context_fingerprint(
+                    frame=df,
+                    prepared_data=prepared_data,
+                    ticker=str(ticker),
+                    timeframe=str(timeframe),
+                    target_name=str(target_name),
+                    current_pattern=str(current_pattern),
+                )
+                training_context = self._build_unified_training_context(
+                    prepared_data,
+                    target_name=target_name,
+                    context_fingerprint=context_fingerprint,
+                )
+                training_results = self.training_manager.execute_unified_training(
+                    tickers=[ticker], data_context=training_context
+                )
+
+                # Вибираємо переможця для конкретного ПАТЕРНА
+                ticker_result = training_results.get('tickers_results', {}).get(ticker, {})
+                if ticker_result.get('status') == 'success':
+                    winner_name = ticker_result.get('winner')
+                    metrics = ticker_result.get('winner_metrics', {})
+
+                    context_key = (
+                        f"{ticker}_{timeframe}_{target_name}_{current_pattern}"
+                    )
+                    artifact_paths = self._write_active_stage4_candidates(
+                        ticker=ticker,
+                        timeframe=timeframe,
+                        target_name=target_name,
+                        current_pattern=str(current_pattern),
+                        context_fingerprint=context_fingerprint,
+                        df=df,
+                        prepared_data=prepared_data,
+                        ticker_result=ticker_result,
+                        output_dir=metric_artifact_dir,
+                    )
+                    if artifact_paths and metric_artifacts is not None:
+                        metric_artifacts.append(artifact_paths)
+                    champions[context_key] = {
+                        'ticker': ticker,
+                        'timeframe': timeframe,
+                        'target': target_name,
+                        'target_name': target_name,
+                        'target_type': training_context.get('target_type'),
+                        'pattern_id': current_pattern,
+                        'winner': winner_name,
+                        'model_type': winner_name,
+                        'model_category': 'unified',
+                        'metrics': metrics,
+                        'model_path': ticker_result.get('model_path'),
+                        'selected_features': list(
+                            training_context.get("feature_names") or []
+                        ),
+                        'context_fingerprint': context_fingerprint,
+                        'pipeline_control_metric_artifacts': artifact_paths,
+                        'timestamp': datetime.datetime.now().isoformat()
+                    }
+
+                    self._log_expert_to_diary(champions[context_key], timeframe)
+                    logger.info(f"🏆 Pattern Champion for {context_key}: {winner_name} (Score: {metrics.get('score', 0):.4f})")
+
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            logger.exception(f"Error modeling {ticker}: {e}")
+
+    def _build_unified_training_context(
+        self,
+        prepared_data: dict[str, Any],
+        *,
+        target_name: str,
+        context_fingerprint: str,
+    ) -> dict[str, Any]:
+        """Adapt nested preparation output and reserve the holdout.
+
+        UnifiedTrainingManager calls its selection split ``X_test``. Stage 4
+        supplies validation there and does not expose the prepared holdout to
+        model selection.
+        """
+        light = prepared_data.get("light_models")
+        if not isinstance(light, dict):
+            raise ValueError("Prepared data has no light-model split.")
+        required = ("X_train", "y_train", "X_val", "y_val")
+        missing = [key for key in required if light.get(key) is None]
+        if missing:
+            raise ValueError(
+                f"Prepared light-model split is incomplete: {missing}."
+            )
+        y_train = light["y_train"]
+        return {
+            "X_train": light["X_train"],
+            "y_train": y_train,
+            "X_test": light["X_val"],
+            "y_test": light["y_val"],
+            "feature_names": list(light.get("feature_names") or []),
+            "target_name": target_name,
+            "target_type": self._infer_target_type(y_train),
+            "context_fingerprint": context_fingerprint,
+            "selection_split_role": "validation",
+            "prepared_holdout_reserved": True,
+        }
+
+    def _write_active_stage4_candidates(
+        self,
+        *,
+        ticker: str,
+        timeframe: str,
+        target_name: str,
+        current_pattern: str,
+        context_fingerprint: str,
+        df: pd.DataFrame,
+        prepared_data: dict[str, Any],
+        ticker_result: dict[str, Any],
+        output_dir: Path | None,
+    ) -> dict[str, Any]:
+        """Write partial/measured evidence without inventing unavailable data."""
+        if output_dir is None:
+            return {}
+        try:
+            light = prepared_data["light_models"]
+            feature_names = list(light.get("feature_names") or [])
+            validation_metrics = dict(
+                ticker_result.get("winner_metrics") or {}
+            )
+            stability_analysis = (
+                pipeline_control_artifacts
+                .build_feature_distribution_stability_analysis(
+                    light.get("X_train"),
+                    light.get("X_val"),
+                    feature_names,
+                )
+            )
+            evaluation_window = (
+                pipeline_control_artifacts.build_split_evaluation_window(
+                    light.get("X_val"),
+                    source="stage4_validation_feature_index",
+                )
+            )
+            market_regime = self._latest_context_value(
+                df,
+                ("market_regime", "regime"),
+                default="unknown",
+            )
+            volatility_regime = self._latest_context_value(
+                df,
+                ("volatility_regime",),
+                default="unknown",
+            )
+            winner = str(ticker_result.get("winner") or "unknown")
+            model_candidate = (
+                pipeline_control_artifacts
+                .build_model_evaluation_candidate(
+                    ticker=ticker,
+                    target_name=target_name,
+                    model_type=winner,
+                    timeframe=timeframe,
+                    context_fingerprint=context_fingerprint,
+                    market_regime=market_regime,
+                    volatility_regime=volatility_regime,
+                    train_metrics=dict(
+                        ticker_result.get("train_metrics") or {}
+                    ),
+                    validation_metrics=validation_metrics,
+                    train_sample_count=len(light.get("y_train", [])),
+                    validation_sample_count=len(light.get("y_val", [])),
+                    test_metrics=None,
+                    test_sample_count=0,
+                    max_drawdown=None,
+                    evaluation_window=evaluation_window,
+                )
+            )
+            feature_candidate = (
+                pipeline_control_artifacts
+                .build_feature_stability_candidate(
+                    ticker=ticker,
+                    target_name=target_name,
+                    model_type=winner,
+                    timeframe=timeframe,
+                    context_fingerprint=context_fingerprint,
+                    market_regime=market_regime,
+                    volatility_regime=volatility_regime,
+                    feature_importance={},
+                    stability_analysis=stability_analysis,
+                )
+            )
+            return (
+                pipeline_control_artifacts
+                .write_pipeline_control_metric_artifact_candidates(
+                    batch_dir=output_dir,
+                    context_key=(
+                        f"{ticker}_{timeframe}_{target_name}_"
+                        f"{current_pattern}_{winner}"
+                    ),
+                    model_evaluation=model_candidate,
+                    feature_stability=feature_candidate,
+                )
+            )
+        except (
+            ValueError,
+            TypeError,
+            AttributeError,
+            KeyError,
+            ZeroDivisionError,
+            OSError,
+        ) as exc:
+            logger.warning(
+                "Could not write active Stage 4 pipeline-control candidates: %s",
+                exc,
+            )
+            return {}
+
+    @staticmethod
+    def _latest_context_value(
+        frame: pd.DataFrame,
+        columns: tuple[str, ...],
+        *,
+        default: str | None,
+    ) -> str | None:
+        for column in columns:
+            if column not in frame.columns:
+                continue
+            values = frame[column].dropna()
+            if not values.empty:
+                return str(values.iloc[-1])
+        return default
+
+    @classmethod
+    def _build_context_fingerprint(
+        cls,
+        *,
+        frame: pd.DataFrame,
+        prepared_data: dict[str, Any],
+        ticker: str,
+        timeframe: str,
+        target_name: str,
+        current_pattern: str,
+    ) -> str:
+        existing = trusted_context_fingerprint(
+            cls._latest_context_value(
+                frame,
+                ("context_fingerprint",),
+                default=None,
+            )
+        )
+        if existing:
+            return existing
+
+        feature_names = sorted(
+            str(value)
+            for value in (
+                prepared_data.get("light_models", {}).get(
+                    "feature_names", []
+                )
+                or []
+            )
+        )
+        last_values: dict[str, Any] = {}
+        if not frame.empty:
+            row = frame.iloc[-1]
+            for name in feature_names:
+                if name not in frame.columns:
+                    continue
+                value = row[name]
+                if pd.isna(value):
+                    last_values[name] = None
+                elif hasattr(value, "item"):
+                    try:
+                        last_values[name] = value.item()
+                    except (TypeError, ValueError):
+                        last_values[name] = str(value)
+                else:
+                    last_values[name] = value
+        lineage = source_lineage_attrs(frame)
+        payload = {
+            "schema_version": "pipeline_model_context_fingerprint_v1",
+            "ticker": ticker.upper(),
+            "timeframe": timeframe.lower(),
+            "target_name": target_name,
+            "context_pattern_id": current_pattern,
+            "observed_at": lineage.get("prediction_observed_at"),
+            "feature_names": feature_names,
+            "last_feature_values": last_values,
+        }
+        encoded = json.dumps(
+            payload,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            default=str,
+        ).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    @staticmethod
+    def _infer_target_type(values: Any) -> str:
+        flattened = pd.Series(
+            values.reshape(-1)
+            if hasattr(values, "reshape")
+            else list(values)
+        ).dropna()
+        unique = set(flattened.unique().tolist())
+        if unique and unique.issubset({-1, 0, 1}):
+            return "classification"
+        return "regression"
+
+    def _log_expert_to_diary(self, info: dict[str, Any], tf: str):
+        """Зберігає інформацію про експертну модель у щоденник досвіду."""
+        entry = {
+            'timestamp': info['timestamp'], 'ticker': info['ticker'],
+            'tf': tf, 'target': info['target'], 'pattern_id': info['pattern_id'],
+            'model_name': info['winner'], 'score': info['metrics'].get('score', 0),
+            'is_champion': True
+        }
+        pd.DataFrame([entry]).to_csv(self.diary_path, mode='a', header=False, index=False)

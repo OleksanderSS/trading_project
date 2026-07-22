@@ -67,7 +67,7 @@ class MetadataManager:
         """Save metadata to files."""
         metadata_path = params.output_dir / f"{params.batch_name}_metadata_{params.timestamp}.json"
         with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(params.metadata, f, indent=2, ensure_ascii=False)
+            json.dump(params.metadata, f, indent=2, ensure_ascii=False, default=str)
 
         # Also save as pickle for faster loading
         pickle_path = params.output_dir / f"{params.batch_name}_metadata_{params.timestamp}.pkl"
@@ -101,7 +101,7 @@ class MetadataManager:
         output_path = output_dir / f"final_results_{timestamp}.json"
 
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(final_summary, f, indent=2, ensure_ascii=False)
+            json.dump(final_summary, f, indent=2, ensure_ascii=False, default=str)
 
         return output_path
 

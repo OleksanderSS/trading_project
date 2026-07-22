@@ -7,6 +7,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+import pandas as pd
+
 from src.analytics.data_managers.model_results_manager import ModelResultsManager
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.clients.http_client_factory import HttpClientFactory
@@ -42,7 +44,8 @@ class PipelineOrchestrator:
     """
 
     def __init__(self, config_manager: UnifiedConfigManager, brain:
-        dict[str, Any] | None=None, stages_to_run: list[int] | None=None
+        dict[str, Any] | None=None, stages_to_run: list[int] | None=None,
+        data_manager=None
         ):
         self.config_manager = config_manager
         self.logger = ProjectLogger.get_logger(__name__)
@@ -55,7 +58,7 @@ class PipelineOrchestrator:
         if not scaler_path:
             self.logger.warning(
                 "scaler_path not resolved from config 'paths.scalers'.")
-        self.data_manager = DataManager(self.config_manager)
+        self.data_manager = data_manager if data_manager else DataManager(self.config_manager)
         self.results_manager = ModelResultsManager(models_path)
         self.http_client_factory = HttpClientFactory(self.config_manager,
             self.error_handler)
@@ -209,6 +212,26 @@ class PipelineOrchestrator:
         self.logger.info(f'Context keys: {list(execution_context.keys())}')
         stage_outputs = {'tickers': tickers, 'timeframes': timeframes,
             'run_mode': run_mode}
+
+        # Merge enriched_data and targets_df if both are provided
+        enriched_data = execution_context.get('enriched_data')
+        targets_df = execution_context.get('targets_df')
+        if enriched_data is not None and targets_df is not None:
+            # Merge targets into enriched_data using concat on index
+            self.logger.info(f"Merging enriched_data ({enriched_data.shape}) with targets_df ({targets_df.shape})")
+            # Remove duplicate columns from targets_df (ticker, datetime, interval)
+            target_cols_only = targets_df.drop(columns=['ticker', 'datetime', 'interval'], errors='ignore')
+            # Reset index to ensure proper alignment
+            enriched_data_reset = enriched_data.reset_index(drop=True)
+            targets_df_reset = target_cols_only.reset_index(drop=True)
+            merged_df = pd.concat([enriched_data_reset, targets_df_reset], axis=1)
+            self.logger.info(f"Merged DataFrame shape: {merged_df.shape}")
+            self.logger.info(f"Target columns in merged DataFrame: {[col for col in merged_df.columns if col.startswith('target_')]}")
+            stage_outputs['enriched_data'] = merged_df
+            # Remove separate targets_df and old enriched_data to avoid confusion
+            execution_context.pop('targets_df', None)
+            execution_context.pop('enriched_data', None)
+
         stage_outputs.update({k: v for k, v in execution_context.items() if
             k not in ('tickers', 'timeframes', 'run_mode')})
         self.logger.info(
@@ -267,6 +290,13 @@ class PipelineOrchestrator:
         stage_name: str, stage: Any, stage_outputs: dict[str, Any]) ->dict[str, Any] | None:
         """Run stage with memory tracking."""
         with self.memory_profiler.track(f'stage_{stage_index}_{stage_name}'):
+            # Log enriched_data shape for ModelingStage
+            if stage_name == 'ModelingStage':
+                enriched_data = stage_outputs.get('enriched_data')
+                if enriched_data is not None:
+                    self.logger.info(f"ModelingStage receiving enriched_data with shape: {enriched_data.shape}")
+                    target_cols = [col for col in enriched_data.columns if col.startswith('target_')]
+                    self.logger.info(f"ModelingStage enriched_data target columns: {len(target_cols)}")
             return await stage.run(**stage_outputs)
 
     def _validate_stage_output(self, stage_name: str, stage_output:

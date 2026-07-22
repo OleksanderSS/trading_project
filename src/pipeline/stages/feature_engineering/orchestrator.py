@@ -8,10 +8,17 @@ from src.core.error_handling.error_handler import ErrorHandler
 from src.core.logging.logger import ProjectLogger
 from src.features.selection.enhanced_smart_selector import get_enhanced_smart_selector
 from src.pipeline.stages.base_stage import BaseStage
+from src.pipeline.target_column_utils import is_target_like_column
+from src.pipeline.timeframe_lineage import (
+    normalize_timeframe,
+    partition_market_frame_by_timeframe,
+    timeframe_lineage_report,
+)
 
 from .enricher import FeatureEnricher
 from .guards import FeatureGuards
 from .targets import TargetGenerator
+from .timeframe_context import BackwardTimeframeContextAssembler
 
 
 class FeatureEngineeringStage(BaseStage):
@@ -31,6 +38,8 @@ class FeatureEngineeringStage(BaseStage):
         self.guards = FeatureGuards(mode=kwargs.get('mode', 'full'))
         self.enricher = FeatureEnricher(config_manager)
         self.target_gen = TargetGenerator(config_manager)
+        self.timeframe_context_assembler = BackwardTimeframeContextAssembler()
+        self._last_timeframe_context_report: dict[str, Any] = {}
 
         self.logger.info("✅ FeatureEngineeringStage (Modular) initialized")
 
@@ -40,7 +49,10 @@ class FeatureEngineeringStage(BaseStage):
 
         cleaned_data, market_data_dict = self._validate_and_prepare_market_data(**kwargs)
         if not market_data_dict:
-            return {'status': 'failed', 'reason': 'no_data'}
+            raise ValueError(
+                "FeatureEngineeringStage: No market data available. "
+                "Ensure Stage 2 (ProcessingStage) produced 'prices' in cleaned_data."
+            )
 
         enriched_data: dict[str, pd.DataFrame] = {}
         all_targets: dict[str, pd.DataFrame] = {}
@@ -53,11 +65,17 @@ class FeatureEngineeringStage(BaseStage):
                 enrich_kwargs['macro_data'] = cleaned_data['macro_data']
             if 'news' in cleaned_data:
                 enrich_kwargs['news'] = cleaned_data['news']
+            if kwargs.get('offline_only'):
+                enrich_kwargs['offline_only'] = True
 
             enriched_df = self.enricher.enrich_features(df, timeframe=tf, **enrich_kwargs)
+            enriched_df = self._restore_service_columns(enriched_df, df)
 
             # 2. Target Generation (for all timeframes, not just 1d)
-            targets_df = self.target_gen.generate_targets(enriched_df)
+            targets_df = self.target_gen.generate_targets(
+                enriched_df,
+                timeframe=tf,
+            )
             all_targets[tf] = targets_df
             target_cols = [col for col in targets_df.columns if col.startswith('target_')]
             for col in target_cols:
@@ -65,12 +83,13 @@ class FeatureEngineeringStage(BaseStage):
 
             # 3. Apply Safety Guards
             enriched_df = self.guards.apply_guards(enriched_df)
+            enriched_df = self._restore_service_columns(enriched_df, df)
 
             enriched_data[tf] = enriched_df
 
         # 4. Feature Selection (on the primary timeframe)
-        final_features = enriched_data.get('1d', pd.DataFrame())
-        selected_features = list(final_features.columns) if not final_features.empty else []
+        final_features = self._combine_timeframes(enriched_data)
+        selected_features = self._initial_feature_columns(final_features)
         feature_importance: dict[str, float] = {}
         if not final_features.empty:
             target_col = kwargs.get('target_column', 'target_up_1d')
@@ -91,17 +110,146 @@ class FeatureEngineeringStage(BaseStage):
             'combined_features': final_features,
             'selected_features': selected_features,
             'feature_importance': feature_importance,
+            'timeframe_context_report': self._last_timeframe_context_report,
             'timestamp': datetime.now().isoformat()
         }
 
     def _validate_and_prepare_market_data(self, **kwargs):
         cleaned_data = kwargs.get('cleaned_data', {})
-        market_data_raw = cleaned_data.get('prices') or cleaned_data.get('market_data') or kwargs.get('market_data')
+        stage_logger = getattr(self, "logger", None)
+        if stage_logger is not None:
+            stage_logger.info(
+                f"Stage3 input keys: {list(kwargs.keys())}; "
+                f"cleaned_data keys: {list(cleaned_data.keys()) if isinstance(cleaned_data, dict) else type(cleaned_data).__name__}"
+            )
+        market_data_raw = cleaned_data.get('prices')
+        if market_data_raw is None:
+            market_data_raw = cleaned_data.get('market_data')
+        if market_data_raw is None:
+            market_data_raw = kwargs.get('market_data')
+
+        if market_data_raw is None:
+            if stage_logger is not None:
+                stage_logger.error("No market data found in cleaned_data['prices'], cleaned_data['market_data'], or kwargs['market_data']")
+        elif isinstance(market_data_raw, dict):
+            inner_types = {k: type(v).__name__ for k, v in market_data_raw.items()}
+            if stage_logger is not None:
+                stage_logger.info(f"Market data dict contents: {inner_types}")
+        else:
+            if stage_logger is not None:
+                stage_logger.info(f"Market data type: {type(market_data_raw).__name__}")
 
         if isinstance(market_data_raw, pd.DataFrame):
-            market_data_raw = {'1d': market_data_raw}
+            market_data_raw = partition_market_frame_by_timeframe(
+                market_data_raw
+            )
+        elif isinstance(market_data_raw, dict):
+            validated = {}
+            for raw_timeframe, frame in market_data_raw.items():
+                if not isinstance(frame, pd.DataFrame) or frame.empty:
+                    continue
+                declared = normalize_timeframe(raw_timeframe)
+                report = timeframe_lineage_report(
+                    frame,
+                    declared_timeframe=declared,
+                )
+                if report.get("status") in {
+                    "timeframe_cadence_mismatch",
+                    "timeframe_cadence_ambiguous",
+                }:
+                    raise ValueError(
+                        f"Market frame {raw_timeframe} conflicts with "
+                        f"observed {report.get('observed_timeframe')} "
+                        "cadence"
+                    )
+                resolved = report.get("resolved_timeframe")
+                if not resolved:
+                    raise ValueError(
+                        f"Market frame {raw_timeframe} has no "
+                        "cadence-validated timeframe"
+                    )
+                candidate = frame.copy()
+                candidate["interval"] = resolved
+                candidate.attrs["timeframe_lineage"] = report
+                candidate.attrs["timeframe_source"] = (
+                    "stage3_input_mapping_key"
+                )
+                validated[resolved] = candidate
+            market_data_raw = validated
 
         return cleaned_data, market_data_raw
+
+    def _combine_timeframes(self, enriched_data: dict[str, pd.DataFrame]) -> pd.DataFrame:
+        """Build point-in-time higher-timeframe context for every base frame."""
+        # Filter each dataframe to only contain its own interval
+        filtered_data = {}
+        for tf, df in enriched_data.items():
+            if 'interval' in df.columns:
+                filtered_df = df[df['interval'] == tf].copy()
+                self.logger.info(f"Filtered {tf} timeframe: {len(df)} -> {len(filtered_df)} rows")
+                filtered_data[tf] = filtered_df
+            else:
+                filtered_data[tf] = df
+
+        assembler = getattr(
+            self,
+            "timeframe_context_assembler",
+            BackwardTimeframeContextAssembler(),
+        )
+        combined, report = assembler.assemble(filtered_data)
+        self._last_timeframe_context_report = report
+        self.logger.info(
+            "Assembled %s causal timeframe contexts: %s total rows",
+            report["summary"]["base_context_count"],
+            report["summary"]["output_rows"],
+        )
+        return combined
+
+    def _initial_feature_columns(self, frame: pd.DataFrame) -> list[str]:
+        """Return numeric model candidates without labels or service metadata."""
+        if frame.empty:
+            return []
+        metadata_columns = {
+            "datetime",
+            "date",
+            "timestamp",
+            "ticker",
+            "interval",
+            "timeframe",
+        }
+        return [
+            column
+            for column in frame.select_dtypes(include="number").columns
+            if column not in metadata_columns and not is_target_like_column(column)
+        ]
+
+    def _restore_service_columns(
+        self,
+        enriched_df: pd.DataFrame,
+        source_df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        """Preserve row-level source identity when enrichers drop service columns."""
+        if len(enriched_df) != len(source_df):
+            return enriched_df
+        result = enriched_df.copy()
+        service_columns = (
+            "datetime",
+            "timestamp",
+            "date",
+            "ticker",
+            "interval",
+            "timeframe",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "hash",
+        )
+        for column in service_columns:
+            if column not in result.columns and column in source_df.columns:
+                result[column] = source_df[column].to_numpy(copy=True)
+        return result
 
     async def _select_features(
         self,
@@ -109,7 +257,7 @@ class FeatureEngineeringStage(BaseStage):
         target_col: str,
         kwargs: dict[str, Any],
     ) -> tuple[list[str], dict[str, float]]:
-        target_cols = [col for col in final_features.columns if col.startswith('target_')]
+        target_cols = [col for col in final_features.columns if is_target_like_column(col)]
         metadata_cols = {'datetime', 'date', 'timestamp', 'ticker', 'interval'}
         candidate_features = final_features.drop(columns=target_cols, errors='ignore')
         candidate_features = candidate_features.drop(

@@ -120,6 +120,11 @@ class HybridOrchestrator:
             tickers=request.tickers,
             timeframes=request.timeframes,
             batch_name=request.batch_name or self.batch_name,
+            stages_to_run=request.stages_to_run,
+            execution_mode=request.execution_mode,
+            evaluation_notification_authorized=(
+                request.evaluation_notification_authorized
+            ),
         )
 
         return await self.pipeline_manager.run_final_stages(params)

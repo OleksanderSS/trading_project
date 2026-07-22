@@ -39,7 +39,7 @@ class FinalStagesOrchestrator:
             colab_results = {}
 
         batch_name = batch_name or colab_results.get('batch_name', self.batch_name)
-        stages_to_run = stages_to_run or [5, 6, 7]
+        stages_to_run = stages_to_run or [5, 7]
 
         # Ensure stage 5 is included if stages 6 or 7 are requested
         if 6 in stages_to_run or 7 in stages_to_run:
@@ -61,7 +61,12 @@ class FinalStagesOrchestrator:
     async def _run_stages_5_to_7(self, features_df: pd.DataFrame, targets_df: pd.DataFrame,
                                 tickers: list[str] | None, timeframes: list[str] | None,
                                 batch_name: str, stages_to_run: list[int],
-                                models_metadata: dict[str, Any]) -> dict[str, Any]:
+                                models_metadata: dict[str, Any],
+                                execution_mode: str = 'review_only',
+                                evaluation_notification_authorized: bool = False,
+                                news_data: pd.DataFrame | None = None,
+                                economic_data: pd.DataFrame | None = None,
+                                market_indicators: pd.DataFrame | None = None) -> dict[str, Any]:
         """Run stages 5-7 using PipelineOrchestrator."""
         valid_stages = [s for s in stages_to_run if s in [5, 6, 7]]
         orchestrator = PipelineOrchestrator(
@@ -77,18 +82,55 @@ class FinalStagesOrchestrator:
             features_df=features_df,
             targets_df=targets_df,
             models_metadata=models_metadata,
+            news_data=news_data,
+            economic_data=economic_data,
+            market_indicators=market_indicators,
             batch_name=batch_name,
+            execution_mode=execution_mode,
+            evaluation_notification_authorized=(
+                evaluation_notification_authorized
+            ),
             stages_to_run=valid_stages
         ))
 
-    def _create_final_summary(self, results: dict[str, Any], tickers: list[str] | None) -> dict[str, Any]:
-        """Create final summary dictionary."""
+    def _create_final_summary(
+        self,
+        results: dict[str, Any],
+        tickers: list[str] | None,
+        duration_seconds: float = 0.0,
+    ) -> dict[str, Any]:
+        """Create final summary dictionary.
+
+        PipelineOrchestrator merges all stage outputs so keys come directly
+        from each stage's return dict:
+          Stage 5 → 'predictions', 'prediction_results', 'current_prices'
+          Stage 6 → 'trading_activity', 'portfolio_summary', 'signals'
+          Stage 7 → 'evaluation_summary'
+        """
+        # Stage 5: prediction_results is a dict keyed by context_id;
+        # 'predictions' is the list form — expose both for consumers.
+        prediction_results = (
+            results.get('prediction_results')
+            or {p['ticker']: p for p in results.get('predictions', []) if p.get('ticker')}
+        )
+
         return {
             'timestamp': datetime.now().isoformat(),
             'tickers': tickers,
-            'prediction_results': results.get('prediction_results', {}),
+            'prediction_results': prediction_results,
+            'predictions': results.get('predictions', []),
+            'current_prices': results.get('current_prices', {}),
             'trading_summary': results.get('portfolio_summary', {}),
-            'duration_seconds': time.time()
+            'trading_activity': results.get('trading_activity', []),
+            'execution_status': results.get('execution_status', 'stage_6_not_requested'),
+            'execution_boundary': results.get('execution_boundary', {
+                'effective_mode': 'review_only',
+                'live_execution_supported': False,
+                'portfolio_mutated': False,
+                'reason': 'Stage 6 was not requested.',
+            }),
+            'evaluation_summary': results.get('evaluation_summary', {}),
+            'duration_seconds': duration_seconds,
         }
 
     async def _save_final_results(self, final_summary: dict[str, Any]) -> Path:
@@ -111,13 +153,19 @@ class FinalStagesOrchestrator:
 
         self.logger.info(f"🏁 Starting final stages for batch: {request.batch_name}")
 
+        started_at = time.time()
+
         # 1. Build models metadata
         from src.pipeline.hybrid.results_processor import ResultsProcessor
         rp = ResultsProcessor()
         models_metadata = rp.build_models_metadata(request.colab_results or {}, request.light_results)
 
-        # 2. Run stages 5-7
-        stages_to_run = [5, 6, 7]
+        # 2. Run prediction and evaluation by default. Stage 6 is explicit.
+        _, stages_to_run = self._prepare_final_stages_params(
+            request.colab_results,
+            request.batch_name,
+            request.stages_to_run,
+        )
         results = await self._run_stages_5_to_7(
             features_df=request.features_df,
             targets_df=request.targets_df,
@@ -125,11 +173,22 @@ class FinalStagesOrchestrator:
             timeframes=request.timeframes or ['15m', '60m', '1d'],
             batch_name=request.batch_name or self.batch_name,
             stages_to_run=stages_to_run,
-            models_metadata=models_metadata
+            models_metadata=models_metadata,
+            execution_mode=request.execution_mode,
+            evaluation_notification_authorized=(
+                request.evaluation_notification_authorized
+            ),
+            news_data=request.news_data,
+            economic_data=request.economic_data,
+            market_indicators=request.market_indicators,
         )
 
         # 3. Create and save summary
-        summary = self._create_final_summary(results, request.tickers)
+        summary = self._create_final_summary(
+            results,
+            request.tickers,
+            duration_seconds=time.time() - started_at,
+        )
         saved_path = await self._save_final_results(summary)
 
         self.logger.info(f"✅ Final results saved to {saved_path}")

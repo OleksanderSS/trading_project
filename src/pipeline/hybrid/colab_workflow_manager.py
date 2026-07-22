@@ -61,4 +61,4 @@ COLAB INSTRUCTIONS:
         feats = [c for c in features_df.columns if not c.startswith('target_')]
         for m in self.light_models:
             with open(b_dir / f"selected_features_{m}.json", 'w', encoding='utf-8') as f:
-                json.dump({'model_name': m, 'selected_features': feats, 'selection_method': 'fallback'}, f, indent=2)
+                json.dump({'model_name': m, 'selected_features': feats, 'selection_method': 'fallback'}, f, indent=2, default=str)

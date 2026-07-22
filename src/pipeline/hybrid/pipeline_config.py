@@ -30,6 +30,9 @@ class FinalStagesParams:
     tickers: list[str] | None = None
     timeframes: list[str] | None = None
     batch_name: str | None = None
+    stages_to_run: list[int] | None = None
+    execution_mode: str = "review_only"
+    evaluation_notification_authorized: bool = False
 
 
 @dataclass

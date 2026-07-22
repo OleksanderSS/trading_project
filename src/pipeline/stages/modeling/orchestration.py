@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+import aiofiles
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger

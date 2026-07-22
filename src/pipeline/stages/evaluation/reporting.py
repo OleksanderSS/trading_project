@@ -46,5 +46,5 @@ def save_report(path: Path, summary: dict[str, Any]) -> None:
     with open(path, "w", encoding="utf-8") as f:
         import json
 
-        json.dump(summary, f, indent=2)
+        json.dump(summary, f, indent=2, default=str)
         f.write("\n")

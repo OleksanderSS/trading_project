@@ -30,7 +30,7 @@ async def load_stage6_results(batch_dir: Path) -> tuple[list[dict[str, Any]], li
 def save_evaluation_summary(path: Path, summary: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2)
+        json.dump(summary, f, indent=2, default=str)
 
 
 async def save_evaluation_summary_async(path: Path, summary: dict[str, Any]) -> None:

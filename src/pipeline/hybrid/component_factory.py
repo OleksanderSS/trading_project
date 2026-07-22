@@ -49,7 +49,9 @@ class OrchestratorComponentFactory:
         components = {}
 
         try:
+            from src.data.management.data_manager import DataManager
             components['data_manager'] = HybridDataManager(output_dir)
+            components['db_data_manager'] = DataManager(config_manager)
             components['feature_processor'] = FeatureProcessor()
             components['cache_manager'] = CacheManager(output_dir, batch_name)
             components['colab_manager'] = ColabManager(output_dir, batch_name)
@@ -67,7 +69,8 @@ class OrchestratorComponentFactory:
                 'output_dir': output_dir,
                 'batch_name': batch_name,
                 'light_models': config.light_models,
-                'models_config': config.models_config
+                'models_config': config.models_config,
+                'data_manager': components['db_data_manager']
             })
 
             components['colab_workflow_manager'] = ColabWorkflowManager(output_dir, batch_name, config.light_models)

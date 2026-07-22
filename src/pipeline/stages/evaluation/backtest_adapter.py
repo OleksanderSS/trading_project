@@ -75,6 +75,6 @@ async def run_backtest(backtester, signals_df) -> dict[str, Any]:
     except TypeError:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, partial(method, price_pivot, signal_pivot))
-    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+    except (ValueError, AttributeError, KeyError, ZeroDivisionError) as e:
         logger.exception(f"Backtest execution failed: {e}")
         return {}

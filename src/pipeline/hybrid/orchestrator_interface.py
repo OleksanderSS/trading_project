@@ -162,10 +162,13 @@ class OrchestratorInterface:
 
     async def run_final_stages(self, features_df: pd.DataFrame | None, targets_df: pd.DataFrame | None,
                               colab_results: dict[str, Any] | None = None,
-                              light_results: dict[str, Any] | None = None,
-                              tickers: list[str] | None = None,
-                              timeframes: list[str] | None = None,
-                              batch_name: str | None = None) -> dict[str, Any]:
+                               light_results: dict[str, Any] | None = None,
+                               tickers: list[str] | None = None,
+                               timeframes: list[str] | None = None,
+                               batch_name: str | None = None,
+                               stages_to_run: list[int] | None = None,
+                               execution_mode: str = "review_only",
+                               evaluation_notification_authorized: bool = False) -> dict[str, Any]:
         """Run final stages of the pipeline."""
         params = FinalStagesParams(
             features_df=features_df,
@@ -174,7 +177,12 @@ class OrchestratorInterface:
             light_results=light_results,
             tickers=tickers,
             timeframes=timeframes,
-            batch_name=batch_name
+            batch_name=batch_name,
+            stages_to_run=stages_to_run,
+            execution_mode=execution_mode,
+            evaluation_notification_authorized=(
+                evaluation_notification_authorized
+            ),
         )
 
         return await self.orchestrator.pipeline_manager.run_final_stages(params)

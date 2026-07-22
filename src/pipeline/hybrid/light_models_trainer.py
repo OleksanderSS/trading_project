@@ -37,6 +37,7 @@ class LightModelsTrainer:
         self.batch_name = trainer_config['batch_name']
         self.light_models = trainer_config['light_models']
         self.models_config = trainer_config['models_config']
+        self.data_manager = trainer_config.get('data_manager')
         self.logger = ProjectLogger.get_logger(__name__)
 
     async def run_light_models(self, features_df: pd.DataFrame, targets_df:
@@ -46,8 +47,10 @@ class LightModelsTrainer:
         original_config = self.config_manager.merged_config.get('models')
         self._set_temp_light_models_config()
         try:
+            # Use PipelineOrchestrator with stages_to_run=[4] using shared data_manager
+            self.logger.info("Creating new pipeline orchestrator for light models")
             orchestrator = PipelineOrchestrator(config_manager=self.
-                config_manager, stages_to_run=[4])
+                config_manager, stages_to_run=[4], data_manager=self.data_manager)
             results = await orchestrator.run(enriched_data=features_df,
                 targets_df=targets_df, tickers=tickers, run_mode='train',
                 stages_to_run=[4])

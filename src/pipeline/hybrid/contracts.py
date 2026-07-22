@@ -68,6 +68,8 @@ class HybridFinalStagesRequest:
     economic_data: pd.DataFrame | None = None
     market_indicators: pd.DataFrame | None = None
     stages_to_run: list[int] | None = None
+    execution_mode: str = "review_only"
+    evaluation_notification_authorized: bool = False
 
 
 @dataclass

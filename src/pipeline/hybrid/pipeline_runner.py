@@ -20,12 +20,13 @@ class PipelineRunner:
     """Handles pipeline execution and result management."""
 
     def __init__(self, config_manager, output_dir: str, batch_name: str,
-                 feature_processor, metadata_manager: MetadataManager):
+                 feature_processor, metadata_manager: MetadataManager, data_manager=None):
         self.config_manager = config_manager
         self.output_dir = Path(output_dir)
         self.batch_name = batch_name
         self.feature_processor = feature_processor
         self.metadata_manager = metadata_manager
+        self.data_manager = data_manager
         self.logger = ProjectLogger.get_logger(__name__)
 
     async def run_local_pipeline(self, tickers: list[str] | None = None,
@@ -66,18 +67,23 @@ class PipelineRunner:
 
     async def _run_pipeline_stages(self, tickers: list[str] | None,
                                    timeframes: list[str] | None,
-                                   stages: list[int]) -> dict[str, Any]:
+                                   stages: list[int],
+                                   enriched_data: pd.DataFrame | None = None,
+                                   targets_df: pd.DataFrame | None = None) -> dict[str, Any]:
         """Runs pipeline stages."""
         orchestrator = PipelineOrchestrator(
             config_manager=self.config_manager,
-            stages_to_run=stages
+            stages_to_run=stages,
+            data_manager=self.data_manager
         )
 
         stage_start = time.time()
         results = await orchestrator.run(
             tickers=tickers,
             timeframes=timeframes,
-            run_mode='train'
+            run_mode='train',
+            enriched_data=enriched_data,
+            targets_df=targets_df
         )
         stage_duration = time.time() - stage_start
         self.logger.info(f"Stages {stages} completed in {stage_duration:.1f}s")
@@ -108,17 +114,27 @@ class PipelineRunner:
                 results['enriched_data'] = proc_data['data']
                 results['features_df'] = proc_data['features']
                 results['targets_df'] = proc_data['targets']
+                # Save both features and targets paths so callers can load them
                 saved_files['features'] = enriched_result['paths']['features']
+                saved_files['targets'] = enriched_result['paths']['targets']
 
         return saved_files
 
-    def _save_stage_result(self, data: Any, filename: str):
-        """Save stage result to file."""
+    def _save_stage_result(self, data: Any, filename: str) -> Path:
+        """Save stage result to file. Returns path."""
         import pickle
 
         path = self.output_dir / filename
         if isinstance(data, pd.DataFrame):
+            if data.empty:
+                self.logger.warning(f"Skipping save of empty DataFrame to {filename}")
+                return path
             data.to_parquet(path, compression='snappy')
+        elif isinstance(data, dict) and 'prices' in data and isinstance(data['prices'], dict):
+            # Handle cleaned_data dict - save as pickle since it contains nested DataFrames
+            with open(path, 'wb') as f:
+                pickle.dump(data, f)
+            self.logger.info(f"Saved dict data to {filename} as pickle")
         else:
             with open(path, 'wb') as f:
                 pickle.dump(data, f)

@@ -106,7 +106,7 @@ class ProcessingStage(BaseStage):
 
         # ✅ Pass macro_data from Stage 1 (FredCollector) to Feature Engineering with cleaning
         if 'macro_data' in raw_data and isinstance(raw_data['macro_data'], __import__('pandas').DataFrame):
-            macro_df = self.data_handler.clean_and_normalize_market_data(raw_data['macro_data'])
+            macro_df = self.data_handler.clean_and_normalize_macro_data(raw_data['macro_data'])
             cleaned_data_map['macro_data'] = macro_df
 
         # Pass news data with cleaning

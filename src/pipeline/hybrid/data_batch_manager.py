@@ -115,7 +115,7 @@ class DataBatchManager:
         """Save batch metadata to file."""
         metadata_path = batch_dir / BATCH_METADATA_FILE
         with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(batch_metadata, f, indent=2)
+            json.dump(batch_metadata, f, indent=2, default=str)
         self.logger.info(f"✅ Batch metadata saved: {metadata_path}")
 
     def _save_dataframe(self, df: pd.DataFrame, path: Path) -> None:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Metrics Calculator - Financial metrics calculation for evaluation
+Evaluation Metrics Calculator - Financial metrics calculation for evaluation
 Handles calculation of professional financial metrics for portfolio evaluation.
 """
 
@@ -11,10 +11,10 @@ import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 
-logger = ProjectLogger.get_logger("MetricsCalculator")
+logger = ProjectLogger.get_logger("EvaluationMetricsCalculator")
 
 
-class MetricsCalculator:
+class EvaluationMetricsCalculator:
     """
     Financial metrics calculator for portfolio evaluation.
 
@@ -31,14 +31,14 @@ class MetricsCalculator:
 
     def __init__(self, metrics_calculator=None):
         """
-        Initialize Metrics Calculator.
+        Initialize Evaluation Metrics Calculator.
 
         Args:
             metrics_calculator: Optional PortfolioMetricsCalculator instance
         """
         self.logger = logger
         self.metrics_calculator = metrics_calculator
-        self.logger.info("✅ MetricsCalculator initialized")
+        self.logger.info("✅ EvaluationMetricsCalculator initialized")
 
     def calculate_financial_metrics(self, portfolio_history: pd.DataFrame) -> dict[str, Any]:
         """
@@ -70,8 +70,20 @@ class MetricsCalculator:
             self.logger.error(f"Error calculating financial metrics: {e}")
             return {'status': 'error', 'error': str(e)}
 
-    def _calculate_basic_metrics(self, portfolio_history: pd.DataFrame) -> dict[str, Any]:
-        """Calculate basic financial metrics manually."""
+    def _calculate_basic_metrics(
+        self,
+        portfolio_history: pd.DataFrame,
+        periods_per_year: int | None = None,
+    ) -> dict[str, Any]:
+        """Calculate basic financial metrics manually.
+
+        Args:
+            portfolio_history: Portfolio history DataFrame.
+            periods_per_year: Annualisation factor (e.g. 252 for daily,
+                1440 for 1-min intraday). When *None* the factor is inferred
+                automatically from the DatetimeIndex of portfolio_history.
+                Pass an explicit value when the index is not a DatetimeIndex.
+        """
         try:
             values = portfolio_history['total_value']
             returns = values.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan).dropna()
@@ -79,11 +91,16 @@ class MetricsCalculator:
             if len(returns) == 0:
                 return {}
 
+            # Determine annualisation factor
+            from src.algorithms.metrics_mixin import _infer_periods_per_year
+            ppy = periods_per_year if periods_per_year is not None else _infer_periods_per_year(returns)
+
             # Calculate metrics
             total_return = (values.iloc[-1] / values.iloc[0]) - 1
             volatility = returns.std()
+            risk_free_rate = 0.0
             sharpe_ratio = (
-                returns.mean() / volatility
+                ((returns.mean() - risk_free_rate) / volatility) * np.sqrt(ppy)
                 if np.isfinite(volatility) and volatility > 1e-12
                 else np.nan
             )
@@ -94,9 +111,9 @@ class MetricsCalculator:
             drawdown = (cumulative - running_max) / running_max
             max_drawdown = drawdown.min()
 
-            # Calculate CAGR
-            days = len(portfolio_history)
-            years = days / 252  # Trading days per year
+            # Calculate CAGR — use actual number of periods, not raw row count
+            n_periods = len(portfolio_history)
+            years = n_periods / ppy
             cagr = (values.iloc[-1] / values.iloc[0]) ** (1 / years) - 1 if years > 0 else 0
 
             return {
@@ -105,7 +122,8 @@ class MetricsCalculator:
                 'volatility': volatility,
                 'sharpe_ratio': sharpe_ratio,
                 'max_drawdown': max_drawdown,
-                'cagr': cagr
+                'cagr': cagr,
+                'periods_per_year_used': ppy,
             }
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
@@ -209,6 +227,10 @@ class MetricsCalculator:
 
 
 # Factory function
-def get_metrics_calculator(metrics_calculator=None) -> MetricsCalculator:
-    """Factory function to get MetricsCalculator instance."""
-    return MetricsCalculator(metrics_calculator)
+def get_evaluation_metrics_calculator(metrics_calculator=None) -> EvaluationMetricsCalculator:
+    """Factory function to get EvaluationMetricsCalculator instance."""
+    return EvaluationMetricsCalculator(metrics_calculator)
+
+
+# Backward compatibility alias
+MetricsCalculator = EvaluationMetricsCalculator

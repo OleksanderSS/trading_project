@@ -4,6 +4,7 @@ Colab Manager for Hybrid Orchestrator.
 Handles all Colab-related operations including batch preparation and result loading.
 """
 
+import hashlib
 import json
 import logging
 from dataclasses import dataclass
@@ -14,7 +15,13 @@ from typing import Any
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.features.utils.datetime_utils import ensure_datetime_column
 from src.features.validation.feature_leakage_guard import FeatureLeakageGuard
+from src.pipeline.target_column_utils import is_direct_target_column, is_target_like_column
+from src.pipeline.timeframe_lineage import (
+    normalize_timeframe,
+    partition_market_frame_by_timeframe,
+)
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -85,7 +92,7 @@ class ColabManager:
         # 5. Save metadata
         metadata_path = batch_dir / BATCH_METADATA_FILE
         with open(metadata_path, 'w') as f:
-            json.dump(metadata, f, indent=2)
+            json.dump(metadata, f, indent=2, default=str)
 
         # 6. Check feature selection
         fs_check = self._check_feature_selection(
@@ -104,11 +111,29 @@ class ColabManager:
         """Handles saving and optional accumulation of features and targets."""
         features_path = batch_dir / FEATURES_FILE
         targets_path = batch_dir / TARGETS_FILE
+        features_df = self._validate_batch_frame(
+            features_df,
+            frame_name="features",
+            requested_timeframes=config.timeframes,
+        )
+        targets_df = self._validate_batch_frame(
+            targets_df,
+            frame_name="targets",
+            requested_timeframes=config.timeframes,
+        )
 
         if config.accumulate and features_path.exists() and targets_path.exists():
             # Load existing
-            existing_f = pd.read_parquet(features_path)
-            existing_t = pd.read_parquet(targets_path)
+            existing_f = self._validate_batch_frame(
+                pd.read_parquet(features_path),
+                frame_name="existing features",
+                requested_timeframes=config.timeframes,
+            )
+            existing_t = self._validate_batch_frame(
+                pd.read_parquet(targets_path),
+                frame_name="existing targets",
+                requested_timeframes=config.timeframes,
+            )
 
             # Combine
             combined_f = pd.concat([existing_f, features_df], ignore_index=True)
@@ -138,16 +163,91 @@ class ColabManager:
         return features_path, targets_path
 
     def _deduplicate_df(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Removes duplicates based on datetime and ticker if columns exist."""
+        """Remove duplicate rows without collapsing separate timeframes."""
         subset = []
-        if 'datetime' in df.columns:
-            subset.append('datetime')
-        if 'ticker' in df.columns:
-            subset.append('ticker')
+        for column in ("datetime", "ticker", "interval"):
+            if column in df.columns:
+                subset.append(column)
 
         if subset:
             return df.drop_duplicates(subset=subset, keep='last')
         return df
+
+    def _validate_batch_frame(
+        self,
+        frame: pd.DataFrame,
+        *,
+        frame_name: str,
+        requested_timeframes: list[str],
+    ) -> pd.DataFrame:
+        """Require exact, timezone-aware row identity before Colab save."""
+        if not isinstance(frame, pd.DataFrame) or frame.empty:
+            raise ValueError(f"Colab {frame_name} frame is empty")
+        missing = [
+            column
+            for column in ("ticker", "datetime", "interval")
+            if column not in frame.columns
+        ]
+        if missing:
+            raise ValueError(
+                f"Colab {frame_name} frame is missing identity columns: "
+                + ", ".join(missing)
+            )
+
+        normalized = ensure_datetime_column(
+            frame,
+            raise_on_missing=True,
+        )
+
+        # Ensure UTC timezone if naive to prevent downstream Colab failures
+        if normalized.attrs.get("datetime_timezone_status") != "timezone_aware":
+            if getattr(normalized["datetime"].dt, "tz", None) is None:
+                normalized["datetime"] = normalized["datetime"].dt.tz_localize("UTC")
+            else:
+                normalized["datetime"] = normalized["datetime"].dt.tz_convert("UTC")
+            normalized.attrs["datetime_timezone_status"] = "timezone_aware"
+            normalized.attrs["datetime_timezone"] = "UTC"
+
+        if (
+            normalized.attrs.get("datetime_timezone_status")
+            != "timezone_aware"
+        ):
+            raise ValueError(
+                f"Colab {frame_name} datetime timezone is unresolved"
+            )
+        if normalized["datetime"].isna().any():
+            raise ValueError(
+                f"Colab {frame_name} contains invalid datetime values"
+            )
+
+        requested = {
+            normalize_timeframe(value)
+            for value in requested_timeframes
+            if normalize_timeframe(value)
+        }
+        observed = {
+            normalize_timeframe(value)
+            for value in normalized["interval"].dropna().unique()
+            if normalize_timeframe(value)
+        }
+        if not observed:
+            raise ValueError(
+                f"Colab {frame_name} has no valid interval values"
+            )
+        unexpected = sorted(observed - requested) if requested else []
+        if unexpected:
+            raise ValueError(
+                f"Colab {frame_name} contains unrequested timeframes: "
+                + ", ".join(unexpected)
+            )
+
+        normalized["interval"] = normalized["interval"].map(
+            normalize_timeframe
+        )
+        partition_market_frame_by_timeframe(
+            normalized[["ticker", "datetime", "interval"]]
+        )
+        return normalized
 
     def _check_feature_leakage(self, features_df: pd.DataFrame, targets_df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -157,9 +257,17 @@ class ColabManager:
         """
         try:
             guard = FeatureLeakageGuard(block_on_forbidden=False)  # warn only, don't raise
+            target_like_feature_cols = [c for c in features_df.columns if is_target_like_column(c)]
+            if target_like_feature_cols:
+                logger.warning(
+                    "[LeakageGuard] Removing %s target-like feature column(s): %s",
+                    len(target_like_feature_cols),
+                    target_like_feature_cols[:5],
+                )
+                features_df = features_df.drop(columns=target_like_feature_cols, errors='ignore')
 
             # Build combined df with both features and targets for correlation check
-            target_cols = [c for c in targets_df.columns if c.startswith('target_')]
+            target_cols = [c for c in targets_df.columns if is_direct_target_column(c)]
             combined = pd.concat([features_df, targets_df[target_cols]], axis=1) if target_cols else features_df
 
             report = guard.check(combined, target_cols=target_cols if target_cols else None)
@@ -228,8 +336,34 @@ class ColabManager:
                 'features': str(f_path),
                 'targets': str(t_path),
                 'config': str(c_path) if c_path else None
-            }
+            },
+            'lineage': {
+                'features_sha256': self._sha256(f_path),
+                'targets_sha256': self._sha256(t_path),
+                'identity_columns': [
+                    'ticker',
+                    'datetime',
+                    'interval',
+                ],
+                'feature_interval_counts': {
+                    str(key): int(value)
+                    for key, value in f_df['interval']
+                    .value_counts()
+                    .sort_index()
+                    .items()
+                },
+                'datetime_timezone': str(f_df['datetime'].dt.tz),
+                'datetime_timezone_status': 'timezone_aware',
+            },
         }
+
+    @staticmethod
+    def _sha256(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(block)
+        return digest.hexdigest()
 
     def _assemble_preparation_result(self, batch_dir: Path, name: str, meta_path: Path,
                                     metadata: dict[str, Any], fs_check: dict[str, Any],
@@ -337,7 +471,7 @@ class ColabManager:
 
         config_path = batch_dir / "config.json"
         with open(config_path, 'w') as f:
-            json.dump(config_data, f, indent=2)
+            json.dump(config_data, f, indent=2, default=str)
 
         self.logger.info(f"🧪 Test mode config created: {config.test_ticker} | {config.test_target} | epochs={config.epochs}")
         return config_path

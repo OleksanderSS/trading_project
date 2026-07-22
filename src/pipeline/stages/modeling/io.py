@@ -128,7 +128,8 @@ def save_light_models_results(stage, ticker: str, target_name: str, light_models
                 'selected_features': info.get('selected_features', [])[:10],
                 'market_regime': info.get('market_regime', 'unknown'),
                 'timestamp': info.get('timestamp', ''),
-                'model_category': 'light'
+                'model_category': 'light',
+                'pipeline_control_metric_artifacts': info.get('pipeline_control_metric_artifacts', {})
             }
 
         ticker_data[target_name] = target_data

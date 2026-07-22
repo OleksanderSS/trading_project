@@ -90,7 +90,7 @@ class PipelineExecutor:
             data.to_parquet(path)
         elif isinstance(data, dict):
             with open(path.with_suffix('.json'), 'w') as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, default=str)
         else:
             with open(path, 'wb') as f:
                 pickle.dump(data, f)

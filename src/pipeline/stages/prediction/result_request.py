@@ -17,3 +17,4 @@ class PredictionResultRequest:
     ticker_df_clean: pd.DataFrame
     meta: dict[str, Any]
     shap_explanations: dict[str, Any] | None = None
+    model_output_contract: dict[str, Any] | None = None

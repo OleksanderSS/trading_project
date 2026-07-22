@@ -18,25 +18,33 @@ class CollectionManager:
         logger.info(f'Initialized CollectionManager with {len(self.collectors)} collectors.')
 
     async def fetch_all(self, tickers: list[str], keywords: list[str]) -> dict[str, pd.DataFrame]:
-        """Executes all collectors and aggregates results."""
+        """Executes all collectors concurrently and aggregates results."""
+        import asyncio
         raw_data = {}
-        for collector in self.collectors:
+        
+        async def fetch_single(collector):
             try:
                 result = await self._run_collector(collector, tickers, keywords)
                 if result is None:
-                    continue
-
+                    return None
                 df = self._convert_to_dataframe(result)
                 if df is not None and not df.empty:
                     table_name = f"{collector.__class__.__name__.lower().replace('collector', '')}_data"
-                    raw_data[table_name] = df
                     logger.info(f'✅ Collected {len(df)} rows from {collector.__class__.__name__}')
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                    return table_name, df
+            except Exception as e:
                 logger.exception(f'❌ Collector {collector.__class__.__name__} failed: {e}')
-                # Re-raising or handling depends on whether we want to fail the whole stage or just skip
-                # Given current requirement to fix "silent" errors, we should at least log properly or raise if critical.
-                # For now, let's keep it skipping but with better diagnostic log.
-                continue
+            return None
+
+        # Запускаємо всі колектори паралельно
+        tasks = [fetch_single(col) for col in self.collectors]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for res in results:
+            if isinstance(res, tuple):
+                table_name, df = res
+                raw_data[table_name] = df
+                
         return raw_data
 
     async def _run_collector(self, collector: Any, tickers: list[str], keywords: list[str]) -> Any:

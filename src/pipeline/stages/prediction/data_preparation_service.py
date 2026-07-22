@@ -11,6 +11,10 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.stages.prediction.lineage import (
+    apply_lineage_attrs,
+    source_lineage_attrs,
+)
 
 
 class DataPreparationService:
@@ -110,6 +114,7 @@ class DataPreparationService:
             return None
 
         ticker_df_clean = ticker_df.copy()
+        lineage_attrs = source_lineage_attrs(ticker_df_clean)
 
         # Preserve context columns before numeric conversion
         preserved_cols = [
@@ -149,7 +154,7 @@ class DataPreparationService:
         for c in preserved_data.columns:
             ticker_df_clean[c] = preserved_data[c]
 
-        return ticker_df_clean
+        return apply_lineage_attrs(ticker_df_clean, lineage_attrs)
 
     def prepare_context_data(
         self,
@@ -178,6 +183,7 @@ class DataPreparationService:
         ticker_df_clean = self.prepare_ticker_data(features_df, ticker)
         if ticker_df_clean is None:
             return None
+        lineage_attrs = dict(ticker_df_clean.attrs)
 
         # Preserve critical context columns before filtering
         context_cols = [
@@ -192,6 +198,10 @@ class DataPreparationService:
         ].copy()
 
         selected_features = meta.get('selected_features', [])
+        
+        # Robustly exclude any remaining metadata columns like 'hash' from being expected
+        metadata_cols = {'ticker', 'datetime', 'date', 'interval', 'timeframe', 'hash', 'symbol'}
+        selected_features = [f for f in selected_features if f not in metadata_cols]
 
         # Check for missing features
         missing_features = [f for f in selected_features if f not in ticker_df_clean.columns]
@@ -222,7 +232,13 @@ class DataPreparationService:
         for c in context_data.columns:
             ticker_df_clean_features[c] = context_data.reindex(ticker_df_clean_features.index)[c]
 
-        return ticker_df_clean_features, selected_features
+        return (
+            apply_lineage_attrs(
+                ticker_df_clean_features,
+                lineage_attrs,
+            ),
+            selected_features,
+        )
 
     def _drop_incomplete_model_rows(
         self,
@@ -241,15 +257,20 @@ class DataPreparationService:
         dropped = int((~complete_rows).sum())
         self.logger.warning(
             f'Context {context_id} has {dropped} incomplete feature row(s); '
-            'dropping them instead of filling missing model inputs with zeros.'
+            'filling missing values with zeros instead of dropping rows.'
         )
-        filtered = ticker_df.loc[complete_rows].copy()
-        if filtered.empty:
+        # Fill missing values with zeros instead of dropping rows
+        ticker_df = ticker_df.copy()
+        ticker_df[model_feature_cols] = ticker_df[model_feature_cols].fillna(0)
+
+        # Add validation to ensure we have data after filling
+        if ticker_df.empty:
             self.logger.error(
-                f'Context {context_id} has no complete rows after missing-feature filtering; skipping prediction.'
+                f'Context {context_id} has no data after filling missing values; skipping prediction.'
             )
             return None
-        return filtered
+
+        return ticker_df
 
     def create_context_fingerprint(
         self,
