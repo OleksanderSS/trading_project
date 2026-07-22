@@ -101,6 +101,10 @@ mlflow.db
 reports/**/*.log
 reports/dean_os/
 
+# Local backup archives (duplicate content already cleaned from root — see git history)
+/.archive_docs/
+/.archive_temp/
+
 # Static analysis caches
 .mypy_cache/
 .ruff_cache/
