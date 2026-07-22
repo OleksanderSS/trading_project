@@ -6,6 +6,7 @@ import numpy as np
 
 from src.core.logging.logger import ProjectLogger
 from src.models.neural.base_neural import BaseNeuralModel, _get_tf
+from src.models.neural.sequence_builder import SequenceBuilder
 
 
 class LSTMModel(BaseNeuralModel):
@@ -14,10 +15,11 @@ class LSTMModel(BaseNeuralModel):
     This model is designed for sequence prediction tasks and follows the BaseNeuralModel interface.
     """
 
-    def __init__(self, task_type: str = "regression", epochs: int = 50, batch_size: int = 32, random_state: int = 42):
+    def __init__(self, task_type: str = "regression", epochs: int = 50, batch_size: int = 32, random_state: int = 42, sequence_builder: SequenceBuilder | None = None):
         super().__init__(model_type="lstm", task_type=task_type, random_state=random_state)
         self.epochs = epochs
         self.batch_size = batch_size
+        self.sequence_builder = sequence_builder or SequenceBuilder(strategy='sliding_window')
         self.logger = ProjectLogger.get_logger("LSTMModel")
 
     @property
@@ -66,12 +68,27 @@ class LSTMModel(BaseNeuralModel):
     def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> dict[str, Any]:
         """
         Trains the LSTM model.
+        
+        Args:
+            X: Input data (2D or 3D). If 2D, will be converted to sequences using sequence_builder.
+            y: Target data
+            **kwargs: Additional arguments including window_size, step_size for sequence building
+            
+        Returns:
+            Training metrics
         """
         self.logger.info(f"Starting training for {self.name}...")
 
-        # Reshape data if it's 2D
+        # Build sequences if input is 2D
         if len(X.shape) == 2:
-            X = np.reshape(X, (X.shape[0], X.shape[1], 1))
+            window_size = kwargs.get('window_size', 10)
+            step_size = kwargs.get('step_size', 1)
+            X = self.sequence_builder.build_sequences(X, window_size=window_size, step_size=step_size)
+            # Adjust y to match sequence length
+            if len(y) > len(X):
+                y = y[-len(X):]
+            elif len(y) < len(X):
+                raise ValueError(f"Target length ({len(y)}) is insufficient for {len(X)} sequences")
 
         # Перетворення в числові типи для Keras
         X = X.astype(np.float32)
@@ -79,15 +96,25 @@ class LSTMModel(BaseNeuralModel):
 
         return super().train(X, y, **kwargs)
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, **kwargs) -> np.ndarray:
         """
         Makes predictions with the trained LSTM model.
+        
+        Args:
+            X: Input data (2D or 3D). If 2D, will be converted to sequences using sequence_builder.
+            **kwargs: Additional arguments including window_size, step_size for sequence building
+            
+        Returns:
+            Predictions
         """
         if not self.is_trained or self.model is None:
             raise ValueError("Model must be trained before prediction.")
 
+        # Build sequences if input is 2D
         if len(X.shape) == 2:
-            X = np.reshape(X, (X.shape[0], X.shape[1], 1))
+            window_size = kwargs.get('window_size', 10)
+            step_size = kwargs.get('step_size', 1)
+            X = self.sequence_builder.build_sequences(X, window_size=window_size, step_size=step_size)
 
         # Перетворення в числовий тип для Keras
         X = X.astype(np.float32)

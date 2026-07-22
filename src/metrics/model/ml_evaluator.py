@@ -55,6 +55,11 @@ class MLEvaluator(BaseMetricCalculator):
         if not self.validate_input(y_true) or not self.validate_input(y_pred):
             return {}
         y_true, y_pred = np.asarray(y_true), np.asarray(y_pred)
+        # Handle different dimensions - squeeze to 1D if needed
+        if y_true.ndim > 1 and y_true.shape[1] == 1:
+            y_true = y_true.squeeze()
+        if y_pred.ndim > 1 and y_pred.shape[1] == 1:
+            y_pred = y_pred.squeeze()
         mask = ~np.isnan(y_true) & ~np.isnan(y_pred) & np.isfinite(y_true
             ) & np.isfinite(y_pred)
         y_true, y_pred = y_true[mask], y_pred[mask]
@@ -67,7 +72,8 @@ class MLEvaluator(BaseMetricCalculator):
         if task_type == 'regression':
             return self.calculate_regression_metrics(y_true, y_pred)
         elif task_type == 'classification':
-            return self.calculate_classification_metrics(y_true, y_pred)
+            y_prob = kwargs.get('y_prob')
+            return self.calculate_classification_metrics(y_true, y_pred, y_prob)
         elif task_type == 'probabilistic':
             y_prob = kwargs.get('y_prob')
             return self._calculate_probabilistic_metrics(y_true, y_pred, y_prob

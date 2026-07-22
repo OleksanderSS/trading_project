@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
 from src.core.logging.logger import ProjectLogger
-from src.models.model_selector.fingerprint_selector import SmartModelSelector as FingerprintModelSelector
+from src.models.model_selector.fingerprint_selector import FingerprintModelSelector
 
 if TYPE_CHECKING:
     from src.analytics.arena.arena_battle import TradingModelArena
@@ -290,7 +290,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
         self.leaderboard_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             with open(self.leaderboard_path, 'w') as f:
-                json.dump(self.arena_leaderboard, f, indent=2)
+                json.dump(self.arena_leaderboard, f, indent=2, default=str)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f'Failed to save leaderboard: {e}')
 
@@ -361,7 +361,7 @@ class AdaptiveModelSelector(FingerprintModelSelector):
             json.dump({'selection_history': self.selection_history,
                 'performance_tracker': {k: v[-100:] for k, v in self.
                 performance_tracker.items()}, 'exported_at': datetime.now()
-                .isoformat()}, f, indent=2)
+                .isoformat()}, f, indent=2, default=str)
         logger.info(f'Exported history to {filepath}')
 
     def get_model_performance(self, model_id: str) ->dict[str, Any]:

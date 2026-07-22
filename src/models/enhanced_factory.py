@@ -4,7 +4,7 @@ Enhanced Model Factory with Prototype Support
 Extends ModelFactory with prototype pattern for fast model cloning and metadata management.
 """
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
@@ -39,8 +39,8 @@ class EnhancedModelFactory(ModelFactory):
         model = factory.get_model("catboost", iterations=100)
     """
 
-    _PROTOTYPES: dict[str, ModelPrototype] = {}
-    _REGISTRY: PrototypeRegistry | None = None
+    _PROTOTYPES: ClassVar[dict[str, ModelPrototype]] = {}
+    _REGISTRY: ClassVar[PrototypeRegistry | None] = None
 
     @classmethod
     def initialize_registry(cls, registry_path: str = "data/prototypes/registry.json"):

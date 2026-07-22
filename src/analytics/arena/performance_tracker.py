@@ -53,11 +53,12 @@ class LeaderboardEntry:
 class ModelPerformanceTracker:
     """Трекер продуктивності моделей"""
 
-    def __init__(self):
+    def __init__(self, live_ensemble=None):
         self.performance_history: list[ModelPerformanceRecord] = []
         self.model_stats: dict[str, dict] = defaultdict(dict)
         self.leaderboard: list[LeaderboardEntry] = []
         self.battle_results: list[dict] = []
+        self.live_ensemble = live_ensemble
         self._initialize_model_stats()
         logger.info('[TRACKER] Model Performance Tracker initialized')
 
@@ -116,8 +117,9 @@ class ModelPerformanceTracker:
         Any], battle_id: int, opponent: str, result: str):
         """Запис продуктивності окремої моделі"""
         try:
+            model_type = self.model_stats[model_name]['model_type']
             record = ModelPerformanceRecord(model_name=model_name,
-                model_type=self.model_stats[model_name]['model_type'],
+                model_type=model_type,
                 timestamp=datetime.now(), accuracy=metrics.get('accuracy',
                 0.0), precision=metrics.get('precision', 0.0), recall=
                 metrics.get('recall', 0.0), f1_score=metrics.get('f1_score',
@@ -142,6 +144,23 @@ class ModelPerformanceTracker:
                 stats['win_rates'] = stats['win_rates'][-100:]
                 stats['confidence_scores'] = stats['confidence_scores'][-100:]
                 stats['execution_times'] = stats['execution_times'][-100:]
+
+            # Forward metrics to LiveAdaptiveEnsemble if available
+            if self.live_ensemble:
+                try:
+                    self.live_ensemble.record_model_performance(
+                        model_id=model_name,
+                        model_type=model_type,
+                        sharpe_ratio=metrics.get('sharpe_ratio', 0.0),
+                        hit_rate=metrics.get('accuracy', 0.0),  # accuracy as hit rate
+                        precision=metrics.get('precision', 0.0),
+                        recall=metrics.get('recall', 0.0),
+                        avg_return=metrics.get('win_rate', 0.0),  # Using win_rate as a proxy
+                        max_consecutive_losses=0,  # Placeholder, calculate if needed
+                        predictions_count=1
+                    )
+                except Exception as e:
+                    logger.warning(f'[TRACKER] Failed to forward metrics to live ensemble: {e}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
             logger.exception(f'[TRACKER] Failed to record model performance for {model_name}')
 
@@ -356,7 +375,7 @@ class ModelPerformanceTracker:
                     return obj
             data = convert_datetime(data)
             with open(filepath, 'w') as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, default=str)
             logger.info(f'[TRACKER] Performance data saved to {filepath}')
             return True
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
@@ -408,9 +427,12 @@ class ModelPerformanceTracker:
             return False
 
 
-def get_performance_tracker() ->ModelPerformanceTracker:
+def get_performance_tracker(live_ensemble=None) ->ModelPerformanceTracker:
     """Отримати глобальний трекер продуктивності"""
     global _performance_tracker
     if '_performance_tracker' not in globals():
-        _performance_tracker = ModelPerformanceTracker()
+        _performance_tracker = ModelPerformanceTracker(live_ensemble=live_ensemble)
+    elif live_ensemble is not None and _performance_tracker.live_ensemble is None:
+        # If live_ensemble wasn't set before, set it now
+        _performance_tracker.live_ensemble = live_ensemble
     return _performance_tracker

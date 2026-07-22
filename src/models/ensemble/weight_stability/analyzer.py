@@ -63,19 +63,19 @@ class WeightStabilityAnalyzer:
 
             recommendations = []
             overall_stability = metrics.get('overall_stability', 1.0)
-            
+
             # Aggregate all stability checks
             recommendations.extend(self._check_stability_score(overall_stability))
             recommendations.extend(self._check_volatility(metrics))
             recommendations.extend(self._check_drift(metrics))
             recommendations.extend(self._check_consistency(metrics))
             recommendations.extend(self._check_excessive_changes(excessive_changes))
-            
+
             if not recommendations:
                 return ["✅ SYSTEM STABLE: Weight stability is within acceptable parameters."]
-                
+
             return recommendations
-            
+
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error generating recommendations: {e}")
             return [f"❌ ERROR: Failed to generate stability recommendations: {str(e)}"]

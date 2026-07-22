@@ -7,7 +7,7 @@ Moved from src/integration/ and cleaned of synthetic fallback logic.
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from src.core.logging.logger import ProjectLogger
 
@@ -35,7 +35,7 @@ class EnsembleSelector:
     by operating at a higher level — choosing which ensemble *strategy* to use.
     """
 
-    _METHODS: dict[str, dict[str, Any]] = {
+    _METHODS: ClassVar[dict[str, dict[str, Any]]] = {
         "live_adaptive": {
             "class_path": "src.trading.live_adaptive_ensemble.LiveAdaptiveEnsemble",
             "strengths": {"real_time_adaptation", "performance_tracking", "regime_aware"},

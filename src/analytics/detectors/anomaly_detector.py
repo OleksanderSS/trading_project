@@ -79,6 +79,37 @@ class AnomalyDetector:
         logger.info(f"Detected {anomaly_flags.sum()} anomalies out of {len(anomaly_flags)} records.")
         return pd.Series(anomaly_flags, index=features.index)
 
+    def score_anomaly_strength(self, features: pd.DataFrame) -> pd.Series:
+        """
+        Returns a continuous anomaly strength score in [0, 1].
+        0 = completely normal, 1 = extreme anomaly.
+
+        Uses Isolation Forest's decision_function which returns
+        negative values for anomalies and positive for normal data.
+        """
+        if not self._is_fitted:
+            logger.warning("Isolation Forest has not been trained. Returning zero scores.")
+            return pd.Series(0.0, index=features.index, dtype=float)
+
+        numeric_features = features.select_dtypes(include=[np.number])
+        if numeric_features.empty:
+            return pd.Series(0.0, index=features.index, dtype=float)
+
+        numeric_features = numeric_features.reindex(columns=self.feature_columns)
+        prediction_features = self._impute_with_training_medians(numeric_features)
+
+        # decision_function returns: positive = normal, negative = anomaly
+        raw_scores = self.isolation_forest.decision_function(prediction_features)
+
+        # Convert to [0, 1] where 1 = strong anomaly, 0 = normal
+        # Clamp negative scores to [0, max_abs], then normalise
+        anomaly_scores = np.clip(-raw_scores, 0, None)
+        max_score = anomaly_scores.max()
+        if max_score > 0:
+            anomaly_scores = anomaly_scores / max_score
+
+        return pd.Series(anomaly_scores, index=features.index, dtype=float)
+
     def _impute_with_training_medians(self, numeric_features: pd.DataFrame) -> pd.DataFrame:
         imputed = numeric_features.copy()
         for column in imputed.columns:
@@ -91,14 +122,20 @@ class AnomalyDetector:
     @staticmethod
     def calculate_anomaly_impact_weights(anomaly_flags: pd.Series,
                                          base_weights: pd.Series | None = None,
-                                         reduction_factor: float = 0.5) -> pd.Series:
+                                         reduction_factor: float = 0.5,
+                                         anomaly_scores: pd.Series | None = None) -> pd.Series:
         """
         Calculates signal weights, reducing them during anomalous periods.
 
+        If anomaly_scores (continuous, [0,1]) are provided, the reduction is
+        proportional to the anomaly strength instead of a flat binary cut.
+
         Args:
-            anomaly_flags (pd.Series): Binary flags where 1 indicates an anomaly.
-            base_weights (pd.Series, optional): A series of base weights to modify. Defaults to 1.0.
-            reduction_factor (float): The factor by which to reduce weights during anomalies (e.g., 0.5 for 50% reduction).
+            anomaly_flags: Binary flags where 1 indicates an anomaly.
+            base_weights: A series of base weights to modify. Defaults to 1.0.
+            reduction_factor: The factor by which to reduce weights during anomalies
+                              (used as the floor when continuous scores are available).
+            anomaly_scores: Optional continuous anomaly strength in [0, 1].
 
         Returns:
             pd.Series: The adjusted weights.
@@ -110,7 +147,20 @@ class AnomalyDetector:
             base_weights = base_weights.reindex(anomaly_flags.index, fill_value=1.0)
 
         anomaly_weights = base_weights.copy()
-        anomaly_weights[anomaly_flags == 1] *= reduction_factor
 
-        logger.info(f"Reduced weights for {int(anomaly_flags.sum())} anomalous periods.")
+        if anomaly_scores is not None:
+            # Continuous reduction: stronger anomaly -> bigger penalty
+            # weight_multiplier goes from 1.0 (score=0) to reduction_factor (score=1)
+            weight_multiplier = 1.0 - anomaly_scores * (1.0 - reduction_factor)
+            anomaly_weights *= weight_multiplier
+            n_affected = int((anomaly_scores > 0.01).sum())
+            logger.info(
+                f"Applied continuous anomaly reduction to {n_affected} periods "
+                f"(max reduction: {(1 - weight_multiplier.min()) * 100:.1f}%)"
+            )
+        else:
+            # Legacy binary mode
+            anomaly_weights[anomaly_flags == 1] *= reduction_factor
+            logger.info(f"Reduced weights for {int(anomaly_flags.sum())} anomalous periods.")
+
         return anomaly_weights

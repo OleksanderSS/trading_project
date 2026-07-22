@@ -248,7 +248,7 @@ class DynamicWeightCalculator:
 
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
         with open(filepath, 'w') as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=2, default=str)
 
         self.logger.info(f"Exported weights to {filepath}")
 

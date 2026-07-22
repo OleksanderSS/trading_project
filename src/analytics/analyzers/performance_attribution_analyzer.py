@@ -100,25 +100,36 @@ class PerformanceAttributionAnalyzer(IAnalyzer):
         bench_total = (1 + bench_returns).prod() - 1
         observation_days = len(shared_index)
 
-        port_annual = (1 + port_total) ** (252 / observation_days) - 1
-        bench_annual = (1 + bench_total) ** (252 / observation_days) - 1
+        # Infer annualisation factor from the actual bar frequency.
+        from src.algorithms.metrics_mixin import _infer_periods_per_year
+        ppy = _infer_periods_per_year(port_returns)
 
-        port_vol = port_returns.std() * np.sqrt(252)
-        const_rf_daily = 0.02 / 252
+        port_annual = (1 + port_total) ** (ppy / observation_days) - 1
+        bench_annual = (1 + bench_total) ** (ppy / observation_days) - 1
+
+        port_vol = port_returns.std() * np.sqrt(ppy)
+        const_rf_daily = 0.02 / ppy
 
         # Avoid division by zero
         port_std = port_returns.std()
-        port_sharpe = ((port_returns.mean() - const_rf_daily) / port_std * np.sqrt(252)) if port_std > 0 else 0.0
+        port_sharpe = ((port_returns.mean() - const_rf_daily) / port_std * np.sqrt(ppy)) if port_std > 0 else 0.0
 
         port_nav = (1 + port_returns).cumprod()
         port_ath = port_nav.expanding().max()
         port_max_dd = ((port_nav - port_ath) / port_ath).min()
 
-        # Beta calculation
-        covar = np.cov(port_returns.values.flatten(), bench_returns.values.flatten())
-        covariance = covar[0, 1]
-        bench_variance = np.var(bench_returns.values.flatten())
-        realized_beta = float(covariance / bench_variance) if bench_variance > 0 else 1.0
+        # Beta calculation — drop NaN rows before computing covariance
+        # to avoid silently returning NaN beta on dates with missing values.
+        combined = pd.DataFrame(
+            {'p': port_returns, 'b': bench_returns}
+        ).dropna()
+        if len(combined) < 2:
+            realized_beta = 1.0
+        else:
+            covar = np.cov(combined['p'].values, combined['b'].values)
+            covariance = covar[0, 1]
+            bench_variance = np.var(combined['b'].values)
+            realized_beta = float(covariance / bench_variance) if bench_variance > 0 else 1.0
 
         realized_alpha = port_annual - (0.02 + realized_beta * (bench_annual - 0.02))
 

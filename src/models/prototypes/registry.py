@@ -161,7 +161,7 @@ class PrototypeRegistry:
 
         try:
             with open(self.registry_path, "w") as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, default=str)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f"💾 Registry saved: {len(data)} prototypes")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:

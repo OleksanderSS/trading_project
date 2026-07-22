@@ -30,10 +30,10 @@ class LinearRegressionBaseline(BaseBaseline):
                     'insufficient_data'}
             # Leakage protection: drop target columns early
             X_clean = features_df.drop(columns=[c for c in features_df.columns if str(c).startswith('target_')], errors='ignore')
-            
+
             # Safe imputation to avoid look-ahead bias
             X = X_clean.select_dtypes(include=[np.number]).fillna(0)
-            
+
             if len(X.columns) == 0:
                 return {'model_type': 'linear_regression', 'status':
                     'no_numeric_features'}
@@ -67,10 +67,10 @@ class SimpleRandomForestBaseline(BaseBaseline):
                     'insufficient_data'}
             # Leakage protection: drop target columns early
             X_clean = features_df.drop(columns=[c for c in features_df.columns if str(c).startswith('target_')], errors='ignore')
-            
+
             # Safe imputation to avoid look-ahead bias
             X = X_clean.select_dtypes(include=[np.number]).fillna(0)
-            
+
             if len(X.columns) == 0:
                 return {'model_type': 'random_forest_simple', 'status':
                     'no_numeric_features'}

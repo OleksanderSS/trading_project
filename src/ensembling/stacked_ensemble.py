@@ -6,9 +6,11 @@ from typing import Any, NamedTuple
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Ridge
+import xgboost as xgb
 
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.utils.artifact_security import resolve_trusted_artifact_path
+from src.analytics.context.dynamic_router import DynamicRouter
 
 logger = getLogger(__name__)
 
@@ -34,16 +36,20 @@ class StackedEnsemble:
     def __init__(self, meta_model=None, config_manager=None, method='stacked', weighting_metric='r2'):
         """
         Args:
-            meta_model: Meta-learner for stacked method (default: Ridge)
+            meta_model: Meta-learner for stacked method (default: XGBRegressor)
             config_manager: Configuration manager
             method: Ensemble method ('stacked', 'weighted_average', 'median', 'voting')
             weighting_metric: Metric for weighted_average ('r2', 'rmse', 'mape', 'equal')
         """
-        self.meta_model = meta_model or Ridge(alpha=1.0)
+        self.meta_model = meta_model or xgb.XGBRegressor(
+            n_estimators=100, max_depth=3, learning_rate=0.05, 
+            objective='reg:squarederror', random_state=42
+        )
         self.config_manager = config_manager
         self.method = method
         self.weighting_metric = weighting_metric
         self.diary_engine = DiaryEngine()
+        self.dynamic_router = DynamicRouter()
         self.is_trained = False
         self.feature_names = []
         self.model_metrics = {}  # Store model metrics for weighted_average method
@@ -84,7 +90,7 @@ class StackedEnsemble:
         Returns:
             EnsembleResult with predictions, confidence, divergence, weights, and stats
         """
-        if not self.is_trained:
+        if not self.is_trained and self.method != 'stacked':
             logger.warning("[StackedEnsemble] Model not trained. Returning simple average.")
             simple_avg = X.mean(axis=1).to_numpy()
             return EnsembleResult(
@@ -94,6 +100,10 @@ class StackedEnsemble:
                 active_weights={m: 1.0/len(X.columns) for m in X.columns},
                 stats={"trained": False, "method": "fallback"}
             )
+            
+        # If stacked but not trained, we can just use equal base weights and STILL apply the router!
+        if not self.is_trained and not self.feature_names:
+            self.feature_names = X.columns.tolist()
 
         # Route to appropriate method
         if self.method == 'stacked':
@@ -118,10 +128,23 @@ class StackedEnsemble:
 
         # 1. Retrieve Recent Live Performance from Experience Diary
         contextual_weights = self.diary_engine.get_contextual_model_weights(context_fingerprint)
+        
+        # Get Routing Multipliers from DynamicRouter
+        routing_multipliers = {}
+        if context_params:
+            # We need to construct dummy model_predictions dict for router
+            dummy_preds = {m: 1.0 for m in self.feature_names}
+            routing_multipliers = self.dynamic_router.adjust_weights(dummy_preds, context_params)
 
         # 2. Dynamically Adjust Weights
-        # Get base weights from meta-model (Ridge coefficients)
-        base_weights = self.meta_model.coef_
+        # Get base weights from meta-model (XGBoost feature importances or fallback to equal weights)
+        if self.is_trained and hasattr(self.meta_model, 'feature_importances_'):
+            base_weights = self.meta_model.feature_importances_
+        elif self.is_trained and hasattr(self.meta_model, 'coef_'):
+            base_weights = self.meta_model.coef_
+        else:
+            base_weights = np.ones(len(self.feature_names)) / max(1, len(self.feature_names))
+            
         adjusted_weights = np.array(base_weights, copy=True)
 
         active_weights_map = {}
@@ -129,16 +152,20 @@ class StackedEnsemble:
         for i, model_name in enumerate(self.feature_names):
             # Use contextual weight if available
             contextual_weight = contextual_weights.get(model_name, 1.0)
+            
+            # Apply dynamic routing multiplier (e.g. 0.0 for weekly_return in sharp_drop)
+            route_mult = routing_multipliers.get(model_name, 1.0)
+            final_context_weight = contextual_weight * route_mult
 
             # Logic 3: Apply contextual weighting
-            adjusted_weights[i] *= contextual_weight
+            adjusted_weights[i] *= final_context_weight
 
-            if contextual_weight < 0.5:
+            if final_context_weight < 0.5:
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Contextual weight {contextual_weight:.2f}")
-            elif contextual_weight > 1.5:
+                    logger.debug(f"[StackedEnsemble] Penalizing {model_name}: Final context weight {final_context_weight:.2f}")
+            elif final_context_weight > 1.5:
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"[StackedEnsemble] Boosting {model_name}: Contextual weight {contextual_weight:.2f}")
+                    logger.debug(f"[StackedEnsemble] Boosting {model_name}: Final context weight {final_context_weight:.2f}")
 
             active_weights_map[model_name] = float(adjusted_weights[i])
 
@@ -161,11 +188,13 @@ class StackedEnsemble:
         final_confidence = np.full(len(X), base_confidence)
 
         # Identify extreme disagreement (e.g., some models say +1, others say -1)
-        extreme_mask = divergence > 0.7
+        # Adaptive Threshold: instead of hardcoded 0.7, use dynamic threshold based on data dispersion
+        dynamic_threshold = max(0.5, min(1.5, np.mean(divergence) + 1.5 * np.std(divergence)))
+        extreme_mask = divergence > dynamic_threshold
         final_confidence[extreme_mask] *= 0.3
 
         if np.any(extreme_mask):
-            logger.info(f"[StackedEnsemble] High divergence detected in {np.sum(extreme_mask)} samples. Lowering confidence.")
+            logger.info(f"[StackedEnsemble] High divergence detected (threshold > {dynamic_threshold:.2f}) in {np.sum(extreme_mask)} samples. Lowering confidence.")
 
         return EnsembleResult(
             final_signal=final_preds,
@@ -213,7 +242,8 @@ class StackedEnsemble:
         # Confidence based on agreement
         base_confidence = 0.8
         final_confidence = np.full(len(X), base_confidence)
-        extreme_mask = divergence > 0.7
+        dynamic_threshold = max(0.5, min(1.5, np.mean(divergence) + 1.5 * np.std(divergence)))
+        extreme_mask = divergence > dynamic_threshold
         final_confidence[extreme_mask] *= 0.3
 
         active_weights_map = {m: float(w) for m, w in zip(self.feature_names, weights, strict=False)}
@@ -243,7 +273,8 @@ class StackedEnsemble:
         # Confidence based on agreement
         base_confidence = 0.75
         final_confidence = np.full(len(X), base_confidence)
-        extreme_mask = divergence > 0.7
+        dynamic_threshold = max(0.5, min(1.5, np.mean(divergence) + 1.5 * np.std(divergence)))
+        extreme_mask = divergence > dynamic_threshold
         final_confidence[extreme_mask] *= 0.4
 
         logger.info(f"[StackedEnsemble] Median ensemble with {len(self.feature_names)} models")
@@ -468,9 +499,9 @@ def _apply_divergence_penalty(signal: np.ndarray, divergence: np.ndarray, diverg
     return signal
 
 def _apply_smoothing(signal: np.ndarray, rolling_window: int | None, fill_na: float) -> np.ndarray:
-    """Apply rolling window smoothing if specified."""
+    """Apply exponential moving average (EMA) smoothing if specified."""
     if rolling_window and rolling_window > 1:
-        return pd.Series(signal).ffill().fillna(fill_na).rolling(rolling_window, min_periods=1).mean().to_numpy()
+        return pd.Series(signal).ffill().fillna(fill_na).ewm(span=rolling_window, min_periods=1, adjust=False).mean().to_numpy()
     return signal
 
 def _calculate_final_confidence(stacked_conf: np.ndarray, effective_weights: np.ndarray) -> np.ndarray:

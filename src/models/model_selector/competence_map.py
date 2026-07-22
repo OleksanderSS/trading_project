@@ -1,7 +1,10 @@
 # models/model_selector/competence_map.py
 
 import json
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 def build_competence_map(results_path: str = "results.json", tolerance: float = 0.1) -> dict:
     """
@@ -20,7 +23,8 @@ def build_competence_map(results_path: str = "results.json", tolerance: float = 
     with open(path, encoding="utf-8") as f:
         try:
             history = [json.loads(line) for line in f]
-        except Exception:
+        except Exception as e:
+            logger.error(f"Failed to parse history file {path}: {e}")
             return {}
 
     competence_map = {}
@@ -35,7 +39,8 @@ def build_competence_map(results_path: str = "results.json", tolerance: float = 
 
         try:
             key = (r["target"], json.dumps(r["context"], sort_keys=True))
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to generate key for record: {e}")
             continue
 
         task = r["context"].get("task", "")

@@ -5,7 +5,7 @@ Handles model registration, metadata storage, and retrieval.
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from src.core.logging.logger import ProjectLogger
 
@@ -23,7 +23,7 @@ class ModelRegistry:
     """
 
     # Unified model configuration map
-    MODELS: dict[str, dict[str, Any]] = {
+    MODELS: ClassVar[dict[str, dict[str, Any]]] = {
         'lgbm': {'type': 'light', 'role': 'predictor', 'can_be_primary': True, 'class': 'LightGBM', 'default_feature_count': 64},
         'rf': {'type': 'light', 'role': 'predictor', 'can_be_primary': True, 'class': 'RandomForest', 'default_feature_count': 42},
         'xgboost': {'type': 'light', 'role': 'predictor', 'can_be_primary': True, 'class': 'XGBoost', 'default_feature_count': 64},
@@ -78,7 +78,7 @@ class ModelRegistry:
         if model_name not in self.MODELS:
             self.logger.warning(f"Registering model not in registry: {model_name}")
         self._registered_models[model_name] = model
-        
+
         # Initialize default metadata if not exists
         if model_name not in self._metadata:
             self._metadata[model_name] = {
@@ -86,7 +86,7 @@ class ModelRegistry:
                 'analysis_count': 0,
                 'last_analysis': None
             }
-            
+
         self.logger.info(f"✅ Model registered: {model_name}")
 
     def get_model(self, model_name: str) -> Any | None:

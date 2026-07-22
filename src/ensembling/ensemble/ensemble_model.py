@@ -1,20 +1,21 @@
 # src/models/ensemble/ensemble_model.py
 
-import numpy as np
-import joblib
-import os
-from sklearn.ensemble import VotingClassifier, VotingRegressor
-from sklearn.metrics import accuracy_score, r2_score, mean_squared_error, f1_score
-from typing import List, Tuple, Any, Optional, Type, Dict
-import logging
 import importlib
+import logging
+import os
+from typing import Any
+
+import joblib
+import numpy as np
+from sklearn.ensemble import VotingClassifier, VotingRegressor
+from sklearn.metrics import accuracy_score, f1_score, mean_squared_error, r2_score
 
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.models.model_interface import BaseModel
 
 logger = logging.getLogger(__name__)
 
-def _import_model_class(class_path: str) -> Type[BaseModel]:
+def _import_model_class(class_path: str) -> type[BaseModel]:
     """Dynamically imports a model class from a given string path."""
     try:
         module_path, class_name = class_path.rsplit('.', 1)
@@ -29,22 +30,22 @@ class EnsembleModel(BaseModel):
     An ensemble model that combines multiple models using a voting strategy.
     This model adheres to the BaseModel interface.
     """
-    
-    def __init__(self, models: Optional[List[Tuple[str, BaseModel]]] = None, task_type: str = "classification", voting: str = "soft", **kwargs):
+
+    def __init__(self, models: list[tuple[str, BaseModel]] | None = None, task_type: str = "classification", voting: str = "soft", **kwargs):
         super().__init__(model_type="ensemble", task_type=task_type)
         self.voting = voting
         self.models = models if models is not None else self._get_default_models()
         self.ensemble = self._create_ensemble()
 
-    def _get_default_models(self) -> List[Tuple[str, BaseModel]]:
+    def _get_default_models(self) -> list[tuple[str, BaseModel]]:
         """Loads the default list of models from the configuration file."""
         config_manager = UnifiedConfigManager()
         model_config = config_manager.get_config('models')
         ensemble_config = model_config.get('ensemble', {})
-        
+
         model_set_key = 'classification_models' if self.task_type == "classification" else 'regression_models'
         models_to_load = ensemble_config.get(model_set_key, {})
-        
+
         default_models = []
         for name, config in models_to_load.items():
             try:
@@ -58,10 +59,10 @@ class EnsembleModel(BaseModel):
                 default_models.append((name, model_instance))
             except Exception as e:
                 logger.warning(f"Could not load model '{name}' for ensemble. Skipping. Error: {e}")
-        
+
         logger.info(f"Loaded {len(default_models)} default models for {self.task_type} ensemble.")
         return default_models
-    
+
     def _create_ensemble(self) -> Any:
         """Creates the VotingClassifier or VotingRegressor instance."""
         if not self.models:
@@ -99,7 +100,7 @@ class EnsembleModel(BaseModel):
             logger.error(f"Failed to create ensemble: {e}", exc_info=True)
             return None
 
-    def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> Dict[str, Any]:
+    def train(self, X: np.ndarray, y: np.ndarray, **kwargs) -> dict[str, Any]:
         """Fits the ensemble model to the training data."""
         if self.ensemble is None:
             logger.error("Ensemble has not been created or is empty.")
@@ -133,13 +134,13 @@ class EnsembleModel(BaseModel):
              raise AttributeError("The configured ensemble (e.g., with 'hard' voting) does not support predict_proba.")
         return self.ensemble.predict_proba(X)
 
-    def evaluate(self, X: np.ndarray, y: np.ndarray) -> Dict[str, float]:
+    def evaluate(self, X: np.ndarray, y: np.ndarray) -> dict[str, float]:
         """Evaluates the model and returns a dictionary of metrics."""
         if not self.is_trained:
             raise RuntimeError("Model has not been trained yet.")
-        
+
         preds = self.predict(X)
-        
+
         if self.task_type == "regression":
             self.metrics = {
                 "r2_score": r2_score(y, preds),
@@ -152,7 +153,7 @@ class EnsembleModel(BaseModel):
             }
         else:
             self.metrics = {}
-            
+
         logger.info(f"Evaluation metrics: {self.metrics}")
         return self.metrics
 
@@ -160,17 +161,17 @@ class EnsembleModel(BaseModel):
         """Saves the ensemble model and its components."""
         if not self.is_trained:
             logger.warning("Attempting to save an untrained ensemble model.")
-        
+
         model_dir = os.path.dirname(path)
         os.makedirs(model_dir, exist_ok=True)
-        
+
         sub_model_configs = []
         for name, model in self.models:
             model_path_prefix = os.path.join(model_dir, f"submodel_{name}")
             if not model.save_model(model_path_prefix):
                 logger.error(f"Failed to save sub-model '{name}'. Aborting ensemble save.")
                 return False
-            
+
             class_path = f"{model.__class__.__module__}.{model.__class__.__name__}"
             sub_model_configs.append({'name': name, 'class': class_path})
 
@@ -180,7 +181,7 @@ class EnsembleModel(BaseModel):
             'sub_models': sub_model_configs,
             'is_trained': self.is_trained
         }
-        
+
         try:
             joblib.dump(ensemble_metadata, path)
             logger.info(f"Ensemble model saved to {path}")
@@ -196,28 +197,28 @@ class EnsembleModel(BaseModel):
             self.task_type = metadata['task_type']
             self.voting = metadata.get('voting', 'soft')
             self.is_trained = metadata['is_trained']
-            
+
             model_dir = os.path.dirname(path)
             self.models = []
-            
+
             for model_config in metadata['sub_models']:
                 name = model_config['name']
                 class_path = model_config['class']
                 try:
                     ModelClass = _import_model_class(class_path)
                     model_instance = ModelClass(task_type=self.task_type)
-                    
+
                     model_path_prefix = os.path.join(model_dir, f"submodel_{name}")
                     if not model_instance.load_model(model_path_prefix):
                          logger.warning(f"Failed to load state for sub-model '{name}'.")
-                    
+
                     self.models.append((name, model_instance))
                 except Exception as e:
                     logger.error(f"Failed to instantiate or load sub-model '{name}' ({class_path}). Error: {e}")
                     return False
 
             self.ensemble = self._create_ensemble()
-            
+
             logger.info(f"Ensemble model loaded from {path}")
             return True
 
@@ -225,8 +226,8 @@ class EnsembleModel(BaseModel):
             logger.error(f"Failed to load ensemble model: {e}", exc_info=True)
             self.is_trained = False
             return False
-            
-    def get_model_info(self) -> Dict[str, Any]:
+
+    def get_model_info(self) -> dict[str, Any]:
         """Returns a dictionary with information about the model."""
         info = {
             "model_type": self.model_type,

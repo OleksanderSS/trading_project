@@ -33,17 +33,27 @@ class FinancialMetricsLibrary:
         """Calculates total percentage return."""
         if equity_curve.empty:
             return 0.0
-        return float((equity_curve.iloc[-1] - equity_curve.iloc[0]) / equity_curve.iloc[0])
+        initial_equity = equity_curve.iloc[0]
+        # Validate initial equity
+        if not np.isfinite(initial_equity) or initial_equity <= 0:
+            logger.warning(f"Invalid initial equity: {initial_equity}. Cannot calculate total return.")
+            return 0.0
+        return float((equity_curve.iloc[-1] - initial_equity) / initial_equity)
 
     @staticmethod
     def calculate_cagr(equity_curve: pd.Series, trading_days_per_year: int = 252) -> float:
         """Calculates Compound Annual Growth Rate."""
         if equity_curve.empty:
             return 0.0
+        initial_equity = equity_curve.iloc[0]
+        # Validate initial equity
+        if not np.isfinite(initial_equity) or initial_equity <= 0:
+            logger.warning(f"Invalid initial equity: {initial_equity}. Cannot calculate CAGR.")
+            return 0.0
         years = len(equity_curve) / trading_days_per_year
         if years <= 0:
             return 0.0
-        total_return_factor = equity_curve.iloc[-1] / equity_curve.iloc[0]
+        total_return_factor = equity_curve.iloc[-1] / initial_equity
         return float(total_return_factor ** (1 / years) - 1)
 
     @staticmethod
@@ -91,11 +101,16 @@ class FinancialMetricsLibrary:
 
     @staticmethod
     def calculate_drawdowns(equity_curve: pd.Series) -> pd.Series:
-        """Calculates percentage drawdown series."""
+        """
+        Calculates percentage drawdown series.
+        Drawdowns are always <= 0 (negative for losses, 0 at new highs).
+        """
         if equity_curve.empty:
             return pd.Series([], dtype=float)
         rolling_max = equity_curve.expanding(min_periods=1).max().shift(1)
-        return (equity_curve - rolling_max) / rolling_max
+        drawdowns = (equity_curve - rolling_max) / rolling_max
+        # Ensure drawdowns are never positive (0 at new highs, negative for losses)
+        return drawdowns.clip(upper=0)
 
     @staticmethod
     def calculate_max_drawdown(equity_curve: pd.Series) -> float:

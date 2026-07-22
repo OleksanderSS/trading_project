@@ -1,4 +1,4 @@
-# src/models/model_selector/selector.py
+# src/models/model_selector/fingerprint_selector.py
 
 from typing import Any, cast
 
@@ -6,14 +6,14 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("FingerprintModelSelector")
 
-class SmartModelSelector:  # Keep name for backward compatibility
+class FingerprintModelSelector:
     """
     Advanced model selector that uses Context Fingerprints to identify the best model
     for a given market state. Implements similarity-based search, consensus strategies,
     and a reward system for Actor-Critic improvement.
 
     Note: This is the fingerprint-based selector. For full context analysis,
-    use SmartModelSelector from smart_selector.py
+    use PerformanceHistorySelector from smart_selector.py
     """
 
     def __init__(self, fallback: str = "lightgbm"):

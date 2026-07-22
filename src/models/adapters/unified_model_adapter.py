@@ -13,6 +13,7 @@ from src.config.unified_config_manager import get_current_config
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 from src.features.feature_selector import FeatureSelector
+from src.models import constants
 
 logger = ProjectLogger.get_logger("UnifiedModelAdapter")
 
@@ -32,17 +33,17 @@ class UnifiedModelAdapter:
         self.model_feature_counts = self.config.get(
             "feature_counts",
             {
-                "mlp": 42,
-                "lstm": 42,
-                "gru": 42,
-                "cnn": 42,
-                "transformer": 42,
-                "catboost": 64,
-                "lightgbm": 64,
-                "xgboost": 64,
-                "random_forest": 42,
-                "ensemble": 42,
-                "linear": 20,
+                constants.MLP: 42,
+                constants.LSTM: 42,
+                constants.GRU: 42,
+                constants.CNN: 42,
+                constants.TRANSFORMER: 42,
+                constants.CATBOOST: 64,
+                constants.LIGHTGBM: 64,
+                constants.XGBOOST: 64,
+                constants.RANDOM_FOREST: 42,
+                'ensemble': 42,
+                'linear': 20,
             },
         )
 
@@ -160,7 +161,7 @@ class UnifiedModelAdapter:
         if len(selected) < target_count:
             numeric_cols = ticker_df.select_dtypes(include=[np.number]).columns
             remaining = [
-                c for c in numeric_cols if c not in selected and c not in ["datetime", "ticker", "hash", "interval"]
+                c for c in numeric_cols if c not in selected and c not in ["datetime", "ticker", "hash", "interval", "date", "timeframe", "symbol"]
             ]
 
             variances = ticker_df[remaining].var().sort_values(ascending=False)

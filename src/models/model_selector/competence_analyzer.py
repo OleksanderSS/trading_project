@@ -1,8 +1,9 @@
 # models/model_selector/competence_analyzer.py
 
 import json
+from typing import Any
+
 import pandas as pd
-from typing import Dict, Any, List, Optional
 from utils.logger import ProjectLogger
 
 
@@ -12,17 +13,18 @@ def load_results_json(path: str = "results.json") -> pd.DataFrame:
     Кожен рядок  окремий forпуск.
     """
     logger = ProjectLogger.get_logger("CompetenceAnalyzer")
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
                     continue
                 try:
                     rows.append(json.loads(line))
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Failed to parse JSON line in competence analyzer: {e}")
                     continue
         df = pd.DataFrame(rows)
         logger.info(f"[CompetenceAnalyzer] Заванandжено {len(df)} рядкandв andwith {path}")
@@ -32,7 +34,7 @@ def load_results_json(path: str = "results.json") -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def build_competence_matrix(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+def build_competence_matrix(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     """
     Будує матрицю компетенцandй for порandвняння:
     - for класифandкацandєю: average accuracy/F1/roc_auc per (ticker, interval, model)
@@ -76,9 +78,9 @@ def build_competence_matrix(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
 
 
 def pick_best_models(
-    matrices: Dict[str, pd.DataFrame],
+    matrices: dict[str, pd.DataFrame],
     top_n: int = 3
-) -> Dict[str, pd.DataFrame]:
+) -> dict[str, pd.DataFrame]:
     """
     Вибирає топ-моwhereлand:
     - for класифandкацandї: сортуємо for середнandм скором (mean accuracy/F1/roc_auc)

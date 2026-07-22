@@ -15,6 +15,7 @@ from src.core.logging.logger import ProjectLogger
 from src.utils.artifact_security import resolve_trusted_artifact_path
 
 from .battle_groups import get_battle_group_manager
+from src.analytics.context.dynamic_router import DynamicRouter
 
 rng = np.random.default_rng(42)
 logger = ProjectLogger.get_logger(__name__)
@@ -80,6 +81,7 @@ class TradingModelArena:
         self.current_battles: list[Battle] = []
         self.champion_dir = Path(champion_dir)
         self.safety_margin = safety_margin
+        self.dynamic_router = DynamicRouter()
         logger.info(
             f'[ARENA] Trading Model Arena initialized. Safety margin: {safety_margin * 100}%'
             )
@@ -152,8 +154,11 @@ class TradingModelArena:
         num_simulations = 50
         simulations = []
         for _ in range(num_simulations):
-            noise = rng.normal(0, 0.001, context_data.shape)
-            noisy_context = context_data + noise
+            # Only add noise to numeric columns
+            noisy_context = context_data.copy()
+            numeric_cols = noisy_context.select_dtypes(include=[np.number]).columns
+            noise = rng.normal(0, 0.001, (len(noisy_context), len(numeric_cols)))
+            noisy_context[numeric_cols] = noisy_context[numeric_cols] + noise
             sim_pred = self._get_instance_predictions(model, noisy_context)
             simulations.append(sim_pred)
         sim_matrix = np.array(simulations)
@@ -246,6 +251,19 @@ class TradingModelArena:
         champ_metrics.realization_gap = champ_blind['realization_gap']
         cand_score = self._calculate_causal_weighted_score(cand_metrics)
         champ_score = self._calculate_causal_weighted_score(champ_metrics)
+
+        # Apply Dynamic Routing Rules
+        # To determine context, let's assume we use 'is_sharp_drop' if the market has fallen recently
+        # For a full implementation, this should come from a ContextDetector. We will mock context here:
+        mock_context = {'is_sharp_drop': True} # For testing the Shadow Battle Mode
+        weight_multipliers = self.dynamic_router.adjust_weights({candidate_name: cand_preds, champ_name: champ_preds}, mock_context)
+        
+        cand_score *= weight_multipliers.get(candidate_name, 1.0)
+        champ_score *= weight_multipliers.get(champ_name, 1.0)
+        
+        logger.info(f"[ARENA-ROUTER] Candidate {candidate_name} score adjusted to {cand_score:.4f}")
+        logger.info(f"[ARENA-ROUTER] Champion {champ_name} score adjusted to {champ_score:.4f}")
+
         required_score = champ_score * (1 + self.safety_margin)
         model_info = self.models.get(candidate_name, {})
         logger.info(

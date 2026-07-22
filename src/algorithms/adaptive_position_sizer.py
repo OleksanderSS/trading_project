@@ -10,14 +10,13 @@
 6. Liquidity constraints
 7. Market regime adaptation
 """
-import logging
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 
 from src.core.logging.logger import ProjectLogger
-from src.risk_management import VaRCalculator
+from src.risk.analyzers.var_calculator import VaRCalculator
 
 
 @dataclass
@@ -202,24 +201,22 @@ class AdaptivePositionSizer:
                 'position_size_pct': float(self.base_position_size_pct),
                 'error': str(e), 'fallback_used': True}
 
-    def _calculate_var_adjustment(self, historical_returns: np.ndarray | None) ->float:
+    def _calculate_var_adjustment(self, historical_returns: np.ndarray | None) -> float:
         """Calculate VaR-based adjustment factor"""
         if historical_returns is None or len(historical_returns) <= 30:
             return 1.0
         try:
             var_result = self.var_calculator.calculate_var_historical(
                 historical_returns, confidence=0.95, time_horizon=1)
-            if 'var' in var_result:
+            if 'var' in var_result and var_result['var'] is not None and not np.isnan(var_result['var']):
                 target_risk_pct = self.base_position_size_pct
                 var_pct = abs(var_result['var'])
                 if var_pct > 0:
                     return min(target_risk_pct / var_pct, 2.0)
+            return 1.0
         except (ValueError, TypeError, KeyError) as e:
-            self.logger.error(f'Помилка розрахунку VaR: {e}', exc_info=True)
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f'VaR calculation failed: {e}')
-            raise ValueError(f'VaR calculation failed: {e}') from e
-        return 1.0
+            self.logger.warning(f'VaR calculation failed, using fallback: {e}')
+            return 1.0
 
     def _calculate_kelly_adjustment(self, confidence: float) ->float:
         """Calculate Kelly Criterion adjustment factor"""

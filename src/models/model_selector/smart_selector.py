@@ -9,11 +9,11 @@ from sklearn.ensemble import RandomForestRegressor
 from src.core.logging.logger import ProjectLogger
 
 warnings.filterwarnings('ignore')
-logger = ProjectLogger.get_logger('SmartModelSelector')
+logger = ProjectLogger.get_logger('PerformanceHistorySelector')
 
 
-class SmartModelSelector:
-    """Smart selector моделей на основі історії, контексту та мета-навчання."""
+class PerformanceHistorySelector:
+    """Performance history-based selector that uses historical model performance, context analysis, and meta-learning."""
 
     def __init__(self, results_file: str='model_performance_history.json',
         competence_map_file: str=

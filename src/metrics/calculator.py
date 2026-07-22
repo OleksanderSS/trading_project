@@ -83,7 +83,7 @@ class MetricsCalculator:
         }
 
         if y_true is not None and y_pred is not None:
-            y_prob = kwargs.get('y_prob')
+            y_prob = kwargs.pop('y_prob', None)
             results["ml"] = self.get_ml_metrics(y_true, y_pred, y_prob=y_prob, **kwargs)
 
         if equity_curve is not None:

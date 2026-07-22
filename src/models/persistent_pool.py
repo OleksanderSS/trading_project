@@ -37,6 +37,7 @@ import numpy as np
 
 from src.core.logging.logger import ProjectLogger
 from src.models.model_pool import ModelPool
+from src.utils.path_safety import get_path_safety
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -58,17 +59,21 @@ class PersistentModelPool(ModelPool):
         quality_scores: Dict[model_id, quality_score]
     """
 
-    def __init__(self, max_models: int = 50, cache_dir: str = ".model_cache"):
+    def __init__(self, max_models: int = 50, cache_dir: str | None = None):
         """
         Initialize persistent model pool.
 
         Args:
             max_models: Maximum number of models to keep in memory
-            cache_dir: Directory for cache index persistence
+            cache_dir: Directory for cache index persistence (defaults to data/models/cache)
         """
         super().__init__(max_models)
 
-        self.cache_dir = Path(cache_dir)
+        path_safety = get_path_safety()
+        if cache_dir:
+            self.cache_dir = Path(cache_dir)
+        else:
+            self.cache_dir = path_safety.get_models_dir() / 'cache'
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         self.model_metadata: dict[str, dict[str, Any]] = {}
@@ -245,7 +250,7 @@ class PersistentModelPool(ModelPool):
                     'metadata': self.model_metadata,
                     'quality': self.quality_scores,
                     'updated_at': datetime.now().isoformat()
-                }, f, indent=2)
+                }, f, indent=2, default=str)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Failed to save cache index: {e}")
 
@@ -302,13 +307,13 @@ class PersistentModelPool(ModelPool):
 _persistent_pool: PersistentModelPool | None = None
 
 
-def get_persistent_pool(max_models: int = 50, cache_dir: str = ".model_cache") -> PersistentModelPool:
+def get_persistent_pool(max_models: int = 50, cache_dir: str | None = None) -> PersistentModelPool:
     """
     Get or create global persistent pool (singleton).
 
     Args:
         max_models: Maximum models in pool
-        cache_dir: Cache directory
+        cache_dir: Cache directory (defaults to data/models/cache)
 
     Returns:
         Global PersistentModelPool instance

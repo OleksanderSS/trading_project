@@ -1,7 +1,8 @@
-import pandas as pd
-import numpy as np
-from scipy.stats import entropy
 import logging
+
+import numpy as np
+import pandas as pd
+from scipy.stats import entropy
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class MarketRegimeCalculator:
         regime[ (rolling_mean < trend_threshold_negative) & (rolling_std > volatility_threshold_low) ] = 'Bearish'
         regime[ rolling_std > volatility_threshold_high ] = 'High Volatility'
         regime[ rolling_std < volatility_threshold_low ] = 'Low Volatility'
-        
+
         logger.info("Market regime calculation completed.")
         return regime.fillna('Consolidation')
 
@@ -65,9 +66,9 @@ class MarketRegimeCalculator:
         """
         if not isinstance(price_series, pd.Series) or price_series.empty:
             return pd.Series(dtype=float)
-            
-        returns = price_series.pct_change().dropna()
-        
+
+        returns = price_series.pct_change(fill_method=None).dropna()
+
         def rolling_entropy(window_data):
             if len(window_data) < window * 0.8: # Require enough data
                 return np.nan
@@ -96,7 +97,7 @@ class MarketRegimeCalculator:
         if not isinstance(price_series, pd.Series) or price_series.empty:
             return pd.Series(dtype=float)
 
-        returns = price_series.pct_change()
+        returns = price_series.pct_change(fill_method=None).fillna(0)
         is_down_day = (returns < down_day_threshold).astype(int)
 
         # Count consecutive down days
@@ -106,9 +107,9 @@ class MarketRegimeCalculator:
         # This is a very basic model and can be significantly improved.
         base_prob = 0.1
         prob = base_prob + (consecutive_down_days / window) * 0.5
-        
+
         # We only care about the probability at the end of a streak
         reversal_prob = prob.where(consecutive_down_days > 1, 0)
-        
+
         logger.info(f"Calculated reversal probability with window {window}.")
         return reversal_prob.clip(0, 1)

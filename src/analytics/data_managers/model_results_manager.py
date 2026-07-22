@@ -207,7 +207,7 @@ class ModelResultsManager:
         target_path = self.base_path / filename
         try:
             with open(target_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=4)
+                json.dump(data, f, indent=4, default=str)
             logger.info(f'Saved JSON report to {target_path}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Failed to save JSON report to {target_path}: {e}')

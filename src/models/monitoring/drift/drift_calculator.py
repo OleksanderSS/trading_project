@@ -73,7 +73,7 @@ class DriftCalculator:
                 'severity': self.thresholds['ks_test']['severity'] if drift_detected else 'none'
             }
 
-        except (ValueError, TypeError, Exception) as e:
+        except Exception as e:
             self.logger.error(f"Error performing KS test: {e}", exc_info=True)
             raise RuntimeError(f"KS test calculation failed: {e}") from e
 
@@ -167,7 +167,7 @@ class DriftCalculator:
                 'severity': self.thresholds['wasserstein']['severity'] if drift_detected else 'none'
             }
 
-        except (ValueError, TypeError, Exception) as e:
+        except Exception as e:
             self.logger.error(f"Error calculating Wasserstein distance: {e}", exc_info=True)
             raise RuntimeError(f"Wasserstein distance calculation failed: {e}") from e
 
@@ -353,8 +353,7 @@ class DriftCalculator:
         try:
             drift_scores = []
             for _method_name, method_result in drift_methods.items():
-                if method_result.get('drift_detected', False):
-                    drift_scores.append(method_result.get('drift_score', 0.0))
+                drift_scores.append(method_result.get('drift_score', 0.0))
 
             if drift_scores:
                 return np.mean(drift_scores)

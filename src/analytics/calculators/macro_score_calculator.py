@@ -138,13 +138,17 @@ class MacroScoreCalculator:
         if valid_score.nunique(dropna=True) <= 1:
             scaled_score.loc[valid_score.index] = 50.0
             return scaled_score
-        scaled_values = minmax_scale(valid_score, feature_range=(0, 100))
-        # ✅ FIX: deduplicate index before assignment to avoid length mismatch
+
+        # Handle duplicate indices by using the original index for assignment
         if valid_score.index.duplicated().any():
+            # Keep only the last occurrence of each duplicate index
             valid_score_dedup = valid_score[~valid_score.index.duplicated(keep='last')]
-            scaled_values_dedup = minmax_scale(valid_score_dedup, feature_range=(0, 100))
-            scaled_score = pd.Series(index=composite_score.index, dtype=float)
-            scaled_score.loc[valid_score_dedup.index] = scaled_values_dedup
+            scaled_values = minmax_scale(valid_score_dedup.values, feature_range=(0, 100))
+            # Create a Series with the deduplicated index and values
+            scaled_values_series = pd.Series(scaled_values, index=valid_score_dedup.index)
+            # Assign using the deduplicated index
+            scaled_score.loc[valid_score_dedup.index] = scaled_values_series
         else:
+            scaled_values = minmax_scale(valid_score, feature_range=(0, 100))
             scaled_score.loc[valid_score.index] = scaled_values
         return scaled_score

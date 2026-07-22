@@ -9,7 +9,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.algorithms.regime_detector import MarketRegimeDetector
+from src.analytics.detectors.regime_detector import MarketRegimeDetector
 from src.analytics.interfaces import IAnalyzer
 
 logger = logging.getLogger(__name__)

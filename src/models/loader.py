@@ -16,10 +16,12 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 
 from src.config.unified_config_manager import get_current_config
 from src.core.error_handling.error_handler import ModelLoadingError
 from src.core.logging.logger import ProjectLogger
+from src.models.neural.sequence_builder import SequenceBuilder
 from src.utils.artifact_security import resolve_trusted_artifact_path
 
 KERAS_EXTENSION = '.keras'
@@ -136,7 +138,7 @@ class ModelLoaderStrategy:
         except (FileNotFoundError, ValueError) as e:
             raise ModelLoadingError(
                 f'Unsafe or missing model artifact path {model_path}: {e}') from e
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             raise ModelLoadingError(
                 f'Failed to load model from path {model_path}: {e}') from e
         raise ModelLoadingError(f'Unsupported model file suffix: {path.suffix}'
@@ -327,21 +329,55 @@ class ModelLoaderStrategy:
             def __init__(self, keras_model, model_type):
                 self.model = keras_model
                 self.model_type = model_type
+                self.sequence_builder = SequenceBuilder(strategy='sliding_window')
+                self.logger = ProjectLogger.get_logger('KerasPredictor')
 
             def predict(self, X):
-                import numpy as np
                 if hasattr(X, 'values'):
                     x_input = X.values
                 else:
                     x_input = X
+                # Convert to float to avoid "Invalid dtype: object" errors
+                x_input = np.asarray(x_input, dtype=np.float32)
+
+                # Handle 3D input shape requirements for sequential models
                 if len(self.model.input_shape) == 3 and len(x_input.shape) == 2:
-                    if self.model.input_shape[-1] == 1 or 'cnn' in self.model_type.lower():
+                    # Check if this is a sequential model (LSTM, GRU, Transformer)
+                    is_sequential = any(seq in self.model_type.lower()
+                                     for seq in ['lstm', 'gru', 'transformer'])
+
+                    self.logger.debug(f"Model type: {self.model_type}, is_sequential: {is_sequential}, input_shape: {self.model.input_shape}, x_input.shape: {x_input.shape}")
+
+                    if is_sequential:
+                        # Extract expected timesteps from model input shape
+                        expected_timesteps = self.model.input_shape[1]
+
+                        self.logger.debug(f"Building sequences with window_size={expected_timesteps}")
+
+                        # Build proper sequences using SequenceBuilder
+                        if len(x_input) >= expected_timesteps:
+                            # Use sliding window to create sequences
+                            x_input = self.sequence_builder.build_sequences(
+                                x_input,
+                                window_size=expected_timesteps,
+                                step_size=1
+                            )
+                            self.logger.debug(f"Sequences built: {x_input.shape}")
+                        else:
+                            # Not enough data: repeat last row to create sequences
+                            last_row = x_input[-1:]
+                            repeated = np.repeat(last_row, expected_timesteps, axis=0)
+                            x_input = repeated.reshape(1, expected_timesteps, -1)
+                            self.logger.debug(f"Repeated last row: {x_input.shape}")
+                    elif self.model.input_shape[-1] == 1 or 'cnn' in self.model_type.lower():
+                        # CNN models: add channel dimension
                         x_input = np.expand_dims(x_input, axis=-1)
                     else:
+                        # Other models: add sequence dimension (legacy behavior)
                         x_input = np.expand_dims(x_input, axis=1)
-                elif len(self.model.input_shape) == 2 and len(x_input.shape
-                    ) == 3:
+                elif len(self.model.input_shape) == 2 and len(x_input.shape) == 3:
                     x_input = x_input.squeeze(axis=1)
+
                 predictions = self.model.predict(x_input, verbose=0)
                 return predictions.flatten()
         return KerasPredictor(model, model_type)

@@ -77,7 +77,8 @@ class RegimeClusteringEngine:
             raise DataProcessingError("Cluster model not initialized")
         distances = self.cluster_model.transform(features_scaled)[0]
         min_distance = float(np.min(distances))
-        return max(0.5, 1.0 - min_distance)
+        # Confidence should be between 0.5 and 1.0
+        return min(1.0, max(0.5, 1.0 - min_distance))
 
     def _initialize_cluster_centers(self):
         centers = np.array([
@@ -91,8 +92,13 @@ class RegimeClusteringEngine:
             [0.002, 0.03, -0.04, 0.08, 0.001, 0.8, 0.3]
         ])
         self.scaler.fit(centers)
-        self.cluster_model = KMeans(n_clusters=self.n_clusters, init=centers, n_init=1, random_state=self.seed)
-        self.cluster_model.fit(centers)
+
+        # Use only needed number of centers
+        n_centers = min(self.n_clusters, len(centers))
+        actual_centers = centers[:n_centers]
+
+        self.cluster_model = KMeans(n_clusters=n_centers, init=actual_centers, n_init=1, random_state=self.seed)
+        self.cluster_model.fit(actual_centers)
 
     def _cluster_to_regime(self, cluster: int) -> Any:
         from src.algorithms.regime.types import MarketRegime

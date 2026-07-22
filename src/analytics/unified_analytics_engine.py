@@ -41,6 +41,7 @@ class UnifiedAnalyticsEngine:
         self.config_manager = config_manager
         self.analyzers: dict[str, IAnalyzer] = {}
         self.analyzer_data_map: dict[str, list[str]] = {}
+        self.analyzer_registration_report: dict[str, dict[str, Any]] = {}
         engine_config = self.config_manager.get('analysis.engine', {})
         self.max_workers = engine_config.get('max_workers', 4)
         self.analyzer_configs = engine_config.get('analyzers', [])
@@ -54,27 +55,70 @@ class UnifiedAnalyticsEngine:
     def _register_analyzers_from_config(self):
         """Dynamically imports and initializes analyzer instances based on configuration."""
         for config in self.analyzer_configs:
+            analyzer_name = config.get('name', config.get('class', 'unknown').lower())
+            if config.get('enabled', True) is not True:
+                self.analyzer_registration_report[analyzer_name] = {
+                    'status': 'disabled',
+                    'reason': config.get('disabled_reason', 'disabled_in_config'),
+                }
+                continue
             try:
                 module_path = config['module']
                 class_name = config['class']
-                analyzer_name = config.get('name', class_name.lower())
                 params = config.get('params', {})
                 module = importlib.import_module(module_path)
                 analyzer_class = getattr(module, class_name)
-                analyzer_instance = analyzer_class(**params)
+                analyzer_instance = self._instantiate_analyzer(
+                    analyzer_class,
+                    params,
+                )
                 if isinstance(analyzer_instance, IAnalyzer):
                     self.register_analyzer(analyzer_instance, name=
                         analyzer_name)
                     self.analyzer_data_map[analyzer_name] = config.get(
                         'data_mapping', [])
+                    self.analyzer_registration_report[analyzer_name] = {
+                        'status': 'registered',
+                        'required_inputs': config.get('data_mapping', []),
+                        'class_path': f'{module_path}.{class_name}',
+                    }
                 else:
                     logger.warning(
                         f"Class '{class_name}' from '{module_path}' is not a valid IAnalyzer instance."
                         )
-            except (ImportError, AttributeError, KeyError, TypeError) as e:
+                    self.analyzer_registration_report[analyzer_name] = {
+                        'status': 'rejected_not_analyzer',
+                        'class_path': f'{module_path}.{class_name}',
+                    }
+            except (
+                ImportError,
+                AttributeError,
+                KeyError,
+                TypeError,
+                ValueError,
+                RuntimeError,
+                OSError,
+            ) as e:
                 logger.exception(
                     f"Failed to register analyzer '{config.get('name', 'unknown')}': {e}"
                     )
+                self.analyzer_registration_report[analyzer_name] = {
+                    'status': 'registration_failed',
+                    'error': f'{type(e).__name__}: {e}',
+                }
+
+    def _instantiate_analyzer(
+        self,
+        analyzer_class: type,
+        params: dict[str, Any],
+    ) -> Any:
+        try:
+            return analyzer_class(**params)
+        except TypeError as direct_error:
+            try:
+                return analyzer_class(config=params)
+            except TypeError:
+                raise direct_error
 
     def register_analyzer(self, analyzer: IAnalyzer, name: str):
         """Registers a single analyzer instance into the engine registry."""
@@ -84,26 +128,70 @@ class UnifiedAnalyticsEngine:
         self.analyzers[name] = analyzer
         logger.info(f'Registered analyzer component: {name}')
 
+    def _analysis_contract_payload(self) -> dict[str, Any]:
+        """Return the analyzer-suite contract that makes cached results valid."""
+        return {
+            'configured_analyzers': self.analyzer_configs,
+            'registered_analyzers': sorted(self.analyzers),
+            'data_mapping': {
+                name: list(keys)
+                for name, keys in sorted(self.analyzer_data_map.items())
+            },
+            'registration_status': {
+                name: details.get('status', 'unknown')
+                for name, details in sorted(
+                    self.analyzer_registration_report.items()
+                )
+            },
+        }
+
+    def _analysis_contract_hash(self) -> str:
+        deterministic_json = json.dumps(
+            self._analysis_contract_payload(),
+            sort_keys=True,
+            default=str,
+        )
+        return hashlib.sha256(deterministic_json.encode()).hexdigest()
+
     def _generate_data_hash(self, data_map: dict[str, Any]) ->str:
         """
         Generates a stable fingerprint (MD5 hash) for input datasets to support result caching.
         """
         try:
             stable_repr: dict[str, Any] = {}
+            stable_repr['_analysis_contract_hash'] = (
+                self._analysis_contract_hash()
+            )
             for key in sorted(data_map.keys()):
                 value = data_map[key]
                 if isinstance(value, pd.DataFrame):
-                    sample = value.head(10).tail(5)
-                    stable_repr[key] = {'shape': value.shape, 'columns':
-                        list(value.columns), 'sample_hash': hashlib.sha256(
-                        sample.to_json(date_format='iso', orient='split').
-                        encode()).hexdigest()}
+                    content_hash = hashlib.sha256(
+                        pd.util.hash_pandas_object(
+                            value,
+                            index=True,
+                            categorize=True,
+                        ).values.tobytes()
+                    ).hexdigest()
+                    stable_repr[key] = {
+                        'shape': value.shape,
+                        'columns': list(value.columns),
+                        'dtypes': [str(dtype) for dtype in value.dtypes],
+                        'content_hash': content_hash,
+                    }
                 elif isinstance(value, pd.Series):
-                    sample = value.head(10)
-                    stable_repr[key] = {'shape': value.shape, 'name': value
-                        .name, 'sample_hash': hashlib.sha256(sample.to_json
-                        (date_format='iso', orient='split').encode()).
-                        hexdigest()}
+                    content_hash = hashlib.sha256(
+                        pd.util.hash_pandas_object(
+                            value,
+                            index=True,
+                            categorize=True,
+                        ).values.tobytes()
+                    ).hexdigest()
+                    stable_repr[key] = {
+                        'shape': value.shape,
+                        'name': value.name,
+                        'dtype': str(value.dtype),
+                        'content_hash': content_hash,
+                    }
                 else:
                     stable_repr[key] = str(value)
             deterministic_json = json.dumps(stable_repr, sort_keys=True)
@@ -118,7 +206,8 @@ class UnifiedAnalyticsEngine:
                 if isinstance(value, (pd.DataFrame, pd.Series)):
                     sample = value.head(3)
                     hash_input += (
-                        f"{key}_{value.shape}_{hash(sample.to_json(date_format='iso', orient='split'))}"
+                        f"{key}_{value.shape}_"
+                        f"{hashlib.sha256(sample.to_json(date_format='iso', orient='split').encode()).hexdigest()}"
                         )
                 else:
                     hash_input += f'{key}_{str(value)}'
@@ -144,26 +233,142 @@ class UnifiedAnalyticsEngine:
             f'Commencing parallel analysis suite with {len(self.analyzers)} modules.'
             )
         futures = {}
+        results: dict[str, Any] = {}
+        routing_status: dict[str, dict[str, Any]] = {}
         for name, analyzer in self.analyzers.items():
-            input_data = self._get_data_for_analyzer(name, data_map)
+            try:
+                input_data = self._get_data_for_analyzer(name, data_map)
+            except ConfigurationError as exc:
+                required = self.analyzer_data_map.get(name, [])
+                missing = [key for key in required if key not in data_map]
+                results[name] = {
+                    'status': 'skipped_missing_inputs',
+                    'required_inputs': required,
+                    'missing_inputs': missing,
+                    'supporting_review_only': True,
+                }
+                routing_status[name] = {
+                    'status': 'skipped_missing_inputs',
+                    'missing_inputs': missing,
+                }
+                logger.info("Skipping analyzer '%s': %s", name, exc)
+                continue
             if input_data is not None:
                 futures[name] = self.thread_pool.submit(analyzer.analyze,
                     input_data, **kwargs)
+                routing_status[name] = {'status': 'submitted'}
             else:
                 logger.warning(
                     f"Skipping analyzer '{name}': dependent data keys not found in data_map."
                     )
-        results = {}
+                results[name] = {
+                    'status': 'skipped_no_input_contract',
+                    'supporting_review_only': True,
+                }
+                routing_status[name] = {'status': 'skipped_no_input_contract'}
         for name, future in futures.items():
             try:
-                results[name] = future.result(timeout=120)
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                raw_result = future.result(timeout=120)
+                results[name] = self._normalize_analyzer_result(raw_result)
+                routing_status[name] = {'status': 'executed'}
+            except Exception as e:
                 logger.exception(
                     f"Parallel execution failed for analyzer '{name}': {e}"
                     )
-                results[name] = {'error': str(e), 'status': 'failed'}
+                results[name] = {
+                    'error': str(e),
+                    'status': 'failed',
+                    'supporting_review_only': True,
+                }
+                routing_status[name] = {
+                    'status': 'failed',
+                    'error_type': type(e).__name__,
+                }
+        results['_analysis_coverage'] = self._analysis_coverage(
+            routing_status
+        )
         self.results_manager.cache_analysis(data_hash, results)
         return results
+
+    def _normalize_analyzer_result(self, result: Any) -> dict[str, Any]:
+        if isinstance(result, pd.DataFrame):
+            return {
+                'status': 'completed',
+                'output_type': 'dataframe_summary',
+                'row_count': len(result),
+                'columns': [str(column) for column in result.columns],
+                'latest_record': (
+                    result.tail(1).to_dict(orient='records')[0]
+                    if not result.empty
+                    else None
+                ),
+                'supporting_review_only': True,
+            }
+        if isinstance(result, pd.Series):
+            return {
+                'status': 'completed',
+                'output_type': 'series_summary',
+                'row_count': len(result),
+                'name': str(result.name) if result.name is not None else None,
+                'latest_value': result.iloc[-1] if not result.empty else None,
+                'supporting_review_only': True,
+            }
+        if isinstance(result, dict):
+            return {
+                'status': result.get('status', 'completed'),
+                **result,
+                'supporting_review_only': True,
+            }
+        return {
+            'status': 'completed',
+            'output_type': type(result).__name__,
+            'value': result,
+            'supporting_review_only': True,
+        }
+
+    def _analysis_coverage(
+        self,
+        routing_status: dict[str, dict[str, Any]],
+    ) -> dict[str, Any]:
+        statuses = {
+            name: details.get('status', 'unknown')
+            for name, details in routing_status.items()
+        }
+        registration_statuses = {
+            name: details.get('status', 'unknown')
+            for name, details in self.analyzer_registration_report.items()
+        }
+        return {
+            'status': 'stage7_analyzer_coverage_recorded',
+            'analysis_contract_hash': self._analysis_contract_hash(),
+            'configured_count': len(self.analyzer_configs),
+            'registered_count': len(self.analyzers),
+            'executed': sorted(
+                name for name, status in statuses.items()
+                if status == 'executed'
+            ),
+            'skipped_missing_inputs': sorted(
+                name for name, status in statuses.items()
+                if status == 'skipped_missing_inputs'
+            ),
+            'failed': sorted(
+                name for name, status in statuses.items()
+                if status == 'failed'
+            ),
+            'disabled': sorted(
+                name for name, status in registration_statuses.items()
+                if status == 'disabled'
+            ),
+            'registration_failed': sorted(
+                name for name, status in registration_statuses.items()
+                if status in {'registration_failed', 'rejected_not_analyzer'}
+            ),
+            'routing': routing_status,
+            'registration': self.analyzer_registration_report,
+            'evidence_class': 'supporting_analysis_not_locked_evidence',
+            'can_promote_model': False,
+            'can_trade': False,
+        }
 
     def _get_data_for_analyzer(self, analyzer_name: str, data_map: dict[str,
         Any]) ->Any | None:
@@ -188,7 +393,8 @@ class UnifiedAnalyticsEngine:
         return {'engine_status': 'operational', 'active_analyzers_count':
             len(self.analyzers), 'registered_modules': list(self.analyzers.
             keys()), 'max_concurrency': self.max_workers,
-            'orchestration_map': self.analyzer_data_map}
+            'orchestration_map': self.analyzer_data_map,
+            'registration_report': self.analyzer_registration_report}
 
     def get_registered_components(self) ->dict[str, list[str]]:
         """Returns the list of registered analysis components."""

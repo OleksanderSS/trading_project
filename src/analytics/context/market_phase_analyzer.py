@@ -61,7 +61,7 @@ class MarketPhaseAnalyzer(IAnalyzer):
                 f'A required indicator column was not found in the market data: {e}'
                 , exc_info=True)
             return {'market_phase': 'error'}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (ValueError, TypeError, AttributeError, ZeroDivisionError) as e:
             self.logger.error(f'Error evaluating market phase: {e}',
                 exc_info=True)
             return {'market_phase': 'error'}

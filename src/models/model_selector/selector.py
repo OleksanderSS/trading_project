@@ -1,9 +1,7 @@
 # src/models/model_selector/selector.py
 
-import json
-import logging
-import numpy as np
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
+
 from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("SmartModelSelector")
@@ -20,7 +18,7 @@ class SmartModelSelector:
         self.logger = logger
         self.reward_history = []
 
-    def select_best_model(self, target: str, context_fingerprint: str, arena_leaderboard: Dict[str, Any]) -> str:
+    def select_best_model(self, target: str, context_fingerprint: str, arena_leaderboard: dict[str, Any]) -> str:
         """
         Selects the best model based on 'points' or 'win_rate' for a specific fingerprint.
         If no exact match, performs a similarity check on the '1|0|-1' string bits.
@@ -30,8 +28,8 @@ class SmartModelSelector:
             if context_fingerprint in arena_leaderboard:
                 models_data = arena_leaderboard[context_fingerprint]
                 # Select based on points, then win_rate
-                best_model = max(models_data.keys(), 
-                                key=lambda m: (models_data[m].get('points', 0), 
+                best_model = max(models_data.keys(),
+                                key=lambda m: (models_data[m].get('points', 0),
                                                models_data[m].get('win_rate', 0)))
                 self.logger.info(f"Exact match for '{context_fingerprint}'. Selected: {best_model}")
                 return best_model
@@ -45,7 +43,7 @@ class SmartModelSelector:
                 fp_bits = fp.split('|')
                 if len(fp_bits) != len(target_bits):
                     continue
-                
+
                 matches = sum(1 for i in range(len(target_bits)) if target_bits[i] == fp_bits[i])
                 if matches > max_matches:
                     max_matches = matches
@@ -54,8 +52,8 @@ class SmartModelSelector:
             # Require at least 50% match for fuzzy selection
             if best_sim_fp and max_matches >= (len(target_bits) / 2):
                 models_data = arena_leaderboard[best_sim_fp]
-                best_model = max(models_data.keys(), 
-                                key=lambda m: (models_data[m].get('points', 0), 
+                best_model = max(models_data.keys(),
+                                key=lambda m: (models_data[m].get('points', 0),
                                                models_data[m].get('win_rate', 0)))
                 self.logger.info(f"Fuzzy match '{best_sim_fp}' ({max_matches} bits). Selected: {best_model}")
                 return best_model
@@ -67,7 +65,7 @@ class SmartModelSelector:
             self.logger.error(f"Selection error: {e}", exc_info=True)
             return self.fallback
 
-    def get_consensus_strategy(self, heavy_model: Any, light_model: Any, data: Any) -> Dict[str, Any]:
+    def get_consensus_strategy(self, heavy_model: Any, light_model: Any, data: Any) -> dict[str, Any]:
         """
         Gets predictions from Heavy and Light models and validates direction.
         Returns CONFIRMED if they agree, or DIVERGENCE_WARNING if they clash.
@@ -75,7 +73,7 @@ class SmartModelSelector:
         try:
             h_pred = heavy_model.predict(data)
             l_pred = light_model.predict(data)
-            
+
             # Simple direction check (sign)
             h_dir = 1 if h_pred > 0 else (-1 if h_pred < 0 else 0)
             l_dir = 1 if l_pred > 0 else (-1 if l_pred < 0 else 0)
@@ -89,7 +87,7 @@ class SmartModelSelector:
                     "confidence": confidence,
                     "avg_pred": (h_pred + l_pred) / 2
                 }
-            
+
             self.logger.warning(f"DIVERGENCE_WARNING: Heavy({h_pred:.4f}) vs Light({l_pred:.4f}).")
             return {
                 "status": "DIVERGENCE_WARNING",
@@ -102,7 +100,7 @@ class SmartModelSelector:
             self.logger.error(f"Consensus calculation failed: {e}")
             return {"status": "ERROR", "action": "SKIP"}
 
-    def calculate_reward(self, predicted_direction: int, actual_direction: int, was_consensus: bool, critic_warned: bool) -> Dict[str, float]:
+    def calculate_reward(self, predicted_direction: int, actual_direction: int, was_consensus: bool, critic_warned: bool) -> dict[str, float]:
         """
         Assigns rewards based on outcome and logic used.
         """
@@ -126,5 +124,5 @@ class SmartModelSelector:
         result = {"total_reward": round(reward, 2), "details": details}
         self.reward_history.append(result)
         self.logger.info(f"Decision Audit - Reward: {reward} | Consensus: {was_consensus} | Correct: {is_correct}")
-        
+
         return result

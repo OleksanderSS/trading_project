@@ -44,18 +44,40 @@ class BaseModel(ABC):
 
     def evaluate(
         self, X: np.ndarray | pd.DataFrame,
-        y: np.ndarray | pd.Series
+        y: np.ndarray | pd.Series,
+        task_type: str | None = None
     ) -> dict[str, float]:
-        """Evaluates model performance using centralized metrics calculator."""
+        """
+        Evaluates model performance using centralized metrics calculator.
+        
+        Args:
+            X: Feature data
+            y: True labels
+            task_type: Task type ('classification' or 'regression'). If None, uses self.task_type.
+            
+        Returns:
+            Dictionary of evaluation metrics
+        """
         self.logger.info(f"Evaluating model {self.name}...")
         predictions = self.predict(X)
 
-        calculator = MetricsCalculator()
-        is_classification = (self.task_type == 'classification')
+        # Use provided task_type or fall back to instance task_type
+        effective_task_type = task_type if task_type is not None else self.task_type
 
-        # Use unified calculator for ML metrics
+        calculator = MetricsCalculator()
+
+        # For classification, try to get probability predictions if available
+        y_prob = None
+        if effective_task_type == 'classification' and hasattr(self, 'predict_proba'):
+            try:
+                y_prob = self.predict_proba(X)
+            except Exception:
+                # If predict_proba fails, continue without probabilities
+                pass
+
+        # Use unified calculator for ML metrics with task_type instead of is_classification
         results = calculator.get_ml_metrics(
-            y, predictions, is_classification=is_classification
+            y, predictions, y_prob=y_prob, task_type=effective_task_type
         )
 
         self.metrics.update(results)

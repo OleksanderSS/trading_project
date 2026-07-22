@@ -1,5 +1,6 @@
 
 import logging
+
 from src.analytics.analyzers.causal_event_finder import CausalEventFinder
 from src.analytics.analyzers.drift_analyzer import DriftAnalyzer
 from src.analytics.analyzers.hedge_fund_analyzer import HedgeFundAnalyzer
@@ -29,7 +30,7 @@ def get_analyzer(name: str, config: dict = None) -> IAnalyzer:
         raise ValueError(f"Analyzer '{name}' not found in registry. Available: {list(ANALYZER_REGISTRY.keys())}")
 
     analyzer_class = ANALYZER_REGISTRY[name]
-    
+
     # Handle different analyzer constructor signatures
     try:
         # Try with config parameter first
@@ -39,7 +40,7 @@ def get_analyzer(name: str, config: dict = None) -> IAnalyzer:
             # Fallback: try without config parameter
             try:
                 return analyzer_class()
-            except (TypeError, ValueError) as e2:
+            except (TypeError, ValueError):
                 logger.exception(f"Failed to instantiate analyzer '{name}' without config")
                 # Fallback: try with **kwargs
                 try:
