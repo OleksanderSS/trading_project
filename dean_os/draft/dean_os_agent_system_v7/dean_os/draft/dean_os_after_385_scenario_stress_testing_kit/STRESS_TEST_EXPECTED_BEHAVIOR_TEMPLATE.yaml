@@ -1,0 +1,29 @@
+schema_name: stress_test_expected_behavior_template
+version: after_385_v1
+
+expected_behavior:
+  scenario_id: string
+  expected_blocks:
+    - component: string
+      block_condition: string
+      expected_reason: string
+
+  expected_warnings:
+    - component: string
+      warning_condition: string
+      expected_message: string
+
+  expected_review_items:
+    - review_type: event_deep_dive | pipeline_health | strategy_block | risk_limit | incident | learning_candidate
+      priority: critical | high | medium | low
+      reason: string
+
+  expected_learning:
+    - learning_type: pattern_candidate | eval_case | incident_regression | source_registry_update | prompt_candidate
+      reason: string
+
+  expected_no_action:
+    - forbidden_action: broker_order
+    - forbidden_action: buy_sell_hold
+    - forbidden_action: price_target
+    - forbidden_action: risk_override

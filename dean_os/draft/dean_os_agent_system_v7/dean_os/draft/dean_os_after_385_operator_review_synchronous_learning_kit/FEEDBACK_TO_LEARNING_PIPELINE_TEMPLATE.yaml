@@ -1,0 +1,54 @@
+schema_name: feedback_to_learning_pipeline_template
+version: after_385_v1
+
+feedback_flow:
+  - step_id: capture_review
+    input: operator_review_labels
+    output: review_session_record
+
+  - step_id: classify_feedback
+    input: review_session_record
+    output:
+      - data_quality_issue
+      - analyst_reasoning_issue
+      - causal_graph_issue
+      - baseline_issue
+      - pipeline_issue
+      - source_registry_issue
+      - eval_gap
+
+  - step_id: create_learning_candidate
+    input: classified_feedback
+    output:
+      - event_graph_learning_record
+      - prompt_update_candidate
+      - pattern_memory_candidate
+      - source_registry_update_candidate
+      - eval_test_candidate
+
+  - step_id: require_approval
+    input: learning_candidate
+    output:
+      - approved_learning_update
+      - rejected_learning_update
+      - needs_more_evidence
+
+  - step_id: apply_safe_updates
+    allowed_updates:
+      - eval_test_backlog
+      - source_registry_notes
+      - prompt_candidate_backlog
+      - causal_pattern_candidate_backlog
+      - human_feedback_dataset
+    forbidden_without_gate:
+      - production_prompt
+      - production_model_weights
+      - trading_config
+      - broker_permissions
+      - live_risk_limits
+
+rules:
+  - operator_feedback_is_training_data_candidate_not_automatic_truth
+  - repeated_corrections_should_create_regression_tests
+  - pattern_memory_promotion_requires_approval
+  - feedback_records_must_keep_original_agent_output

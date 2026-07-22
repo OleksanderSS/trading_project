@@ -1,0 +1,58 @@
+{
+  "schema_name": "decision_lineage_blame_game_schema",
+  "version": "after_385_v3",
+  "purpose": "Make each agent/pipeline/orchestrator contribution traceable so errors can be debugged after a bad output or failed hypothesis.",
+  "decision_lineage_record": {
+    "decision_or_output_id": "string",
+    "created_at": "datetime",
+    "mode": "review_only",
+    "inputs": {
+      "event_ids": ["string"],
+      "source_ids": ["string"],
+      "macro_regime_snapshot_ids": ["string"],
+      "hypothesis_token_ids": ["string"],
+      "pipeline_snapshot_ids": ["string"]
+    },
+    "analyst_contribution": {
+      "agent_id": "string",
+      "archetype_tags": ["string"],
+      "causal_patterns": ["string"],
+      "confidence_label": "low | medium | high",
+      "evidence_gaps": ["string"],
+      "output_hash": "string"
+    },
+    "pipeline_controller_contribution": {
+      "controller_id": "string",
+      "risk_bounds_checked": ["string"],
+      "leading_monitors_triggered": ["string"],
+      "blocked_actions": ["string"],
+      "output_hash": "string"
+    },
+    "orchestrator_contribution": {
+      "orchestrator_id": "string",
+      "routing_decisions": ["string"],
+      "review_required": true,
+      "blocked_or_escalated": "blocked | escalated | review_queue | none",
+      "output_hash": "string"
+    },
+    "final_review_only_output": {
+      "output_type": "hypothesis | review_queue_item | internal_digest | evidence_gap | outcome_review",
+      "safety_counters": {
+        "buy_sell_hold": 0,
+        "price_target": 0,
+        "trade_signal": 0,
+        "broker_order": 0
+      }
+    },
+    "debug_labels_if_failure": [
+      "analyst_wrong_archetype",
+      "analyst_overclaim",
+      "retrieval_failure",
+      "bad_baseline_basket",
+      "data_alignment_error",
+      "pipeline_lagging_metric_failure",
+      "orchestrator_bad_route",
+      "human_review_needed"
+    ]
+  }
+}

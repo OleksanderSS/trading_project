@@ -1,0 +1,39 @@
+registry_id: dean_semiconductor_issuer_identity_registry_v1
+domain_id: semiconductor_ai_infrastructure
+review_status: initial_mapping_requires_manual_acceptance
+
+eligibility:
+  strong_source_tiers:
+    - tier_1_primary_or_wire
+    - tier_2_strong_context
+  minimum_independent_strong_sources: 2
+  require_consistent_directional_stance: true
+  plain_substring_match_allowed: false
+  raw_fundamental_fact_is_directional_evidence: false
+  sector_context_can_close_ticker_lane: false
+
+issuers:
+  NVDA:
+    legal_name: NVIDIA Corporation
+    aliases:
+      - NVIDIA Corporation
+      - NVIDIA
+      - NVDA
+  AMD:
+    legal_name: Advanced Micro Devices, Inc.
+    aliases:
+      - Advanced Micro Devices
+      - AMD
+  INTC:
+    legal_name: Intel Corporation
+    aliases:
+      - Intel Corporation
+      - Intel
+      - INTC
+  TSM:
+    legal_name: Taiwan Semiconductor Manufacturing Company Limited
+    aliases:
+      - Taiwan Semiconductor Manufacturing
+      - Taiwan Semiconductor
+      - TSMC
+      - TSM

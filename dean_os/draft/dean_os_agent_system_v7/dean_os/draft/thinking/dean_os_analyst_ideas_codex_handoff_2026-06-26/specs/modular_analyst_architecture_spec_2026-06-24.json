@@ -1,0 +1,127 @@
+{
+  "name": "modular_analyst_architecture",
+  "version": "2026-06-24",
+  "purpose": "Codex-ready modular architecture for extensible DEAN-OS news/text analysis with regime context, patterns, scenario graphs, and outcome self-check.",
+  "core_principle": "Use a shared AnalysisPacket updated by modular analyst lenses rather than one monolithic news-analysis agent.",
+  "base_objects": [
+    "SourcePacket",
+    "AnalysisPacket",
+    "RegimeContextVector",
+    "EventRecord",
+    "ModuleDelta",
+    "ScenarioOutcomeGraph"
+  ],
+  "modules": [
+    "source_normalizer",
+    "source_quality_scorer",
+    "event_classifier",
+    "entity_asset_sector_linker",
+    "regime_context_builder",
+    "event_cluster_detector",
+    "transmission_mapper",
+    "expectation_gap_engine",
+    "historical_analog_retriever",
+    "historical_outcome_retriever",
+    "contradiction_matrix_builder",
+    "evidence_gap_prioritizer",
+    "hypothesis_ledger_updater",
+    "scenario_outcome_graph_builder",
+    "watch_signal_builder",
+    "analyst_report_builder",
+    "human_review_console",
+    "outcome_horizon_tracker",
+    "self_check_calibration_layer"
+  ],
+  "module_interface": {
+    "required_metadata": [
+      "module_name",
+      "module_version",
+      "input_contract",
+      "output_contract",
+      "required_fields",
+      "optional_fields",
+      "confidence_output",
+      "evidence_ids_used",
+      "assumptions_added",
+      "evidence_gaps_added",
+      "safety_boundary"
+    ],
+    "function_shape": "analyze(input_packet, analysis_state, config) -> analysis_state_delta"
+  },
+  "orchestrator": {
+    "responsibilities": [
+      "route packets",
+      "choose relevant modules",
+      "record which modules ran",
+      "record why modules ran or were skipped",
+      "merge deltas",
+      "preserve audit trail",
+      "enforce review-only boundary"
+    ],
+    "non_responsibilities": [
+      "make final unsupported predictions",
+      "execute trades",
+      "overwrite analysis state without deltas"
+    ]
+  },
+  "implementation_phases": {
+    "phase_1": [
+      "schemas",
+      "SourcePacket",
+      "AnalysisPacket",
+      "RegimeContextVector",
+      "EventRecord",
+      "ModuleDelta",
+      "ScenarioOutcomeGraph"
+    ],
+    "phase_2": [
+      "module_registry",
+      "source_normalizer",
+      "event_classifier",
+      "regime_context_builder",
+      "transmission_mapper",
+      "expectation_gap_engine",
+      "analyst_report_builder"
+    ],
+    "phase_3": [
+      "historical_analog_retriever",
+      "historical_outcome_retriever",
+      "outcome_horizon_tracker",
+      "self_check_calibration"
+    ],
+    "phase_4": [
+      "event_cluster_detector",
+      "contradiction_matrix",
+      "evidence_gap_prioritizer",
+      "hypothesis_ledger",
+      "second_order_exposure_graph"
+    ],
+    "phase_5": [
+      "human_review_console",
+      "paper_replay_evaluation",
+      "module_quality_metrics"
+    ]
+  },
+  "authority_boundary": {
+    "allowed": [
+      "classification",
+      "regime snapshot",
+      "scenario probabilities",
+      "evidence gaps",
+      "historical analogs",
+      "outcome tracking",
+      "watch signals",
+      "review packets",
+      "calibration notes"
+    ],
+    "forbidden": [
+      "live order",
+      "buy/sell/hold instruction",
+      "position sizing",
+      "broker routing",
+      "autonomous execution",
+      "production price targets",
+      "model promotion without gates"
+    ]
+  }
+}

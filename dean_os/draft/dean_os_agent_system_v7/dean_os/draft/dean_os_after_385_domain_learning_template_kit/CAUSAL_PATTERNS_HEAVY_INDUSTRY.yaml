@@ -1,0 +1,229 @@
+patterns:
+  - pattern_id: renewable_energy_growth_to_green_steel_demand
+    domain: heavy_industry
+    subdomain: green_steel
+    trigger_events:
+      - renewable_energy_capacity_expansion
+      - wind_turbine_manufacturing_growth
+      - solar_manufacturing_growth
+      - grid_infrastructure_capex
+      - green_public_procurement_policy
+      - low_carbon_material_subsidy
+    mechanism_chain:
+      - renewable_energy_capex_may_increase
+      - steel_intensive_assets_may_require_more_steel_input
+      - procurement_or_subsidy_rules_may_favor_low_carbon_materials
+      - part_of_steel_demand_may_shift_toward_green_steel
+      - steelmakers_with_verified_low_carbon_capacity_may_gain_volume_or_pricing_opportunity
+    affected_value_chain:
+      - wind_turbine_towers
+      - foundations
+      - solar_mounting_structures
+      - grid_transmission
+      - industrial_equipment
+      - low_carbon_steelmakers
+    intermediate_variables:
+      - renewable_capex
+      - steel_intensity_per_mw
+      - green_steel_price_premium
+      - subsidy_level
+      - carbon_price
+      - procurement_rules
+      - available_green_steel_capacity
+      - local_content_requirements
+    confirming_evidence:
+      - official_subsidy_or_procurement_rule
+      - renewable_project_pipeline_growth
+      - company_green_steel_capacity_disclosure
+      - order_backlog_or_offtake_agreement
+      - buyer_low_carbon_material_requirement
+    contradicting_evidence:
+      - no_low_carbon_procurement_requirement
+      - green_steel_price_premium_too_high
+      - limited_green_steel_supply
+      - project_delays_or_cancellations
+      - substitution_to_aluminum_or_composites
+    counterforces:
+      - higher_interest_rates_reduce_capex
+      - permitting_delays
+      - weak_policy_enforcement
+      - conventional_steel_cost_advantage
+      - insufficient_verified_green_capacity
+    time_horizon:
+      - 1_2_years
+      - 3_5_years
+      - structural_long_term
+    materiality_rules:
+      - high_if_policy_support_plus_company_capacity_plus_buyer_demand
+      - medium_if_sector_trend_visible_but_company_exposure_unclear
+      - low_if_only_broad_ESG_narrative_without_procurement_or_capacity_evidence
+    common_false_positives:
+      - treating_all_renewable_growth_as_green_steel_demand
+      - ignoring_price_premium
+      - confusing_steel_demand_with_green_steel_demand
+      - treating_capex_announcements_as_completed_demand
+    required_review: true
+
+  - pattern_id: rate_hike_to_industrial_capex_pressure
+    domain: heavy_industry
+    subdomain: industrial_capex
+    trigger_events:
+      - central_bank_rate_hike
+      - higher_bond_yields
+      - tighter_credit_conditions
+    mechanism_chain:
+      - financing_costs_increase
+      - leveraged_or_cyclical_industrial_projects_face_higher_hurdle_rates
+      - capex_may_be_delayed_or_reprioritized
+      - demand_for_capital_goods_or_construction_materials_may_weaken
+    affected_value_chain:
+      - machinery
+      - construction_steel
+      - cement
+      - mining_projects
+      - chemicals_capacity_expansion
+    intermediate_variables:
+      - debt_maturity_schedule
+      - net_debt_to_ebitda
+      - interest_coverage
+      - project_financing_dependency
+      - backlog_quality
+      - public_subsidy_offset
+    confirming_evidence:
+      - company_capex_guidance_reduction
+      - project_delay_announcements
+      - credit_spread_widening
+      - lower_order_intake
+    contradicting_evidence:
+      - public_funding_offsets
+      - fixed_rate_debt_profile
+      - contracted_backlog
+      - strategic_mandated_projects
+    counterforces:
+      - government_subsidies
+      - defense_or_energy_security_spending
+      - inflation_pass_through
+      - long_term_contracts
+    time_horizon:
+      - immediate
+      - 3_6_months
+      - 1_2_years
+    materiality_rules:
+      - high_if_rate_shock_plus_leverage_plus_discretionary_capex_exposure
+      - medium_if_rate_shock_but_company_exposure_indirect
+      - low_if_balance_sheet_strong_and_projects_subsidized
+    common_false_positives:
+      - assuming_all_rate_hikes_reduce_all_industrial_demand_equally
+      - ignoring_fixed_rate_debt
+      - ignoring_public_capex_programs
+    required_review: true
+
+  - pattern_id: carbon_policy_to_industrial_cost_curve_shift
+    domain: heavy_industry
+    subdomain: emissions_regulation
+    trigger_events:
+      - carbon_price_increase
+      - carbon_border_adjustment
+      - emissions_cap_tightening
+      - low_carbon_tax_credit
+    mechanism_chain:
+      - emissions_cost_or_incentive_changes
+      - relative_cost_curve_between_high_and_low_emission_producers_changes
+      - import_export_competitiveness_may_shift
+      - investment_in_low_carbon_processes_may_accelerate
+    affected_value_chain:
+      - steel
+      - cement
+      - chemicals
+      - aluminum
+      - energy_intensive_exports
+    intermediate_variables:
+      - emissions_intensity
+      - carbon_price
+      - free_allowances
+      - pass_through_ability
+      - import_exposure
+      - low_carbon_capex_readiness
+    confirming_evidence:
+      - official_regulation_text
+      - company_emissions_intensity_disclosure
+      - margin_sensitivity_to_carbon_cost
+      - capex_plan_for_low_carbon_processes
+    contradicting_evidence:
+      - exemptions_or_free_allowances
+      - weak_enforcement
+      - inability_to_pass_through_cost
+      - low_import_exposure
+    counterforces:
+      - subsidies
+      - transitional_relief
+      - customer_resistance_to_premium
+      - technology_delay
+    time_horizon:
+      - 1_2_years
+      - 3_5_years
+      - structural_long_term
+    materiality_rules:
+      - high_if_regulation_binding_and_company_emissions_exposure_material
+      - medium_if_policy_direction_clear_but_timeline_uncertain
+      - low_if_non_binding_policy_statement_only
+    common_false_positives:
+      - treating_policy_proposal_as_enacted_law
+      - ignoring_free_allowances
+      - ignoring_regional_differences
+    required_review: true
+
+  - pattern_id: trade_tariff_to_domestic_utilization_shift
+    domain: heavy_industry
+    subdomain: trade_policy
+    trigger_events:
+      - import_tariff
+      - anti_dumping_measure
+      - export_restriction
+      - local_content_rule
+    mechanism_chain:
+      - relative_import_cost_or_availability_changes
+      - domestic_producers_may_gain_pricing_or_utilization_support
+      - downstream_users_may_face_higher_input_costs
+      - trade_flows_may_reroute
+    affected_value_chain:
+      - domestic_steelmakers
+      - downstream_manufacturers
+      - exporters
+      - importers
+      - logistics
+    intermediate_variables:
+      - import_share
+      - domestic_capacity_utilization
+      - tariff_rate
+      - demand_elasticity
+      - downstream_margin_pressure
+      - retaliation_risk
+    confirming_evidence:
+      - official_tariff_text
+      - import_volume_share
+      - domestic_capacity_availability
+      - company_exposure_by_region
+    contradicting_evidence:
+      - insufficient_domestic_capacity
+      - weak_demand
+      - exemptions
+      - pass_through_failure
+    counterforces:
+      - retaliation
+      - demand_destruction
+      - substitution
+      - inventory_overhang
+    time_horizon:
+      - immediate
+      - 3_6_months
+      - 1_2_years
+    materiality_rules:
+      - high_if_import_share_large_and_domestic_capacity_available
+      - medium_if_trade_flow_shift_plausible_but_demand_uncertain
+      - low_if_exemptions_or_low_import_exposure
+    common_false_positives:
+      - assuming_tariffs_help_all_domestic_companies
+      - ignoring_downstream_cost_pressure
+      - ignoring_retaliation
+    required_review: true

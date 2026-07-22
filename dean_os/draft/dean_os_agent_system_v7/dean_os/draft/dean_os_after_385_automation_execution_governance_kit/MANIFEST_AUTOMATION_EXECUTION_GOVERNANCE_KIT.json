@@ -1,0 +1,117 @@
+{
+  "kit_name": "dean_os_after_385_automation_execution_governance_kit",
+  "version": "after_385_v2",
+  "created_at_utc": "2026-06-21T13:15:26+00:00",
+  "purpose": "Automation and execution governance kit with v2 clarification that Pipeline Controller Agent governs daily automation runs.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Harvest/adapt useful templates; do not blind-merge.",
+  "files": [
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/AGENT_LEARNING_AUTOMATION_TEMPLATE.yaml",
+      "sha256": "96726c46e20efaedac229f7e561aab0d3ffb9edae4caf8551501cb41c90584f6",
+      "bytes": 862
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/ANALYST_ROUTING_REVIEW_QUEUE_TEMPLATE.yaml",
+      "sha256": "24ecf6043dfd7aef63284589b231f7acc5051689ef5ae32b7ff1291ade81ba0c",
+      "bytes": 837
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/AUTOMATION_MATURITY_LADDER.md",
+      "sha256": "06b25e75844fc2f49d57d430de6f002e8530db3973e90eb2b24d6c4589fa579e",
+      "bytes": 962
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/CODEX_AUTOMATION_EXECUTION_HARVEST_NOTES.md",
+      "sha256": "01abbf7862304581454e279e9ce94b81563224ce2aee2c9ff97add96da848a7a",
+      "bytes": 1667
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/COLLECTOR_HEALTH_AND_RUN_MANIFEST_TEMPLATE.yaml",
+      "sha256": "eba2bb33f2bc369eaa56fc50f814ca1466c5b64a975e24d5f60ec2b5cb90cd3e",
+      "bytes": 1614
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/CONSTRAINED_EXECUTION_GATEWAY_TEMPLATE.yaml",
+      "sha256": "2d5ca4a47b4fcbe29fe989562c99cd547d648b765b9a9fdfbc0c3c5c9caac434",
+      "bytes": 852
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/DAILY_AUTOMATION_RUN_TEMPLATE.yaml",
+      "sha256": "893863e6487af48d3fe830341d51908286952c442619bcd69bfc6d12ba026f6b",
+      "bytes": 717
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/EXISTING_PIPELINE_AUTOMATION_MAP.md",
+      "sha256": "1ac40e9bc06745af9838229872b3f15d48ccb460af4b520e58de56e0d3a00388",
+      "bytes": 3041
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/LOCAL_VERIFICATION_AUTOMATION_EXECUTION_GOVERNANCE_KIT.json",
+      "sha256": "60af86adbcffca21263d8bebfa67dc1bcf4284d2e9fd8097122886d79908dbc2",
+      "bytes": 645
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/MODEL_PROMOTION_AND_REPLAY_GATE_TEMPLATE.yaml",
+      "sha256": "698be4198676336dc38afaacf6a974f6335aca6b4ec3f39b973dc73fa6d7c213",
+      "bytes": 743
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/NEXT_USEFUL_TEMPLATE_RECOMMENDATIONS.md",
+      "sha256": "873132718814ee128adc176f5f4516063257ae82f6b3c0f4bcece73e53b6142a",
+      "bytes": 1718
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/NORMALIZED_EVENT_PACKET_SCHEMA.json",
+      "sha256": "ead16b449a0ae42c9b11d95f81bd927559c6a3ed0f7517a05c54ea0e39a18da7",
+      "bytes": 953
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/ORDER_DECISION_LINEAGE_SCHEMA.json",
+      "sha256": "66c5550c511ab4b8591772fe3336b3353267fb0a19e05077d5b71ccd25319770",
+      "bytes": 1394
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/PAPER_SHADOW_SUPERVISED_LIVE_GATES.md",
+      "sha256": "79497939d2299cbe293576e5f8fa61d30981a005d9c7493a5c08e2715c739ff0",
+      "bytes": 542
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/PIPELINE_CONTROLLER_AUTOMATION_BOUNDARY_NOTE.md",
+      "sha256": "2a0155b20f97117a41c7eebf84157edb349d609428feb9d15844bab4216e18de",
+      "bytes": 1517
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/PIPELINE_CONTROLLER_AUTOMATION_TEMPLATE.yaml",
+      "sha256": "c00cdd0cd87347107bc4c8be7b6f184aed56bdc54a8865589396e2573620c138",
+      "bytes": 780
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/PIPELINE_DAILY_RUN_GOVERNOR_TEMPLATE.yaml",
+      "sha256": "b2fab24805f285f44fb0ef957cb068f276e3c568f27f49537f7b0d00785622bd",
+      "bytes": 4328
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/README_AUTOMATION_EXECUTION_GOVERNANCE_KIT.md",
+      "sha256": "399dca87f60f26416bf351535320e7b9fcadb889b85b5a360b994863e0b496d8",
+      "bytes": 1233
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/RISK_LIMITS_KILL_SWITCH_TEMPLATE.yaml",
+      "sha256": "ba61a9e6c066bc04312060d4d11da97c85caa90517c18662fba206f091e982d7",
+      "bytes": 800
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/SIMPLE_PROCESS_AUTOMATION_BACKLOG.md",
+      "sha256": "546347e1b84bd7195e73585c8f10e0a3722684bfdb846105db0f45d7c8e32fc5",
+      "bytes": 624
+    },
+    {
+      "path": "dean_os_after_385_automation_execution_governance_kit/SOURCE_QUALITY_DEDUPE_TEMPLATE.yaml",
+      "sha256": "0631dd3f3336cf056bc734abd3595b9379b918f78c5295c5a025469913837367",
+      "bytes": 787
+    }
+  ]
+}

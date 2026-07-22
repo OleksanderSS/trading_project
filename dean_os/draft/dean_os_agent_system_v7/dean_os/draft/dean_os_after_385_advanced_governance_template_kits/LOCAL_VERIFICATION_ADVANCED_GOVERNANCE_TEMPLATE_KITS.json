@@ -1,0 +1,18 @@
+{
+  "kit_name": "dean_os_after_385_advanced_governance_template_kits",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T13:29:51+00:00",
+  "checks": {
+    "required_files_present": true,
+    "existing_pipeline_integration_map_present": true,
+    "data_provenance_present": true,
+    "analyst_debate_present": true,
+    "incident_postmortem_present": true,
+    "portfolio_governance_present": true,
+    "event_graph_learning_closure_present": true,
+    "non_numbered_practical_kit": true,
+    "production_code_created": false,
+    "review_only": true,
+    "trading_outputs_forbidden_by_default": true
+  }
+}

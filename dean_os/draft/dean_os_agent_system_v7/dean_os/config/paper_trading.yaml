@@ -1,0 +1,10 @@
+execution_model:
+  price_model: last_close
+  slippage_bps: 5
+  commission_per_trade: 1.0
+  market_impact_model: linear
+
+policy:
+  live_execution_enabled: false
+  paper_trading_enabled: true
+  require_human_approval: true

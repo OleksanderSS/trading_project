@@ -1,0 +1,18 @@
+
+transformers:
+  # - StandardScaler: Scales features to have a mean of 0 and a standard deviation of 1.
+  #   Best for algorithms that assume a Gaussian distribution.
+  - module: "src.features.transformers.transformers"
+    class: "StandardScalerTransformer"
+    params:
+      columns: [
+        "macd", "rsi", "bollinger_mavg", "atr", "obv", 
+        "sentiment_score", "news_volume", "volatility", "spread"
+      ]
+
+  # - MinMaxScaler: Scales features to a given range, typically [0, 1].
+  #   Useful for neural networks and algorithms sensitive to feature magnitudes.
+  - module: "src.features.transformers.transformers"
+    class: "MinMaxScalerTransformer"
+    params:
+      columns: [] # Specify columns here if needed, or leave empty if unused

@@ -1,0 +1,5432 @@
+{
+  "pack_id": "pack_semiconductor_ai_infrastructure_2026-07-02",
+  "domain_id": "semiconductor_ai_infrastructure",
+  "name": "semiconductor_ai_infrastructure knowledge pack",
+  "version": "0.1.0",
+  "description": "Knowledge pack built from saved producer artifacts for semiconductor_ai_infrastructure",
+  "tags": [
+    "auto-generated",
+    "from-artifacts",
+    "semiconductor_ai_infrastructure"
+  ],
+  "tickers": [],
+  "sources": [
+    {
+      "source_id": "src_evidence_6d9d6d9876c44ecdb48e03d08d0d8ae5",
+      "title": "Will TSM's Aggressive Capex Plan Strengthen Its Foundry Dominance? - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-03-27T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_1dee60456aeb4720924ee67e260cf535",
+      "title": "Semi equipment manufacturers dip despite Taiwan Semiconductor's high capex plans - Seeking Alpha",
+      "source_type": "news",
+      "reference": "seeking alpha",
+      "publisher": null,
+      "published_at": "2026-04-16T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_7cefc86528d84e269d917c422aa2bcae",
+      "title": "NVIDIA (NVDA) Sold Off Due to Investor Concerns About AI Capital Spending Sustainability - Yahoo Fin",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-04-20T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_8c813bdf22e24dfbb87c5529c95783de",
+      "title": "Microsoft calls for $190 billion in 2026 capital spending on soaring memory prices - CNBC",
+      "source_type": "news",
+      "reference": "cnbc",
+      "publisher": null,
+      "published_at": "2026-04-29T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_c3d88db6b17748cb8bd10b6b057b82f2",
+      "title": "Inside Meta’s $200 Billion Louisiana Data Center Bet",
+      "source_type": "news",
+      "reference": "bloomberg",
+      "publisher": null,
+      "published_at": "2026-05-18T20:00:06+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_69c0b00afb25490a8fa6a7a36e6f4d9e",
+      "title": "Nvidia (NVDA) Stock Rating Raised to Buy as Export Controls and AI Demand Set Up Strong Second Half",
+      "source_type": "news",
+      "reference": "foreignpolicyjournal.com",
+      "publisher": null,
+      "published_at": "2026-04-26T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_a71da7261b734dad94a7a703fd686e1d",
+      "title": "This Billionaire is Loading Up On Taiwan Semiconductor (TSM) Despite Geopolitical Risks - Yahoo Fina",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-05-01T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_6ce3c95a57b249e9afe1c18a518816e0",
+      "title": "Easing Chip Export Controls Will Fuel China's 'Techno-Surveillance State' Says Rep. Krishnamoorthi",
+      "source_type": "news",
+      "reference": "bloomberg",
+      "publisher": null,
+      "published_at": "2026-05-14T18:53:54+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_048c8e44c3d9428597365b90b3b8eda9",
+      "title": "TSMC Stock (TSM) Opinions on BofA Buy Rating and AI Demand | TSM Stock News - Quiver Quantitative",
+      "source_type": "news",
+      "reference": "quiver quantitative",
+      "publisher": null,
+      "published_at": "2026-03-15T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_3fd70df3fc5e4c3090ef632424e65fb5",
+      "title": "Will AI-Driven Chip Demand Help TSM Meet 2026 Revenue Growth Goal? - Zacks Investment Research",
+      "source_type": "news",
+      "reference": "zacks investment research",
+      "publisher": null,
+      "published_at": "2026-03-19T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_f6cf7f548c9f48fba7b1c00052e87051",
+      "title": "Taiwan Semiconductor Manufacturing (TSM) Soared on Strong AI Chip Demand - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-03-27T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_21acad7de42e47ec8160f2cd58703a61",
+      "title": "Taiwan Semiconductor Manufacturing Company Limited (TSM) is a Buy on Strong AI Chip Demand - Yahoo F",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-04-03T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_23bfc1347b81417d9e05bacc33afc81c",
+      "title": "How The Nvidia (NVDA) Narrative Is Shifting With US$1t AI Orders And Valuation Debates - Yahoo Finan",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-04-05T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_2c6fa1c231f744baa4f456272c6deef8",
+      "title": "NVIDIA Stock Surge: AI Demand Fuels Growth (NVDA) - GuruFocus",
+      "source_type": "news",
+      "reference": "gurufocus",
+      "publisher": null,
+      "published_at": "2026-04-14T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_ff0cb4b797e6495c90c86d501f409ab6",
+      "title": "TSMC first-quarter profit rises 58%, beats estimates as AI demand fuels record run - CNBC",
+      "source_type": "news",
+      "reference": "cnbc",
+      "publisher": null,
+      "published_at": "2026-04-16T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_9b73416d9a7f4af49febe6d422640574",
+      "title": "Is Taiwan Semiconductor Manufacturing Stock a Buy on Strong AI Demand? - The Motley Fool",
+      "source_type": "news",
+      "reference": "the motley fool",
+      "publisher": null,
+      "published_at": "2026-04-19T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_754cb1c986784a1aa1cfa08bca85189d",
+      "title": "How The NVIDIA (NVDA) Narrative Is Shifting With AI Demand And Valuation Debates - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-04-20T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_133a1e7059bc43dab9fd28574040f387",
+      "title": "TSMC (TSM) Hits Record Margins and Raises the Bar. The AI Demand Story Just Got Stronger - TipRanks",
+      "source_type": "news",
+      "reference": "tipranks",
+      "publisher": null,
+      "published_at": "2026-04-22T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_0caf587a95cd43348b7a51ec9db0c2ac",
+      "title": "Intel Shares Eclipse Dot-Com Peak After Strong Sales Forecast - Bloomberg.com",
+      "source_type": "news",
+      "reference": "bloomberg",
+      "publisher": null,
+      "published_at": "2026-04-23T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_15e464ed3419422080754a83de31b191",
+      "title": "AI demand lifts Intel (Nasdaq: INTC) Q1 2026 revenue and outlook - Stock Titan",
+      "source_type": "news",
+      "reference": "stock titan",
+      "publisher": null,
+      "published_at": "2026-04-23T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_2873954270af413e86ce700779436f30",
+      "title": "TSMC Stock Surges to Record High on Policy Boost, AI Demand - TradingView",
+      "source_type": "news",
+      "reference": "tradingview",
+      "publisher": null,
+      "published_at": "2026-04-24T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_f74c119114814c7087f01dad890076a5",
+      "title": "INTC Q1 Deep Dive: AI Demand and Advanced Manufacturing Propel Intel’s Outlook - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-04-24T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_1051d713c466452e96b6c0283234034c",
+      "title": "Intel Corp. (INTC) Soars to All-Time High as Revenues Climb on AI Demand - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-04-24T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_316df9a84b4f452a9b5687f3460d8fe5",
+      "title": "TSMC Stock Surges to Record High on Policy Boost, AI Demand - Zacks Investment Research",
+      "source_type": "news",
+      "reference": "zacks investment research",
+      "publisher": null,
+      "published_at": "2026-04-24T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_d44bf193cd2a418c95e422e587b7073b",
+      "title": "Nvidia (NVDA) Stock Rating Raised to Buy as Export Controls and AI Demand Set Up Strong Second Half",
+      "source_type": "news",
+      "reference": "foreignpolicyjournal.com",
+      "publisher": null,
+      "published_at": "2026-04-26T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_0d7460a7b3b54703b38abb7447df1e50",
+      "title": "Amazon Stock Wobbles Following Positive Chip Demand Comments - Barron's",
+      "source_type": "news",
+      "reference": "barron's",
+      "publisher": null,
+      "published_at": "2026-04-30T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_314569e04d7f478dbc7bfea82ed294ca",
+      "title": "AMD shares rally 19% on AI data center demand boom, rating upgrades - Investing.com",
+      "source_type": "news",
+      "reference": "investing.com",
+      "publisher": null,
+      "published_at": "2026-05-05T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_a49ca1b215a74320816c4c7551335130",
+      "title": "AMD Shares Soar After AI Demand Fuels Blockbuster Sales Forecast - Bloomberg.com",
+      "source_type": "news",
+      "reference": "bloomberg",
+      "publisher": null,
+      "published_at": "2026-05-05T20:19:47+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_a7726eb8593c44768d7e194fa4ca13d9",
+      "title": "AMD forecasts revenue above expectations on strong AI demand, shares jump 12% - Reuters",
+      "source_type": "news",
+      "reference": "reuters",
+      "publisher": null,
+      "published_at": "2026-05-05T22:28:48+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_0c851935c5ef4647ad3d51a99d5466d2",
+      "title": "AMD stock surges on Q1 earnings, driven by AI demand boom - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-05-06T13:47:53+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_e676f46678d74a21adfec32b70f507e3",
+      "title": "AMD shares hit record high, spark global chips rally on AI demand optimism - Reuters",
+      "source_type": "news",
+      "reference": "reuters",
+      "publisher": null,
+      "published_at": "2026-05-06T15:16:36+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_8053c0b29d2c43678dac864168de957b",
+      "title": "AMD stock soars on Q1 earnings beat, better-than-expected outlook amid strong AI chip demand - Yahoo",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-05-06T20:21:30+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_db74bb8c323b45008b659abdd2e234da",
+      "title": "Qnity Stock Rises on Strong Earnings. Semiconductor Demand Isn’t Slowing Down. - Barron's",
+      "source_type": "news",
+      "reference": "barron's",
+      "publisher": null,
+      "published_at": "2026-05-12T20:35:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_9baccb04e4d943b4b6702a0da36347f3",
+      "title": "Nebius stock soars as revenue jumps 684% on booming data center demand",
+      "source_type": "news",
+      "reference": "yahoo_finance_general",
+      "publisher": null,
+      "published_at": "2026-05-13T15:23:16+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_2f53f796bfcc447e8c2794426204bf87",
+      "title": "BMO Capital Says Prologis (PLD) Can Benefit From Data Center Demand",
+      "source_type": "news",
+      "reference": "yahoo_finance_general",
+      "publisher": null,
+      "published_at": "2026-05-13T17:02:24+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_c9c8cc1e2afd44118923951804de6065",
+      "title": "TSM Stock Jumps: Why Taiwan Semiconductor Shares Rose Today as AI Demand Resets the Chip Trade - Tec",
+      "source_type": "news",
+      "reference": "techstock²",
+      "publisher": null,
+      "published_at": "2026-05-14T23:32:49+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_fc2d4211860747c182996b27c75baeb1",
+      "title": "Samsung Elec and AMD sign MoU on AI memory, explore foundry partnership - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-03-18T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_72f20203de0c4a90bfac2988dc1ae256",
+      "title": "Will TSM's Aggressive Capex Plan Strengthen Its Foundry Dominance? - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-03-27T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_f6cb70bea53b4b318776840783965ac4",
+      "title": "TSMC Stock (TSM) Opinions on Capacity Constraints - Quiver Quantitative",
+      "source_type": "news",
+      "reference": "quiver quantitative",
+      "publisher": null,
+      "published_at": "2026-03-30T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_c58cd34e8682400fa622834817b0cdce",
+      "title": "How The Intel (INTC) Narrative Is Shifting With Advanced Packaging And Data Center Uncertainty - Yah",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-03-31T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_366c8d35624143788dbb7f0e123ffef5",
+      "title": "Will TSM's Advanced Packaging Push Unlock a New Growth Phase? - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-03-31T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_05834db6077047b899a3f056b76f32b3",
+      "title": "Will TSM's Advanced Packaging Push Unlock a New Growth Phase? - Zacks Investment Research",
+      "source_type": "news",
+      "reference": "zacks investment research",
+      "publisher": null,
+      "published_at": "2026-03-31T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_930e1f2c47bb4d149757a699453565d2",
+      "title": "TSLA stock slides, Supercharger prices, and who’s REALLY behind Elon’s big chip fab - Electrek",
+      "source_type": "news",
+      "reference": "electrek",
+      "publisher": null,
+      "published_at": "2026-04-08T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_245e4100151a43638bb649e5641d6005",
+      "title": "Chip Foundry TSMC Beats First-Quarter Targets, Guides Up - Investor's Business Daily",
+      "source_type": "news",
+      "reference": "investor's business daily",
+      "publisher": null,
+      "published_at": "2026-04-16T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_61ac61cbe17f4509a3a512c52e573ddb",
+      "title": "TSMC: Foundry Monopoly Is Cracking As Rivals Catch Up (Rating Downgrade) (NYSE:TSM) - Seeking Alpha",
+      "source_type": "news",
+      "reference": "seeking alpha",
+      "publisher": null,
+      "published_at": "2026-04-17T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_df9bd1855d6a437abfd891e4c8d9b60d",
+      "title": "Intel Hit Its Highest Price in 25 Years. Here's Why It Will Make a New All-Time High Intel’s year-to",
+      "source_type": "news",
+      "reference": "barchart.com",
+      "publisher": null,
+      "published_at": "2026-04-20T13:00:02+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_7b63fecb5a9541de8d7fa643e30fb8f1",
+      "title": "TSMC: The Market Is Pricing A Foundry Like A Cyclical. It Is Not One. (NYSE:TSM) - Seeking Alpha",
+      "source_type": "news",
+      "reference": "seeking alpha",
+      "publisher": null,
+      "published_at": "2026-04-21T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_ef1753948b4d436ebf7b6d494485bbfd",
+      "title": "Is Microsoft Corporation (MSFT) a Top AI Play on Azure Growth and Memory Supply Deal - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-04-22T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_4c0d4ee5aa084aa9a7c1a8b01c3514da",
+      "title": "With Tesla and SpaceX Using Intel’s 14A, Is INTC Stock a Buy Now as Part of an Early Bet on Its Foun",
+      "source_type": "news",
+      "reference": "yahoo entertainment",
+      "publisher": null,
+      "published_at": "2026-04-27T11:30:02+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_af39944f87d64f09b82ee54dcd734918",
+      "title": "Microsoft calls for $190 billion in 2026 capital spending on soaring memory prices - CNBC",
+      "source_type": "news",
+      "reference": "cnbc",
+      "publisher": null,
+      "published_at": "2026-04-29T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_b18cab8388b3411c99aa56a2caf698cd",
+      "title": "A Look At Intel (NasdaqGS:INTC) Valuation After AI CPU Momentum And Reported Apple And Google Foundr",
+      "source_type": "news",
+      "reference": "simplywall.st",
+      "publisher": null,
+      "published_at": "2026-05-03T16:34:49+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_0c25c29d76fb4f229324fa8820dcfe5a",
+      "title": "AMD expects 20% decline in gaming revenue from 'higher memory and component costs' in the second hal",
+      "source_type": "news",
+      "reference": "tom's hardware",
+      "publisher": null,
+      "published_at": "2026-05-05T07:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_ab97982f9b0d4b1b8b99b68354dea21c",
+      "title": "INTC Stock Jumps Overnight: Report Says Apple In Discussion With Intel Foundry For Manufacturing Cus",
+      "source_type": "news",
+      "reference": "stocktwits",
+      "publisher": null,
+      "published_at": "2026-05-05T07:14:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_00cfc480e82540e0b7696b119ecf84e8",
+      "title": "TSMC: Early Signs Of Formidable Foundry Competition (NYSE:TSM) - Seeking Alpha",
+      "source_type": "news",
+      "reference": "seeking alpha",
+      "publisher": null,
+      "published_at": "2026-05-07T02:09:59+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_ad4889a3b6e0438b9664d895068655c4",
+      "title": "Lisa Su Says AMD Has Secured Critical AI Memory Supply, But Rising Prices Threaten PC And Gaming Dem",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-05-07T15:00:45+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_808468d2caff40228651125e4c946501",
+      "title": "Assessing Intel (INTC) Valuation After Apple Foundry Deal And AI Earnings Momentum - simplywall.st",
+      "source_type": "news",
+      "reference": "simplywall.st",
+      "publisher": null,
+      "published_at": "2026-05-11T16:54:21+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_16652ee174a5470b8fd73c57dc464b50",
+      "title": "Memory Crunch Deepens Chasm Between Stock Winners and Losers",
+      "source_type": "news",
+      "reference": "bloomberg",
+      "publisher": null,
+      "published_at": "2026-05-13T01:50:13+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_faa0bcc8d8e84bf087de4eb659a4a03c",
+      "title": "Why Kulicke and Soffa (KLIC) Is Benefiting From the Advanced Packaging Recovery",
+      "source_type": "news",
+      "reference": "yahoo_finance_general",
+      "publisher": null,
+      "published_at": "2026-05-13T11:19:51+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_42c40e51803d4e35b01c715130d951e9",
+      "title": "Intel Foundry’s $1 Trillion Upside - Trefis",
+      "source_type": "news",
+      "reference": "trefis",
+      "publisher": null,
+      "published_at": "2026-05-13T13:55:39+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_31bd9e3e7bec4ce5959d47b9b2154aa2",
+      "title": "Why Lam Research (LRCX) Is Levered to AI-Driven Wafer Fab and Packaging Spending",
+      "source_type": "news",
+      "reference": "yahoo_finance_general",
+      "publisher": null,
+      "published_at": "2026-05-14T02:19:13+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_a3a99fed79d94543b162230281b6b076",
+      "title": "TSMC’s US$1.5t Chip Outlook Reshapes AI Supply Chain Risks And Rewards - Yahoo Finance",
+      "source_type": "news",
+      "reference": "yahoo finance",
+      "publisher": null,
+      "published_at": "2026-05-14T13:17:40+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_cc6c01295da54eb5924ec1f697753654",
+      "title": "Samsung, South Korean Union Resume Talks As Strike Threat Risks Disrupting Memory Chip Fabs",
+      "source_type": "news",
+      "reference": "zerohedge",
+      "publisher": null,
+      "published_at": "2026-05-16T13:55:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "unverified"
+    },
+    {
+      "source_id": "src_evidence_acc6929fbb91481aa38759350b109480",
+      "title": "NVIDIA Earnings Anticipated Amid Supply Constraints and China Uncertainty",
+      "source_type": "news",
+      "reference": "bloomberg",
+      "publisher": null,
+      "published_at": "2026-05-17T14:48:40+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:33:34.177380+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_b5f77a4d7dbf40e1a2c813238086460d",
+      "title": "BIS states that a license requirement continues to apply to advanced-computing items for entities he",
+      "source_type": "news",
+      "reference": "us_bureau_industry_security",
+      "publisher": null,
+      "published_at": "2026-05-31T00:00:00+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-02T11:35:28.169921+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "high"
+    },
+    {
+      "source_id": "src_evidence_9ddddc7320d647319cb84916d4525706",
+      "title": "macro observation high_yield_oas=2.83 percentage_points for 2026-06-26.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/BAMLH0A0HYM2",
+      "publisher": null,
+      "published_at": "2026-06-29T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_2ba379b5bb1f4209b07e1cbe807fcb66",
+      "title": "macro observation continued_claims=1821000.0 persons for 2026-06-13.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/CCSA",
+      "publisher": null,
+      "published_at": "2026-06-27T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_bffa31c0b31c4e73b0c2720569c5f33c",
+      "title": "macro observation cpi=333.979 index_1982_1984_100 for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/CPIAUCSL",
+      "publisher": null,
+      "published_at": "2026-06-17T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_e63bab2b1cf7449b82840c4630eccd9b",
+      "title": "macro observation wti_crude_oil=78.94 usd_per_barrel for 2026-06-22.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/DCOILWTICO",
+      "publisher": null,
+      "published_at": "2026-06-24T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_8c8079dfe7804154aeaf5ba405b16362",
+      "title": "macro observation usd_cny=6.7686 chinese_yuan_per_usd for 2026-06-18.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/DEXCHUS",
+      "publisher": null,
+      "published_at": "2026-06-23T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_895bcd1ae3f7400592a708e7264bfebc",
+      "title": "macro observation usd_eur=1.147 usd_per_euro for 2026-06-18.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/DEXUSEU",
+      "publisher": null,
+      "published_at": "2026-06-22T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_18f357fdeb2648c291e0e41583dc735b",
+      "title": "macro observation durable_goods_orders=332050.0 millions_usd for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/DGORDER",
+      "publisher": null,
+      "published_at": "2026-06-27T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_5b90704bd0df4c1aab4c27d198be4cc5",
+      "title": "macro observation treasury_10y_daily=4.4 percent for 2026-06-25.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/DGS10",
+      "publisher": null,
+      "published_at": "2026-06-26T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_5c5405aeb6e74798b14266899bdc8234",
+      "title": "macro observation real_disposable_personal_income=17983.8 billions_chained_2017_usd for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/DSPIC96",
+      "publisher": null,
+      "published_at": "2026-06-27T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_207d19017a844c9a989c6f94b7a555ad",
+      "title": "macro observation fed_funds_rate=3.63 percent for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/FEDFUNDS",
+      "publisher": null,
+      "published_at": "2026-06-04T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_f2c7900383d54c258c805417700937aa",
+      "title": "macro observation treasury_10y_monthly=4.48 percent for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/GS10",
+      "publisher": null,
+      "published_at": "2026-06-04T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_c1229f2d938e4386a8e0156ecf3f84e1",
+      "title": "macro observation treasury_2y_monthly=4.0 percent for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/GS2",
+      "publisher": null,
+      "published_at": "2026-06-04T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_d0eb400143184544ad2fd54733989267",
+      "title": "macro observation housing_starts=1177.0 thousands_units for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/HOUST",
+      "publisher": null,
+      "published_at": "2026-06-17T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_6a4de59f767d4120b7d7985e1f62036f",
+      "title": "macro observation industrial_production=102.6475 index_2017_100 for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/INDPRO",
+      "publisher": null,
+      "published_at": "2026-06-17T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_58690d348417420d96dfbb6a612c3d26",
+      "title": "macro observation manufacturing_employment=12605.0 thousands_persons for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/MANEMP",
+      "publisher": null,
+      "published_at": "2026-06-05T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_67dbd3235ccf4cd1a8b03c5474e2782c",
+      "title": "macro observation nonfarm_payrolls=159001.0 thousands_persons for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/PAYEMS",
+      "publisher": null,
+      "published_at": "2026-06-05T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_a0b58b658d154c6894b7bb3488e6ee5b",
+      "title": "macro observation pce_price_index=131.527 index_2017_100 for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/PCEPI",
+      "publisher": null,
+      "published_at": "2026-06-27T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_a5b2879c25304376b889134bf77e41e1",
+      "title": "macro observation core_pce_price_index=130.082 index_2017_100 for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/PCEPILFE",
+      "publisher": null,
+      "published_at": "2026-06-27T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_65dec16ffc8746248fcd9836c291e7bf",
+      "title": "macro observation building_permits=1413.0 thousands_units for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/PERMIT",
+      "publisher": null,
+      "published_at": "2026-06-17T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_990a772ec2164dd28632d01af7362efe",
+      "title": "macro observation producer_price_index=292.504 index_1982_100 for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/PPIACO",
+      "publisher": null,
+      "published_at": "2026-06-17T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_7941f038d8a645db960d501c4ea0881c",
+      "title": "macro observation retail_sales=763705.0 millions_usd for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/RSAFS",
+      "publisher": null,
+      "published_at": "2026-06-17T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_202ef808c536422f96bd899d1d2027d6",
+      "title": "macro observation yield_curve_10y_2y=0.31 percentage_points for 2026-06-26.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/T10Y2Y",
+      "publisher": null,
+      "published_at": "2026-06-27T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_c0c8cf3b452842ebbb952de42532322d",
+      "title": "macro observation total_vehicle_sales=16.485 millions_units for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/TOTALSA",
+      "publisher": null,
+      "published_at": "2026-06-05T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_c68fea734e8c4195a3338b6d410fd141",
+      "title": "macro observation consumer_sentiment=44.8 index_1966_q1_100 for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/UMCSENT",
+      "publisher": null,
+      "published_at": "2026-06-27T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_93c691ca136a4a87953a80e498cbe457",
+      "title": "macro observation unemployment_rate=4.3 percent for 2026-05-01.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/UNRATE",
+      "publisher": null,
+      "published_at": "2026-06-05T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_0f5c284947c943939f396480cad1c161",
+      "title": "macro observation vix=18.41 index_points for 2026-06-26.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/VIXCLS",
+      "publisher": null,
+      "published_at": "2026-06-29T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_d509429c44974d41b2e9c0d8f899fe6f",
+      "title": "macro observation federal_reserve_total_assets=6735645.0 millions_usd for 2026-06-24.",
+      "source_type": "macro",
+      "reference": "https://fred.stlouisfed.org/series/WALCL",
+      "publisher": null,
+      "published_at": "2026-06-26T23:59:59.999999+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:22:38.088329+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_9cc2e5205f35433e954755bdb0cfd574",
+      "title": "sector observation sector_median_return_20_session=3.555513744407024 percent for 2026-05-27/2026-06-",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_2c45ac5c750b4d34a8c647b86365da21",
+      "title": "sector observation sector_positive_breadth=0.75 ratio for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_4b6e4b50987549559944b2dd1c714507",
+      "title": "sector observation sector_median_excess_return_vs_qqq=6.838631063033485 percentage_points for 2026-0",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "medium"
+    },
+    {
+      "source_id": "src_evidence_eb39714f6bc94b59b94f4b769a761630",
+      "title": "sector observation sector_return_dispersion_20_session=5.466356488095736 percent for 2026-05-27/2026",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_1b4389ba71734c58b165332e003bb7f1",
+      "title": "sector observation sector_ticker_coverage=1.0 ratio for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_7cb8e4b3910c4608ab65192d423279f6",
+      "title": "sector observation sector_common_session_count=22.0 count for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_e067a241d03f4f5892a565d319f55cee",
+      "title": "sector observation amd_return_20_session=4.857290386251889 percent for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_82f5009eb03b415d9958b50e3d83fc52",
+      "title": "sector observation intc_return_20_session=4.854212453477924 percent for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_3c4244966b574e289cd22b440edbe926",
+      "title": "sector observation nvda_return_20_session=-8.394487283373541 percent for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_fd9eb5da5a3c4c7ab64c2cfe8ff605f6",
+      "title": "sector observation tsm_return_20_session=2.256815035336124 percent for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    },
+    {
+      "source_id": "src_evidence_57652fe8af5f4bee9d15bd3214573b94",
+      "title": "sector observation qqq_return_20_session=-3.2831173186264606 percent for 2026-05-27/2026-06-26.",
+      "source_type": "sector",
+      "reference": "reports\\dean_os\\pipeline_control_saved_price_repair_current\\pipeline_control_saved_price_repair_20260627T120633739200+0000\\artifacts\\prices_1d_resampled.parquet",
+      "publisher": null,
+      "published_at": "2026-06-27T12:06:33.956784+00:00",
+      "event_at": null,
+      "retrieved_at": "2026-07-01T13:18:09.756344+00:00",
+      "content_sha256": null,
+      "raw_storage_path": null,
+      "anchor": null,
+      "allowed_uses": [
+        "context",
+        "evidence",
+        "review"
+      ],
+      "known_limitations": [],
+      "reliability": "low"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "ki_evidence_6d9d6d9876c44ecdb48e03d08d0d8ae5",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Will TSM's Aggressive Capex Plan Strengthen Its Foundry Dominance? - Yahoo Finance",
+      "body": "Will TSM's Aggressive Capex Plan Strengthen Its Foundry Dominance? - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "capex_cycle",
+        "news",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "capex_cycle"
+      ],
+      "source_ids": [
+        "src_evidence_6d9d6d9876c44ecdb48e03d08d0d8ae5"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "capex_cycle",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_1dee60456aeb4720924ee67e260cf535",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Semi equipment manufacturers dip despite Taiwan Semiconductor's high capex plans - Seeking Alpha",
+      "body": "Semi equipment manufacturers dip despite Taiwan Semiconductor's high capex plans - Seeking Alpha",
+      "stance_hint": "unknown",
+      "tags": [
+        "capex_cycle",
+        "news",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "capex_cycle"
+      ],
+      "source_ids": [
+        "src_evidence_1dee60456aeb4720924ee67e260cf535"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "capex_cycle",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_7cefc86528d84e269d917c422aa2bcae",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "NVIDIA (NVDA) Sold Off Due to Investor Concerns About AI Capital Spending Sustainability - Yahoo Finance",
+      "body": "NVIDIA (NVDA) Sold Off Due to Investor Concerns About AI Capital Spending Sustainability - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "capex_cycle",
+        "news",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "capex_cycle"
+      ],
+      "source_ids": [
+        "src_evidence_7cefc86528d84e269d917c422aa2bcae"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "capex_cycle",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_8c813bdf22e24dfbb87c5529c95783de",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Microsoft calls for $190 billion in 2026 capital spending on soaring memory prices - CNBC",
+      "body": "Microsoft calls for $190 billion in 2026 capital spending on soaring memory prices - CNBC",
+      "stance_hint": "unknown",
+      "tags": [
+        "capex_cycle",
+        "news",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "capex_cycle"
+      ],
+      "source_ids": [
+        "src_evidence_8c813bdf22e24dfbb87c5529c95783de"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "capex_cycle",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_c3d88db6b17748cb8bd10b6b057b82f2",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Inside Meta’s $200 Billion Louisiana Data Center Bet",
+      "body": "Inside Meta’s $200 Billion Louisiana Data Center Bet",
+      "stance_hint": "unknown",
+      "tags": [
+        "capex_cycle",
+        "news",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "capex_cycle"
+      ],
+      "source_ids": [
+        "src_evidence_c3d88db6b17748cb8bd10b6b057b82f2"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "capex_cycle",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_69c0b00afb25490a8fa6a7a36e6f4d9e",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Nvidia (NVDA) Stock Rating Raised to Buy as Export Controls and AI Demand Set Up Strong Second Half - foreignpolicyjourn",
+      "body": "Nvidia (NVDA) Stock Rating Raised to Buy as Export Controls and AI Demand Set Up Strong Second Half - foreignpolicyjournal.com",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "policy_or_geopolitical",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "policy_or_geopolitical"
+      ],
+      "source_ids": [
+        "src_evidence_69c0b00afb25490a8fa6a7a36e6f4d9e"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "policy_or_geopolitical",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_a71da7261b734dad94a7a703fd686e1d",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "This Billionaire is Loading Up On Taiwan Semiconductor (TSM) Despite Geopolitical Risks - Yahoo Finance",
+      "body": "This Billionaire is Loading Up On Taiwan Semiconductor (TSM) Despite Geopolitical Risks - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "policy_or_geopolitical",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "policy_or_geopolitical"
+      ],
+      "source_ids": [
+        "src_evidence_a71da7261b734dad94a7a703fd686e1d"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "policy_or_geopolitical",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_6ce3c95a57b249e9afe1c18a518816e0",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Easing Chip Export Controls Will Fuel China's 'Techno-Surveillance State' Says Rep. Krishnamoorthi",
+      "body": "Easing Chip Export Controls Will Fuel China's 'Techno-Surveillance State' Says Rep. Krishnamoorthi",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "policy_or_geopolitical",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "policy_or_geopolitical"
+      ],
+      "source_ids": [
+        "src_evidence_6ce3c95a57b249e9afe1c18a518816e0"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "policy_or_geopolitical",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_048c8e44c3d9428597365b90b3b8eda9",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "TSMC Stock (TSM) Opinions on BofA Buy Rating and AI Demand | TSM Stock News - Quiver Quantitative",
+      "body": "TSMC Stock (TSM) Opinions on BofA Buy Rating and AI Demand | TSM Stock News - Quiver Quantitative",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_048c8e44c3d9428597365b90b3b8eda9"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_3fd70df3fc5e4c3090ef632424e65fb5",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Will AI-Driven Chip Demand Help TSM Meet 2026 Revenue Growth Goal? - Zacks Investment Research",
+      "body": "Will AI-Driven Chip Demand Help TSM Meet 2026 Revenue Growth Goal? - Zacks Investment Research",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_3fd70df3fc5e4c3090ef632424e65fb5"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_f6cf7f548c9f48fba7b1c00052e87051",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Taiwan Semiconductor Manufacturing (TSM) Soared on Strong AI Chip Demand - Yahoo Finance",
+      "body": "Taiwan Semiconductor Manufacturing (TSM) Soared on Strong AI Chip Demand - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_f6cf7f548c9f48fba7b1c00052e87051"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_21acad7de42e47ec8160f2cd58703a61",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Taiwan Semiconductor Manufacturing Company Limited (TSM) is a Buy on Strong AI Chip Demand - Yahoo Finance",
+      "body": "Taiwan Semiconductor Manufacturing Company Limited (TSM) is a Buy on Strong AI Chip Demand - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_21acad7de42e47ec8160f2cd58703a61"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_23bfc1347b81417d9e05bacc33afc81c",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "How The Nvidia (NVDA) Narrative Is Shifting With US$1t AI Orders And Valuation Debates - Yahoo Finance",
+      "body": "How The Nvidia (NVDA) Narrative Is Shifting With US$1t AI Orders And Valuation Debates - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_23bfc1347b81417d9e05bacc33afc81c"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_2c6fa1c231f744baa4f456272c6deef8",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "NVIDIA Stock Surge: AI Demand Fuels Growth (NVDA) - GuruFocus",
+      "body": "NVIDIA Stock Surge: AI Demand Fuels Growth (NVDA) - GuruFocus",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_2c6fa1c231f744baa4f456272c6deef8"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_ff0cb4b797e6495c90c86d501f409ab6",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "TSMC first-quarter profit rises 58%, beats estimates as AI demand fuels record run - CNBC",
+      "body": "TSMC first-quarter profit rises 58%, beats estimates as AI demand fuels record run - CNBC",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_ff0cb4b797e6495c90c86d501f409ab6"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_9b73416d9a7f4af49febe6d422640574",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Is Taiwan Semiconductor Manufacturing Stock a Buy on Strong AI Demand? - The Motley Fool",
+      "body": "Is Taiwan Semiconductor Manufacturing Stock a Buy on Strong AI Demand? - The Motley Fool",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_9b73416d9a7f4af49febe6d422640574"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_754cb1c986784a1aa1cfa08bca85189d",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "How The NVIDIA (NVDA) Narrative Is Shifting With AI Demand And Valuation Debates - Yahoo Finance",
+      "body": "How The NVIDIA (NVDA) Narrative Is Shifting With AI Demand And Valuation Debates - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_754cb1c986784a1aa1cfa08bca85189d"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_133a1e7059bc43dab9fd28574040f387",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "TSMC (TSM) Hits Record Margins and Raises the Bar. The AI Demand Story Just Got Stronger - TipRanks",
+      "body": "TSMC (TSM) Hits Record Margins and Raises the Bar. The AI Demand Story Just Got Stronger - TipRanks",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_133a1e7059bc43dab9fd28574040f387"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_0caf587a95cd43348b7a51ec9db0c2ac",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Intel Shares Eclipse Dot-Com Peak After Strong Sales Forecast - Bloomberg.com",
+      "body": "Intel Shares Eclipse Dot-Com Peak After Strong Sales Forecast - Bloomberg.com",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_0caf587a95cd43348b7a51ec9db0c2ac"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_15e464ed3419422080754a83de31b191",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "AI demand lifts Intel (Nasdaq: INTC) Q1 2026 revenue and outlook - Stock Titan",
+      "body": "AI demand lifts Intel (Nasdaq: INTC) Q1 2026 revenue and outlook - Stock Titan",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_15e464ed3419422080754a83de31b191"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_2873954270af413e86ce700779436f30",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "TSMC Stock Surges to Record High on Policy Boost, AI Demand - TradingView",
+      "body": "TSMC Stock Surges to Record High on Policy Boost, AI Demand - TradingView",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_2873954270af413e86ce700779436f30"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_f74c119114814c7087f01dad890076a5",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "INTC Q1 Deep Dive: AI Demand and Advanced Manufacturing Propel Intel’s Outlook - Yahoo Finance",
+      "body": "INTC Q1 Deep Dive: AI Demand and Advanced Manufacturing Propel Intel’s Outlook - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_f74c119114814c7087f01dad890076a5"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_1051d713c466452e96b6c0283234034c",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Intel Corp. (INTC) Soars to All-Time High as Revenues Climb on AI Demand - Yahoo Finance",
+      "body": "Intel Corp. (INTC) Soars to All-Time High as Revenues Climb on AI Demand - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_1051d713c466452e96b6c0283234034c"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_316df9a84b4f452a9b5687f3460d8fe5",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "TSMC Stock Surges to Record High on Policy Boost, AI Demand - Zacks Investment Research",
+      "body": "TSMC Stock Surges to Record High on Policy Boost, AI Demand - Zacks Investment Research",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_316df9a84b4f452a9b5687f3460d8fe5"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_d44bf193cd2a418c95e422e587b7073b",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Nvidia (NVDA) Stock Rating Raised to Buy as Export Controls and AI Demand Set Up Strong Second Half - foreignpolicyjourn",
+      "body": "Nvidia (NVDA) Stock Rating Raised to Buy as Export Controls and AI Demand Set Up Strong Second Half - foreignpolicyjournal.com",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_d44bf193cd2a418c95e422e587b7073b"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_0d7460a7b3b54703b38abb7447df1e50",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Amazon Stock Wobbles Following Positive Chip Demand Comments - Barron's",
+      "body": "Amazon Stock Wobbles Following Positive Chip Demand Comments - Barron's",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_0d7460a7b3b54703b38abb7447df1e50"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_314569e04d7f478dbc7bfea82ed294ca",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "AMD shares rally 19% on AI data center demand boom, rating upgrades - Investing.com",
+      "body": "AMD shares rally 19% on AI data center demand boom, rating upgrades - Investing.com",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_314569e04d7f478dbc7bfea82ed294ca"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_a49ca1b215a74320816c4c7551335130",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "AMD Shares Soar After AI Demand Fuels Blockbuster Sales Forecast - Bloomberg.com",
+      "body": "AMD Shares Soar After AI Demand Fuels Blockbuster Sales Forecast - Bloomberg.com",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_a49ca1b215a74320816c4c7551335130"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.7
+      }
+    },
+    {
+      "item_id": "ki_evidence_a7726eb8593c44768d7e194fa4ca13d9",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "AMD forecasts revenue above expectations on strong AI demand, shares jump 12% - Reuters",
+      "body": "AMD forecasts revenue above expectations on strong AI demand, shares jump 12% - Reuters",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_a7726eb8593c44768d7e194fa4ca13d9"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_0c851935c5ef4647ad3d51a99d5466d2",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "AMD stock surges on Q1 earnings, driven by AI demand boom - Yahoo Finance",
+      "body": "AMD stock surges on Q1 earnings, driven by AI demand boom - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_0c851935c5ef4647ad3d51a99d5466d2"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_e676f46678d74a21adfec32b70f507e3",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "AMD shares hit record high, spark global chips rally on AI demand optimism - Reuters",
+      "body": "AMD shares hit record high, spark global chips rally on AI demand optimism - Reuters",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_e676f46678d74a21adfec32b70f507e3"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_8053c0b29d2c43678dac864168de957b",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "AMD stock soars on Q1 earnings beat, better-than-expected outlook amid strong AI chip demand - Yahoo Finance",
+      "body": "AMD stock soars on Q1 earnings beat, better-than-expected outlook amid strong AI chip demand - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_8053c0b29d2c43678dac864168de957b"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_db74bb8c323b45008b659abdd2e234da",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Qnity Stock Rises on Strong Earnings. Semiconductor Demand Isn’t Slowing Down. - Barron's",
+      "body": "Qnity Stock Rises on Strong Earnings. Semiconductor Demand Isn’t Slowing Down. - Barron's",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_db74bb8c323b45008b659abdd2e234da"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_9baccb04e4d943b4b6702a0da36347f3",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "Nebius stock soars as revenue jumps 684% on booming data center demand",
+      "body": "Nebius stock soars as revenue jumps 684% on booming data center demand",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_9baccb04e4d943b4b6702a0da36347f3"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_2f53f796bfcc447e8c2794426204bf87",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "BMO Capital Says Prologis (PLD) Can Benefit From Data Center Demand",
+      "body": "BMO Capital Says Prologis (PLD) Can Benefit From Data Center Demand",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_2f53f796bfcc447e8c2794426204bf87"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_c9c8cc1e2afd44118923951804de6065",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "driver",
+      "title": "TSM Stock Jumps: Why Taiwan Semiconductor Shares Rose Today as AI Demand Resets the Chip Trade - TechStock²",
+      "body": "TSM Stock Jumps: Why Taiwan Semiconductor Shares Rose Today as AI Demand Resets the Chip Trade - TechStock²",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "sector_demand",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "sector_demand"
+      ],
+      "source_ids": [
+        "src_evidence_c9c8cc1e2afd44118923951804de6065"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "sector_demand",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_fc2d4211860747c182996b27c75baeb1",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Samsung Elec and AMD sign MoU on AI memory, explore foundry partnership - Yahoo Finance",
+      "body": "Samsung Elec and AMD sign MoU on AI memory, explore foundry partnership - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_fc2d4211860747c182996b27c75baeb1"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_72f20203de0c4a90bfac2988dc1ae256",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Will TSM's Aggressive Capex Plan Strengthen Its Foundry Dominance? - Yahoo Finance",
+      "body": "Will TSM's Aggressive Capex Plan Strengthen Its Foundry Dominance? - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_72f20203de0c4a90bfac2988dc1ae256"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_f6cb70bea53b4b318776840783965ac4",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "TSMC Stock (TSM) Opinions on Capacity Constraints - Quiver Quantitative",
+      "body": "TSMC Stock (TSM) Opinions on Capacity Constraints - Quiver Quantitative",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_f6cb70bea53b4b318776840783965ac4"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_c58cd34e8682400fa622834817b0cdce",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "How The Intel (INTC) Narrative Is Shifting With Advanced Packaging And Data Center Uncertainty - Yahoo Finance",
+      "body": "How The Intel (INTC) Narrative Is Shifting With Advanced Packaging And Data Center Uncertainty - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_c58cd34e8682400fa622834817b0cdce"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_366c8d35624143788dbb7f0e123ffef5",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Will TSM's Advanced Packaging Push Unlock a New Growth Phase? - Yahoo Finance",
+      "body": "Will TSM's Advanced Packaging Push Unlock a New Growth Phase? - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_366c8d35624143788dbb7f0e123ffef5"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_05834db6077047b899a3f056b76f32b3",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Will TSM's Advanced Packaging Push Unlock a New Growth Phase? - Zacks Investment Research",
+      "body": "Will TSM's Advanced Packaging Push Unlock a New Growth Phase? - Zacks Investment Research",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_05834db6077047b899a3f056b76f32b3"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_930e1f2c47bb4d149757a699453565d2",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "TSLA stock slides, Supercharger prices, and who’s REALLY behind Elon’s big chip fab - Electrek",
+      "body": "TSLA stock slides, Supercharger prices, and who’s REALLY behind Elon’s big chip fab - Electrek",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_930e1f2c47bb4d149757a699453565d2"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_245e4100151a43638bb649e5641d6005",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Chip Foundry TSMC Beats First-Quarter Targets, Guides Up - Investor's Business Daily",
+      "body": "Chip Foundry TSMC Beats First-Quarter Targets, Guides Up - Investor's Business Daily",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_245e4100151a43638bb649e5641d6005"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_61ac61cbe17f4509a3a512c52e573ddb",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "TSMC: Foundry Monopoly Is Cracking As Rivals Catch Up (Rating Downgrade) (NYSE:TSM) - Seeking Alpha",
+      "body": "TSMC: Foundry Monopoly Is Cracking As Rivals Catch Up (Rating Downgrade) (NYSE:TSM) - Seeking Alpha",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_61ac61cbe17f4509a3a512c52e573ddb"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_df9bd1855d6a437abfd891e4c8d9b60d",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Intel Hit Its Highest Price in 25 Years. Here's Why It Will Make a New All-Time High Intel’s year-to-date stock performa",
+      "body": "Intel Hit Its Highest Price in 25 Years. Here's Why It Will Make a New All-Time High Intel’s year-to-date stock performance, alongside its strategic moves in data centers and foundry operations, sets up the chipmaker to make new all-time...",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_df9bd1855d6a437abfd891e4c8d9b60d"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_7b63fecb5a9541de8d7fa643e30fb8f1",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "TSMC: The Market Is Pricing A Foundry Like A Cyclical. It Is Not One. (NYSE:TSM) - Seeking Alpha",
+      "body": "TSMC: The Market Is Pricing A Foundry Like A Cyclical. It Is Not One. (NYSE:TSM) - Seeking Alpha",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_7b63fecb5a9541de8d7fa643e30fb8f1"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_ef1753948b4d436ebf7b6d494485bbfd",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Is Microsoft Corporation (MSFT) a Top AI Play on Azure Growth and Memory Supply Deal - Yahoo Finance",
+      "body": "Is Microsoft Corporation (MSFT) a Top AI Play on Azure Growth and Memory Supply Deal - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_ef1753948b4d436ebf7b6d494485bbfd"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_4c0d4ee5aa084aa9a7c1a8b01c3514da",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "With Tesla and SpaceX Using Intel’s 14A, Is INTC Stock a Buy Now as Part of an Early Bet on Its Foundry Plans?",
+      "body": "With Tesla and SpaceX Using Intel’s 14A, Is INTC Stock a Buy Now as Part of an Early Bet on Its Foundry Plans?",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_4c0d4ee5aa084aa9a7c1a8b01c3514da"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_af39944f87d64f09b82ee54dcd734918",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Microsoft calls for $190 billion in 2026 capital spending on soaring memory prices - CNBC",
+      "body": "Microsoft calls for $190 billion in 2026 capital spending on soaring memory prices - CNBC",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_af39944f87d64f09b82ee54dcd734918"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_b18cab8388b3411c99aa56a2caf698cd",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "A Look At Intel (NasdaqGS:INTC) Valuation After AI CPU Momentum And Reported Apple And Google Foundry Deals - simplywall",
+      "body": "A Look At Intel (NasdaqGS:INTC) Valuation After AI CPU Momentum And Reported Apple And Google Foundry Deals - simplywall.st",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_b18cab8388b3411c99aa56a2caf698cd"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_0c25c29d76fb4f229324fa8820dcfe5a",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "AMD expects 20% decline in gaming revenue from 'higher memory and component costs' in the second half of the year — CEO",
+      "body": "AMD expects 20% decline in gaming revenue from 'higher memory and component costs' in the second half of the year — CEO Lisa Su warns of further memory crunch - Tom's Hardware",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_0c25c29d76fb4f229324fa8820dcfe5a"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_ab97982f9b0d4b1b8b99b68354dea21c",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "INTC Stock Jumps Overnight: Report Says Apple In Discussion With Intel Foundry For Manufacturing Custom Chips - Stocktwi",
+      "body": "INTC Stock Jumps Overnight: Report Says Apple In Discussion With Intel Foundry For Manufacturing Custom Chips - Stocktwits",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_ab97982f9b0d4b1b8b99b68354dea21c"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_00cfc480e82540e0b7696b119ecf84e8",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "TSMC: Early Signs Of Formidable Foundry Competition (NYSE:TSM) - Seeking Alpha",
+      "body": "TSMC: Early Signs Of Formidable Foundry Competition (NYSE:TSM) - Seeking Alpha",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_00cfc480e82540e0b7696b119ecf84e8"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_ad4889a3b6e0438b9664d895068655c4",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Lisa Su Says AMD Has Secured Critical AI Memory Supply, But Rising Prices Threaten PC And Gaming Demand - Yahoo Finance",
+      "body": "Lisa Su Says AMD Has Secured Critical AI Memory Supply, But Rising Prices Threaten PC And Gaming Demand - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_ad4889a3b6e0438b9664d895068655c4"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_808468d2caff40228651125e4c946501",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Assessing Intel (INTC) Valuation After Apple Foundry Deal And AI Earnings Momentum - simplywall.st",
+      "body": "Assessing Intel (INTC) Valuation After Apple Foundry Deal And AI Earnings Momentum - simplywall.st",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_808468d2caff40228651125e4c946501"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_16652ee174a5470b8fd73c57dc464b50",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Memory Crunch Deepens Chasm Between Stock Winners and Losers",
+      "body": "Memory Crunch Deepens Chasm Between Stock Winners and Losers",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_16652ee174a5470b8fd73c57dc464b50"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_faa0bcc8d8e84bf087de4eb659a4a03c",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Why Kulicke and Soffa (KLIC) Is Benefiting From the Advanced Packaging Recovery",
+      "body": "Why Kulicke and Soffa (KLIC) Is Benefiting From the Advanced Packaging Recovery",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_faa0bcc8d8e84bf087de4eb659a4a03c"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_42c40e51803d4e35b01c715130d951e9",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Intel Foundry’s $1 Trillion Upside - Trefis",
+      "body": "Intel Foundry’s $1 Trillion Upside - Trefis",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_42c40e51803d4e35b01c715130d951e9"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_31bd9e3e7bec4ce5959d47b9b2154aa2",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Why Lam Research (LRCX) Is Levered to AI-Driven Wafer Fab and Packaging Spending",
+      "body": "Why Lam Research (LRCX) Is Levered to AI-Driven Wafer Fab and Packaging Spending",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_31bd9e3e7bec4ce5959d47b9b2154aa2"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_a3a99fed79d94543b162230281b6b076",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "TSMC’s US$1.5t Chip Outlook Reshapes AI Supply Chain Risks And Rewards - Yahoo Finance",
+      "body": "TSMC’s US$1.5t Chip Outlook Reshapes AI Supply Chain Risks And Rewards - Yahoo Finance",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_a3a99fed79d94543b162230281b6b076"
+      ],
+      "confidence": 0.55,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_cc6c01295da54eb5924ec1f697753654",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "Samsung, South Korean Union Resume Talks As Strike Threat Risks Disrupting Memory Chip Fabs",
+      "body": "Samsung, South Korean Union Resume Talks As Strike Threat Risks Disrupting Memory Chip Fabs",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_cc6c01295da54eb5924ec1f697753654"
+      ],
+      "confidence": 0.3,
+      "importance": 3,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_acc6929fbb91481aa38759350b109480",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "NVIDIA Earnings Anticipated Amid Supply Constraints and China Uncertainty",
+      "body": "NVIDIA Earnings Anticipated Amid Supply Constraints and China Uncertainty",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "supply_chain",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "supply_chain"
+      ],
+      "source_ids": [
+        "src_evidence_acc6929fbb91481aa38759350b109480"
+      ],
+      "confidence": 0.75,
+      "importance": 4,
+      "updated_at": "2026-07-02T11:33:34.177380+00:00",
+      "metadata": {
+        "evidence_type": "supply_chain",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.6
+      }
+    },
+    {
+      "item_id": "ki_evidence_b5f77a4d7dbf40e1a2c813238086460d",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "risk",
+      "title": "BIS states that a license requirement continues to apply to advanced-computing items for entities headquartered in Count",
+      "body": "BIS states that a license requirement continues to apply to advanced-computing items for entities headquartered in Country Group D:5 or Macau.",
+      "stance_hint": "unknown",
+      "tags": [
+        "news",
+        "policy_or_geopolitical",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "policy_or_geopolitical"
+      ],
+      "source_ids": [
+        "src_evidence_b5f77a4d7dbf40e1a2c813238086460d"
+      ],
+      "confidence": 0.9,
+      "importance": 5,
+      "updated_at": "2026-07-02T11:35:28.169921+00:00",
+      "metadata": {
+        "evidence_type": "policy_or_geopolitical",
+        "source_type": "news",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.8
+      }
+    },
+    {
+      "item_id": "ki_evidence_9ddddc7320d647319cb84916d4525706",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation high_yield_oas=2.83 percentage_points for 2026-06-26.",
+      "body": "macro observation high_yield_oas=2.83 percentage_points for 2026-06-26.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_9ddddc7320d647319cb84916d4525706"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_2ba379b5bb1f4209b07e1cbe807fcb66",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation continued_claims=1821000.0 persons for 2026-06-13.",
+      "body": "macro observation continued_claims=1821000.0 persons for 2026-06-13.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_2ba379b5bb1f4209b07e1cbe807fcb66"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_bffa31c0b31c4e73b0c2720569c5f33c",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation cpi=333.979 index_1982_1984_100 for 2026-05-01.",
+      "body": "macro observation cpi=333.979 index_1982_1984_100 for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_bffa31c0b31c4e73b0c2720569c5f33c"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_e63bab2b1cf7449b82840c4630eccd9b",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation wti_crude_oil=78.94 usd_per_barrel for 2026-06-22.",
+      "body": "macro observation wti_crude_oil=78.94 usd_per_barrel for 2026-06-22.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_e63bab2b1cf7449b82840c4630eccd9b"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_8c8079dfe7804154aeaf5ba405b16362",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation usd_cny=6.7686 chinese_yuan_per_usd for 2026-06-18.",
+      "body": "macro observation usd_cny=6.7686 chinese_yuan_per_usd for 2026-06-18.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_8c8079dfe7804154aeaf5ba405b16362"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_895bcd1ae3f7400592a708e7264bfebc",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation usd_eur=1.147 usd_per_euro for 2026-06-18.",
+      "body": "macro observation usd_eur=1.147 usd_per_euro for 2026-06-18.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_895bcd1ae3f7400592a708e7264bfebc"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_18f357fdeb2648c291e0e41583dc735b",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation durable_goods_orders=332050.0 millions_usd for 2026-05-01.",
+      "body": "macro observation durable_goods_orders=332050.0 millions_usd for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_18f357fdeb2648c291e0e41583dc735b"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_5b90704bd0df4c1aab4c27d198be4cc5",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation treasury_10y_daily=4.4 percent for 2026-06-25.",
+      "body": "macro observation treasury_10y_daily=4.4 percent for 2026-06-25.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_5b90704bd0df4c1aab4c27d198be4cc5"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_5c5405aeb6e74798b14266899bdc8234",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation real_disposable_personal_income=17983.8 billions_chained_2017_usd for 2026-05-01.",
+      "body": "macro observation real_disposable_personal_income=17983.8 billions_chained_2017_usd for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_5c5405aeb6e74798b14266899bdc8234"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_207d19017a844c9a989c6f94b7a555ad",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation fed_funds_rate=3.63 percent for 2026-05-01.",
+      "body": "macro observation fed_funds_rate=3.63 percent for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_207d19017a844c9a989c6f94b7a555ad"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_f2c7900383d54c258c805417700937aa",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation treasury_10y_monthly=4.48 percent for 2026-05-01.",
+      "body": "macro observation treasury_10y_monthly=4.48 percent for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_f2c7900383d54c258c805417700937aa"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_c1229f2d938e4386a8e0156ecf3f84e1",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation treasury_2y_monthly=4.0 percent for 2026-05-01.",
+      "body": "macro observation treasury_2y_monthly=4.0 percent for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_c1229f2d938e4386a8e0156ecf3f84e1"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_d0eb400143184544ad2fd54733989267",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation housing_starts=1177.0 thousands_units for 2026-05-01.",
+      "body": "macro observation housing_starts=1177.0 thousands_units for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_d0eb400143184544ad2fd54733989267"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_6a4de59f767d4120b7d7985e1f62036f",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation industrial_production=102.6475 index_2017_100 for 2026-05-01.",
+      "body": "macro observation industrial_production=102.6475 index_2017_100 for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_6a4de59f767d4120b7d7985e1f62036f"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_58690d348417420d96dfbb6a612c3d26",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation manufacturing_employment=12605.0 thousands_persons for 2026-05-01.",
+      "body": "macro observation manufacturing_employment=12605.0 thousands_persons for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_58690d348417420d96dfbb6a612c3d26"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_67dbd3235ccf4cd1a8b03c5474e2782c",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation nonfarm_payrolls=159001.0 thousands_persons for 2026-05-01.",
+      "body": "macro observation nonfarm_payrolls=159001.0 thousands_persons for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_67dbd3235ccf4cd1a8b03c5474e2782c"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_a0b58b658d154c6894b7bb3488e6ee5b",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation pce_price_index=131.527 index_2017_100 for 2026-05-01.",
+      "body": "macro observation pce_price_index=131.527 index_2017_100 for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_a0b58b658d154c6894b7bb3488e6ee5b"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_a5b2879c25304376b889134bf77e41e1",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation core_pce_price_index=130.082 index_2017_100 for 2026-05-01.",
+      "body": "macro observation core_pce_price_index=130.082 index_2017_100 for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_a5b2879c25304376b889134bf77e41e1"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_65dec16ffc8746248fcd9836c291e7bf",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation building_permits=1413.0 thousands_units for 2026-05-01.",
+      "body": "macro observation building_permits=1413.0 thousands_units for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_65dec16ffc8746248fcd9836c291e7bf"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_990a772ec2164dd28632d01af7362efe",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation producer_price_index=292.504 index_1982_100 for 2026-05-01.",
+      "body": "macro observation producer_price_index=292.504 index_1982_100 for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_990a772ec2164dd28632d01af7362efe"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_7941f038d8a645db960d501c4ea0881c",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation retail_sales=763705.0 millions_usd for 2026-05-01.",
+      "body": "macro observation retail_sales=763705.0 millions_usd for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_7941f038d8a645db960d501c4ea0881c"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_202ef808c536422f96bd899d1d2027d6",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation yield_curve_10y_2y=0.31 percentage_points for 2026-06-26.",
+      "body": "macro observation yield_curve_10y_2y=0.31 percentage_points for 2026-06-26.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_202ef808c536422f96bd899d1d2027d6"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_c0c8cf3b452842ebbb952de42532322d",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation total_vehicle_sales=16.485 millions_units for 2026-05-01.",
+      "body": "macro observation total_vehicle_sales=16.485 millions_units for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_c0c8cf3b452842ebbb952de42532322d"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_c68fea734e8c4195a3338b6d410fd141",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation consumer_sentiment=44.8 index_1966_q1_100 for 2026-05-01.",
+      "body": "macro observation consumer_sentiment=44.8 index_1966_q1_100 for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_c68fea734e8c4195a3338b6d410fd141"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_93c691ca136a4a87953a80e498cbe457",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation unemployment_rate=4.3 percent for 2026-05-01.",
+      "body": "macro observation unemployment_rate=4.3 percent for 2026-05-01.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_93c691ca136a4a87953a80e498cbe457"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_0f5c284947c943939f396480cad1c161",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation vix=18.41 index_points for 2026-06-26.",
+      "body": "macro observation vix=18.41 index_points for 2026-06-26.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_0f5c284947c943939f396480cad1c161"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_d509429c44974d41b2e9c0d8f899fe6f",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "macro observation federal_reserve_total_assets=6735645.0 millions_usd for 2026-06-24.",
+      "body": "macro observation federal_reserve_total_assets=6735645.0 millions_usd for 2026-06-24.",
+      "stance_hint": "unknown",
+      "tags": [
+        "macro",
+        "macro_context",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "macro_context"
+      ],
+      "source_ids": [
+        "src_evidence_d509429c44974d41b2e9c0d8f899fe6f"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:22:38.088329+00:00",
+      "metadata": {
+        "evidence_type": "macro_context",
+        "source_type": "macro",
+        "directness": "macro",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_9cc2e5205f35433e954755bdb0cfd574",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation sector_median_return_20_session=3.555513744407024 percent for 2026-05-27/2026-06-26.",
+      "body": "sector observation sector_median_return_20_session=3.555513744407024 percent for 2026-05-27/2026-06-26.",
+      "stance_hint": "positive",
+      "tags": [
+        "market_confirmation",
+        "positive",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_9cc2e5205f35433e954755bdb0cfd574"
+      ],
+      "confidence": 0.6,
+      "importance": 4,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.7
+      }
+    },
+    {
+      "item_id": "ki_evidence_2c45ac5c750b4d34a8c647b86365da21",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation sector_positive_breadth=0.75 ratio for 2026-05-27/2026-06-26.",
+      "body": "sector observation sector_positive_breadth=0.75 ratio for 2026-05-27/2026-06-26.",
+      "stance_hint": "positive",
+      "tags": [
+        "market_confirmation",
+        "positive",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_2c45ac5c750b4d34a8c647b86365da21"
+      ],
+      "confidence": 0.6,
+      "importance": 4,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.7
+      }
+    },
+    {
+      "item_id": "ki_evidence_4b6e4b50987549559944b2dd1c714507",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation sector_median_excess_return_vs_qqq=6.838631063033485 percentage_points for 2026-05-27/2026-06-26.",
+      "body": "sector observation sector_median_excess_return_vs_qqq=6.838631063033485 percentage_points for 2026-05-27/2026-06-26.",
+      "stance_hint": "positive",
+      "tags": [
+        "market_confirmation",
+        "positive",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_4b6e4b50987549559944b2dd1c714507"
+      ],
+      "confidence": 0.6,
+      "importance": 4,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.7
+      }
+    },
+    {
+      "item_id": "ki_evidence_eb39714f6bc94b59b94f4b769a761630",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation sector_return_dispersion_20_session=5.466356488095736 percent for 2026-05-27/2026-06-26.",
+      "body": "sector observation sector_return_dispersion_20_session=5.466356488095736 percent for 2026-05-27/2026-06-26.",
+      "stance_hint": "unknown",
+      "tags": [
+        "market_confirmation",
+        "sector",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_eb39714f6bc94b59b94f4b769a761630"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_1b4389ba71734c58b165332e003bb7f1",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation sector_ticker_coverage=1.0 ratio for 2026-05-27/2026-06-26.",
+      "body": "sector observation sector_ticker_coverage=1.0 ratio for 2026-05-27/2026-06-26.",
+      "stance_hint": "unknown",
+      "tags": [
+        "market_confirmation",
+        "sector",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_1b4389ba71734c58b165332e003bb7f1"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_7cb8e4b3910c4608ab65192d423279f6",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation sector_common_session_count=22.0 count for 2026-05-27/2026-06-26.",
+      "body": "sector observation sector_common_session_count=22.0 count for 2026-05-27/2026-06-26.",
+      "stance_hint": "unknown",
+      "tags": [
+        "market_confirmation",
+        "sector",
+        "unknown"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_7cb8e4b3910c4608ab65192d423279f6"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_e067a241d03f4f5892a565d319f55cee",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation amd_return_20_session=4.857290386251889 percent for 2026-05-27/2026-06-26.",
+      "body": "sector observation amd_return_20_session=4.857290386251889 percent for 2026-05-27/2026-06-26.",
+      "stance_hint": "positive",
+      "tags": [
+        "market_confirmation",
+        "positive",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_e067a241d03f4f5892a565d319f55cee"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_82f5009eb03b415d9958b50e3d83fc52",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation intc_return_20_session=4.854212453477924 percent for 2026-05-27/2026-06-26.",
+      "body": "sector observation intc_return_20_session=4.854212453477924 percent for 2026-05-27/2026-06-26.",
+      "stance_hint": "positive",
+      "tags": [
+        "market_confirmation",
+        "positive",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_82f5009eb03b415d9958b50e3d83fc52"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_3c4244966b574e289cd22b440edbe926",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation nvda_return_20_session=-8.394487283373541 percent for 2026-05-27/2026-06-26.",
+      "body": "sector observation nvda_return_20_session=-8.394487283373541 percent for 2026-05-27/2026-06-26.",
+      "stance_hint": "negative",
+      "tags": [
+        "market_confirmation",
+        "negative",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_3c4244966b574e289cd22b440edbe926"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_fd9eb5da5a3c4c7ab64c2cfe8ff605f6",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation tsm_return_20_session=2.256815035336124 percent for 2026-05-27/2026-06-26.",
+      "body": "sector observation tsm_return_20_session=2.256815035336124 percent for 2026-05-27/2026-06-26.",
+      "stance_hint": "positive",
+      "tags": [
+        "market_confirmation",
+        "positive",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_fd9eb5da5a3c4c7ab64c2cfe8ff605f6"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    },
+    {
+      "item_id": "ki_evidence_57652fe8af5f4bee9d15bd3214573b94",
+      "domain_id": "semiconductor_ai_infrastructure",
+      "item_type": "metric",
+      "title": "sector observation qqq_return_20_session=-3.2831173186264606 percent for 2026-05-27/2026-06-26.",
+      "body": "sector observation qqq_return_20_session=-3.2831173186264606 percent for 2026-05-27/2026-06-26.",
+      "stance_hint": "negative",
+      "tags": [
+        "market_confirmation",
+        "negative",
+        "sector"
+      ],
+      "tickers": [],
+      "sectors": [
+        "semiconductor_ai_infrastructure"
+      ],
+      "metrics": [
+        "market_confirmation"
+      ],
+      "source_ids": [
+        "src_evidence_57652fe8af5f4bee9d15bd3214573b94"
+      ],
+      "confidence": 0.5,
+      "importance": 3,
+      "updated_at": "2026-07-01T13:18:09.756344+00:00",
+      "metadata": {
+        "evidence_type": "market_confirmation",
+        "source_type": "sector",
+        "directness": "sector",
+        "freshness_score": 0.7,
+        "strength": 0.55
+      }
+    }
+  ],
+  "safety": {
+    "review_only": true,
+    "no_live_execution": true,
+    "no_broker_access": true,
+    "no_production_config_write": true,
+    "no_learning_memory_write": true,
+    "no_model_promotion": true
+  },
+  "metadata": {}
+}

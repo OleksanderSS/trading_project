@@ -1,0 +1,56 @@
+historical_periods_seed_list:
+  - period_id: late_1920s_pre_depression
+    years: "1927-1929"
+    regime_tags: [late_cycle, speculation, credit_expansion, pre_crisis]
+
+  - period_id: great_depression
+    years: "1929-1939"
+    regime_tags: [depression, deflation, banking_crisis, unemployment_shock, policy_experimentation]
+
+  - period_id: wwii_mobilization
+    years: "1939-1945"
+    regime_tags: [war, state_mobilization, rationing, industrial_capacity_shift, strategic_materials]
+
+  - period_id: postwar_reconstruction_boom
+    years: "1945-1960s"
+    regime_tags: [reconstruction, industrial_expansion, demographics, infrastructure]
+
+  - period_id: oil_shock_arab_israeli_war_1973_1974
+    years: "1973-1974"
+    regime_tags: [oil_shock, arab_israeli_war, inflation, embargo, energy_security]
+
+  - period_id: second_oil_shock_late_1970s
+    years: "1979-1981"
+    regime_tags: [oil_shock, inflation, monetary_tightening, recession_risk]
+
+  - period_id: volcker_disinflation
+    years: "1979-1984"
+    regime_tags: [restrictive_rates, disinflation, recession, credit_pressure]
+
+  - period_id: globalization_1990s
+    years: "1990-1999"
+    regime_tags: [globalization, disinflation, productivity, tech_cycle]
+
+  - period_id: dotcom_boom_bust
+    years: "1998-2002"
+    regime_tags: [tech_bubble, equity_crash, valuation_reset]
+
+  - period_id: global_financial_crisis
+    years: "2007-2009"
+    regime_tags: [banking_crisis, credit_freeze, housing_crash, emergency_policy]
+
+  - period_id: qe_low_rate_regime
+    years: "2009-2019"
+    regime_tags: [low_rates, qe, asset_inflation, low_inflation, globalization_late_stage]
+
+  - period_id: covid_shock
+    years: "2020-2021"
+    regime_tags: [pandemic, shutdown, fiscal_stimulus, supply_chain_disruption, demand_rotation]
+
+  - period_id: inflation_rate_shock_2021_2023
+    years: "2021-2023"
+    regime_tags: [inflation, rate_hikes, energy_shock, supply_constraints, post_covid_repricing]
+
+  - period_id: current_multipolar_ai_energy_transition_war_risk
+    years: "2024-present"
+    regime_tags: [multipolarity, war_risk, sanctions, industrial_policy, ai_capex, energy_transition, supply_chain_relocalization]

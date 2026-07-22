@@ -1,0 +1,52 @@
+schema_name: alerting_rules_template
+version: after_385_v1
+purpose: Define alerts for quality, safety, and data-pipeline health.
+
+alerts:
+  - alert_id: unsafe_output_counter_nonzero
+    severity: critical
+    condition: "any safety counter > 0"
+    action:
+      - block_publication
+      - require_human_review
+      - preserve_audit_log
+      - open_incident
+
+  - alert_id: daily_run_failed
+    severity: high
+    condition: "scheduled daily run did not complete"
+    action:
+      - create_incident
+      - skip_digest_or_mark_incomplete
+      - preserve_partial_outputs
+
+  - alert_id: retrieval_quality_degraded
+    severity: medium
+    condition: "rerank_precision_at_12 below threshold or no_evidence_answer_rate above threshold"
+    action:
+      - mark_outputs_low_confidence
+      - run_retrieval_regression_suite
+      - inspect_source_registry_and_index
+
+  - alert_id: time_leakage_detected
+    severity: critical
+    condition: "as_of_date eval uses future source"
+    action:
+      - block_backtest_use
+      - mark_snapshot_invalid
+      - open_regression_issue
+
+  - alert_id: numeric_metadata_missing
+    severity: high
+    condition: "numeric metadata completeness below threshold"
+    action:
+      - block_numeric_summary
+      - create_extraction_schema_issue
+
+  - alert_id: weak_source_overclaim
+    severity: high
+    condition: "strong conclusion generated from tier_3_or_tier_4 source without confirmation"
+    action:
+      - downgrade_to_hypothesis
+      - require_human_review
+      - add_source_quality_test

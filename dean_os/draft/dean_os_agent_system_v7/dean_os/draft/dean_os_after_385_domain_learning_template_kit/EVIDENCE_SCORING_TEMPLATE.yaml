@@ -1,0 +1,82 @@
+# Template: evidence scoring model for domain analyst evidence records.
+
+evidence_scoring_profile_id: heavy_industry_evidence_scoring_v1
+status: staged_template
+
+score_range:
+  min: 0.0
+  max: 1.0
+
+weights:
+  source_trust: 0.30
+  directness: 0.20
+  period_match: 0.12
+  entity_match: 0.10
+  numeric_or_table_quality: 0.10
+  corroboration: 0.08
+  contradiction_status: 0.06
+  recency_when_relevant: 0.04
+
+source_trust_scores:
+  tier_1_core_evidence: 1.00
+  tier_2_strong_context: 0.78
+  tier_3_event_context: 0.55
+  tier_4_weak_or_unverified: 0.20
+
+numeric_or_table_quality:
+  full_quality_requires:
+    - unit_detected
+    - period_detected
+    - table_or_text_anchor_present
+    - numeric_parse_confidence_at_or_above_threshold
+    - no_unresolved_footnote_dependency
+  penalties:
+    missing_unit: -0.25
+    missing_period: -0.25
+    low_table_confidence: -0.20
+    unresolved_currency_conversion: -0.15
+    unresolved_quarterly_vs_annual: -0.15
+
+contradiction_status_scores:
+  no_known_contradiction: 1.00
+  corroborated_by_independent_source: 1.00
+  partially_conflicting: 0.55
+  directly_conflicting: 0.20
+  unresolved_conflict: 0.30
+
+minimum_use_thresholds:
+  final_numeric_claim: 0.75
+  final_materiality_assessment: 0.70
+  context_only: 0.45
+  inquiry_trigger: 0.30
+
+fail_closed_rules:
+  - rule: numeric_claim_missing_unit
+    action: block_final_claim
+  - rule: numeric_claim_missing_period
+    action: block_final_claim
+  - rule: weak_source_only_material_conclusion
+    action: require_review_or_corroboration
+  - rule: table_confidence_below_threshold
+    action: quarantine_or_context_only
+  - rule: future_data_detected_in_as_of_analysis
+    action: block_answer
+  - rule: source_conflict_unresolved
+    action: flag_and_request_review
+
+output_fields:
+  - evidence_id
+  - entity_id
+  - claim_type
+  - claim_text
+  - metric_name
+  - value
+  - unit
+  - period_covered
+  - source_id
+  - source_anchor
+  - trust_tier
+  - evidence_score
+  - confidence_reason
+  - contradiction_status
+  - reviewer_status

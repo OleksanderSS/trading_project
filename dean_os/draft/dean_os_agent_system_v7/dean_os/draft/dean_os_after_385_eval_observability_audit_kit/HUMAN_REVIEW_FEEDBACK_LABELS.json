@@ -1,0 +1,57 @@
+{
+  "schema_name": "human_review_feedback_labels",
+  "version": "after_385_v1",
+  "labels": {
+    "source_grounding": [
+      "correct_source",
+      "wrong_source",
+      "missing_source",
+      "weak_source_overused",
+      "stale_source"
+    ],
+    "numeric_quality": [
+      "correct_number",
+      "wrong_number",
+      "missing_unit",
+      "wrong_unit",
+      "missing_period",
+      "wrong_period",
+      "capacity_production_confusion",
+      "production_shipments_confusion"
+    ],
+    "reasoning_quality": [
+      "good_mechanism",
+      "weak_mechanism",
+      "overclaim",
+      "missed_counterforce",
+      "good_evidence_gap",
+      "missing_evidence_gap",
+      "hypothesis_correctly_labeled",
+      "hypothesis_treated_as_fact"
+    ],
+    "causal_pattern_quality": [
+      "pattern_match_correct",
+      "pattern_false_positive",
+      "pattern_false_negative",
+      "time_horizon_correct",
+      "time_horizon_wrong"
+    ],
+    "safety": [
+      "safe_review_only",
+      "unsafe_recommendation",
+      "trade_signal_generated",
+      "price_target_generated",
+      "needs_escalation"
+    ],
+    "action": [
+      "accept",
+      "revise",
+      "reject",
+      "downgrade_confidence",
+      "request_more_evidence",
+      "add_regression_test",
+      "update_source_registry",
+      "update_causal_pattern"
+    ]
+  }
+}

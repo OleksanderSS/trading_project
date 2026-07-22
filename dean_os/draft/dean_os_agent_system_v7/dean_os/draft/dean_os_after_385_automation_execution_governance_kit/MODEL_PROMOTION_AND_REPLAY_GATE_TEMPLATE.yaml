@@ -1,0 +1,27 @@
+schema_name: model_promotion_and_replay_gate_template
+version: after_385_v1
+
+model_promotion_gate:
+  required_checks:
+    - data_quality_passed
+    - temporal_leakage_passed
+    - target_leakage_passed
+    - walk_forward_passed
+    - out_of_sample_passed
+    - drawdown_within_bounds
+    - turnover_within_bounds
+    - slippage_assumption_valid
+    - transaction_cost_assumption_valid
+    - decision_lineage_complete
+    - rollback_plan_exists
+  decision: blocked | review_required | approved_for_next_level
+
+replay_gate:
+  required_checks:
+    - as_of_data_only
+    - source_manifest_present
+    - no_future_leakage
+    - model_state_manifest_present
+    - decision_lineage_complete
+    - risk_limits_simulated
+    - outcome_review_generated

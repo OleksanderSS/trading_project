@@ -1,0 +1,43 @@
+schema_name: safe_automation_boundary_template
+version: after_385_v2
+purpose: >
+  Define the boundary for minimal daily automation. The system may collect, parse, normalize,
+  store, index, route, and create review artifacts. It may not trade, generate final investment
+  recommendations, mutate production trading configuration, or promote models without review.
+
+allowed_automation:
+  - scheduled_daily_collection
+  - source_allowlist_fetch
+  - parsing
+  - deduplication
+  - metadata_normalization
+  - event_extraction
+  - causal_pattern_matching
+  - materiality_watchlist_scoring
+  - evidence_gap_generation
+  - evidence_store_update
+  - vector_index_update
+  - review_queue_creation
+  - internal_digest_generation
+
+requires_human_review:
+  - high_materiality_hypothesis
+  - conflicting_sources
+  - low_source_quality_but_high_potential_impact
+  - policy_or_geopolitical_interpretation
+  - company_specific_materiality_claim
+  - production_config_change
+  - model_promotion
+  - any output that could be interpreted as recommendation
+
+forbidden_automation:
+  - broker_api_call
+  - order_creation
+  - autonomous_trade
+  - portfolio_rebalance
+  - buy_sell_hold_generation
+  - price_target_generation
+  - final_investment_recommendation
+  - production_trading_config_mutation
+  - model_promotion_without_review
+  - live_backtest_to_trade_bridge

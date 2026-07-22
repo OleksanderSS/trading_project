@@ -1,0 +1,13 @@
+{
+  "kit_name": "dean_os_after_385_eval_observability_audit_kit",
+  "version": "after_385_v1",
+  "checks": {
+    "required_files_present": true,
+    "no_numbered_block_created": true,
+    "review_only": true,
+    "production_code_created": false,
+    "safety_counters_defined": true,
+    "forbidden_trading_outputs_blocked": true
+  },
+  "file_count": 16
+}

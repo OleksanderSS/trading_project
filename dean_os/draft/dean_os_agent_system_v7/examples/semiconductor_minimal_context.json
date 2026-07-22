@@ -1,0 +1,32 @@
+{
+  "as_of": "2026-07-12T12:00:00+00:00",
+  "tickers": ["TSM"],
+  "timeframes": ["1d"],
+  "news": [
+    {
+      "title": "TSMC expands advanced packaging capacity as AI accelerator demand grows",
+      "summary": "Additional CoWoS capacity is intended to address HBM and advanced-packaging constraints.",
+      "published_at": "2026-07-11T08:00:00+00:00",
+      "url": "https://example.test/tsmc-cowos-capacity",
+      "tickers": ["TSM"],
+      "_dean_semantic_evidence": {
+        "producer_contract": "example_semantic_evidence_v1",
+        "evidence_type": "supply",
+        "matched_terms": ["advanced packaging", "cowos"],
+        "required_lane_eligible": true,
+        "source_tier": "tier_2_strong_context",
+        "source_identity": "example_fixture",
+        "candidate_sha256": "example-candidate",
+        "stance_hint": "positive"
+      }
+    }
+  ],
+  "metadata": {
+    "stage7_regime_review": {
+      "regime": "AI_CAPEX_BOOM"
+    },
+    "expectation_context": {
+      "status": "crowded_positive_expectations"
+    }
+  }
+}

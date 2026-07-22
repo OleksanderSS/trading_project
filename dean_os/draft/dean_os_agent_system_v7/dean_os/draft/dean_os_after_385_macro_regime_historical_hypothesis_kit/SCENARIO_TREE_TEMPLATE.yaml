@@ -1,0 +1,54 @@
+schema_name: scenario_tree_template
+version: after_385_v1
+
+scenario_tree:
+  scenario_tree_id: string
+  event_hypothesis_token_id: string
+  as_of_date: date
+  base_regime_snapshot_id: string
+
+  scenarios:
+    - scenario_id: base_case
+      probability: 0.50
+      thesis: string
+      mechanism_path: list[string]
+      expected_milestones: list[string]
+      expected_metrics:
+        - metric: string
+          direction: up | down | mixed | unclear
+          time_horizon: string
+      key_risks: list[string]
+      evidence_that_would_increase_probability: list[string]
+      evidence_that_would_decrease_probability: list[string]
+
+    - scenario_id: upside_case
+      probability: 0.25
+      thesis: string
+      mechanism_path: list[string]
+      expected_milestones: list[string]
+      key_risks: list[string]
+
+    - scenario_id: downside_case
+      probability: 0.25
+      thesis: string
+      mechanism_path: list[string]
+      expected_milestones: list[string]
+      key_risks: list[string]
+
+  probability_sum_must_equal: 1.0
+  output_boundary:
+    allowed: [scenario_tracking, evidence_gap_generation, review_queue_item]
+    forbidden: [buy_sell_hold, price_target, trade_signal]
+
+v2_expectation_gap_and_priors:
+  market_expectation_already_priced:
+    priced_probability: 0.0
+    positioning_state: underpriced | fairly_priced | crowded | extremely_crowded | unknown
+    expectation_sources: [options_market, futures_curve, analyst_consensus, sector_relative_performance, news_narrative, fund_flows]
+  probability_source:
+    type: historical_base_rate | market_implied | analyst_reviewed_prior | hybrid | unknown
+    event_database_query_id: string
+    analog_sample_size: integer
+    analog_quality_score: 0.0
+    llm_probability_allowed_as_final: false
+  rule: "Scenario branches can be drafted by LLM, but probabilities require base rates, market-implied data, or human-reviewed priors."

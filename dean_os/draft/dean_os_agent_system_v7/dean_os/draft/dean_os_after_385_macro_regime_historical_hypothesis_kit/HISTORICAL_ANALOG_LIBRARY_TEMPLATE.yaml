@@ -1,0 +1,39 @@
+schema_name: historical_analog_library_template
+version: after_385_v1
+
+historical_analog:
+  analog_id: string
+  source_event_or_period: string
+  target_event_or_hypothesis: string
+
+  similarity_dimensions:
+    macro_regime:
+      score: 0.0
+      notes: string
+    policy_mechanism:
+      score: 0.0
+      notes: string
+    sector_transmission:
+      score: 0.0
+      notes: string
+    geopolitical_context:
+      score: 0.0
+      notes: string
+    credit_conditions:
+      score: 0.0
+      notes: string
+    commodity_energy_context:
+      score: 0.0
+      notes: string
+
+  key_similarities: list[string]
+  key_differences: list[string]
+  false_analogy_risks: list[string]
+  relevant_mechanisms: list[string]
+  non_transferable_features: list[string]
+  confidence:
+    label: low | medium | high
+    reason: string
+
+  allowed_use: [context, scenario_generation, evidence_questions, review_prompt]
+  forbidden_use: [deterministic_prediction, direct_trade_signal, price_target]

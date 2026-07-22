@@ -1,0 +1,33 @@
+schema_name: risk_limits_kill_switch_template
+version: after_385_v1
+
+risk_limits:
+  max_position_size: required
+  max_portfolio_exposure: required
+  max_daily_loss: required
+  max_drawdown: required
+  max_order_frequency: required
+  max_slippage: required
+  liquidity_minimum: required
+  volatility_block: required
+
+kill_switch:
+  manual_kill_switch: required
+  automated_kill_switch: required
+  triggers:
+    - daily_loss_limit_breached
+    - drawdown_limit_breached
+    - stale_market_data
+    - broker_error
+    - repeated_order_rejection
+    - missing_decision_lineage
+    - model_state_unknown
+    - risk_engine_failure
+    - unauthorized_asset
+  actions:
+    - cancel_open_orders
+    - block_new_orders
+    - create_incident_report
+    - notify_operator
+
+rule: "Risk breach defaults to block."

@@ -1,0 +1,49 @@
+{
+  "schema_id": "domain_human_feedback_schema_template_v1",
+  "status": "staged_template",
+  "purpose": "Capture reviewer corrections for evidence use, retrieval quality, extraction errors, reasoning errors, and safety violations.",
+  "feedback_record_schema": {
+    "feedback_id": "string",
+    "reviewer_id": "string_or_role",
+    "timestamp_utc": "string",
+    "agent_profile_id": "string",
+    "task_id": "string",
+    "domain": "heavy_industry",
+    "review_type": "evidence | extraction | reasoning | safety | style | routing",
+    "severity": "low | medium | high | blocker",
+    "issue_type": [
+      "wrong_source",
+      "missing_source",
+      "weak_source_overweighted",
+      "wrong_unit",
+      "wrong_period",
+      "entity_mismatch",
+      "capacity_production_shipments_confusion",
+      "time_leakage",
+      "unsupported_inference",
+      "forbidden_recommendation",
+      "bad_routing",
+      "unclear_output"
+    ],
+    "evidence_ids_involved": [
+      "string"
+    ],
+    "incorrect_output_excerpt": "string|null",
+    "corrected_output_or_instruction": "string",
+    "should_update": {
+      "source_registry": false,
+      "ingestion_filter": false,
+      "rag_settings": false,
+      "evidence_scoring": false,
+      "eval_pack": false,
+      "fine_tuning_dataset": false
+    },
+    "approved_for_training_dataset": false
+  },
+  "aggregation_rules": {
+    "blocker_feedback_requires_human_review_before_reuse": true,
+    "repeat_wrong_unit_errors_threshold": 3,
+    "repeat_time_leakage_errors_threshold": 1,
+    "repeat_forbidden_recommendation_errors_threshold": 1
+  }
+}

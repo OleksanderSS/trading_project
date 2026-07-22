@@ -1,0 +1,19 @@
+schema_name: historical_data_usage_boundary_template
+version: after_385_v2
+purpose: Define how old historical data should and should not be used.
+
+historical_data_usage:
+  pre_1970:
+    allowed_use: [regime_context, crisis_pattern_calibration, policy_mechanism_comparison, broad_macro_cycle_comparison, credit_cycle_language, inflation_deflation_regime_comparison]
+    restricted_use: [sector_specific_forecast, company_specific_forecast, valuation_multiple_comparison, direct_market_prediction, modern_factor_model_calibration]
+    reason: "Economic structure, sector weights, data quality, accounting standards, market structure, monetary frameworks, and policy institutions differ materially from modern periods."
+  post_1970:
+    allowed_use: [regime_context, sector_level_analog_comparison_with_caution, policy_and_rate_cycle_comparison, commodity_and_energy_shock_comparison]
+    restrictions: [adjust_for_globalization, adjust_for_financialization, adjust_for_index_composition, adjust_for_policy_framework_changes]
+  modern_period:
+    allowed_use: [richer_indicator_analysis, sector_factor_behavior, market_implied_expectations, high_frequency_tracking]
+    restrictions: [avoid_overfitting_to_recent_regime, account_for_crowded_narratives]
+rules:
+  - use_old_history_for_regime_language_not_precise_modern_forecasts
+  - preserve_comparability_warning
+  - prefer_relative_phase_over_absolute_numbers

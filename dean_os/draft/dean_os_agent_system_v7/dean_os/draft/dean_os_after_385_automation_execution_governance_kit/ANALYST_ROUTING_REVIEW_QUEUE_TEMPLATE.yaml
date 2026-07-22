@@ -1,0 +1,32 @@
+schema_name: analyst_routing_review_queue_template
+version: after_385_v1
+
+routing_record:
+  event_id: string
+  route_to:
+    - macro_analyst
+    - sector_analyst
+    - geopolitical_risk_analyst
+    - pipeline_controller_context_consumer
+  routing_reason: string
+  directness: direct | indirect | contextual
+  materiality: low | medium | high | review_required
+
+review_queue_item:
+  item_id: string
+  event_id: string
+  priority: low | medium | high
+  review_reason:
+    - high_materiality
+    - weak_source
+    - expectation_gap_unclear
+    - regime_shift_candidate
+    - analyst_pipeline_conflict
+    - evidence_gap
+  requested_reviewer: human | analyst_lead | pipeline_lead
+  required_decision:
+    - approve_hypothesis_token
+    - reject_or_reclassify_event
+    - request_more_sources
+    - approve_replay_test
+    - block_escalation

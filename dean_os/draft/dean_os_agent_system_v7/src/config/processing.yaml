@@ -1,0 +1,46 @@
+# Configuration for data processing steps
+
+stage_2_processing:
+  requires: ['raw_data']
+
+safe_fill:
+  fill_with_zero:
+    - "news_score"
+    - "impact_score"
+    - "reverse_impact"
+    - "daily_sentiment"
+    - "match_count"
+    - "news_count"
+
+data_preparation:
+  test_size: 0.2
+  seq_len: 10
+  feature_columns:
+    - "feature_rsi"
+    - "feature_ema_cross"
+    - "feature_volatility"
+    - "feature_sentiment_score"
+    - "feature_news_volume"
+  targets_config:
+    - name: "target_regression_1d"
+      type: "regression"
+      params:
+        base_col: "close"
+        shift: -1
+    - name: "target_binary_1d_0_0"
+      type: "classification_binary"
+      params:
+        base_col: "close"
+        shift: -1
+        threshold: 0.0
+    - name: "target_multiclass_1d"
+      type: "classification_multiclass"
+      params:
+        base_col: "close"
+        shift: -1
+        thresholds: [-0.01, 0.01]
+    - name: "target_rsi_prediction_3d"
+      type: "indicator_prediction"
+      params:
+        indicator_col: "RSI_14"
+        shift: -3

@@ -1,0 +1,87 @@
+{
+  "kit_name": "dean_os_after_385_eval_observability_audit_kit",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T07:53:52+00:00",
+  "purpose": "Non-numbered practical templates for evaluating, observing, auditing, and regression-testing DEAN-OS agents, retrieval, domain-learning, causal patterns, and daily data accumulation runs.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Harvest/adapt useful templates; do not blind-merge.",
+  "files": [
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/AGENT_EVAL_SUITE_TEMPLATE.md",
+      "sha256": "a966c7fd2b5eabe2496113687b31cc7a18415507ecd9d1c5f3e22a4e3e56e431",
+      "bytes": 1223
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/AGENT_OUTPUT_QUALITY_METRICS.yaml",
+      "sha256": "6e651dc90c6a88e4f81399888b0b3e5c91ad4488e4830865c14dd624ed3d8d06",
+      "bytes": 1440
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/ALERTING_RULES_TEMPLATE.yaml",
+      "sha256": "65fa35c420b2c9e9c3beda4058b356c544154da5b15397243e8d7b154e8ff93a",
+      "bytes": 1535
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/CAUSAL_PATTERN_FALSE_POSITIVE_TESTS.yaml",
+      "sha256": "3459032e72db34fdb5e6b1ce8a1c7640fe5ed1e40df8130b3015166fbcd91516",
+      "bytes": 1791
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/CODEX_EVAL_OBSERVABILITY_HARVEST_NOTES.md",
+      "sha256": "5cea6303e3b77565bbc17023ca8c665da40e0221aeb65ccd3102c1719d4c2ee8",
+      "bytes": 1052
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/DAILY_RUN_AUDIT_LOG_SCHEMA.json",
+      "sha256": "85d82d4b43a9b109871c46ce54d2e167c7c9c2fd202dadfe7d6e03a494a7f5a0",
+      "bytes": 1684
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/HUMAN_REVIEW_FEEDBACK_LABELS.json",
+      "sha256": "c5966f87ac97af7698c4c6bfd75aa26296a34fb3f156277eb7db03e2d675b66d",
+      "bytes": 1340
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/LOCAL_VERIFICATION_EVAL_OBSERVABILITY_AUDIT_KIT.json",
+      "sha256": "c9b6766e059dab3b78e7ceefbf7c449bd8dc9428849ca2fdb63f78f14e4adfbd",
+      "bytes": 356
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/NUMERIC_UNIT_TRAP_TESTS.yaml",
+      "sha256": "61507a3dd3d2cee3a3e393914284b47d1f1115897b98e5d35f69ebc316cec87f",
+      "bytes": 1735
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/OBSERVABILITY_DASHBOARD_TEMPLATE.md",
+      "sha256": "fa46b6fc02c43e836296c337bf7ec354d59008ba82874adbb6a717653d1197c1",
+      "bytes": 1532
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/README_EVAL_OBSERVABILITY_AUDIT_KIT.md",
+      "sha256": "33ca3e2d8a854a614d2ec26318f1783576b26abe11b6118572de45b7776c9ed8",
+      "bytes": 1701
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/REGRESSION_TEST_RUNBOOK.md",
+      "sha256": "07fef5d4719a082625c99c96c51bf4cb2a2831b57a2467d43ae078caf9d19b63",
+      "bytes": 1400
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/RETRIEVAL_EVAL_TEMPLATE.yaml",
+      "sha256": "abe2889b5cc41800802c53da5415893fd701018c1cc33d8afa20c8ea4fb92b02",
+      "bytes": 1098
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/SOURCE_GROUNDING_EVAL_TEMPLATE.yaml",
+      "sha256": "9b6da56668cf7300505b9cb482ecdc5a370f1370438d56d5f059b97d03d6e2f0",
+      "bytes": 1381
+    },
+    {
+      "path": "dean_os_after_385_eval_observability_audit_kit/TIME_LEAKAGE_TESTS.yaml",
+      "sha256": "8e12207aa406c767c081b011c20cc61543a4847314172e27249d01ae265f8be5",
+      "bytes": 1202
+    }
+  ]
+}

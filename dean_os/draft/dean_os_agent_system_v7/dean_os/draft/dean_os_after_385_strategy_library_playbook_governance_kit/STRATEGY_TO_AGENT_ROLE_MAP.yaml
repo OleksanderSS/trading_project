@@ -1,0 +1,59 @@
+schema_name: strategy_to_agent_role_map
+version: after_385_v1
+
+roles:
+  analyst_agent:
+    allowed:
+      - provide_macro_context
+      - tag_risk_archetypes
+      - identify_expectation_gap
+      - identify_evidence_gaps
+      - summarize_hypothesis_context
+    forbidden:
+      - direct_order
+      - final_buy_sell_hold
+      - price_target
+      - override_risk_engine
+
+  pipeline_controller_agent:
+    allowed:
+      - verify_input_contract
+      - check_data_quality
+      - check_feature_drift
+      - check_model_state
+      - check_regime_compatibility
+      - block_strategy
+      - request_replay_or_paper
+    forbidden:
+      - bypass_promotion_gate
+      - mutate_live_config_without_gate
+      - send_order
+
+  orchestrator:
+    allowed:
+      - route_strategy_review
+      - coordinate analyst_and_pipeline_inputs
+      - create_review_queue_item
+      - enforce_dependencies
+    forbidden:
+      - broker_order
+      - risk_override
+
+  risk_engine:
+    allowed:
+      - enforce_limits
+      - block_order
+      - trigger_kill_switch
+      - reduce_or_flatten_if_policy_allows
+    forbidden:
+      - accept_llm_override
+
+  execution_gateway:
+    allowed:
+      - reject_order
+      - queue_manual_review
+      - send_bounded_order_after_all_checks
+    forbidden:
+      - trade_without_lineage
+      - trade_when_kill_switch_active
+      - accept_llm_direct_order

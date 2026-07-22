@@ -1,0 +1,151 @@
+{
+  "name": "outcome_memory_timeframe_self_check",
+  "version": "2026-06-24",
+  "purpose": "Codex-ready design note for DEAN-OS analyst agents: retrieve historical analogs, store realized outcomes by fixed horizons, self-check scenario probabilities, and improve calibration without live trading authority.",
+  "default_horizons": [
+    "1d",
+    "5d",
+    "20d",
+    "60d",
+    "120d"
+  ],
+  "core_loop": [
+    "regime_snapshot",
+    "event_classification",
+    "historical_analog_retrieval",
+    "historical_outcome_retrieval",
+    "expectation_gap_analysis",
+    "scenario_probability_estimation",
+    "future_outcome_tracking",
+    "self_check",
+    "calibration_update",
+    "human_review"
+  ],
+  "schemas": {
+    "event_record": {
+      "required": [
+        "event_id",
+        "as_of_date",
+        "event_timestamp",
+        "source_ids",
+        "source_quality",
+        "event_class",
+        "affected_entities",
+        "affected_sectors",
+        "affected_commodities",
+        "regime_snapshot_id",
+        "market_expectation_before",
+        "evidence_gaps_at_as_of"
+      ]
+    },
+    "regime_snapshot": {
+      "required": [
+        "regime_snapshot_id",
+        "date",
+        "war_peace_geopolitical_state",
+        "economic_phase",
+        "inflation_rates_context",
+        "liquidity_credit_context",
+        "market_state",
+        "commodity_real_economy_stress",
+        "ai_tech_cycle",
+        "safe_haven_behavior",
+        "confidence",
+        "evidence_gaps"
+      ]
+    },
+    "scenario_set": {
+      "required": [
+        "scenario_set_id",
+        "event_id",
+        "as_of_date",
+        "scenario_probabilities",
+        "main_transmission_channels",
+        "expectation_gap",
+        "invalidation_signals",
+        "confidence",
+        "review_status"
+      ]
+    },
+    "realized_outcome": {
+      "required": [
+        "outcome_record_id",
+        "event_id",
+        "scenario_set_id",
+        "horizon",
+        "horizon_date",
+        "which_scenario_won",
+        "outcome_notes",
+        "data_quality"
+      ],
+      "optional_groups": [
+        "asset_outcomes",
+        "macro_outcomes",
+        "company_outcomes",
+        "news_outcomes"
+      ]
+    },
+    "self_check": {
+      "required": [
+        "self_check_id",
+        "event_id",
+        "scenario_set_id",
+        "horizon",
+        "predicted_scenario_distribution",
+        "realized_scenario",
+        "brier_score",
+        "scenario_hit",
+        "overconfidence_flag",
+        "agent_error_notes",
+        "calibration_update"
+      ]
+    }
+  },
+  "module_suggestions": {
+    "services": [
+      "analog_retrieval_service.py",
+      "outcome_horizon_tracker.py",
+      "scenario_calibration_service.py",
+      "expectation_gap_evaluator.py",
+      "no_lookahead_guard.py"
+    ],
+    "stores": [
+      "event_memory_store.py",
+      "outcome_memory_store.py",
+      "regime_snapshot_store.py",
+      "analyst_self_check_store.py"
+    ],
+    "reports": [
+      "daily_regime_snapshot_report.py",
+      "analyst_journal_note_builder.py",
+      "scenario_outcome_replay_report.py"
+    ],
+    "tests": [
+      "test_no_lookahead_guard.py",
+      "test_outcome_horizon_tracking.py",
+      "test_brier_score_computation.py",
+      "test_false_analogy_flagging.py",
+      "test_missing_outcome_fields_are_explicit.py"
+    ]
+  },
+  "authority_boundary": {
+    "allowed": [
+      "scenario probabilities",
+      "historical analogs",
+      "outcome checks",
+      "calibration notes",
+      "evidence gaps",
+      "watch signals",
+      "paper/replay evaluation",
+      "human-review packets"
+    ],
+    "forbidden": [
+      "live buy/sell orders",
+      "position sizing",
+      "broker routing",
+      "autonomous execution",
+      "production price targets",
+      "model promotion without gates"
+    ]
+  }
+}

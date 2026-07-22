@@ -1,0 +1,28 @@
+schema_name: regime_indicator_crosswalk_template
+version: after_385_v1
+
+crosswalk:
+  - concept: risk_appetite
+    modern_indicators: [VIX, credit_spreads, equity_volatility, fund_flows, sentiment_indices]
+    historical_proxies: [market_drawdowns, realized_volatility_proxy, bank_failures, bond_spreads_where_available, panic_terms_in_news]
+    warning: "Do not compare modern VIX directly to pre-VIX periods."
+
+  - concept: economic_activity
+    modern_indicators: [real_GDP, industrial_production, PMI, payrolls, retail_sales]
+    historical_proxies: [industrial_production, railroad_freight, steel_output, electricity_generation, unemployment_estimates]
+    warning: "Use comparable frequency and geography."
+
+  - concept: credit_conditions
+    modern_indicators: [policy_rate, yield_curve, credit_spreads, lending_standards, loan_growth]
+    historical_proxies: [discount_rate, bank_failures, commercial_paper_rates, bond_spreads_where_available, credit_contraction_narratives]
+    warning: "Credit market structures differ across eras."
+
+  - concept: commodity_energy_shock
+    modern_indicators: [oil_price, gas_price, power_price, commodity_indices, futures_curves]
+    historical_proxies: [spot_prices, embargo_records, rationing_records, import_price_indices]
+    warning: "Real vs nominal comparison required."
+
+  - concept: market_valuation
+    modern_indicators: [PE, CAPE, EV_EBITDA, equity_risk_premium]
+    historical_proxies: [broad_market_PE, dividend_yield, bond_yield_comparison]
+    warning: "Accounting standards and index composition change over time."

@@ -1,0 +1,16 @@
+{
+  "zip_path": "/mnt/data/dean_os_after_385_codex_integration_kit.zip",
+  "zip_sha256": "b2c8c63148157214941ed401140a884c60f3b220183509b226ad957051492fa5",
+  "zip_size_bytes": 9220,
+  "zip_testzip_bad_entry": null,
+  "duplicate_entries": 0,
+  "entry_count": 6,
+  "entries": [
+    "dean_os_after_385_codex_integration_kit/CODEX_HARVEST_PRIORITY_MATRIX_AFTER_385.md",
+    "dean_os_after_385_codex_integration_kit/CODEX_INTEGRATION_BRIEF_AFTER_385.md",
+    "dean_os_after_385_codex_integration_kit/CODEX_PROMPT_AFTER_385.txt",
+    "dean_os_after_385_codex_integration_kit/CODEX_REPO_RECONCILIATION_CHECKLIST_AFTER_385.md",
+    "dean_os_after_385_codex_integration_kit/MANIFEST_AFTER_385_CODEX_INTEGRATION_KIT.json",
+    "dean_os_after_385_codex_integration_kit/README_AFTER_385_CODEX_INTEGRATION_KIT.md"
+  ]
+}

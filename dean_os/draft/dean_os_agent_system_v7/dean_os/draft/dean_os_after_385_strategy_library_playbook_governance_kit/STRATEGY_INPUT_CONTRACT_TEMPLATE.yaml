@@ -1,0 +1,54 @@
+schema_name: strategy_input_contract_template
+version: after_385_v1
+
+strategy_input_contract:
+  strategy_id: string
+  version: string
+
+  required_inputs:
+    market_data:
+      - price
+      - volume
+      - corporate_actions_if_needed
+    features:
+      - feature_snapshot_id
+      - feature_freshness
+      - feature_version
+    model:
+      - model_state_id
+      - model_version
+      - prediction_timestamp
+    macro_context:
+      - macro_regime_snapshot_id
+      - risk_archetype_tags
+      - regime_shift_assessment
+    evidence_context:
+      - hypothesis_token_ids
+      - source_ids
+      - expectation_gap_id
+      - evidence_gap_ids
+    risk_context:
+      - portfolio_risk_state_id
+      - capital_policy_id
+      - liquidity_state
+      - volatility_state
+
+  validation:
+    required_before_signal:
+      - schema_valid
+      - timestamps_aligned
+      - market_data_fresh
+      - feature_snapshot_present
+      - model_state_known
+      - macro_context_not_stale
+      - risk_state_available
+      - no_leakage_detected
+
+  forbidden_inputs:
+    - ungrounded_llm_text_as_signal
+    - future_data
+    - stale_market_data
+    - missing_source_lineage
+    - unknown_model_state
+    - unsupported_asset
+    - open_hypothesis_as_fact

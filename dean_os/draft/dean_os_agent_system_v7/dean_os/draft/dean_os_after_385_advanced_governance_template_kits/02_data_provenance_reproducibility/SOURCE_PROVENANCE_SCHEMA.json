@@ -1,0 +1,26 @@
+{
+  "schema_name": "source_provenance_schema",
+  "version": "after_385_v1",
+  "source_record": {
+    "source_id": "string",
+    "source_type": "news | filing | macro | market | sentiment | research | other",
+    "source_url_or_locator": "string",
+    "publisher": "string",
+    "author": "string | null",
+    "publication_date": "datetime | null",
+    "event_date": "datetime | null",
+    "ingestion_date": "datetime",
+    "retrieved_by": "collector_id",
+    "content_hash": "sha256",
+    "raw_storage_path": "string",
+    "normalized_packet_ids": ["string"],
+    "source_quality": {
+      "trust_tier": "tier_1 | tier_2 | tier_3 | tier_4 | unknown",
+      "is_primary_source": false,
+      "staleness_flag": "fresh | stale | unknown",
+      "known_limitations": ["string"]
+    },
+    "allowed_use": ["context", "event_detection", "evidence", "review"],
+    "restricted_use": ["final_probability", "company_fact_without_primary_confirmation"]
+  }
+}

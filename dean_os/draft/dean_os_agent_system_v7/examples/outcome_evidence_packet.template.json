@@ -1,0 +1,37 @@
+{
+  "horizon_days": 20,
+  "evaluation_as_of": "2026-08-01T12:00:00+00:00",
+  "evidence": [
+    {
+      "evidence_id": "replace-with-stable-outcome-evidence-id",
+      "source": "replace-with-source",
+      "observed_at": "2026-08-01T12:00:00+00:00",
+      "available_at": "2026-08-01T12:00:00+00:00",
+      "metric_name": "replace-with-observed-outcome-metric",
+      "value": "replace-with-point-in-time-value",
+      "unit": null,
+      "scope": "semiconductor_ai_infrastructure",
+      "quality_score": 1.0,
+      "provenance": {
+        "locator": "replace-with-url-artifact-id-or-hash"
+      }
+    }
+  ],
+  "scenario_resolutions": [
+    {
+      "scenario_node_id": "replace-with-node-id-from-stored-scenario-graph",
+      "status": "realized",
+      "confidence": 0.8,
+      "outcome_class": "replace-with-comparable-outcome-class",
+      "supporting_evidence_ids": [
+        "replace-with-stable-outcome-evidence-id"
+      ],
+      "contradicting_evidence_ids": [],
+      "rationale": "Explain why the evidence resolves this scenario."
+    }
+  ],
+  "hypothesis_resolutions": [],
+  "evidence_gaps": [
+    "List unresolved outcome evidence here."
+  ]
+}

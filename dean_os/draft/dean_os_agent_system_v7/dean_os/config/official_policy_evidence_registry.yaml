@@ -1,0 +1,21 @@
+registry_version: official_policy_evidence_v1
+review_status: agent_verified_official_source_review_only
+
+documents:
+  d7296438740efad835badddb5daa6cfd8d3a43bb62fedbf5a7a817c79828610b:
+    title: Guidance Regarding Enforcement of License Requirements for Advanced Computing Items for Entities Headquartered in Country Group D:5 and Macau
+    published_at: "2026-05-31T00:00:00+00:00"
+    source_url: https://media.bis.gov/media/documents/bis-guidance-may-31-2026.pdf
+    source_identity: us_bureau_industry_security
+    source_tier: tier_1_core_evidence
+    evidence_type: policy_or_geopolitical
+    semantic_claim: BIS states that a license requirement continues to apply to advanced-computing items for entities headquartered in Country Group D:5 or Macau.
+    matched_terms:
+      - advanced computing items
+      - license requirement
+      - Country Group D:5
+    visual_verification:
+      page_count: 1
+      verified_at: "2026-07-02T00:00:00+03:00"
+      status: source_title_date_and_claim_visible
+

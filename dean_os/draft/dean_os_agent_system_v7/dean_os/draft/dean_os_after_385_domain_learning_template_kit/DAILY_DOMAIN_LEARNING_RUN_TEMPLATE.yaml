@@ -1,0 +1,86 @@
+schedule_name: daily_domain_learning_run_template
+version: after_385_v2
+mode: data_accumulation_and_review_only
+frequency: daily
+
+purpose: >
+  Run collectors and analysts once per day to accumulate data, normalize new information,
+  detect causal/context patterns, update evidence stores, and create review queues.
+  This is not paper trading, live trading, or autonomous decision-making.
+
+daily_flow:
+  - step_id: collect_raw_inputs
+    owner: pipeline
+    allowed_actions:
+      - fetch_from_allowlisted_news_sources
+      - fetch_from_allowlisted_filings_or_reports
+      - read_existing_api_feeds_if_configured
+    forbidden_actions:
+      - broker_api_call
+      - order_generation
+      - production_trading_config_write
+
+  - step_id: normalize_and_deduplicate
+    owner: pipeline
+    allowed_actions:
+      - canonicalize_urls
+      - compute_source_hashes
+      - remove_duplicates
+      - normalize_dates_entities_geography
+      - assign_source_tier
+
+  - step_id: create_event_packets
+    owner: pipeline_or_extractor
+    allowed_actions:
+      - extract_events
+      - extract_claims
+      - extract_numbers_with_units
+      - tag_sectors
+      - tag_entities
+
+  - step_id: route_to_domain_analysts
+    owner: orchestrator
+    allowed_actions:
+      - select_candidate_analysts
+      - select_sector_profiles
+      - route_event_packets
+      - mark_blocked_or_review_required
+
+  - step_id: domain_analyst_interpretation
+    owner: analyst_agent
+    allowed_actions:
+      - match_causal_patterns
+      - generate_structured_hypotheses
+      - identify_counterforces
+      - create_evidence_gap_packets
+      - assign_materiality_watchlist_label
+
+  - step_id: store_outputs
+    owner: pipeline
+    allowed_actions:
+      - update_document_store
+      - update_structured_event_store
+      - update_evidence_graph
+      - update_vector_index
+      - append_review_queue_items
+
+  - step_id: daily_digest
+    owner: orchestrator
+    allowed_actions:
+      - create_internal_digest
+      - summarize_new_hypotheses
+      - summarize_evidence_gaps
+      - summarize_high_materiality_watchlist_items
+    forbidden_actions:
+      - buy_sell_hold
+      - price_target
+      - trade_signal
+
+global_forbidden_actions:
+  - autonomous_trading
+  - broker_order
+  - portfolio_rebalance
+  - live_trade_execution
+  - production_model_promotion_without_review
+  - production_config_mutation_without_review
+  - thesis_or_recommendation_as_final_output

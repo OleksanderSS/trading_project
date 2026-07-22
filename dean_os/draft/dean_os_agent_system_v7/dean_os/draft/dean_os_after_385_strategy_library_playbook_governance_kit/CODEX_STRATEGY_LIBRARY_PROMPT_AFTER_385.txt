@@ -1,0 +1,14 @@
+Use `dean_os_after_385_strategy_library_playbook_governance_kit.zip` as a non-numbered practical design kit.
+
+Do not blind-merge. Harvest/adapt useful schemas and notes.
+
+Goal:
+Define a governed strategy/playbook library before replay, paper, shadow, supervised live, or constrained autonomous execution.
+
+Important:
+- Strategies must declare allowed/forbidden regimes.
+- Strategies must declare required/forbidden inputs.
+- Analyst Agent provides context, not direct orders.
+- Pipeline Controller validates input contracts and gates.
+- Risk Engine and Execution Gateway control any later execution.
+- No strategy promotion without eval, lineage, risk policy, and rollback.

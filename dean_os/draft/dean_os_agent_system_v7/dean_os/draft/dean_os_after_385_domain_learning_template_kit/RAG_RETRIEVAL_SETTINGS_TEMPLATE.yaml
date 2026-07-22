@@ -1,0 +1,94 @@
+# Template: RAG and retrieval settings for domain analyst profiles.
+
+rag_profile_id: heavy_industry_rag_retrieval_settings_v1
+status: staged_template
+
+chunking:
+  default_chunk_size_tokens: 1000
+  default_overlap_tokens: 150
+  section_aware_chunking: true
+  preserve_headers: true
+  preserve_page_refs: true
+  preserve_footnotes: true
+  table_chunking:
+    preserve_table_as_single_unit_if_possible: true
+    attach_preceding_heading: true
+    attach_following_footnotes: true
+  filing_chunking:
+    split_by:
+      - item
+      - section_heading
+      - note_number
+      - segment_disclosure
+      - table_boundary
+  earnings_call_chunking:
+    split_by:
+      - speaker_turn
+      - question_answer_pair
+      - topic_segment
+
+retrieval:
+  mode: hybrid_bm25_dense
+  dense_vector_search: true
+  bm25_keyword_search: true
+  metadata_filters: true
+  reranker: true
+  query_decomposition: true
+  initial_retrieval_top_k: 50
+  rerank_top_k: 12
+  final_context_chunks: 8
+
+metadata_filters:
+  required_when_available:
+    - entity_id
+    - domain
+    - subdomain
+    - geography
+    - period_covered
+    - source_type
+    - trust_tier
+  numeric_claims_require:
+    - period_covered
+    - unit
+    - source_anchor
+  historical_or_backtest_queries_require:
+    - as_of_date
+    - no_future_data
+
+reranking_features:
+  - directness_to_question
+  - source_trust_tier
+  - period_match
+  - entity_match
+  - metric_match
+  - unit_presence
+  - table_confidence
+  - contradiction_status
+  - recency_if_relevant
+
+context_assembly:
+  max_chunks_per_source: 3
+  prefer_diverse_sources: true
+  allow_single_source_answer_if:
+    - regulatory_filing
+    - official_statistics
+    - audited_annual_report
+  require_multiple_sources_for:
+    - broad_market_conclusion
+    - material_event_impact
+    - disputed_claim
+
+answer_constraints:
+  require_citations: true
+  forbid_uncited_numeric_claims: true
+  cite_source_anchor: true
+  state_period_and_unit_for_numeric_claims: true
+  separate_fact_from_inference: true
+  flag_low_confidence: true
+  flag_source_conflict: true
+
+retrieval_failure_behavior:
+  if_insufficient_evidence: say_insufficient_evidence
+  do_not_invent_missing_numbers: true
+  do_not_use_weak_source_as_final_basis: true
+  request_human_review_if_material_and_uncertain: true

@@ -1,0 +1,81 @@
+schema_name: component_stress_check_matrix
+version: after_385_v1
+
+component_stress_checks:
+  analyst_agent:
+    checks:
+      - correct_risk_archetype
+      - expectation_gap_detected
+      - uncertainty_widened_for_regime_shift
+      - evidence_gaps_created
+      - no_direct_trading_output
+    fail_if:
+      - unsupported_claim
+      - overconfidence
+      - missed_counterforce
+      - buy_sell_hold_output
+
+  macro_regime_layer:
+    checks:
+      - regime_snapshot_updated
+      - regime_shift_candidate_detected
+      - historical_analog_confidence_adjusted
+      - narrative_crowding_flagged
+    fail_if:
+      - old_analog_used_deterministically
+      - pre_1970_sector_forecast_misuse
+
+  pipeline_controller:
+    checks:
+      - data_quality_gate
+      - feature_drift_gate
+      - model_state_gate
+      - strategy_regime_gate
+      - review_queue_created
+    fail_if:
+      - stale_data_continues
+      - model_promotion_allowed_after_failed_gate
+      - missing_run_manifest
+
+  strategy_library:
+    checks:
+      - regime_compatibility_checked
+      - forbidden_regime_blocks_strategy
+      - input_contract_validated
+      - promotion_gate_enforced
+    fail_if:
+      - strategy_runs_in_forbidden_regime
+      - missing_input_contract
+      - no_rollback_plan
+
+  portfolio_governance:
+    checks:
+      - exposure_limits_checked
+      - correlation_cluster_checked
+      - drawdown_state_checked
+      - risk_budget_enforced
+    fail_if:
+      - risk_increase_after_limit_breach
+      - no_capital_bucket
+
+  risk_engine:
+    checks:
+      - max_position_size
+      - max_daily_loss
+      - max_drawdown
+      - volatility_filter
+      - liquidity_filter
+      - kill_switch
+    fail_if:
+      - kill_switch_disabled
+      - limit_breach_ignored
+
+  execution_gateway:
+    checks:
+      - no_order_without_lineage
+      - no_order_when_kill_switch_active
+      - reject_unsupported_asset
+      - no_llm_direct_order
+    fail_if:
+      - broker_bypass
+      - live_order_in_research_mode

@@ -1,0 +1,479 @@
+agents:
+  semiconductor_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: semiconductor_ai_infrastructure
+    horizon_days: 180
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: semiconductor_domain_analysis
+    run_phases:
+      - pre_trade
+    news_artifact_path: reports/dean_os/saved_semiconductor_news_evidence_producer_current/latest.json
+    macro_artifact_path: reports/dean_os/saved_macro_evidence_producer_current/latest.json
+    fundamental_artifact_path: reports/dean_os/saved_sec_fundamental_evidence_merger_current/latest.json
+    sector_market_artifact_path: reports/dean_os/saved_sector_market_evidence_producer_current/latest.json
+    runtime_artifact_path: reports/dean_os/semiconductor_analyst_runtime_current/latest.json
+
+  agriculture_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: agriculture
+    horizon_days: 180
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: agriculture_domain_analysis
+    run_phases:
+      - pre_trade
+
+  logistics_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: logistics
+    horizon_days: 180
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: logistics_domain_analysis
+    run_phases:
+      - pre_trade
+
+  real_estate_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: real_estate
+    horizon_days: 180
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: real_estate_domain_analysis
+    run_phases:
+      - pre_trade
+
+  energy_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: energy
+    horizon_days: 180
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: energy_domain_analysis
+    run_phases:
+      - pre_trade
+
+  geopolitics_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: geopolitics
+    horizon_days: 180
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: geopolitics_domain_analysis
+    run_phases:
+      - pre_trade
+
+  liquidity_credit_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: liquidity_credit
+    horizon_days: 180
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: liquidity_credit_domain_analysis
+    run_phases:
+      - pre_trade
+
+  macro_analyst:
+    class_path: dean_os.agents.domain_analyst:DomainAnalystAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: macro_policy
+    horizon_days: 365
+    agent_role: standalone_domain_analysis
+    decision_influence: false
+    execution_group: macro_policy_domain_analysis
+    run_phases:
+      - pre_trade
+
+  pipeline_manager:
+    class_path: dean_os.agents.pipeline_manager:PipelineManagerAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    domain_id: semiconductor_ai_infrastructure
+    horizon_days: 180
+    agent_role: composite_domain_pipeline_manager
+    decision_influence: false
+    execution_group: semiconductor_domain_analysis
+    run_phases:
+      - pre_trade
+    runtime_path: reports/dean_os/semiconductor_analyst_runtime_current/latest.json
+    feature_timeframe_audit_path: reports/dean_os/pipeline_stage23_regeneration_nvda_review600/feature_timeframe_audit/latest.json
+    target_readiness_path: reports/dean_os/pipeline_target_readiness_audit_nvda_review600/latest.json
+    stage4_review_path: reports/dean_os/pipeline_stage4_exact_context_review_nvda_15m_review600/latest.json
+    prediction_review_path: reports/dean_os/pipeline_prediction_source_review_current/latest.json
+    sector_to_ticker_review_path: reports/dean_os/sector_to_ticker_review_packet_current/latest.json
+    output_dir: reports/dean_os/sector_pipeline_manager_semiconductor_current
+
+  pipeline_audit:
+    class_path: dean_os.agents.pipeline_audit:PipelineAuditAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 30
+    findings_path: audit_reports/findings.json
+    required_inputs:
+      - audit_reports/findings.json
+      - audit_reports/triage_P0_P1.md
+    max_findings_age_hours: 10000
+    blocker_severities:
+      - P0
+    caution_severities:
+      - P1
+
+  agent_evaluation_controller:
+    class_path: dean_os.agents.agent_evaluation_controller:AgentEvaluationControllerAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: false
+    error_behavior: block
+    timeout_seconds: 10
+    run_phases:
+      - pre_trade
+    trace_store_path: logs/dean_os/agent_run_traces.jsonl
+    thresholds_version: agent_eval_thresholds_v1
+    lookback_runs: 200
+    min_reviewed_runs: 20
+    min_schema_validity: 0.98
+    min_source_grounding: 0.90
+    min_task_success_rate: 0.70
+    max_loop_rate: 0.05
+    max_unsafe_action_attempts: 0
+    block_on_unsafe: true
+
+  data_quality:
+    class_path: dean_os.agents.data_quality:DataQualityAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 10
+    max_missing_ratio: 0.25
+
+  risk:
+    class_path: dean_os.agents.risk:RiskAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 10
+    max_drawdown_limit: 0.20
+    max_daily_var_95: 0.08
+    max_gross_exposure: 1.0
+
+  model_performance:
+    class_path: dean_os.agents.model_performance:ModelPerformanceAgent
+    branch: pipeline
+    veto_level: soft
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 10
+    min_validation_score: 0.55
+    min_sharpe: 0.0
+    max_drawdown: 0.25
+    min_sample_count: 50
+    max_age_hours: 720
+    performance_path: reports/dean_os/pipeline_control_metric_artifact_materializer_current/model_evaluation/latest.json
+    evidence_chain_path: reports/dean_os/pipeline_control_real_metric_evidence_run_current/latest.json
+    model_case_path: reports/dean_os/pipeline_model_case_packet_current/latest.json
+
+  regime:
+    class_path: dean_os.agents.regime:RegimeAgent
+    branch: pipeline
+    veto_level: soft
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    require_stage7_regime_review: true
+    shadow_mode: true
+    run_phases:
+      - pre_trade
+    close_col: close
+    volume_col: volume
+
+  context_synthesis:
+    class_path: dean_os.agents.context_synthesis:ContextSynthesisAgent
+    branch: pipeline
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    require_predecessor_data: true
+    shadow_mode: true
+    run_phases:
+      - pre_trade
+    max_as_of_skew_minutes: 60
+    min_prediction_confidence: 0.5
+    min_anomaly_score: 0.8
+
+  tuning:
+    class_path: dean_os.agents.tuning:TuningAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+
+  chief_review:
+    class_path: dean_os.agents.chief_review:ChiefReviewAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+    autonomy_mode: paper_supervised
+
+  paper_portfolio:
+    class_path: dean_os.agents.paper_portfolio:PaperPortfolioAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+    store_path: data/dean_os/paper_trades.sqlite
+    latest_processed_prices: 1d
+    initial_cash: 100000
+    position_size_pct: 0.05
+    include_watchlist: false
+    slippage_bps: 5
+    commission_bps: 1
+    max_drawdown_limit: 0.10
+
+  diary_bridge:
+    class_path: dean_os.agents.diary_bridge:DiaryBridgeAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+    experience_diary_path: logs/experience_diary.csv
+    paper_store_path: data/dean_os/paper_trades.sqlite
+    candidate_limit: 20
+
+  source_routing:
+    class_path: dean_os.agents.source_routing:SourceRoutingAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+
+  operations_proposal:
+    class_path: dean_os.agents.operations:OperationsProposalAgent
+    branch: pipeline
+    veto_level: none
+    enabled: false
+    proposal_only: true
+    error_behavior: warn
+    timeout_seconds: 10
+
+  news_event_analyzer:
+    class_path: dean_os.agents.news_event_analyzer:NewsEventAnalyzerAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 15
+    register_outcomes: false
+
+  research_ingestion:
+    class_path: dean_os.agents.research_agents:ResearchIngestionAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 20
+    corpus_path: data/dean_os/research_corpus.sqlite
+    chunk_size: 1200
+
+  specialist_research:
+    class_path: dean_os.agents.research_agents:SpecialistResearchAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 20
+    corpus_path: data/dean_os/research_corpus.sqlite
+    horizon_days: 365
+    corpus_search_limit: 20
+
+  financial_nlp:
+    class_path: dean_os.agents.financial_nlp:FinancialNLPAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 20
+    finbert_model: null
+
+  evidence_synthesis:
+    class_path: dean_os.agents.synthesis:EvidenceSynthesisAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 20
+    topic: evidence_synthesis
+
+  macro_policy:
+    class_path: dean_os.agents.domain_research:MacroPolicyAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 1.5
+
+  geopolitical:
+    class_path: dean_os.agents.domain_research:GeoPoliticalAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 2.0
+
+  news_catalyst:
+    class_path: dean_os.agents.domain_research:NewsCatalystAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 0.5
+
+  sector_cycle:
+    class_path: dean_os.agents.domain_research:SectorCycleAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 1.0
+
+  industry_map:
+    class_path: dean_os.agents.domain_research:IndustryMapAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 2.0
+
+  historical_analogies:
+    class_path: dean_os.agents.historical_analogies:HistoricalAnalogiesAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 3.0
+
+  value_screening:
+    class_path: dean_os.agents.domain_research:ValueScreeningAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 3.0
+
+  contrarian_thesis:
+    class_path: dean_os.agents.domain_research:ContrarianThesisAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    horizon_years: 2.0
+
+  unified_research:
+    class_path: dean_os.agents.unified_research_agent:UnifiedResearchAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    corpus_path: data/dean_os/research_corpus.sqlite
+    duckdb_path: data/trading_data.duckdb
+    horizon_days: 365
+
+  coherence_scan:
+    class_path: dean_os.agents.coherence_scan:CoherenceScanAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 15
+    horizon_years: 0.5
+
+  freshness_audit:
+    class_path: dean_os.agents.freshness_audit:FreshnessAuditAgent
+    branch: analytical
+    veto_level: none
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 15
+    horizon_years: 0.25
+
+  pipeline_readiness:
+    class_path: dean_os.agents.pipeline_readiness:PipelineReadinessAgent
+    branch: pipeline
+    veto_level: soft
+    enabled: false
+    error_behavior: skip
+    timeout_seconds: 30
+    horizon_days: 180
+    agent_role: pipeline_readiness_gate
+    decision_influence: false
+    execution_group: pipeline_readiness
+    run_phases:
+      - pre_trade
+    required_inputs: []

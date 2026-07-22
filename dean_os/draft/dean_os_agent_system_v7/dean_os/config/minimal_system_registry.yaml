@@ -1,0 +1,95 @@
+agents:
+  pipeline_control:
+    class_path: dean_os.agents.pipeline_control:PipelineControlAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 15
+    run_phases: [pre_pipeline, pre_trade]
+    reuse_context_surface: true
+    save_surface: false
+    allowed_stages: [0, 1, 2, 3, 4, 5, 7]
+    constraints:
+      min_total_return: 0.0
+      min_pnl: 0.0
+      min_sharpe: 0.0
+      max_drawdown: 0.25
+      min_validation_score: 0.55
+      max_train_test_gap: 0.15
+      min_sample_count: 50
+      max_feature_concentration: 0.35
+      max_feature_weight_abs: 0.6
+      max_unstable_features: 0
+      min_feature_stability_score: 0.7
+      max_data_quality_warnings: 0
+      max_leakage_flags: 0
+      min_clear_replay_hit_rate: 0.55
+      max_quality_blocked_replay_runs: 0
+      min_clear_replay_runs: 5
+
+  data_quality:
+    class_path: dean_os.agents.data_quality:DataQualityAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 10
+    max_missing_ratio: 0.25
+
+  risk:
+    class_path: dean_os.agents.risk:RiskAgent
+    branch: pipeline
+    veto_level: hard
+    enabled: true
+    error_behavior: block
+    timeout_seconds: 10
+    max_drawdown_limit: 0.20
+    max_daily_var_95: 0.08
+    max_gross_exposure: 1.0
+
+  regime:
+    class_path: dean_os.agents.regime:RegimeAgent
+    branch: pipeline
+    veto_level: soft
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    require_stage7_regime_review: true
+    shadow_mode: true
+    run_phases: [pre_trade]
+
+  context_synthesis:
+    class_path: dean_os.agents.context_synthesis:ContextSynthesisAgent
+    branch: pipeline
+    veto_level: none
+    enabled: true
+    error_behavior: skip
+    timeout_seconds: 10
+    require_predecessor_data: true
+    shadow_mode: true
+    run_phases: [pre_trade]
+
+  tuning:
+    class_path: dean_os.agents.tuning:TuningAgent
+    branch: pipeline
+    veto_level: none
+    enabled: true
+    proposal_only: true
+    require_control_surface: true
+    error_behavior: warn
+    timeout_seconds: 10
+    run_phases: [pre_trade]
+
+  domain_analyst:
+    class_path: dean_os.agents.domain_analytical:DomainAnalyticalAgent
+    branch: analytical
+    veto_level: none
+    enabled: true
+    error_behavior: warn
+    timeout_seconds: 45
+    domain_id: semiconductor_ai_infrastructure
+    horizon_days: 180
+    agent_role: domain_world_model_analyst
+    decision_influence: false
+    run_phases: [post_pipeline]

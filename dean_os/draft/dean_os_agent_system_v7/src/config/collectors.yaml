@@ -1,0 +1,399 @@
+# collectors.yaml (оновлений)
+
+collectors:
+  local_file:
+    enabled: false
+    type: "local_file"
+    module: "src.data.collectors.local_file_collector"
+    class: "LocalFileCollector"
+    critical: false
+    table_name: "local_market_data"
+    params:
+      file_path: "data/raw/market_data.csv"
+      file_type: "csv"
+      date_col: "date"
+
+  yahoo_finance:
+    enabled: true
+    type: "yahoo_finance"
+    critical: true
+    table_name: "market_data_raw"
+    cache_ttl: 900
+    cache_duration_minutes: 15
+    max_retries: 3
+    retry_delay: 5
+    intraday_max_days: 60                # <-- нове поле
+    daily_max_years: 2
+    timeframes:
+      "15m":
+        period: "60d"
+      "1h":
+        period: "60d"      # ВИПРАВЛЕНО: з 730d на 60d
+      "1d":
+        period: "2y"
+
+  free_google_trends:
+    enabled: true
+    type: "free_google_trends"
+    critical: false
+    table_name: "google_trends_data"
+    cache_ttl: 7200
+    cache_duration_minutes: 120
+    geo: "US"
+    timeframe: "today 1-m"
+    language: "en-US"
+    batch_size: 4
+    min_batch_size: 1
+    max_retries: 5
+    base_delay: 10
+    max_delay: 300
+    batch_delay_min: 45
+    batch_delay_max: 75
+    request_delay_seconds: 5
+
+  fred:
+    enabled: true
+    type: "fred"
+    critical: false
+    table_name: "fred_data"
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    hash_keys: ["series_id", "date"]
+    params:
+      period: "2y"
+      series_ids:
+        - "FEDFUNDS"
+        - "DGS10"
+        - "GS10"
+        - "GS2"
+        - "T10Y2Y"
+        - "CPIAUCSL"
+        - "PCEPILFE"
+        - "PCEPI"
+        - "PPIACO"
+        - "UNRATE"
+        - "PAYEMS"
+        - "CCSA"
+        - "MANEMP"
+        - "GDP"
+        - "INDPRO"
+        - "CAPUTLB50001SQ"
+        - "DGORDER"
+        - "TOTALSA"
+        - "RSAFS"
+        - "UMCSENT"
+        - "VIXCLS"
+        - "HOUST"
+        - "PERMIT"
+        - "TEDRATE"
+        - "BAMLH0A0HYM2"
+        - "WALCL"
+        - "DEXUSEU"
+        - "DEXCHUS"
+        - "DCOILWTICO"
+        - "DSPIC96"
+      max_retries: 3
+
+  google_news:
+    enabled: true
+    type: "google_news"
+    critical: false
+    table_name: "google_news"
+    hash_keys: ["link"]
+    cache_ttl: 3600
+    cache_duration_minutes: 60
+    max_concurrent_terms: 5
+    max_terms: 30
+    timeout: 500
+    headers:  # <-- додано заголовки
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      Accept: "application/rss+xml, application/xml, text/xml, */*"
+      Accept-Language: "en-US,en;q=0.9"
+    filter:
+      min_source_quality: 0.4
+      require_keywords_in_title: false
+      exclude_title_keywords:
+        - "horoscope"
+        - "celebrity"
+        - "sports score"
+        - "weather"
+        - "recipe"
+      allowed_domains: []
+    params:
+      period: "7d"
+      language: "en"
+      country: "US"
+      max_results: 5
+    deduplication:
+      n_clusters: 10
+      max_features: 500
+
+  rss:
+    enabled: true
+    type: "rss"
+    critical: false
+    table_name: "rss_news"
+    hash_keys: ["link"]
+    cache_ttl: 3600
+    cache_duration_minutes: 60
+    timeout: 500
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      Accept: "application/rss+xml, application/xml, text/xml, */*"
+      Accept-Language: "en-US,en;q=0.9"
+    filter:
+      min_source_quality: 0.4
+      require_keywords_in_title: false
+      exclude_title_keywords:
+        - "horoscope"
+        - "celebrity"
+        - "sports"
+    params:
+      period: "7d"
+      limit_per_feed: 20
+    deduplication:
+      n_clusters: 10
+      max_features: 300
+
+  newsapi:
+    enabled: true
+    type: "newsapi"
+    critical: false
+    table_name: "newsapi_articles"
+    cache_ttl: 86400
+    max_terms: 10
+    cache_duration_minutes: 60
+    timeout: 500
+    requires_api_key: true
+    api_key_env: "NEWS_API_KEY"
+    base_url: "https://newsapi.org/v2/everything"
+    language: "en"
+    page_size: 20
+    hash_keys: ["url", "publishedAt"]
+    filter:
+      min_source_quality: 0.4
+      exclude_title_keywords:
+        - "horoscope"
+        - "celebrity"
+
+  economic_calendar:
+    enabled: true
+    type: "economic_calendar"
+    critical: false
+    table_name: "economic_calendar"
+    hash_keys: ["timestamp", "country", "event"]
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    api_url: "https://sb-inv-prod.investing.com/api/economic-calendar/v1/events"
+    days_back: 7
+    days_ahead: 30
+    countries: ["us", "eu", "gb", "cn", "jp", "de"]
+    importance: ["medium", "high"]
+    time_zone: "5"
+    max_retries: 5          # <-- збільшено з 3 до 5
+    retry_delay: 1.0        # <-- додано затримку
+    backoff_factor: 2.0     # <-- додано бекоф
+    timeout: 60             # <-- збільшено таймаут
+    headers:
+      User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      Accept: "application/json, text/plain, */*"
+      Content-Type: "application/x-www-form-urlencoded"
+      X-Requested-With: "XMLHttpRequest"
+      Origin: "https://www.investing.com"
+      Referer: "https://www.investing.com/economic-calendar/"
+    filter:
+      min_source_quality: 0.4
+      require_keywords_in_title: false
+      exclude_title_keywords:
+        - "horoscope"
+        - "celebrity"
+        - "sports score"
+        - "weather"
+        - "recipe"
+    params:
+      period: "7d"
+      language: "en"
+      country: "us"
+      max_results: 5
+
+  sec_filings:
+    enabled: true
+    type: "sec_filings"
+    critical: false
+    table_name: "sec_filings"
+    cache_ttl: 14400
+    cache_duration_minutes: 240
+    submissions_url_template: "https://data.sec.gov/submissions/CIK{cik}.json"
+    hash_keys: ["accessionNumber", "cik"]
+    params:
+      period: "60d"
+
+  insider:
+    enabled: true
+    type: "insider"
+    critical: false
+    table_name: "insider_trades"
+    cache_ttl: 14400
+    cache_duration_minutes: 240
+    timeout: 500
+    hash_keys: ["filing_date", "ticker", "insider_name"]
+    urls:
+      - "http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1"
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    column_mapping:
+      filing_date: 0
+      trade_date: 1
+      ticker: 2
+      insider_name: 3
+      title: 4
+      trade_type: 5
+      price: 6
+      quantity: 7
+      owned: 8
+      delta_own: 9
+      value: 10
+
+  huggingface:
+    enabled: true
+    type: "huggingface"
+    critical: false
+    table_name: "huggingface_data"
+    cache_ttl: 604800
+    cache_duration_minutes: 10080
+    dataset_name: "zeroshot/twitter-financial-news-topic"
+    subset_name: null
+    split: "train"
+    hf_token: "${HF_TOKEN}"
+    essential_columns:
+      - "date"
+      - "text"
+      - "label"
+      - "sentiment"
+      - "timestamp"
+    max_rows: 10000
+    max_days: 90
+    filter_by_keywords: true
+    keywords_categories:
+      - "market_terms"
+      - "finance_economy"
+      - "sectors_tech"
+
+  bigquery:
+    enabled: false
+    type: "bigquery"
+    credentials_path: "D:/trading_project/credentials/gcp_credentials.json"
+    critical: false
+    table_name: "bigquery_data"
+    project_id: "seismic-vista-470410-i5"
+    hash_keys: ["date", "ticker"]
+    essential_columns:
+      - "date"
+      - "ticker"
+      - "close"
+      - "volume"
+      - "high"
+      - "low"
+      - "open"
+    query: |
+      SELECT
+        date,
+        ticker,
+        close,
+        volume,
+        high,
+        low,
+        open
+      FROM `seismic-vista-470410-i5.market_data.daily_prices`
+      WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 90 DAY)
+      AND ticker IN UNNEST(@tickers)
+      LIMIT 10000
+    max_rows: 10000
+    max_days: 90
+
+  custom_csv:
+    enabled: true
+    type: "custom_csv"
+    critical: false
+    data_type: "macro_context"
+    file_path: "data/macro_context/news_patterns.csv"
+    encoding: "utf-8"
+    date_column: "date"
+    table_name: "news_patterns"
+
+  vix:
+    enabled: true
+    type: "vix"
+    critical: false
+    table_name: "vix_data"
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    hash_keys: ["date", "vix_current", "volatility_regime"]
+    ticker: "^VIX"
+    params:
+      period: "30d"
+      interval: "1d"
+
+  put_call_ratio:
+    enabled: true
+    type: "put_call_ratio"
+    critical: false
+    table_name: "put_call_ratio_data"
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    hash_keys: ["date", "put_call_ratio", "sentiment_signal"]
+    allow_sample_fallback: false
+
+  fear_greed:
+    enabled: true
+    type: "fear_greed"
+    critical: false
+    table_name: "fear_greed_data"
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    hash_keys: ["date", "fear_greed_index", "classification"]
+
+  aaii_sentiment:
+    enabled: true
+    type: "aaii_sentiment"
+    critical: false
+    table_name: "aaii_sentiment_data"
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    hash_keys: ["date", "bullish", "bearish", "neutral"]
+
+  cftc:
+    enabled: true
+    type: "cftc"
+    critical: false
+    table_name: "cftc_data"
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    hash_keys: ["date", "instrument", "net_position"]
+    allow_sample_fallback: false
+
+  reddit_sentiment:
+    enabled: false
+    type: "reddit_sentiment"
+    critical: false
+    table_name: "reddit_sentiment_data"
+    cache_ttl: 86400
+    cache_duration_minutes: 1440
+    hash_keys: ["date", "sentiment_score", "viral_posts"]
+    subreddits:
+      - "wallstreetbets"
+      - "stocks"
+      - "investing"
+    use_synthetic_data: false
+
+  #data_sources:
+    # Configuration for loading data from a local file
+    #- name: "local_file_source"
+      #type: "local"
+      #module: "src.data_sources.local_file_data_source.LocalFileDataSource"
+      #class: "LocalFileDataSource"
+      #params:
+        # Default path to the data file. This can be overridden at runtime.
+        #file_path: "data/raw/market_data.csv"
+        #file_type: "csv" # Can be 'csv' or 'parquet'
+        # Specify the date column to be used as the DataFrame index. If null, no index is set.
+        #date_col: "date"

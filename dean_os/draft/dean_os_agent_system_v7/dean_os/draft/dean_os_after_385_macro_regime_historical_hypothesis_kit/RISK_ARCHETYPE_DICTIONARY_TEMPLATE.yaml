@@ -1,0 +1,63 @@
+schema_name: risk_archetype_dictionary_template
+version: after_385_v3
+purpose: >
+  Prevent false historical matching by requiring analysts to tag mechanism/archetype states rather than
+  claiming that one year is directly "like" another year.
+
+principle: >
+  The analyst should not search for "similar years" as the final logic. It should identify risk archetypes
+  or market-mechanism states. Example: say CREDIT_LIQUIDITY_CRISIS rather than "this is 2008".
+
+risk_archetypes:
+  - archetype_id: CREDIT_BUBBLE_BURST
+    description: Excess leverage or credit expansion reverses into default risk, forced deleveraging, and liquidity stress.
+    common_indicators: [credit_spread_widening, lending_tightening, default_rate_rising, forced_selling, bank_stress]
+    historical_examples_for_context_only: [great_depression, global_financial_crisis]
+    forbidden_interpretation: "Do not assume the same sector outcomes across eras."
+
+  - archetype_id: LIQUIDITY_CRISIS
+    description: Market participants need cash/liquidity, correlations rise, and high-quality liquid assets outperform.
+    common_indicators: [funding_stress, volatility_spike, bid_ask_widening, credit_freeze, flight_to_quality]
+    historical_examples_for_context_only: [1929_1933, 2008, covid_liquidity_shock]
+
+  - archetype_id: SUPPLY_CHAIN_SHOCK
+    description: Production/logistics bottlenecks constrain supply and change margins across value chains.
+    common_indicators: [delivery_delays, shipping_costs_up, inventory_shortages, input_price_spikes]
+    historical_examples_for_context_only: [wwii_mobilization, oil_shocks, covid_supply_chain]
+
+  - archetype_id: INFLATION_SPIKE
+    description: Price levels accelerate, policy reaction risk rises, and valuation/real-income pressure increases.
+    common_indicators: [cpi_acceleration, commodity_spike, wage_pressure, inflation_expectations]
+    historical_examples_for_context_only: [1970s_inflation, post_covid_inflation]
+
+  - archetype_id: REGULATORY_CRACKDOWN
+    description: Law/regulation enforcement changes allowed business models, margins, or sector risk premia.
+    common_indicators: [new_rules, enforcement_actions, fines, forced_business_model_change]
+    historical_examples_for_context_only: [post_2008_financial_regulation, antitrust_cycles]
+
+  - archetype_id: TECHNOLOGY_BUBBLE_EUPHORIA
+    description: Expectations around a technology exceed near-term fundamentals and crowd into related assets.
+    common_indicators: [valuation_expansion, narrative_dominance, capex_boom, weak_profitability_screening, retail_or_fund_flow_crowding]
+    historical_examples_for_context_only: [dotcom_bubble, ai_capex_wave_candidate]
+
+  - archetype_id: FIRST_CRACKS_IN_BUBBLE
+    description: A crowded narrative begins showing evidence of overcapacity, missed expectations, financing stress, or failed leaders.
+    common_indicators: [failed_breakouts, earnings_misses, down_rounds, capex_delays, insider_selling, dispersion_rising]
+    historical_examples_for_context_only: [dotcom_2000, housing_2006_2007]
+
+  - archetype_id: POLICY_INDUSTRIAL_SUBSIDY
+    description: Government policy attempts to redirect capital and demand through subsidies/procurement/tax credits.
+    common_indicators: [law_passed, funding_allocated, eligibility_rules, procurement_requirements, company_applications]
+    historical_examples_for_context_only: [postwar_reconstruction, renewable_subsidy_cycles, chips_act_like_programs]
+
+usage_rules:
+  - analyst_tags_archetypes_not_years
+  - analog_years_are_context_only
+  - archetype_confidence_must_include_evidence
+  - archetypes_can_coexist
+  - regime_shift_candidate_overrides_simple_archetype_match
+forbidden_outputs:
+  - deterministic_prediction
+  - buy_sell_hold
+  - price_target
+  - trade_signal

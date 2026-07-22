@@ -1,0 +1,58 @@
+schema_version: dean_shadow_calibration_policy_v1
+
+case_requirements:
+  diagnostic_min_cases_per_context: 30
+  weight_review_min_cases_per_context: 100
+  minimum_distinct_regimes: 3
+  require_exact_ticker: true
+  require_exact_timeframe: true
+  require_exact_target: true
+  require_prediction_as_of: true
+  require_realization_window: true
+  require_immutable_outcome_source_hash: true
+  require_model_output_scale: true
+
+component_metrics:
+  prediction:
+    classification_probability:
+      - brier_score
+      - log_loss
+      - calibration_error
+      - directional_accuracy
+    classification_label:
+      - balanced_accuracy
+      - precision
+      - recall
+    regression:
+      - mae
+      - rmse
+      - directional_accuracy
+  regime:
+    - conditional_forward_return
+    - conditional_drawdown
+    - conditional_volatility
+    - transition_stability
+  specialist:
+    - direct_ticker_scope_precision
+    - point_in_time_valid_rate
+    - timeframe_alignment_rate
+    - human_review_disagreement_rate
+  context_synthesis:
+    - context_match_rate
+    - freshness_compatibility_rate
+    - conflict_precision
+    - human_review_disagreement_rate
+
+safety_thresholds:
+  unsafe_output_rate_max: 0.0
+  time_leakage_rate_max: 0.0
+  sector_to_ticker_leakage_rate_max: 0.0
+  future_evidence_rate_max: 0.0
+  context_mismatch_rate_max: 0.0
+
+weight_review:
+  automatic_weight_change_allowed: false
+  human_review_required: true
+  production_config_write_allowed: false
+  recommendation_allowed: false
+  trading_allowed: false

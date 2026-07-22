@@ -1,0 +1,57 @@
+schema_name: cross_sectional_baseline_template
+version: after_385_v3
+purpose: >
+  Define target, secondary, and baseline sectors for event studies or relative impact analysis.
+  The baseline does not need to be perfectly unaffected; it must be a documented comparison basket.
+
+cross_sectional_event_frame:
+  event_id: string
+  as_of_date: date
+  event_type: string
+
+  impact_vector:
+    target_sector:
+      sector_id: string
+      expected_direction: positive | negative | mixed | unclear
+      rationale: string
+    secondary_impacts:
+      - sector_id: string
+        expected_direction: positive | negative | mixed | unclear
+        rationale: string
+    baseline_basket:
+      basket_id: string
+      sectors: list[string]
+      selection_reason: string
+      contamination_risk: low | medium | high
+      contamination_notes: string
+
+  measurement:
+    pre_event_window: string
+    post_event_windows:
+      - 1d
+      - 5d
+      - 20d
+      - 60d
+      - 120d
+    metrics:
+      - relative_return_vs_baseline
+      - abnormal_volume
+      - realized_volatility
+      - earnings_revision_delta
+      - credit_spread_delta
+      - sector_flow_delta
+      - fundamental_metric_update_if_available
+
+  rules:
+    - baseline_is_never_assumed_clean
+    - document_contamination_risk
+    - compare_relative_move_not_only_absolute_price_change
+    - prefer_sector_indices_or_baskets_over_single_name_only
+    - keep_result_as_review_item_not_trade_signal
+
+example:
+  event: "Autopilot fatal accident"
+  target_sector: "autos"
+  secondary_impacts: ["software", "semiconductors", "insurance"]
+  baseline_basket: ["healthcare", "utilities"]
+  warning: "Baseline may still be affected by broad market risk-off."

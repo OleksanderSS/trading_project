@@ -1,0 +1,122 @@
+{
+  "kit_name": "dean_os_after_385_advanced_governance_template_kits",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T13:29:51+00:00",
+  "purpose": "Non-numbered practical Codex-facing templates for pipeline integration mapping, data provenance, analyst debate, incident postmortem, portfolio governance, and event graph learning closure.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Harvest/adapt useful templates; do not blind-merge.",
+  "files": [
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/01_existing_pipeline_integration_map/EXISTING_PIPELINE_INTEGRATION_MAP.md",
+      "sha256": "1326549c47d6241be3f2d98eb630aea70500ef2381f94c9b9fac0973af5f340d",
+      "bytes": 4048
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/01_existing_pipeline_integration_map/MODULE_TO_KIT_MAPPING_SCHEMA.yaml",
+      "sha256": "05dd740c7bcfc96ead3ae3dae5aaaf17577d4f15d0b8f70b0e4efa26cb65cd3b",
+      "bytes": 584
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/02_data_provenance_reproducibility/AS_OF_REPLAY_MANIFEST_TEMPLATE.json",
+      "sha256": "f6173597848e194284c812af69d0f49ffd18d52244dbb799e7d104b7da436dec",
+      "bytes": 741
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/02_data_provenance_reproducibility/DATA_PROVENANCE_REPRODUCIBILITY_ARCHITECTURE.md",
+      "sha256": "3ae8b3852a153e17246b7a556e32d90b1898d33a6faf458d7768edcc928010aa",
+      "bytes": 807
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/02_data_provenance_reproducibility/FEATURE_MODEL_STATE_MANIFEST_TEMPLATE.yaml",
+      "sha256": "221ea6692105ede47a5ddd742e0383a3ba9279379afa085f604f20cd041d7360",
+      "bytes": 933
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/02_data_provenance_reproducibility/SOURCE_PROVENANCE_SCHEMA.json",
+      "sha256": "749dc2c91104ac976ac50b911d29e566dade3fc03f3684e7208b55781a0f9d7b",
+      "bytes": 949
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/03_analyst_debate_devil_advocate/ANALYST_DEBATE_ARCHITECTURE.md",
+      "sha256": "2e24d950d43c1e7c8113c907746c95dd7807d74312e4fd8aca77f3d76bbeac86",
+      "bytes": 559
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/03_analyst_debate_devil_advocate/COUNTERARGUMENT_CHECKLIST.md",
+      "sha256": "7d2228d5acb74b56942ce197f1f15117fae5b47c986410bacad6b7ca0dc6e071",
+      "bytes": 555
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/03_analyst_debate_devil_advocate/DEBATE_PACKET_SCHEMA.json",
+      "sha256": "bf33c36de54d9f521441fe8e25d1cc35c9913e86f9fb127c9fe9ecc2589e7f49",
+      "bytes": 1134
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/04_incident_response_postmortem/INCIDENT_REPORT_SCHEMA.json",
+      "sha256": "4e6830209af76f3dba3cce2accca280cf1afd91c33c3985f4d138f5a1dfc0dcf",
+      "bytes": 1383
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/04_incident_response_postmortem/INCIDENT_RESPONSE_POSTMORTEM_ARCHITECTURE.md",
+      "sha256": "23ec912ae07b29180fb9aaa75c26a549e7c5a48d046832d6c43ae72b09aeb8b5",
+      "bytes": 579
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/04_incident_response_postmortem/POSTMORTEM_RUNBOOK.md",
+      "sha256": "7b3c26420cdcc4efc4cfa4374687ccf51308397766b74c0153ecbc2bfd5dd366",
+      "bytes": 488
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/05_portfolio_capital_allocation_governance/CAPITAL_ALLOCATION_POLICY_TEMPLATE.yaml",
+      "sha256": "110621e16638a972dfe36b66580bcff79321ad97d9297b68ae622a8bbe6effb7",
+      "bytes": 1150
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/05_portfolio_capital_allocation_governance/PORTFOLIO_CAPITAL_GOVERNANCE_ARCHITECTURE.md",
+      "sha256": "18632e4ae0afa2994e3397b7dcab3920bf776bed9d8bb4b32a2e5606798bacfb",
+      "bytes": 405
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/05_portfolio_capital_allocation_governance/PORTFOLIO_RISK_STATE_SCHEMA.json",
+      "sha256": "57a777b335c4cac046ba43f4b630bd1157c44749cd5d22a2586cff6828cccda6",
+      "bytes": 842
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/06_event_graph_learning_closure/EVENT_GRAPH_LEARNING_LOOP_ARCHITECTURE.md",
+      "sha256": "7615d822e551cef9fc4dd04f136187bcb0599bb4357d7e20e56f7f3e11549f53",
+      "bytes": 1135
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/06_event_graph_learning_closure/EVENT_GRAPH_LEARNING_RECORD_SCHEMA.json",
+      "sha256": "3bfb4396e251f06223efec834a04bea4102bf472419022527761ca60be1472e0",
+      "bytes": 1539
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/06_event_graph_learning_closure/PATTERN_MEMORY_UPDATE_POLICY.md",
+      "sha256": "4bfee3f05b2965b30d768d1784ecf60029b2b4ef430d83aaf43d30490404b664",
+      "bytes": 973
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/CODEX_ADVANCED_GOVERNANCE_HARVEST_NOTES.md",
+      "sha256": "93d7d322b95be9e6cea8696f18308ae101a22dce8ba81e5d4e3a44ac7444ad53",
+      "bytes": 974
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/CODEX_ADVANCED_GOVERNANCE_PROMPT_AFTER_385.txt",
+      "sha256": "3ee61b3deb020faecb3ada352bc641dc5423578da61871afffdb0a8e5baf2f61",
+      "bytes": 882
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/LOCAL_VERIFICATION_ADVANCED_GOVERNANCE_TEMPLATE_KITS.json",
+      "sha256": "0d16e4840854136338899a190f48a949602cd201af39d34ea736f0ccb96b6a67",
+      "bytes": 618
+    },
+    {
+      "path": "dean_os_after_385_advanced_governance_template_kits/README_ADVANCED_GOVERNANCE_TEMPLATE_KITS.md",
+      "sha256": "426be7b49bd7c02260c42d03016581a38b43e3b718aa53ae2e0f863444e54561",
+      "bytes": 794
+    }
+  ]
+}

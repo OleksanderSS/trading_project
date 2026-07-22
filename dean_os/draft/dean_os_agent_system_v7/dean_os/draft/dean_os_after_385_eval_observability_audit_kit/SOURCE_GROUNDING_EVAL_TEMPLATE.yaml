@@ -1,0 +1,45 @@
+schema_name: source_grounding_eval_template
+version: after_385_v1
+purpose: Evaluate whether agent outputs are grounded in correct, sufficient, and traceable evidence.
+
+test_cases:
+  - test_id: source_grounding_company_metric_001
+    category: source_grounded_qa
+    prompt: "What was Company X's steel shipment volume in FY2025?"
+    required_evidence:
+      source_type_allowed:
+        - annual_report
+        - regulatory_filing
+        - audited_financial_statement
+      required_fields:
+        - source_id
+        - page_or_section_anchor
+        - period
+        - unit
+        - value
+    fail_if:
+      - no_citation
+      - missing_period
+      - missing_unit
+      - wrong_entity
+      - segment_metric_confused_with_company_metric
+      - weak_source_used_when_filing_available
+
+  - test_id: source_grounding_policy_001
+    category: policy_claim_grounding
+    prompt: "Does the policy require low-carbon steel procurement?"
+    required_evidence:
+      source_type_allowed:
+        - official_policy_document
+        - regulator_document
+        - government_publication
+      required_fields:
+        - policy_status
+        - jurisdiction
+        - effective_date
+        - quoted_or_paraphrased_clause_anchor
+    fail_if:
+      - treats_policy_proposal_as_enacted_law
+      - missing_jurisdiction
+      - missing_effective_date
+      - relies_only_on_news_summary

@@ -1,0 +1,92 @@
+schema_name: strategy_playbook_schema
+version: after_385_v1
+
+strategy_playbook:
+  strategy_id: string
+  version: string
+  status: draft | research | replay | paper | shadow | supervised_live | constrained_autonomous_candidate | active | deprecated | rejected
+  owner: string | null
+  created_at: datetime
+  updated_at: datetime
+
+  description:
+    name: string
+    thesis: string
+    strategy_family:
+      - trend_following
+      - mean_reversion
+      - event_driven
+      - macro_regime
+      - cross_sectional
+      - statistical_arbitrage
+      - volatility
+      - defensive_allocation
+      - other
+    time_horizon: intraday | daily | swing | medium_term | long_term
+    asset_universe: list[string]
+    prohibited_assets: list[string]
+
+  regime_compatibility:
+    allowed_regimes: list[string]
+    forbidden_regimes: list[string]
+    caution_regimes: list[string]
+    required_macro_context_fields: list[string]
+    regime_shift_behavior: reduce | pause | block | require_review
+
+  input_requirements:
+    required_sources: list[string]
+    required_features: list[string]
+    required_model_states: list[string]
+    required_hypothesis_inputs: list[string]
+    minimum_data_freshness: string
+    allowed_llm_inputs:
+      - risk_archetype_tag
+      - evidence_gap
+      - hypothesis_context
+      - review_label
+    forbidden_llm_inputs:
+      - direct_order
+      - final_probability_without_base_rate
+      - buy_sell_hold
+      - price_target
+
+  signal_policy:
+    signal_source: model | rule | hybrid | human_reviewed | other
+    signal_must_be_numeric_or_structured: true
+    signal_requires_confidence_calibration: true
+    signal_requires_risk_gate: true
+    signal_requires_execution_gateway: true
+
+  risk_policy:
+    capital_bucket_id: string
+    max_position_size: configured_externally
+    max_daily_loss: configured_externally
+    max_drawdown: configured_externally
+    max_turnover: configured_externally
+    max_correlation_cluster_exposure: configured_externally
+    liquidity_filter_required: true
+    volatility_filter_required: true
+
+  evaluation_requirements:
+    replay_required: true
+    paper_required_before_live: true
+    shadow_required_before_supervised_live: true
+    out_of_sample_required: true
+    walk_forward_required: true
+    leakage_checks_required: true
+    transaction_costs_required: true
+    slippage_model_required: true
+    decision_lineage_required: true
+
+  promotion_policy:
+    current_maturity_level: research | replay | paper | shadow | supervised_live | constrained_autonomous
+    next_allowed_level: replay | paper | shadow | supervised_live | constrained_autonomous | none
+    approval_required: true
+    rollback_strategy_id: string | null
+
+  forbidden_outputs:
+    - LLM_direct_order
+    - broker_order_without_gateway
+    - trade_without_risk_gate
+    - buy_sell_hold_from_analyst
+    - price_target

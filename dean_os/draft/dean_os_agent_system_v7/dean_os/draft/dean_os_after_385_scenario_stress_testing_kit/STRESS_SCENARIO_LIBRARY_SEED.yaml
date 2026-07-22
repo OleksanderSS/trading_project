@@ -1,0 +1,99 @@
+scenario_library_seed:
+  - scenario_id: oil_price_spike
+    category: commodity_energy_shock
+    severity: high
+    description: "Oil price spikes rapidly due to geopolitical or supply shock."
+    expected_archetypes: [COMMODITY_ENERGY_SHOCK, INFLATION_SPIKE, SUPPLY_CHAIN_SHOCK]
+    key_checks:
+      - energy_sensitive_sector_exposure
+      - inflation_expectation_response
+      - transport_margin_pressure
+      - risk_engine_volatility_filter
+
+  - scenario_id: rate_shock_plus_valuation_reset
+    category: macro_shock
+    severity: high
+    description: "Policy rates or yield curve shock reprices duration-sensitive assets."
+    expected_archetypes: [INFLATION_SPIKE, RATE_SHOCK, VALUATION_RESET]
+    key_checks:
+      - long_duration_equity_exposure
+      - credit_spreads
+      - model_feature_drift
+      - strategy_regime_compatibility
+
+  - scenario_id: credit_freeze
+    category: credit_liquidity_shock
+    severity: extreme
+    description: "Credit spreads widen, liquidity collapses, and correlations rise."
+    expected_archetypes: [LIQUIDITY_CRISIS, CREDIT_BUBBLE_BURST]
+    key_checks:
+      - liquidity_stress_monitor
+      - correlation_breakdown
+      - forced_deleveraging_risk
+      - execution_gateway_order_block
+
+  - scenario_id: ai_bubble_crack
+    category: technology_narrative_shock
+    severity: high
+    description: "Crowded AI narrative shows first cracks: earnings misses, capex doubts, valuation compression."
+    expected_archetypes: [TECHNOLOGY_BUBBLE_EUPHORIA, FIRST_CRACKS_IN_BUBBLE, NARRATIVE_REVERSAL]
+    key_checks:
+      - narrative_half_life
+      - crowdedness
+      - expectation_gap
+      - semiconductor_and_power_infrastructure_exposure
+
+  - scenario_id: war_escalation
+    category: geopolitical_shock
+    severity: extreme
+    description: "Major war escalation or sanctions regime change affects energy, defense, shipping, inflation, and risk appetite."
+    expected_archetypes: [WAR_RISK, SANCTIONS_REGIME, ENERGY_SECURITY, SUPPLY_CHAIN_SHOCK]
+    key_checks:
+      - geopolitical_risk_routing
+      - regime_shift_candidate
+      - risk_limits
+      - operator_review_priority
+
+  - scenario_id: policy_reversal
+    category: policy_shock
+    severity: medium
+    description: "Important subsidy/law/tariff/regulation is delayed, reversed, or watered down."
+    expected_archetypes: [POLICY_REVERSAL, REGULATORY_CRACKDOWN]
+    key_checks:
+      - open_hypothesis_token_update
+      - expectation_gap
+      - affected_vs_baseline_sector_response
+      - outcome_review_update
+
+  - scenario_id: data_vendor_bad_tick_or_bad_news_batch
+    category: data_quality_shock
+    severity: high
+    description: "Bad market tick or duplicated/false news batch enters collectors."
+    expected_archetypes: [DATA_QUALITY_FAILURE]
+    key_checks:
+      - dedupe
+      - source_quality
+      - anomaly_detection
+      - pipeline_controller_block
+
+  - scenario_id: model_drift_under_regime_shift
+    category: model_pipeline_shock
+    severity: high
+    description: "Model appears strong historically but feature distribution drifts after a regime shift."
+    expected_archetypes: [MODEL_DRIFT, REGIME_SHIFT_CANDIDATE]
+    key_checks:
+      - feature_distribution_drift
+      - champion_challenger_review
+      - model_promotion_block
+      - replay_required
+
+  - scenario_id: liquidity_gap_execution_failure
+    category: execution_gateway_shock
+    severity: extreme
+    description: "Market liquidity disappears, spreads widen, simulated orders get rejected or slip."
+    expected_archetypes: [LIQUIDITY_CRISIS, EXECUTION_STRESS]
+    key_checks:
+      - max_slippage
+      - order_rejection_handling
+      - kill_switch
+      - no_broker_bypass

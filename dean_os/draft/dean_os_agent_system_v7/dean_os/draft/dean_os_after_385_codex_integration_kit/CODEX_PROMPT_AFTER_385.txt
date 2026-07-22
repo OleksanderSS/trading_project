@@ -1,0 +1,44 @@
+Use `dean_os_after_385_full_context_bundle.zip` plus this integration kit as the complete staged design inventory for DEAN-OS.
+
+Important: this is not a blind merge patch. Do not copy the assistant_workbench tree into production as-is.
+
+An older assistant_workbench context up to around block 135 may already have been used. Preserve useful existing work in the current repo, but reconcile it against after-385. Prefer the after-385 lifecycle templates when deciding architecture and workflow coverage.
+
+Primary harvest targets:
+
+1. 376-378 Analyst Branch full-cycle template.
+2. 379-381 Pipeline Controller Branch full-cycle template.
+3. 382-384 Orchestrator full-cycle template.
+4. 385 Codex harvest/adapt integration brief.
+5. Safety guards, fixtures, tests, module boundaries, and verification command ideas from 375.
+
+Expected behavior:
+
+- Inspect the current repo first.
+- Harvest useful artifacts, architecture ideas, contracts, lifecycle templates, tests, fixtures, safety boundaries, and integration guidance.
+- Adapt/rewrite useful parts into the current repo structure.
+- Prefer small vertical slices: interfaces -> fixtures -> tests -> implementation -> offline smoke validation.
+- Keep human-review boundaries explicit.
+- Document what was harvested, adapted, skipped, and deferred.
+
+Hard constraints:
+
+- no blind merge;
+- no live fetch during integration tests;
+- no external API calls during integration tests;
+- no source retrieval from this brief;
+- no autonomous workflow loop;
+- no runtime orchestration execution by default;
+- no model training execution from this integration pass;
+- no backtest execution from this integration pass;
+- no production config write;
+- no runtime parameter mutation;
+- no model promotion;
+- no production analyst report generation;
+- no thesis/valuation/recommendation/trading output;
+- no position sizing;
+- no order generation;
+- no broker routing;
+- no autonomous trading.
+
+Do not continue the assistant_workbench numbered template ladder after 385. Produce practical repo integration changes or a concrete integration issue list.

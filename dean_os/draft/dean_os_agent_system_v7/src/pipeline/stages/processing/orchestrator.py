@@ -1,0 +1,128 @@
+from datetime import datetime
+from typing import Any
+
+from src.config.unified_config_manager import UnifiedConfigManager
+from src.core.cloud.gcs_manager import GCSManager
+from src.core.error_handling.error_handler import ErrorHandler
+from src.core.file_management.file_manager import FileManager
+from src.core.logging.logger import ProjectLogger
+from src.monitoring.infrastructure.resource_monitor import get_resource_monitor
+from src.pipeline.stages.base_stage import BaseStage
+from src.processing.data_filter import IntelligentDataFilter
+from src.processing.normalization_manager import NormalizationManager
+
+from .data_handler import ProcessingDataHandler
+from .storage import ProcessingStorage
+from .validator import ProcessingValidator
+
+
+class ProcessingStage(BaseStage):
+    """
+    Modular Stage 2: Data Processing, Cleaning, and Cloud Offloading.
+    Delegates to specialized components for validation, handling, and storage.
+    """
+
+    def __init__(self, config_manager: UnifiedConfigManager, error_handler: ErrorHandler, **kwargs):
+        super().__init__(config_manager, error_handler, **kwargs)
+        self.logger = ProjectLogger.get_logger('ProcessingStage')
+
+        # Initialize Core Components
+        self.file_manager = FileManager(base_dir='.')
+        self.resource_monitor = get_resource_monitor()
+
+        processing_config = self.config_manager.get_config('processing') or {}
+        filtering_config = processing_config.get('filtering')
+        paths_config = self.config_manager.get_config('paths') or {}
+        scaler_dir = paths_config.get('scalers', 'data/scalers')
+
+        self.data_filter = IntelligentDataFilter(config=filtering_config)
+        self.normalization_manager = NormalizationManager(scaler_dir=scaler_dir)
+
+        # Initialize Specialized Modular Components
+        self.modular_validator = ProcessingValidator()
+        self.data_handler = ProcessingDataHandler(self.normalization_manager, self.data_filter)
+        self.storage_manager = ProcessingStorage(self.file_manager)
+
+        try:
+            self.gcs_manager = GCSManager()
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.warning(f'GCS Manager initialization failed: {e}. Continuing without cloud storage.')
+            self.gcs_manager = None
+
+    async def run(self, **kwargs) -> dict[str, Any]:
+        """Runs the processing cycle."""
+        self.logger.info('Starting modular data processing stage...')
+
+        raw_data = self._extract_raw_data(kwargs)
+        if not raw_data:
+            return {}
+        processing_config = self.config_manager.get_config('processing') or {}
+
+        cleaned_data_map: dict[str, Any] = {}
+
+        # 1. Process different data types
+        self._process_all_data_types(raw_data, cleaned_data_map)
+
+        # 2. Intelligent Filtering
+        filtered_results = self.data_handler.apply_intelligent_filtering(cleaned_data_map)
+
+        # 3. Normalization
+        normalization_config = processing_config.get('normalization', {})
+        features_to_normalize = normalization_config.get('features', [])
+        run_mode = kwargs.get('run_mode', 'train')
+        self.data_handler.apply_normalization(
+            filtered_results,
+            features_to_normalize=features_to_normalize,
+            fit_scalers=run_mode != 'predict',
+        )
+
+        # 4. Validation
+        self.modular_validator.run_system_validation(filtered_results)
+
+        # 5. Storage
+        storage_paths = self.storage_manager.save_cleaned_data_to_files(filtered_results)
+
+        # Finalize
+        result = self._finalize_results(filtered_results, storage_paths)
+
+        health = self.resource_monitor.get_health_status()
+        self.logger.info(f"Stage 2 complete. System Health: CPU {health.get('cpu')}, MEM {health.get('memory')}")
+
+        return result
+
+    def _extract_raw_data(self, kwargs) -> dict[str, Any]:
+        raw_data = kwargs.get('raw_data', {})
+        if 'raw_data' in raw_data and isinstance(raw_data['raw_data'], dict):
+            raw_data = raw_data['raw_data']
+        return raw_data
+
+    def _process_all_data_types(self, raw_data: dict[str, Any], cleaned_data_map: dict[str, Any]):
+        """Delegates processing for various data types."""
+        # This would call methods like _process_market_data, _process_news_data, etc.
+        # For the sake of refactoring, we maintain the original logic structure but cleaner.
+        if 'market_data' in raw_data:
+            df_m = self.data_handler.clean_and_normalize_market_data(raw_data['market_data'])
+            cleaned_data_map['prices'] = self.data_handler.group_by_timeframes(df_m)
+
+        # ✅ Pass macro_data from Stage 1 (FredCollector) to Feature Engineering with cleaning
+        if 'macro_data' in raw_data and isinstance(raw_data['macro_data'], __import__('pandas').DataFrame):
+            macro_df = self.data_handler.clean_and_normalize_macro_data(raw_data['macro_data'])
+            cleaned_data_map['macro_data'] = macro_df
+
+        # Pass news data with cleaning
+        if 'news' in raw_data and isinstance(raw_data['news'], __import__('pandas').DataFrame):
+            news_df = raw_data['news'].copy()
+            # Basic cleaning for news: remove duplicates, handle missing values
+            if 'title' in news_df.columns:
+                news_df = news_df.drop_duplicates(subset=['title'])
+            news_df = __import__('pandas').DataFrame(news_df).fillna('')
+            cleaned_data_map['news'] = news_df
+
+    def _finalize_results(self, cleaned_data: dict[str, Any], storage_paths: dict[str, Any]) -> dict[str, Any]:
+        return {
+            'status': 'success',
+            'cleaned_data': cleaned_data,
+            'storage_paths': storage_paths,
+            'quality_metrics': self.modular_validator.create_quality_metrics(cleaned_data),
+            'timestamp': datetime.now().isoformat()
+        }

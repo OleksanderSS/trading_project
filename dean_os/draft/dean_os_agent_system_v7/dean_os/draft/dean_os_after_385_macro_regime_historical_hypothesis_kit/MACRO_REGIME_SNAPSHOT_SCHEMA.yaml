@@ -1,0 +1,60 @@
+schema_name: macro_regime_snapshot_schema
+version: after_385_v1
+
+regime_snapshot:
+  snapshot_id: string
+  period_start: date
+  period_end: date
+  label: string
+  geography:
+    primary_region: string
+    affected_regions: list[string]
+
+  macro_state:
+    growth: contraction | weak | stable | accelerating | boom | unknown
+    inflation: deflation | low | moderate | high | accelerating | unknown
+    rates: easing | neutral | tightening | restrictive | unknown
+    credit_conditions: loose | normal | tightening | crisis | unknown
+    unemployment: low | rising | high | unknown
+    fiscal_policy: austerity | neutral | stimulus | wartime_mobilization | industrial_policy | unknown
+
+  geopolitics:
+    war_or_major_conflict: boolean
+    conflict_context: string
+    sanctions_or_embargo: boolean
+    supply_chain_disruption: boolean
+    strategic_resource_pressure: boolean
+
+  commodities_energy:
+    oil_shock: boolean
+    gas_power_shock: boolean
+    commodity_cycle: downcycle | stable | upcycle | spike | unknown
+
+  market_context:
+    equity_regime: bull | bear | range_bound | crash | recovery | unknown
+    valuation_pressure: low | moderate | high | unknown
+    volatility_proxy: low | moderate | high | crisis | unknown
+    risk_appetite_proxy: fear | neutral | greed | unknown
+
+  policy_context:
+    monetary_policy_regime: easing | neutral | tightening | emergency | unknown
+    fiscal_policy_regime: austerity | neutral | stimulus | wartime | industrial_policy | unknown
+    trade_policy_regime: liberalizing | protectionist | sanctions | fragmented | unknown
+    regulatory_shock: boolean
+
+  sector_context:
+    likely_winners: list[string]
+    likely_losers: list[string]
+    affected_value_chains: list[string]
+
+  data_quality:
+    available_indicators: list[string]
+    missing_indicators: list[string]
+    proxy_indicators_used: list[string]
+    comparability_warning: string
+
+  forbidden_outputs:
+    - buy_sell_hold
+    - price_target
+    - trade_signal
+    - deterministic_prediction

@@ -1,0 +1,47 @@
+schema_name: collector_health_and_run_manifest_template
+version: after_385_v2
+purpose: >
+  Provide a standard manifest for daily collector runs governed by the Pipeline Controller Agent.
+
+run_manifest:
+  run_id: string
+  run_date: date
+  run_mode: research | daily_collection | replay | paper | shadow | supervised_live | constrained_autonomous
+  started_at: datetime
+  completed_at: datetime | null
+  controller_agent_id: string
+
+  collectors:
+    - collector_id: string
+      collector_type: news | filing | macro | market | sentiment | alternative | other
+      enabled: boolean
+      status: not_started | running | success | partial | failed | skipped
+      source_count: integer
+      duplicate_count: integer
+      stale_count: integer
+      error_count: integer
+      timeout_seconds: integer
+      source_hash_manifest_id: string
+      last_success_at: datetime | null
+      failure_reason: string | null
+
+  quality_summary:
+    critical_collectors_passed: boolean
+    noncritical_collectors_failed: integer
+    stale_source_rate: number
+    dedupe_passed: boolean
+    schema_validation_passed: boolean
+    date_metadata_complete: boolean
+    source_quality_minimum_passed: boolean
+
+  controller_decision:
+    status: continue | continue_with_warnings | block | fail
+    reason: string
+    review_queue_items_created: integer
+    blocked_items_created: integer
+
+rules:
+  - critical_collector_failure_can_block_downstream_analysis
+  - noncritical_failure_can_continue_with_warning
+  - source_hash_manifest_required_for_reproducibility
+  - publication_date_event_date_ingestion_date_required_when_available

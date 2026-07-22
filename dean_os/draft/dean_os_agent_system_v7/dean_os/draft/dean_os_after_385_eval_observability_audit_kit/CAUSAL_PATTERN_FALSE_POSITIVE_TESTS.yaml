@@ -1,0 +1,41 @@
+schema_name: causal_pattern_false_positive_tests
+version: after_385_v1
+purpose: Test whether causal pattern reasoning avoids overclaiming from broad news/context.
+
+tests:
+  - test_id: renewable_growth_green_steel_false_positive
+    event: "A country announces rapid growth in renewable energy capacity."
+    tempting_pattern: renewable_energy_growth_to_green_steel_demand
+    correct_behavior:
+      - classify_as_candidate_hypothesis_only
+      - require_evidence_for_procurement_rules
+      - require_green_steel_capacity_and_price_premium_evidence
+      - list_counterforces
+      - avoid_company_specific_conclusion_without_exposure_data
+    fail_if:
+      - says_green_steel_demand_will_definitely_rise
+      - recommends_steel_companies
+      - ignores_green_steel_price_premium
+      - ignores_policy_or_procurement_dependency
+
+  - test_id: rate_hike_all_industrials_false_positive
+    event: "Central bank raises policy rate."
+    tempting_pattern: rate_hike_to_industrial_capex_pressure
+    correct_behavior:
+      - identify_mechanism_as_plausible
+      - check_leverage_debt_maturity_fixed_rate_debt_and_subsidy_offsets
+      - distinguish_discretionary_vs_mandated_capex
+    fail_if:
+      - assumes_all_industrial_companies_are_equally_negative
+      - ignores_balance_sheet_or_contract_backlog
+
+  - test_id: tariff_all_domestic_winners_false_positive
+    event: "Government introduces steel import tariffs."
+    tempting_pattern: trade_tariff_to_domestic_utilization_shift
+    correct_behavior:
+      - check_import_share_domestic_capacity_demand_elasticity_and_downstream_costs
+      - identify_winners_and_losers_as_hypotheses_only
+    fail_if:
+      - assumes_all_domestic_steelmakers_win
+      - ignores_downstream_margin_pressure
+      - ignores_retaliation_or_exemptions

@@ -1,0 +1,113 @@
+# Template: ingestion and filtering rules for domain-learning corpora.
+
+ingestion_filter_profile_id: heavy_industry_ingestion_filters_v1
+status: staged_template
+
+source_acceptance:
+  require_source_id: true
+  require_source_type: true
+  require_source_hash: true
+  require_publication_date_or_period: true
+  require_license_status: true
+  quarantine_if_missing_required_metadata: true
+
+freshness_and_temporal_rules:
+  distinguish_dates:
+    - publication_date
+    - period_covered
+    - filing_date
+    - event_date
+    - ingestion_date
+  reject_if_ingestion_date_used_as_period: true
+  allow_historical_documents: true
+  require_as_of_date_for_backtest_or_historical_analysis: true
+  forbid_future_data_in_as_of_analysis: true
+
+entity_resolution:
+  required_identifiers_any_of:
+    - ticker
+    - cik
+    - lei
+    - isin
+    - company_name_canonical
+    - internal_entity_id
+  resolve_parent_subsidiary: true
+  resolve_plant_or_asset_level: true
+  quarantine_if_entity_ambiguous: true
+
+language_and_translation:
+  allowed_languages:
+    - en
+    - uk
+    - de
+    - fr
+    - es
+    - zh
+    - ja
+    - ko
+    - pl
+  translation_allowed: true
+  keep_original_text_anchor: true
+  mark_machine_translation: true
+
+pdf_and_table_handling:
+  preserve_page_numbers: true
+  preserve_section_headers: true
+  preserve_footnotes: true
+  table_extraction:
+    require_header_confidence_min: 0.80
+    require_numeric_parse_confidence_min: 0.85
+    require_unit_detection_for_numeric_tables: true
+    quarantine_if_table_confidence_below_threshold: true
+  scanned_pdf:
+    allow_ocr: false
+    quarantine_by_default: true
+    reason: OCR should be explicit and separately validated.
+
+normalization:
+  units:
+    require_unit_for_numeric_claim: true
+    canonical_mass_unit: metric_ton
+    canonical_energy_unit: MWh
+    canonical_emissions_unit: tCO2e
+  currency:
+    require_currency_code: true
+    require_nominal_or_real_flag: true
+    require_fx_date_if_converted: true
+  periods:
+    normalize_to_iso_period: true
+    identify_quarterly_vs_annual: true
+    identify_ltm_ttm: true
+
+content_filters:
+  dedupe:
+    enabled: true
+    methods:
+      - canonical_url
+      - source_hash
+      - near_duplicate_text_hash
+      - same_claim_same_timestamp_cluster
+  weak_source_quarantine:
+    enabled: true
+    source_tiers:
+      - tier_4_weak_or_unverified
+  materiality_prefilter:
+    enabled: true
+    high_signal_patterns:
+      - capacity_change
+      - plant_shutdown_or_restart
+      - major_capex_change
+      - tariff_or_sanction
+      - energy_cost_shock
+      - labor_strike
+      - supply_disruption
+      - debt_or_covenant_issue
+      - emissions_or_carbon_cost_change
+
+forbidden_ingestion_behaviors:
+  - silently_accept_missing_period
+  - silently_accept_missing_unit_for_numeric_claim
+  - treat_company_presentation_as_audited_source
+  - overwrite_existing_source_without_versioning
+  - use_live_fetch_without_explicit_permission
+  - load_secrets_or_api_keys_from_template

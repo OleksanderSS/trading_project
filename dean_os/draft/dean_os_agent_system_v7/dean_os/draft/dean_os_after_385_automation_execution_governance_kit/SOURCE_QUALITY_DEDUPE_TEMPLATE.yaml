@@ -1,0 +1,24 @@
+schema_name: source_quality_dedupe_template
+version: after_385_v1
+
+source_quality:
+  source_id: string
+  source_type: news | filing | macro_series | market_data | report | social | other
+  source_url_or_location: string
+  source_hash: string
+  publisher: string
+  publication_date: date
+  ingestion_date: date
+  credibility_tier: tier_1 | tier_2 | tier_3 | tier_4 | unknown
+  freshness_status: fresh | stale | unknown
+  duplicate_status: unique | duplicate | near_duplicate | cluster_representative
+  dedupe_cluster_id: string | null
+  quality_flags:
+    - missing_date
+    - weak_source
+    - duplicated
+    - stale
+    - paywalled_excerpt_only
+    - unclear_primary_source
+  allowed_use: [context, event_packet, evidence_candidate]
+  restricted_use: [final_claim_without_confirmation]

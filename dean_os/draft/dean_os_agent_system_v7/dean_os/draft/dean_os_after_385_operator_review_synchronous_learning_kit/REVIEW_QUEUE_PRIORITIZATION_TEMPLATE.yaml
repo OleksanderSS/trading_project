@@ -1,0 +1,47 @@
+schema_name: review_queue_prioritization_template
+version: after_385_v1
+
+priority_rules:
+  critical:
+    - unsafe_output_counter_nonzero
+    - broker_order_or_trade_signal_detected
+    - time_leakage_detected
+    - risk_engine_failure
+    - kill_switch_failure
+    - model_promotion_requested_with_failed_gate
+
+  high:
+    - regime_changing_event_candidate
+    - major_policy_or_law_event
+    - high_expectation_gap
+    - high_reflexivity_risk
+    - crowded_narrative_reversal_risk
+    - weak_source_used_for_material_claim
+    - analyst_pipeline_disagreement_high
+    - missing_decision_lineage
+
+  medium:
+    - new_hypothesis_token
+    - scenario_probability_update
+    - baseline_contamination_risk_medium
+    - evidence_gap_blocks_confidence
+    - feature_drift_warning
+
+  low:
+    - routine_daily_digest_item
+    - noncritical_collector_warning
+    - minor_source_metadata_gap
+
+queue_item:
+  queue_item_id: string
+  priority: critical | high | medium | low
+  reason: string
+  owner: operator | analyst_agent | pipeline_controller | orchestrator
+  due_policy: immediate | same_day | next_review_cycle | backlog
+  allowed_actions:
+    - approve
+    - correct
+    - reject
+    - request_more_evidence
+    - create_incident
+    - create_eval_case

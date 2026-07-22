@@ -1,0 +1,151 @@
+schema_name: pipeline_daily_run_governor_template
+version: after_385_v2
+purpose: >
+  Define the Pipeline Controller Agent as the governor of daily automated runs.
+  It does not collect data itself and does not analyze news itself. It starts, monitors,
+  validates, blocks, retries, and logs the run across collectors, analyst agents,
+  evaluation checks, review queues, and later replay/paper/shadow/live gates.
+
+role_definition:
+  pipeline_controller_agent:
+    primary_role: daily_run_governor
+    owns:
+      - run_plan
+      - run_state_machine
+      - collector_health_checks
+      - data_quality_gate
+      - normalization_gate
+      - feature_build_gate
+      - eval_audit_gate
+      - model_promotion_gate
+      - replay_paper_shadow_gate
+      - blocked_state_reason
+      - daily_run_audit
+    does_not_own:
+      - source_content_interpretation
+      - macro_or_sector_thesis
+      - LLM_probability_generation
+      - broker_order_generation
+      - direct_trading_decision
+
+daily_run_flow:
+  - step_id: prepare_run
+    controller_action:
+      - create_run_id
+      - load_run_config
+      - verify_allowed_sources
+      - verify_secrets_permissions_scope
+      - verify_output_paths
+      - initialize_audit_log
+    block_if:
+      - config_missing
+      - unauthorized_source
+      - output_path_unknown
+
+  - step_id: trigger_collectors
+    controller_action:
+      - trigger_enabled_collectors
+      - enforce_timeout
+      - capture_source_hashes
+      - record_collection_status
+    collector_examples:
+      - google_news_collector
+      - newsapi_collector
+      - rss_collector
+      - sec_filings_collector
+      - fred_collector
+      - fear_greed_collector
+      - vix_collector
+    block_if:
+      - critical_collector_failed
+      - data_stale_above_threshold
+      - source_hash_missing
+
+  - step_id: normalize_and_dedupe
+    controller_action:
+      - trigger_normalizers
+      - verify_schema
+      - verify_publication_event_ingestion_dates
+      - verify_dedupe_cluster_ids
+      - verify_source_quality_flags
+    block_if:
+      - schema_invalid
+      - time_metadata_missing
+      - dedupe_failed
+      - source_quality_below_minimum
+
+  - step_id: route_to_analysts
+    controller_action:
+      - create_event_packets
+      - route_packets_to_domain_analysts
+      - route_macro_events_to_macro_analyst
+      - route_policy_events_to_policy_analyst
+      - create_review_queue_if_routing_uncertain
+    block_if:
+      - event_packet_invalid
+      - route_unknown
+      - analyst_output_schema_invalid
+
+  - step_id: build_hypotheses_and_evidence_gaps
+    controller_action:
+      - require_tag_only_analyst_output
+      - verify_no_final_probability_without_source
+      - attach_evidence_ids
+      - create_or_update_hypothesis_tokens
+      - create_evidence_gap_items
+    block_if:
+      - analyst_direct_trade_output_detected
+      - missing_evidence_lineage
+      - probability_without_base_rate_or_review
+
+  - step_id: run_eval_audit
+    controller_action:
+      - run_source_grounding_checks
+      - run_time_leakage_checks
+      - run_unit_period_checks
+      - run_retrieval_quality_checks
+      - verify_decision_lineage
+    block_if:
+      - leakage_detected
+      - source_grounding_failed
+      - decision_lineage_missing
+      - unsafe_output_counter_nonzero
+
+  - step_id: publish_internal_outputs
+    controller_action:
+      - write_daily_digest
+      - write_review_queue
+      - write_daily_audit_log
+      - write_blocked_items_report
+      - write_next_run_backlog
+    forbidden:
+      - publish_trading_recommendation
+      - send_broker_order
+      - mutate_live_trading_config
+
+state_machine:
+  states:
+    - scheduled
+    - running_collectors
+    - normalizing
+    - routing
+    - analyzing
+    - auditing
+    - completed_review_only
+    - completed_with_warnings
+    - blocked
+    - failed
+  terminal_states:
+    - completed_review_only
+    - completed_with_warnings
+    - blocked
+    - failed
+
+controller_rules:
+  - pipeline_controller_governs_daily_automation
+  - collectors_collect_but_do_not_govern_the_run
+  - analysts_interpret_but_do_not_control_execution
+  - orchestrator_coordinates_cross_agent_tasks
+  - pipeline_controller_can_block_or_escalate
+  - pipeline_controller_cannot_bypass_risk_or_execution_gates
+  - every_run_must_have_run_id_manifest_and_audit_log

@@ -1,0 +1,49 @@
+{
+  "schema_name": "incident_report_schema",
+  "version": "after_385_v1",
+  "incident_report": {
+    "incident_id": "string",
+    "created_at": "datetime",
+    "severity": "low | medium | high | critical",
+    "mode": "research | daily_collection | replay | paper | shadow | supervised_live | constrained_autonomous",
+    "summary": "string",
+    "detected_by": "eval | pipeline_controller | human_review | risk_engine | execution_gateway | other",
+    "affected_components": [
+      "collector",
+      "normalizer",
+      "analyst",
+      "retrieval",
+      "macro_context",
+      "pipeline_controller",
+      "model",
+      "orchestrator",
+      "risk_engine",
+      "execution_gateway"
+    ],
+    "root_cause_labels": [
+      "source_quality_failure",
+      "dedupe_failure",
+      "time_leakage",
+      "unit_error",
+      "period_error",
+      "wrong_archetype",
+      "bad_expectation_gap",
+      "bad_baseline_basket",
+      "llm_overclaim",
+      "model_drift",
+      "risk_gate_failure",
+      "execution_gate_failure",
+      "missing_lineage"
+    ],
+    "evidence": {
+      "source_ids": ["string"],
+      "run_ids": ["string"],
+      "decision_lineage_ids": ["string"],
+      "model_state_ids": ["string"]
+    },
+    "impact": "string",
+    "remediation": ["string"],
+    "regression_tests_to_add": ["string"],
+    "status": "open | mitigated | closed | monitoring"
+  }
+}

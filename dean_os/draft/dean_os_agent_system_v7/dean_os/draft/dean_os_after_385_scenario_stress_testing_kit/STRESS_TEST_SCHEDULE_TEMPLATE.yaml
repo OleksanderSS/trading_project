@@ -1,0 +1,34 @@
+schema_name: stress_test_schedule_template
+version: after_385_v1
+
+stress_test_schedule:
+  daily_light_checks:
+    - data_quality_shock_small
+    - stale_source_check
+    - missing_metadata_check
+    - no_forbidden_output_check
+
+  weekly_system_stress:
+    - rate_shock_plus_valuation_reset
+    - oil_price_spike
+    - model_drift_under_regime_shift
+    - data_vendor_bad_tick_or_bad_news_batch
+
+  monthly_extreme_stress:
+    - credit_freeze
+    - war_escalation
+    - liquidity_gap_execution_failure
+    - ai_bubble_crack
+
+  pre_promotion_required:
+    - strategy_forbidden_regime_test
+    - kill_switch_test
+    - decision_lineage_test
+    - replay_future_leakage_test
+    - execution_gateway_block_test
+
+rules:
+  - stress_tests_required_before_strategy_promotion
+  - critical_failure_blocks_promotion
+  - unresolved_incident_blocks_autonomy_escalation
+  - stress_results_feed_operator_review_and_eval_backlog

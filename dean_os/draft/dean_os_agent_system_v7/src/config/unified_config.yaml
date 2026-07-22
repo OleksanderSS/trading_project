@@ -1,0 +1,455 @@
+# Unified Configuration for the Trading Project
+
+# ---------------------------------
+# Data Section
+# ---------------------------------
+data:
+  # Configuration for data ingestion from various sources
+  ingestion:
+    keyword_filter:
+      # Tickers list is now centralized and sourced from assets.yaml.
+      # This list is for reference and should be dynamically loaded.
+      tickers:
+        - "TSLA"
+        - "NVDA"
+        - "SPY"
+        - "QQQ"
+        - "AMD"
+        - "KO"
+        - "WMT"
+        - "XOM"
+        - "JPM"
+        - "GS"
+
+      # Keywords are now centralized and sourced from knowledge_base.yaml.
+      # This list is for reference and should be dynamically loaded.
+      general_keywords:
+        - "etf"
+        - "index"
+        - "nasdaq"
+        - "s&p 500"
+        - "earnings"
+        - "earnings report"
+        - "quarterly results"
+        - "financial results"
+        - "merger"
+        - "m&a"
+        - "acquisition"
+        - "lawsuit"
+        - "regulation"
+        - "downgrade"
+        - "upgrade"
+        - "buyback"
+        - "dividend"
+        - "guidance"
+        - "forecast"
+        - "ipo"
+        - "bankruptcy"
+        - "restructuring"
+        - "inflation"
+        - "interest rates"
+        - "federal reserve"
+        - "gdp"
+        - "unemployment"
+        - "recession"
+        - "stimulus"
+        - "bond yields"
+        - "market"
+        - "economy"
+        - "economic"
+        - "financial"
+        - "stocks"
+        - "trading"
+        - "investors"
+        - "analysis"
+        - "forecast"
+        - "outlook"
+        - "report"
+        - "ai"
+        - "ev"
+        - "semiconductor"
+        - "chips"
+        - "cloud"
+        - "tech"
+        - "quantum computing"
+        - "cybersecurity"
+        - "data breach"
+        - "robotics"
+        - "automation"
+        - "battery"
+        - "charging"
+        - "fda approval"
+        - "clinical trial"
+        - "biotech"
+        - "pharmaceutical"
+        - "medical device"
+        - "banking"
+        - "insurance"
+        - "fintech"
+        - "payments"
+        - "lending"
+        - "oil"
+        - "crude"
+        - "brent"
+        - "energy"
+        - "commodities"
+        - "opec"
+        - "gas"
+        - "renewables"
+        - "sanctions"
+        - "tariffs"
+        - "trade war"
+        - "conflict"
+        - "china"
+        - "eu"
+        - "us fed"
+        - "antitrust"
+        - "transformers"
+        - "bert"
+        - "gpt"
+        - "classification"
+        - "sentiment"
+        - "nlp"
+        - "model"
+        - "huggingface"
+        - "tokenizer"
+        - "finetuned"
+        - "ted spread"
+        - "yield curve inversion"
+        - "high yield spreads"
+        - "credit spreads"
+        - "repo rates"
+        - "libor"
+        - "commercial paper"
+        - "money market"
+        - "liquidity crisis"
+        - "margin calls"
+        - "volatility spike"
+        - "risk parity"
+        - "carry trade"
+        - "currency intervention"
+        - "central bank swap"
+        - "industrial production"
+        - "capacity utilization"
+        - "consumer sentiment"
+        - "housing starts"
+        - "building permits"
+        - "nonfarm payrolls"
+        - "initial claims"
+        - "continuing claims"
+        - "retail sales"
+        - "personal income"
+        - "durable goods"
+        - "factory orders"
+        - "ism manufacturing"
+        - "ism services"
+        - "philadelphia fed"
+        - "ai"
+        - "etf"
+        - "ev"
+        - "gdp"
+        - "nasdaq"
+        - "s&p 500"
+        - "acquisition"
+        - "chips"
+        - "cloud"
+        - "commodities"
+        - "earnings"
+        - "earnings report"
+        - "elon musk"
+        - "energy"
+        - "federal reserve"
+        - "gpu"
+        - "inflation"
+        - "interest rates"
+        - "lawsuit"
+        - "merger"
+        - "nvidia"
+        - "nvda"
+        - "oil"
+        - "qqq"
+        - "regulation"
+        - "semiconductor"
+        - "spy"
+        - "spdr"
+        - "tech"
+        - "tesla"
+        - "tsla"
+
+  # Configuration for data processing pipeline
+  processing:
+    # Settings for data cleaning
+    cleaning:
+      # Columns to fill with zero instead of ffill/bfill
+      fill_with_zero:
+        - "volume"
+        - "news_sentiment"
+        - "twitter_sentiment"
+    
+    # Settings for data preparation
+    preparation:
+      test_size: 0.2
+      seq_len: 20 # For heavy models
+    
+    # Settings for normalization
+    normalization:
+      features:
+        - {feature: 'close', scaler_type: 'standard'}
+        - {feature: 'volume', scaler_type: 'min_max'}
+    
+    # Modular Enrichers Configuration
+
+    # ---------------------------------
+    # Modular Enrichers Configuration (Centralized for FeatureOrchestrator)
+    # ---------------------------------
+    enrichers:
+      hype: {enabled: true}
+      macro_features: {enabled: true}
+      nlp_features: {enabled: true}
+      sentiment_features: {enabled: true}
+      decay_features: {enabled: true}
+      significance_features: {enabled: true}
+      technical_analysis: {enabled: true}
+      time_features: {enabled: true}
+      context_map: {enabled: true}
+      derived_features: {enabled: true}
+      news_quality: {enabled: true}
+      volatility: {enabled: true}
+      volume: {enabled: true}
+
+# ---------------------------------
+# Analysis Section
+# ---------------------------------
+analysis:
+  # Configuration for the CriticalSignalDetector
+  critical_signal_detector:
+    price_shock:
+      window: 3
+      threshold: -0.07 # 7% drop in 3 periods
+    volume_spike:
+      window: 10
+      multiplier: 4.0 # 4x the average volume
+    volatility_explosion:
+      window: 15
+      multiplier: 3.0 # 3x the average volatility
+    # Sensitive settings for intraday timeframes (e.g., 5m)
+    timeframe_5m:
+      price_shock:
+        window: 3
+        threshold: -0.02 # 2% drop in 3 periods
+      volume_spike:
+        window: 10
+        multiplier: 2.0
+      volatility_explosion:
+        window: 10
+        multiplier: 1.8
+
+  # Configuration for the NewsImpactAnalyzer
+  news_impact:
+    news_weights:
+      general_news: 1.0
+      earnings: 1.7
+      m_and_a: 2.0
+      product_launch: 1.3
+      guidance: 1.8
+    half_life_hours: 18
+    significance_thresholds:
+      high_impact: 1.8
+      medium_impact: 0.9
+    news_categories:
+      earnings: ['earnings', 'revenue', 'profit', 'guidance', 'EPS']
+      m_and_a: ['merger', 'acquisition', 'takeover', 'buyout', 'deal']
+      product_launch: ['launch', 'release', 'new product', 'announcement']
+      legal: ['lawsuit', 'regulation', 'antitrust', 'probe']
+
+  # Configuration for the MacroContextAnalyzer
+  macro_context:
+    regime_thresholds:
+      strong_expansion: 0.6
+      expansion: 0.25
+      strong_contraction: -0.6
+      contraction: -0.25
+    indicators:
+      gdp_growth:
+        weight: 0.25
+        direction: "higher_is_better"
+        threshold: 0.6
+      unemployment_rate:
+        weight: 0.20
+        direction: "lower_is_better"
+        threshold: 0.25
+      cpi_inflation:
+        weight: 0.20
+        direction: "lower_is_better"
+        threshold: 0.35
+      vix_index:
+        weight: 0.10
+        direction: "lower_is_better"
+        threshold: 2.5
+      consumer_confidence:
+        weight: 0.10
+        direction: "higher_is_better"
+        threshold: 6.0
+      interest_rate:
+        weight: 0.25
+        direction: "lower_is_better"
+        threshold: 0.3
+      credit_spread:
+        weight: 0.15
+        direction: "lower_is_better"
+        threshold: 0.25
+
+  # Configuration for feature engineering analyzers
+  feature_engineering:
+    # Settings for the SignificanceAnalyzer
+    significance_analyzer:
+      significance_col: 'is_significant'
+      min_events_per_ticker: 5
+      mode: 'feature_engineering'
+
+# ---------------------------------
+# Context Rule Generation Section
+# ---------------------------------
+context_rule_generation:
+  # Target asset for rule generation analysis
+  target_asset: 'SPY'
+  
+  # Indicators to analyze for rule generation
+  indicators_to_analyze:
+    - name: 'VIX'
+      thresholds:
+        - condition: '>'
+          value: 30
+          effect_windows: [1, 5, 20]
+        - condition: '<'
+          value: 15
+          effect_windows: [1, 5, 20]
+    
+    - name: 'yield_curve_slope'
+      thresholds:
+        - condition: '<'
+          value: 0  # Inverted yield curve
+          effect_windows: [1, 5, 20, 60]
+        - condition: '>'
+          value: 2.0  # Steep yield curve
+          effect_windows: [1, 5, 20]
+    
+    - name: 'fed_funds_rate'
+      thresholds:
+        - condition: '>'
+          value: 5.0  # High interest rates
+          effect_windows: [1, 5, 20, 60]
+        - condition: '<'
+          value: 1.0  # Low interest rates
+          effect_windows: [1, 5, 20]
+    
+    - name: 'unemployment_rate'
+      thresholds:
+        - condition: '>'
+          value: 6.0  # High unemployment
+          effect_windows: [1, 5, 20, 60]
+        - condition: '<'
+          value: 4.0  # Low unemployment
+          effect_windows: [1, 5, 20]
+    
+    - name: 'cpi_inflation'
+      thresholds:
+        - condition: '>'
+          value: 4.0  # High inflation
+          effect_windows: [1, 5, 20, 60]
+        - condition: '<'
+          value: 2.0  # Low inflation
+          effect_windows: [1, 5, 20]
+  
+  # Output path for generated rules (relative to project root)
+  output_path: 'src/config/generated_context_rules.yaml'
+  
+  # Minimum number of events required to generate a rule
+  min_event_count: 10
+  
+  # Minimum win rate to consider a rule significant
+  min_win_rate: 0.55
+
+# ---------------------------------
+# Strategy Section
+# ---------------------------------
+strategy:
+  # Configuration for the TradingAdvisor
+  trading_advisor:
+    # Weights for aggregating signals
+    weights:
+      forecast: 0.5
+      rsi: 0.15
+      sentiment: 0.15
+      macro_context: 0.2
+    
+    # Thresholds for generating final BUY/SELL signals
+    thresholds:
+      buy: 0.5
+      sell: -0.5
+
+    # Thresholds for interpreting RSI values
+    rsi_thresholds:
+      oversold: 25
+      overbought: 75
+
+    # Multipliers to adjust final score based on market context
+    context_multipliers:
+      bull_market: 1.15
+      bear_market: 0.85
+      sideways_market: 0.9
+
+  # Configuration for different trading strategies
+  strategies:
+    aggressive_growth:
+      description: "An aggressive strategy focused on high-growth tech stocks."
+      model_type: "transformer_model"
+      target_configs:
+        - name: "rolling_vol_10d"
+          calculator_class: "VolatilityCalculator"
+          method_name: "calculate_rolling_volatility"
+          params:
+            window: 10
+          input_type: "returns"
+        - name: "max_drawdown_30d"
+          calculator_class: "DrawdownCalculator"
+          method_name: "calculate_rolling_max_drawdown"
+          params:
+            window: 30
+            price_col: "close"
+          input_type: "prices"
+      feature_config:
+        required_features:
+          - "RSI_7"
+          - "EMA_10"
+          - "news_sentiment_trending"
+
+# ---------------------------------
+# Training Pipeline Definition
+# ---------------------------------
+
+training_pipeline:
+  - name: "Stage_0_Setup"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_0_setup.Stage0Setup"
+  - name: "Stage_1_Collection"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_1_collection.CollectionStage"
+  - name: "Stage_2_Processing"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_2_processing.ProcessingStage"
+  - name: "Stage_3_Feature_Engineering"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_3_feature_engineering.FeatureEngineeringStage"
+  - name: "Stage_4_Modeling"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_4_modeling.ModelingStage"
+  - name: "Stage_5_Prediction"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_5_prediction.PredictionStage"
+  - name: "Stage_6_Trading_Execution"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_6_trading_execution.TradingExecutionStage"
+  - name: "Stage_7_Evaluation"
+    enabled: true
+    class_path: "src.pipeline.stages.stage_7_evaluation.EvaluationStage"

@@ -1,0 +1,40 @@
+{
+  "schema_name": "event_graph_learning_record_schema",
+  "version": "after_385_v1",
+  "learning_record": {
+    "learning_record_id": "string",
+    "event_hypothesis_token_id": "string",
+    "created_at": "datetime",
+    "event_packet_id": "string",
+    "macro_regime_snapshot_id": "string",
+    "risk_archetype_ids": ["string"],
+    "historical_analog_ids": ["string"],
+    "expectation_gap_id": "string",
+    "causal_graph_id": "string",
+    "scenario_tree_id": "string",
+    "watch_metric_ids": ["string"],
+    "outcome_review_id": "string",
+    "debate_packet_id": "string | null",
+    "incident_report_id": "string | null",
+    "learning_labels": {
+      "analog_quality": "misleading | weak | useful | strong | unknown",
+      "causal_graph_quality": "weak | partial | good | strong",
+      "scenario_quality": "wrong | partially_right | right_direction | strong",
+      "expectation_gap_quality": "missed | partial | useful | decisive | unknown",
+      "evidence_gap_quality": "missed_key_gap | useful | excessive | unknown"
+    },
+    "updates_created": {
+      "causal_pattern_updates": ["string"],
+      "risk_archetype_updates": ["string"],
+      "source_registry_updates": ["string"],
+      "eval_tests_added": ["string"],
+      "prompt_or_template_updates": ["string"]
+    },
+    "human_review": {
+      "required": true,
+      "review_status": "pending | approved | rejected | revised",
+      "reviewer_notes": "string"
+    },
+    "forbidden_outputs": ["buy_sell_hold", "price_target", "trade_signal", "broker_order"]
+  }
+}

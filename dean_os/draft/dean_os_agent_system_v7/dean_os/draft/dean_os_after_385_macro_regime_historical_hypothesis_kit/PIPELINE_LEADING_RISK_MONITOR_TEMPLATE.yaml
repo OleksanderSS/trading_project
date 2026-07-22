@@ -1,0 +1,47 @@
+schema_name: pipeline_leading_risk_monitor_template
+version: after_385_v3
+purpose: >
+  Address the weakness that PnL/train-test metrics are lagging. Add leading monitors that can flag
+  regime change or model invalidation before historical PnL fully deteriorates.
+
+leading_risk_monitors:
+  - monitor_id: regime_shift_candidate_detected
+    input_sources: [macro_regime_snapshot, regime_changing_event_template, volatility, credit_spreads, policy_events]
+    trigger_condition: "regime_shift_candidate == true OR multiple regime dimensions change within short window"
+    action: [reduce_confidence, require_review, freeze_model_promotion, widen_scenarios]
+
+  - monitor_id: feature_distribution_drift
+    input_sources: [feature_store]
+    trigger_condition: "population_stability_index_or_equivalent above threshold"
+    action: [mark_model_stale, require_revalidation]
+
+  - monitor_id: correlation_breakdown
+    input_sources: [returns, factors, sector_indices]
+    trigger_condition: "factor/sector correlation structure changes materially"
+    action: [reduce_context_weight, rerun_backtest_by_regime]
+
+  - monitor_id: volatility_regime_break
+    input_sources: [realized_volatility, implied_volatility]
+    trigger_condition: "volatility moves to different regime"
+    action: [tighten_risk_bounds, require_pipeline_review]
+
+  - monitor_id: liquidity_stress
+    input_sources: [spreads, volume, funding_markets]
+    trigger_condition: "liquidity stress above threshold"
+    action: [block_autonomous_escalation, require_human_review]
+
+  - monitor_id: analyst_pipeline_disagreement
+    input_sources: [analyst_archetype_tags, pipeline_signals]
+    trigger_condition: "analyst regime risk high while pipeline confidence high"
+    action: [flag_conflict, reduce_final_confidence, review_required]
+
+rules:
+  - PnL_is_lagging_not_sufficient
+  - train_test_metrics_do_not_capture_new_regime_immediately
+  - leading_monitors_trigger_review_not_trading
+  - safety_counters_must_remain_zero
+forbidden_outputs:
+  - autonomous_trade
+  - broker_order
+  - buy_sell_hold
+  - price_target

@@ -1,0 +1,33 @@
+schema_name: expectation_gap_schema
+version: after_385_v2
+purpose: >
+  Model the difference between what actually happened and what the market had already expected/priced.
+  DEAN-OS should analyze events relative to expectations, not as standalone facts.
+
+expectation_gap:
+  event_hypothesis_token_id: string
+  as_of_date: date
+  market_expectation:
+    consensus_view: string
+    priced_probability: 0.0
+    expected_scenario_id: string
+    expectation_confidence: low | medium | high | unknown
+    positioning_state: underpriced | fairly_priced | crowded | extremely_crowded | unknown
+    expectation_sources: [options_market, futures_curve, analyst_consensus, sector_relative_performance, news_narrative, fund_flows, credit_spreads, management_guidance, survey_data, other]
+  actual_or_updated_outcome:
+    outcome_label: string
+    outcome_status: pending | observed | partially_observed | contradicted | unclear
+    surprise_direction: positive | negative | neutral | mixed | unknown
+    surprise_magnitude: low | medium | high | unknown
+  expectation_gap_assessment:
+    gap_direction: positive_surprise | negative_surprise | no_material_gap | mixed | unknown
+    gap_size: low | medium | high | unknown
+    price_reaction_expected_only_as_review_item: true
+    notes: string
+  rules:
+    - event_itself_is_not_signal
+    - compare_actual_to_priced_expectation
+    - bad_news_can_be_positive_if_less_bad_than_expected
+    - good_news_can_be_negative_if_already_overpriced
+    - output_is_review_only_not_trade_signal
+  forbidden_outputs: [buy_sell_hold, price_target, trade_signal, broker_order, autonomous_portfolio_action]

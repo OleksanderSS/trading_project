@@ -1,0 +1,77 @@
+{
+  "kit_name": "dean_os_after_385_operator_review_synchronous_learning_kit",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T14:07:20+00:00",
+  "purpose": "Non-numbered practical Codex-facing templates for synchronous operator review, human-agent parallel analysis, feedback labels, review queues, and conversion of reviewed reports into learning/eval examples.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Harvest/adapt useful templates; do not blind-merge.",
+  "files": [
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/CODEX_OPERATOR_REVIEW_PROMPT_AFTER_385.txt",
+      "sha256": "d32d52b77a1851c9d9c39dbbfcf992253e2772ba8d5a0542e850349d9804308c",
+      "bytes": 782
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/FEEDBACK_TO_LEARNING_PIPELINE_TEMPLATE.yaml",
+      "sha256": "c1b5253f480ec5a6800dcc4df6bfb4644e9422bb192a6fde6ab6f0f06e0083ef",
+      "bytes": 1472
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/HUMAN_AGENT_PARALLEL_ANALYSIS_SCHEMA.json",
+      "sha256": "bcdc566f806f69414ec0a079a0198f748130e702ec8b1e1042ed026a34c02ad7",
+      "bytes": 1511
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/LOCAL_VERIFICATION_OPERATOR_REVIEW_SYNCHRONOUS_LEARNING_KIT.json",
+      "sha256": "576fe73ea268f1800069fcbce833f392c08fc9feea846660bc83e444b6bed826",
+      "bytes": 597
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/OPERATOR_CONSOLE_WORKFLOW.md",
+      "sha256": "6f32edf10b6f19a9dc28ad94c94d25e78b72af5f3e95e3116a698e0ba88fb956",
+      "bytes": 723
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/OPERATOR_DAILY_REVIEW_REPORT_TEMPLATE.md",
+      "sha256": "747c60466986ec5c34f0f8e8cb8ad1f7801108057b51dcadc7eae6f562693eb8",
+      "bytes": 1501
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/README_OPERATOR_REVIEW_SYNCHRONOUS_LEARNING_KIT.md",
+      "sha256": "8f93f63f6d8133ead2d055185c4b5c07fc76b6dfc6bbd09dd6584cf4b95de878",
+      "bytes": 1440
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/REPORT_TO_TRAINING_EXAMPLE_SCHEMA.json",
+      "sha256": "069a140df4ae108f555ab7ecce1e833291aff61901dbde983da060b3df1f4b06",
+      "bytes": 1016
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/REVIEW_LABEL_TAXONOMY.json",
+      "sha256": "159f3f5a25eddd383b68b2dd5f9f8408a1024a8390f0ff23f593b037b34c6987",
+      "bytes": 1359
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/REVIEW_QUEUE_PRIORITIZATION_TEMPLATE.yaml",
+      "sha256": "adbfbea16c4b70e439ebc45ca54db5af817791a1cca6cd9705e0758f9023b457",
+      "bytes": 1248
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/REVIEW_SESSION_STATE_SCHEMA.json",
+      "sha256": "c7f8f9b7e9266c3e278b2225b52b319539f26f19f02c9ef411fe55d566a583a1",
+      "bytes": 1606
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/SYNCHRONOUS_REVIEW_CODEX_HARVEST_NOTES.md",
+      "sha256": "94303175e7de5f18c64b937e254ed9152ae7196cc1b0d9115c0cca66c26460b3",
+      "bytes": 756
+    },
+    {
+      "path": "dean_os_after_385_operator_review_synchronous_learning_kit/SYNCHRONOUS_REVIEW_LOOP_ARCHITECTURE.md",
+      "sha256": "7ed41717656d98e9bd7a93ec50b1c41a7b4a0383a9efe35c7669ba4a8f8e12f9",
+      "bytes": 1647
+    }
+  ]
+}

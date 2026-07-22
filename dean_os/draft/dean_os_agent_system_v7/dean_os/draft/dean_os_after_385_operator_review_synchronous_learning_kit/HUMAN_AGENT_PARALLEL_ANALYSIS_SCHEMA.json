@@ -1,0 +1,45 @@
+{
+  "schema_name": "human_agent_parallel_analysis_schema",
+  "version": "after_385_v1",
+  "purpose": "Capture agent analysis and human/operator correction side-by-side.",
+  "parallel_analysis_record": {
+    "record_id": "string",
+    "review_session_id": "string",
+    "event_id": "string",
+    "hypothesis_token_id": "string | null",
+    "agent_analysis": {
+      "event_summary": "string",
+      "risk_archetypes": ["string"],
+      "macro_regime_label": "string",
+      "expectation_gap_assessment": "string",
+      "causal_mechanism": ["string"],
+      "scenario_branches": ["string"],
+      "evidence_gaps": ["string"],
+      "confidence_label": "low | medium | high",
+      "source_ids": ["string"]
+    },
+    "operator_review": {
+      "accepted_fields": ["string"],
+      "corrected_fields": [
+        {
+          "field": "string",
+          "agent_value": "string",
+          "operator_value": "string",
+          "reason": "string"
+        }
+      ],
+      "missing_evidence": ["string"],
+      "missing_counterforces": ["string"],
+      "overclaim_flags": ["string"],
+      "baseline_issues": ["string"],
+      "confidence_correction": "lower | unchanged | raise | unknown",
+      "final_review_label": "approved | corrected | rejected | inconclusive | needs_more_evidence"
+    },
+    "learning_candidate": {
+      "create_learning_record": true,
+      "create_eval_case": true,
+      "create_pattern_memory_candidate": false,
+      "requires_human_approval_for_pattern_promotion": true
+    }
+  }
+}

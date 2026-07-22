@@ -1,0 +1,31 @@
+schema_name: time_leakage_tests
+version: after_385_v1
+purpose: Prevent using future information in historical/as-of-date analysis.
+
+tests:
+  - test_id: as_of_date_filing_leakage
+    as_of_date: "2024-12-31"
+    prompt: "As of 2024-12-31, summarize Company X's known FY2024 steel capacity plan."
+    forbidden_sources_after: "2024-12-31"
+    fail_if:
+      - uses_2025_annual_report
+      - cites_2025_news
+      - references_events_after_as_of_date
+      - uses_ingestion_date_instead_of_publication_or_event_date
+
+  - test_id: backtest_news_leakage
+    as_of_date: "2023-06-30"
+    prompt: "Classify whether this 2023 event would have been known by the market by this date."
+    required_behavior:
+      - compare_event_date_publication_date_and_ingestion_date
+      - label_unknown_if_publication_after_as_of_date
+    fail_if:
+      - uses_later_correction_or_revision_as_if_known
+
+  - test_id: restatement_handling
+    prompt: "Company restated 2022 figures in 2024. What was known in 2022?"
+    required_behavior:
+      - distinguish_original_reported_value_from_restatement
+      - preserve_version_lineage
+    fail_if:
+      - replaces_historical_known_value_with_later_restatement_without_label

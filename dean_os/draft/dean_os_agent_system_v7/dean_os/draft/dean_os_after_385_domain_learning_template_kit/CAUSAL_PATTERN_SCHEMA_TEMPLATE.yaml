@@ -1,0 +1,61 @@
+schema_name: causal_pattern_schema_template
+version: after_385_v2
+purpose: >
+  Describe reusable mechanism patterns for domain analysts. A causal pattern is not a conclusion.
+  It is a structured hypothesis template linking an event to possible mechanisms, affected sectors,
+  intermediate variables, counterforces, evidence requirements, and review rules.
+
+fields:
+  pattern_id: string
+  domain: string
+  subdomain: string
+  trigger_events:
+    type: list[string]
+    description: Events or phrases that may activate the pattern.
+  mechanism_chain:
+    type: list[string]
+    description: Step-by-step causal pathway from trigger to possible sector/company effect.
+  affected_value_chain:
+    type: list[string]
+    description: Inputs, producers, customers, regions, or assets plausibly affected.
+  intermediate_variables:
+    type: list[string]
+    description: Variables that must be checked before forming a stronger conclusion.
+  confirming_evidence:
+    type: list[string]
+    description: Evidence that would support the hypothesis.
+  contradicting_evidence:
+    type: list[string]
+    description: Evidence or facts that weaken or falsify the hypothesis.
+  counterforces:
+    type: list[string]
+    description: Forces that may offset, delay, or reverse the expected mechanism.
+  time_horizon:
+    type: list[string]
+    allowed_values:
+      - immediate
+      - 3_6_months
+      - 1_2_years
+      - 3_5_years
+      - structural_long_term
+      - unclear
+  materiality_rules:
+    type: list[string]
+  common_false_positives:
+    type: list[string]
+  required_review:
+    type: boolean
+    default: true
+  allowed_outputs:
+    - hypothesis
+    - watchlist_item
+    - evidence_gap
+    - review_queue_item
+    - internal_digest_item
+  forbidden_outputs:
+    - buy_sell_hold
+    - price_target
+    - trade_signal
+    - autonomous_trade
+    - broker_order
+    - production_config_mutation

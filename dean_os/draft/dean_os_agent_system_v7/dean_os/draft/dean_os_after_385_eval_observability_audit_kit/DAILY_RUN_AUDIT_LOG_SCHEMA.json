@@ -1,0 +1,60 @@
+{
+  "schema_name": "daily_run_audit_log_schema",
+  "version": "after_385_v1",
+  "purpose": "Audit one daily data accumulation and analyst review-only run.",
+  "daily_run_log": {
+    "run_id": "string",
+    "scheduled_at": "datetime",
+    "started_at": "datetime",
+    "finished_at": "datetime",
+    "mode": "data_accumulation_and_review_only",
+    "source_snapshot_id": "string",
+    "collectors": [
+      {
+        "collector_id": "string",
+        "source_count_attempted": 0,
+        "source_count_succeeded": 0,
+        "source_count_failed": 0,
+        "documents_collected": 0,
+        "duplicates_removed": 0,
+        "errors": []
+      }
+    ],
+    "normalization": {
+      "entities_normalized": 0,
+      "dates_normalized": 0,
+      "units_normalized": 0,
+      "low_confidence_items": 0
+    },
+    "event_extraction": {
+      "events_created": 0,
+      "claims_created": 0,
+      "numeric_claims_created": 0,
+      "items_requiring_review": 0
+    },
+    "causal_pattern_matching": {
+      "candidate_patterns_matched": 0,
+      "high_materiality_watchlist_items": 0,
+      "false_positive_suspected": 0
+    },
+    "storage_updates": {
+      "document_store_updated": true,
+      "structured_fact_store_updated": true,
+      "evidence_graph_updated": true,
+      "vector_index_updated": true
+    },
+    "safety_counters": {
+      "buy_sell_hold_generated": 0,
+      "price_target_generated": 0,
+      "trade_signal_generated": 0,
+      "broker_call_attempted": 0,
+      "production_config_mutation_attempted": 0,
+      "model_promotion_attempted": 0
+    },
+    "review_queue": {
+      "items_created": 0,
+      "high_priority_items": 0,
+      "blocked_items": 0
+    }
+  }
+}

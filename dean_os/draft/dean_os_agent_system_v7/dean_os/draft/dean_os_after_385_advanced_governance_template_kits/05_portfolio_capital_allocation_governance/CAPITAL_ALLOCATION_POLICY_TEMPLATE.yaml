@@ -1,0 +1,36 @@
+schema_name: capital_allocation_policy_template
+version: after_385_v1
+
+capital_policy:
+  capital_bucket_id: string
+  mode: paper | shadow | supervised_live | constrained_autonomous
+  allowed_assets: list[string]
+  prohibited_assets: list[string]
+  max_position_size: configured_externally
+  max_sector_exposure: configured_externally
+  max_strategy_exposure: configured_externally
+  max_correlation_cluster_exposure: configured_externally
+  max_daily_loss: configured_externally
+  max_drawdown: configured_externally
+  max_turnover: configured_externally
+  max_order_frequency: configured_externally
+  liquidity_minimum: configured_externally
+
+risk_budget:
+  by_strategy:
+    - strategy_id: string
+      budget: configured_externally
+      drawdown_response: reduce | pause | disable | review
+  by_sector:
+    - sector_id: string
+      budget: configured_externally
+  by_regime:
+    - regime_id: string
+      risk_multiplier: number
+
+rules:
+  - no_order_without_capital_bucket
+  - no_order_without_exposure_check
+  - no_order_if_correlation_cluster_limit_breached
+  - reduce_autonomy_after_drawdown_or_incident
+  - LLM_cannot_override_capital_policy

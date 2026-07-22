@@ -1,0 +1,53 @@
+{
+  "schema_name": "event_hypothesis_token_schema",
+  "version": "after_385_v1",
+  "purpose": "Track an important law/event/news item as an open hypothesis over time.",
+  "event_hypothesis_token": {
+    "token_id": "string",
+    "status": "open | monitoring | partially_confirmed | confirmed | weakened | falsified | closed",
+    "created_at": "datetime",
+    "updated_at": "datetime",
+    "event": {
+      "event_id": "string",
+      "event_type": "law | policy | war | sanction | rate_change | industrial_policy | technology_shift | commodity_shock | other",
+      "title": "string",
+      "description": "string",
+      "jurisdiction": ["string"],
+      "event_date": "date",
+      "announcement_date": "date",
+      "implementation_date": "date | null",
+      "source_ids": ["string"]
+    },
+    "affected_domains": ["string"],
+    "affected_sectors": ["string"],
+    "affected_value_chains": ["string"],
+    "macro_regime_snapshot_ids": ["string"],
+    "historical_analog_ids": ["string"],
+    "initial_hypotheses": ["string"],
+    "causal_graph_id": "string",
+    "scenario_tree_id": "string",
+    "watch_metrics": [
+      {
+        "metric_id": "string",
+        "metric_name": "string",
+        "expected_direction": "up | down | mixed | unclear",
+        "time_horizon": "immediate | 3_6_months | 1_2_years | 3_5_years | structural_long_term",
+        "source_preference": ["string"]
+      }
+    ],
+    "evidence_milestones": [
+      {
+        "milestone_id": "string",
+        "description": "string",
+        "status": "not_started | pending | observed | contradicted | stale",
+        "observed_at": "datetime | null",
+        "source_ids": ["string"]
+      }
+    ],
+    "confidence": "low | medium | high",
+    "materiality": "watchlist_low | watchlist_medium | watchlist_high | review_required",
+    "review_required": true,
+    "allowed_outputs": ["hypothesis_tracking", "scenario_update", "evidence_gap", "review_queue_item", "internal_digest_item"],
+    "forbidden_outputs": ["buy_sell_hold", "price_target", "trade_signal", "broker_order", "deterministic_prediction"]
+  }
+}

@@ -1,0 +1,38 @@
+schema_name: constrained_execution_gateway_template
+version: after_385_v1
+
+execution_gateway:
+  purpose: "Only component allowed to send real orders after all gates pass."
+
+pre_order_checks:
+  - strategy_approved
+  - model_state_known
+  - risk_engine_passed
+  - asset_allowed
+  - market_data_fresh
+  - liquidity_ok
+  - volatility_ok
+  - position_limit_ok
+  - daily_loss_limit_ok
+  - drawdown_limit_ok
+  - kill_switch_not_active
+  - decision_lineage_complete
+
+hard_blocks:
+  - llm_direct_order
+  - broker_bypass
+  - missing_lineage
+  - unsupported_asset
+  - stale_market_data
+  - risk_engine_disabled
+  - kill_switch_active
+  - daily_loss_limit_breached
+  - drawdown_limit_breached
+  - model_state_unknown
+
+allowed_actions:
+  - reject_order
+  - queue_for_manual_review
+  - send_bounded_order
+  - cancel_order
+  - flatten_on_risk_breach_if_policy_allows

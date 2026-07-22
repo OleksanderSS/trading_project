@@ -1,0 +1,18 @@
+{
+  "kit_name": "dean_os_after_385_macro_regime_historical_hypothesis_kit",
+  "version": "after_385_v3",
+  "source_zip_used": "/mnt/data/dean_os_after_385_macro_regime_historical_hypothesis_kit_v2.zip",
+  "checks": {
+    "required_v3_files_present": true,
+    "risk_archetypes_present": true,
+    "tag_only_output_present": true,
+    "cross_sectional_baseline_present": true,
+    "data_alignment_present": true,
+    "leading_risk_monitor_present": true,
+    "decision_lineage_present": true,
+    "no_numbered_block_created": true,
+    "review_only": true,
+    "production_code_created": false,
+    "forbidden_trading_outputs_blocked": true
+  }
+}

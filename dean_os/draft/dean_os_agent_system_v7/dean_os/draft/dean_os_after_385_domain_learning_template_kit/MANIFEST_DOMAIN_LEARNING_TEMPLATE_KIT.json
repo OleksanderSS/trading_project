@@ -1,0 +1,123 @@
+{
+  "kit_name": "dean_os_after_385_domain_learning_template_kit",
+  "version": "after_385_v3",
+  "created_at_utc": "2026-06-21T07:50:03+00:00",
+  "purpose": "Domain-learning templates plus consolidated discussion notes preserving recommendations on source handling, RAG, news-to-analyst routing, causal pattern reasoning, materiality, evidence gaps, eval, fine-tuning, and safe daily automation.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Harvest/adapt useful templates and notes; do not blind-merge.",
+  "file_count": 24,
+  "files": [
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/ANALYST_NEWS_INTERPRETATION_PROMPT_TEMPLATE.md",
+      "sha256": "e03f630a025b992d67592e10c76165bdbdc714b9bf665163f8cdbae43b280f51",
+      "bytes": 1863
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/CAUSAL_PATTERNS_HEAVY_INDUSTRY.yaml",
+      "sha256": "be614b3700d9957147097332e3368988eee6c2d144e9b118f18024f547e6480b",
+      "bytes": 7662
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/CAUSAL_PATTERN_SCHEMA_TEMPLATE.yaml",
+      "sha256": "3fafbf8e642c8ef537059098b3c89f9c643626b77a92e365b7e6fdc0df714474",
+      "bytes": 1893
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/CODEX_DOMAIN_LEARNING_HARVEST_NOTES.md",
+      "sha256": "c8c029adfa182fb380c735512866250fc4ff19f7e875439678a8a036d6e4fea2",
+      "bytes": 3515
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/CODEX_DOMAIN_LEARNING_PROMPT_AFTER_385.txt",
+      "sha256": "3abfed6b233d0f50ab1105f2ad7921ea696031f59401e75d0ecf21ffdc1bad78",
+      "bytes": 1473
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/DAILY_DOMAIN_LEARNING_RUN_TEMPLATE.yaml",
+      "sha256": "27f3199e2d58fe8c056c4a7eabb874f9e6966a8aa81244baf92fe65138c5a99a",
+      "bytes": 2445
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/DOMAIN_LEARNING_ARCHITECTURE_TEMPLATE.md",
+      "sha256": "24b319688e8162011ebdda150b61782d0ce76e936df408a36ad87120708a791d",
+      "bytes": 4111
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/DOMAIN_LEARNING_DISCUSSION_NOTES_AFTER_385.md",
+      "sha256": "8fef1022d5f6a240afc2dfee0ea4fa60affa45499e3cb6742f4f69649bbd3dd5",
+      "bytes": 12034
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/EVAL_PACK_TEMPLATE_HEAVY_INDUSTRY.json",
+      "sha256": "50e314942b72a00027ade1add1d66266b6533f55c8d262ba93bac1fe917c77b6",
+      "bytes": 3618
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/EVIDENCE_GAP_SCHEMA_TEMPLATE.json",
+      "sha256": "6decddf1e45ce509a53113f29c59f0d9f3d31c88cc1b499658a4d5be28d90f12",
+      "bytes": 1253
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/EVIDENCE_SCORING_TEMPLATE.yaml",
+      "sha256": "b141d33ef82df43c1154c477fe9c4cb734b061b14b5ffb9eb85eb53f7ae0e596",
+      "bytes": 2013
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/FINE_TUNING_DATASET_SCHEMA_TEMPLATE.json",
+      "sha256": "1a77a0a613432a69189d33425c1b74273407e990feb48c0b47fb40468579e9e5",
+      "bytes": 1569
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/HUMAN_FEEDBACK_SCHEMA_TEMPLATE.json",
+      "sha256": "85fa536e4b8138791275b776cbe77b887ea450051db57231a46e272adbe7ebf8",
+      "bytes": 1599
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/INGESTION_FILTERS_TEMPLATE.yaml",
+      "sha256": "67bc39103436b3c85f27328348b152c004861789b365f12df31a88dd9bedd0ff",
+      "bytes": 2976
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/MATERIALITY_SCORING_TEMPLATE.yaml",
+      "sha256": "ccbfe81753e0605f1049ac26ea51006ff41e6d3dbf3db776460562bf67ffbba9",
+      "bytes": 1858
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/NEWS_COLLECTOR_TO_DOMAIN_ANALYST_ROUTING_TEMPLATE.md",
+      "sha256": "debb126c6a2c61484c86d053636d76e4e7b180dfe1ef1440434ec81d32126d49",
+      "bytes": 2411
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/NEWS_EVENT_INTERPRETATION_SCHEMA_TEMPLATE.json",
+      "sha256": "ec2fc885d71c05789435425815d80afb9cb0d08f5a5d208a7e939f4c9883ea64",
+      "bytes": 1797
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/RAG_RETRIEVAL_SETTINGS_TEMPLATE.yaml",
+      "sha256": "5a220be6072eddbb9cf1981f0d755aab34ea428a325fa22ceca1794e767cadfa",
+      "bytes": 2274
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/README_DOMAIN_LEARNING_TEMPLATE_KIT.md",
+      "sha256": "554b80b32bf381f9b8fbd19b1d3cf996c5ee48d4a197e3c4f8b2e58fa80094f1",
+      "bytes": 2271
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/SAFE_AUTOMATION_BOUNDARY_TEMPLATE.yaml",
+      "sha256": "9a9d317c716c6159f223ae5bd6e6d2d82432eecb78dbed1dc08d1034e8bf7b97",
+      "bytes": 1344
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/SECTOR_PROFILE_TEMPLATE_HEAVY_INDUSTRY.yaml",
+      "sha256": "f1cca21737fdb6a64219b9ef3b1c211601ab4bddd617c5c660a86d8b39ce5e8b",
+      "bytes": 2881
+    },
+    {
+      "path": "dean_os_after_385_domain_learning_template_kit/SOURCE_REGISTRY_TEMPLATE_HEAVY_INDUSTRY.yaml",
+      "sha256": "c98a3ecc1af5ea4db101d2fb001db308d28cdd55c1184192d23759cbec98cfb0",
+      "bytes": 5012
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schema_name": "as_of_replay_manifest_template",
+  "version": "after_385_v1",
+  "as_of_replay_manifest": {
+    "replay_id": "string",
+    "as_of_timestamp": "datetime",
+    "allowed_sources_until": "datetime",
+    "forbidden_future_sources_after": "datetime",
+    "source_manifest_id": "string",
+    "feature_snapshot_id": "string",
+    "model_state_id": "string",
+    "macro_regime_snapshot_id": "string",
+    "hypothesis_ledger_snapshot_id": "string",
+    "config_manifest_id": "string",
+    "checks": {
+      "future_sources_excluded": true,
+      "publication_dates_verified": true,
+      "event_dates_distinguished_from_publication_dates": true,
+      "revised_data_marked": true,
+      "decision_lineage_enabled": true
+    }
+  }
+}

@@ -1,0 +1,32 @@
+schema_name: agent_learning_automation_template
+version: after_385_v1
+
+learning_flow:
+  - ingest_new_sources
+  - update_document_store
+  - update_structured_fact_store
+  - update_evidence_graph
+  - update_vector_index_if_quality_passed
+  - update_causal_pattern_candidates
+  - update_open_hypothesis_tokens
+  - run_eval_suite
+  - add_failed_cases_to_regression_backlog
+  - create_human_feedback_tasks
+
+allowed_learning_updates:
+  - source_registry
+  - vector_index
+  - structured_fact_store
+  - evidence_graph
+  - causal_pattern_candidate
+  - prompt/profile_candidate
+  - eval_backlog
+
+forbidden_without_gate:
+  - production_prompt_change
+  - production_model_weight_change
+  - trading_config_change
+  - live_risk_limit_change
+  - broker_permission_change
+
+rule: "Learning is controlled accumulation + eval + reviewed promotion, not uncontrolled self-training."

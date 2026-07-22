@@ -1,0 +1,265 @@
+{
+  "name": "regime_context_scenario_outcome_graph",
+  "version": "2026-06-24",
+  "purpose": "Codex-ready supplement for DEAN-OS: explicit regime-context grading and scenario outcome graph structure for analyst agents.",
+  "extends": [
+    "outcome_memory_timeframe_self_check",
+    "macro_industrial_ai_analyst_journal"
+  ],
+  "default_horizons": [
+    "1d",
+    "5d",
+    "20d",
+    "60d",
+    "120d"
+  ],
+  "regime_context_vector": {
+    "fields": [
+      "geopolitical_state",
+      "economic_phase",
+      "inflation_rates_context",
+      "liquidity_credit_context",
+      "market_state",
+      "commodity_real_economy_stress",
+      "ai_tech_cycle",
+      "safe_haven_behavior"
+    ],
+    "field_shape": {
+      "state": "enum",
+      "intensity": "float_0_to_1",
+      "trend": [
+        "rising",
+        "falling",
+        "stable",
+        "unknown"
+      ],
+      "confidence": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "evidence_ids": "list",
+      "notes": "string"
+    },
+    "taxonomies": {
+      "geopolitical_state": [
+        "peace",
+        "hybrid_conflict",
+        "localized_war",
+        "regional_war_risk",
+        "major_power_conflict_risk",
+        "sanctions_chokepoint_risk",
+        "de_escalation",
+        "escalation"
+      ],
+      "economic_phase": [
+        "crisis",
+        "recession_risk",
+        "stagnation",
+        "fragile_recovery",
+        "expansion",
+        "overheating",
+        "bubble_risk"
+      ],
+      "inflation_rates_context": [
+        "disinflation",
+        "sticky_inflation",
+        "energy_led_inflation",
+        "food_led_inflation",
+        "wage_led_inflation",
+        "higher_for_longer",
+        "easing_cycle",
+        "policy_uncertainty"
+      ],
+      "liquidity_credit_context": [
+        "loose",
+        "neutral",
+        "tight",
+        "stressed",
+        "credit_crunch",
+        "liquidity_shock"
+      ],
+      "market_state": [
+        "risk_on",
+        "risk_off",
+        "volatile_resilient",
+        "crowded_theme",
+        "bubble_risk",
+        "defensive_rotation",
+        "liquidity_driven_rally",
+        "valuation_reset"
+      ],
+      "commodity_real_economy_stress": [
+        "oil_stress",
+        "gas_stress",
+        "power_stress",
+        "metals_stress",
+        "food_stress",
+        "fertilizer_stress",
+        "freight_stress",
+        "strategic_industrial_capacity_stress"
+      ],
+      "ai_tech_cycle": [
+        "early_adoption",
+        "enterprise_adoption",
+        "capex_boom",
+        "infrastructure_bottleneck",
+        "memory_bottleneck",
+        "power_bottleneck",
+        "valuation_bubble_risk",
+        "correction",
+        "productivity_evidence"
+      ],
+      "safe_haven_behavior": [
+        "gold_bid",
+        "dollar_bid",
+        "treasury_bid",
+        "cash_preference",
+        "defensive_sector_rotation",
+        "safe_haven_fatigue"
+      ]
+    }
+  },
+  "scenario_outcome_graph": {
+    "graph_required_fields": [
+      "scenario_graph_id",
+      "as_of_date",
+      "root_regime_snapshot_id",
+      "event_id",
+      "nodes",
+      "edges",
+      "horizons",
+      "probability_mass_check",
+      "evidence_gaps",
+      "review_status"
+    ],
+    "node_types": [
+      "regime_state",
+      "event",
+      "transmission_channel",
+      "expectation_gap",
+      "scenario",
+      "observable_signal",
+      "outcome_horizon",
+      "invalidation_signal",
+      "self_check"
+    ],
+    "edge_types": [
+      "causal_channel",
+      "conditional_update",
+      "supports",
+      "contradicts",
+      "confirms",
+      "invalidates",
+      "leads_to",
+      "observed_after",
+      "calibrates"
+    ],
+    "node_required_fields": [
+      "node_id",
+      "node_type",
+      "label",
+      "description",
+      "as_of_date",
+      "confidence",
+      "evidence_ids",
+      "uncertainty_notes"
+    ],
+    "edge_required_fields": [
+      "edge_id",
+      "source_node_id",
+      "target_node_id",
+      "edge_type",
+      "weight",
+      "probability_delta",
+      "direction",
+      "rationale",
+      "evidence_ids",
+      "lag_assumption",
+      "confidence"
+    ],
+    "constraints": [
+      "acyclic_per_as_of_packet",
+      "probability_mass_sums_to_one_for_scenario_siblings",
+      "missing_evidence_is_explicit",
+      "no_future_evidence_allowed",
+      "review_only_no_execution"
+    ]
+  },
+  "news_against_regime_questions": [
+    "Which regime indicators does this news affect?",
+    "Does it confirm, weaken, or contradict the current regime?",
+    "What is the first-order transmission channel?",
+    "What are second-order and third-order effects?",
+    "What was likely already priced?",
+    "Which scenario probabilities change?",
+    "Which horizons should be tracked?",
+    "What evidence gaps remain?",
+    "What historical analog graphs are relevant?",
+    "What would falsify this interpretation?"
+  ],
+  "codex_module_tree": {
+    "regime": [
+      "regime_snapshot_schema.py",
+      "regime_context_vector.py",
+      "regime_snapshot_builder.py"
+    ],
+    "scenario_graph": [
+      "scenario_graph_schema.py",
+      "scenario_graph_builder.py",
+      "scenario_graph_store.py",
+      "scenario_probability_validator.py"
+    ],
+    "historical_memory": [
+      "analog_graph_retriever.py",
+      "outcome_memory_store.py",
+      "event_regime_outcome_graph_store.py"
+    ],
+    "evaluation": [
+      "outcome_horizon_tracker.py",
+      "graph_self_check.py",
+      "calibration_metrics.py",
+      "no_lookahead_guard.py"
+    ],
+    "reports": [
+      "daily_regime_snapshot_report.py",
+      "analyst_journal_note_builder.py",
+      "scenario_graph_report.py"
+    ]
+  },
+  "tests": [
+    "test_regime_context_vector_has_required_fields.py",
+    "test_regime_context_values_are_from_allowed_taxonomy.py",
+    "test_scenario_graph_probability_mass_sums_to_one.py",
+    "test_scenario_graph_is_acyclic.py",
+    "test_graph_has_as_of_date.py",
+    "test_no_lookahead_guard_blocks_future_evidence.py",
+    "test_horizon_outcomes_are_recorded_by_fixed_timeframes.py",
+    "test_realized_path_can_be_mapped_to_scenario_node.py",
+    "test_false_analogy_risk_is_required.py",
+    "test_missing_evidence_gaps_are_explicit.py",
+    "test_review_only_boundary_blocks_trading_outputs.py"
+  ],
+  "authority_boundary": {
+    "allowed": [
+      "regime snapshot",
+      "scenario graph",
+      "probability estimates",
+      "historical analog graph retrieval",
+      "outcome horizon tracking",
+      "self-check",
+      "calibration notes",
+      "human-review packet",
+      "paper/replay evaluation"
+    ],
+    "forbidden": [
+      "live order",
+      "buy/sell/hold instruction",
+      "position sizing",
+      "production price target",
+      "broker routing",
+      "autonomous execution",
+      "model promotion without gates"
+    ]
+  }
+}

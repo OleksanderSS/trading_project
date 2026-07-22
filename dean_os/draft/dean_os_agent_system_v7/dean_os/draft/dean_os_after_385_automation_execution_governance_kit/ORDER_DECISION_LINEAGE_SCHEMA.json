@@ -1,0 +1,43 @@
+{
+  "schema_name": "order_decision_lineage_schema",
+  "version": "after_385_v1",
+  "order_decision_lineage": {
+    "order_decision_id": "string",
+    "created_at": "datetime",
+    "mode": "replay | paper | shadow_live | supervised_live | constrained_autonomous",
+    "asset": "string",
+    "strategy_id": "string",
+    "model_id": "string",
+    "hypothesis_token_ids": ["string"],
+    "features_snapshot_id": "string",
+    "macro_regime_snapshot_id": "string",
+    "pipeline_controller_state_id": "string",
+    "risk_engine_state_id": "string",
+    "pre_order_checks": {
+      "strategy_approved": true,
+      "model_state_known": true,
+      "risk_engine_passed": true,
+      "asset_allowed": true,
+      "market_data_fresh": true,
+      "liquidity_ok": true,
+      "volatility_ok": true,
+      "position_limit_ok": true,
+      "daily_loss_limit_ok": true,
+      "drawdown_limit_ok": true,
+      "kill_switch_not_active": true,
+      "decision_lineage_complete": true
+    },
+    "decision": {
+      "action": "reject | review | simulated_order | hypothetical_order | approved_live_order | bounded_autonomous_order",
+      "reason": "string",
+      "human_approval_id": "string | null"
+    },
+    "forbidden_flags": {
+      "llm_direct_order": false,
+      "broker_bypass": false,
+      "missing_lineage": false,
+      "unsupported_asset": false,
+      "risk_breach_ignored": false
+    }
+  }
+}

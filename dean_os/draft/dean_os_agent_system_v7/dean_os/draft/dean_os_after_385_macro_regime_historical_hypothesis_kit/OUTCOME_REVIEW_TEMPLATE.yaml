@@ -1,0 +1,61 @@
+schema_name: outcome_review_template
+version: after_385_v1
+
+outcome_review:
+  review_id: string
+  event_hypothesis_token_id: string
+  review_date: date
+  review_horizon: 3_6_months | 1_2_years | 3_5_years | final
+
+  initial_hypotheses: list[string]
+  initial_scenarios:
+    - scenario_id: string
+      initial_probability: 0.0
+      expected_path: list[string]
+
+  observed_outcomes:
+    - metric: string
+      expected_direction: up | down | mixed | unclear
+      actual_direction: up | down | mixed | unclear
+      actual_value: number | null
+      unit: string | null
+      period: string
+      source_ids: list[string]
+      interpretation: string
+
+  evidence_chain_assessment:
+    policy_announced: boolean
+    policy_implemented: boolean
+    funds_disbursed: boolean
+    company_response_observed: boolean
+    sector_metric_moved: boolean
+    counterfactual_uncertain: boolean
+
+  result_label: confirmed | partially_confirmed | weakened | falsified | inconclusive
+  what_was_right: list[string]
+  what_was_wrong: list[string]
+  missed_counterforces: list[string]
+  data_quality_issues: list[string]
+  lesson_learned: list[string]
+
+  updates_required:
+    causal_patterns_to_update: list[string]
+    source_registry_updates: list[string]
+    evaluation_tests_to_add: list[string]
+    prompt_or_template_updates: list[string]
+
+  forbidden_outputs: [buy_sell_hold, price_target, trade_signal]
+
+v2_expectation_gap_and_circularity:
+  expectation_gap_review:
+    expected_outcome: string
+    actual_outcome: string
+    priced_probability_before_outcome: 0.0
+    surprise_direction: positive | negative | neutral | mixed | unknown
+    surprise_magnitude: low | medium | high | unknown
+  validation_circularity_check:
+    system_actions_could_affect_target_price: false
+    validation_uses_broad_indices: true
+    validation_uses_sector_indices: true
+    validation_uses_macro_or_fundamental_metrics: true
+    single_stock_price_only_validation_allowed: false

@@ -1,0 +1,30 @@
+{
+  "schema_name": "report_to_training_example_schema",
+  "version": "after_385_v1",
+  "purpose": "Convert reviewed report items into training/eval examples.",
+  "training_example": {
+    "example_id": "string",
+    "source_review_session_id": "string",
+    "task_type": "event_classification | archetype_tagging | expectation_gap_detection | evidence_gap_generation | causal_graph_review | baseline_selection | confidence_calibration | incident_detection",
+    "input": {
+      "event_text_or_summary": "string",
+      "source_metadata": {},
+      "macro_regime_context": {},
+      "available_evidence": ["string"]
+    },
+    "agent_original_output": {},
+    "operator_corrected_output": {},
+    "labels": ["string"],
+    "quality": {
+      "approved_for_eval": false,
+      "approved_for_training": false,
+      "requires_more_evidence": true,
+      "sensitive_or_restricted": false
+    },
+    "forbidden_use": [
+      "direct_trading_rule",
+      "price_target_generation",
+      "broker_order_logic"
+    ]
+  }
+}

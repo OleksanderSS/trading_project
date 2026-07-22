@@ -1,0 +1,190 @@
+# ============================================
+# NOISE FILTER THRESHOLDS
+# ============================================
+# Thresholds for determining significant changes in indicators in Context Map
+# If change < threshold → state = 0 (no change)
+# If change > threshold → state = 1 (increase)
+# If change < -threshold → state = -1 (decrease)
+
+noise_filter_thresholds:
+  # ============================================
+  # MACROECONOMIC INDICATORS (FRED)
+  # ============================================
+  
+  # Volatility and risk indices
+  VIX: 0.02           # 2% change in volatility index
+  VVIX: 0.03          # 3% change in VIX volatility
+  
+  # Interest rates and bonds
+  10Y_yield: 0.001    # 0.1% change in 10-year bond yield
+  2Y_yield: 0.001     # 0.1% change in 2-year bond yield
+  30Y_yield: 0.001    # 0.1% change in 30-year bond yield
+  fed_rate: 0.0025    # 0.25% change in Fed rate (basis point)
+  EFFR: 0.0025        # 0.25% change in effective federal funds rate
+  
+  # Currencies
+  DXY: 0.003          # 0.3% change in dollar index
+  EURUSD: 0.003       # 0.3% change in EUR/USD
+  USDJPY: 0.003       # 0.3% change in USD/JPY
+  
+  # Indices and ETFs
+  SPY: 0.005          # 0.5% change in S&P 500
+  QQQ: 0.006          # 0.6% change in NASDAQ-100
+  DIA: 0.005          # 0.5% change in Dow Jones
+  IWM: 0.007          # 0.7% change in Russell 2000 (small caps)
+  
+  # Commodities
+  GLD: 0.005          # 0.5% change in gold
+  SLV: 0.01           # 1% change in silver
+  USO: 0.015          # 1.5% change in oil
+  UNG: 0.02           # 2% change in natural gas
+  
+  # Macroeconomic indicators
+  GDP: 0.01           # 1% change in GDP
+  CPI: 0.002          # 0.2% change in consumer price index
+  PPI: 0.003          # 0.3% change in producer price index
+  PCE: 0.002          # 0.2% change in personal consumption expenditures
+  unemployment: 0.001 # 0.1% change in unemployment rate
+  payrolls: 0.005     # 0.5% change in employment
+  retail_sales: 0.005 # 0.5% change in retail sales
+  industrial_production: 0.003 # 0.3% change in industrial production
+  housing_starts: 0.01 # 1% change in housing starts
+  consumer_confidence: 0.02 # 2% change in consumer confidence
+  PMI: 0.01           # 1% change in purchasing managers index
+  
+  # Money supply and credit
+  M1: 0.005           # 0.5% change in money supply M1
+  M2: 0.003           # 0.3% change in money supply M2
+  credit_spread: 0.001 # 0.1% change in credit spread
+  
+  # ============================================
+  # TECHNICAL INDICATORS
+  # ============================================
+  
+  # Momentum indicators
+  RSI: 0.05           # 5 points RSI (0-100 scale)
+  RSI_14: 0.05
+  RSI_7: 0.07
+  RSI_21: 0.04
+  Stochastic: 0.05    # 5 points stochastic
+  Stochastic_K: 0.05
+  Stochastic_D: 0.05
+  Williams_R: 0.05    # 5 points Williams %R
+  CCI: 0.1            # 10 points Commodity Channel Index
+  MFI: 0.05           # 5 points Money Flow Index
+  
+  # Trend indicators
+  MACD: 0.01          # 1% change in MACD
+  MACD_signal: 0.01
+  MACD_hist: 0.02
+  ADX: 0.05           # 5 points Average Directional Index
+  DI_plus: 0.05
+  DI_minus: 0.05
+  Aroon_up: 0.1       # 10 points Aroon
+  Aroon_down: 0.1
+  TRIX: 0.01          # 1% change in TRIX
+  
+  # Moving Averages
+  SMA: 0.005          # 0.5% change in simple moving average
+  SMA_20: 0.005
+  SMA_50: 0.005
+  SMA_200: 0.005
+  EMA: 0.005          # 0.5% change in exponential moving average
+  EMA_12: 0.005
+  EMA_26: 0.005
+  EMA_50: 0.005
+  WMA: 0.005          # 0.5% change in weighted moving average
+  DEMA: 0.005         # 0.5% change in double EMA
+  TEMA: 0.005         # 0.5% change in triple EMA
+  KAMA: 0.005         # 0.5% change in Kaufman Adaptive MA
+  
+  # Volatility indicators
+  ATR: 0.05           # 5% change in Average True Range
+  ATR_14: 0.05
+  BB_upper: 0.005     # 0.5% change in upper Bollinger Band
+  BB_middle: 0.005
+  BB_lower: 0.005
+  BB_width: 0.02      # 2% change in Bollinger Bands width
+  BB_percent: 0.05    # 5% change in %B (position in bands)
+  Keltner_upper: 0.005
+  Keltner_middle: 0.005
+  Keltner_lower: 0.005
+  Donchian_upper: 0.005
+  Donchian_middle: 0.005
+  Donchian_lower: 0.005
+  historical_volatility: 0.02 # 2% change in historical volatility
+  
+  # Volume indicators
+  volume: 0.1         # 10% change in volume
+  OBV: 0.05           # 5% change in On-Balance Volume
+  AD: 0.05            # 5% change in Accumulation/Distribution
+  CMF: 0.05           # 5% change in Chaikin Money Flow
+  VWAP: 0.005         # 0.5% change in Volume Weighted Average Price
+  volume_ratio: 0.1   # 10% change in volume ratio
+  
+  # ============================================
+  # TICKER PRICES
+  # ============================================
+  close: 0.005        # 0.5% change in closing price
+  open: 0.005         # 0.5% change in opening price
+  high: 0.005         # 0.5% change in high price
+  low: 0.005          # 0.5% change in low price
+  adj_close: 0.005    # 0.5% change in adjusted price
+  
+  # Price derivatives
+  returns: 0.005      # 0.5% change in returns
+  log_returns: 0.005
+  price_change: 0.005
+  price_range: 0.01   # 1% change in price range (high-low)
+  
+  # ============================================
+  # SENTIMENT AND NEWS
+  # ============================================
+  sentiment_score: 0.05      # 5% change in sentiment (-1 to 1)
+  news_sentiment: 0.05
+  reddit_sentiment: 0.1      # 10% change in Reddit sentiment (more volatile)
+  twitter_sentiment: 0.1
+  fear_greed_index: 0.02     # 2% change in fear/greed index
+  put_call_ratio: 0.05       # 5% change in put/call ratio
+  
+  # ============================================
+  # DERIVED FEATURES (DECAY, LAG, ROLLING)
+  # ============================================
+  decay: 0.01         # 1% change in decay features
+  lag: 0.005          # 0.5% change in lag features
+  rolling_mean: 0.005 # 0.5% change in rolling mean
+  rolling_std: 0.02   # 2% change in rolling standard deviation
+  rolling_min: 0.005
+  rolling_max: 0.005
+  rolling_median: 0.005
+  ewm: 0.005          # 0.5% change in exponentially weighted mean
+  
+  # ============================================
+  # OTHER INDICATORS
+  # ============================================
+  correlation: 0.05   # 5% change in correlation
+  beta: 0.05          # 5% change in beta coefficient
+  alpha: 0.01         # 1% change in alpha
+  sharpe_ratio: 0.1   # 10% change in Sharpe ratio
+  sortino_ratio: 0.1
+  max_drawdown: 0.01  # 1% change in maximum drawdown
+
+# ============================================
+# TIME INDICATORS (NOT COMPARED)
+# ============================================
+# These indicators are simply normalized, not compared with previous values
+temporal_features:
+  - hour              # 0-23
+  - day_of_week       # 0-6
+  - day_of_month      # 1-31
+  - day_of_year       # 1-366
+  - week_of_year      # 1-53
+  - month_of_year     # 1-12
+  - quarter           # 1-4
+  - is_weekend        # 0 or 1
+
+# ============================================
+# SETTINGS
+# ============================================
+default_dynamic_threshold: 0.005  # 0.5% default for unknown indicators
+noise_sensitivity: 0.5            # Multiplier for dynamic threshold calculation (IQR * sensitivity)

@@ -1,0 +1,52 @@
+schema_name: materiality_scoring_template
+version: after_385_v2
+purpose: >
+  Score indirect news/context events by mechanism quality, sector/company exposure, evidence quality,
+  time horizon, and counterforces. This score creates review priority, not a trading signal.
+
+score_components:
+  sector_relevance:
+    weight: 0.20
+    description: How directly the event maps to the domain/sector/value chain.
+  mechanism_strength:
+    weight: 0.20
+    description: How plausible and specific the causal mechanism is.
+  policy_or_incentive_support:
+    weight: 0.10
+    description: Whether regulation, subsidy, procurement, or fiscal support strengthens the mechanism.
+  company_or_asset_exposure:
+    weight: 0.15
+    description: Whether specific companies/assets have identifiable exposure.
+  evidence_quality:
+    weight: 0.15
+    description: Source tier, directness, citations, and corroboration.
+  time_horizon_clarity:
+    weight: 0.10
+    description: Whether the likely effect horizon is clear.
+  contradiction_penalty:
+    weight: -0.15
+    description: Counterforces, conflicting evidence, weak enforcement, or missing data.
+
+labels:
+  ignore:
+    range: [0.0, 0.20]
+    action: archive_only
+  watchlist_low:
+    range: [0.20, 0.40]
+    action: store_and_recheck_if_related_events_accumulate
+  watchlist_medium:
+    range: [0.40, 0.65]
+    action: create_evidence_gap_tasks
+  watchlist_high:
+    range: [0.65, 0.85]
+    action: route_to_domain_analyst_review
+  review_required:
+    range: [0.85, 1.0]
+    action: route_to_human_review_queue
+
+constraints:
+  - materiality_score_must_not_generate_buy_sell_hold
+  - materiality_score_must_not_generate_price_target
+  - materiality_score_must_not_generate_trade_signal
+  - high_score_requires_source_quality_and_mechanism_strength
+  - low_source_tier_can_not_create_high_materiality_without_confirmation

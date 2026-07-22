@@ -1,0 +1,18 @@
+Use `dean_os_after_385_advanced_governance_template_kits.zip` as a non-numbered practical design kit.
+
+Do not blind-merge. Harvest/adapt useful schemas and notes into the existing DEAN-OS repository.
+
+This package contains:
+1. Existing Pipeline Integration Map Kit
+2. Data Provenance / Reproducibility Kit
+3. Analyst Debate / Devil's Advocate Kit
+4. Incident Response / Postmortem Kit
+5. Portfolio / Capital Allocation Governance Kit
+6. Event Graph Learning Closure Kit
+
+Special attention:
+The user's central learning idea is event-graph learning:
+event → graph/hypothesis → scenario → watch metrics → outcome → error attribution → pattern/eval update.
+
+Keep all outputs review-only unless later execution gates explicitly allow constrained action.
+LLM/Analyst never sends orders and never supplies final probabilities without base-rate/market-implied/reviewed backing.

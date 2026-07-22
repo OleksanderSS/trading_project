@@ -1,0 +1,146 @@
+# Template: heavy industry domain profile for DEAN-OS Analyst Branch.
+# This is a staged blueprint, not production configuration.
+
+profile_id: heavy_industry_v1
+domain: heavy_industry
+status: staged_template
+intended_agent: analyst_core_agent
+
+subdomains:
+  - steel
+  - mining
+  - aluminum
+  - cement
+  - chemicals
+  - fertilizers
+  - industrial_machinery
+  - industrial_energy
+  - transport_and_logistics_inputs
+
+entity_types:
+  - public_company
+  - private_company
+  - subsidiary
+  - plant
+  - mine
+  - smelter
+  - refinery
+  - port_terminal
+  - regulator
+  - industry_body
+  - commodity
+  - country
+  - trade_route
+
+core_reasoning_lenses:
+  - sector_structure
+  - value_chain
+  - cost_curve
+  - capacity_utilization
+  - commodity_cycle
+  - energy_sensitivity
+  - trade_policy
+  - sanctions_and_export_controls
+  - emissions_and_carbon_cost
+  - company_fundamentals
+  - balance_sheet_risk
+  - capex_cycle
+  - working_capital_cycle
+  - scenario_risk
+
+key_metrics:
+  production_and_capacity:
+    - production_volume
+    - nameplate_capacity
+    - effective_capacity
+    - capacity_utilization
+    - shipments
+    - order_book
+  financials:
+    - revenue
+    - gross_margin
+    - ebitda
+    - ebitda_margin
+    - operating_income
+    - free_cash_flow
+    - net_debt
+    - interest_expense
+    - capex
+    - maintenance_capex
+    - growth_capex
+    - working_capital
+  input_costs:
+    - electricity_price
+    - natural_gas_price
+    - coal_price
+    - coke_price
+    - iron_ore_price
+    - scrap_price
+    - freight_cost
+    - labor_cost
+    - carbon_price
+  risk_metrics:
+    - debt_maturity_wall
+    - covenant_headroom
+    - refinancing_risk
+    - supply_disruption_exposure
+    - country_risk
+    - policy_risk
+    - emissions_liability
+
+unit_normalization:
+  mass:
+    canonical: metric_ton
+    aliases:
+      - tonne
+      - mt
+      - t
+      - metric_tons
+      - short_ton
+      - long_ton
+  energy:
+    canonical: MWh
+    aliases:
+      - kWh
+      - GWh
+      - TWh
+      - GJ
+      - EJ
+      - mmbtu
+  currency:
+    canonical: USD
+    require_currency_date: true
+    require_nominal_or_real_flag: true
+  emissions:
+    canonical: tCO2e
+    aliases:
+      - CO2
+      - CO2e
+      - tonnes_CO2e
+
+hard_distinctions:
+  - capacity_is_not_production
+  - production_is_not_shipments
+  - demand_is_not_consumption
+  - quarterly_annualized_is_not_full_year
+  - nominal_is_not_real
+  - company_level_is_not_segment_level
+  - parent_company_is_not_subsidiary
+
+allowed_outputs:
+  - source_grounded_sector_context
+  - source_grounded_company_snapshot
+  - source_grounded_event_impact_note
+  - source_grounded_risk_scenario
+  - evidence_quality_summary
+  - human_review_packet
+
+forbidden_outputs:
+  - buy_sell_hold
+  - price_target
+  - trade_signal
+  - order_generation
+  - broker_routing
+  - autonomous_portfolio_action
+  - uncited_numeric_claim
+  - thesis_without_evidence_packet

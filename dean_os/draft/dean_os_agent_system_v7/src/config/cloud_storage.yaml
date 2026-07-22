@@ -1,0 +1,6 @@
+cloud_storage:
+  project_id: "monospace-13"
+  bucket_name: "trading_multi_project"
+  paths:
+    raw_data: "data/raw"
+    processed_data: "data/processed"

@@ -1,0 +1,127 @@
+stage7_analysis_engine: &stage7_analysis_engine
+  max_workers: 4
+  analyzers:
+    - name: "market_regime"
+      enabled: true
+      module: "src.analytics.context.market_regime_analyzer"
+      class: "MarketRegimeAnalyzer"
+      data_mapping: ["price_data"]
+      params:
+        window_size: 20
+        entropy_window: 50
+    - name: "adaptive_confidence"
+      enabled: false
+      disabled_reason: "No reviewed Stage 7 market-indicator rule contract yet"
+      module: "src.analytics.analyzers.adaptive_confidence_analyzer"
+      class: "AdaptiveConfidenceAnalyzer"
+      data_mapping: ["price_data", "market_indicators"]
+    - name: "causal_event_finder"
+      enabled: false
+      disabled_reason: "Configured class path does not implement the active analyzer contract"
+      module: "src.analytics.analyzers.causal_event_finder"
+      class: "CausalEngine"
+      data_mapping: ["target_series", "causal_series"]
+    - name: "knn_similarity"
+      enabled: false
+      disabled_reason: "Requires explicit historical/target feature partitions and outcome lineage"
+      module: "src.analytics.analyzers.knn_similarity_finder"
+      class: "KnnSimilarityFinder"
+      data_mapping: ["features_data"]
+      params:
+        n_neighbors: 5
+    - name: "news_impact"
+      enabled: false
+      disabled_reason: "Heavy sentiment analysis remains optional supporting context"
+      module: "src.analytics.analyzers.news_impact_analyzer"
+      class: "NewsImpactAnalyzer"
+      data_mapping: ["news_data", "price_data"]
+      params:
+        sentiment_weights:
+          positive: 1.0
+          negative: -1.0
+          neutral: 0.0
+        half_life_hours: 48
+    - name: "hedge_fund_style"
+      enabled: false
+      disabled_reason: "Analyzer may fetch external factor proxies; saved-factor contract required"
+      module: "src.analytics.analyzers.hedge_fund_analyzer"
+      class: "HedgeFundAnalyzer"
+      data_mapping: ["portfolio_data", "market_data"]
+    - name: "macro_context"
+      enabled: false
+      disabled_reason: "Indicator crosswalk and publication-time contract not attached"
+      module: "src.analytics.context.macro_context_analyzer"
+      class: "MacroContextAnalyzer"
+      data_mapping: ["macro_data"]
+      params:
+        context_features: []
+    - name: "critical_signals"
+      enabled: true
+      module: "src.analytics.detectors.critical_signal_detector"
+      class: "CriticalSignalDetector"
+      data_mapping: ["price_data"]
+    - name: "pattern_analysis"
+      enabled: false
+      disabled_reason: "Input and debug-side-effect contracts require repair before Stage 7 use"
+      module: "src.patterns.pattern_analyzer"
+      class: "PatternAnalyzer"
+      data_mapping: ["price_data"]
+      params:
+        fractal_window: 20
+        min_pattern_bars: 5
+    - name: "risk_decomposition"
+      enabled: false
+      disabled_reason: "Requires explicit portfolio-return/factor/weight input contract"
+      module: "src.analytics.analyzers.risk_decomposition_analyzer"
+      class: "RiskDecompositionAnalyzer"
+      data_mapping: ["portfolio_data", "market_data"]
+      params:
+        n_components: 5
+    - name: "model_health"
+      enabled: false
+      disabled_reason: "Current class is an async service, not an IAnalyzer adapter"
+      module: "src.models.analysis.model_health_analyzer"
+      class: "ModelHealthAnalyzer"
+      data_mapping: ["model_results"]
+      params:
+        threshold: 0.7
+    - name: "overfitting_detection"
+      enabled: false
+      disabled_reason: "Current class requires model objects and split frames, not saved metric candidates"
+      module: "src.models.analysis.overfitting_detection.analyzer"
+      class: "OverfittingAnalyzer"
+      data_mapping: ["training_metrics", "validation_metrics"]
+      params:
+        gap_threshold: 0.15
+
+analysis:
+  engine: *stage7_analysis_engine
+
+calculators_config:
+  volatility:
+    module: "src.analytics.calculators.volatility_calculator"
+    class: "VolatilityCalculator"
+    params:
+      window: 20
+  drawdown:
+    module: "src.analytics.calculators.drawdown_calculator"
+    class: "DrawdownCalculator"
+  risk_reward:
+    module: "src.analytics.calculators.risk_reward_calculator"
+    class: "RiskRewardCalculator"
+  fama_french:
+    module: "src.analytics.calculators.fama_french_factors"
+    class: "FamaFrenchFactors"
+  econometrics:
+    module: "src.analytics.calculators.econometrics_calculator"
+    class: "EconometricsCalculator"
+  sentiment_stats:
+    module: "src.analytics.calculators.sentiment_stats_calculator"
+    class: "SentimentStatsCalculator"
+  # MarketRegimeDetector is a detector, not a calculator - removed from calculators_config
+  macro_score:
+    module: "src.analytics.calculators.macro_score_calculator"
+    class: "MacroScoreCalculator"
+  explainability:
+    module: "src.analytics.calculators.explainability_calculator"
+    class: "ExplainabilityCalculator"

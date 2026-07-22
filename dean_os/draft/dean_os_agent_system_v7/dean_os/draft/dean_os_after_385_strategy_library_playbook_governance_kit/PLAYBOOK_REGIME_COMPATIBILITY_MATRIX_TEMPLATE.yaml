@@ -1,0 +1,54 @@
+schema_name: playbook_regime_compatibility_matrix_template
+version: after_385_v1
+
+regime_compatibility_matrix:
+  strategy_id: string
+  version: string
+
+  regimes:
+    - regime_id: liquidity_crisis
+      allowed: false
+      behavior: block_or_reduce
+      reason: "Correlations rise and liquidity assumptions may fail."
+      required_checks:
+        - liquidity_stress_check
+        - volatility_regime_check
+        - correlation_breakdown_check
+
+    - regime_id: credit_bubble_burst
+      allowed: caution
+      behavior: reduce_risk_or_review
+      reason: "Credit spreads and default risk may dominate normal signals."
+      required_checks:
+        - credit_spread_check
+        - drawdown_check
+        - exposure_cluster_check
+
+    - regime_id: low_volatility_risk_on
+      allowed: true
+      behavior: normal_if_other_gates_pass
+      reason: "Strategy may operate if valuation/narrative crowding is controlled."
+
+    - regime_id: regime_shift_candidate
+      allowed: false
+      behavior: require_review
+      reason: "Historical performance may be invalid during regime transition."
+      required_checks:
+        - macro_regime_review
+        - analyst_pipeline_disagreement_check
+        - replay_in_comparable_regimes
+
+    - regime_id: crowded_narrative_reversal_risk
+      allowed: caution
+      behavior: lower_confidence
+      reason: "Positive news may be priced; expectation gap may be asymmetric."
+      required_checks:
+        - expectation_gap_check
+        - positioning_check
+        - narrative_half_life_check
+
+rules:
+  - strategy_must_define_allowed_and_forbidden_regimes
+  - regime_shift_candidate_defaults_to_review_or_block
+  - missing_regime_classification_defaults_to_review
+  - risk_engine_can_override_strategy_allowance

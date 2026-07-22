@@ -1,0 +1,22 @@
+schema_name: validation_circularity_check_template
+version: after_385_v2
+purpose: Prevent outcome validation from becoming circular if future system actions influence the target being measured.
+
+validation_circularity_check:
+  outcome_review_id: string
+  event_hypothesis_token_id: string
+  system_action_exposure:
+    system_actions_could_affect_target_price: false
+    position_size_or_action_materiality: none | negligible | low | medium | high | unknown
+    public_output_could_affect_narrative: false
+    notes: string
+  validation_metric_preference:
+    primary_metrics: [broad_market_indices, sector_indices, macro_series, capex_announcements, production_or_capacity_metrics, order_backlog, investment_flows, margins, utilization, policy_disbursement]
+    secondary_metrics: [single_stock_price, short_term_price_reaction, social_media_reaction]
+  rules:
+    - do_not_validate_only_on_single_stock_price
+    - prefer_broad_sector_macro_fundamental_metrics
+    - preserve_system_action_metadata
+    - flag_circularity_if_outputs_or_actions_could_affect_measured_target
+    - if_circularity_high_require_human_review
+forbidden_outputs: [trade_signal, price_target, buy_sell_hold]

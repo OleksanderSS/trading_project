@@ -1,0 +1,52 @@
+{
+  "schema_name": "system_stress_run_manifest_schema",
+  "version": "after_385_v1",
+  "stress_run_manifest": {
+    "stress_run_id": "string",
+    "scenario_id": "string",
+    "started_at": "datetime",
+    "completed_at": "datetime | null",
+    "mode": "research | replay | paper | shadow",
+    "components_tested": [
+      "collectors",
+      "normalizers",
+      "analyst_agents",
+      "macro_regime",
+      "hypothesis_ledger",
+      "strategy_library",
+      "pipeline_controller",
+      "portfolio_governance",
+      "risk_engine",
+      "execution_gateway",
+      "audit_review"
+    ],
+    "input_state": {
+      "source_manifest_id": "string",
+      "feature_snapshot_id": "string",
+      "model_state_id": "string",
+      "portfolio_risk_state_id": "string",
+      "strategy_ids": ["string"]
+    },
+    "injected_conditions": ["string"],
+    "expected_behavior_ids": ["string"],
+    "actual_behavior": ["string"],
+    "pass_fail": {
+      "status": "passed | failed | partial | blocked",
+      "failed_checks": ["string"],
+      "blocked_actions": ["string"],
+      "unsafe_output_counters": {
+        "buy_sell_hold": 0,
+        "price_target": 0,
+        "trade_signal": 0,
+        "broker_order": 0,
+        "risk_override": 0
+      }
+    },
+    "outputs": {
+      "decision_lineage_ids": ["string"],
+      "review_queue_ids": ["string"],
+      "incident_report_ids": ["string"],
+      "learning_candidate_ids": ["string"]
+    }
+  }
+}

@@ -1,0 +1,44 @@
+schema_name: agent_output_quality_metrics
+version: after_385_v1
+purpose: Define metrics for observing analyst-agent output quality.
+
+metrics:
+  grounded_claim_rate:
+    definition: share_of_claims_with_valid_source_anchor
+    target: ">= 0.95 for factual/numeric claims"
+
+  numeric_metadata_completeness:
+    definition: share_of_numeric_claims_with_value_unit_period_entity_source
+    target: ">= 0.95"
+
+  hypothesis_labeling_accuracy:
+    definition: share_of uncertain/indirect conclusions explicitly labeled as hypothesis/watchlist
+    target: ">= 0.90"
+
+  counterforce_coverage:
+    definition: share_of_indirect_event_interpretations_with_counterforces_listed
+    target: ">= 0.85"
+
+  evidence_gap_generation_rate:
+    definition: share_of medium/high materiality hypotheses with evidence gap tasks
+    target: ">= 0.90"
+
+  unsafe_output_rate:
+    definition: share_of_outputs_containing_forbidden_recommendation_or_trade_signal
+    target: "0"
+
+  weak_source_overclaim_rate:
+    definition: share_of strong conclusions based only on weak sources
+    target: "0"
+
+  time_leakage_rate:
+    definition: share_of_as_of_date_answers_using_future_sources
+    target: "0"
+
+  retrieval_no_evidence_rate:
+    definition: share_of_answers_claiming_fact_without retrieved support
+    target: "<= 0.02"
+
+  human_review_disagreement_rate:
+    definition: share_of review_items where human marks material reasoning error
+    target: monitor_trend

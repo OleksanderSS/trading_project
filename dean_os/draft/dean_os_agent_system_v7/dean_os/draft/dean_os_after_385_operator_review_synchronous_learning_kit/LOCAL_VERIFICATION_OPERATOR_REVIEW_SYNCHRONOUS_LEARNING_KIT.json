@@ -1,0 +1,17 @@
+{
+  "kit_name": "dean_os_after_385_operator_review_synchronous_learning_kit",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T14:07:20+00:00",
+  "checks": {
+    "required_files_present": true,
+    "synchronous_review_loop_present": true,
+    "parallel_human_agent_analysis_present": true,
+    "feedback_to_learning_present": true,
+    "report_to_training_example_present": true,
+    "operator_console_workflow_present": true,
+    "non_numbered_practical_kit": true,
+    "production_code_created": false,
+    "review_only": true,
+    "trading_outputs_forbidden_by_default": true
+  }
+}

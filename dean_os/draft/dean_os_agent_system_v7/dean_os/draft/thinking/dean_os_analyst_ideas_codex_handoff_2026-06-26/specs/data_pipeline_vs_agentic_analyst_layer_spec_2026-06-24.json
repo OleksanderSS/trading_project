@@ -1,0 +1,80 @@
+{
+  "name": "data_pipeline_vs_agentic_analyst_layer",
+  "version": "2026-06-24",
+  "purpose": "Clarify DEAN-OS architecture: deterministic data/feature pipeline builds datasets; agentic analyst layer performs deeper reasoning, scenario analysis, news impact analysis, and self-check.",
+  "planes": {
+    "data_plane": [
+      "source_ingestion",
+      "source_normalization",
+      "feature_calculation",
+      "feature_store",
+      "macro_store",
+      "market_snapshot_store"
+    ],
+    "analysis_plane": [
+      "agent_orchestrator",
+      "regime_context_builder",
+      "event_interpreter",
+      "expectation_gap_engine",
+      "transmission_mapper",
+      "historical_analog_retriever",
+      "scenario_outcome_graph_builder",
+      "hypothesis_ledger",
+      "analyst_report_builder"
+    ],
+    "evaluation_plane": [
+      "outcome_horizon_tracker",
+      "calibration_metrics",
+      "replay_engine",
+      "analyst_self_check"
+    ],
+    "review_plane": [
+      "human_review_console",
+      "correction_logger",
+      "audit_trail"
+    ]
+  },
+  "interface_objects": [
+    "NewsEvidencePacket",
+    "MarketFeatureSnapshot",
+    "AnalysisRequest",
+    "AnalystOutputPacket"
+  ],
+  "data_pipeline_outputs": [
+    "FeaturePacket",
+    "MarketSnapshot",
+    "MacroSnapshot",
+    "NewsEvidencePacket",
+    "SourceQualityScore",
+    "SentimentScore",
+    "EntityLinkSet",
+    "TechnicalFeatureSet"
+  ],
+  "agent_outputs": [
+    "RegimeSnapshot",
+    "EventInterpretation",
+    "ExpectationGap",
+    "TransmissionMap",
+    "ScenarioOutcomeGraph",
+    "HistoricalAnalogReview",
+    "OutcomeHorizonPlan",
+    "HypothesisLedgerUpdate",
+    "EvidenceGapList",
+    "AnalystReport",
+    "HumanReviewPacket"
+  ],
+  "boundary": {
+    "data_pipeline": "reproducible evidence and features",
+    "agentic_layer": "structured reasoning and interpretation",
+    "evaluation_layer": "outcome tracking and calibration",
+    "review_layer": "human correction and governance"
+  },
+  "forbidden": [
+    "live_order",
+    "buy_sell_hold_recommendation",
+    "position_sizing",
+    "broker_routing",
+    "autonomous_execution",
+    "production_price_target"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "name": "additional_analyst_observations",
+  "version": "2026-06-24",
+  "purpose": "Additional DEAN-OS analyst-system design ideas from macro/news/AI/industrial analysis discussions.",
+  "new_modules": [
+    "regime_transition_model",
+    "event_cluster_detector",
+    "contradiction_matrix",
+    "evidence_gap_prioritizer",
+    "hypothesis_ledger",
+    "market_already_priced_detector",
+    "second_order_exposure_graph",
+    "safe_haven_behavior_classifier",
+    "ai_cycle_decomposer",
+    "strategic_asset_mna_classifier"
+  ],
+  "core_distinctions": [
+    "regime_as_state_vector_not_label",
+    "physical_reality_vs_market_narrative_vs_policy_reaction",
+    "news_cluster_not_isolated_rows",
+    "non_response_as_signal",
+    "crowding_as_hidden_variable",
+    "ai_bubble_decomposition",
+    "safe_haven_divergence",
+    "strategic_asset_mna_as_macro_geopolitical_event"
+  ],
+  "hypothesis_ledger_schema": [
+    "hypothesis_id",
+    "as_of_date",
+    "hypothesis",
+    "confidence",
+    "supporting_evidence",
+    "contradicting_evidence",
+    "expected_observations",
+    "invalidation_signals",
+    "horizons_to_check",
+    "status",
+    "calibration_note"
+  ],
+  "review_only_boundary": {
+    "allowed": [
+      "analyst notes",
+      "scenario probabilities",
+      "evidence gap prioritization",
+      "hypothesis tracking",
+      "market expectation analysis",
+      "historical analog review",
+      "self-check and calibration"
+    ],
+    "forbidden": [
+      "live order",
+      "buy/sell/hold instruction",
+      "position sizing",
+      "broker routing",
+      "production price target",
+      "autonomous execution"
+    ]
+  }
+}

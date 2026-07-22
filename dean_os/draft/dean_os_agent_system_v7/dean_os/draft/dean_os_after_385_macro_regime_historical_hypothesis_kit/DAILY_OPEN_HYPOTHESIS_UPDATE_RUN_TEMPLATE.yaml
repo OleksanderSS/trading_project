@@ -1,0 +1,32 @@
+schedule_name: daily_open_hypothesis_update_run_template
+version: after_385_v1
+mode: data_accumulation_and_review_only
+frequency: daily_or_weekly
+
+flow:
+  - step_id: load_open_tokens
+    allowed_actions: [read_open_event_hypothesis_tokens, read_watch_metrics, read_expected_milestones]
+
+  - step_id: collect_new_evidence
+    allowed_actions: [fetch_from_allowlisted_sources_if_configured, ingest_reports_news_filings_statistics, update_evidence_store]
+    forbidden_actions: [broker_api_call, trade_execution, production_config_mutation]
+
+  - step_id: update_milestones
+    allowed_actions: [mark_milestone_observed, mark_milestone_contradicted, mark_milestone_stale, attach_sources]
+
+  - step_id: update_scenarios
+    allowed_actions: [adjust_reviewable_scenario_probabilities, record_reason_for_probability_change, preserve_previous_probability_version]
+
+  - step_id: generate_review_items
+    allowed_actions: [create_review_queue_item, create_internal_digest_entry, create_evidence_gap_task]
+
+  - step_id: outcome_review_if_horizon_reached
+    allowed_actions: [compare_expected_vs_actual, label_result, write_lessons_learned, suggest_pattern_updates]
+
+global_forbidden_actions:
+  - buy_sell_hold
+  - price_target
+  - trade_signal
+  - autonomous_trade
+  - broker_order
+  - final_recommendation

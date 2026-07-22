@@ -1,0 +1,16 @@
+{
+  "kit_name": "dean_os_after_385_domain_learning_template_kit",
+  "version": "after_385_v3",
+  "checks": {
+    "discussion_notes_present": true,
+    "news_collector_templates_present": true,
+    "causal_pattern_templates_present": true,
+    "daily_automation_template_present": true,
+    "safe_automation_boundary_present": true,
+    "no_numbered_block_created": true,
+    "review_only": true,
+    "production_code_created": false,
+    "forbidden_trading_outputs_blocked": true
+  },
+  "file_count": 24
+}

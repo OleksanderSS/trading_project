@@ -1,0 +1,23 @@
+schema_name: module_to_kit_mapping_schema
+version: after_385_v1
+
+module_mapping:
+  module_path: string
+  current_role: string
+  related_kits:
+    - full_context_bundle_after_385
+    - codex_integration_kit
+    - domain_learning_template_kit_v3
+    - eval_observability_audit_kit
+    - macro_regime_historical_hypothesis_kit_v3
+    - automation_execution_governance_kit_v2
+    - advanced_governance_template_kits
+  proposed_role: string
+  preserve:
+    - string
+  add:
+    - string
+  do_not_do:
+    - string
+  integration_priority: low | medium | high
+  human_review_required: boolean

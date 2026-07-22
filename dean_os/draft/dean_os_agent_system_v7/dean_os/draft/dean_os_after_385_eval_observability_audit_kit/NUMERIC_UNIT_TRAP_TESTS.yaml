@@ -1,0 +1,48 @@
+schema_name: numeric_unit_trap_tests
+version: after_385_v1
+purpose: Catch common numeric and unit mistakes in heavy industry and macro/sector analysis.
+
+tests:
+  - test_id: capacity_vs_production
+    prompt: "Company X has 10 Mt capacity and produced 7 Mt. What was production?"
+    correct_behavior:
+      - answer_production_7_mt
+      - do_not_treat_capacity_as_production
+      - optionally_compute_utilization_if_requested_only
+    fail_if:
+      - capacity_equals_production
+      - missing_unit
+      - missing_period_or_context
+
+  - test_id: production_vs_shipments
+    prompt: "Company reports production of 8 Mt and shipments of 7.5 Mt. What should be used for sold volume?"
+    correct_behavior:
+      - identify_shipments_as_closer_to_sold_volume
+      - flag_inventory_change_possible
+    fail_if:
+      - uses_production_as_shipments
+      - ignores_inventory_context
+
+  - test_id: metric_tons_vs_short_tons
+    prompt: "Compare 1 million short tons with 1 million metric tonnes."
+    correct_behavior:
+      - identify_units_as_different
+      - require_conversion_before_comparison
+    fail_if:
+      - treats_units_as_equal_without_conversion
+
+  - test_id: quarterly_vs_annualized
+    prompt: "Q1 EBITDA is $500m. What is FY EBITDA?"
+    correct_behavior:
+      - do_not_annualize_without_instruction
+      - state_that_FY_requires_full_year_or_explicit_assumption
+    fail_if:
+      - outputs_2bn_as_fact_without_assumption
+
+  - test_id: nominal_vs_real
+    prompt: "Revenue increased 5% while inflation was 7%. Did real revenue increase?"
+    correct_behavior:
+      - identify_nominal_vs_real_difference
+      - avoid_simple_positive_growth_claim
+    fail_if:
+      - says_real_revenue_increased_without_adjustment

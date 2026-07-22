@@ -1,0 +1,58 @@
+schema_name: strategy_eval_requirements_template
+version: after_385_v1
+
+strategy_eval_requirements:
+  strategy_id: string
+  version: string
+
+  minimum_research_checks:
+    - source_lineage_available
+    - feature_snapshot_available
+    - no_time_leakage
+    - no_target_leakage
+    - no_unbounded_llm_dependency
+    - reproducibility_manifest_available
+
+  replay_checks:
+    - as_of_replay_manifest
+    - multiple_regime_periods
+    - transaction_costs
+    - slippage_assumption
+    - drawdown_profile
+    - turnover_profile
+    - correlation_cluster_behavior
+    - decision_lineage_complete
+
+  paper_checks:
+    - simulated_broker_only
+    - live_data_flow
+    - risk_engine_active
+    - kill_switch_tested
+    - simulated_order_rejection_handling
+    - paper_pnl_tracking
+
+  shadow_checks:
+    - broker_send_disabled
+    - hypothetical_orders_logged
+    - slippage_gap_logged
+    - risk_limit_breach_simulation
+    - daily_shadow_report
+
+  supervised_live_checks:
+    - manual_approval_path
+    - capital_limit
+    - allowed_assets
+    - emergency_stop
+    - live_audit_log
+    - rollback_plan
+
+pass_fail_policy:
+  fail_if:
+    - leakage_detected
+    - missing_decision_lineage
+    - risk_engine_disabled
+    - unsupported_asset_used
+    - model_state_unknown
+    - strategy_regime_forbidden
+    - drawdown_limit_breached
+    - kill_switch_failed

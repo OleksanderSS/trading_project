@@ -1,0 +1,45 @@
+schema_name: data_alignment_frequency_template
+version: after_385_v3
+purpose: >
+  Manage different data frequencies across historical and modern periods. Prevent hallucinated precision
+  when old data is monthly/quarterly and modern data is daily/intraday.
+
+frequency_alignment:
+  dataset_id: string
+  source_period: string
+
+  native_frequency:
+    value: intraday | daily | weekly | monthly | quarterly | annual | irregular | unknown
+    evidence_source: string
+
+  target_analysis_frequency:
+    value: daily | weekly | monthly | quarterly | event_window
+    rationale: string
+
+  allowed_transformations:
+    - aggregate_to_lower_frequency
+    - forward_fill_with_staleness_flag
+    - interpolate_only_if_explicitly_allowed
+    - use_event_window_labels
+    - align_to_publication_date
+    - align_to_event_date
+
+  forbidden_transformations:
+    - fabricate_missing_high_frequency_values
+    - compare_intraday_modern_data_to_monthly_historical_data_as_equal
+    - use_ingestion_date_as_event_date
+    - interpolate_policy_events_without_label
+    - mix_revised_and_real_time_data_without_versioning
+
+  staleness_metadata:
+    last_observed_at: datetime
+    publication_lag_days: integer
+    revision_risk: low | medium | high | unknown
+    forward_fill_used: boolean
+    interpolation_used: boolean
+    comparability_warning: string
+
+rules:
+  - old_periods_should_be_downsampled_not_modern_periods_overfitted
+  - preserve_publication_date_event_date_and_ingestion_date
+  - real_time_analysis_must_use_as_known_data_only

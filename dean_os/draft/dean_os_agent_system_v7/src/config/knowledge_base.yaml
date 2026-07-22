@@ -1,0 +1,146 @@
+knowledge_base:
+  rss_feeds:
+    - name: bloomberg_markets
+      url: https://feeds.bloomberg.com/markets/news.rss
+    - name: bloomberg_tech
+      url: https://feeds.bloomberg.com/technology/news.rss
+    - name: bloomberg_economics
+      url: https://feeds.bloomberg.com/economics/news.rss
+    - name: bloomberg_business
+      url: https://feeds.bloomberg.com/business/news.rss
+    # - name: bloomberg_politics  # Вимкнено: HTTP timeout
+    #   url: https://feeds.bloomberg.com/politics/news.rss
+    # - name: cnbc_earnings  # Вимкнено: не працює
+    #   url: https://www.cnbc.com/id/10000664/device/rss/rss.html
+    # - name: cnbc_world  # Вимкнено: не працює
+    #   url: https://www.cnbc.com/id/10000664/device/rss/rss.html
+    - name: yahoo_finance_general
+      url: https://finance.yahoo.com/news/rssindex
+    - name: bbc_business
+      url: http://feeds.bbci.co.uk/news/business/rss.xml
+    - name: financial_times
+      url: https://www.ft.com/rss/home/uk
+    - name: wsj
+      url: https://feeds.a.dj.com/rss/RSSMarketsMain.xml
+    - name: wsj_markets
+      url: https://feeds.a.dj.com/rss/RSSMarketsMain.xml
+    - name: marketwatch
+      url: https://www.marketwatch.com/rss/topstories
+    - name: seeking_alpha
+      url: https://seekingalpha.com/feed.xml
+    - name: investing_com
+      url: https://www.investing.com/rss/news_301.rss
+    - name: benzinga
+      url: https://www.benzinga.com/feed
+    - name: ft_markets
+      url: https://www.ft.com/rss/markets
+    - name: zerohedge
+      url: https://feeds.feedburner.com/zerohedge/feed
+    - name: cointelegraph_crypto
+      url: https://cointelegraph.com/rss
+    - name: npr_business
+      url: https://feeds.npr.org/1006/rss.xml
+  twitter_accounts_official:
+  - Bloomberg
+  - Reuters
+  - CNBC
+  - FinancialTimes
+  - MarketWatch
+  - businessinsider
+  - WSJmarkets
+  - Forbes
+  - Investingcom
+  - NYSE
+  - Nasdaq
+  - CMEGroup
+  - SEC_News
+  - federalreserve
+  - ecb
+  - Tesla
+  - elonmusk
+  - nvidia
+  - Microsoft
+  - Google
+  - Apple
+  - Meta
+  - MorningstarInc
+  - ZacksResearch
+  - FactSet
+  - SPGlobal
+  - MoodysInvSvc
+  - OPECSecretariat
+  - IEA
+  - WorldBank
+  - IMFNews
+  keywords:
+    market_terms: [etf, index, nasdaq, s&p 500, earnings, earnings report, quarterly results, financial results, merger, m&a, acquisition, lawsuit, regulation, downgrade, upgrade, buyback, dividend, guidance, forecast, ipo, bankruptcy, restructuring]
+    finance_economy: [inflation, interest rates, federal reserve, gdp, unemployment, recession, stimulus, bond yields, market, economy, economic, financial, stocks, trading, investors, analysis, forecast, outlook, report]
+    sectors_tech: [ai, ev, semiconductor, chips, cloud, tech, quantum computing, cybersecurity, data breach, robotics, automation, battery, charging]
+    healthcare_biotech: [fda approval, clinical trial, biotech, pharmaceutical, medical device]
+    financial_services: [banking, insurance, fintech, payments, lending]
+    energy_commodities: [oil, crude, brent, energy, commodities, opec, gas, renewables]
+    geopolitics: [sanctions, tariffs, trade war, conflict, china, eu, us fed, antitrust]
+    huggingface_models: [transformers, bert, gpt, classification, sentiment, nlp, model, huggingface, tokenizer, finetuned]
+    # professional_indicators: ["ted spread", "yield curve inversion", "high yield spreads", "credit spreads", "repo rates", "libor", "commercial paper", "money market", "liquidity crisis", "margin calls", "volatility spike", "risk parity", "carry trade", "currency intervention", "central bank swap"]
+    # leading_indicators: ["industrial production", "capacity utilization", "consumer sentiment", "housing starts", "building permits", "nonfarm payrolls", "initial claims", "continuing claims", "retail sales", "personal income", "durable goods", "factory orders", "ism manufacturing", "ism services", "philadelphia fed"]
+    gdelt_themes: [ai, etf, ev, gdp, nasdaq, s&p 500, acquisition, chips, cloud, commodities, earnings, earnings report, elon musk, energy, federal reserve, gpu, inflation, interest rates, lawsuit, merger, nvidia, nvda, oil, qqq, regulation, semiconductor, spy, spdr, tech, tesla, tsla]
+
+news:
+  field_mappings:
+    published_at: ["published", "pubDate", "date", "created", "created_utc", "timestamp", "time", "published_at", "publishedAt"]
+    headline: ["title", "headline"]
+    summary: ["content", "summary", "description", "body", "text", "message", "snippet"]
+    source_url: ["url", "link"]
+    source_name: ["source"]
+  text_analytics_defaults:
+    max_features_per_source: 1000
+    ngram_range: [1, 2]
+    n_clusters: 10
+    stop_words: ["a", "the", "in", "is", "are", "to", "for", "of"]
+  quality_weights:
+    bloomberg: 1.0
+    reuters: 1.0
+    "wall street journal": 1.0
+    wsj: 1.0
+    "financial times": 1.0
+    ft: 1.0
+    "the wall street journal": 1.0
+    cnbc: 1.0
+    bbc: 1.0
+    "the economist": 0.8
+    economist: 0.8
+    politico: 0.8
+    marketwatch: 0.6
+    "business insider": 0.6
+    fortune: 0.6
+    forbes: 0.6
+    money: 0.6
+    cnn: 0.6
+    "yahoo finance": 0.6
+    yahoo: 0.6
+    "investing.com": 0.6
+    morningstar: 0.6
+    zacks: 0.6
+    factset: 0.6
+    "sp global": 0.6
+    techcrunch: 0.6
+    "the verge": 0.6
+    "barron's": 0.6
+    "the motley fool": 0.4
+    "motley fool": 0.4
+    "seeking alpha": 0.4
+    benzinga: 0.4
+    "investor's business daily": 0.4
+    ibd: 0.4
+    "the street": 0.4
+    tipranks: 0.4
+    unknown: 0.2
+    "local news": 0.2
+    blogs: 0.2
+    forums: 0.2
+    electrek: 0.6
+    insideevs: 0.6
+    "not a tesla app": 0.5
+    "automotive news": 0.6
+    "cbt news": 0.4
+    default_weight: 0.3

@@ -1,0 +1,37 @@
+{
+  "schema_name": "debate_packet_schema",
+  "version": "after_385_v1",
+  "debate_packet": {
+    "debate_id": "string",
+    "event_hypothesis_token_id": "string",
+    "created_at": "datetime",
+    "topic": "string",
+    "bull_case": {
+      "claims": ["string"],
+      "evidence_ids": ["string"],
+      "assumptions": ["string"],
+      "what_would_confirm": ["string"],
+      "what_would_falsify": ["string"]
+    },
+    "bear_case": {
+      "claims": ["string"],
+      "evidence_ids": ["string"],
+      "assumptions": ["string"],
+      "what_would_confirm": ["string"],
+      "what_would_falsify": ["string"]
+    },
+    "neutral_review": {
+      "strongest_points": ["string"],
+      "weakest_points": ["string"],
+      "missing_evidence": ["string"],
+      "base_rate_needed": true,
+      "expectation_gap_needed": true,
+      "confidence": "low | medium | high"
+    },
+    "decision": {
+      "result": "watch | more_evidence_needed | hypothesis_strengthened | hypothesis_weakened | inconclusive",
+      "review_required": true
+    },
+    "forbidden_outputs": ["buy_sell_hold", "price_target", "trade_signal", "broker_order"]
+  }
+}

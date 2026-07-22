@@ -1,0 +1,39 @@
+{
+  "schema_name": "analyst_tag_only_output_schema",
+  "version": "after_385_v3",
+  "purpose": "Constrain analyst output to structured tags, mechanism labels, evidence gaps, and review fields. The analyst must not invent final probabilities.",
+  "analyst_output": {
+    "event_id": "string",
+    "as_of_date": "date",
+    "event_summary": "string",
+    "risk_archetypes": [
+      {
+        "archetype_id": "string",
+        "confidence_label": "low | medium | high",
+        "evidence_ids": ["string"],
+        "reason": "string"
+      }
+    ],
+    "event_stage": "accumulation | euphoria | first_cracks | panic | capitulation | recovery | unclear",
+    "trigger_type": "technology | regulatory | financial | geopolitical | commodity | credit | policy | other",
+    "market_reaction_so_far": "ignored | high_volatility | one_way_move | reversal | dispersion | unclear",
+    "directness": "direct | indirect | contextual",
+    "affected_value_chain": ["string"],
+    "candidate_target_sectors": ["string"],
+    "candidate_secondary_sectors": ["string"],
+    "candidate_baseline_sectors": ["string"],
+    "causal_mechanism_tags": ["string"],
+    "counterforces": ["string"],
+    "evidence_gaps": ["string"],
+    "required_human_review": true,
+    "llm_probability_output_allowed": false,
+    "probability_source_required": "historical_base_rate | market_implied | analyst_reviewed_prior | hybrid",
+    "forbidden_outputs": [
+      "final_probability_without_database_or_review",
+      "buy_sell_hold",
+      "price_target",
+      "trade_signal",
+      "broker_order"
+    ]
+  }
+}

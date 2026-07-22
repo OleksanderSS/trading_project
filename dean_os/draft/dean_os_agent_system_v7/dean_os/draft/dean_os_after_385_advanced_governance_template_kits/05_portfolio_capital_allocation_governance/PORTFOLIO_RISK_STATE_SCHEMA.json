@@ -1,0 +1,20 @@
+{
+  "schema_name": "portfolio_risk_state_schema",
+  "version": "after_385_v1",
+  "portfolio_risk_state": {
+    "state_id": "string",
+    "timestamp": "datetime",
+    "mode": "paper | shadow | supervised_live | constrained_autonomous",
+    "gross_exposure": "number",
+    "net_exposure": "number",
+    "sector_exposures": [{"sector": "string", "exposure": "number"}],
+    "strategy_exposures": [{"strategy_id": "string", "exposure": "number"}],
+    "correlation_clusters": [{"cluster_id": "string", "exposure": "number", "limit": "number"}],
+    "daily_pnl": "number",
+    "drawdown": "number",
+    "risk_flags": ["string"],
+    "allowed_to_increase_risk": false,
+    "allowed_actions": ["reduce", "hold", "review", "block_new_orders"],
+    "forbidden_actions": ["increase_risk_after_limit_breach", "bypass_risk_engine", "llm_override"]
+  }
+}

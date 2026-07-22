@@ -1,0 +1,48 @@
+{
+  "schema_name": "review_session_state_schema",
+  "version": "after_385_v1",
+  "review_session": {
+    "review_session_id": "string",
+    "created_at": "datetime",
+    "operator_id": "string | null",
+    "run_id": "string",
+    "mode": "daily_digest | event_deep_dive | pipeline_health | outcome_review | paper_shadow_review",
+    "status": "open | in_review | completed | blocked | escalated",
+    "inputs": {
+      "daily_report_id": "string | null",
+      "event_ids": ["string"],
+      "hypothesis_token_ids": ["string"],
+      "pipeline_run_ids": ["string"],
+      "source_ids": ["string"],
+      "model_state_ids": ["string"],
+      "decision_lineage_ids": ["string"]
+    },
+    "agent_outputs_under_review": [
+      {
+        "output_id": "string",
+        "output_type": "event_packet | hypothesis_update | evidence_gap | scenario_tree | outcome_review | pipeline_health | digest_item",
+        "confidence_label": "low | medium | high | unknown",
+        "review_required": true
+      }
+    ],
+    "operator_actions": [
+      {
+        "action_id": "string",
+        "action_type": "approve | correct | reject | request_more_evidence | escalate | create_incident | create_regression_test",
+        "target_output_id": "string",
+        "notes": "string",
+        "created_at": "datetime"
+      }
+    ],
+    "learning_records_created": ["string"],
+    "eval_tests_created": ["string"],
+    "incidents_created": ["string"],
+    "forbidden_output_counters": {
+      "buy_sell_hold": 0,
+      "price_target": 0,
+      "trade_signal": 0,
+      "broker_order": 0,
+      "risk_override": 0
+    }
+  }
+}

@@ -1,0 +1,183 @@
+# Template: source registry for heavy industry domain learning.
+# Codex should adapt this into the repo's actual config/schema conventions.
+
+registry_id: heavy_industry_source_registry_template_v1
+status: staged_template
+
+trust_tiers:
+  tier_1_core_evidence:
+    description: Official filings, audited reports, regulators, official statistics, and recognized public data providers.
+    default_allowed_for:
+      - numeric_claims
+      - period_specific_claims
+      - sector_context
+      - company_fundamentals
+  tier_2_strong_context:
+    description: Company presentations, earnings call transcripts, industry-body reports, and sustainability disclosures.
+    default_allowed_for:
+      - management_context
+      - segment_context
+      - risk_context
+      - claim_corroboration
+  tier_3_event_context:
+    description: Reputable financial news, trade press, and official announcements that may identify events.
+    default_allowed_for:
+      - event_detection
+      - inquiry_trigger
+      - context_only
+  tier_4_weak_or_unverified:
+    description: Blogs, social media, unsourced tables, reposted commentary, and low-attribution material.
+    default_allowed_for:
+      - lead_generation_only
+    default_not_allowed_for:
+      - final_conclusion
+      - numeric_claim
+      - materiality_conclusion
+
+source_templates:
+  - source_type: regulatory_filing
+    examples:
+      - SEC_EDGAR_10K_10Q_20F_40F
+      - exchange_or_regulator_filings
+    trust_tier: tier_1_core_evidence
+    required_metadata:
+      - entity_id
+      - filing_date
+      - period_covered
+      - form_type
+      - accession_or_filing_id
+      - source_url_or_archive_ref
+      - source_hash
+    allowed_for:
+      - audited_or_reported_financials
+      - segment_disclosures
+      - risk_factors
+      - debt_maturity
+      - capex_guidance
+    not_allowed_for:
+      - standalone_trade_signal
+
+  - source_type: company_annual_report
+    trust_tier: tier_1_core_evidence
+    required_metadata:
+      - entity_id
+      - fiscal_year
+      - publication_date
+      - period_covered
+      - source_hash
+      - page_anchors
+    allowed_for:
+      - financials
+      - operations
+      - segment_context
+      - risk_context
+    bias_flags:
+      - company_provided_narrative
+
+  - source_type: company_investor_presentation
+    trust_tier: tier_2_strong_context
+    required_metadata:
+      - entity_id
+      - presentation_date
+      - period_covered
+      - source_hash
+      - slide_anchors
+    allowed_for:
+      - management_guidance_context
+      - strategy_context
+      - capex_context
+    not_allowed_for:
+      - uncorroborated_numeric_final_claim
+    bias_flags:
+      - selective_disclosure_risk
+      - promotional_framing_risk
+
+  - source_type: earnings_call_transcript
+    trust_tier: tier_2_strong_context
+    required_metadata:
+      - entity_id
+      - call_date
+      - fiscal_period
+      - speaker_metadata
+      - source_hash
+    allowed_for:
+      - management_commentary
+      - q_and_a_context
+      - risk_discussion
+    not_allowed_for:
+      - audited_metric_replacement
+
+  - source_type: official_statistics
+    examples:
+      - national_statistics_agency
+      - energy_information_agency
+      - customs_or_trade_database
+      - central_bank_macro_series
+    trust_tier: tier_1_core_evidence
+    required_metadata:
+      - publisher
+      - dataset_id
+      - series_id_or_table_id
+      - period_covered
+      - retrieval_or_snapshot_date
+      - source_hash_or_version
+    allowed_for:
+      - macro_context
+      - production_context
+      - trade_flows
+      - energy_prices
+      - demand_proxy
+
+  - source_type: industry_body_report
+    examples:
+      - steel_industry_report
+      - mining_industry_report
+      - cement_industry_report
+    trust_tier: tier_2_strong_context
+    required_metadata:
+      - publisher
+      - report_title
+      - publication_date
+      - period_covered
+      - methodology_available
+      - source_hash
+    allowed_for:
+      - sector_structure
+      - capacity_context
+      - regional_trends
+      - sustainability_context
+
+  - source_type: reputable_news_or_trade_press
+    trust_tier: tier_3_event_context
+    required_metadata:
+      - publisher
+      - author_or_wire
+      - publication_datetime
+      - event_date_if_available
+      - source_url_or_archive_ref
+    allowed_for:
+      - event_detection
+      - event_context
+      - inquiry_trigger
+    not_allowed_for:
+      - final_numeric_claim_without_corroboration
+
+minimum_source_rules:
+  numeric_claim:
+    min_trust_tier: tier_2_strong_context
+    allow_single_source_if:
+      - regulatory_filing
+      - official_statistics
+      - audited_annual_report
+    require_unit: true
+    require_period: true
+    require_source_anchor: true
+  material_event_claim:
+    min_sources: 2
+    allow_single_source_if:
+      - company_press_release
+      - regulator_announcement
+      - official_government_notice
+  final_conclusion:
+    min_trust_tier: tier_2_strong_context
+    weak_source_allowed: false

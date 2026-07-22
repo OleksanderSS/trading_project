@@ -1,0 +1,52 @@
+{
+  "kit_name": "dean_os_after_385_codex_master_handoff_index",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T14:33:19+00:00",
+  "purpose": "Master navigation index for the 11 after-385 DEAN-OS Codex handoff ZIPs, including role matrix, integration order, minimal implementation plan, repo-specific priority map, and one-page brief.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Read this first to navigate the full after-385 handoff set.",
+  "files": [
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/CODEX_INTEGRATION_ORDER_AFTER_385.md",
+      "sha256": "ee179d919dfcdc8e0a097ac104d0f6716b3a422faf7665c4cbb1856051d0516e",
+      "bytes": 3178
+    },
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/HANDOFF_FILE_INVENTORY.json",
+      "sha256": "d6e9f2da292a37e0bcdf1b193a2972983245642ec761651dc5543dbc2f29a045",
+      "bytes": 2478
+    },
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/HANDOFF_PACKAGE_ROLE_MATRIX.md",
+      "sha256": "98cb191d05287418ac02e68e9e94c6c9bff34df35be4c91843bc6b7f25dd573a",
+      "bytes": 2069
+    },
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/LOCAL_VERIFICATION_CODEX_MASTER_HANDOFF_INDEX.json",
+      "sha256": "52834971ad5369f0f00d6bdbe9691029a8fb31b57fc647e0d2abbd31627eeced",
+      "bytes": 568
+    },
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/MINIMAL_FIRST_IMPLEMENTATION_PLAN.md",
+      "sha256": "5e5d1af4efba7e056cc9d71d3a853b17f7210cef6badf1c9c5a73437b4d09354",
+      "bytes": 2050
+    },
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/ONE_PAGE_CODEX_BRIEF_AFTER_385.md",
+      "sha256": "b0c6f0b517249c18a7cd2ff520c7c7827c7c40f3a5ba765a1ab59c67a67e3609",
+      "bytes": 1222
+    },
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/README_CODEX_MASTER_HANDOFF_INDEX_AFTER_385.md",
+      "sha256": "2a09772fdf20a39da6862ba3d2dd96f8c6ed3f3743692d297d41c1d665cd9e7e",
+      "bytes": 2124
+    },
+    {
+      "path": "dean_os_after_385_codex_master_handoff_index/REPO_SPECIFIC_PRIORITY_MAP_AFTER_SRC6.md",
+      "sha256": "cb14af5190fad74b8a6f59cf9d54091866d7193ddb4085f556c378f4afe518b7",
+      "bytes": 3146
+    }
+  ]
+}

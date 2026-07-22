@@ -1,0 +1,26 @@
+schema_name: narrative_regime_tracking_template
+version: after_385_v2
+purpose: >
+  Track dominant market narratives, their age, momentum, crowdedness, half-life, and reversal risk.
+  Narrative context affects how news is interpreted.
+
+market_narrative:
+  narrative_id: string
+  label: string
+  start_date: date
+  age_days: integer
+  dominance: low | medium | high
+  momentum: rising | stable | fading | reversing
+  crowdedness: low | medium | high | extreme | unknown
+  half_life_estimate: short | medium | long | unknown
+  reversal_risk: low | medium | high | unknown
+  examples: [AI_everything, inflation_transitory, soft_landing, higher_for_longer, China_reopening, energy_security, deglobalization, green_transition]
+  supporting_events: list[event_id]
+  contradicting_events: list[event_id]
+  affected_sectors: list[string]
+  interpretation_rules:
+    - young_narrative_plus_confirmation_can_strengthen_trend
+    - old_crowded_narrative_plus_neutral_news_can_raise_reversal_risk
+    - fading_narrative_requires_stronger_evidence_to_extend
+    - narrative_is_context_not_final_signal
+forbidden_outputs: [buy_sell_hold, price_target, trade_signal]

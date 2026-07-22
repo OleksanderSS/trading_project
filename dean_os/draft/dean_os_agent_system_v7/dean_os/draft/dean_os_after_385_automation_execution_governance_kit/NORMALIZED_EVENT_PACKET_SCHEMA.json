@@ -1,0 +1,26 @@
+{
+  "schema_name": "normalized_event_packet_schema",
+  "version": "after_385_v1",
+  "event_packet": {
+    "event_id": "string",
+    "created_at": "datetime",
+    "source_ids": ["string"],
+    "source_hashes": ["string"],
+    "title": "string",
+    "summary": "string",
+    "publication_date": "date",
+    "event_date": "date | null",
+    "ingestion_date": "date",
+    "source_quality_score": "number",
+    "dedupe_cluster_id": "string | null",
+    "affected_tickers": ["string"],
+    "affected_sectors": ["string"],
+    "secondary_sectors": ["string"],
+    "baseline_candidates": ["string"],
+    "risk_archetypes": ["string"],
+    "expectation_gap_required": true,
+    "analyst_routing": ["macro_analyst", "sector_analyst", "pipeline_controller_context_consumer"],
+    "allowed_outputs": ["review_item", "hypothesis_token", "evidence_gap", "digest_item"],
+    "forbidden_outputs": ["buy_sell_hold", "price_target", "trade_signal", "broker_order"]
+  }
+}

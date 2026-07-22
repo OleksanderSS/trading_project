@@ -1,0 +1,72 @@
+{
+  "created_at_utc": "2026-06-21T14:33:19+00:00",
+  "expected_zip_count": 11,
+  "files": [
+    {
+      "filename": "dean_os_after_385_full_context_bundle.zip",
+      "exists": true,
+      "bytes": 56913887,
+      "sha256": "22d204a363d1e2a243f5b17641a176b55ae41d5f90d46ff153a3996fb80ca06d"
+    },
+    {
+      "filename": "dean_os_after_385_codex_integration_kit.zip",
+      "exists": true,
+      "bytes": 9819,
+      "sha256": "e53da26c80a02252764a70dab693ea6749212999f72940dc18db5d6f0118cd7d"
+    },
+    {
+      "filename": "dean_os_after_385_domain_learning_template_kit_v3.zip",
+      "exists": true,
+      "bytes": 35040,
+      "sha256": "cd859020fe7582901249b8c83d0cab89987f13eb0f8e7c5dc0a5598fad976ae3"
+    },
+    {
+      "filename": "dean_os_after_385_eval_observability_audit_kit.zip",
+      "exists": true,
+      "bytes": 14560,
+      "sha256": "1db13c673c2f883f9902c45148cbb9fb0ad311a06227f8b0c328e84785e78971"
+    },
+    {
+      "filename": "dean_os_after_385_macro_regime_historical_hypothesis_kit_v3.zip",
+      "exists": true,
+      "bytes": 33163,
+      "sha256": "eb16db3b9e71a5bafd03a84cfa5e3fd787dc4323933981e5bc5e436d3b471c6a"
+    },
+    {
+      "filename": "dean_os_after_385_automation_execution_governance_kit_v2.zip",
+      "exists": true,
+      "bytes": 20019,
+      "sha256": "9a83649d0540c2530444f8afb03a54b5cd125fcde933a5b3fc8aed595d0b3fd8"
+    },
+    {
+      "filename": "dean_os_after_385_advanced_governance_template_kits.zip",
+      "exists": true,
+      "bytes": 19318,
+      "sha256": "9c40ca45f4844cb0c7086705b60e7440246b335885c9be04294776b49211e3cf"
+    },
+    {
+      "filename": "dean_os_after_385_operator_review_synchronous_learning_kit.zip",
+      "exists": true,
+      "bytes": 12444,
+      "sha256": "c674f6755d1de8ac36ac48ac71d67f00eb24e80a4002c9ff2cb0b5d6d679f0c1"
+    },
+    {
+      "filename": "dean_os_after_385_agent_memory_knowledge_governance_kit.zip",
+      "exists": true,
+      "bytes": 10881,
+      "sha256": "eeee0ca4909a7ce4ff05069f2276642b61b064e8dedd40788270c2a8cc145f0b"
+    },
+    {
+      "filename": "dean_os_after_385_strategy_library_playbook_governance_kit.zip",
+      "exists": true,
+      "bytes": 12760,
+      "sha256": "6892544eddb6a742a47f74cb4484002f3165620b0ba1bef17f0e40bb8c0aa05d"
+    },
+    {
+      "filename": "dean_os_after_385_scenario_stress_testing_kit.zip",
+      "exists": true,
+      "bytes": 12679,
+      "sha256": "208886373d3ef5220dc5eff8eb3a5f8c15522b04611c9d427d1df1b689c0cb98"
+    }
+  ]
+}

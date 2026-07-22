@@ -1,0 +1,77 @@
+{
+  "kit_name": "dean_os_after_385_strategy_library_playbook_governance_kit",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T14:20:58+00:00",
+  "purpose": "Non-numbered practical Codex-facing templates for strategy/playbook registry, regime compatibility, input contracts, eval requirements, promotion gates, block/deprecation policy, and agent role boundaries.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Harvest/adapt useful templates; do not blind-merge.",
+  "files": [
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/CODEX_STRATEGY_LIBRARY_HARVEST_NOTES.md",
+      "sha256": "036db46e13e07346f1ee2faf8f0a34b6d812bbf39487f8c18f8e634f3245ce5f",
+      "bytes": 995
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/CODEX_STRATEGY_LIBRARY_PROMPT_AFTER_385.txt",
+      "sha256": "c430f5b6a823ca9d5820d5e1a81a739903fbec549c475344a8b012ab54a18a8d",
+      "bytes": 674
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/LOCAL_VERIFICATION_STRATEGY_LIBRARY_PLAYBOOK_GOVERNANCE_KIT.json",
+      "sha256": "931098370d54537db7011ba5c1285935e2ecdcf0288995c4a83b63d837a7cd76",
+      "bytes": 645
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/PLAYBOOK_REGIME_COMPATIBILITY_MATRIX_TEMPLATE.yaml",
+      "sha256": "12ef51545f0e1155ab7328a4386568c6b0ebca744ef94170fd8e9a95d0937baf",
+      "bytes": 1758
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/README_STRATEGY_LIBRARY_PLAYBOOK_GOVERNANCE_KIT.md",
+      "sha256": "c6476a4fb4b6ca498f17ef97fc2fbef3817d6a5498933b25d5442a4eb59aa679",
+      "bytes": 1482
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_BLOCKLIST_AND_DEPRECATION_POLICY.md",
+      "sha256": "9a75fdba6f63e52565ab37971def88eeae6e97a27c6dd694de77983afcd490b5",
+      "bytes": 919
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_EVAL_REQUIREMENTS_TEMPLATE.yaml",
+      "sha256": "e2aa56c454c4531def5a0b8ef31cf3ae98b40028b2363cccce035e66517e032f",
+      "bytes": 1349
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_INPUT_CONTRACT_TEMPLATE.yaml",
+      "sha256": "7949d8e494fd57cb5c2c67e962bf3c9081b3173ac4d3c785b4cf1dca9c6e6147",
+      "bytes": 1245
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_LIBRARY_ARCHITECTURE.md",
+      "sha256": "4556963aa916dc75ee3d961aa483956c4c5c9979e11262b266ca1d9933887748",
+      "bytes": 1030
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_PLAYBOOK_EXAMPLES.md",
+      "sha256": "a724056b741dd9679032d065801a6be9cb0dcd3f9ebcd02b438b5c2cabb976ae",
+      "bytes": 1507
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_PLAYBOOK_SCHEMA.yaml",
+      "sha256": "6a109fc9214bed53b5b048bf3c456867a23c73e6304b1ba8a2d2aded34828c3c",
+      "bytes": 2863
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_PROMOTION_GATE_TEMPLATE.yaml",
+      "sha256": "8d8dbf5e4e7db57108c1fc521f036d6b9ad4f5ed5eec8783b4c8e91e0b7eca63",
+      "bytes": 1099
+    },
+    {
+      "path": "dean_os_after_385_strategy_library_playbook_governance_kit/STRATEGY_TO_AGENT_ROLE_MAP.yaml",
+      "sha256": "9fb6607bb1c438c9c2137dc6e7dd9b4fad8d2fb4dba886b9303f863964bfdedc",
+      "bytes": 1377
+    }
+  ]
+}

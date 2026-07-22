@@ -1,0 +1,39 @@
+schema_name: strategy_promotion_gate_template
+version: after_385_v1
+
+strategy_promotion_gate:
+  strategy_id: string
+  from_level: draft | research | replay | paper | shadow | supervised_live
+  to_level: research | replay | paper | shadow | supervised_live | constrained_autonomous_candidate | active
+
+required_artifacts:
+  - strategy_playbook
+  - input_contract
+  - regime_compatibility_matrix
+  - eval_report
+  - risk_policy
+  - decision_lineage_sample
+  - rollback_plan
+  - operator_review_record
+
+required_checks:
+  - all_required_artifacts_present
+  - eval_requirements_passed
+  - risk_limits_defined
+  - forbidden_outputs_zero
+  - model_state_known
+  - capital_policy_defined_if_execution_level
+  - execution_gateway_required_if_live_level
+  - kill_switch_required_if_live_level
+
+decision:
+  status: blocked | review_required | approved
+  reason: string
+  approver: human | governance_board | automated_low_risk_gate
+  valid_until: datetime | null
+
+rules:
+  - no_direct_research_to_live
+  - no_promotion_without_rollback
+  - no_promotion_if_regime_forbidden
+  - no_promotion_if_lineage_missing

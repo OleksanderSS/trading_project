@@ -1,0 +1,40 @@
+change_id: dean_agent_system_vertical_slice_7
+base_options:
+  incremental: vertical_slice_6
+  cumulative: original_dean_os_and_src_snapshots
+scope:
+  - canonical full-system branch topology
+  - existing pipeline stages 0-3 artifact intake
+  - stage-aware pipeline control
+  - accepted-evidence-only downstream boundary
+  - cross-branch system run manifest
+  - full-system CLI
+contracts:
+  - dean_system_topology_v1
+  - dean_system_run_manifest_v1
+  - dean_pipeline_stage03_packet_v1
+branches:
+  - pipeline_stage03_intake
+  - pipeline_control
+  - evidence_intelligence
+  - domain_analysis
+  - world_model
+  - replay_evaluation
+  - governance_review
+  - daily_audit
+invariants:
+  - pipeline stages above 3 are disabled in the stage03 bridge
+  - model and pnl metrics are not applicable in stage03_data_only mode
+  - rejected or suppressed evidence is removed before analytical agents run
+  - domain instances reuse the same orchestrator
+  - all outputs remain review_only
+  - no automatic model promotion or learning-memory write
+verification:
+  compileall: pass
+  pytest: 49_passed
+  full_system_cli_smoke: pass
+known_limits:
+  - inner branch records are projected from the current composite runtime
+  - live saved artifact paths need repository-specific mapping
+  - one domain instance is enabled
+  - no durable distributed scheduler

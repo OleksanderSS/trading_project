@@ -1,0 +1,38 @@
+schema_name: retrieval_eval_template
+version: after_385_v1
+purpose: Evaluate hybrid retrieval quality for analyst and domain-learning tasks.
+
+retrieval_settings_under_test:
+  retrieval_mode: hybrid_bm25_dense
+  initial_top_k: 50
+  rerank_top_k: 12
+  final_context_chunks: 6-10
+  metadata_filters_required:
+    - entity
+    - sector
+    - geography
+    - source_type
+    - source_tier
+    - period_covered
+    - publication_date
+
+metrics:
+  recall_at_50:
+    target: ">= 0.90 for gold evidence included in top 50"
+  rerank_precision_at_12:
+    target: ">= 0.75 relevant chunks in top 12"
+  citation_anchor_accuracy:
+    target: ">= 0.90 correct page/section/table anchors"
+  stale_source_rate:
+    target: "<= 0.05 when fresher official source exists"
+  weak_source_overuse_rate:
+    target: "<= 0.05 for final grounded claims"
+
+failure_modes:
+  - correct_document_not_retrieved
+  - correct_document_retrieved_wrong_section
+  - stale_document_ranked_above_current_source
+  - weak_news_ranked_above_official_filing
+  - entity_alias_confusion
+  - geography_filter_ignored
+  - table_chunk_lost_context

@@ -1,0 +1,75 @@
+schema_name: stress_scenario_schema
+version: after_385_v1
+
+stress_scenario:
+  scenario_id: string
+  version: string
+  title: string
+  description: string
+  category:
+    - macro_shock
+    - policy_shock
+    - credit_liquidity_shock
+    - commodity_energy_shock
+    - geopolitical_shock
+    - technology_narrative_shock
+    - data_quality_shock
+    - model_pipeline_shock
+    - portfolio_risk_shock
+    - execution_gateway_shock
+
+  severity: low | medium | high | extreme
+  time_horizon: intraday | daily | weekly | monthly | quarterly | multi_year
+  affected_regions: list[string]
+  affected_assets: list[string]
+  affected_sectors: list[string]
+  affected_value_chains: list[string]
+
+  injected_conditions:
+    macro_regime_changes: list[string]
+    risk_archetypes: list[string]
+    market_data_changes: list[string]
+    source_data_changes: list[string]
+    policy_or_event_changes: list[string]
+    portfolio_state_changes: list[string]
+    execution_state_changes: list[string]
+
+  expected_system_behavior:
+    analyst_expected:
+      - tag_correct_archetype
+      - flag_uncertainty
+      - create_or_update_hypothesis_token
+      - identify_evidence_gaps
+    pipeline_controller_expected:
+      - detect_drift_or_regime_shift
+      - block_or_warn
+      - require_review
+      - preserve_run_manifest
+    strategy_expected:
+      - check_regime_compatibility
+      - block_if_forbidden_regime
+      - reduce_or_pause_if_caution_regime
+    risk_engine_expected:
+      - enforce_limits
+      - trigger_kill_switch_if_needed
+      - block_risk_increase
+    execution_gateway_expected:
+      - reject_unsafe_order
+      - require_manual_review
+      - preserve_order_lineage
+
+  pass_conditions: list[string]
+  fail_conditions: list[string]
+  required_outputs:
+    - stress_run_manifest
+    - decision_lineage
+    - risk_response_report
+    - review_queue_items
+    - incident_report_if_failed
+    - learning_candidates_if_applicable
+
+forbidden_outputs:
+  - buy_sell_hold
+  - price_target
+  - trade_signal
+  - live_order

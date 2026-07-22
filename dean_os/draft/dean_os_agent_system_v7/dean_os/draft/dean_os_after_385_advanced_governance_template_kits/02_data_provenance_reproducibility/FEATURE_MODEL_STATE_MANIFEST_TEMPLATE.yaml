@@ -1,0 +1,33 @@
+schema_name: feature_model_state_manifest_template
+version: after_385_v1
+
+feature_snapshot:
+  feature_snapshot_id: string
+  created_at: datetime
+  as_of_timestamp: datetime
+  source_manifest_id: string
+  feature_builder_versions: list[string]
+  features:
+    - feature_name: string
+      source_ids: list[string]
+      transformation_hash: string
+      period: string
+      frequency: string
+      leakage_checked: boolean
+
+model_state:
+  model_state_id: string
+  model_id: string
+  model_version: string
+  trained_at: datetime
+  training_data_as_of: datetime
+  feature_snapshot_id: string
+  hyperparameters_hash: string
+  metrics_snapshot_id: string
+  promotion_status: research | replay | paper | shadow | supervised_live | constrained_autonomous | blocked
+  rollback_model_id: string | null
+
+rules:
+  - no_model_promotion_without_feature_snapshot
+  - no_replay_without_as_of_manifest
+  - no_execution_without_model_state_manifest

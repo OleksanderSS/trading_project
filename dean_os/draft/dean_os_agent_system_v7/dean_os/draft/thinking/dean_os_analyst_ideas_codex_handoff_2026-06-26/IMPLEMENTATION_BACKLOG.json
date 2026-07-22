@@ -1,0 +1,47 @@
+{
+  "name": "dean_os_analyst_enrichment_backlog",
+  "date": "2026-06-26",
+  "priority_0_mapping": [
+    "Inspect existing Analyst Branch contracts",
+    "Map current outputs to proposed enrichment fields",
+    "Identify smallest safe integration points"
+  ],
+  "priority_1_schemas": [
+    "RegimeContextVector",
+    "ScenarioOutcomeGraph",
+    "EvidenceGap",
+    "HypothesisLedgerEntry",
+    "HistoricalOutcomeCheck",
+    "DomainAnalystReportExtension"
+  ],
+  "priority_2_validators": [
+    "as_of_date_required",
+    "no_lookahead_guard",
+    "allowed_taxonomy_values",
+    "scenario_probability_mass_check",
+    "scenario_graph_acyclic_check",
+    "explicit_evidence_gaps",
+    "review_only_no_trading_outputs"
+  ],
+  "priority_3_report_sections": [
+    "Regime Snapshot",
+    "News vs Regime",
+    "Expectation Gap",
+    "Scenario Outcome Graph",
+    "Historical Analog Candidates",
+    "Evidence Gaps",
+    "Self-Check Horizons",
+    "DEAN-OS Journal Notes"
+  ],
+  "parking_lot_modules": [
+    "ChipflationTransmissionLens",
+    "AICycleDecomposer",
+    "PowerBottleneckMapper",
+    "StrategicSupplyChainWeaponizationLens",
+    "SafeHavenDivergenceClassifier",
+    "MarketAlreadyPricedDetector",
+    "EvidenceGapPrioritizer",
+    "HistoricalOutcomeMemory"
+  ],
+  "missing_files_not_included": []
+}

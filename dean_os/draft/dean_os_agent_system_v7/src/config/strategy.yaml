@@ -1,0 +1,66 @@
+# strategy.yaml
+
+thresholds:
+  forecast:
+    bullish: 0.01
+    bearish: -0.01
+  rsi:
+    oversold: 30
+    overbought: 70
+  sentiment:
+    positive: 0.2
+    negative: -0.2
+
+# ... (existing sections) ...
+
+# --- New Section for Defining Market Phase ---
+market_phase_definition:
+  # Defines the indicators used to determine the phase.
+  # These names should match the output of the feature engineering stage.
+  indicators:
+    price: "close"
+    short_term_ma: "SMA_50"
+    long_term_ma: "SMA_200"
+
+  # Defines the rules for each phase, evaluated in order.
+  rules:
+    - phase: "bull"
+      condition: "price > short_term_ma and short_term_ma > long_term_ma"
+    - phase: "bear"
+      condition: "price < short_term_ma and short_term_ma < long_term_ma"
+    - phase: "neutral" # Default fallback
+      condition: "True"
+
+# --- New Section for Adjusting Predictions based on Context ---
+context_prediction_adjustment:
+  # Weights for different context features when adjusting predictions
+  weights:
+    market_phase: 0.3
+    trend_alignment: 0.25
+    macro_bias: 0.2
+  
+  # Multipliers to apply based on the value of the context feature
+  multipliers:
+    market_phase:
+      bull: 1.1
+      bear: 0.9
+      neutral: 1.0
+      unknown: 1.0
+
+# --- Backtesting Settings ---
+backtesting:
+  initial_capital: 100000.0
+  minimum_trade_value: 100.0
+  transaction_costs:
+    commission_pct: 0.001
+    spread_pct: 0.0005
+    slippage_pct: 0.0002
+  market_impact:
+    sqrt_coefficient: 0.0001
+    volatility_factor: 0.5
+
+# --- Risk Management Settings ---
+risk_management:
+  max_position_size_pct: 0.15
+  stop_loss_pct: 0.10
+  take_profit_pct: 0.20

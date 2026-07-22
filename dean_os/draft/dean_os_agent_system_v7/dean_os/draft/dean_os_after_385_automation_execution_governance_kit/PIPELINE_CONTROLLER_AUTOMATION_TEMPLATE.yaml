@@ -1,0 +1,34 @@
+schema_name: pipeline_controller_automation_template
+version: after_385_v1
+
+pipeline_controller_checks:
+  - data_quality
+  - freshness
+  - temporal_leakage
+  - target_leakage
+  - timeframe_alignment
+  - feature_drift
+  - train_test_split
+  - walk_forward_validation
+  - champion_challenger_comparison
+  - pnl_stability
+  - drawdown
+  - volatility_regime
+  - liquidity_stress
+  - analyst_pipeline_disagreement
+
+allowed_actions:
+  - health_report
+  - block_model_promotion
+  - mark_model_stale
+  - request_replay
+  - request_paper_test
+  - create_review_queue_item
+
+forbidden_without_gate:
+  - live_model_promotion
+  - production_config_mutation
+  - broker_order
+  - risk_engine_bypass
+
+rule: "Controller can block/propose/escalate to review; it cannot silently increase autonomy."

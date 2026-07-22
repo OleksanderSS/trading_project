@@ -1,0 +1,219 @@
+domain_id: semiconductor_ai_infrastructure
+display_name: Semiconductor and AI Infrastructure
+sector_label: semiconductor
+macro_evidence_type: macro_context
+description: >-
+  Reviews the semiconductor value chain and AI-infrastructure cycle across
+  design, foundry, memory, advanced packaging, equipment, power constraints,
+  policy, geopolitics, end demand, and market expectations. The profile is
+  review-only and separates sector evidence from ticker-specific evidence.
+horizon_days_default: 180
+allowed_horizons: [1, 5, 20, 30, 60, 90, 120, 180, 365]
+core_questions:
+  - Is end demand broadening beyond concentrated AI accelerator demand?
+  - Where are the active supply bottlenecks across foundry, HBM, packaging, equipment, power, and logistics?
+  - Are capex commitments supported by utilization, orders, pricing, and customer economics?
+  - How do export controls, subsidies, Taiwan risk, and industrial policy change capacity and market access?
+  - What is already priced into sector and ticker valuations versus what changed fundamentally?
+  - Which transmission channels connect the semiconductor cycle to power, industrials, logistics, cloud, and consumer electronics?
+required_evidence_types:
+  - demand
+  - supply
+  - capex_cycle
+  - policy_or_geopolitical
+  - market_confirmation
+useful_evidence_types:
+  - macro_context
+  - inventories
+  - pricing
+  - utilization
+  - lead_times
+  - earnings_guidance
+  - valuation_context
+  - relative_strength
+  - power_capacity
+  - logistics_constraints
+  - customer_concentration
+evidence_keywords:
+  demand:
+    - ai accelerator demand
+    - data center demand
+    - hyperscaler capex
+    - bookings
+    - order growth
+    - consumer electronics recovery
+    - automotive semiconductor demand
+    - industrial semiconductor demand
+  supply:
+    - capacity constraint
+    - supply shortage
+    - wafer capacity
+    - foundry capacity
+    - hbm supply
+    - advanced packaging
+    - cowos
+    - lead time
+    - yield improvement
+  capex_cycle:
+    - semiconductor capex
+    - fab construction
+    - equipment orders
+    - capacity expansion
+    - capital expenditure
+    - utilization rate
+    - lithography orders
+  policy_or_geopolitical:
+    - export control
+    - chips act
+    - semiconductor subsidy
+    - taiwan risk
+    - china restriction
+    - industrial policy
+    - sanctions
+  market_confirmation:
+    - relative strength
+    - valuation multiple
+    - earnings revision
+    - guidance raise
+    - guidance cut
+    - price target
+    - market share
+  macro_context:
+    - interest rates
+    - inflation
+    - recession
+    - credit conditions
+    - dollar strength
+  power_capacity:
+    - data center power
+    - electricity capacity
+    - grid constraint
+  logistics_constraints:
+    - shipping disruption
+    - air freight
+    - port congestion
+sector_keywords:
+  - semiconductor
+  - chip
+  - gpu
+  - accelerator
+  - foundry
+  - wafer
+  - fab
+  - hbm
+  - dram
+  - nand
+  - memory
+  - advanced packaging
+  - cowos
+  - lithography
+  - semiconductor equipment
+  - data center
+  - hyperscaler
+  - ai infrastructure
+  - export control
+  - chips act
+adjacent_sectors:
+  - Cloud and hyperscale infrastructure
+  - Power and electricity infrastructure
+  - Data-center construction and cooling
+  - Industrial automation and capital goods
+  - Electronics manufacturing and logistics
+  - Automotive and industrial electronics
+ticker_universe_hint:
+  - NVDA
+  - AMD
+  - INTC
+  - TSM
+  - ASML
+  - AMAT
+  - LRCX
+  - KLAC
+  - MU
+  - AVGO
+contradiction_rules:
+  - Strong AI demand does not prove broad semiconductor-cycle strength when consumer, auto, or industrial demand remains weak.
+  - Announced capex is not realized capacity; separate authorization, construction, qualification, utilization, and economic output.
+  - Market outperformance without source-bound operating evidence is market confirmation only, not fundamental proof.
+  - Supply tightness can be bullish for upstream pricing but bearish for downstream volumes and customer margins.
+  - Policy subsidies can improve domestic capacity while increasing duplication, cost, and geopolitical fragmentation.
+  - A sector thesis cannot be promoted to a ticker thesis without company-specific evidence and exact-context market data.
+direct_ticker_evidence_rules:
+  - Require company-specific filings, guidance, orders, margins, capacity, or customer evidence.
+  - Require exact ticker, timeframe, target, and context fingerprint for pipeline model evidence.
+  - Keep annual and quarterly observations separate unless a reviewed transformation makes them comparable.
+  - Do not infer ticker direction from sector evidence alone.
+blocked_if_missing:
+  - No timezone-aware as_of or point-in-time provenance.
+  - No source-bound demand or supply evidence.
+  - Policy or geopolitical claims rely only on weak or unattributed sources.
+  - Market confirmation is used as a substitute for fundamental evidence.
+  - Contradicting evidence or expectation gaps are not represented.
+  - Historical analog retrieval uses information unavailable at the decision cutoff.
+version: 1.0.0
+source_registry_policy:
+  policy_id: semiconductor_source_registry_policy_v2
+  default_tier: unknown
+  source_tiers:
+    tier_1_core_evidence:
+      - official_company_release
+      - nvidia newsroom
+      - amd newsroom
+      - intel newsroom
+      - tsmc
+      - u.s. department of commerce
+      - bis
+      - sec
+      - federal reserve
+    tier_2_strong_context:
+      - reuters
+      - bloomberg
+      - financial times
+      - the wall street journal
+      - wall street journal
+      - company earnings transcript
+      - industry association
+    tier_3_event_context:
+      - cnbc
+      - yahoo finance
+      - marketwatch
+      - ee times
+      - tom's hardware
+      - the verge
+      - techcrunch
+    tier_4_weak_or_unverified:
+      - seeking alpha
+      - stocktwits
+      - zerohedge
+      - tipranks
+      - marketbeat
+  minimum_source_rules:
+    material_event_claim:
+      min_sources: 2
+      allow_single_source_if:
+        - company_press_release
+        - regulator_announcement
+        - official_government_notice
+  weak_source_policy: Weak sources may create lead-generation and evidence-gap tasks only.
+coverage_gate:
+  - coverage_id: demand
+    label: Semiconductor demand
+    aliases: [demand]
+  - coverage_id: supply
+    label: Supply and capacity
+    aliases: [supply]
+  - coverage_id: capex_cycle
+    label: Capex and manufacturing investment
+    aliases: [capex_cycle, capex]
+  - coverage_id: policy_or_geopolitical
+    label: Policy and geopolitics
+    aliases: [policy_or_geopolitical, policy_geopolitics]
+  - coverage_id: market_confirmation
+    label: Market confirmation
+    aliases: [market_confirmation]
+  - coverage_id: power_capacity
+    label: Power and data-center infrastructure
+    aliases: [power_capacity, power]
+  - coverage_id: logistics_constraints
+    label: Electronics manufacturing logistics
+    aliases: [logistics_constraints, logistics]

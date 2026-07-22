@@ -1,0 +1,44 @@
+{
+  "schema_name": "news_event_interpretation_schema_template",
+  "version": "after_385_v2",
+  "purpose": "Represent a news item as an analyst-reviewable event interpretation rather than a sentiment-only signal.",
+  "event_packet": {
+    "event_id": "string",
+    "source_id": "string",
+    "source_type": "news | company_release | regulator | trade_press | government | industry_body",
+    "trust_tier": "tier_1 | tier_2 | tier_3 | tier_4",
+    "published_at": "datetime",
+    "event_date": "datetime | null",
+    "title": "string",
+    "summary": "string",
+    "entities": ["string"],
+    "sectors": ["string"],
+    "geography": ["string"],
+    "event_type": "policy_subsidy | demand_driver | supply_disruption | capex_signal | rate_policy | tariff | sanctions | capacity_change | regulation | other",
+    "directness": "direct | indirect | contextual",
+    "sentiment": {
+      "label": "positive | neutral | negative | mixed | unknown",
+      "confidence": 0.0,
+      "note": "Sentiment is not sufficient for analytical conclusion."
+    },
+    "candidate_causal_patterns": ["string"],
+    "mechanism_summary": "string",
+    "intermediate_variables": ["string"],
+    "counterforces": ["string"],
+    "evidence_gaps": ["string"],
+    "next_collection_tasks": ["string"],
+    "materiality_score": 0.0,
+    "materiality_label": "ignore | archive | watchlist_low | watchlist_medium | watchlist_high | review_required",
+    "confidence_score": 0.0,
+    "time_horizon": "immediate | 3_6_months | 1_2_years | 3_5_years | structural_long_term | unclear",
+    "allowed_output": "hypothesis_for_review",
+    "forbidden_outputs": [
+      "buy_sell_hold",
+      "price_target",
+      "trade_signal",
+      "autonomous_portfolio_action",
+      "broker_order",
+      "production_config_mutation"
+    ]
+  }
+}

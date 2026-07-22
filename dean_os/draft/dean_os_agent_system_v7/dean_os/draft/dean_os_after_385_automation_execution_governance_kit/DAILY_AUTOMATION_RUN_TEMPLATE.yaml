@@ -1,0 +1,31 @@
+schema_name: daily_automation_run_template
+version: after_385_v1
+mode: review_only_initial
+
+daily_run:
+  run_id: string
+  run_date: date
+  autonomy_level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+
+  steps:
+    - collect_sources
+    - save_raw_sources
+    - compute_source_hashes
+    - deduplicate
+    - normalize_metadata
+    - create_normalized_event_packets
+    - run_source_quality_checks
+    - route_to_analysts
+    - update_hypothesis_tokens
+    - create_evidence_gaps
+    - generate_daily_digest
+    - write_audit_log
+    - create_review_queue_items
+
+  hard_forbidden_until_later_gates:
+    - broker_order
+    - live_execution
+    - buy_sell_hold
+    - price_target
+    - direct_llm_order
+    - production_config_mutation

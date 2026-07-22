@@ -1,0 +1,37 @@
+Use `dean_os_after_385_domain_learning_template_kit.zip` as a non-numbered practical template kit for domain learning in DEAN-OS.
+
+Do not treat it as production code or a blind merge patch. Harvest and adapt useful templates into the current repo.
+
+Primary goal: support domain-configurable Analyst Branch behavior, starting with heavy industry.
+
+Prioritize:
+
+- sector profile schema
+- source registry and trust tiers
+- ingestion metadata filters
+- unit/date/entity normalization rules
+- hybrid RAG settings
+- evidence scoring thresholds
+- evaluation pack templates
+- human feedback schema
+- optional fine-tuning dataset schema only after reviewed examples exist
+
+Preserve constraints:
+
+- no autonomous trading
+- no buy/sell/hold
+- no price target
+- no broker/order routing
+- no uncited numeric claims
+- no live fetch in tests unless explicitly configured
+- no weak source as final conclusion
+- no production config mutation without review
+
+Use this kit together with `dean_os_after_385_full_context_bundle.zip` and `dean_os_after_385_codex_integration_kit.zip`.
+
+
+Additional v2 guidance:
+Use the news collector and causal pattern templates as part of the domain-learning layer.
+Do not reduce news processing to sentiment. Route normalized news/event packets to domain analysts
+for causal pattern reasoning, indirect mechanism analysis, evidence-gap generation, materiality
+watchlist scoring, and human-review queue creation. Keep automation data-accumulation/review-only.

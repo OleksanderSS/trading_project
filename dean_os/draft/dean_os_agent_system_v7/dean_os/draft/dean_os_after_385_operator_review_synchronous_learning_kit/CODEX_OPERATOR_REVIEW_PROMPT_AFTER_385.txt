@@ -1,0 +1,15 @@
+Use `dean_os_after_385_operator_review_synchronous_learning_kit.zip` as a non-numbered practical design kit.
+
+Do not blind-merge. Harvest/adapt useful schemas and workflow notes.
+
+Goal:
+Implement a review workflow where the user/operator receives a report while the agent continues structured analysis.
+The operator can correct fields, add evidence, mark errors, and the system turns those corrections into learning/eval candidates.
+
+Important:
+- Review is synchronous co-analysis, not only approve/reject.
+- Preserve original agent output and corrected operator output side-by-side.
+- Turn repeated corrections into eval/regression tests.
+- Pattern memory promotion requires approval.
+- Operator console is not a trading terminal in early stages.
+- LLM/Analyst never sends orders.

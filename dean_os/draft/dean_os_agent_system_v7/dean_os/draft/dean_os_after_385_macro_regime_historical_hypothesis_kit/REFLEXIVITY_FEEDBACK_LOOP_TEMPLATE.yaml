@@ -1,0 +1,22 @@
+schema_name: reflexivity_feedback_loop_template
+version: after_385_v2
+purpose: >
+  Represent Soros-style reflexivity: expectations and positioning can change behavior, prices,
+  financing conditions, negotiations, policy responses, and therefore outcomes.
+
+reflexivity_assessment:
+  event_hypothesis_token_id: string
+  public_visibility: low | medium | high
+  ambiguity: low | medium | high
+  positioning_sensitivity: low | medium | high
+  reflexivity_risk: low | medium | high
+  feedback_nodes: [market_expectation, positioning, hedging_behavior, funding_conditions, actor_behavior_change, policy_response, negotiation_pressure, media_narrative, price_action]
+  confidence_adjustment:
+    rule: "If reflexivity risk is high, reduce scenario confidence or widen probabilities."
+    adjustment: reduce_confidence | widen_scenarios | require_human_review
+rules:
+  - forecasts_can_change_behavior
+  - public_ambiguous_events_need_lower_confidence
+  - positioning_can_amplify_or_reverse_mechanisms
+  - reflexive_events_require_more_frequent_updates
+forbidden_outputs: [deterministic_prediction, trade_signal, broker_order]

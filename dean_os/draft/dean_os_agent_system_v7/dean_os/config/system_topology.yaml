@@ -1,0 +1,201 @@
+schema_version: dean_system_topology_v1
+topology_id: dean_agent_system_full_skeleton_v1
+root_orchestrator: dean_os.full_system_orchestrator:DEANAgentSystemOrchestrator
+branches:
+  - branch_id: pipeline_stage03_intake
+    title: Pipeline stages 0-3 artifact intake
+    plane: data_plane
+    parent_branch: pipeline
+    depends_on: []
+    required: false
+    enabled: true
+    execution_mode: sequential
+    input_contracts:
+      - Pipeline stages 0-3 result or saved artifact bundle
+    output_contracts:
+      - PipelineStage03Packet
+      - MarketContext enrichment
+    allowed_actions:
+      - read_existing_stage_0_3_outputs
+      - normalize_saved_news
+      - attach_pipeline_artifact_references
+    forbidden_actions:
+      - run_stage_4_or_later
+      - live_order
+      - mutate_source_artifacts
+
+  - branch_id: pipeline_control
+    title: Pipeline control and guardrails
+    plane: control_plane
+    parent_branch: pipeline
+    depends_on: [pipeline_stage03_intake]
+    required: true
+    enabled: true
+    execution_mode: sequential
+    input_contracts:
+      - PipelineStage03Packet
+      - PipelineMetricSnapshot
+      - MarketContext
+    output_contracts:
+      - PipelineReport
+      - PipelineExecutionPolicy
+      - ParameterChangeProposal
+    allowed_actions:
+      - inspect_pipeline_outputs
+      - block_downstream_use
+      - propose_bounded_changes
+      - request_replay_or_retraining
+    forbidden_actions:
+      - ungated_config_write
+      - model_promotion
+      - live_order
+
+  - branch_id: evidence_intelligence
+    title: Evidence credibility, deduplication, and provenance
+    plane: data_plane
+    parent_branch: analytical
+    depends_on: [pipeline_stage03_intake]
+    required: true
+    enabled: true
+    execution_mode: sequential
+    input_contracts:
+      - NewsEvidencePacket
+      - ResearchDocument
+      - ManualEvidencePayload
+    output_contracts:
+      - EvidenceAcquisitionRunManifest
+      - CatalogEvidenceRecord
+      - EvidenceDedupResult
+    allowed_actions:
+      - validate_point_in_time
+      - suppress_duplicates
+      - score_source_credibility
+      - catalog_evidence
+    forbidden_actions:
+      - infer_truth_from_credibility_only
+      - use_future_evidence
+      - write_learning_memory
+
+  - branch_id: domain_analysis
+    title: Domain analyst branch
+    plane: analysis_plane
+    parent_branch: analytical
+    depends_on: [pipeline_control, evidence_intelligence]
+    required: true
+    enabled: true
+    execution_mode: parallel
+    input_contracts:
+      - AcceptedEvidenceSet
+      - PipelineStage03Packet
+      - DomainProfile
+    output_contracts:
+      - AnalyticalReport
+      - HypothesisLedger
+      - TransmissionMap
+      - EvidenceGapSet
+    allowed_actions:
+      - interpret_news
+      - map_transmission_channels
+      - propose_hypotheses
+      - identify_evidence_gaps
+    forbidden_actions:
+      - direct_trade_execution
+      - autonomous_model_promotion
+      - unsupported_probability_claim
+
+  - branch_id: world_model
+    title: Context, indicators, scenarios, and immutable world state
+    plane: analysis_plane
+    parent_branch: analytical
+    depends_on: [domain_analysis]
+    required: true
+    enabled: true
+    execution_mode: sequential
+    input_contracts:
+      - AnalyticalReport
+      - ContextGrid
+      - IndicatorStateGrid
+      - HistoricalWorldStateAnalogs
+    output_contracts:
+      - ScenarioOutcomeGraph
+      - WorldStateSnapshot
+    allowed_actions:
+      - update_context_grid
+      - update_indicator_grid
+      - build_scenario_graph
+      - append_world_state_snapshot
+    forbidden_actions:
+      - rewrite_history
+      - use_post_cutoff_evidence
+      - auto_calibrate_probabilities
+
+  - branch_id: replay_evaluation
+    title: Replay, outcomes, and calibration proposals
+    plane: evaluation_plane
+    parent_branch: analytical
+    depends_on: [world_model]
+    required: false
+    enabled: true
+    execution_mode: sequential
+    input_contracts:
+      - WorldStateSnapshot
+      - ScenarioOutcomeGraph
+      - PriorReplayTasks
+    output_contracts:
+      - ReplayScheduleItem
+      - WorldStateOutcomeSnapshot
+      - CalibrationProposal
+    allowed_actions:
+      - schedule_fixed_horizon_replay
+      - score_due_outcomes
+      - propose_calibration
+    forbidden_actions:
+      - automatic_learning_promotion
+      - retrospective_evidence_leakage
+
+  - branch_id: governance_review
+    title: Operator review and authority gates
+    plane: review_plane
+    parent_branch: governance
+    depends_on: [pipeline_control, world_model, replay_evaluation]
+    required: true
+    enabled: true
+    execution_mode: sequential
+    input_contracts:
+      - DailyBriefing
+      - EvidenceGapPlan
+      - ReplayScheduleItem
+    output_contracts:
+      - ReviewInboxItem
+      - HumanReviewRecord
+      - AuthorityDecision
+    allowed_actions:
+      - create_review_items
+      - record_hash_bound_decisions
+      - block_promotion
+    forbidden_actions:
+      - approve_changed_artifact_by_old_hash
+      - bypass_human_review
+      - live_order
+
+  - branch_id: daily_audit
+    title: Cross-branch immutable daily audit
+    plane: review_plane
+    parent_branch: governance
+    depends_on: [governance_review]
+    required: true
+    enabled: true
+    execution_mode: sequential
+    input_contracts:
+      - All branch outputs
+    output_contracts:
+      - DailyRunRecord
+      - SystemRunManifest
+      - DailyBriefing artifacts
+    allowed_actions:
+      - link_cross_artifact_hashes
+      - append_audit_record
+      - render_review_artifacts
+    forbidden_actions:
+      - mutate_prior_run_record
+      - omit_required_branch_failure

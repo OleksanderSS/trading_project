@@ -1,0 +1,17 @@
+{
+  "kit_name": "dean_os_after_385_automation_execution_governance_kit",
+  "version": "after_385_v2",
+  "source_zip_used": "/mnt/data/dean_os_after_385_automation_execution_governance_kit.zip",
+  "created_at_utc": "2026-06-21T13:15:26+00:00",
+  "checks": {
+    "required_v2_files_present": true,
+    "pipeline_controller_daily_run_governor_present": true,
+    "collector_health_manifest_present": true,
+    "boundary_note_present": true,
+    "non_numbered_practical_kit": true,
+    "review_only_templates": true,
+    "production_code_created": false,
+    "llm_direct_order_forbidden": true,
+    "broker_order_forbidden_before_gates": true
+  }
+}

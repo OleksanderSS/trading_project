@@ -1,0 +1,140 @@
+{
+  "name": "pipeline_control_and_domain_analyst_branches",
+  "version": "2026-06-24",
+  "purpose": "Clarify DEAN-OS architecture: data/ML pipeline trains and compares; pipeline controller agent tunes within guardrails; separate domain analyst agents perform deep qualitative analysis.",
+  "branches": {
+    "data_ml_pipeline_branch": {
+      "responsibilities": [
+        "parse",
+        "normalize",
+        "enrich",
+        "build_features",
+        "build_datasets",
+        "train_models",
+        "compare_model_runs",
+        "backtest_replay",
+        "calculate_metrics"
+      ],
+      "outputs": [
+        "FeatureDataset",
+        "NewsEvidencePacket",
+        "MarketFeatureSnapshot",
+        "MacroSnapshot",
+        "TrainingRunReport",
+        "BacktestReport",
+        "ModelComparisonReport",
+        "DataQualityReport"
+      ]
+    },
+    "pipeline_controller_agent_branch": {
+      "responsibilities": [
+        "read_pipeline_reports",
+        "detect_degradation",
+        "propose_parameter_changes",
+        "adjust_allowed_config_values_through_gates",
+        "request_retraining_or_replay",
+        "flag_data_quality_problems",
+        "compare_train_test_behavior",
+        "prevent_overfitting_and_leakage"
+      ],
+      "allowed_tuning": [
+        "train_test_split_ratio_within_range",
+        "walk_forward_window_length_within_range",
+        "feature_inclusion_exclusion_proposals",
+        "hyperparameter_ranges",
+        "data_quality_thresholds",
+        "source_quality_thresholds",
+        "retraining_cadence",
+        "paper_replay_experiment_selection",
+        "risk_metric_thresholds"
+      ]
+    },
+    "domain_analyst_agent_branch": {
+      "analysts": [
+        "MacroAnalyst",
+        "EnergyAnalyst",
+        "MetalsIndustrialAnalyst",
+        "FoodAgricultureAnalyst",
+        "DefenseGeopoliticsAnalyst",
+        "SemiconductorAIInfrastructureAnalyst",
+        "FinancialsCreditAnalyst",
+        "ConsumerRetailAnalyst",
+        "HealthcareBiotechAnalyst",
+        "LogisticsShippingAnalyst"
+      ],
+      "responsibilities": [
+        "news_interpretation",
+        "event_classification",
+        "regime_interaction",
+        "historical_analog_search",
+        "transmission_channel_mapping",
+        "expectation_gap_analysis",
+        "scenario_outcome_graph",
+        "evidence_gap_prioritization",
+        "contradiction_matrix_update",
+        "hypothesis_ledger_update",
+        "watch_signals",
+        "human_review_packet"
+      ]
+    }
+  },
+  "planes": [
+    "data_plane",
+    "control_plane",
+    "analysis_plane",
+    "evaluation_plane",
+    "review_plane"
+  ],
+  "key_packets": [
+    "PipelineMetricPacket",
+    "ParameterChangeProposal",
+    "GuardrailValidationReport",
+    "DomainAnalystReport",
+    "AnalystSynthesisPacket"
+  ],
+  "guardrail_metrics": [
+    "PnL",
+    "Sharpe",
+    "Sortino",
+    "max_drawdown",
+    "win_rate",
+    "profit_factor",
+    "train_test_gap",
+    "walk_forward_stability",
+    "out_of_sample_degradation",
+    "transaction_costs",
+    "slippage",
+    "missing_values",
+    "timestamp_integrity",
+    "source_quality",
+    "feature_drift",
+    "no_lookahead_violations",
+    "target_leakage",
+    "confidence_calibration",
+    "regime_specific_performance"
+  ],
+  "integration_rule": "Domain analysts may propose new variables/features; pipeline controller checks feasibility, data quality, leakage risk, and out-of-sample value before guarded pipeline integration.",
+  "authority_boundary": {
+    "allowed": [
+      "pipeline_metric_review",
+      "parameter_change_proposals",
+      "guardrail_checks",
+      "paper_replay_experiments",
+      "domain_analyst_reports",
+      "scenario_probabilities",
+      "feature_proposals",
+      "human_review_packets",
+      "calibration_notes"
+    ],
+    "forbidden": [
+      "live_order",
+      "direct_buy_sell_hold_recommendation",
+      "position_sizing",
+      "broker_routing",
+      "autonomous_execution",
+      "ungated_production_config_write",
+      "model_promotion_without_gates",
+      "unbounded_self_modification"
+    ]
+  }
+}

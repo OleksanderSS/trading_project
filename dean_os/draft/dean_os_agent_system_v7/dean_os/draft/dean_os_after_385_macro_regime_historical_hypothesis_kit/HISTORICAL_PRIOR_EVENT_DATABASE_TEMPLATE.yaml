@@ -1,0 +1,49 @@
+schema_name: historical_prior_event_database_template
+version: after_385_v2
+purpose: >
+  Define how scenario probabilities should be grounded. LLMs may describe branches,
+  but probabilities should come from historical base rates, market-implied data, or reviewed priors.
+
+event_database:
+  event_database_id: string
+  version: string
+  event_classes: [rate_shock, fiscal_stimulus, industrial_policy, oil_shock, war_or_sanctions, banking_crisis, tariff_or_trade_policy, technology_capex_wave, pandemic_or_shutdown, supply_chain_disruption]
+  historical_event_record:
+    event_id: string
+    event_class: string
+    period: string
+    geography: string
+    macro_regime_snapshot_id: string
+    initial_conditions:
+      growth: string
+      inflation: string
+      rates: string
+      credit_conditions: string
+      valuation_context: string
+      geopolitical_context: string
+    outcomes:
+      - outcome_label: string
+        time_horizon: string
+        observed: boolean
+        metric_refs: list[string]
+    quality:
+      data_quality: low | medium | high
+      analog_quality: low | medium | high
+      notes: string
+probability_assignment:
+  probability_source:
+    type: historical_base_rate | market_implied | analyst_reviewed_prior | hybrid | unknown
+    event_database_query_id: string
+    analog_sample_size: integer
+    analog_quality_score: 0.0
+    market_implied_source: string
+    analyst_review_required: true
+  llm_probability_policy:
+    llm_probability_allowed_as_final: false
+    allowed_use: [describe_branches, suggest_mechanisms, list_counterforces, identify_evidence_gaps]
+    forbidden_use: [final_probability_without_base_rate_or_review, fake_precision]
+rules:
+  - initial_probabilities_should_not_come_from_llm_alone
+  - use_base_rates_when_analog_sample_exists
+  - use_market_implied_data_when_available
+  - use_human_review_for_low_sample_or_regime_changing_events

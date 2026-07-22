@@ -1,0 +1,37 @@
+{
+  "schema_name": "evidence_gap_schema_template",
+  "version": "after_385_v2",
+  "purpose": "Represent what must be collected before a news-derived hypothesis can become stronger analyst evidence.",
+  "evidence_gap_packet": {
+    "hypothesis_id": "string",
+    "related_event_ids": ["string"],
+    "domain": "string",
+    "sector_profile": "string",
+    "hypothesis": "string",
+    "missing_evidence": [
+      {
+        "gap_id": "string",
+        "gap_type": "policy_text | company_disclosure | industry_statistics | pricing_data | capacity_data | demand_data | macro_series | counterevidence",
+        "description": "string",
+        "priority": "low | medium | high",
+        "suggested_sources": ["string"],
+        "required_for_materiality_upgrade": true
+      }
+    ],
+    "next_collection_tasks": [
+      {
+        "task_id": "string",
+        "task_type": "fetch_document | search_filings | collect_statistics | monitor_news | request_human_review",
+        "target": "string",
+        "frequency": "once | daily | weekly | monthly",
+        "allowed_mode": "data_accumulation_only"
+      }
+    ],
+    "forbidden_actions": [
+      "trade_signal",
+      "portfolio_action",
+      "broker_order",
+      "production_config_mutation"
+    ]
+  }
+}

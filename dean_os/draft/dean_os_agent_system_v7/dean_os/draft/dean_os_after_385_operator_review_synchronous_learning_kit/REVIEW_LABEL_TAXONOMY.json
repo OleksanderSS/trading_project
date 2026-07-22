@@ -1,0 +1,56 @@
+{
+  "schema_name": "review_label_taxonomy",
+  "version": "after_385_v1",
+  "labels": {
+    "analysis_quality": [
+      "correct",
+      "partially_correct",
+      "wrong_archetype",
+      "wrong_macro_regime",
+      "missed_expectation_gap",
+      "missed_reflexivity",
+      "missed_narrative_crowding",
+      "missed_counterforce",
+      "overclaim",
+      "too_low_confidence",
+      "too_high_confidence",
+      "unsupported_by_sources"
+    ],
+    "data_quality": [
+      "weak_source",
+      "stale_source",
+      "missing_primary_source",
+      "bad_date_metadata",
+      "unit_period_error",
+      "dedupe_error",
+      "retrieval_miss"
+    ],
+    "causal_quality": [
+      "causal_graph_good",
+      "causal_graph_partial",
+      "causal_graph_wrong",
+      "bad_baseline_basket",
+      "contaminated_baseline",
+      "bad_synthetic_control",
+      "wrong_directness_label"
+    ],
+    "pipeline_quality": [
+      "collector_failure",
+      "feature_drift",
+      "model_drift",
+      "leakage_risk",
+      "promotion_block_correct",
+      "promotion_block_missing",
+      "decision_lineage_missing"
+    ],
+    "learning_action": [
+      "create_eval_case",
+      "create_incident",
+      "update_prompt_candidate",
+      "update_pattern_candidate",
+      "update_source_registry",
+      "request_more_evidence",
+      "no_learning_update"
+    ]
+  }
+}

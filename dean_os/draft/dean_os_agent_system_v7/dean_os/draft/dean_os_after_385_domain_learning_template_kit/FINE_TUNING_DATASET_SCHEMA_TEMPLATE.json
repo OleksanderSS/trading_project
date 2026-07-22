@@ -1,0 +1,57 @@
+{
+  "schema_id": "domain_fine_tuning_dataset_schema_template_v1",
+  "status": "staged_template",
+  "use_only_after": [
+    "source_registry_exists",
+    "evidence_store_exists",
+    "eval_pack_exists",
+    "human_review_examples_exist"
+  ],
+  "good_targets": [
+    "document_classification",
+    "stable_json_extraction",
+    "materiality_classification",
+    "lens_routing",
+    "internal_memo_style_consistency"
+  ],
+  "forbidden_targets": [
+    "memorize_current_facts",
+    "replace_rag",
+    "generate_buy_sell_hold",
+    "generate_price_target",
+    "generate_trade_signal",
+    "bypass_human_review"
+  ],
+  "example_record_schema": {
+    "record_id": "string",
+    "task_type": "document_classification | extraction | materiality_classification | routing | style_rewrite",
+    "domain": "heavy_industry",
+    "input": {
+      "text": "string",
+      "metadata": {
+        "source_type": "string",
+        "trust_tier": "string",
+        "entity_id": "string|null",
+        "period_covered": "string|null",
+        "publication_date": "string|null"
+      }
+    },
+    "expected_output": {
+      "json": "object_or_null",
+      "label": "string_or_null",
+      "rationale": "short_source_grounded_rationale"
+    },
+    "quality_controls": {
+      "source_anchor_required": true,
+      "unit_required_for_numeric_claims": true,
+      "period_required_for_numeric_claims": true,
+      "reviewer_approved": false
+    },
+    "forbidden_in_expected_output": [
+      "buy_sell_hold",
+      "price_target",
+      "trade_signal",
+      "uncited_numeric_claim"
+    ]
+  }
+}

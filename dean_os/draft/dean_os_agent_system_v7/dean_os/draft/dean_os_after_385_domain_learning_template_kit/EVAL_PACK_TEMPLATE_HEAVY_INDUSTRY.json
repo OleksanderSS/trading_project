@@ -1,0 +1,105 @@
+{
+  "eval_pack_id": "heavy_industry_eval_pack_template_v1",
+  "status": "staged_template",
+  "purpose": "Evaluate source-grounded heavy-industry analyst behavior before any production use.",
+  "test_categories": [
+    {
+      "category": "source_grounded_numeric_qa",
+      "description": "Verify that numeric answers include correct value, unit, period, entity, and source anchor.",
+      "example_tests": [
+        {
+          "test_id": "numeric_qa_steel_shipments_fy",
+          "question_template": "What were {company}'s steel shipments in {period}?",
+          "required_pass_conditions": [
+            "correct_value",
+            "correct_unit",
+            "correct_period",
+            "correct_entity_scope",
+            "source_anchor_present"
+          ],
+          "fail_if": [
+            "missing_unit",
+            "missing_period",
+            "uses_capacity_as_shipments",
+            "uncited_numeric_claim"
+          ]
+        }
+      ]
+    },
+    {
+      "category": "unit_trap",
+      "description": "Check whether the analyst distinguishes metric tons, short tons, annualized quarterly values, nominal vs real currency, and CO2 vs CO2e.",
+      "example_tests": [
+        {
+          "test_id": "capacity_vs_production_vs_shipments",
+          "question_template": "Compare {company}'s capacity, production, and shipments for {period}.",
+          "fail_if": [
+            "capacity_equals_production",
+            "production_equals_shipments_without_evidence",
+            "missing_unit",
+            "missing_period"
+          ]
+        }
+      ]
+    },
+    {
+      "category": "time_leakage",
+      "description": "Ensure as-of-date analysis does not use later documents or future facts.",
+      "example_tests": [
+        {
+          "test_id": "as_of_date_no_future_filings",
+          "question_template": "Analyze {company} as of {as_of_date} using only information available then.",
+          "required_filters": [
+            "as_of_date",
+            "publication_date_lte_as_of_date"
+          ],
+          "fail_if": [
+            "uses_future_source",
+            "mentions_post_as_of_event"
+          ]
+        }
+      ]
+    },
+    {
+      "category": "source_tier_precedence",
+      "description": "Verify that filings/official statistics override blogs or unsourced commentary when claims conflict.",
+      "example_tests": [
+        {
+          "test_id": "filing_over_blog_conflict",
+          "question_template": "Resolve conflicting claims about {metric} for {company} in {period}.",
+          "required_behavior": [
+            "identify_conflict",
+            "prefer_higher_trust_source",
+            "explain_source_quality",
+            "avoid_false_certainty"
+          ]
+        }
+      ]
+    },
+    {
+      "category": "materiality_classification",
+      "description": "Classify event materiality without generating investment/trading recommendations.",
+      "example_tests": [
+        {
+          "test_id": "tariff_materiality_high",
+          "event_template": "A government imposes a large tariff on imported steel products affecting {geography}.",
+          "expected_materiality": "high",
+          "allowed_output": "source_grounded_event_impact_note",
+          "forbidden_output": [
+            "buy_sell_hold",
+            "price_target",
+            "trade_signal"
+          ]
+        }
+      ]
+    }
+  ],
+  "global_fail_conditions": [
+    "uncited_numeric_claim",
+    "investment_recommendation",
+    "trade_signal",
+    "confuses_capacity_production_shipments",
+    "uses_future_data_in_as_of_analysis",
+    "weak_source_as_final_conclusion"
+  ]
+}

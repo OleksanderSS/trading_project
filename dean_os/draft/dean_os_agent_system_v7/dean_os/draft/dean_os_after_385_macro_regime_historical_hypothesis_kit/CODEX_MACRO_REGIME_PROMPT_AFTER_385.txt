@@ -1,0 +1,34 @@
+Use `dean_os_after_385_macro_regime_historical_hypothesis_kit.zip` as a non-numbered practical design kit for DEAN-OS.
+
+This kit adds the macro regime / historical analog / open hypothesis tracking layer.
+
+Do not blind-merge the files. Harvest/adapt useful schemas and notes into the current project.
+
+Core goals:
+1. Give analysts a long-run macro/historical context from pre-Great Depression/Great Depression through modern regimes.
+2. Allow current major laws/events/news to create open hypothesis tokens.
+3. For each open token, build causal graphs, scenario trees, watch metrics, evidence milestones, and outcome reviews.
+4. Compare expected scenario paths with actual outcomes over time and preserve lessons learned.
+5. Use historical analogs as structured comparison tools, not deterministic predictions.
+
+Hard boundaries:
+- no buy/sell/hold;
+- no price targets;
+- no trade signals;
+- no autonomous trading;
+- no broker/order actions;
+- no exact causality claims without evidence;
+- no blind historical analogy.
+
+Additional v2 guidance:
+Integrate expectation-gap thinking into scenario and outcome review. A news/law/event is not enough;
+compare it with what the market already priced. Add regime-changing event classification, reflexivity
+feedback loops, narrative half-life tracking, EventDatabase-based historical priors, pre-1970 data usage
+boundaries, and validation circularity checks. Do not use LLM-generated probabilities as final priors.
+
+Additional v3 guidance:
+Add risk archetype tagging to avoid naive historical year matching. Constrain analyst outputs to
+structured tags rather than LLM-generated probabilities. Use cross-sectional target/secondary/baseline
+baskets with contamination-risk labels. Add data-frequency alignment for historical vs modern indicators.
+Add leading risk monitors because PnL/train-test metrics are lagging. Add decision-lineage records so
+multi-agent failures are debuggable.

@@ -1,0 +1,77 @@
+{
+  "kit_name": "dean_os_after_385_scenario_stress_testing_kit",
+  "version": "after_385_v1",
+  "created_at_utc": "2026-06-21T14:23:45+00:00",
+  "purpose": "Non-numbered practical Codex-facing templates for system-level scenario stress testing across analyst, macro regime, pipeline controller, strategy, portfolio/risk, execution gateway, and audit/review loops.",
+  "numbered_block": false,
+  "production_code": false,
+  "review_only": true,
+  "codex_usage": "Harvest/adapt useful templates; do not blind-merge.",
+  "files": [
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/CODEX_SCENARIO_STRESS_HARVEST_NOTES.md",
+      "sha256": "a3f6485c24558059e3a73ddf8fb6ef2d1283011e2a8f9bc3cc13399993653c18",
+      "bytes": 1084
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/CODEX_SCENARIO_STRESS_PROMPT_AFTER_385.txt",
+      "sha256": "cea8eb33b32fd9a0c2c4618f416b3a0e9456c4eab3139d1c912bcf97bf18180e",
+      "bytes": 731
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/COMPONENT_STRESS_CHECK_MATRIX.yaml",
+      "sha256": "fc9f581d2d81d18347967ae8828209babac4e1d1e062ad0dc8f67fad40db03b0",
+      "bytes": 1999
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/LOCAL_VERIFICATION_SCENARIO_STRESS_TESTING_KIT.json",
+      "sha256": "fd83f19c66757604f92933220a20845b96c57cb2a4ec9843a0632e29e885c05a",
+      "bytes": 534
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/README_SCENARIO_STRESS_TESTING_KIT.md",
+      "sha256": "02d637c5984d27669ae3a980aa143dcacc4f17d61be82eabbddacf731a94dc9d",
+      "bytes": 1038
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/SCENARIO_STRESS_TESTING_ARCHITECTURE.md",
+      "sha256": "863cd97a1b4c6719783b04d3b643088f47a4d71b4f012333db6ddb3b5820e386",
+      "bytes": 1265
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/STRESS_OUTCOME_REVIEW_TEMPLATE.md",
+      "sha256": "3830f4d682495b495fb95239161dd6bd1c865cdb3302783c7604872b86f3fd8d",
+      "bytes": 1093
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/STRESS_SCENARIO_LIBRARY_SEED.yaml",
+      "sha256": "a12e5614dff9fc3498209bbab960371739175964b31003482e087962f8f06bb9",
+      "bytes": 3688
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/STRESS_SCENARIO_SCHEMA.yaml",
+      "sha256": "5ce4c8f229bdb49a0da2f37f9886b6030a4120408b5501f558997f35194c0f1f",
+      "bytes": 2023
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/STRESS_TEST_EXPECTED_BEHAVIOR_TEMPLATE.yaml",
+      "sha256": "eb678b0c0116426cb425ed80f620a0f07b8e6e09a45098c8bc38f7b64f0ef9cc",
+      "bytes": 870
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/STRESS_TEST_SCHEDULE_TEMPLATE.yaml",
+      "sha256": "9d1262b20932a4f7068109d16732dd097eb53285ee06d49cc0e1f86eeea57fb7",
+      "bytes": 911
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/STRESS_TEST_TO_INCIDENT_POLICY.md",
+      "sha256": "38ecb39202b0912b9059c3eb96c145d557e6f6f45aad87420ddbe8cd74a1861a",
+      "bytes": 1131
+    },
+    {
+      "path": "dean_os_after_385_scenario_stress_testing_kit/SYSTEM_STRESS_RUN_MANIFEST_SCHEMA.json",
+      "sha256": "a7596de0f85eef6f5383912690d4706ab07b562bba3c44a13c0e6f5e8bfdf292",
+      "bytes": 1447
+    }
+  ]
+}

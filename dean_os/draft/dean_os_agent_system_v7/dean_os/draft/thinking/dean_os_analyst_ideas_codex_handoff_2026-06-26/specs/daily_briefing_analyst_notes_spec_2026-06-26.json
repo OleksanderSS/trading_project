@@ -1,0 +1,50 @@
+{
+  "name": "daily_briefing_analyst_notes",
+  "date": "2026-06-26",
+  "purpose": "Capture reusable analyst-system design insights from the daily briefing.",
+  "candidate_modules": [
+    "ChipflationTransmissionLens",
+    "AICycleDecomposer",
+    "PowerBottleneckMapper",
+    "StrategicSupplyChainWeaponizationLens",
+    "SafeHavenDivergenceClassifier",
+    "MarketAlreadyPricedDetector",
+    "EvidenceGapPrioritizer",
+    "ScenarioOutcomeGraphBuilder",
+    "HistoricalOutcomeMemory"
+  ],
+  "domain_analyst_report_extension_fields": [
+    "demand_channel",
+    "cost_channel",
+    "margin_channel",
+    "inflation_channel",
+    "rates_channel",
+    "power_channel",
+    "supply_chain_security_channel",
+    "valuation_expectation_gap"
+  ],
+  "self_check_horizons": [
+    "1d",
+    "5d",
+    "20d",
+    "60d",
+    "120d"
+  ],
+  "review_only_boundary": {
+    "allowed": [
+      "journal note",
+      "candidate module",
+      "schema extension",
+      "review-only report output",
+      "historical outcome check",
+      "feature proposal to pipeline controller"
+    ],
+    "forbidden": [
+      "live trading instruction",
+      "position sizing",
+      "broker routing",
+      "ungated production config change",
+      "unsupported price target"
+    ]
+  }
+}

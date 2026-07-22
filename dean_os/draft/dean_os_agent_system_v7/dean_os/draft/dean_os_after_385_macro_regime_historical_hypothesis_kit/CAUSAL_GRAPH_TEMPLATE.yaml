@@ -1,0 +1,35 @@
+schema_name: causal_graph_template
+version: after_385_v1
+
+causal_graph:
+  graph_id: string
+  event_hypothesis_token_id: string
+
+  nodes:
+    - node_id: string
+      node_type: event | policy_rule | incentive | constraint | actor_response | sector_effect | company_effect | metric | counterforce
+      label: string
+      evidence_status: observed | assumed | pending | contradicted
+      source_ids: list[string]
+
+  edges:
+    - edge_id: string
+      from_node: string
+      to_node: string
+      mechanism: string
+      direction: positive | negative | mixed | unclear
+      lag: immediate | 3_6_months | 1_2_years | 3_5_years | structural_long_term | unknown
+      confidence: low | medium | high
+      evidence_status: observed | assumed | pending | contradicted
+      counterforces: list[string]
+
+  required_review: true
+  forbidden_interpretations:
+    - deterministic_causality_without_evidence
+    - investment_recommendation
+    - trade_signal
+
+v2_reflexivity_node_types:
+  additional_node_types: [market_expectation, positioning, reflexive_feedback, policy_response, actor_behavior_change, media_narrative]
+  additional_edge_types: [causal, expectation_feedback, positioning_pressure, policy_reaction]
+  rule: "For public ambiguous events, include feedback loops where expectations and positioning can alter outcomes."

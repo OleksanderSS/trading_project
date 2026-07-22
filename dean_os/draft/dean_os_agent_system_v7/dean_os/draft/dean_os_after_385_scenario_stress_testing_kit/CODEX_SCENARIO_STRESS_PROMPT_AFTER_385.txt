@@ -1,0 +1,23 @@
+Use `dean_os_after_385_scenario_stress_testing_kit.zip` as a non-numbered practical design kit.
+
+Do not blind-merge. Harvest/adapt useful schemas and notes.
+
+Goal:
+Implement system-level stress tests for DEAN-OS before replay/paper/shadow/supervised/constrained execution.
+
+Stress should test:
+- analyst interpretation;
+- macro regime logic;
+- hypothesis ledger;
+- strategy playbooks;
+- pipeline controller;
+- portfolio governance;
+- risk engine;
+- execution gateway;
+- audit/review/learning loop.
+
+Important:
+- Stress output is not a trading recommendation.
+- Critical failures create incidents and regression tests.
+- Strategy promotion and autonomy escalation require stress checks.
+- Broker/order safety failures are critical.

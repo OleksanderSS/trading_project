@@ -1,0 +1,21 @@
+schema_name: regime_changing_event_template
+version: after_385_v2
+purpose: >
+  Classify events that may alter the macro regime itself, not merely affect one sector.
+
+event_classification:
+  event_id: string
+  event_class: sector_event | policy_event | macro_event | regime_shift_candidate | regime_changing_event
+  regime_shift_assessment:
+    is_regime_shift_candidate: boolean
+    affected_regime_dimensions: [monetary_policy, fiscal_policy, credit_conditions, supply_chains, energy_security, labor_market, geopolitics, trade_policy, technology_capex, inflation_process, regulation]
+    historical_analog_confidence: low | medium | high
+    uncertainty_adjustment: none | widen_scenarios | reduce_confidence | require_human_review
+    reason: string
+  examples: [covid_shock, global_financial_crisis_2008, volcker_disinflation, oil_embargo_1973, wartime_mobilization, full_scale_war_or_sanctions_regime, possible_ai_capex_regime_shift, possible_energy_transition_regime_shift]
+rules:
+  - regime_changing_events_reduce_historical_analog_confidence
+  - regime_changing_events_require_wider_scenario_ranges
+  - do_not_force_old_analog_if_event_creates_new_regime
+  - prefer_uncertainty_over_false_precision
+forbidden_outputs: [deterministic_prediction, buy_sell_hold, price_target, trade_signal]
