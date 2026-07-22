@@ -112,8 +112,15 @@ class PutCallRatioCollector(BaseCollector):
 
             self.logger.info(f"Fetching FREE Put/Call Ratio from {url}")
 
-            async with self.http_client_factory.get_http_client(timeout=self.timeout) as http_client:
-                response = await http_client.get(url)
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5"
+            }
+
+            http_client = await self.http_client_factory.get_http_client(timeout=self.timeout)
+            async with http_client:
+                response = await http_client.get(url, headers=headers)
                 if response.status_code == 404:
                     self.logger.error(f"Put/Call Ratio endpoint not found (404). URL may have changed: {url}")
                     return []

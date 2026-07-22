@@ -153,9 +153,20 @@ class SECFilingsCollector(BaseCollector):
 
         logger.info(f"[SEC] Fetching filings for {len(valid_ciks)} tickers from {start_date.date()}.")
 
-        async with self.http_client_factory.get_http_client() as client:
+        # The SEC has a strict limit of 10 requests per second.
+        # Use a semaphore to limit concurrency and avoid ConnectTimeout / drops.
+        sem = asyncio.Semaphore(5)
+        
+        async def fetch_with_sem(ticker, cik):
+            async with sem:
+                # Add a small delay to further ensure we don't burst past the 10/sec limit
+                await asyncio.sleep(0.2)
+                return await self._fetch_filings_for_cik(ticker, cik, client, start_date)
+
+        client = await self.http_client_factory.get_http_client()
+        async with client:
             tasks = [
-                self._fetch_filings_for_cik(ticker, cik, client, start_date)
+                fetch_with_sem(ticker, cik)
                 for ticker, cik in valid_ciks.items()
             ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -193,7 +204,8 @@ class SECFilingsCollector(BaseCollector):
         start_date: datetime,
     ) -> list[dict[str, Any]]:
         url = self.submissions_url_template.format(cik=cik)
-        headers = {"User-Agent": "Mozilla/5.0"}
+        # SEC EDGAR requires a specific User-Agent format: 'CompanyName ContactEmail'
+        headers = {"User-Agent": "DEAN_OS_Agent research@example.com", "Accept-Encoding": "gzip, deflate"}
 
         try:
             response = await client.get(url, headers=headers)

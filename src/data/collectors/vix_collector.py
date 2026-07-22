@@ -24,7 +24,7 @@ def _configure_yfinance_cache() -> None:
         yf.set_tz_cache_location(str(cache_dir))
     except AttributeError as e:
         logger.debug(f"yfinance does not support set_tz_cache_location: {e}")
-    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+    except (ValueError, TypeError, KeyError, ZeroDivisionError) as e:
         logger.error(f"Failed to set yfinance cache location: {e}", exc_info=True)
 
 class VIXCollector(BaseCollector):
@@ -49,7 +49,7 @@ class VIXCollector(BaseCollector):
 
         self.logger.info(f"VIXCollector initialized. Enabled: {self.enabled}, Period: {self.period}, Interval: {self.interval}")
 
-    def _generate_hash(self, row: pd.Series) -> str:
+    def generate_hash(self, row: pd.Series) -> str:
         """Generates a stable hash for a record."""
         hash_string = "|".join(str(row.get(key, "")) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
@@ -85,7 +85,7 @@ class VIXCollector(BaseCollector):
             df['collected_at'] = datetime.now()
 
             # Generate hashes for deduplication
-            df['record_hash'] = df.apply(self._generate_hash, axis=1)
+            df['record_hash'] = df.apply(self.generate_hash, axis=1)
 
             self.logger.info(f"Successfully fetched {len(df)} VIX records")
             return df
@@ -113,19 +113,30 @@ class VIXCollector(BaseCollector):
 
             # Process historical data
             data = []
-            for date, row in hist.iterrows():
+            for idx, (date, row) in enumerate(hist.iterrows()):
                 vix_close = row['Close']
                 vix_high = row['High']
                 vix_low = row['Low']
                 vix_volume = row['Volume']
 
-                # Calculate volatility regime
-                vix_sma = hist['Close'].rolling(window=20).mean().shift(1).iloc[-1] if len(hist) >= 20 else vix_close
+                # Calculate volatility regime using only historical data up to current row
+                # Use .iloc[:idx+1] to get only data up to current row to avoid lookahead
+                hist_up_to_now = hist.iloc[:idx+1]
+                if len(hist_up_to_now) >= 20:
+                    vix_sma = hist_up_to_now['Close'].rolling(window=20).mean().iloc[-1]
+                else:
+                    vix_sma = vix_close
                 volatility_regime = 'high' if vix_close > vix_sma else 'low'
 
-                # Calculate VIX percentiles
-                vix_percentile_20 = hist['Close'].quantile(0.2)
-                vix_percentile_80 = hist['Close'].quantile(0.8)
+                # Calculate VIX percentiles using only historical data up to current row
+                # This prevents lookahead bias where future data influences historical percentiles
+                if len(hist_up_to_now) >= 20:
+                    vix_percentile_20 = hist_up_to_now['Close'].quantile(0.2)
+                    vix_percentile_80 = hist_up_to_now['Close'].quantile(0.8)
+                else:
+                    # Not enough data for meaningful percentiles, use current value
+                    vix_percentile_20 = vix_close
+                    vix_percentile_80 = vix_close
 
                 # Classify VIX level
                 if vix_close >= 30:

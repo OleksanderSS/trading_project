@@ -28,6 +28,26 @@ class BaseCollector(ABC):
         """Helper to get a configured client from the factory."""
         return self.http_client_factory.get_http_client(**kwargs)
 
+    def get_table_name(self) -> str:
+        """Return the DB table name from config."""
+        return self.configs.get('table_name', f'{self.collector_type}_data')
+
+    def get_hash_keys(self) -> list[str]:
+        """Return hash keys from config."""
+        return self.configs.get('hash_keys', [])
+
+    def get_data_type(self) -> str:
+        """Return data type from config."""
+        return self.configs.get('data_type', self.collector_type)
+
+    def get_cache_ttl(self) -> int:
+        """Return cache TTL from config."""
+        return self.configs.get('cache_ttl', 3600)
+
+    def get_active_tickers(self) -> list[str]:
+        """Return active tickers from config."""
+        return self.configs.get('tickers', [])
+
     @abstractmethod
     async def run(self, tickers: list[str], **kwargs) -> Any | None:
         """Main method to execute the data collection logic."""

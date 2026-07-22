@@ -2,6 +2,7 @@ import asyncio
 import hashlib
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 import pandas as pd
 
@@ -16,13 +17,25 @@ class FredCollector(BaseCollector):
     """Collector for fetching economic data from the Federal Reserve Economic Data (FRED)."""
     collector_type = "fred"
     data_type = "macro_data"
+    runtime_request_contract = {
+        "contract": "fred_bounded_runtime_request_v1",
+        "runtime_series_ids_supported": True,
+        "timezone_aware_as_of_required": True,
+        "fred_vintage_dates_supported": True,
+        "observation_end_cutoff_supported": True,
+        "point_in_time_availability_field": "realtime_start",
+        "maximum_runs_enforced_by_external_gate": True,
+    }
 
     def __init__(self, configs: dict[str, Any], http_client_factory: HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None = None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.timeout = self.configs.get('timeout', 20.0)
         period_str = self.configs.get('params', {}).get('period', '1y')
         self.start_date = self._calculate_start_date(period_str)
-        self.hash_keys = self.configs.get('hash_keys', ["date", "series_id", "value"])
+        self.hash_keys = self.configs.get(
+            'hash_keys',
+            ["series_id", "date", "realtime_start", "value"],
+        )
         self.logger.info(f"FredCollector configured to fetch data from {self.start_date} onwards.")
 
     def _calculate_start_date(self, period: str) -> str:
@@ -49,7 +62,24 @@ class FredCollector(BaseCollector):
             self.logger.error("FRED_API_KEY environment variable not set.")
             return None, None
 
-        series_ids = self.configs.get('params', {}).get('series_ids', [])
+        runtime_series_ids = kwargs.get("series_ids")
+        if runtime_series_ids is not None and not isinstance(
+            runtime_series_ids, (list, tuple, set)
+        ):
+            raise ValueError("FRED runtime series_ids must be a list-like collection")
+        configured_series_ids = self.configs.get('params', {}).get('series_ids', [])
+        raw_series_ids = (
+            runtime_series_ids
+            if runtime_series_ids is not None
+            else configured_series_ids
+        )
+        series_ids = list(
+            dict.fromkeys(
+                str(series_id).strip()
+                for series_id in raw_series_ids
+                if str(series_id).strip()
+            )
+        )
         if not series_ids:
             self.logger.warning("No series_ids specified for FRED. Skipping collection.")
             return api_key, None
@@ -78,9 +108,31 @@ class FredCollector(BaseCollector):
         if not api_key or not series_ids:
             return None
 
+        observation_start = str(kwargs.get("observation_start") or self.start_date)
+        observation_end = kwargs.get("observation_end")
+        vintage_date = None
+        if kwargs.get("as_of"):
+            parsed_as_of = datetime.fromisoformat(
+                str(kwargs["as_of"]).replace("Z", "+00:00")
+            )
+            if parsed_as_of.tzinfo is None or parsed_as_of.utcoffset() is None:
+                raise ValueError("FRED runtime as_of must be timezone-aware")
+            vintage_date = parsed_as_of.date().isoformat()
+            observation_end = observation_end or vintage_date
+
         client = await self.http_client_factory.get_http_client()
         async with client:
-            tasks = [self._fetch_series(series_id, client, api_key) for series_id in series_ids]
+            tasks = [
+                self._fetch_series(
+                    series_id,
+                    client,
+                    api_key,
+                    observation_start=observation_start,
+                    observation_end=str(observation_end) if observation_end else None,
+                    vintage_date=vintage_date,
+                )
+                for series_id in series_ids
+            ]
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_series_data = []
@@ -125,15 +177,47 @@ class FredCollector(BaseCollector):
 
         return new_records_df
 
-    async def _fetch_series(self, series_id: str, client, api_key:str) -> list[dict[str, Any]]:
-        url = f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}&api_key={api_key}&file_type=json&observation_start={self.start_date}"
+    async def _fetch_series(
+        self,
+        series_id: str,
+        client,
+        api_key: str,
+        *,
+        observation_start: str | None = None,
+        observation_end: str | None = None,
+        vintage_date: str | None = None,
+    ) -> list[dict[str, Any]]:
+        params = {
+            "series_id": series_id,
+            "api_key": api_key,
+            "file_type": "json",
+            "observation_start": observation_start or self.start_date,
+        }
+        if observation_end:
+            params["observation_end"] = observation_end
+        if vintage_date:
+            params["vintage_dates"] = vintage_date
+        url = "https://api.stlouisfed.org/fred/series/observations?" + urlencode(params)
         try:
             response = await client.get(url, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
             observations = data.get('observations', [])
             for obs in observations:
+                missing = [
+                    field
+                    for field in ("date", "value", "realtime_start")
+                    if not str(obs.get(field) or "").strip()
+                ]
+                if missing:
+                    raise ValueError(
+                        "FRED observation missing point-in-time fields: "
+                        + ", ".join(missing)
+                    )
                 obs['series_id'] = series_id
+                obs['source_locator'] = (
+                    f"https://fred.stlouisfed.org/series/{series_id}"
+                )
             return observations
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to fetch FRED series {series_id}: {e}")

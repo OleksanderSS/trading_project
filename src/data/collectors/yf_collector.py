@@ -1,6 +1,8 @@
 import asyncio
 import hashlib
 import logging
+import math
+import threading
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -11,10 +13,16 @@ import yfinance as yf
 
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
+from src.pipeline.timeframe_lineage import timeframe_lineage_report
 
 from .base_collector import BaseCollector
 
 logger = logging.getLogger(__name__)
+
+# yfinance keeps process-global download state.  The collector launches one
+# worker per timeframe, so concurrent yf.download calls can otherwise return a
+# frame belonging to another in-flight ticker/timeframe request.
+_YFINANCE_DOWNLOAD_LOCK = threading.Lock()
 
 def _configure_yfinance_cache() -> None:
     cache_dir = Path("data/cache/yfinance").resolve()
@@ -24,7 +32,7 @@ def _configure_yfinance_cache() -> None:
     except AttributeError:
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug("Installed yfinance version does not support cache location override.")
-    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+    except (ValueError, TypeError, KeyError, ZeroDivisionError) as e:
         logger.warning(f"Could not configure yfinance cache directory '{cache_dir}': {e}", exc_info=True)
         raise RuntimeError(f"Could not configure yfinance cache directory '{cache_dir}'") from e
 
@@ -76,16 +84,28 @@ class YFCollector(BaseCollector):
         """Create async download tasks for all timeframes."""
         tasks = []
         for interval, params in self.timeframes.items():
+            interval_end_date = end_date
             period = params.get('period')
-            start_date = self._calculate_start_date(end_date, period)
+            start_date = self._calculate_start_date(interval_end_date, period)
 
             if not start_date:
                 continue
 
             if (interval.endswith('m') or interval.endswith('h')):
-                start_date, end_date = self._adjust_intraday_dates(interval, start_date, end_date, reference_now)
+                start_date, interval_end_date = self._adjust_intraday_dates(
+                    interval,
+                    start_date,
+                    interval_end_date,
+                    reference_now,
+                )
 
-            task = asyncio.to_thread(self._blocking_download, tickers, interval, start_date, end_date)
+            task = asyncio.to_thread(
+                self._blocking_download,
+                tickers,
+                interval,
+                start_date,
+                interval_end_date,
+            )
             tasks.append(task)
         return tasks
 
@@ -94,11 +114,18 @@ class YFCollector(BaseCollector):
         Asynchronously downloads data, filters for new records, and saves them to the database.
         Accepts an optional end_date for deterministic testing.
         """
-        if not self.timeframes or not tickers:
+        # --- Додаємо галузеві ETF-бенчмарки ---
+        benchmarks = self.configs.get('benchmark_tickers', [])
+        all_tickers = list(set((tickers or []) + benchmarks))
+        
+        if not self.timeframes or not all_tickers:
             self.logger.info("No tickers or timeframes to collect. Skipping.")
             return []
 
+        tickers = all_tickers
+
         end_date = end_date or datetime.now()
+        persist = bool(kwargs.get("persist", True))
         table_name = self.configs.get('table_name', 'market_data_raw')
 
         # Cache Check
@@ -109,8 +136,21 @@ class YFCollector(BaseCollector):
             "end_date": end_date.isoformat()
         }
 
-        cached_result = self._check_cache(cache_key, cache_params, table_name, tickers)
+        cached_result = (
+            self._check_cache(cache_key, cache_params, table_name, tickers)
+            if persist
+            else None
+        )
         if cached_result is not None:
+            if cached_result:
+                issues = self._validate_collected_price_data(
+                    pd.DataFrame(cached_result)
+                )
+                if issues:
+                    raise RuntimeError(
+                        "Cached Yahoo Finance data failed source gate: "
+                        + "; ".join(issues)
+                    )
             return cached_result
 
         # Use reference_now from kwargs if provided for stable testing, otherwise datetime.now()
@@ -136,6 +176,15 @@ class YFCollector(BaseCollector):
         self.logger.info(f"Collected {len(all_price_data)} total data points from API.")
 
         df_to_check = pd.DataFrame(all_price_data)
+        issues = self._validate_collected_price_data(df_to_check)
+        if issues:
+            raise RuntimeError(
+                "Yahoo Finance data failed source gate: "
+                + "; ".join(issues)
+            )
+        if not persist:
+            return all_price_data
+
         new_records_df = self.db_manager.filter_new_records(table_name, df_to_check)
 
         if new_records_df.empty:
@@ -150,6 +199,139 @@ class YFCollector(BaseCollector):
             self.cache_manager.set(cache_key, result, cache_params, ttl=self.configs.get('cache_ttl', 3600), namespace="collectors")
 
         return result
+
+    def _validate_collected_price_data(
+        self,
+        frame: pd.DataFrame,
+    ) -> list[str]:
+        """Validate source identity and cadence before cache/database writes."""
+        required = {
+            "datetime",
+            "ticker",
+            "interval",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        }
+        missing = sorted(required - set(frame.columns))
+        if missing:
+            return ["missing_columns=" + ",".join(missing)]
+        if frame.empty:
+            return ["empty_market_data"]
+
+        issues: list[str] = []
+        timestamps = pd.to_datetime(
+            frame["datetime"],
+            errors="coerce",
+        )
+        if timestamps.isna().any():
+            issues.append(
+                f"invalid_datetime_rows={int(timestamps.isna().sum())}"
+            )
+        if getattr(timestamps.dt, "tz", None) is None:
+            issues.append("datetime_timezone_unresolved")
+
+        identity_duplicates = int(
+            frame.duplicated(
+                ["ticker", "datetime", "interval"],
+                keep=False,
+            ).sum()
+        )
+        if identity_duplicates:
+            issues.append(
+                f"duplicate_identity_rows={identity_duplicates}"
+            )
+
+        price_identity_columns = [
+            "datetime",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+        ]
+        identity_frame = frame.assign(
+            datetime=timestamps,
+            _source_identity=(
+                frame["ticker"].astype(str).str.upper()
+                + "|"
+                + frame["interval"].astype(str).str.lower()
+            ),
+        )
+        duplicate_price_mask = identity_frame.duplicated(
+            price_identity_columns,
+            keep=False,
+        )
+        duplicate_price_rows = identity_frame.loc[duplicate_price_mask]
+        if not duplicate_price_rows.empty:
+            cross_identity = duplicate_price_rows.groupby(
+                price_identity_columns,
+                dropna=False,
+            )["_source_identity"].transform("nunique") > 1
+            contaminated_rows = int(cross_identity.sum())
+            if contaminated_rows:
+                issues.append(
+                    f"cross_identity_ohlcv_rows={contaminated_rows}"
+                )
+
+        for interval, interval_frame in frame.groupby(
+            "interval",
+            dropna=False,
+        ):
+            report = timeframe_lineage_report(
+                interval_frame,
+                declared_timeframe=interval,
+            )
+            if report.get("status") in {
+                "timeframe_cadence_mismatch",
+                "timeframe_cadence_ambiguous",
+            }:
+                issues.append(
+                    "cadence_mismatch="
+                    f"{interval}:observed="
+                    f"{report.get('observed_timeframe')}"
+                )
+
+        expected_minutes = {
+            "15m": 15.0,
+            "1h": 60.0,
+            "60m": 60.0,
+            "1d": 1440.0,
+        }
+        timing = frame.assign(_datetime=timestamps)
+        for (ticker, interval), group in timing.groupby(
+            ["ticker", "interval"],
+            dropna=False,
+        ):
+            expected = expected_minutes.get(str(interval).lower())
+            if expected is None:
+                issues.append(f"unsupported_interval={interval}")
+                continue
+            deltas = (
+                group.sort_values("_datetime")["_datetime"]
+                .dropna()
+                .diff()
+                .dropna()
+                .dt.total_seconds()
+                .div(60.0)
+            )
+            if deltas.empty:
+                continue
+            ratios = deltas / expected
+            invalid = (
+                ratios.lt(1.0 - 1e-6)
+                | (ratios - ratios.round()).abs().gt(1e-6)
+            )
+            if invalid.any():
+                issues.append(
+                    "cadence_mismatch="
+                    f"{ticker}/{interval}:"
+                    f"{int(invalid.sum())}/{len(deltas)}"
+                )
+
+        return sorted(set(issues))
 
     def _calculate_start_date(self, end_date: datetime, period: str) -> datetime | None:
         try:
@@ -166,27 +348,42 @@ class YFCollector(BaseCollector):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"Started blocking download for interval '{interval}'.")
         all_ticker_data = []
+        retries = max(1, int(self.configs.get("max_retries", 3)))
+        delay = max(0, int(self.configs.get("retry_delay", 5)))
         for ticker in tickers:
-            df = self._single_ticker_download_with_retry(ticker, interval, start_date, end_date)
+            df = self._single_ticker_download_with_retry(
+                ticker,
+                interval,
+                start_date,
+                end_date,
+                retries=retries,
+                delay=delay,
+            )
             if not df.empty:
                 processed_data = self._process_single_ticker_dataframe(df, ticker, interval)
                 all_ticker_data.extend(processed_data)
         return all_ticker_data
 
     def _single_ticker_download_with_retry(self, ticker: str, interval: str, start_date: datetime, end_date: datetime, retries: int = 3, delay: int = 5) -> pd.DataFrame:
-        _configure_yfinance_cache()
         last_error = None
         for attempt in range(retries):
             try:
                 # Use objects directly for intraday or precise strings
-                df = yf.download(
-                    tickers=ticker,
-                    interval=interval,
-                    start=start_date,
-                    end=end_date,
-                    auto_adjust=True,
-                    progress=False,
-                )
+                with _YFINANCE_DOWNLOAD_LOCK:
+                    _configure_yfinance_cache()
+                    df = yf.download(
+                        tickers=ticker,
+                        interval=interval,
+                        start=start_date,
+                        end=end_date,
+                        auto_adjust=True,
+                        progress=False,
+                        threads=False,
+                    )
+                    # Detach the returned frame from any process-global
+                    # yfinance cache/state before the next worker is allowed
+                    # to start another request.
+                    df = df.copy(deep=True)
                 if not df.empty:
                     self.logger.info(f"Successfully downloaded {len(df)} rows for {ticker}/{interval}")
                     return df
@@ -202,8 +399,63 @@ class YFCollector(BaseCollector):
         raise RuntimeError(f"Data download failed for {ticker}/{interval} after {retries} attempts: {last_error}") from last_error
 
     def _flatten_multiindex_columns(self, df: pd.DataFrame, ticker: str, interval: str) -> pd.DataFrame:
-        """Flatten MultiIndex columns if present."""
+        """Validate Yahoo's source ticker and then flatten its columns."""
         if isinstance(df.columns, pd.MultiIndex):
+            requested = str(ticker).strip().casefold()
+            level_names = [
+                str(name).strip().casefold() if name is not None else ""
+                for name in df.columns.names
+            ]
+            symbol_level = next(
+                (
+                    index
+                    for index, name in enumerate(level_names)
+                    if name in {"ticker", "tickers", "symbol", "symbols"}
+                ),
+                None,
+            )
+            if symbol_level is None:
+                market_fields = {
+                    "open",
+                    "high",
+                    "low",
+                    "close",
+                    "adj close",
+                    "volume",
+                    "price",
+                }
+                candidate_levels = []
+                for index in range(df.columns.nlevels):
+                    values = {
+                        str(value).strip().casefold()
+                        for value in df.columns.get_level_values(index)
+                        if str(value).strip()
+                    }
+                    if requested in values or (
+                        values and not values.issubset(market_fields)
+                    ):
+                        candidate_levels.append(index)
+                if len(candidate_levels) == 1:
+                    symbol_level = candidate_levels[0]
+
+            if symbol_level is None:
+                raise RuntimeError(
+                    f"Could not resolve Yahoo source ticker identity for "
+                    f"{ticker}/{interval}; refusing to relabel MultiIndex data."
+                )
+
+            source_tickers = {
+                str(value).strip().casefold()
+                for value in df.columns.get_level_values(symbol_level)
+                if str(value).strip()
+            }
+            if source_tickers != {requested}:
+                observed = ",".join(sorted(source_tickers)) or "<empty>"
+                raise RuntimeError(
+                    f"Yahoo source ticker mismatch for {ticker}/{interval}: "
+                    f"observed={observed}"
+                )
+
             df.columns = df.columns.get_level_values(0)
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f"Flattened MultiIndex columns for {ticker}/{interval}")
@@ -267,6 +519,21 @@ class YFCollector(BaseCollector):
         df['ticker'] = ticker
         df['interval'] = interval
 
+        # Drop rows with NaN or infinite values in numeric columns
+        numeric_cols = ['open', 'high', 'low', 'close', 'volume']
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        if all(col in df.columns for col in numeric_cols):
+            initial_len = len(df)
+            df = df.dropna(subset=numeric_cols)
+            for col in numeric_cols:
+                df = df[df[col].map(math.isfinite)]
+            dropped = initial_len - len(df)
+            if dropped > 0:
+                self.logger.info(f"Dropped {dropped} rows with non-finite values for {ticker}/{interval}")
+
         required_cols = ['datetime', 'ticker', 'interval']
         for col in required_cols:
             if col not in df.columns:
@@ -275,6 +542,6 @@ class YFCollector(BaseCollector):
         # Consistent hash generation using isoformat with microsecond precision
         df['hash'] = df.apply(lambda row: hashlib.sha256(f"{row['datetime'].strftime('%Y-%m-%dT%H:%M:%S.%f%z')}{row['ticker']}{row['interval']}".encode()).hexdigest(), axis=1)
 
-        self.logger.info(f"✅ Processed {len(df)} rows for {ticker}/{interval} (after NaT removal)")
+        self.logger.info(f"✅ Processed {len(df)} rows for {ticker}/{interval} (after NaT and non-finite removal)")
 
         return df.to_dict('records')

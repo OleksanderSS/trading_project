@@ -31,7 +31,7 @@ class AIISentimentCollector(BaseCollector):
         self.logger.info(
             f'AIISentimentCollector initialized. Enabled: {self.enabled}')
 
-    def _generate_hash(self, row: pd.Series) ->str:
+    def generate_hash(self, row: pd.Series) ->str:
         """Generates a stable hash for a record."""
         hash_string = '|'.join(str(row.get(key, '')) for key in self.hash_keys)
         return hashlib.sha256(hash_string.encode()).hexdigest()
@@ -55,7 +55,7 @@ class AIISentimentCollector(BaseCollector):
             df['collector_name'] = self.collector_name
             df['data_type'] = self.data_type
             df['collected_at'] = datetime.now()
-            df['record_hash'] = df.apply(self._generate_hash, axis=1)
+            df['record_hash'] = df.apply(self.generate_hash, axis=1)
             self.logger.info(
                 f'Successfully fetched {len(df)} AAII Sentiment records')
             return df
@@ -67,8 +67,8 @@ class AIISentimentCollector(BaseCollector):
         """Fetches data from AAII website."""
         try:
             url = f'{self.base_url}/sentimentsurveyresults'
-            async with self.http_client_factory.get_http_client(timeout=
-                self.timeout) as http_client:
+            client = await self.http_client_factory.get_http_client(timeout=self.timeout)
+            async with client as http_client:
                 response = await http_client.get(url)
                 if response.status_code == 404:
                     self.logger.error(

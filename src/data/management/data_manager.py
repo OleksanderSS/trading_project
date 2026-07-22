@@ -2,9 +2,8 @@ import logging
 import os
 import re
 import time
-import atexit
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, ClassVar
 
 import duckdb
 import pandas as pd
@@ -56,8 +55,8 @@ class IDatabaseManager:
 
 
 class DataManager(IDatabaseManager):
-    _connections: dict[str, duckdb.DuckDBPyConnection] = {}
-    _connection_lock: dict[str, bool] = {}
+    _connections: ClassVar[dict[str, duckdb.DuckDBPyConnection]] = {}
+    _connection_lock: ClassVar[dict[str, bool]] = {}
 
     def __init__(self, config_manager: UnifiedConfigManager, error_handler: IErrorHandler | None = None):
         self.config_manager = config_manager
@@ -67,9 +66,6 @@ class DataManager(IDatabaseManager):
         self._initialize_connection(force_new=False)
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"DataManager instance configured with shared connection to '{self.db_path}'.")
-
-# Реєстрація автоматичного закриття при виході
-atexit.register(DataManager.close_all_connections)
 
     @classmethod
     def close_all_connections(cls):
@@ -125,17 +121,18 @@ atexit.register(DataManager.close_all_connections)
                 ConnectionRegistry.register(f'duckdb_{db_path}', cls._connections[db_path])
                 logger.info(f"Successfully created DB connection to '{db_path}' (attempt {attempt + 1}/{retry_count})")
                 return cls._connections[db_path]
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            except duckdb.Error as e:
                 logger.warning(f"Connection attempt {attempt + 1} failed for '{db_path}': {e}")
                 last_error = e
                 if attempt < retry_count - 1:
-                    time.sleep(2 ** attempt)
+                    import random
+                    time.sleep((2 ** attempt) + random.uniform(0, 0.5))
 
         try:
             # Резервна спроба зі стандартними налаштуваннями
             cls._connections[db_path] = duckdb.connect(database=db_path, read_only=False)
             return cls._connections[db_path]
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except duckdb.Error as e:
             logger.error(f"Failed to connect to database '{db_path}' after retries. Last error: {last_error}. Fallback error: {e}", exc_info=True)
             raise RuntimeError(f"Cannot connect to database '{db_path}': {last_error or e}") from e
 
@@ -325,21 +322,32 @@ atexit.register(DataManager.close_all_connections)
             # External deduplication against table
             valid_unique_in_table = [c for c in unique_on if c in existing_cols and c in df_insert.columns]
             if valid_unique_in_table:
-                key_col = valid_unique_in_table[0]
+                # Use all columns in unique_on for composite key deduplication
+                quoted_cols = ', '.join([self._quote_identifier(c) for c in valid_unique_in_table])
                 try:
                     existing_keys_df = self.con.execute(
-                        f'SELECT {self._quote_identifier(key_col)} FROM {self._quote_identifier(table_name)}'
+                        f'SELECT {quoted_cols} FROM {self._quote_identifier(table_name)}'
                     ).fetchdf()
-                    existing_keys_set = {str(k) for k in existing_keys_df[key_col].tolist()}
+
+                    # Create composite keys from all unique_on columns
+                    if len(valid_unique_in_table) == 1:
+                        # Single column: use simple set
+                        existing_keys_set = {str(k) for k in existing_keys_df[valid_unique_in_table[0]].tolist()}
+                        df_insert_keys = df_insert[valid_unique_in_table[0]].astype(str)
+                    else:
+                        # Multiple columns: use tuple composite keys
+                        existing_keys_set = set(tuple(row) for row in existing_keys_df[valid_unique_in_table].values)
+                        df_insert_keys = pd.Series([tuple(row) for row in df_insert[valid_unique_in_table].values])
+
                 except (duckdb.Error, Exception) as e:
                     logger.error(f"Error fetching existing keys for deduplication in '{table_name}': {e}", exc_info=True)
-                    self.error_handler.handle_error(e, context={'table_name': table_name, 'key_col': key_col})
+                    self.error_handler.handle_error(e, context={'table_name': table_name, 'unique_on': valid_unique_in_table})
                     raise DataLoadError(f"Failed to fetch existing keys for '{table_name}': {e}") from e
 
                 before = len(df_insert)
-                df_insert = df_insert[~df_insert[key_col].astype(str).isin(existing_keys_set)]
+                df_insert = df_insert[~df_insert_keys.isin(existing_keys_set)]
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.debug(f"Filtered to {len(df_insert)} new records for '{table_name}' (excluded {before - len(df_insert)} duplicates)")
+                    logger.debug(f"Filtered to {len(df_insert)} new records for '{table_name}' (excluded {before - len(df_insert)} duplicates based on {len(valid_unique_in_table)} columns: {valid_unique_in_table})")
 
         # Schema alignment
         common_cols = [c for c in df_insert.columns if c in existing_cols]
@@ -437,7 +445,9 @@ atexit.register(DataManager.close_all_connections)
 
     def get_all_table_names(self) -> list[str]:
         try:
-            tables = self.con.execute('SELECT table_name FROM duckdb_tables()').fetchall()
+            tables = self.con.execute(
+                "SELECT table_name FROM duckdb_tables() WHERE schema_name = 'main'"
+            ).fetchall()
             return [table[0] for table in tables]
         except (duckdb.Error, Exception) as e:
             logger.error(f'Помилка при отриманні списку таблиць: {e}', exc_info=True)
@@ -456,6 +466,7 @@ atexit.register(DataManager.close_all_connections)
             raise DataLoadError(f"Failed to get schema for table '{table_name}': {e}") from e
 
     def _clean_numeric_data(self, df: pd.DataFrame, table_name: str) -> pd.DataFrame:
+        """Clean numeric data without filling across entity or timeframe boundaries."""
         import numpy as np
         numeric_cols = df.select_dtypes(include=['number']).columns
         if len(numeric_cols) == 0:
@@ -472,13 +483,57 @@ atexit.register(DataManager.close_all_connections)
             else:
                 logger.warning(f"Table '{table_name}': {nan_count} NaN values ({nan_pct:.2f}%)")
 
-            df[numeric_cols] = df[numeric_cols].ffill()
+            group_cols = []
+            if 'ticker' in df.columns:
+                group_cols.append('ticker')
+            if 'interval' in df.columns:
+                group_cols.append('interval')
+            if not group_cols:
+                series_col = next(
+                    (column for column in ('series_id', 'series') if column in df.columns),
+                    None,
+                )
+                if series_col:
+                    group_cols.append(series_col)
+            time_col = next(
+                (
+                    column
+                    for column in ('datetime', 'date', 'timestamp', 'published_at')
+                    if column in df.columns
+                ),
+                None,
+            )
+            working = df.copy()
+            working['_fill_original_order'] = np.arange(len(working))
+            sort_cols = [*group_cols, *([time_col] if time_col else [])]
+            if sort_cols:
+                working = working.sort_values(sort_cols, kind='stable')
+
+            total_filled = 0
+            for col in numeric_cols:
+                col_nan_before = working[col].isna().sum()
+                if group_cols:
+                    working[col] = working.groupby(
+                        group_cols,
+                        dropna=False,
+                        sort=False,
+                    )[col].ffill()
+                else:
+                    working[col] = working[col].ffill()
+                col_nan_after = working[col].isna().sum()
+                total_filled += (col_nan_before - col_nan_after)
+
+            working = working.sort_values('_fill_original_order', kind='stable')
+            df[numeric_cols] = working[numeric_cols].to_numpy()
             remaining_nan_count = df[numeric_cols].isna().sum().sum()
             if remaining_nan_count:
                 logger.warning(
                     f"Table '{table_name}': {remaining_nan_count} leading NaN values left unfilled to avoid lookahead"
                 )
-            logger.info(f"Applied causal forward-fill to {nan_count - remaining_nan_count} NaN values in '{table_name}'")
+            logger.info(
+                f"Applied entity-safe causal forward-fill to {total_filled} NaN values "
+                f"in '{table_name}' using groups={group_cols or ['table']}."
+            )
         return df
 
     def _should_checkpoint(self, table_name: str) -> bool:

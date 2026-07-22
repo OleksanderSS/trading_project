@@ -1,8 +1,9 @@
+import atexit
 import logging
 import os
 import time
-import atexit
 from contextlib import contextmanager
+from typing import ClassVar
 
 import duckdb
 
@@ -13,8 +14,8 @@ MEMORY_DB = ':memory:'
 
 class ConnectionHandler:
     """Handles DuckDB connection lifecycle and shared connections."""
-    _connections: dict[str, duckdb.DuckDBPyConnection] = {}
-    _connection_lock: dict[str, bool] = {}
+    _connections: ClassVar[dict[str, duckdb.DuckDBPyConnection]] = {}
+    _connection_lock: ClassVar[dict[str, bool]] = {}
 
     def __init__(self, db_path: str):
         self.db_path = os.path.abspath(db_path
@@ -33,8 +34,8 @@ class ConnectionHandler:
         cls._connections.clear()
         cls._connection_lock.clear()
 
-# Реєстрація автоматичного закриття при виході
-atexit.register(ConnectionHandler.close_all_connections)
+    # NOTE: atexit registration moved below the class body (was inside class
+    # body which caused NameError — ConnectionHandler not yet defined there).
 
     @classmethod
     def get_connection(cls, db_path: str, force_new: bool=False,
@@ -67,10 +68,11 @@ atexit.register(ConnectionHandler.close_all_connections)
                         'enable_object_cache': True, 'checkpoint_threshold':
                         '1GB'})
                     return cls._connections[db_path]
-                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                except duckdb.Error as e:
                     last_error = e
                     if attempt < retry_count - 1:
-                        time.sleep(2 ** attempt)
+                        import random
+                        time.sleep((2 ** attempt) + random.uniform(0, 0.5))
                     else:
                         logger.error(
                             f"All {retry_count} connection attempts failed for '{db_path}'"
@@ -93,5 +95,9 @@ atexit.register(ConnectionHandler.close_all_connections)
             yield self.con
             self.con.commit()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.con.rollback()
+            logger.error(f"Error closing connection: {e}")
             raise e
+
+# Register automatic cleanup on interpreter exit.
+# Must be outside the class body so ConnectionHandler is already defined.
+atexit.register(ConnectionHandler.close_all_connections)

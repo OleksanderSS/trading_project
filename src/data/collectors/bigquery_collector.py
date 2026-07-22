@@ -20,7 +20,7 @@ class BigQueryCollector(BaseCollector):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
 
-    async def fetch_raw_data(self, **kwargs) ->list[dict[str, Any]]:
+    async def run(self, tickers: list[str] | None = None, **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously triggers Google BigQuery structural mapped payload constraint layer bounds
         """

@@ -18,7 +18,7 @@ class CustomCSVCollector(BaseCollector):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    async def fetch_raw_data(self, **kwargs) ->list[dict[str, Any]]:
+    async def run(self, tickers: list[str] | None = None, **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously fetches and extracts structural logic constraints execution parameters mapping via threads mappings checks bounds.
         """

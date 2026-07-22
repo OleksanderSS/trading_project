@@ -39,11 +39,12 @@ class FreeGoogleTrendsCollector(BaseCollector):
                 raise ConnectionError(
                     f'Failed to bootstrap TrendReq execution state: {e}') from e
 
-    async def fetch_raw_data(self, tickers: list[str], keywords: list[str],
+    async def run(self, tickers: list[str], keywords: list[str] | None = None,
         **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously pulls Google Trends metrics bounded by given ticker and metric lists.
         """
+        keywords = keywords or []
         search_terms = list(set(tickers + keywords))
         if not search_terms:
             self.logger.warning(

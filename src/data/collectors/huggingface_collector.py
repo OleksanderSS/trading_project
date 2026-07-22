@@ -64,7 +64,11 @@ class HuggingfaceCollector(BaseCollector):
             )
         df = pd.DataFrame(raw_data)
         self.logger.info('[HuggingFace] Computing cryptographic hashes...')
-        df['hash'] = df[self.hash_keys].astype(str).agg('|'.join, axis=1
+        available_keys = [k for k in self.hash_keys if k in df.columns]
+        if not available_keys:
+            self.logger.warning(f'None of hash_keys {self.hash_keys} found in columns {list(df.columns)}. Using all columns.')
+            available_keys = list(df.columns)
+        df['hash'] = df[available_keys].astype(str).agg('|'.join, axis=1
             ).apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
         self.logger.info('[HuggingFace] Filtering for novel records...')
         new_df = self.db_manager.filter_new_records(table_name, df)

@@ -199,8 +199,8 @@ class RSSCollector(BaseCollector):
                     f"[RSS] '{name}' HTTP timeout ({type(exc).__name__}). Skipping."
                     )
                 return []
-            except Exception as exc:
-                self.logger.error(f'Виникла помилка: {exc}', exc_info=True)
+            except httpx.RequestError as exc:
+                self.logger.error(f'Виникла помилка запиту: {exc}', exc_info=True)
                 self.logger.warning(
                     f"[RSS] '{name}' HTTP error ({type(exc).__name__}): {exc}. Skipping."
                     )

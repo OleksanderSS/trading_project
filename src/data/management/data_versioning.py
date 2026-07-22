@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from src.utils.path_safety import get_path_safety
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,13 +91,14 @@ class DataVersioning:
         if not file_path.exists():
             self.logger.error(f'File not found: {file_path}')
             return {}
+        path_safety = get_path_safety()
         version_info = {'file_path': str(file_path), 'data_type': data_type,
             'description': description, 'created_at': datetime.now().
             isoformat(), 'file_size': self._get_file_size(file_path),
             'file_hash': self._get_file_hash(file_path), 'file_mtime': self
             ._get_file_mtime(file_path).isoformat(), 'metadata': metadata or {}
             }
-        file_key = str(file_path.relative_to(Path.cwd()))
+        file_key = str(file_path.relative_to(path_safety.get_project_root()))
         self.metadata[file_key] = version_info
         self._save_metadata()
         self.logger.info(f'[OK] Registered file: {file_key} ({data_type})')
@@ -114,7 +117,8 @@ class DataVersioning:
             Tuple[bool, Dict[str, Any]]: (is_fresh, info)
         """
         file_path = Path(file_path)
-        file_key = str(file_path.relative_to(Path.cwd()))
+        path_safety = get_path_safety()
+        file_key = str(file_path.relative_to(path_safety.get_project_root()))
         if not file_path.exists():
             return False, {'reason': 'file_not_exists'}
         current_mtime = self._get_file_mtime(file_path)
@@ -239,7 +243,8 @@ class DataVersioning:
             Dict[str, Any]: File information
         """
         file_path = Path(file_path)
-        file_key = str(file_path.relative_to(Path.cwd()))
+        path_safety = get_path_safety()
+        file_key = str(file_path.relative_to(path_safety.get_project_root()))
         info = {'file_path': str(file_path), 'file_exists': file_path.
             exists(), 'registered': file_key in self.metadata}
         if file_path.exists():

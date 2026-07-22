@@ -1,12 +1,12 @@
 import asyncio
 import logging
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 from src.core.security.path_validator import PathValidationError, validate_safe_path
 from src.data.collectors.base_collector import BaseCollector
+from src.utils.path_safety import get_path_safety
 
 logger = logging.getLogger(__name__)
 
@@ -34,12 +34,13 @@ class LocalFileCollector(BaseCollector):
         else:
             try:
                 # Validate the path immediately upon initialization
-                self.file_path = validate_safe_path(raw_path, base_dir=Path.cwd())
+                path_safety = get_path_safety()
+                self.file_path = validate_safe_path(raw_path, base_dir=path_safety.get_project_root())
             except PathValidationError as e:
                 self.logger.error(f"Security violation: Invalid file path '{raw_path}': {e}")
                 self.file_path = None
 
-    async def fetch_raw_data(self, **kwargs) ->list[dict[str, Any]]:
+    async def run(self, tickers: list[str] | None = None, **kwargs) ->list[dict[str, Any]]:
         """
         Asynchronously reads data from a local file and returns it as a list of dictionaries.
         """

@@ -109,11 +109,15 @@ class CFTCCollector(BaseCollector):
 
             self.logger.info(f"Fetching FREE CFTC data for {instrument} from {url}")
 
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/csv,text/plain,application/csv,*/*"
+            }
             http_client = await self.http_client_factory.get_http_client(timeout=self.timeout)
             if hasattr(http_client, 'get') and asyncio.iscoroutinefunction(http_client.get):
-                response = await http_client.get(url)
+                response = await http_client.get(url, headers=headers)
             else:
-                response = await asyncio.to_thread(http_client.get, url)
+                response = await asyncio.to_thread(http_client.get, url, headers=headers)
 
             status_code = getattr(response, 'status_code', None)
             if status_code == 404:

@@ -35,7 +35,7 @@ class InsiderCollector(BaseCollector):
         super().__init__(configs, http_client_factory, db_manager, cache_manager, **kwargs)
         self.hash_keys = self.configs.get("hash_keys", ["filing_date", "ticker", "insider_name"])
 
-    async def fetch_raw_data(self, **kwargs) -> list[dict[str, Any]]:
+    async def fetch_raw_data(self, tickers: list[str] | None = None, **kwargs) -> list[dict[str, Any]]:
         """
         Asynchronously parses execution lists from HTTP sources passed through configuration payload.
         """
@@ -244,4 +244,11 @@ class InsiderCollector(BaseCollector):
 
         self.logger.info(f"[Insider] Committed bounded record list limits constraint size of {len(new_df)}.")
         return new_df
+
+    async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
+        """
+        UNIFIED data collection - retrieval only, without database storage.
+        """
+        df = await self.run(**kwargs)
+        return df.to_dict('records') if df is not None else None
 

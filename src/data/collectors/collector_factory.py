@@ -53,10 +53,10 @@ class CollectorFactory:
         class_map = {}
         package_path = os.path.dirname(__file__)
         package_name = 'src.data.collectors'
-        
+
         for _, module_name, _ in pkgutil.walk_packages([package_path], prefix=f'{package_name}.'):
             self._process_module_for_collectors(module_name, class_map)
-        
+
         self.logger.info(
             f'Discovered {len(class_map)} collector classes: {list(class_map.keys())}'
             )
@@ -91,12 +91,12 @@ class CollectorFactory:
         collector_params = self.collectors_config.get(name)
         if not self._is_collector_enabled(collector_params):
             return None
-        
+
         collector_type = collector_params.get('type')
         CollectorClass = self._get_collector_class(collector_type)
         if not CollectorClass:
             return None
-        
+
         return self._instantiate_collector(name, collector_type, CollectorClass, collector_params)
 
     def _is_collector_enabled(self, collector_params: dict | None) -> bool:
@@ -117,7 +117,7 @@ class CollectorFactory:
         try:
             return CollectorClass(configs=collector_params,
                 http_client_factory=self.http_client_factory,
-                config_manager=self.config_manager, db_manager=self.db_manager, 
+                config_manager=self.config_manager, db_manager=self.db_manager,
                 cache_manager=self.cache_manager)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to instantiate '{name}' ({collector_type}): {e}", exc_info=True)
