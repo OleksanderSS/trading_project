@@ -1,0 +1,68 @@
+from __future__ import annotations
+
+import argparse
+import json
+
+from dean_os.domain_scoped_official_policy_envelope import (
+    DomainScopedOfficialPolicyEnvelope,
+)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Verify saved official-policy, raw-document, registry, and domain-news "
+            "lineage as a review-only domain binding candidate."
+        )
+    )
+    parser.add_argument("domain_id")
+    parser.add_argument("--as-of", required=True)
+    parser.add_argument(
+        "--source-path",
+        default=(
+            "reports/dean_os/"
+            "saved_official_policy_evidence_producer_current/latest.json"
+        ),
+    )
+    parser.add_argument(
+        "--news-envelope-path",
+        default=(
+            "reports/dean_os/domain_scoped_news_envelope_current/latest.json"
+        ),
+    )
+    parser.add_argument(
+        "--dispatch-path",
+        default="reports/dean_os/domain_binding_task_dispatch_current/latest.json",
+    )
+    parser.add_argument(
+        "--journal-path", default="data/dean_os/system_journal.jsonl"
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=(
+            "reports/dean_os/domain_scoped_official_policy_envelope_current"
+        ),
+    )
+    parser.add_argument("--apply-journal", action="store_true")
+    parser.add_argument("--no-save", action="store_true")
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    payload = DomainScopedOfficialPolicyEnvelope(args.output_dir).build(
+        domain_id=args.domain_id,
+        as_of=args.as_of,
+        source_path=args.source_path,
+        news_envelope_path=args.news_envelope_path,
+        dispatch_path=args.dispatch_path,
+        journal_path=args.journal_path,
+        apply_journal=args.apply_journal,
+        save=not args.no_save,
+    )
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

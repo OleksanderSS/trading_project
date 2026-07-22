@@ -24,3 +24,7 @@ reports/
 *.pt
 *.parquet
 *.duckdb
+.pytest_tmp*
+.tmp*
+.snyk
+*.zip

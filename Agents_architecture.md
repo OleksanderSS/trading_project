@@ -3,6 +3,27 @@
 Документ підсумовує брейншторм і фіксує остаточну архітектуру.
 Базується на v4.1, виправлені архітектурні помилки, додані відсутні елементи.
 
+> Статус документа: це цільова архітектура й набір інваріантів, а не точний
+> опис поточного коду. Перед реалізацією кожного наступного кроку її потрібно
+> звіряти з активним pipeline, `dean_os/IMPLEMENTATION_STATUS.md`,
+> `dean_os/NEXT_CHAT_HANDOFF.md` і актуальними review-артефактами. Якщо документ
+> суперечить перевіреному коду або causal/data contract, пріоритет має
+> перевірений контракт, а архітектурний документ оновлюється.
+
+> Поточне уточнення (2026-06-28): аналітичний шар Stage 7 має єдине джерело
+> конфігурації в `src/config/analysis.yaml`. Активні лише перевірені
+> `market_regime` і `critical_signals`; інші модулі є каталогом можливостей, а
+> не активною системою. Кожен запуск фіксує executed/skipped/failed/disabled,
+> розділяє ціни за ticker+timeframe і повертає тільки supporting review context.
+> Цей шар не може підмінити locked evidence, consensus, promotion або execution.
+> У DEAN цей контекст проходить через `dean_stage7_analyzer_review_v1`.
+> `ModelPerformanceAgent` не витягує метрики з довільних вкладених полів:
+> pipeline-метрики дозволені лише з `evaluation_summary.metrics`.
+> Явний model-performance файл приймається лише як verified
+> `locked_model_evaluation`, зі source SHA, joined lineage та as-of часом із
+> evaluation window. Навіть валідний locked-файл не дає `clear`, якщо повний
+> real-metric evidence chain заблокований.
+
 ---
 
 ## 0. Принципи, що не змінюються
@@ -18,7 +39,7 @@ LLM керує розумінням.
 - LLM тільки пояснює вже прийняте рішення, не приймає його.
 - Жоден агент не змінює production config самостійно.
 - Жоден агент не підтверджує власні пропозиції.
-- За замовчуванням: paper trading тільки, live execution вимкнено.
+- За замовчуванням активний pipeline є review-only: Stage 5 переходить прямо до Stage 7; paper і live execution вимкнені.
 
 ---
 
@@ -910,3 +931,203 @@ dean_os/
 - **Agent Registry як runtime-компонент** — це конфігурація, читається при старті.
 - **Free-form LLM memory** — тільки structured event log.
 - **Всі 9 decision types одразу** — починати з 4, розширювати за потребою.
+
+Implementation note 2026-06-14:
+
+- Current DEAN-OS work is in the replay/calibration lane, not live execution.
+- Repaired price replay is clean enough for diagnostics, but analyst calibration remains blocked by evidence coverage and neutral/inconclusive research.
+- `ReplayEvidenceWindowSelector` now selects windows where repaired prices, future outcome horizon, and pre-`as_of` evidence overlap.
+- Latest selected replay windows are `2026-03-04` through `2026-04-01`; after the stance-rule fix selected research replay returns `constructive=4`, `mixed=1`.
+- `TickerSpecificAttributionAudit` now shows the next blocker clearly: 0/5 selected replay runs are ticker-ready, all 5 selected notes are still basket notes, and 2 early windows have weak direct ticker evidence.
+- `TickerFocusedResearchNoteBuilder` now builds separate ticker-focused note candidates from the same pre-`as_of` evidence: 3/5 selected windows are focused-note-ready, while 2 early `TSM` windows still require direct evidence backfill.
+- `TickerFocusedReplayExamBridge` now compares original basket-note exams with ticker-focused overlays: 3/5 are overlay-ready, 2 early `TSM` windows remain blocked, and `AMD` on `2026-04-01` remains neutral instead of being forced bullish.
+- Optional focused overlay integration is now implemented in historical research replay; default behavior is unchanged, original basket-note exams are preserved, and applied focused overlays make 3/5 runs ticker-ready while 2 early `TSM` windows remain blocked by weak direct evidence.
+- Sector/industry agents are still valid and important, but their output is a sector thesis, not automatically a ticker thesis. A sector thesis can map to a basket or candidate list only through a separate attribution/allocation layer that checks direct ticker evidence, valuation/risk, and portfolio constraints.
+- Next architecture-safe step is focused-overlay evidence expansion or a sector-thesis-to-ticker-basket contract before adding more specialist profiles or changing analyst weights.
+
+Implementation note 2026-06-18:
+
+- `SectorThesisToTickerBasketBridge` is now implemented as the first concrete sector-to-ticker contract.
+- Current real run: `partial_basket_ready` for `semiconductor_ai_infrastructure`, with `AMD` and `TSM` as reviewed ticker candidates.
+- The bridge deliberately keeps `sector_thesis`, `ticker_candidate_map`, and `direct_ticker_thesis` as separate levels.
+- `TSM` remains evidence-limited because 2 early replay windows are still blocked by weak direct evidence; the bridge therefore must not be treated as calibration-ready.
+- Latest full DEAN-OS tests: `132 passed`.
+- Recommended next local module: `SectorToTickerReviewPacket` / `DomainSpecialistReviewPacket`, JSON/Markdown-only, no learning writes, no analyst weight changes, no config writes, no recommendations, and no trading.
+- Recommended architecture path: stabilize one high-quality domain specialist pattern first, then clone that contract into other sectors.
+- Assistant workbench package in `dean_os/draft/dean_os_after_245_full_context_bundle` stays staged-only/review-only. Its next block is `246_review_only_real_source_normalized_packet_validation_gate_v1`; do not promote draft fixtures into DEAN-OS as facts.
+
+Implementation note 2026-06-18, domain-first correction:
+
+- Web/draft AMD work is a pilot fixture, not the architecture axis.
+- Domain/sector agents analyze their economic sphere first: sources, claims, events, sectors, topics, supply-chain exposure, macro/industry context.
+- Tickers come from the asset/universe dictionary as candidate entities and exposure nodes.
+- `DomainSpecialistReviewPacket` is now the correct standardization candidate: it starts with `domain_thesis`, `source_evidence_context`, `claims_events_entities`, and `sector_exposure_map`.
+- `SectorToTickerReviewPacket` remains a lower bridge/gate for direct ticker evidence only.
+- A domain thesis may be manually reviewable even when ticker candidate review is blocked.
+- No sector/domain packet is a recommendation, price target, allocation, learning promotion, paper trade, or live trade.
+
+Implementation note 2026-06-18, source evidence gate:
+
+- The useful part of draft block 245 is the validation boundary, not a replacement ingestion stack.
+- `SourceEvidenceValidationGate` now validates local source artifacts before domain-specialist review.
+- Draft normalized packet fixtures are accepted only as staged contract material and are explicitly blocked from evidence promotion.
+- Local `AnalystEvidencePack` artifacts can enter manual domain research when shape checks pass; current real pack has timestamp warnings but no failures.
+- Claim/event/entity extraction remains a separate later contract and is not performed by this gate.
+- Recommended order is source evidence validation, domain-specialist review, then sector-to-ticker bridge only where direct ticker evidence exists.
+
+Implementation note 2026-06-18, extraction contract:
+
+- Draft block 247 is now represented locally by `SourceExtractionReviewPacket`.
+- It defines the review-only contract for future candidate claims, events, entity mentions, topics, sectors, assets, financial implication candidates, and source anchors.
+- It does not execute extraction and does not emit claims/events/entities.
+- Current real packet is `extraction_contract_ready_with_warnings`: source anchors exist, but 111 source units lack `published_at` timestamps and event chronology must stay limited.
+- This contract must be reviewed before any fixture-only extraction stage is built.
+- Future extraction output must remain staged/review-only until a separate promotion gate exists.
+
+Implementation note 2026-06-18, extraction fixture:
+
+- Draft block 248 is now represented locally by `SourceExtractionFixturePacket`.
+- It materializes candidate output shapes over a small anchor subset, but still performs no real semantic extraction.
+- Current real fixture has 12 claim fixtures, 12 event fixtures, 12 entity fixtures, and 12 financial implication fixtures.
+- The selected anchors are entity-bearing but timestamp-limited, so the packet remains `extraction_fixture_ready_with_warnings`.
+- Candidate fixtures are not evidence, resolved entities, financial implications, recommendations, or trade signals.
+- The next safe work is manual review of fixture shape and timestamp repair strategy, not promotion or trading.
+
+Implementation note 2026-06-18, fixture review gate:
+
+- `SourceExtractionFixtureReviewGate` now reviews the 248 fixture shape before any real extractor implementation.
+- Current real gate result is `fixture_review_ready_with_warnings`: candidate groups and anchor links are valid, evidence/downstream boundaries are disabled, but selected anchors lack timestamps.
+- `can_standardize_fixture_shape=false` until timestamp limitations are repaired or explicitly accepted.
+- This keeps fixture shape review separate from extraction execution, evidence promotion, learning writes, recommendations, allocation, and trading.
+
+Implementation note 2026-06-20, pipeline-control real metric evidence:
+
+- Synthetic pipeline-control fixture validation remains useful only as a control-flow proof.
+- `PipelineControlRealMetricEvidenceRun` is now the real-evidence counterpart.
+- It accepts non-synthetic saved/past/locked `model_evaluation_json` plus `feature_stability_report` and runs readiness -> surface -> instance -> caution review.
+- It rejects synthetic/fixture artifacts even if their fields would clear the metric planes.
+- Current run without supplied real model/feature artifacts is `real_metric_evidence_rejected`.
+- Real cautions remain `risk`, `validation`, and `feature_stability` until locked drawdown, holdout/sample metrics, and feature-stability evidence are supplied.
+- No collectors, replay reruns, training, autonomous tuning, config writes, learning writes, recommendations, paper trades, or live trades are enabled by this runner.
+
+Implementation note 2026-06-20, staged workbench integration review:
+
+- `StagedWorkbenchIntegrationReview` now inspects the web-bot staged bundle under `dean_os/draft/dean_os_after_245_full_context_bundle`.
+- The review classifies staged blocks as integrate candidates, documentation-only, audit-history-only, redundant metadata ladders, defective/superseded, or manual-review-needed.
+- Blocks 243-245 are the immediate integration direction, but only through existing main repo real-source modules.
+- Strict staged file candidates are limited to four test-intent files around blocks 243-245; canonical snapshot code remains manual-diff/history.
+- Blocks 216-238 are mostly repeated contract -> fixture -> validation ladders and should remain docs/audit history until there is a real fundamental-feed input.
+- The first offline vertical slice is structurally close but not yet viable: `docs/research` needs one operator source file and the repo needs an explicit normalized-packet -> evidence-pack/read-model projection preview.
+- No live fetch, external API call, claim/event/entity extraction, recommendation, valuation, autonomous loop, dashboard publication, order generation, broker routing, paper trade, or live trade is enabled by this review.
+
+Implementation note 2026-06-20, domain analyst vertical slice:
+
+- `DomainAnalystVerticalSliceRun` now runs the full analyst branch for one reusable domain candidate.
+- The current semiconductor analyst run is built from local parquet data: `data/processed/features/news_data.parquet` and `data/processed/features/macro_data.parquet`.
+- Current status is `domain_analyst_candidate_complete_pending_manual_acceptance`.
+- Evidence now uses the supplied local strict evidence pack with 144 documents and 144 analyst evidence items; synthetic and fixture markers are false, while the smoke label is true as a caution label only.
+- The template is ready for manual accept/reject, but no acceptance decision is recorded by the runner.
+- Remaining cautions are real review limitations: 3 dropped source rows and 0 direct ticker evidence.
+- Domain scaling, sector-to-ticker bridge, learning writes, recommendations, allocation, paper trading, and live trading remain disabled until separate gates and manual decisions exist.
+
+Implementation note 2026-06-20, domain analyst portability:
+
+- `DomainAnalystPortabilityReview` now checks whether the completed semiconductor analyst candidate can be reused across economic domains.
+- All 5 configured domain profiles are structurally portable and have required evidence aliases.
+- Reuse is slot-based, not copy-paste: domain id, core questions, required/useful evidence types, sector keywords, ticker universe hints, contradiction rules, direct ticker rules, blockers, and local source paths.
+- GPT and FinBERT are optional enrichment adapters only; they are not required for the MVP analyst.
+- GPT may later summarize/draft from cited evidence only; FinBERT may later add local-only sentiment annotations. Neither can accept templates, clone domains, create ticker theses, recommend, allocate, write config/learning, or trade.
+- `can_clone_domain_profiles_now=false` until the source semiconductor analyst template is manually accepted.
+
+Implementation note 2026-06-20, domain analyst forecast review:
+
+- `DomainAnalystForecastReviewPacket` is now the expectation ledger between domain thesis review and future learning/outcome review.
+- Manual accept/reject of the semiconductor analyst template means accepting the reusable process, not declaring the thesis true.
+- Analyst outputs should be named `thesis_expectation_or_forecast_candidate`, not investment recommendations.
+- Every expectation keeps horizon, confidence, evidence ids, assumptions, contradiction context, invalidation triggers, and future outcome-review protocol.
+- Outcome review separates `correct_for_stated_reasons`, `correct_but_lucky_or_wrong_reason`, `incorrect_forecast`, `inconclusive_or_not_mature`, `unfalsifiable_or_underspecified`, and `data_unavailable`.
+- The analyst may later summarize why it was right/wrong and propose improvements, but it cannot self-apply changes, write learning memory, change weights/config, recommend, allocate, paper trade, or live trade.
+- `DomainAnalystVerticalSliceRun` now creates `forecast_review_json`; `DomainAnalystPortabilityReview` keeps this packet in the fixed non-portable contract for cloned domains.
+- `DomainAnalystCaseRegistryPacket` now accepts `forecast_review_json` and registers the frozen expectation as `pending_expectation_outcome`, preserving the lucky-hit vs correct-for-reasons taxonomy before any learning promotion.
+
+Implementation note 2026-06-25, domain analyst template decision:
+
+- `DomainAnalystTemplateDecisionPacket` is now the explicit manual accept/reject gate for the semiconductor analyst template.
+- This gate records a decision about the reusable analyst process/template only. It does not declare the thesis true and does not score the forecast outcome.
+- Review-only analyst recommendations are allowed: research recommendations, scenario priorities, evidence requests, causal postmortems, and self-improvement proposals.
+- Execution/investment recommendations remain blocked: no buy/sell/hold, sizing, allocation, order routing, paper trade, or live trade.
+- Current real run is `manual_template_decision_pending`: template accepted is false, one-domain clone candidate is disabled, checks are pass=18, warn=1, fail=0.
+- `CurrentArchitectureMap` version is now `2026-06-25-domain-context-sliced-event-v1` and places `DomainAnalystTemplateDecisionPacket`, `DomainAnalystProfilePolicyPacket`, `DomainAnalystEventInterpretationPacket`, and `DomainAnalystFeedbackLoopPacket` before any clone/learning attempt.
+- If the template is later explicitly accepted with rationale, only one next-domain clone candidate may be prepared through portable profile slots and local source paths. Learning writes, config writes, sector-to-ticker bridge, execution recommendations, and trading remain separately gated.
+- After-385 draft kits under `dean_os/draft` should be harvested selectively. The next useful executable layer is domain/source/evidence policy for modular analyst profiles, not another broad template ladder.
+
+Implementation note 2026-06-25, after-385 profile policy slot harvest:
+
+- The useful after-385 domain-learning draft ideas were integrated into the existing profile system, not copied as standalone production templates.
+- `DomainProfile` now includes `source_registry_policy`, `ingestion_filter_policy`, `evidence_scoring_policy`, `review_output_policy`, and `feedback_label_policy`.
+- `DomainAnalystIntakePacket` snapshots those policies; `DomainAnalystInstanceContract` carries them as portable template slots; `DomainAnalystTemplateStandardizationPacket` includes them in template scope.
+- `DomainAnalystPortabilityReview` now checks those policies for all 5 configured profiles, and `CurrentArchitectureMap` exports their policy ids.
+- `DomainAnalystProfilePolicyPacket` is now the executable policy readiness artifact: current run reviewed 5 profiles, 5 are policy-ready, pass=6, warn=0, fail=0.
+- Forecast and case-registry CLI summaries now separate review-only analyst recommendations from execution recommendations.
+- Current real reruns: profile policy pass=6/warn=0/fail=0; forecast review pass=24/warn=2/fail=0; case registry pass=23/warn=1/fail=0; template decision remains pending pass=18/warn=1/fail=0.
+- This does not enable news event extraction, daily automation, GPT, FinBERT, learning writes, config writes, sector-to-ticker bridge, execution recommendations, or trading.
+
+Implementation note 2026-06-25, domain analyst feedback loop:
+
+- `DomainAnalystFeedbackLoopPacket` is now the review-only bridge from human analyst-report feedback to proposal-only learning candidates.
+- It consumes the current case registry, forecast review, profile policy packet, template decision packet, and optional manual feedback JSON.
+- Manual feedback can label analysis quality, data quality, causal quality, outcome review, process review, profile issues, and proposed learning actions.
+- It explicitly preserves the distinction between correct-for-stated-reasons and correct-but-lucky-or-wrong-reason.
+- Valid feedback can create `proposal_only_pending_human_approval` learning candidates; invalid feedback blocks the packet if it uses unknown labels, unknown targets, requests execution, requests learning apply, or requests config writes.
+- Current real run is `domain_analyst_feedback_loop_ready_pending_manual_feedback`: feedback targets=4, manual feedback records=0, learning candidates=0, pass=9, warn=1, fail=0. The only warning is expected: manual feedback has not been supplied yet.
+- The packet can capture manual feedback and create analyst self-improvement proposals, but cannot apply learning, write learning memory, update prompts, update source registry, update pattern memory, write production config, create execution recommendations, allocate, paper trade, or live trade.
+- Next correct analyst work is either attach real manual feedback/outcomes or explicitly record template accept/reject. Do not add another broad template ladder.
+
+Implementation note 2026-06-25, domain analyst event interpretation:
+
+- `DomainAnalystEventInterpretationPacket` is now the offline review-only layer for detailed news/data analysis.
+- This clarifies the boundary: detailed analysis is allowed; execution/investment action is blocked.
+- Allowed analyst outputs now include event interpretation, mechanism hypotheses, value-chain mapping, watch metric requests, contradiction review, data-quality notes, evidence gaps, and review queue items.
+- The packet adapts after-385 `NEWS_EVENT_INTERPRETATION_SCHEMA_TEMPLATE.json`, `ANALYST_NEWS_INTERPRETATION_PROMPT_TEMPLATE.md`, `CAUSAL_PATTERN_SCHEMA_TEMPLATE.yaml`, and `SAFE_AUTOMATION_BOUNDARY_TEMPLATE.yaml`.
+- Current real run on the semiconductor evidence pack processed 144 source documents into 80 event interpretation packets, with 53 high-materiality/review-required items.
+- Event packets include source anchors, event type, directness, sentiment as weak context only, causal patterns, mechanism chain, affected value chain, intermediate variables, counterforces, evidence gaps, next collection tasks, materiality, confidence, and horizon.
+- Event packets now also include `context_conditioned_interpretation`: growth, inflation/rates/credit, war/geopolitical, commodity/energy, market/risk appetite, technology capex, and narrative context slices change how the news is interpreted.
+- Example rule: the same capex/demand news is not read the same way under low rates/growth expansion, high inflation/rate pressure, or war/sanctions/security-of-supply regimes.
+- Context slices create amplifiers, dampeners, watch metrics, and review flags. They are review scaffolding, not final macro truth or trading signals.
+- `DomainAnalystVerticalSliceRun` now creates `event_interpretation_json` as part of the full analyst slice: evidence pack -> source gate -> event interpretation -> intake -> instance -> thesis review -> forecast review -> template standardization.
+- Current vertical slice remains `domain_analyst_candidate_complete_pending_manual_acceptance`; it has 144 documents, 144 evidence items, 80 event packets, 53 review-required items, synthetic=false, fixture=false, can_scale=false, can_trade=false.
+- This does not enable daily automation, live fetch, GPT, FinBERT, final thesis truth, price targets, buy/sell/hold, sizing, allocation, orders, broker calls, paper/live trades, learning writes, or production config writes.
+
+Implementation note 2026-06-28, development walk-forward:
+
+- The active pipeline now has a purged expanding walk-forward train/validation evaluator with causal Stage 3 timeframe lineage and a review-only Stage 4 seam.
+- Its artifacts are development-only supporting evidence. They cannot be promoted or treated as locked test/model evidence.
+- The first NVDA/15m candidate failed predictive and stability gates. Do not iterate variants on the same folds; accumulate new forward observations before a virgin holdout is defined.
+- `PipelineControlForwardDataAccrualPlan` now registers the first-seen boundary for those observations without loading data. New rows must arrive in a new immutable artifact after registration and remain development-refresh data, not a virgin holdout.
+- `PipelineControlForwardDataAccrualGate` enforces that boundary before Stage 3: it rejects pre-registration or seen files, target-contaminated inputs, insufficient post-watermark rows, invalid OHLCV/cadence/returns, duplicates, and cross-ticker copies. The existing June 25 source is blocked.
+- The active walk-forward runner accepts a forward source only through a passing accrual-gate JSON, rechecks its provenance, preserves a separate development partition, and derives causal higher-timeframe context before Stage 3.
+
+Implementation note 2026-06-28, active normal model-evidence path:
+
+- Active Stage 4 now adapts nested prepared splits to the unified trainer and uses validation for model selection while reserving the prepared holdout.
+- Candidate models are persisted separately; only the actual winner is promoted to the stable champion file.
+- Stage 4 emits honest partial/measured training candidates, and Stage 5 propagates target/model/timeframe/context lineage so Stage 7 can produce joinable single-context evaluation evidence.
+- This repair was contract-tested without running normal training or the heavy pipeline.
+
+Implementation note 2026-06-28, active execution boundary:
+
+- Normal final-stage orchestration now runs Stage 5 -> Stage 7. Stage 6 is excluded unless explicitly requested.
+- Explicit Stage 6 calls remain review-only: they pass prediction signals onward but do not initialize the virtual portfolio, create orders, write the decision diary, or mutate learning state.
+- Paper requests are blocked in the active pipeline and routed conceptually to the existing review receipt -> paper simulation plan -> isolated external executor -> post-paper review workflow.
+- Live `Trader` initialization is rejected. No broker adapter, paper transaction, live order, or trading-memory write is authorized by this integration.
+- Stage 7 no longer invokes real-time adaptation from caller-supplied trading activity. It emits a proposal-only learning-review candidate with every learning/config mutation flag false.
+- Telegram/Discord evaluation delivery is off by default and requires explicit authorization in the individual final-stage request.
+
+Implementation note 2026-06-28, DEAN orchestrator review phases:
+
+- `DEANOrchestrator` now runs pipeline hard-veto agents as preflight, runs the explicitly selected pipeline adapter only if preflight is clear, runs analytical agents on post-pipeline context, then repeats pipeline data/risk safety review in `pre_trade`.
+- Post-pipeline reports take precedence over preflight reports for the same agent, so consensus sees checks performed on actual pipeline outputs.
+- Missing prerequisites for hard/block agents now produce valid evidence-backed synthetic block reports and stop the pipeline runner.
+- Default consensus no longer emits `candidate_long` or `candidate_short`; high scores become review-only `watchlist` decisions.
+- `HybridPipelineAdapter` now attaches a compact `dean_pipeline_review_contract_v1` to the DEAN context: pipeline status, Stage 4 manifests, Stage 7 artifacts, execution boundary, learning-review status, and explicit no-trade/no-config flags.
+- Realized returns now outrank `target_return_*`. If only a supervised target label is available, it remains offline-only and RiskAgent blocks it in pre-trade review.

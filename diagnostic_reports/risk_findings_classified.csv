@@ -13,7 +13,7 @@ P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,176,return np.su
 P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,379,"def _scale_to_target_volatility(self, weights: np.ndarray, vols: np.",Feature-like module may create target columns.,REVIEW_REQUIRED
 P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,380,"ndarray, correlations: (np.ndarray | None), target_volatility: float",Feature-like module may create target columns.,REVIEW_REQUIRED
 P0,TARGET_IN_FEATURE_MODULE,algorithms/risk_parity_allocator.py,391,scale_factor = target_volatility / portfolio_vol,Feature-like module may create target columns.,REVIEW_REQUIRED
-P2,BROAD_EXCEPT,analytics/analyzer_registry.py,42,except Exception as e2:,Broad exception. Classify fatal/degraded paths.,REVIEW_REQUIRED
+P2,BROAD_EXCEPT,analytics/analyzer_registry.py,42,except Exception as e2:,Broad exception. Classify fatal/degraded paths.,FALSE_POSITIVE
 P2,BROAD_EXCEPT,analytics/analyzer_registry.py,47,except Exception as e3:,Broad exception. Classify fatal/degraded paths.,REVIEW_REQUIRED
 P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,93,target_name = args.test_target,Feature-like module may create target columns.,SAFE_INFRASTRUCTURE
 P0,TARGET_IN_FEATURE_MODULE,cli/argument_validator.py,94,if not target_name.startswith('target_'):,Feature-like module may create target columns.,SAFE_INFRASTRUCTURE

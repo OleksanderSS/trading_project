@@ -1,0 +1,54 @@
+domain_id: healthcare
+display_name: Health Care
+sector_label: healthcare
+macro_evidence_type: macro_context
+description: Analyzes pharma, biotech, medical devices, drug approvals, and healthcare policy.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Are major drug trials reading out positive or negative?
+  - How are patent cliffs affecting large pharma?
+  - Are FDA approvals accelerating or slowing?
+required_evidence_types:
+  - trial_readouts
+  - fda_decisions
+  - patent_cliffs
+useful_evidence_types:
+  - drug_shortages
+  - pricing_regulation
+sector_keywords:
+  - pharma
+  - biotech
+  - trial
+  - phase 3
+  - fda
+  - ema
+  - clinicaltrials
+  - patent
+  - evaluate pharma
+  - stat news
+  - fierce biotech
+trusted_sources:
+  tier_1_apis:
+    - "FDA"
+    - "EMA"
+    - "ClinicalTrials.gov"
+    - "WHO"
+  tier_2_reports:
+    - "Evaluate Pharma"
+    - "STAT News"
+    - "Fierce Biotech"
+ticker_universe_hint:
+  - PFE
+  - LLY
+  - NVO
+  - JNJ
+  - MRK
+  - XLV
+  - IBB
+contradiction_rules:
+  - Failed trials with rising stock prices reduces confidence in directional thesis.
+direct_ticker_evidence_rules:
+  - Ticker-specific FDA decisions.
+blocked_if_missing:
+  - No trial or regulatory data for biotech plays.

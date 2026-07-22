@@ -1,0 +1,62 @@
+domain_id: consumer_discretionary
+display_name: Consumer Discretionary
+sector_label: consumer_discretionary
+macro_evidence_type: macro_context
+description: Analyzes consumer spending, retail sales, automotive demand (including EVs), and consumer confidence.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Is consumer spending shifting away from discretionary items?
+  - Are auto inventories rising while prices fall?
+  - Are retail margins compressed by discounting?
+  - How do financing rates (e.g., auto loans) affect demand?
+required_evidence_types:
+  - consumer_spending
+  - auto_sales
+  - retail_inventories
+useful_evidence_types:
+  - consumer_confidence
+  - credit_card_data
+  - ev_adoption
+  - housing_wealth_effect
+sector_keywords:
+  - retail
+  - auto
+  - ev
+  - consumer spending
+  - discretionary
+  - e-commerce
+  - battery
+  - registrations
+  - incentives
+  - luxury
+  - acea
+  - marklines
+  - cox automotive
+  - rho motion
+trusted_sources:
+  tier_1_apis:
+    - "US Census"
+    - "BEA"
+    - "ACEA"
+  tier_2_reports:
+    - "S&P Global Mobility"
+    - "MarkLines"
+    - "Cox Automotive"
+    - "Rho Motion"
+    - "Mastercard SpendingPulse"
+ticker_universe_hint:
+  - TSLA
+  - AMZN
+  - HD
+  - MCD
+  - NKE
+  - SBUX
+  - XLY
+contradiction_rules:
+  - Strong consumer confidence with falling real retail sales reduces confidence.
+  - High auto inventories with rising manufacturer stock prices usually indicates speculative action.
+direct_ticker_evidence_rules:
+  - Specific brand or model registration data.
+blocked_if_missing:
+  - No retail or auto sales data for a sector-wide thesis.

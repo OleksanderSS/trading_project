@@ -1,0 +1,73 @@
+domain_id: metals_mining
+display_name: Metals & Mining
+sector_label: basic_materials
+macro_evidence_type: macro_context
+description: Analyzes industrial metals, precious metals, critical minerals, smelting capacity, and mining supply chains.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Is global manufacturing driving higher metal demand?
+  - Are inventories at LME or COMEX depleting?
+  - Are there supply disruptions in key mining regions (Chile, Peru, Africa)?
+  - How are export controls (e.g., China) affecting critical minerals?
+  - Are smelting margins supportive of production?
+required_evidence_types:
+  - demand_manufacturing
+  - supply_mining
+  - inventories
+useful_evidence_types:
+  - treatment_charges
+  - export_controls
+  - lme_stocks
+  - steel_output
+  - critical_minerals_outlook
+sector_keywords:
+  - copper
+  - aluminum
+  - nickel
+  - lithium
+  - gold
+  - silver
+  - steel
+  - iron ore
+  - rare earths
+  - smelting
+  - mine supply
+  - treatment charges
+  - lme stocks
+  - world steel
+  - usgs
+  - benchmark mineral intelligence
+trusted_sources:
+  tier_1_apis:
+    - "USGS"
+    - "IEA"
+    - "COMEX"
+  tier_2_reports:
+    - "World Steel Association"
+    - "LME"
+    - "Benchmark Mineral Intelligence"
+    - "Fastmarkets"
+    - "CRU"
+ticker_universe_hint:
+  - GLD
+  - SLV
+  - CPER
+  - COPX
+  - PICK
+  - LIT
+  - XME
+  - BHP
+  - RIO
+  - FCX
+  - VALE
+  - GLNCY
+contradiction_rules:
+  - Rising inventories with rising prices reduces confidence.
+  - Weak PMI with strong industrial metal rallies must be treated as speculative.
+  - Supply disruption thesis without falling treatment charges reduces confidence.
+direct_ticker_evidence_rules:
+  - Asset-specific inventory data.
+  - Mine specific production or strike news.
+blocked_if_missing:
+  - No inventory or demand evidence for a strong directional thesis.

@@ -1,0 +1,23 @@
+liquidity_conditions:
+  - liquidity
+  - reserves
+  - repo
+  - qt
+  - qe
+  - funding
+credit_spreads:
+  - credit spread
+  - spreads
+  - high yield
+  - investment grade
+funding_stress:
+  - funding stress
+  - bank stress
+  - repo stress
+  - liquidity stress
+market_confirmation:
+  - hyg
+  - lqd
+  - vix
+  - spread widening
+  - spread tightening

@@ -1,0 +1,52 @@
+domain_id: utilities_power
+display_name: Utilities & Power
+sector_label: utilities
+macro_evidence_type: macro_context
+description: Analyzes electricity grids, power generation, data-center load, and utility regulation.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Is data center load straining grid capacity?
+  - Are power prices rising due to generation mix changes?
+  - What are the interconnection queue delays for renewables?
+required_evidence_types:
+  - electricity_load
+  - generation_mix
+  - power_prices
+useful_evidence_types:
+  - reserve_margins
+  - interconnection_queues
+  - transformer_lead_times
+  - outages
+sector_keywords:
+  - utilities
+  - electricity
+  - grid
+  - power equipment
+  - data center load
+  - transformer
+  - entso-e
+  - gridstatus
+  - nerc
+  - pjm
+  - ercot
+trusted_sources:
+  tier_1_apis:
+    - "EIA"
+    - "ENTSO-E"
+    - "NERC"
+  tier_2_reports:
+    - "GridStatus.io"
+    - "PJM"
+    - "ERCOT"
+    - "IEA Electricity"
+ticker_universe_hint:
+  - NEE
+  - DUK
+  - XLU
+contradiction_rules:
+  - High data center load thesis without rising power prices or capex reduces confidence.
+direct_ticker_evidence_rules:
+  - Specific utility rate base growth.
+blocked_if_missing:
+  - No load or power price data.

@@ -10,7 +10,8 @@ secrets/
 
 # Large data and model files (keep locally, don't push to Git)
 /data/
-/models/  # Ignored large model files
+# Ignored large model files
+/models/
 logs/
 cache/
 backups/
@@ -98,6 +99,7 @@ mlflow.db
 /stderr.log
 /*.zip
 reports/**/*.log
+reports/dean_os/
 
 # Static analysis caches
 .mypy_cache/

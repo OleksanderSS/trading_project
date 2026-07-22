@@ -1,0 +1,2216 @@
+{
+  "block_id": "245_review_only_real_source_normalized_packet_fixture_v1",
+  "schema_version": "real_source_normalized_packet_fixture_v1_review_only",
+  "created_at_utc": "2026-06-18T14:26:48.418139+00:00",
+  "upstream_blocks": [
+    "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+    "240_review_only_assets_universe_and_multisource_intelligence_contract_v1"
+  ],
+  "fixture_status": "review_only_normalized_packet_fixture_materialized_for_validation_not_evidence",
+  "source_first_pipeline_position": [
+    "real_source_intake",
+    "intake_normalizer_contract",
+    "normalized_packet_fixture_materialization",
+    "future_normalized_packet_validation_gate",
+    "future_claim_event_entity_extraction_contract",
+    "future_topic_sector_asset_candidate_linking",
+    "future_financial_implication_candidate_mapping",
+    "future_human_review_gate"
+  ],
+  "summary": {
+    "normalized_packet_fixture_count": 12,
+    "source_type_count": 12,
+    "content_unit_count": 29,
+    "anchor_count": 29,
+    "quarantine_partition_instance_count": 6,
+    "candidate_asset_or_entity_count": 16,
+    "candidate_topic_count": 17,
+    "candidate_sector_count": 6,
+    "real_source_content_supplied_in_245": false,
+    "fixtures_are_production_evidence": false,
+    "claim_extraction_performed_in_245": false,
+    "event_extraction_performed_in_245": false,
+    "event_propagation_performed_in_245": false,
+    "company_thesis_generated_in_245": false
+  },
+  "normalized_packet_fixture_rows": [
+    {
+      "packet_id": "norm245_01_company_filings_and_sec_reports",
+      "parent_source_packet_id": "intake_fixture_01_company_filings_and_sec_reports",
+      "source_type_id": "company_filings_and_sec_reports",
+      "source_name": "Company filings / SEC reports",
+      "intake_mode_id": "offline_archive_path",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "offline_archive_path",
+        "original_reference_or_file_id": "fixture_reference://block245/company_filings_and_sec_reports",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "8ba66c938a08db31fa62d0ba0d94d458a882bad927d0934fd4f3f353ec28d7fe",
+        "normalized_text_hash": "708d7d12e5febfdbbb3dd0da3b0837e8f78e5cef1c2d573adc6d7f54dcd0989a",
+        "dedupe_key": "block245:company_filings_and_sec_reports",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "pdf_report_or_filing",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_01_company_filings_and_sec_reports_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture filing packet for parser/schema validation only.",
+          "anchor_id": "norm245_01_company_filings_and_sec_reports_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_01_company_filings_and_sec_reports_unit_02",
+          "content_unit_type_id": "paragraph",
+          "normalized_text": "Fixture management discussion unit; not sourced from a real filing.",
+          "anchor_id": "norm245_01_company_filings_and_sec_reports_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_01_company_filings_and_sec_reports_unit_03",
+          "content_unit_type_id": "table",
+          "normalized_text": "Fixture financial table unit with preserved headers and units but no claim extraction.",
+          "anchor_id": "norm245_01_company_filings_and_sec_reports_anchor_03",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_01_company_filings_and_sec_reports_anchor_01",
+          "content_unit_id": "norm245_01_company_filings_and_sec_reports_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_01_company_filings_and_sec_reports/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_01_company_filings_and_sec_reports_anchor_02",
+          "content_unit_id": "norm245_01_company_filings_and_sec_reports_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_01_company_filings_and_sec_reports/unit/02",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_01_company_filings_and_sec_reports_anchor_03",
+          "content_unit_id": "norm245_01_company_filings_and_sec_reports_unit_03",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_01_company_filings_and_sec_reports/unit/03",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "company_filing",
+          "financial_disclosure"
+        ],
+        "candidate_sectors": [
+          "semiconductors"
+        ],
+        "candidate_assets_or_entities": [
+          "AMD"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_01_company_filings_and_sec_reports_unit_01",
+        "norm245_01_company_filings_and_sec_reports_unit_02",
+        "norm245_01_company_filings_and_sec_reports_unit_03"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "3504d4879585308864c715509c84b95649d1dc30919d751d79b27f4e979ce534"
+    },
+    {
+      "packet_id": "norm245_02_earnings_transcripts_and_presentations",
+      "parent_source_packet_id": "intake_fixture_02_earnings_transcripts_and_presentations",
+      "source_type_id": "earnings_transcripts_and_presentations",
+      "source_name": "Earnings transcripts and investor presentations",
+      "intake_mode_id": "user_uploaded_file",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "user_uploaded_file",
+        "original_reference_or_file_id": "fixture_reference://block245/earnings_transcripts_and_presentations",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "08fd99bd8e7af40e39b86a8abe0a090d8381f48bd3ed783c3f6b5fead4eca373",
+        "normalized_text_hash": "75ff2c334e6bf3ab0809f843ab21b73a177168d996a830f04d96200d5e5ee5c6",
+        "dedupe_key": "block245:earnings_transcripts_and_presentations",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "transcript",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_02_earnings_transcripts_and_presentations_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture earnings transcript packet.",
+          "anchor_id": "norm245_02_earnings_transcripts_and_presentations_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_02_earnings_transcripts_and_presentations_unit_02",
+          "content_unit_type_id": "speaker_turn",
+          "normalized_text": "Fixture prepared remarks unit; no speaker claim promoted.",
+          "anchor_id": "norm245_02_earnings_transcripts_and_presentations_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_02_earnings_transcripts_and_presentations_unit_03",
+          "content_unit_type_id": "speaker_turn",
+          "normalized_text": "Fixture Q&A unit; no event extracted in this block.",
+          "anchor_id": "norm245_02_earnings_transcripts_and_presentations_anchor_03",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_02_earnings_transcripts_and_presentations_anchor_01",
+          "content_unit_id": "norm245_02_earnings_transcripts_and_presentations_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_02_earnings_transcripts_and_presentations/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_02_earnings_transcripts_and_presentations_anchor_02",
+          "content_unit_id": "norm245_02_earnings_transcripts_and_presentations_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_02_earnings_transcripts_and_presentations/unit/02",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_02_earnings_transcripts_and_presentations_anchor_03",
+          "content_unit_id": "norm245_02_earnings_transcripts_and_presentations_unit_03",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_02_earnings_transcripts_and_presentations/unit/03",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [
+        {
+          "partition_id": "legal_disclaimer",
+          "source_type_id": "earnings_transcripts_and_presentations",
+          "status": "quarantined_in_fixture"
+        }
+      ],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "earnings_transcript",
+          "ai_capex_cycle"
+        ],
+        "candidate_sectors": [
+          "ai_big_tech",
+          "semiconductors"
+        ],
+        "candidate_assets_or_entities": [
+          "NVDA",
+          "AMD",
+          "MSFT"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_02_earnings_transcripts_and_presentations_unit_01",
+        "norm245_02_earnings_transcripts_and_presentations_unit_02",
+        "norm245_02_earnings_transcripts_and_presentations_unit_03"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "a99f0c1843aa3cb4333081f63f2d5219d0284ce1defee5cee8b80fdb42ac3866"
+    },
+    {
+      "packet_id": "norm245_03_news_articles_general_business",
+      "parent_source_packet_id": "intake_fixture_03_news_articles_general_business",
+      "source_type_id": "news_articles_general_business",
+      "source_name": "General business/news articles",
+      "intake_mode_id": "user_pasted_text",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "user_pasted_text",
+        "original_reference_or_file_id": "fixture_reference://block245/news_articles_general_business",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "452b85a218df811a568e612df544d49fa04dacd3a5ffbed7877ecbb6ec80ad9e",
+        "normalized_text_hash": "a641ea1ef9c6938810af56deb6a54d92e409dad63d3a46753f47a6f09dcf7553",
+        "dedupe_key": "block245:news_articles_general_business",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "plain_text_or_markdown_article",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_03_news_articles_general_business_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture general business news packet.",
+          "anchor_id": "norm245_03_news_articles_general_business_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_03_news_articles_general_business_unit_02",
+          "content_unit_type_id": "paragraph",
+          "normalized_text": "Fixture paragraph about broad market context; not real news.",
+          "anchor_id": "norm245_03_news_articles_general_business_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_03_news_articles_general_business_anchor_01",
+          "content_unit_id": "norm245_03_news_articles_general_business_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_03_news_articles_general_business/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_03_news_articles_general_business_anchor_02",
+          "content_unit_id": "norm245_03_news_articles_general_business_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_03_news_articles_general_business/unit/02",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [
+        {
+          "partition_id": "advertising_navigation_author_bio",
+          "source_type_id": "news_articles_general_business",
+          "status": "quarantined_in_fixture"
+        }
+      ],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "interest_rates",
+          "consumer_demand"
+        ],
+        "candidate_sectors": [
+          "market_etfs",
+          "finance",
+          "consumer_staples"
+        ],
+        "candidate_assets_or_entities": [
+          "SPY",
+          "IWM",
+          "JPM",
+          "BAC",
+          "WMT"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_03_news_articles_general_business_unit_01",
+        "norm245_03_news_articles_general_business_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "7d8d68c86e8bbe687245725b1bf1bbcee7befc2a9203b5553abc4b569465ced2"
+    },
+    {
+      "packet_id": "norm245_04_specialized_industry_news",
+      "parent_source_packet_id": "intake_fixture_04_specialized_industry_news",
+      "source_type_id": "specialized_industry_news",
+      "source_name": "Specialized industry news",
+      "intake_mode_id": "connector_fetched_reference",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "connector_fetched_reference",
+        "original_reference_or_file_id": "fixture_reference://block245/specialized_industry_news",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "ae5a8965af35332d22582b319f74ca89df113350dc1686ae6d991adb5c60e330",
+        "normalized_text_hash": "71c692b13d1dced2fe1bf259fe088d140659dc02b754f58b2b57373b66d39436",
+        "dedupe_key": "block245:specialized_industry_news",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "plain_text_or_markdown_article",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_04_specialized_industry_news_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture specialized industry news packet.",
+          "anchor_id": "norm245_04_specialized_industry_news_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_04_specialized_industry_news_unit_02",
+          "content_unit_type_id": "paragraph",
+          "normalized_text": "Fixture rare-earth supply pressure context; not external evidence.",
+          "anchor_id": "norm245_04_specialized_industry_news_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_04_specialized_industry_news_unit_03",
+          "content_unit_type_id": "quote",
+          "normalized_text": "Fixture quoted-source unit with no claim extraction.",
+          "anchor_id": "norm245_04_specialized_industry_news_anchor_03",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_04_specialized_industry_news_anchor_01",
+          "content_unit_id": "norm245_04_specialized_industry_news_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_04_specialized_industry_news/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_04_specialized_industry_news_anchor_02",
+          "content_unit_id": "norm245_04_specialized_industry_news_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_04_specialized_industry_news/unit/02",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_04_specialized_industry_news_anchor_03",
+          "content_unit_id": "norm245_04_specialized_industry_news_unit_03",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_04_specialized_industry_news/unit/03",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "rare_earths_critical_minerals",
+          "semiconductor_export_controls"
+        ],
+        "candidate_sectors": [
+          "semiconductors",
+          "ai_big_tech"
+        ],
+        "candidate_assets_or_entities": [
+          "NVDA",
+          "AMD",
+          "AAPL",
+          "TSM"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_04_specialized_industry_news_unit_01",
+        "norm245_04_specialized_industry_news_unit_02",
+        "norm245_04_specialized_industry_news_unit_03"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "81ab2961e810bae82f3524642aedaddb63bf0b94cdddf66e0c0bc6021b049b67"
+    },
+    {
+      "packet_id": "norm245_05_analyst_research_and_broker_notes",
+      "parent_source_packet_id": "intake_fixture_05_analyst_research_and_broker_notes",
+      "source_type_id": "analyst_research_and_broker_notes",
+      "source_name": "Analyst research / broker notes",
+      "intake_mode_id": "user_uploaded_file",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "user_uploaded_file",
+        "original_reference_or_file_id": "fixture_reference://block245/analyst_research_and_broker_notes",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "39aa8e24daba7f419e8893e48438d1028c8b1f38d126ce6df1e9ec2140ec33cb",
+        "normalized_text_hash": "a5524ad5efd2a61d1922bfaf51420bc8b01d65d819fed4112fff632bedcb4813",
+        "dedupe_key": "block245:analyst_research_and_broker_notes",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "pdf_report_or_filing",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_05_analyst_research_and_broker_notes_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture analyst note packet.",
+          "anchor_id": "norm245_05_analyst_research_and_broker_notes_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_05_analyst_research_and_broker_notes_unit_02",
+          "content_unit_type_id": "paragraph",
+          "normalized_text": "Fixture analyst narrative unit; not accepted as DEAN-OS conclusion.",
+          "anchor_id": "norm245_05_analyst_research_and_broker_notes_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_05_analyst_research_and_broker_notes_unit_03",
+          "content_unit_type_id": "disclaimer_rating_price_target_language",
+          "normalized_text": "Fixture third-party rating/price target language quarantined.",
+          "anchor_id": "norm245_05_analyst_research_and_broker_notes_anchor_03",
+          "extraction_eligible": false,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_05_analyst_research_and_broker_notes_anchor_01",
+          "content_unit_id": "norm245_05_analyst_research_and_broker_notes_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_05_analyst_research_and_broker_notes/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_05_analyst_research_and_broker_notes_anchor_02",
+          "content_unit_id": "norm245_05_analyst_research_and_broker_notes_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_05_analyst_research_and_broker_notes/unit/02",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_05_analyst_research_and_broker_notes_anchor_03",
+          "content_unit_id": "norm245_05_analyst_research_and_broker_notes_unit_03",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_05_analyst_research_and_broker_notes/unit/03",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [
+        {
+          "partition_id": "third_party_rating_or_price_target",
+          "source_type_id": "analyst_research_and_broker_notes",
+          "status": "quarantined_in_fixture"
+        },
+        {
+          "partition_id": "legal_disclaimer",
+          "source_type_id": "analyst_research_and_broker_notes",
+          "status": "quarantined_in_fixture"
+        }
+      ],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "analyst_note",
+          "ai_capex_cycle"
+        ],
+        "candidate_sectors": [
+          "ai_big_tech",
+          "semiconductors"
+        ],
+        "candidate_assets_or_entities": [
+          "NVDA",
+          "MSFT",
+          "AMD"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_05_analyst_research_and_broker_notes_unit_01",
+        "norm245_05_analyst_research_and_broker_notes_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "ecfdb725e0f137756f280611a01f15c13e6851f03c0662a04dedfd6e59755ff9"
+    },
+    {
+      "packet_id": "norm245_06_industry_reports_and_whitepapers",
+      "parent_source_packet_id": "intake_fixture_06_industry_reports_and_whitepapers",
+      "source_type_id": "industry_reports_and_whitepapers",
+      "source_name": "Industry reports and whitepapers",
+      "intake_mode_id": "offline_archive_path",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "offline_archive_path",
+        "original_reference_or_file_id": "fixture_reference://block245/industry_reports_and_whitepapers",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "58289e7c79320abd36d7ba4c5566abe8ffa84c345a175d00f081d5946483a5d6",
+        "normalized_text_hash": "86da48612f95ef238766e545a7f77ed9960d1ad35e7ac4661937c9ec5c69c97b",
+        "dedupe_key": "block245:industry_reports_and_whitepapers",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "pdf_report_or_filing",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_06_industry_reports_and_whitepapers_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture industry report packet.",
+          "anchor_id": "norm245_06_industry_reports_and_whitepapers_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_06_industry_reports_and_whitepapers_unit_02",
+          "content_unit_type_id": "paragraph",
+          "normalized_text": "Fixture methodology overview unit.",
+          "anchor_id": "norm245_06_industry_reports_and_whitepapers_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_06_industry_reports_and_whitepapers_unit_03",
+          "content_unit_type_id": "figure_caption",
+          "normalized_text": "Fixture chart caption unit with no underlying figure parsing.",
+          "anchor_id": "norm245_06_industry_reports_and_whitepapers_anchor_03",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_06_industry_reports_and_whitepapers_anchor_01",
+          "content_unit_id": "norm245_06_industry_reports_and_whitepapers_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_06_industry_reports_and_whitepapers/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_06_industry_reports_and_whitepapers_anchor_02",
+          "content_unit_id": "norm245_06_industry_reports_and_whitepapers_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_06_industry_reports_and_whitepapers/unit/02",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_06_industry_reports_and_whitepapers_anchor_03",
+          "content_unit_id": "norm245_06_industry_reports_and_whitepapers_unit_03",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_06_industry_reports_and_whitepapers/unit/03",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "industry_report",
+          "semiconductor_supply_chain"
+        ],
+        "candidate_sectors": [
+          "semiconductors",
+          "ai_big_tech"
+        ],
+        "candidate_assets_or_entities": [
+          "TSM",
+          "NVDA",
+          "AMD",
+          "INTC"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_06_industry_reports_and_whitepapers_unit_01",
+        "norm245_06_industry_reports_and_whitepapers_unit_02",
+        "norm245_06_industry_reports_and_whitepapers_unit_03"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "20bf9663f7c344d97b811663fd96b8cab73f7f917d751053b4d2b3cd699d8b08"
+    },
+    {
+      "packet_id": "norm245_07_macro_data_and_central_bank_context",
+      "parent_source_packet_id": "intake_fixture_07_macro_data_and_central_bank_context",
+      "source_type_id": "macro_data_and_central_bank_context",
+      "source_name": "Macro data and central-bank context",
+      "intake_mode_id": "api_snapshot_payload",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "api_snapshot_payload",
+        "original_reference_or_file_id": "fixture_reference://block245/macro_data_and_central_bank_context",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "589003ea3074fa4fe26be1c19693d01f8a887d5a0742bf573178159e68d94693",
+        "normalized_text_hash": "9b8137f47d73bcdd361ee7e01850e2caf4a4e3c40d85c5f185b33e9c4d80bdf3",
+        "dedupe_key": "block245:macro_data_and_central_bank_context",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "json_api_snapshot_payload",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_07_macro_data_and_central_bank_context_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture macro snapshot packet.",
+          "anchor_id": "norm245_07_macro_data_and_central_bank_context_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_07_macro_data_and_central_bank_context_unit_02",
+          "content_unit_type_id": "time_series_observation",
+          "normalized_text": "Fixture rate observation row; no trading signal.",
+          "anchor_id": "norm245_07_macro_data_and_central_bank_context_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_07_macro_data_and_central_bank_context_anchor_01",
+          "content_unit_id": "norm245_07_macro_data_and_central_bank_context_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_07_macro_data_and_central_bank_context/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_07_macro_data_and_central_bank_context_anchor_02",
+          "content_unit_id": "norm245_07_macro_data_and_central_bank_context_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_07_macro_data_and_central_bank_context/unit/02",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "interest_rates_discount_rates"
+        ],
+        "candidate_sectors": [
+          "market_etfs",
+          "finance",
+          "ai_big_tech"
+        ],
+        "candidate_assets_or_entities": [
+          "SPY",
+          "QQQ",
+          "IWM",
+          "JPM",
+          "GS"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_07_macro_data_and_central_bank_context_unit_01",
+        "norm245_07_macro_data_and_central_bank_context_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "b1b896d484e47121ce7f4e0063c0d02105701cf20909db9a53ffa62ee7316177"
+    },
+    {
+      "packet_id": "norm245_08_policy_regulation_and_law",
+      "parent_source_packet_id": "intake_fixture_08_policy_regulation_and_law",
+      "source_type_id": "policy_regulation_and_law",
+      "source_name": "Policy, regulation and law",
+      "intake_mode_id": "connector_fetched_reference",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "connector_fetched_reference",
+        "original_reference_or_file_id": "fixture_reference://block245/policy_regulation_and_law",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "ecac6edaa4090ee1ce5a1567def3913221a312bb8694a74d742a906fa098a211",
+        "normalized_text_hash": "b7c4b1a1215ff5f0e5b12c02a8937f6603c27de3bcd9f76a7aa605213d8ea561",
+        "dedupe_key": "block245:policy_regulation_and_law",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "policy_or_legal_document",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_08_policy_regulation_and_law_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture policy/regulation packet.",
+          "anchor_id": "norm245_08_policy_regulation_and_law_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_08_policy_regulation_and_law_unit_02",
+          "content_unit_type_id": "legal_or_policy_clause",
+          "normalized_text": "Fixture policy clause unit with jurisdiction capture.",
+          "anchor_id": "norm245_08_policy_regulation_and_law_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_08_policy_regulation_and_law_anchor_01",
+          "content_unit_id": "norm245_08_policy_regulation_and_law_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_08_policy_regulation_and_law/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_08_policy_regulation_and_law_anchor_02",
+          "content_unit_id": "norm245_08_policy_regulation_and_law_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_08_policy_regulation_and_law/unit/02",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "platform_regulation_antitrust_privacy",
+          "semiconductor_export_controls"
+        ],
+        "candidate_sectors": [
+          "ai_big_tech",
+          "semiconductors"
+        ],
+        "candidate_assets_or_entities": [
+          "AAPL",
+          "GOOGL",
+          "AMZN",
+          "NVDA",
+          "TSM"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_08_policy_regulation_and_law_unit_01",
+        "norm245_08_policy_regulation_and_law_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "c5cd22f9e626e09c6cef243aa0c7abebba6ac211ccb5a581b97f3ff18a668273"
+    },
+    {
+      "packet_id": "norm245_09_geopolitics_and_security_context",
+      "parent_source_packet_id": "intake_fixture_09_geopolitics_and_security_context",
+      "source_type_id": "geopolitics_and_security_context",
+      "source_name": "Geopolitics and security context",
+      "intake_mode_id": "user_pasted_text",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "user_pasted_text",
+        "original_reference_or_file_id": "fixture_reference://block245/geopolitics_and_security_context",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "68614dcad45797cb201e95bf950e94eab979357019a90f12d233a1a6bc5169d5",
+        "normalized_text_hash": "2f057e51292ec8d6f45a978bcf993b5f56d30a430f4ba3fb87d1ec07a0064cad",
+        "dedupe_key": "block245:geopolitics_and_security_context",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "plain_text_or_markdown_article",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_09_geopolitics_and_security_context_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture geopolitics/security context packet.",
+          "anchor_id": "norm245_09_geopolitics_and_security_context_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_09_geopolitics_and_security_context_unit_02",
+          "content_unit_type_id": "paragraph",
+          "normalized_text": "Fixture regional risk context; no event propagation.",
+          "anchor_id": "norm245_09_geopolitics_and_security_context_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_09_geopolitics_and_security_context_anchor_01",
+          "content_unit_id": "norm245_09_geopolitics_and_security_context_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_09_geopolitics_and_security_context/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_09_geopolitics_and_security_context_anchor_02",
+          "content_unit_id": "norm245_09_geopolitics_and_security_context_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_09_geopolitics_and_security_context/unit/02",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "geopolitics_security",
+          "semiconductor_export_controls"
+        ],
+        "candidate_sectors": [
+          "semiconductors",
+          "energy",
+          "market_etfs"
+        ],
+        "candidate_assets_or_entities": [
+          "TSM",
+          "NVDA",
+          "XOM",
+          "SPY"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_09_geopolitics_and_security_context_unit_01",
+        "norm245_09_geopolitics_and_security_context_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "b99f63b880972669a94e8f74590c7e4264126777cf92db4e883496cb6adb13d8"
+    },
+    {
+      "packet_id": "norm245_10_historical_context_and_case_studies",
+      "parent_source_packet_id": "intake_fixture_10_historical_context_and_case_studies",
+      "source_type_id": "historical_context_and_case_studies",
+      "source_name": "Historical context and case studies",
+      "intake_mode_id": "offline_archive_path",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "offline_archive_path",
+        "original_reference_or_file_id": "fixture_reference://block245/historical_context_and_case_studies",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "92647b7e46addf9d810ed4dfc8ca2987197be77f08d5a0bababbb503e151a01c",
+        "normalized_text_hash": "59f5ab03883044e2e423eb04c0393e575379966646eb96afb9c28df5a6b60cf9",
+        "dedupe_key": "block245:historical_context_and_case_studies",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "historical_case_note",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_10_historical_context_and_case_studies_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture historical context packet.",
+          "anchor_id": "norm245_10_historical_context_and_case_studies_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_10_historical_context_and_case_studies_unit_02",
+          "content_unit_type_id": "paragraph",
+          "normalized_text": "Fixture case-study paragraph with explicit timeframe limitation.",
+          "anchor_id": "norm245_10_historical_context_and_case_studies_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_10_historical_context_and_case_studies_anchor_01",
+          "content_unit_id": "norm245_10_historical_context_and_case_studies_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_10_historical_context_and_case_studies/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_10_historical_context_and_case_studies_anchor_02",
+          "content_unit_id": "norm245_10_historical_context_and_case_studies_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_10_historical_context_and_case_studies/unit/02",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [
+        {
+          "partition_id": "stale_without_covered_period",
+          "source_type_id": "historical_context_and_case_studies",
+          "status": "quarantined_in_fixture"
+        }
+      ],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "historical_supply_shock_analogy"
+        ],
+        "candidate_sectors": [
+          "semiconductors",
+          "energy",
+          "consumer_staples"
+        ],
+        "candidate_assets_or_entities": [
+          "AMD",
+          "NVDA",
+          "XOM",
+          "WMT"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_10_historical_context_and_case_studies_unit_01",
+        "norm245_10_historical_context_and_case_studies_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "65ba8f3211744738437eb215d20a7683db90e86a910cdbc8135e130e3c88b55f"
+    },
+    {
+      "packet_id": "norm245_11_commodity_and_input_price_series",
+      "parent_source_packet_id": "intake_fixture_11_commodity_and_input_price_series",
+      "source_type_id": "commodity_and_input_price_series",
+      "source_name": "Commodity and input-price series",
+      "intake_mode_id": "api_snapshot_payload",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "api_snapshot_payload",
+        "original_reference_or_file_id": "fixture_reference://block245/commodity_and_input_price_series",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "ec15265e0caa56d4ca01e1913051a4f77725204fbfe6e8b15773e1fb1e17a1c2",
+        "normalized_text_hash": "90e138f5fecd71638ac292bb5cded55b36a60ad962bbf70e2008c8c010fb8113",
+        "dedupe_key": "block245:commodity_and_input_price_series",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "json_api_snapshot_payload",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_11_commodity_and_input_price_series_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture commodity/input price snapshot packet.",
+          "anchor_id": "norm245_11_commodity_and_input_price_series_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_11_commodity_and_input_price_series_unit_02",
+          "content_unit_type_id": "time_series_observation",
+          "normalized_text": "Fixture commodity observation row with provider/time window placeholder.",
+          "anchor_id": "norm245_11_commodity_and_input_price_series_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_11_commodity_and_input_price_series_anchor_01",
+          "content_unit_id": "norm245_11_commodity_and_input_price_series_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_11_commodity_and_input_price_series/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_11_commodity_and_input_price_series_anchor_02",
+          "content_unit_id": "norm245_11_commodity_and_input_price_series_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_11_commodity_and_input_price_series/unit/02",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "rare_earths_critical_minerals",
+          "energy_price_shock"
+        ],
+        "candidate_sectors": [
+          "semiconductors",
+          "energy",
+          "ai_big_tech"
+        ],
+        "candidate_assets_or_entities": [
+          "AMD",
+          "NVDA",
+          "AAPL",
+          "XOM"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_11_commodity_and_input_price_series_unit_01",
+        "norm245_11_commodity_and_input_price_series_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "1b801931e7a98548d299627cb1c7a7b9e3d73a11da624ecb787bcad2b376d3b4"
+    },
+    {
+      "packet_id": "norm245_12_ticker_market_price_volume_series",
+      "parent_source_packet_id": "intake_fixture_12_ticker_market_price_volume_series",
+      "source_type_id": "ticker_market_price_volume_series",
+      "source_name": "Ticker market price / volume series",
+      "intake_mode_id": "api_snapshot_payload",
+      "source_fixture_status": "offline_normalized_packet_fixture_not_real_external_source",
+      "real_source_path_supported_by_contract": true,
+      "real_source_content_supplied_in_245": false,
+      "synthetic_or_fixture_content_used_for_ci": true,
+      "provenance": {
+        "acquisition_mode": "api_snapshot_payload",
+        "original_reference_or_file_id": "fixture_reference://block245/ticker_market_price_volume_series",
+        "source_originator_or_publisher": "fixture_originator_for_schema_validation_only",
+        "rights_notes_or_usage_boundary": "No external copyrighted source text included; fixture is not evidence.",
+        "acquisition_timestamp_utc": "fixture_static_timestamp_not_market_time"
+      },
+      "hashes": {
+        "source_content_hash": "2e20594d06796663de2028377ac9fce1e765ab30e64c8da56c58aa4bbce4a949",
+        "normalized_text_hash": "811dac9aa8b4f379de56c35131c556d6baf04c305fc6b336d7242cf2b3b60547",
+        "dedupe_key": "block245:ticker_market_price_volume_series",
+        "duplicate_status": "not_checked_against_external_corpus"
+      },
+      "parser_profile": {
+        "selected_parser_profile": "market_price_volume_snapshot",
+        "parser_confidence": "fixture_high_schema_only",
+        "parser_warnings": [
+          "fixture_content_not_real_source",
+          "no_external_corpus_deduplication"
+        ]
+      },
+      "content_units": [
+        {
+          "content_unit_id": "norm245_12_ticker_market_price_volume_series_unit_01",
+          "content_unit_type_id": "title_or_headline",
+          "normalized_text": "Offline fixture ticker market snapshot packet.",
+          "anchor_id": "norm245_12_ticker_market_price_volume_series_anchor_01",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        },
+        {
+          "content_unit_id": "norm245_12_ticker_market_price_volume_series_unit_02",
+          "content_unit_type_id": "time_series_observation",
+          "normalized_text": "Fixture price/volume observation row; no trade signal.",
+          "anchor_id": "norm245_12_ticker_market_price_volume_series_anchor_02",
+          "extraction_eligible": true,
+          "fixture_content_status": "offline_fixture_not_external_evidence",
+          "claim_extraction_performed": false,
+          "event_extraction_performed": false
+        }
+      ],
+      "anchors": [
+        {
+          "anchor_id": "norm245_12_ticker_market_price_volume_series_anchor_01",
+          "content_unit_id": "norm245_12_ticker_market_price_volume_series_unit_01",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_12_ticker_market_price_volume_series/unit/01",
+          "stable_for_fixture_replay": true
+        },
+        {
+          "anchor_id": "norm245_12_ticker_market_price_volume_series_anchor_02",
+          "content_unit_id": "norm245_12_ticker_market_price_volume_series_unit_02",
+          "anchor_type": "fixture_sequence_anchor",
+          "anchor_value": "fixture://norm245_12_ticker_market_price_volume_series/unit/02",
+          "stable_for_fixture_replay": true
+        }
+      ],
+      "quarantine_partitions": [
+        {
+          "partition_id": "market_snapshot_without_observation_window",
+          "source_type_id": "ticker_market_price_volume_series",
+          "status": "quarantined_in_fixture"
+        }
+      ],
+      "quality_precheck": {
+        "primary_secondary_classification": "fixture_not_evidence",
+        "freshness_status": "not_applicable_fixture",
+        "methodology_transparency_status": "schema_fixture_only",
+        "conflict_or_bias_risk_status": "not_assessed_for_fixture",
+        "corroboration_requirement": "required_before_real_evidence_promotion"
+      },
+      "routing_prefilter": {
+        "candidate_routing_lanes": [
+          "future_claim_extraction_lane",
+          "future_event_extraction_lane",
+          "future_topic_sector_asset_linking_lane"
+        ],
+        "candidate_topics": [
+          "ticker_market_snapshot"
+        ],
+        "candidate_sectors": [
+          "market_etfs",
+          "semiconductors",
+          "ai_big_tech"
+        ],
+        "candidate_assets_or_entities": [
+          "SPY",
+          "QQQ",
+          "AMD",
+          "NVDA",
+          "AAPL"
+        ],
+        "candidate_links_are_final": false
+      },
+      "normalization_gate_status": {
+        "normalization_readiness_status": "fixture_normalized_packet_ready_for_validation_only",
+        "blocking_issues": [],
+        "human_review_required_before_evidence_promotion": true,
+        "promotion_allowed_after_validation_only": false
+      },
+      "output_boundary": {
+        "claims_emitted_now": false,
+        "events_emitted_now": false,
+        "entities_resolved_now": false,
+        "event_propagation_executed_now": false,
+        "company_thesis_generated_now": false,
+        "recommendation_output_now": false,
+        "trade_signal_output_now": false
+      },
+      "downstream_extraction_outputs": [],
+      "evidence_eligible_unit_ids": [
+        "norm245_12_ticker_market_price_volume_series_unit_01",
+        "norm245_12_ticker_market_price_volume_series_unit_02"
+      ],
+      "contract_trace": {
+        "upstream_block": "244_review_only_real_source_packet_intake_normalizer_contract_v1",
+        "source_type_contract_status": "defined_no_execution",
+        "field_group_ids_inherited": [
+          "source_identity",
+          "provenance_and_rights",
+          "hash_and_deduplication",
+          "language_jurisdiction_timeframe",
+          "parser_and_format",
+          "content_units_and_anchors",
+          "boilerplate_and_disclaimer_partition",
+          "table_numeric_and_time_series_capture",
+          "source_quality_precheck",
+          "routing_prefilter",
+          "normalization_gate_status",
+          "output_boundary"
+        ]
+      },
+      "packet_hash": "090180084edd2cfa44e3e3337ba66d3ad873be0763b340ead78d51296a5eb826"
+    }
+  ],
+  "candidate_asset_or_entity_index": [
+    "AAPL",
+    "AMD",
+    "AMZN",
+    "BAC",
+    "GOOGL",
+    "GS",
+    "INTC",
+    "IWM",
+    "JPM",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SPY",
+    "TSM",
+    "WMT",
+    "XOM"
+  ],
+  "candidate_topic_index": [
+    "ai_capex_cycle",
+    "analyst_note",
+    "company_filing",
+    "consumer_demand",
+    "earnings_transcript",
+    "energy_price_shock",
+    "financial_disclosure",
+    "geopolitics_security",
+    "historical_supply_shock_analogy",
+    "industry_report",
+    "interest_rates",
+    "interest_rates_discount_rates",
+    "platform_regulation_antitrust_privacy",
+    "rare_earths_critical_minerals",
+    "semiconductor_export_controls",
+    "semiconductor_supply_chain",
+    "ticker_market_snapshot"
+  ],
+  "candidate_sector_index": [
+    "ai_big_tech",
+    "consumer_staples",
+    "energy",
+    "finance",
+    "market_etfs",
+    "semiconductors"
+  ],
+  "real_data_usage_note": {
+    "why_fixtures_exist": "They validate schema, parsing boundaries, anchors, quarantine rules, and downstream safety without depending on live or copyrighted external sources.",
+    "how_real_data_enters_next": "A real article/report/filing/API snapshot must be supplied by upload, paste, connector reference, API snapshot payload, or offline archive path, then normalized using the same packet schema.",
+    "not_allowed_to_infer_from_fixture": "No investment thesis, valuation, recommendation, price target, or trade signal may be derived from these fixtures."
+  },
+  "safety_flags": {
+    "autonomous_loop_allowed": false,
+    "patch_application_allowed": false,
+    "entity_resolution_execution_allowed_now": false,
+    "broker_routing_allowed": false,
+    "trade_signal_allowed": false,
+    "live_fetch_allowed": false,
+    "buy_sell_hold_allowed": false,
+    "event_propagation_execution_allowed_now": false,
+    "external_api_call_allowed": false,
+    "company_specific_thesis_allowed_now": false,
+    "event_extraction_execution_allowed_now": false,
+    "trading_allowed": false,
+    "position_sizing_allowed": false,
+    "codex_execution_allowed": false,
+    "publication_allowed": false,
+    "order_generation_allowed": false,
+    "actual_ratio_interpretation_allowed_now": false,
+    "scheduler_allowed": false,
+    "production_write_allowed": false,
+    "valuation_allowed": false,
+    "rating_allowed": false,
+    "source_retrieval_allowed_now": false,
+    "database_write_allowed": false,
+    "recommendation_allowed": false,
+    "claim_extraction_execution_allowed_now": false,
+    "normalization_execution_against_external_sources_allowed_now": false,
+    "tool_write_allowed": false,
+    "price_target_allowed": false,
+    "normalized_packet_fixtures_materialized_in_245": true,
+    "normalized_packet_fixtures_are_real_external_sources": false,
+    "normalized_packet_fixtures_are_production_evidence": false,
+    "real_source_intake_path_supported": true,
+    "real_source_content_supplied_in_245": false,
+    "synthetic_fixture_is_production_evidence": false
+  },
+  "validation_checks": [
+    {
+      "check_id": "all_12_source_types_have_normalized_packet_fixture",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "all_packets_have_content_units",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "all_packets_have_anchors",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "all_packets_preserve_hashes",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "all_packets_have_quality_precheck",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "routing_links_are_candidate_only",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "downstream_outputs_empty",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "real_source_not_claimed_as_supplied",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "fixtures_not_evidence",
+      "status": "passed",
+      "details": {}
+    },
+    {
+      "check_id": "human_review_required_before_evidence_promotion",
+      "status": "passed",
+      "details": {}
+    }
+  ],
+  "safety_assertions": [
+    {
+      "assertion_id": "forbidden_flag_false__actual_ratio_interpretation_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__autonomous_loop_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__broker_routing_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__buy_sell_hold_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__claim_extraction_execution_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__codex_execution_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__company_specific_thesis_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__database_write_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__entity_resolution_execution_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__event_extraction_execution_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__event_propagation_execution_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__external_api_call_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__live_fetch_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__normalization_execution_against_external_sources_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__order_generation_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__patch_application_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__position_sizing_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__price_target_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__production_write_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__publication_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__rating_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__recommendation_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__scheduler_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__source_retrieval_allowed_now",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__tool_write_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__trade_signal_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__trading_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "forbidden_flag_false__valuation_allowed",
+      "status": "passed",
+      "observed": false
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_01_company_filings_and_sec_reports",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_01_company_filings_and_sec_reports",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_02_earnings_transcripts_and_presentations",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_02_earnings_transcripts_and_presentations",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_03_news_articles_general_business",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_03_news_articles_general_business",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_04_specialized_industry_news",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_04_specialized_industry_news",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_05_analyst_research_and_broker_notes",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_05_analyst_research_and_broker_notes",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_06_industry_reports_and_whitepapers",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_06_industry_reports_and_whitepapers",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_07_macro_data_and_central_bank_context",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_07_macro_data_and_central_bank_context",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_08_policy_regulation_and_law",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_08_policy_regulation_and_law",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_09_geopolitics_and_security_context",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_09_geopolitics_and_security_context",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_10_historical_context_and_case_studies",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_10_historical_context_and_case_studies",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_11_commodity_and_input_price_series",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_11_commodity_and_input_price_series",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "no_downstream_outputs__norm245_12_ticker_market_price_volume_series",
+      "status": "passed"
+    },
+    {
+      "assertion_id": "not_production_evidence__norm245_12_ticker_market_price_volume_series",
+      "status": "passed"
+    }
+  ],
+  "validation_check_count": 10,
+  "safety_assertion_count": 52,
+  "validation_error_count": 0,
+  "failed_validation_check_count": 0,
+  "failed_safety_assertion_count": 0,
+  "validation_errors": [],
+  "content_hash": "6a7e6b8ca1690f875fdfaada38f59991d5f8e38d8fcf99920cfa6e5c29eb3303",
+  "next_recommended_block": "246_review_only_real_source_normalized_packet_validation_gate_v1",
+  "next_chat_recommended": true
+}

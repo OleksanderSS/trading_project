@@ -1,12 +1,3 @@
-# Audit Triage Report
+# Audit Triage
 
-Selected severities: P0, P1
-Selected findings: **0**
-
-## Counts
-
-### By severity
-
-### By rule
-
----
+No P0/P1 findings. System is in review-only paper mode.

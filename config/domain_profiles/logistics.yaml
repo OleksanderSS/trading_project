@@ -1,0 +1,124 @@
+domain_id: logistics
+display_name: Logistics & Supply Chain
+sector_label: logistics
+macro_evidence_type: macro_context
+description: >-
+  Analyzes logistics, freight, shipping, supply chain infrastructure,
+  and transportation equities. Covers ocean freight, air cargo, rail,
+  trucking, parcel delivery, warehousing, port operations, and
+  logistics technology.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365, 730]
+core_questions:
+  - Is freight demand growing or contracting?
+  - Are shipping rates and capacity utilization supportive?
+  - Is supply chain congestion easing or worsening?
+  - Are fuel costs and labor availability affecting margins?
+  - Is e-commerce and parcel volume trending up or down?
+  - Are trade volumes and port activity supportive?
+  - Does evidence support a sector thesis or direct ticker theses?
+required_evidence_types:
+  - supply
+  - demand
+  - policy_or_geopolitical
+  - market_confirmation
+useful_evidence_types:
+  - freight_rates
+  - shipping_capacity
+  - port_congestion
+  - fuel_costs
+  - labor_availability
+  - ecommerce_volume
+  - trade_data
+  - warehousing_utilization
+  - fleet_utilization
+  - tariff_policy
+  - valuation_context
+  - relative_strength
+sector_keywords:
+  - logistics
+  - freight
+  - shipping
+  - ocean freight
+  - air cargo
+  - rail
+  - trucking
+  - parcel
+  - last mile
+  - warehousing
+  - port
+  - container
+  - supply chain
+  - shipping rate
+  - Baltic Dry
+  - container index
+  - fuel surcharge
+  - fleet capacity
+  - e-commerce
+  - trade volume
+  - tariff
+  - dockworker
+  - drewry
+  - drewry wci
+  - freightos
+  - xeneta
+  - clarksons
+  - marinetraffic
+  - kpler
+  - dat freight
+  - cass freight index
+  - iata
+  - freightwaves
+  - lmi
+  - cscmp
+  - un comtrade
+  - trucker shortage
+  - intermodal
+  - cross-border
+  - cold chain
+trusted_sources:
+  tier_1_apis:
+    - "IMF PortWatch"
+    - "UNCTAD"
+    - "ATA"
+    - "UN Comtrade"
+  tier_2_reports:
+    - "Drewry World Container Index"
+    - "Freightos Baltic Index"
+    - "Xeneta"
+    - "Cass Freight Index"
+    - "Clarksons Research"
+    - "Logistics Managers Index (LMI)"
+    - "CSCMP"
+ticker_universe_hint:
+  - FDX
+  - UPS
+  - JBHT
+  - CHRW
+  - XPO
+  - ODFL
+  - SAIA
+  - KNX
+  - MATX
+  - ZTO
+  - GXO
+  - UNP
+  - NSC
+  - CSX
+contradiction_rules:
+  - Strong freight demand but rising fuel costs compresses margins.
+  - Positive volume growth with falling rates reduces confidence in revenue outlook.
+  - Supply chain congestion benefits some subsectors (ocean, warehousing) but hurts others (retail logistics).
+  - Strong price momentum without freight rate evidence is market evidence only.
+  - E-commerce growth does not automatically imply parcel profitability.
+direct_ticker_evidence_rules:
+  - Company-specific earnings or guidance evidence.
+  - Ticker-specific price or relative-strength confirmation.
+  - Company-specific fleet utilization or capacity data.
+  - Trade or freight rate evidence for specific routes.
+blocked_if_missing:
+  - No evidence timestamp or as_of.
+  - No supply or demand evidence.
+  - No market confirmation for investment-facing thesis.
+  - No ticker-specific evidence for direct_ticker_thesis.
+  - Contradicting evidence exists but is not addressed.

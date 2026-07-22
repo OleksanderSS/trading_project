@@ -1,0 +1,4 @@
+# Optional proposal-only enrichment. The deterministic DEAN-OS path does not
+# import or require this file.
+openai>=2.46,<3
+pydantic>=2.13,<3

@@ -1,0 +1,51 @@
+domain_id: consumer_staples
+display_name: Consumer Staples
+sector_label: consumer_staples
+macro_evidence_type: macro_context
+description: Analyzes fast-moving consumer goods (FMCG), food retail, beverages, and non-cyclical consumer demand.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Are consumers trading down to private label or cheaper brands?
+  - Are input costs (agriculture/commodities) squeezing margins?
+  - Can companies maintain pricing power without losing volume?
+required_evidence_types:
+  - sales_volumes
+  - pricing_power
+  - input_costs
+useful_evidence_types:
+  - consumer_sentiment
+  - trading_down_behavior
+sector_keywords:
+  - fmcg
+  - staples
+  - food
+  - beverages
+  - private label
+  - trading down
+  - grocery
+  - nielsen
+  - circana
+  - iri
+  - cpi food
+trusted_sources:
+  tier_1_apis:
+    - "BLS CPI"
+    - "US Census"
+  tier_2_reports:
+    - "NielsenIQ"
+    - "Circana"
+    - "IRI"
+ticker_universe_hint:
+  - WMT
+  - KO
+  - PEP
+  - PG
+  - COST
+  - XLP
+contradiction_rules:
+  - High inflation with falling staples margins means pricing power is lost.
+direct_ticker_evidence_rules:
+  - Brand-specific volume data.
+blocked_if_missing:
+  - No volume vs pricing data.

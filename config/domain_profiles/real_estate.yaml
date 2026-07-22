@@ -1,0 +1,99 @@
+domain_id: real_estate
+display_name: Real Estate & REITs
+sector_label: real_estate
+macro_evidence_type: macro_context
+description: >-
+  Analyzes real estate investment trusts, property markets, construction,
+  and real estate services. Covers office, retail, industrial, residential,
+  hospitality, data center, healthcare, and self-storage property sectors,
+  REIT valuation, interest rate sensitivity, and real estate cycle.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365, 730]
+core_questions:
+  - Is the property cycle improving or deteriorating?
+  - Are occupancy rates and rent growth supportive?
+  - Are interest rates and cap rates affecting valuations?
+  - Is construction activity and development pipeline growing?
+  - Are property transaction volumes recovering?
+  - Are REIT balance sheets and dividend coverage healthy?
+  - Does evidence support a sector thesis or direct ticker theses?
+required_evidence_types:
+  - supply
+  - demand
+  - policy_or_geopolitical
+  - market_confirmation
+useful_evidence_types:
+  - occupancy_rates
+  - rent_growth
+  - cap_rates
+  - interest_rate_sensitivity
+  - construction_pipeline
+  - transaction_volume
+  - dividend_coverage
+  - loan_delinquency
+  - housing_starts
+  - building_permits
+  - commercial_real_estate_prices
+  - valuation_context
+  - relative_strength
+sector_keywords:
+  - real estate
+  - REIT
+  - commercial property
+  - residential
+  - office
+  - retail
+  - industrial
+  - multifamily
+  - hospitality
+  - data center
+  - healthcare REIT
+  - self-storage
+  - mortgage
+  - cap rate
+  - occupancy
+  - rent
+  - NOI
+  - FFO
+  - AFFO
+  - dividend yield
+  - interest rate
+  - construction
+  - housing
+  - building permit
+  - housing start
+  - property transaction
+  - brokerage
+  - property management
+ticker_universe_hint:
+  - PLD
+  - AMT
+  - EQIX
+  - WELL
+  - PSA
+  - O
+  - DLR
+  - SPG
+  - AVB
+  - EQR
+  - ARE
+  - CBRE
+  - JLL
+  - INVH
+contradiction_rules:
+  - Rising occupancy with falling rent growth reduces confidence in revenue momentum.
+  - Low interest rates with high cap rates is positive but requires explicit rate sensitivity analysis.
+  - Strong construction pipeline with weak demand suggests oversupply risk.
+  - Strong price momentum without occupancy or rent evidence is market evidence only.
+  - REIT dividend yield above sector average may indicate elevated risk, not value.
+direct_ticker_evidence_rules:
+  - Company-specific earnings, FFO, or NOI evidence.
+  - Ticker-specific price or relative-strength confirmation.
+  - Property-specific occupancy or lease renewal data.
+  - Portfolio transaction or disposition evidence.
+blocked_if_missing:
+  - No evidence timestamp or as_of.
+  - No supply or demand evidence.
+  - No market confirmation for investment-facing thesis.
+  - No ticker-specific evidence for direct_ticker_thesis.
+  - Contradicting evidence exists but is not addressed.

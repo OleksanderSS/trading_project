@@ -1,5 +1,7 @@
 {
     "python.defaultInterpreterPath": "python",
     "python.terminal.activateEnvironment": false,
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "python.languageServer": "None",
+    "Codegeex.RepoIndex": true
 }

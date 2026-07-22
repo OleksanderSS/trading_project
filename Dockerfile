@@ -28,5 +28,5 @@ COPY . .
 ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # Default entrypoint for pipeline execution
-ENTRYPOINT ["python", "-m", "src.pipeline.pipeline_orchestrator"]
-CMD ["--mode", "train"]
+ENTRYPOINT ["python", "scripts/run_full_pipeline_automated.py"]
+CMD ["--batch-name", "main_database"]

@@ -1,0 +1,50 @@
+supply:
+  - supply
+  - opec
+  - production
+  - rig count
+  - output cut
+  - shale
+  - drilling
+  - fracking
+  - offshore
+  - spare capacity
+  - upstream
+demand:
+  - demand
+  - consumption
+  - travel
+  - industrial demand
+  - refinery runs
+  - gasoline demand
+  - jet fuel
+  - heating oil
+inventories:
+  - inventory
+  - stockpile
+  - eia
+  - storage
+  - crude stocks
+  - product inventories
+  - days of supply
+policy_or_geopolitical:
+  - opec
+  - sanction
+  - war
+  - export ban
+  - energy policy
+  - strategic petroleum reserve
+  - opec+
+  - energy transition
+  - carbon tax
+  - climate policy
+market_confirmation:
+  - oil price
+  - brent
+  - wti
+  - energy equities
+  - xle
+  - crack spread
+  - contango
+  - backwardation
+  - refinery margins

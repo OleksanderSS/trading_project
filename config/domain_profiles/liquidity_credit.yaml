@@ -1,0 +1,70 @@
+domain_id: liquidity_credit
+display_name: Liquidity & Credit
+sector_label: liquidity_credit
+macro_evidence_type: macro_context
+description: Analyzes liquidity, funding stress, credit spreads, banking stress, issuance, and risk appetite.
+horizon_days_default: 90
+allowed_horizons: [14, 30, 90, 180, 365]
+core_questions:
+  - Are liquidity conditions improving or tightening?
+  - Are credit spreads signaling stress?
+  - Is funding stress rising?
+  - Are risk assets supported or vulnerable?
+required_evidence_types:
+  - liquidity_conditions
+  - credit_spreads
+  - funding_stress
+  - market_confirmation
+useful_evidence_types:
+  - repo
+  - bank_reserves
+  - issuance
+  - default_risk
+  - volatility
+sector_keywords:
+  - liquidity
+  - credit
+  - spreads
+  - funding
+  - repo
+  - reserves
+  - risk appetite
+  - bis
+  - fdic
+  - occ
+  - ffiec
+  - finra trace
+  - bofa indices
+  - dtcc
+  - ofr
+  - bank credit
+  - delinquencies
+  - cre exposure
+trusted_sources:
+  tier_1_apis:
+    - "BIS"
+    - "FDIC"
+    - "OCC"
+    - "FFIEC"
+  tier_2_reports:
+    - "FINRA TRACE"
+    - "ICE BofA indices"
+    - "DTCC"
+    - "OFR"
+ticker_universe_hint:
+  - HYG
+  - LQD
+  - JNK
+  - SPY
+  - TLT
+  - VIX
+contradiction_rules:
+  - Tight liquidity with tight spreads is mixed, not constructive.
+  - Improving liquidity but rising defaults should reduce confidence.
+direct_ticker_evidence_rules:
+  - ETF-specific spread/flow/price evidence.
+  - Ticker-specific replay evidence.
+blocked_if_missing:
+  - No liquidity evidence.
+  - No credit spread evidence.
+  - No market confirmation.

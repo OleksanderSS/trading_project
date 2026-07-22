@@ -1,0 +1,118 @@
+domain_id: agriculture
+display_name: Agriculture & Soft Commodities
+sector_label: agriculture
+macro_evidence_type: macro_context
+description: >-
+  Analyzes agricultural commodities, soft commodities, crop yields,
+  weather patterns, fertilizer markets, food supply chains, and
+  agricultural policy. Covers row crops, livestock, dairy, and
+  agribusiness equities.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365, 730]
+core_questions:
+  - Are crop yields improving or declining?
+  - Is weather risk (drought, flood, frost) affecting supply?
+  - Are input costs (fertilizer, fuel, labor) supportive?
+  - Is global demand for food and feed stable or growing?
+  - Are inventories and storage levels supportive of prices?
+  - Is agricultural policy or trade war affecting the sector?
+  - Does evidence support a sector thesis or direct ticker theses?
+required_evidence_types:
+  - supply
+  - demand
+  - policy_or_geopolitical
+  - market_confirmation
+useful_evidence_types:
+  - weather_risk
+  - crop_production
+  - planting_area
+  - fertilizer_prices
+  - inventory_levels
+  - export_data
+  - ethanol_margins
+  - livestock_herd
+  - dairy_prices
+  - farm_income
+  - valuation_context
+  - relative_strength
+sector_keywords:
+  - agriculture
+  - soft commodities
+  - crop
+  - wheat
+  - corn
+  - soybean
+  - sugar
+  - coffee
+  - cocoa
+  - cotton
+  - livestock
+  - cattle
+  - hog
+  - dairy
+  - fertilizer
+  - potash
+  - phosphate
+  - nitrogen
+  - ethanol
+  - biodiesel
+  - farmland
+  - irrigation
+  - fao food price index
+  - usda wasde
+  - usda nass
+  - amis
+  - cbot
+  - icip
+  - ifa
+  - drought
+  - flood
+  - USDA
+  - farm bill
+  - food inflation
+  - supply chain
+  - logistics
+trusted_sources:
+  tier_1_apis:
+    - "USDA"
+    - "FAO"
+    - "World Bank"
+    - "NOAA"
+  tier_2_reports:
+    - "USDA WASDE"
+    - "FAO Food Price Index"
+    - "AMIS Market Monitor"
+    - "CBOT"
+    - "ICIS"
+ticker_universe_hint:
+  - ADM
+  - BG
+  - CTVA
+  - DE
+  - FMC
+  - MOS
+  - NTR
+  - CF
+  - AGCO
+  - DOLE
+  - FRPT
+  - POST
+  - TSN
+  - SAFM
+contradiction_rules:
+  - Strong crop yields with falling prices reduces confidence in agricultural equities.
+  - Positive demand but weather-related supply shock creates mixed outlook.
+  - Bullish commodity thesis does not automatically imply bullish equity thesis.
+  - Rising input costs with stable output prices compresses margins.
+  - Strong price momentum without supply/demand evidence is market evidence only.
+direct_ticker_evidence_rules:
+  - Company-specific earnings or guidance evidence.
+  - Ticker-specific price or relative-strength confirmation.
+  - Company-specific crop production or cost data.
+  - Commodity-specific price or export data.
+blocked_if_missing:
+  - No evidence timestamp or as_of.
+  - No supply or demand evidence.
+  - No market confirmation for investment-facing thesis.
+  - No ticker-specific evidence for direct_ticker_thesis.
+  - Contradicting evidence exists but is not addressed.

@@ -1,0 +1,43 @@
+sector_demand:
+  - ai demand
+  - data center
+  - accelerator
+  - gpu
+  - semiconductor demand
+  - hbm
+capex_cycle:
+  - capex
+  - capital expenditure
+  - capital spending
+  - ai spending
+  - spending on artificial intelligence
+  - hyperscaler
+  - hyperscale
+  - data center buildout
+  - data center build-out
+  - data center investment
+  - data center spending
+  - cloud spending
+  - cloud capex
+  - infrastructure spending
+supply_chain:
+  - foundry
+  - capacity
+  - advanced packaging
+  - supply chain
+  - wafer
+  - packaging
+policy_or_geopolitical:
+  - export control
+  - taiwan
+  - china
+  - sanction
+  - tariff
+  - restriction
+market_confirmation:
+  - relative strength
+  - breakout
+  - momentum
+  - drawdown
+  - replay
+  - price action

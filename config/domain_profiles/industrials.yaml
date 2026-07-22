@@ -1,0 +1,54 @@
+domain_id: industrials
+display_name: Industrials
+sector_label: industrials
+macro_evidence_type: macro_context
+description: Analyzes manufacturing, capital goods, machinery, and industrial production cycles.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Are PMIs expanding or contracting?
+  - Are new orders outpacing inventory builds?
+  - Is capital expenditure (Capex) rising in manufacturing?
+required_evidence_types:
+  - pmi
+  - new_orders
+  - industrial_production
+useful_evidence_types:
+  - backlog
+  - equipment_lead_times
+  - capex
+sector_keywords:
+  - industrials
+  - manufacturing
+  - pmi
+  - ism
+  - factory orders
+  - durable goods
+  - capex
+  - machinery
+  - backlog
+  - eurostat
+  - nbs pmi
+trusted_sources:
+  tier_1_apis:
+    - "ISM"
+    - "US Census"
+    - "Fed"
+    - "Eurostat"
+    - "China NBS"
+  tier_2_reports:
+    - "S&P Global PMI"
+    - "Association for Manufacturing Technology"
+    - "VDMA"
+ticker_universe_hint:
+  - CAT
+  - DE
+  - HON
+  - GE
+  - XLI
+contradiction_rules:
+  - Rising PMIs with falling new orders means the cycle may be peaking.
+direct_ticker_evidence_rules:
+  - Specific company backlog or order data.
+blocked_if_missing:
+  - No PMI or new order evidence.

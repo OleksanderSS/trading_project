@@ -1,0 +1,24 @@
+geopolitical_event:
+  - war
+  - conflict
+  - election
+  - sanction
+  - tariff
+  - blockade
+policy_or_sanctions:
+  - sanction
+  - export control
+  - tariff
+  - restriction
+  - policy shock
+exposure_mapping:
+  - exposed
+  - supply chain
+  - country risk
+  - regional exposure
+market_confirmation:
+  - oil
+  - gold
+  - defense
+  - risk premium
+  - market reaction

@@ -1,0 +1,62 @@
+inflation:
+  - inflation
+  - cpi
+  - pce
+  - disinflation
+  - price pressure
+  - headline inflation
+  - core inflation
+  - services inflation
+  - shelter
+  - wage inflation
+  - producer price
+  - import price
+rates_policy:
+  - fed
+  - central bank
+  - rate cut
+  - rate hike
+  - policy rate
+  - yield
+  - federal funds rate
+  - quantitative tightening
+  - quantitative easing
+  - forward guidance
+  - dot plot
+  - terminal rate
+growth:
+  - gdp
+  - growth
+  - slowdown
+  - recession
+  - soft landing
+  - hard landing
+  - economic expansion
+  - output gap
+  - industrial production
+  - retail sales
+  - durable goods
+  - business investment
+labor_market:
+  - jobs
+  - payroll
+  - unemployment
+  - wages
+  - labor
+  - participation rate
+  - jobless claims
+  - quit rate
+  - labor shortage
+  - productivity
+market_confirmation:
+  - yield curve
+  - dxy
+  - bonds
+  - equities
+  - credit spreads
+  - breakeven
+  - real yield
+  - volatility
+  - vix
+  - swap spread
+  - basis point

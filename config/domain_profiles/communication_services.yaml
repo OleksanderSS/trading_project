@@ -1,0 +1,52 @@
+domain_id: communication_services
+display_name: Communication Services
+sector_label: telecom
+macro_evidence_type: macro_context
+description: Analyzes telecom, 5G adoption, subsea cables, digital infrastructure, and media.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Is data traffic growth outpacing telecom capex?
+  - How are 5G monetization and broadband additions progressing?
+  - Are there disruptions in subsea cables or cloud connectivity?
+required_evidence_types:
+  - data_traffic
+  - telecom_capex
+  - subscriber_additions
+useful_evidence_types:
+  - subsea_cable_outages
+  - 5g_adoption
+  - sovereign_infrastructure
+sector_keywords:
+  - telecom
+  - 5g
+  - broadband
+  - subsea cable
+  - cloud connectivity
+  - gsma
+  - ericsson mobility
+  - fcc
+  - telegeography
+  - ookla
+trusted_sources:
+  tier_1_apis:
+    - "FCC"
+    - "ITU"
+    - "Ofcom"
+  tier_2_reports:
+    - "GSMA Intelligence"
+    - "Ericsson Mobility Report"
+    - "TeleGeography"
+    - "Ookla"
+    - "Cloudflare Radar"
+ticker_universe_hint:
+  - T
+  - VZ
+  - TMUS
+  - XLC
+contradiction_rules:
+  - High subscriber growth with falling ARPU reduces margin confidence.
+direct_ticker_evidence_rules:
+  - Carrier specific subscriber numbers.
+blocked_if_missing:
+  - No capex or subscriber data.

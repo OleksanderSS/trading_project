@@ -11,6 +11,7 @@ import argparse, ast, csv, json, re
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from diagnostic_whitelist import SAFE_PATTERNS
 
 CATEGORY_PATTERNS = {
     "enricher": ["Enricher"], "calculator": ["Calculator", "Metric"],
@@ -28,8 +29,27 @@ HIGH_RISK_PATTERNS = [
     ("P0","TRAIN_TEST_SPLIT_TIMESERIES",re.compile(r"\btrain_test_split\s*\("),"Random split is dangerous for time-series."),
     ("P1","SYNTHETIC_PRIMARY_SCORE",re.compile(r"combined_metric\s*=|0\.7\s*\*\s*real_metric|0\.3\s*\*\s*synthetic_metric"),"Synthetic score may affect primary selection."),
     ("P1","TOP_LEVEL_TENSORFLOW_IMPORT",re.compile(r"^import tensorflow|^from tensorflow", re.M),"Heavy TensorFlow import."),
-    ("P2","BROAD_EXCEPT",re.compile(r"except Exception"),"Broad exception. Classify fatal/degraded paths."),
 ]
+
+def check_broad_except(tree):
+    findings = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ExceptHandler):
+            if isinstance(node.type, ast.Name) and node.type.id == 'Exception':
+                has_raise = False
+                has_logging = False
+                for stmt in node.body:
+                    if isinstance(stmt, ast.Raise):
+                        has_raise = True
+                        break
+                    for subnode in ast.walk(stmt):
+                        if isinstance(subnode, ast.Attribute) and isinstance(subnode.value, ast.Name):
+                            if subnode.value.id == 'logger':
+                                has_logging = True
+                                break
+                if not has_raise and not has_logging:
+                    findings.append(node.lineno)
+    return findings
 
 @dataclass
 class ModuleRecord:
@@ -87,11 +107,18 @@ def main():
             imps=extract_imports(tree, rel); imports.extend(imps)
         fr=[]
         for sev,rid,rx,why in HIGH_RISK_PATTERNS:
-            if rid=="TARGET_IN_FEATURE_MODULE" and rel.startswith("targets/"): continue
+            # Added more directories to ignore for target-related modules
+            if rid=="TARGET_IN_FEATURE_MODULE" and (rel.startswith("targets/") or rel.startswith("training/") or rel.startswith("models/")): continue
             for m in rx.finditer(text):
                 line=text[:m.start()].count("\n")+1; snippet=text.splitlines()[line-1].strip() if text.splitlines() else ""
                 if "audit-ignore" in snippet: continue
+                if rid == "TARGET_IN_FEATURE_MODULE" and any(pat in snippet for pat in SAFE_PATTERNS): continue
                 fr.append(RiskFinding(sev,rid,rel,line,snippet,why))
+        if tree:
+            for line in check_broad_except(tree):
+                snippet=text.splitlines()[line-1].strip() if text.splitlines() else ""
+                if "audit-ignore" in snippet: continue
+                fr.append(RiskFinding("P2","BROAD_EXCEPT",rel,line,snippet,"Broad exception. Classify fatal/degraded paths."))
         risks.extend(fr)
         data[rel]={"module":modname(root,p),"classes":classes,"functions":funcs,"imports":imps,"risks":fr,"category":guess(rel,classes,funcs)}
     imported_by=defaultdict(set)

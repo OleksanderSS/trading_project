@@ -1,0 +1,584 @@
+{
+  "block_id": "246_review_only_real_source_normalized_packet_validation_gate_v1",
+  "schema_version": "real_source_normalized_packet_validation_gate_v1_review_only",
+  "created_at_utc": "2026-06-18T14:29:59.296716+00:00",
+  "upstream_blocks": [
+    "245_review_only_real_source_normalized_packet_fixture_v1"
+  ],
+  "gate_status": "passed",
+  "summary": {
+    "total_packets_evaluated": 12,
+    "valid_packets": 12,
+    "invalid_packets": 0,
+    "all_packets_valid": true
+  },
+  "packet_validations": [
+    {
+      "packet_id": "norm245_01_company_filings_and_sec_reports",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_02_earnings_transcripts_and_presentations",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_03_news_articles_general_business",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_04_specialized_industry_news",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_05_analyst_research_and_broker_notes",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_06_industry_reports_and_whitepapers",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_07_macro_data_and_central_bank_context",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_08_policy_regulation_and_law",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_09_geopolitics_and_security_context",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_10_historical_context_and_case_studies",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_11_commodity_and_input_price_series",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    },
+    {
+      "packet_id": "norm245_12_ticker_market_price_volume_series",
+      "is_valid": true,
+      "validation_checks": [
+        {
+          "check_id": "has_consistent_provenance_hashes",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_content_units",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "all_content_units_have_anchors",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_anchors_list",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_valid_provenance",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "has_quarantine_partitions_field",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "extraction_not_performed_yet",
+          "status": "passed",
+          "details": {}
+        },
+        {
+          "check_id": "output_boundary_safeguards_active",
+          "status": "passed",
+          "details": {}
+        }
+      ],
+      "failed_checks": []
+    }
+  ],
+  "next_recommended_block": "247_review_only_real_source_claim_event_entity_extraction_contract_v1",
+  "next_chat_recommended": true,
+  "content_hash": "bd9f737d4dba6ac58ff692847938b2cd673272cac051f98e9ae2df518ef3a78e"
+}

@@ -1,0 +1,111 @@
+domain_id: macro_policy
+display_name: Macro Policy
+sector_label: macro
+macro_evidence_type: macro_context
+description: Analyzes central bank policy, fiscal policy, inflation, growth, labor markets, and policy transmission.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365, 730]
+core_questions:
+  - Is monetary policy easing, tightening, or staying restrictive?
+  - Is inflation improving or reaccelerating?
+  - Is growth resilient or deteriorating?
+  - How do fiscal policy and issuance affect liquidity and rates?
+  - Which asset classes are most exposed to the policy regime?
+  - Are credit conditions tightening or loosening?
+  - Is the yield curve signaling recession risk or normalization?
+required_evidence_types:
+  - inflation
+  - rates_policy
+  - growth
+  - labor_market
+  - market_confirmation
+useful_evidence_types:
+  - central_bank_guidance
+  - yield_curve
+  - credit_spreads
+  - fiscal_issuance
+  - liquidity_conditions
+  - consumer_sentiment
+  - housing_market
+  - trade_policy
+  - currency_markets
+  - commodity_prices
+  - bank_lending_standards
+sector_keywords:
+  - central bank
+  - inflation
+  - rates
+  - yield curve
+  - fiscal
+  - liquidity
+  - labor market
+  - gdp
+  - recession
+  - fed
+  - monetary policy
+  - fiscal policy
+  - credit
+  - bonds
+  - treasuries
+  - fred
+  - bls
+  - bea
+  - fed h.8
+  - sloos
+  - beige book
+  - eurostat
+  - ecb
+  - cpi
+  - ppi
+  - pce
+  - nber
+  - ssrn
+  - maddison project
+  - eh.net
+  - oecd
+  - imf
+  - world bank
+trusted_sources:
+  tier_1_apis:
+    - "FRED"
+    - "BLS"
+    - "BEA"
+    - "Treasury"
+    - "IMF"
+    - "World Bank"
+    - "OECD"
+    - "NBER"
+  tier_2_reports:
+    - "Fed H.8"
+    - "SLOOS"
+    - "Beige Book"
+    - "Eurostat"
+    - "ECB"
+ticker_universe_hint:
+  - TLT
+  - IEF
+  - SPY
+  - QQQ
+  - DXY
+  - GLD
+  - HYG
+  - LQD
+  - TIP
+  - SHY
+contradiction_rules:
+  - Easing narrative with rising inflation reduces confidence.
+  - Soft landing narrative with widening credit spreads must be treated as mixed.
+  - Strong equity rally without monetary policy support is market evidence only.
+  - Recession calls require both growth and labor market evidence.
+  - Divergence between Fed guidance and market pricing reduces directional confidence.
+direct_ticker_evidence_rules:
+  - Asset-specific rate sensitivity evidence.
+  - Ticker-specific replay/price confirmation.
+  - Flow or positioning evidence for the instrument.
+  - Duration or credit spread exposure data for the asset.
+blocked_if_missing:
+  - No inflation evidence.
+  - No policy evidence.
+  - No market confirmation for investment-facing thesis.
+  - No direct ticker evidence for direct_ticker_thesis.
+  - Contradicting evidence exists but is not addressed.

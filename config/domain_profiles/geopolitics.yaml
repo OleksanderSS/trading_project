@@ -1,0 +1,63 @@
+domain_id: geopolitics
+display_name: Geopolitics
+sector_label: geopolitics
+macro_evidence_type: macro_context
+description: Analyzes geopolitical risk, sanctions, conflicts, elections, policy shocks, and supply-chain disruptions.
+horizon_days_default: 180
+allowed_horizons: [7, 30, 90, 180, 365, 730]
+core_questions:
+  - Is geopolitical risk rising or falling?
+  - Which regions/sectors are directly exposed?
+  - Are sanctions, tariffs, conflict risk, or election policy changing?
+  - Is there direct evidence for asset/ticker impact?
+required_evidence_types:
+  - geopolitical_event
+  - policy_or_sanctions
+  - exposure_mapping
+  - market_confirmation
+useful_evidence_types:
+  - supply_chain
+  - country_risk
+  - tariff
+  - defense_policy
+  - commodity_shock
+sector_keywords:
+  - sanctions
+  - tariffs
+  - conflict
+  - election
+  - supply chain
+  - country risk
+  - sipri
+  - iiss
+  - ofac
+  - bis entity list
+  - defense budget
+  - contract awards
+trusted_sources:
+  tier_1_apis:
+    - "SIPRI"
+    - "OFAC"
+    - "EU Sanctions Map"
+    - "SAM.gov"
+  tier_2_reports:
+    - "IISS Military Balance"
+    - "Janes"
+    - "Defense News"
+ticker_universe_hint:
+  - XLE
+  - ITA
+  - TSM
+  - FXI
+  - GLD
+  - USO
+contradiction_rules:
+  - Headline risk without asset exposure mapping is insufficient.
+  - Market ignoring geopolitical risk should reduce conviction unless lag logic is explicit.
+direct_ticker_evidence_rules:
+  - Company/asset-specific exposure mapping.
+  - Ticker-specific market reaction or replay evidence.
+blocked_if_missing:
+  - No event evidence.
+  - No exposure mapping.
+  - No market confirmation.

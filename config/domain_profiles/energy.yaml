@@ -1,0 +1,145 @@
+domain_id: energy
+display_name: Energy
+sector_label: energy
+macro_evidence_type: macro_context
+description: Analyzes oil, gas, energy equities, supply/demand, OPEC, inventories, geopolitics, and policy.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365]
+core_questions:
+  - Is energy supply tightening or loosening?
+  - Is demand improving or weakening?
+  - Are inventories supportive?
+  - Are OPEC/geopolitics changing the balance?
+  - Which assets have direct evidence?
+  - Is the energy transition narrative affecting the cycle?
+required_evidence_types:
+  - supply
+  - demand
+  - policy_or_geopolitical
+  - market_confirmation
+useful_evidence_types:
+  - opec
+  - rig_count
+  - refinery_margins
+  - positioning
+  - seasonality
+  - energy_transition
+  - lng
+  - natural_gas_storage
+  - crack_spreads
+  - tanker_rates
+  - carbon_pricing
+  - renewable_capacity
+sector_keywords:
+  - oil
+  - gas
+  - OPEC
+  - inventories
+  - refinery
+  - energy
+  - supply
+  - demand
+  - crude
+  - brent
+  - wti
+  - natural gas
+  - lng
+  - rig
+  - shale
+  - offshore
+  - petrochemical
+  - eia
+  - iea
+  - opec momr
+  - jodi
+  - baker hughes
+  - steo
+  - crack spreads
+  - lng flows
+  - entso-e
+trusted_sources:
+  tier_1_apis:
+    - "EIA"
+    - "IEA"
+    - "JODI"
+    - "ENTSO-E"
+  tier_2_reports:
+    - "OPEC MOMR"
+    - "Baker Hughes"
+    - "EIA STEO"
+    - "Kpler"
+    - "Vortexa"
+ticker_universe_hint:
+  - XLE
+  - USO
+  - XOM
+  - CVX
+  - OXY
+  - UNG
+  - COP
+  - SLB
+  - EOG
+  - PXD
+  - MPC
+  - PSX
+contradiction_rules:
+  - Supply tightness with demand destruction is mixed.
+  - Bullish commodity thesis does not automatically imply bullish equity thesis.
+  - Rising inventories with weakening demand reduces confidence in the up-cycle thesis.
+  - OPEC production cut with non-OPEC capacity ramp must be evaluated as a net balance.
+  - Strong energy equity momentum without supply/demand evidence is market evidence only.
+direct_ticker_evidence_rules:
+  - Ticker-specific earnings/production/cost evidence.
+  - Commodity-specific price/replay evidence.
+  - Ticker-specific reserve/replacement data.
+  - Company-specific capex guidance or divestiture plans.
+blocked_if_missing:
+  - No supply evidence.
+  - No demand evidence.
+  - No market confirmation for investment-facing thesis.
+  - No ticker-specific evidence for direct_ticker_thesis.
+  - Contradicting evidence exists but is not addressed.
+analyst_lifecycle_profile:
+  profile_status: clone_dry_run
+  context_family_bindings:
+    news: not_configured
+    official_policy: not_configured
+    macro: not_configured
+    fundamentals: not_configured
+    sector_market: not_configured
+    pipeline_context: not_configured
+  mechanisms:
+    - mechanism_id: demand
+      evidence_lanes: [demand, inventories, market_confirmation]
+      observable_metrics: [consumption, inventories, relative_total_return]
+    - mechanism_id: supply
+      evidence_lanes: [supply, inventories, policy_or_geopolitical]
+      observable_metrics: [production, spare_capacity, inventories]
+    - mechanism_id: policy
+      evidence_lanes: [policy_or_geopolitical, supply, demand]
+      observable_metrics: [production_policy, sanctions_scope, relative_total_return]
+  market_measurement:
+    benchmark_ticker: XLE
+    primary_universe: [XOM, CVX, OXY, COP, SLB, EOG, MPC, PSX]
+  macro_series_scope:
+    - DCOILWTICO
+    - INDPRO
+    - CPIAUCSL
+    - PPIACO
+    - FEDFUNDS
+    - DGS10
+    - VIXCLS
+  macro_context_role: supporting_context_only
+  macro_binding_quality_policy:
+    required_series: [DCOILWTICO, INDPRO]
+    supporting_series: [CPIAUCSL, PPIACO, FEDFUNDS, DGS10, VIXCLS]
+    minimum_total_coverage_for_accept: 0.55
+    minimum_supporting_coverage_for_accept: 0.40
+    weights:
+      required_coverage: 0.60
+      supporting_coverage: 0.25
+      lineage_and_safety: 0.15
+    missing_required_action: replace_candidate
+    insufficient_supporting_action: defer
+  source_policy_ref: dean_os/config/replay_verified_market_sources.template.json
+  report_inbox: chief_review

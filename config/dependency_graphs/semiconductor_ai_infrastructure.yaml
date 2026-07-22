@@ -1,0 +1,171 @@
+# Dependency Graph: Semiconductors & AI Infrastructure
+# Structural economic relationships with propagation metadata.
+# Each edge: from → to, with type, lag, strength, confidence.
+
+nodes:
+  - id: hbm_memory
+    label: HBM Memory
+    category: technology_component
+    sector: semiconductor
+  - id: gpu
+    label: GPUs / AI Accelerators
+    category: technology_component
+    sector: semiconductor
+  - id: advanced_packaging
+    label: Advanced Packaging (CoWoS)
+    category: manufacturing_process
+    sector: semiconductor
+  - id: lithography_equipment
+    label: EUV Lithography Equipment
+    category: capital_equipment
+    sector: semiconductor_equipment
+  - id: chip_design_eda
+    label: Chip Design & EDA
+    category: technology_service
+    sector: semiconductor
+  - id: foundry_capacity
+    label: Foundry Capacity (TSMC, Samsung)
+    category: manufacturing
+    sector: semiconductor
+  - id: ai_servers
+    label: AI Servers
+    category: finished_product
+    sector: technology_hardware
+  - id: data_centers
+    label: Data Centers
+    category: infrastructure
+    sector: technology_infrastructure
+  - id: hyperscaler_capex
+    label: Hyperscaler Capex (MSFT, GOOG, AMZN, META)
+    category: capital_spending
+    sector: technology
+  - id: power_grid
+    label: Power Grid & Electricity Capacity
+    category: infrastructure
+    sector: energy
+  - id: cloud_revenue
+    label: Cloud Revenue
+    category: revenue_stream
+    sector: technology
+  - id: enterprise_ai_adoption
+    label: Enterprise AI Adoption
+    category: demand_driver
+    sector: technology
+
+edges:
+  - from: hbm_memory
+    to: gpu
+    type: structural
+    description: HBM is essential for high-end AI GPUs
+    lag: immediate
+    strength: 0.95
+    confidence: 0.9
+    evidence: Established technical dependency
+
+  - from: gpu
+    to: advanced_packaging
+    type: structural
+    description: Advanced GPUs require CoWoS packaging
+    lag: immediate
+    strength: 0.90
+    confidence: 0.85
+    evidence: TSMC CoWoS capacity tracked
+
+  - from: gpu
+    to: ai_servers
+    type: structural
+    description: AI servers are built around GPUs
+    lag: months
+    strength: 0.85
+    confidence: 0.85
+    evidence: Server bill-of-materials analysis
+
+  - from: advanced_packaging
+    to: gpu
+    type: structural
+    description: Packaging capacity constrains GPU supply
+    lag: months
+    strength: 0.80
+    confidence: 0.80
+    evidence: CoWoS capacity vs GPU shipments
+
+  - from: lithography_equipment
+    to: foundry_capacity
+    type: structural
+    description: EUV tools enable advanced node capacity
+    lag: years
+    strength: 0.85
+    confidence: 0.80
+    evidence: ASML shipment vs foundry capacity adds
+
+  - from: foundry_capacity
+    to: gpu
+    type: structural
+    description: Foundry capacity limits total GPU output
+    lag: months
+    strength: 0.85
+    confidence: 0.80
+    evidence: TSMC utilization data
+
+  - from: chip_design_eda
+    to: gpu
+    type: structural
+    description: EDA tools enable chip design
+    lag: years
+    strength: 0.70
+    confidence: 0.75
+    evidence: Cadence/Synopsys revenue cycles
+
+  - from: ai_servers
+    to: data_centers
+    type: structural
+    description: AI servers are deployed in data centers
+    lag: months
+    strength: 0.80
+    confidence: 0.80
+    evidence: DC construction + server shipment data
+
+  - from: data_centers
+    to: hyperscaler_capex
+    type: cyclical
+    description: DC buildout drives and is driven by capex
+    lag: quarters
+    strength: 0.75
+    confidence: 0.75
+    evidence: Capex guidance vs DC announcements
+
+  - from: data_centers
+    to: power_grid
+    type: structural
+    description: DC power demand stresses grid capacity
+    lag: years
+    strength: 0.70
+    confidence: 0.70
+    evidence: Power purchase agreements, grid studies
+
+  - from: hyperscaler_capex
+    to: cloud_revenue
+    type: cyclical
+    description: Capex enables cloud capacity for revenue growth
+    lag: quarters
+    strength: 0.65
+    confidence: 0.65
+    evidence: Cloud revenue vs capex cycles
+
+  - from: enterprise_ai_adoption
+    to: cloud_revenue
+    type: cyclical
+    description: Enterprise AI workloads drive cloud consumption
+    lag: quarters
+    strength: 0.70
+    confidence: 0.65
+    evidence: Azure/AWS AI revenue mix
+
+  - from: enterprise_ai_adoption
+    to: hyperscaler_capex
+    type: cyclical
+    description: Adoption signals drive capex confidence
+    lag: quarters
+    strength: 0.60
+    confidence: 0.60
+    evidence: Management commentary on AI demand

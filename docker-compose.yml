@@ -6,4 +6,4 @@ services:
       - ./:/app
     env_file:
       - .env
-    command: ["python", "run_hybrid_pipeline.py", "--mode", "local"]
+    command: ["scripts/run_full_pipeline_automated.py", "--batch-name", "main_database"]

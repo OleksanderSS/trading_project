@@ -5,6 +5,8 @@
     "data/collectors/collector_factory.py",
     "factories/model_factory.py",
     "factories/tree_model_factory.py",
+    "models/enhanced_factory.py",
+    "models/factory.py",
     "optimization/factory.py",
     "pipeline/hybrid/component_factory.py",
     "pipeline/pipeline_factory.py"
@@ -13,6 +15,7 @@
     "analytics/arena/battle_groups.py",
     "analytics/arena/performance_tracker.py",
     "analytics/data_managers/model_results_manager.py",
+    "config/model_registry.py",
     "factories/model_factory.py",
     "models/ensemble/enhanced_ensemble.py",
     "models/integrated_model_manager.py",
@@ -29,9 +32,12 @@
     "svm": [
       "factories/model_factory.py",
       "models/analysis/regime_winner_analyzer.py",
+      "models/constants.py",
       "models/linear/svm_model.py",
+      "models/model_selector/dynamic_weight_selector.py",
       "models/registry/model_registry.py",
-      "pipeline/stages/modeling/utils.py"
+      "pipeline/stages/modeling/utils.py",
+      "pipeline/stages/stage_config.py"
     ],
     "lstm": [
       "analytics/analyzers/model_comparison_analyzer.py",
@@ -42,6 +48,7 @@
       "factories/model_factory.py",
       "features/colab_context_integration.py",
       "features/feature_selector.py",
+      "models/constants.py",
       "models/ensemble/dynamic_weights.py",
       "models/loader.py",
       "models/model_selector/heavy_light_comparator.py",
@@ -50,6 +57,7 @@
       "optimization/hyperparameter_searcher.py",
       "pipeline/hybrid/final_stages_executor.py",
       "pipeline/stages/prediction/data_preparer.py",
+      "pipeline/stages/stage_config.py",
       "predictions/models_predict.py",
       "trading/consensus_engine.py",
       "trading/live_adaptive_ensemble.py"
@@ -59,16 +67,19 @@
       "colab/models/model_factory.py",
       "colab/models/sklearn_fallback.py",
       "colab/models/torch_models.py",
+      "ensembling/ensemble/archive/adaptive_ensemble.py",
       "factories/model_factory.py",
       "features/colab_context_integration.py",
       "features/feature_selector.py",
+      "models/constants.py",
       "models/ensemble/dynamic_weights.py",
       "models/loader.py",
       "models/model_selector/heavy_light_comparator.py",
       "models/neural/gru_model.py",
       "models/registry/model_registry.py",
       "pipeline/hybrid/final_stages_executor.py",
-      "pipeline/stages/prediction/data_preparer.py"
+      "pipeline/stages/prediction/data_preparer.py",
+      "pipeline/stages/stage_config.py"
     ],
     "cnn": [
       "analytics/analyzers/model_comparison_analyzer.py",
@@ -78,12 +89,15 @@
       "factories/model_factory.py",
       "features/colab_context_integration.py",
       "features/feature_selector.py",
+      "models/constants.py",
+      "models/factory.py",
       "models/loader.py",
       "models/model_selector/heavy_light_comparator.py",
       "models/neural/cnn_model.py",
       "models/registry/model_registry.py",
       "pipeline/hybrid/final_stages_executor.py",
       "pipeline/stages/prediction/data_preparer.py",
+      "pipeline/stages/stage_config.py",
       "predictions/models_predict.py",
       "trading/consensus_engine.py",
       "trading/live_adaptive_ensemble.py"
@@ -93,9 +107,11 @@
       "colab/models/model_factory.py",
       "colab/models/sklearn_fallback.py",
       "colab/models/torch_models.py",
+      "ensembling/ensemble/archive/adaptive_ensemble.py",
       "factories/model_factory.py",
       "features/colab_context_integration.py",
       "features/feature_selector.py",
+      "models/constants.py",
       "models/ensemble/dynamic_weights.py",
       "models/loader.py",
       "models/model_selector/heavy_light_comparator.py",
@@ -103,6 +119,7 @@
       "models/registry/model_registry.py",
       "pipeline/hybrid/final_stages_executor.py",
       "pipeline/stages/prediction/data_preparer.py",
+      "pipeline/stages/stage_config.py",
       "predictions/models_predict.py",
       "trading/consensus_engine.py",
       "trading/live_adaptive_ensemble.py"
@@ -111,30 +128,34 @@
       "analytics/analyzers/model_comparison_analyzer.py",
       "colab/models/model_factory.py",
       "colab/models/torch_models.py",
+      "ensembling/ensemble/archive/adaptive_ensemble.py",
       "factories/model_factory.py",
       "features/colab_context_integration.py",
       "features/feature_selector.py",
+      "models/constants.py",
       "models/loader.py",
       "models/model_selector/heavy_light_comparator.py",
       "models/neural/tabnet_model.py",
       "models/registry/model_registry.py",
       "pipeline/hybrid/final_stages_executor.py",
       "pipeline/stages/prediction/data_preparer.py",
-      "pipeline/stages/prediction/model_selection_service.py"
+      "pipeline/stages/stage_config.py"
     ],
     "mlp": [
       "colab/models/model_factory.py",
       "colab/models/sklearn_fallback.py",
       "colab/models/torch_models.py",
+      "ensembling/ensemble/archive/adaptive_ensemble.py",
       "factories/model_factory.py",
       "features/colab_context_integration.py",
       "features/feature_selector.py",
+      "models/constants.py",
       "models/loader.py",
+      "models/model_selector/dynamic_weight_selector.py",
       "models/neural/mlp_model.py",
       "models/registry/model_registry.py",
       "optimization/hyperparameter_searcher.py",
-      "pipeline/stages/prediction/data_preparer.py",
-      "pipeline/stages/prediction/model_selection_service.py"
+      "pipeline/stages/prediction/data_preparer.py"
     ],
     "autoencoder": [
       "analytics/analyzers/model_comparison_analyzer.py",
@@ -143,6 +164,7 @@
       "factories/model_factory.py",
       "features/colab_context_integration.py",
       "features/feature_selector.py",
+      "models/constants.py",
       "models/loader.py",
       "models/neural/autoencoder_model.py",
       "models/registry/model_registry.py",
@@ -150,59 +172,75 @@
       "pipeline/stages/prediction/model_selection_service.py",
       "pipeline/stages/prediction/prediction_generator.py",
       "pipeline/stages/prediction/result_builder.py",
+      "pipeline/stages/stage_config.py",
       "predictions/models_predict.py"
     ],
     "xgboost": [
       "core/utils/lazy_loader.py",
       "factories/model_factory.py",
       "factories/tree_model_factory.py",
+      "models/constants.py",
       "models/ensemble/dynamic_weights.py",
       "models/model_selector/heavy_light_comparator.py",
       "models/registry/model_registry.py",
       "models/tree/xgboost_model.py",
-      "pipeline/stages/modeling/utils.py"
+      "pipeline/stages/modeling/utils.py",
+      "pipeline/stages/stage_config.py"
     ],
     "lightgbm": [
       "core/utils/lazy_loader.py",
       "factories/model_factory.py",
       "factories/tree_model_factory.py",
       "features/selection/smart_selector.py",
+      "models/constants.py",
       "models/model_selector/adaptive_selector.py",
       "models/model_selector/fingerprint_selector.py",
       "models/model_selector/heavy_light_comparator.py",
+      "models/model_selector/selector.py",
       "models/registry/model_registry.py",
       "models/tree/lightgbm_model.py",
       "pipeline/stages/modeling/utils.py",
-      "pipeline/stages/stage_5_prediction.py"
+      "pipeline/stages/stage_5_prediction.py",
+      "pipeline/stages/stage_config.py"
     ],
     "catboost": [
       "core/utils/lazy_loader.py",
+      "ensembling/ensemble/archive/adaptive_ensemble.py",
       "factories/model_factory.py",
       "factories/tree_model_factory.py",
+      "models/constants.py",
+      "models/enhanced_factory.py",
       "models/ensemble/dynamic_weights.py",
+      "models/factory.py",
+      "models/model_selector/dynamic_weight_selector.py",
       "models/model_selector/heavy_light_comparator.py",
       "models/prototypes/prototype.py",
       "models/registry/model_registry.py",
       "models/tree/catboost_model.py",
       "pipeline/stages/modeling/utils.py",
+      "pipeline/stages/stage_config.py",
       "trading/consensus_engine.py",
       "trading/live_adaptive_ensemble.py"
     ],
     "randomforest": [
       "factories/model_factory.py",
       "factories/tree_model_factory.py",
+      "models/constants.py",
       "models/registry/model_registry.py"
     ],
-    "btc_lstm_v2": [
-      "models/model_pool.py",
-      "models/persistent_pool.py"
-    ],
     "catboost_v1": [
+      "models/constants.py",
+      "models/enhanced_factory.py",
       "models/model_selector/adaptive_selector.py",
       "models/persistent_pool.py",
       "models/prototypes/prototype.py",
       "models/prototypes/registry.py",
       "monitoring/reporting/performance_reports.py"
+    ],
+    "btc_lstm_v2": [
+      "models/constants.py",
+      "models/model_pool.py",
+      "models/persistent_pool.py"
     ]
   }
 }

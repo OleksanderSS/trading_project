@@ -1,0 +1,172 @@
+domain_id: semiconductor_ai_infrastructure
+display_name: Semiconductors & AI Infrastructure
+sector_label: semiconductor
+macro_evidence_type: macro_context
+description: >-
+  Analyzes the semiconductor and AI infrastructure value chain: AI accelerators, GPUs, CPUs,
+  foundries, advanced packaging, memory, EDA, semiconductor equipment, hyperscaler capex,
+  export controls, supply-chain concentration, and geopolitical constraints.
+horizon_days_default: 180
+allowed_horizons: [30, 90, 180, 365, 730]
+core_questions:
+  - Is AI infrastructure demand accelerating, stable, or slowing?
+  - Are hyperscaler capex plans supportive for the sector?
+  - Is the semiconductor cycle improving or deteriorating?
+  - Which part of the value chain benefits most?
+  - Are export controls or geopolitical risks changing the expected return/risk balance?
+  - Is sector strength broad or concentrated in a few mega-cap names?
+  - Does evidence support a sector thesis only, or direct ticker theses?
+required_evidence_types:
+  - sector_demand
+  - capex_cycle
+  - supply_chain
+  - policy_or_geopolitical
+  - market_confirmation
+useful_evidence_types:
+  - earnings_guidance
+  - order_backlog
+  - foundry_utilization
+  - advanced_packaging_capacity
+  - memory_pricing
+  - export_control_update
+  - hyperscaler_capex
+  - valuation_context
+  - relative_strength
+  - analyst_revision
+  - inventory_cycle
+sector_keywords:
+  - AI infrastructure
+  - GPU
+  - accelerator
+  - semiconductor
+  - foundry
+  - advanced packaging
+  - HBM
+  - memory
+  - data center capex
+  - hyperscaler
+  - export controls
+  - Taiwan risk
+  - chip equipment
+  - EDA
+  - semi world fab forecast
+  - wsts
+  - dramexchange
+  - mlcommons
+  - mlperf
+  - swe-bench
+  - agentbench
+trusted_sources:
+  tier_1_apis:
+    - "SIA"
+    - "WSTS"
+  tier_2_reports:
+    - "SEMI World Fab Forecast"
+    - "TrendForce"
+    - "Stanford AI Index"
+    - "MLCommons"
+    - "Artificial Analysis"
+ticker_universe_hint:
+  - NVDA
+  - AMD
+  - TSM
+  - ASML
+  - AMAT
+  - LRCX
+  - KLAC
+  - AVGO
+  - MU
+  - ARM
+  - INTC
+  - QCOM
+contradiction_rules:
+  - Positive AI demand but falling hyperscaler capex should reduce confidence.
+  - Positive sector demand but company-specific margin pressure blocks direct ticker thesis.
+  - Positive demand but export-control restriction on the company or region must be explicit risk.
+  - Broad sector thesis with no ticker-specific evidence can only create basket_candidate.
+  - Strong price momentum without fundamental or event evidence is market evidence only, not full thesis.
+direct_ticker_evidence_rules:
+  - Company-specific earnings/guidance/order evidence.
+  - Ticker-specific focused replay or outcome evidence.
+  - Ticker-specific price/relative-strength confirmation.
+  - Company-specific regulatory/export-control impact.
+  - Company-specific supply-chain or capacity evidence.
+  - Company-specific valuation/revision evidence.
+blocked_if_missing:
+  - No evidence timestamp/as_of.
+  - No sector demand evidence.
+  - No market confirmation for investment-facing thesis.
+  - No ticker-specific evidence for direct_ticker_thesis.
+  - Contradicting evidence exists but is not addressed.
+analyst_lifecycle_profile:
+  profile_status: source_template_candidate_pending_manual_acceptance
+  context_family_bindings:
+    news: configured
+    official_policy: configured
+    macro: configured
+    fundamentals: configured
+    sector_market: configured
+    pipeline_context: configured
+  mechanisms:
+    - mechanism_id: demand
+      evidence_lanes: [sector_demand, market_confirmation]
+      observable_metrics: [revenue_growth, order_backlog, relative_total_return]
+    - mechanism_id: capex
+      evidence_lanes: [capex_cycle, sector_demand, market_confirmation]
+      observable_metrics: [hyperscaler_capex, equipment_orders, relative_total_return]
+    - mechanism_id: supply
+      evidence_lanes: [supply_chain, market_confirmation]
+      observable_metrics: [capacity, utilization, inventory, relative_total_return]
+    - mechanism_id: policy
+      evidence_lanes: [policy_or_geopolitical, market_confirmation]
+      observable_metrics: [policy_scope, geographic_exposure, relative_total_return]
+  macro_series_scope:
+    - INDPRO
+    - DGORDER
+    - PPIACO
+    - FEDFUNDS
+    - DGS10
+    - T10Y2Y
+    - BAMLH0A0HYM2
+    - VIXCLS
+    - DEXCHUS
+  macro_context_role: supporting_context_only
+  macro_binding_quality_policy:
+    required_series: [INDPRO, DGORDER]
+    supporting_series: [PPIACO, FEDFUNDS, DGS10, T10Y2Y, BAMLH0A0HYM2, VIXCLS, DEXCHUS]
+    minimum_total_coverage_for_accept: 0.65
+    minimum_supporting_coverage_for_accept: 0.55
+    weights:
+      required_coverage: 0.55
+      supporting_coverage: 0.30
+      lineage_and_safety: 0.15
+    missing_required_action: replace_candidate
+    insufficient_supporting_action: defer
+  market_measurement:
+    benchmark_ticker: SOXX
+    primary_universe: [NVDA, AMD, TSM, ASML, AMAT, LRCX, KLAC, AVGO, MU, ARM, INTC, QCOM]
+  fundamentals_binding_policy:
+    issuer_identity_registry_path: dean_os/config/semiconductor_issuer_identity_registry.yaml
+    configured_issuer_scope_must_match_source: true
+    configured_issuers_must_be_in_primary_universe: true
+    allow_partial_profile_candidate_with_explicit_gaps: true
+    raw_fundamental_fact_is_directional_evidence: false
+  news_binding_policy:
+    source_registry_path: dean_os/config/semiconductor_news_source_registry.yaml
+    legacy_producer_contract: dean_saved_semiconductor_news_evidence_producer_v1
+    context_role: trigger_evidence_only
+    news_is_directional_evidence_by_itself: false
+    hypothesis_confirmation_allowed: false
+    official_policy_confirmation_is_separate: true
+  official_policy_binding_policy:
+    source_registry_path: dean_os/config/official_policy_evidence_registry.yaml
+    allowed_official_hosts: [bis.gov, www.bis.gov, media.bis.gov]
+    allowed_source_identities: [us_bureau_industry_security]
+    max_source_age_days: 120
+    minimum_independent_news_sources: 1
+    accepted_registry_review_statuses: [operator_accepted, manually_accepted]
+    context_role: official_policy_fact_evidence
+    directional_market_claim_allowed_by_itself: false
+    hypothesis_confirmation_allowed: false
+  source_policy_ref: dean_os/config/replay_verified_market_sources.template.json
+  report_inbox: chief_review

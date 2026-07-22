@@ -1,0 +1,29 @@
+{
+  "steps": {
+    "model_input": {
+      "rows": 41505,
+      "columns": [
+        "datetime",
+        "ticker",
+        "interval"
+      ],
+      "column_count": 3,
+      "nan_ratio_by_column": {
+        "datetime": 0.0,
+        "ticker": 0.0,
+        "interval": 0.0
+      }
+    }
+  },
+  "model_input_columns": [
+    "datetime",
+    "ticker",
+    "interval"
+  ],
+  "components": [],
+  "source_artifact": "data\\colab\\accumulated\\main_database\\features.parquet",
+  "source_artifact_rows": 41505,
+  "source_artifact_columns": 3,
+  "report_scope": "current_cached_colab_features",
+  "note": "Generated from the current cached Colab feature batch; does not run collectors or training."
+}
