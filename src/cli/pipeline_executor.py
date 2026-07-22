@@ -2,16 +2,29 @@
 Pipeline execution utilities for hybrid pipeline.
 """
 import functools
+import hashlib
+import json
 import logging
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
-
+ 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.target_column_utils import is_direct_target_column, split_model_features_and_targets
 
 logger = ProjectLogger.get_logger(__name__)
+
+_FINGERPRINT_FILE = 'raw_db_fingerprint.json'
+# Tables tracked for change detection (fallback if config unavailable)
+_DEFAULT_TRACKED_TABLES = [
+    'news_articles', 'google_news', 'rss_news', 'newsapi_articles',
+    'sec_filings', 'hugging_face_news',
+    'market_data_raw', 'market_data',
+    'fred_data', 'economic_calendar',
+]
 
 def profile_execution(func):
     """Decorator to log execution time of async functions."""
@@ -57,9 +70,18 @@ class PipelineExecutor:
 
         tracker = PipelineExecutor._enable_lineage_tracking_for_run()
 
-        features_df, targets_df = await PipelineExecutor._run_local_pipeline_and_extract_data(
-            orchestrator, tickers, timeframes
-        )
+        # Check cache before running pipeline
+        cached_data = PipelineExecutor._check_cache_before_run(orchestrator)
+        if cached_data is not None:
+            features_df, targets_df = cached_data
+        else:
+            logger.info("🔄 No valid cache found - running pipeline stages 0-3")
+            features_df, targets_df = await PipelineExecutor._run_local_pipeline_and_extract_data(
+                orchestrator, tickers, timeframes
+            )
+            # Persist DB fingerprint so next run can detect new data automatically
+            fp, table_states = PipelineExecutor._compute_db_fingerprint(orchestrator)
+            PipelineExecutor._save_db_fingerprint(orchestrator.config.output_dir, fp, table_states)
 
         PipelineExecutor._capture_final_features(tracker, features_df)
 
@@ -71,6 +93,152 @@ class PipelineExecutor:
 
         PipelineExecutor._disable_lineage_tracking()
         return result
+
+    @staticmethod
+    def _compute_db_fingerprint(orchestrator) -> tuple[str, dict]:
+        """
+        Compute a SHA-256 fingerprint of raw DB table states.
+
+        Fingerprint captures COUNT(*) and MAX(date) per tracked table.
+        If any table grows (new rows accumulated), fingerprint changes,
+        triggering a full stages 0-3 re-run.
+
+        Raw data (news, prices, macro) is a permanent chronicle — it never
+        expires. Old news had valid market impact at the time they were
+        published and remain valid training samples forever.
+        """
+        try:
+            from src.data.management.data_manager import DataManager
+            db_manager = DataManager(orchestrator.config_manager)
+
+            # Prefer tracked_tables from config, fallback to defaults
+            cfg = orchestrator.config_manager.get_config('cache') or {}
+            tracked = cfg.get('tracked_tables', _DEFAULT_TRACKED_TABLES)
+            # Also include any table that exists in DB and looks like raw data
+            try:
+                all_tables = db_manager.get_all_table_names()
+                extra = [
+                    t for t in all_tables
+                    if t not in tracked and t != 'cache_metadata'
+                    and any(kw in t for kw in ('news', 'market', 'fred', 'economic', 'sec', 'rss'))
+                ]
+                tracked = list(dict.fromkeys(tracked + extra))  # preserve order, deduplicate
+            except Exception as e:
+                logger.warning(f"Failed to fetch extra cache tables: {e}")
+
+            table_states = {}
+            state_parts = []
+            for table in tracked:
+                try:
+                    if not db_manager.table_exists(table):
+                        continue
+                    quoted = f'"{table.replace(chr(34), "")}"'
+                    count = (db_manager.fetch_one(f'SELECT COUNT(*) as c FROM {quoted}') or {}).get('c', 0)
+
+                    schema = db_manager.get_table_schema(table)
+                    date_col = next(
+                        (c for c in ('published_at', 'published_date', 'created_at', 'timestamp', 'datetime', 'date')
+                         if c in schema),
+                        None,
+                    )
+                    max_date = 'no_date'
+                    if date_col:
+                        quoted_col = f'"{date_col.replace(chr(34), "")}"'
+                        res = db_manager.fetch_one(f'SELECT MAX({quoted_col}) as m FROM {quoted}')
+                        max_date = str((res or {}).get('m', 'null'))
+
+                    table_states[table] = {'count': count, 'max_date': max_date}
+                    state_parts.append(f'{table}:{count}:{max_date}')
+                except Exception as e:
+                    logger.debug(f'Fingerprint: skipped table {table}: {e}')
+
+            fingerprint = hashlib.sha256('|'.join(state_parts).encode()).hexdigest()
+            return fingerprint, table_states
+        except Exception as e:
+            logger.warning(f'Could not compute DB fingerprint: {e}')
+            return 'unavailable', {}
+
+    @staticmethod
+    def _save_db_fingerprint(output_dir: Path, fingerprint: str, table_states: dict) -> None:
+        """Persist the current DB fingerprint alongside features.parquet."""
+        meta = {
+            'fingerprint': fingerprint,
+            'generated_at': datetime.now().isoformat(),
+            'table_states': table_states,
+        }
+        try:
+            fp_path = output_dir / _FINGERPRINT_FILE
+            fp_path.write_text(json.dumps(meta, indent=2, default=str), encoding='utf-8')
+            logger.info(f'💾 DB fingerprint saved: {fingerprint[:16]}… ({len(table_states)} tables tracked)')
+        except Exception as e:
+            logger.warning(f'Could not save DB fingerprint: {e}')
+
+    @staticmethod
+    def _check_cache_before_run(orchestrator) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+        """
+        Data-driven cache check:
+        1. features.parquet must exist and be non-empty.
+        2. DB fingerprint must match what was used to generate those features.
+           → If new rows accumulated in raw tables since last run, re-run stages 0-3.
+        """
+        output_dir = orchestrator.config.output_dir
+        features_path = output_dir / 'features.parquet'
+        targets_path = output_dir / 'targets.parquet'
+        fp_path = output_dir / _FINGERPRINT_FILE
+
+        # Step 1: parquet files must exist
+        if not features_path.exists() or not targets_path.exists():
+            logger.info('Cache: features/targets not found — running full pipeline.')
+            return None
+
+        # Step 2: fingerprint file must exist (written after every successful prepare)
+        if not fp_path.exists():
+            logger.info('Cache: no DB fingerprint on record — running full pipeline to establish baseline.')
+            return None
+
+        # Step 3: compare current DB state with saved fingerprint
+        try:
+            saved_meta = json.loads(fp_path.read_text(encoding='utf-8'))
+            saved_fp = saved_meta.get('fingerprint', '')
+            saved_states = saved_meta.get('table_states', {})
+            saved_at = saved_meta.get('generated_at', 'unknown')
+        except Exception as e:
+            logger.warning(f'Cache: could not read fingerprint file ({e}) — running full pipeline.')
+            return None
+
+        current_fp, current_states = PipelineExecutor._compute_db_fingerprint(orchestrator)
+
+        if current_fp == 'unavailable':
+            # DB unreachable — be conservative, use cache
+            logger.warning('Cache: DB fingerprint unavailable — using cached features (conservative).')
+        elif current_fp != saved_fp:
+            # Find which tables grew
+            changed = [
+                f'{t}: {saved_states.get(t, {}).get("count", "?")} → {v["count"]}'
+                for t, v in current_states.items()
+                if str(v.get('count')) != str((saved_states.get(t) or {}).get('count', ''))
+            ]
+            logger.info(
+                f'🔄 New data detected since last prepare ({saved_at}) — re-running stages 0-3.'
+                + (f' Changed tables: {changed}' if changed else '')
+            )
+            return None
+
+        # Step 4: load and validate cached features
+        try:
+            features_df = pd.read_parquet(features_path)
+            targets_df = pd.read_parquet(targets_path)
+            if features_df.empty or targets_df.empty:
+                logger.warning('Cache: parquet files are empty — running full pipeline.')
+                return None
+            logger.info(
+                f'✅ No new data since last prepare ({saved_at}) — using cached features '
+                f'features={features_df.shape}, targets={targets_df.shape}'
+            )
+            return features_df, targets_df
+        except Exception as e:
+            logger.warning(f'Cache: error reading parquet files ({e}) — running full pipeline.')
+            return None
 
     @staticmethod
     def _enable_lineage_tracking_for_run():
@@ -92,8 +260,151 @@ class PipelineExecutor:
         results_data = local_results.get('results', {})
         features_df = results_data.get('features_df', pd.DataFrame())
         targets_df = results_data.get('targets_df', pd.DataFrame())
+
+        # If features/targets are empty — cascade fallbacks:
+        # 1. saved_files['features'] from this run (written by feature_processor)
+        # 2. saved_files['cleaned_data'] from this run
+        # 3. data/processed/features/ — persistent processed storage
+        if features_df.empty and targets_df.empty:
+            saved_files = local_results.get('saved_files', {})
+            features_df, targets_df = PipelineExecutor._load_features_targets_with_fallbacks(
+                saved_files
+            )
+
         logger.info(f'Local pipeline complete: features={features_df.shape}, targets={targets_df.shape}')
         return features_df, targets_df
+
+    @staticmethod
+    def _load_features_targets_with_fallbacks(saved_files: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Load features and targets from saved files with multiple fallbacks.
+
+        Priority:
+        1. saved_files['features'] — written by feature_processor in this run
+        2. saved_files['cleaned_data'] — stage2 output, split into features/targets
+        3. data/processed/features/ — persistent storage from previous runs
+        """
+        features_df = pd.DataFrame()
+        targets_df = pd.DataFrame()
+
+        # --- Fallback 1: explicit features path saved by feature_processor ---
+        features_path = saved_files.get('features')
+        targets_path = saved_files.get('targets')
+        if features_path:
+            features_df = PipelineExecutor._try_load_parquet(features_path, "saved features")
+        if targets_path:
+            targets_df = PipelineExecutor._try_load_parquet(targets_path, "saved targets")
+
+        if not features_df.empty and not targets_df.empty:
+            return features_df, targets_df
+
+        # --- Fallback 2: cleaned_data from stage2 (split into features/targets) ---
+        cleaned_data_path_str = saved_files.get('cleaned_data')
+        if cleaned_data_path_str:
+            cleaned_data = PipelineExecutor._try_load_pickle_or_parquet(cleaned_data_path_str, "cleaned_data")
+            if cleaned_data is not None:
+                # Handle dict (nested DataFrames) or DataFrame
+                if isinstance(cleaned_data, dict) and 'prices' in cleaned_data:
+                    # Extract 1d prices from dict
+                    prices_dict = cleaned_data['prices']
+                    if '1d' in prices_dict and isinstance(prices_dict['1d'], pd.DataFrame):
+                        cleaned_df = prices_dict['1d']
+                    else:
+                        # Use first available timeframe
+                        for tf, df in prices_dict.items():
+                            if isinstance(df, pd.DataFrame) and not df.empty:
+                                cleaned_df = df
+                                break
+                        else:
+                            cleaned_df = pd.DataFrame()
+                elif isinstance(cleaned_data, pd.DataFrame):
+                    cleaned_df = cleaned_data
+                else:
+                    cleaned_df = pd.DataFrame()
+
+                if not cleaned_df.empty:
+                    feature_cols, target_cols, dropped = split_model_features_and_targets(cleaned_df.columns)
+                    if dropped:
+                        logger.warning(
+                            "Dropped %s target-derived column(s) from features: %s",
+                            len(dropped), list(dropped)[:5],
+                        )
+                    if feature_cols:
+                        features_df = cleaned_df[feature_cols]
+                    if target_cols:
+                        targets_df = cleaned_df[target_cols]
+                    logger.info(f'Loaded data from cleaned_data: features={features_df.shape}, targets={targets_df.shape}')
+
+        if not features_df.empty and not targets_df.empty:
+            return features_df, targets_df
+
+        # --- Fallback 3: persistent data/processed/features/ ---
+        processed_features = Path("data/processed/features/features.parquet")
+        processed_targets = Path("data/processed/features/targets.parquet")
+
+        if features_df.empty and processed_features.exists():
+            loaded = PipelineExecutor._try_load_parquet(str(processed_features), "processed features")
+            if not loaded.empty:
+                features_df = loaded
+                logger.info(f'Fallback to processed features: {features_df.shape}')
+
+        if targets_df.empty and processed_targets.exists():
+            loaded = PipelineExecutor._try_load_parquet(str(processed_targets), "processed targets")
+            if not loaded.empty:
+                targets_df = loaded
+                logger.info(f'Fallback to processed targets: {targets_df.shape}')
+
+        return features_df, targets_df
+
+    @staticmethod
+    def _try_load_parquet(path_str: str, label: str) -> pd.DataFrame:
+        """
+        Safely load a parquet file. Returns empty DataFrame on any error
+        (including corrupted files that raise pyarrow/OSError exceptions).
+        """
+        path = Path(path_str)
+        if not path.exists():
+            return pd.DataFrame()
+        try:
+            df = pd.read_parquet(path)
+            if not df.empty:
+                logger.info(f'Loaded {label}: {df.shape} from {path.name}')
+            return df
+        except Exception as e:  # noqa: BLE001 — intentional broad catch for corrupted files
+            logger.warning(f'Failed to load {label} from {path}: {e}')
+            return pd.DataFrame()
+
+    @staticmethod
+    def _try_load_pickle_or_parquet(path_str: str, label: str) -> Any:
+        """
+        Try to load as pickle first (for cleaned_data dict), then as parquet.
+        Returns loaded data or None on failure.
+        """
+        import pickle
+
+        path = Path(path_str)
+        if not path.exists():
+            return None
+
+        # Try pickle first (for cleaned_data dict)
+        try:
+            with open(path, 'rb') as f:
+                data = pickle.load(f)
+            logger.info(f'Loaded {label} from {path.name} as pickle')
+            return data
+        except Exception:
+            # Not a pickle file, try parquet
+            pass
+
+        # Try parquet
+        try:
+            df = pd.read_parquet(path)
+            if not df.empty:
+                logger.info(f'Loaded {label}: {df.shape} from {path.name} as parquet')
+            return df
+        except Exception as e:  # noqa: BLE001 — intentional broad catch
+            logger.warning(f'Failed to load {label} from {path}: {e}')
+            return None
 
     @staticmethod
     def _capture_final_features(tracker, features_df):
@@ -102,7 +413,7 @@ class PipelineExecutor:
             try:
                 tracker.capture_step("final_features", features_df)
                 tracker.mark_model_input(features_df)
-            except Exception as e:
+            except (AttributeError, TypeError, RuntimeError, KeyError) as e:
                 logger.warning(f"[Lineage] Could not capture step: {e}")
 
     @staticmethod
@@ -128,7 +439,7 @@ class PipelineExecutor:
             colab_dirs = sorted(Path("data/colab/accumulated").glob("*/features.parquet"))
             if colab_dirs:
                 features_path = colab_dirs[-1]
-        
+
         if features_path.exists():
             final_features = pd.read_parquet(features_path)
             logger.info(f"[Lineage] Loaded features from Parquet: {final_features.shape}")
@@ -172,15 +483,41 @@ class PipelineExecutor:
 
         # 3. Resolve tickers and run light training
         tickers = PipelineExecutor._resolve_tickers(args, colab_results, features_df)
+        
+        # Filter DataFrames to only include the resolved tickers
+        if tickers and hasattr(features_df, 'empty') and not features_df.empty and 'ticker' in features_df.columns:
+            features_df = features_df[features_df['ticker'].isin(tickers)].copy()
+        if tickers and hasattr(targets_df, 'empty') and not targets_df.empty and 'ticker' in targets_df.columns:
+            targets_df = targets_df[targets_df['ticker'].isin(tickers)].copy()
+            
+        logger.info(f"Resolved tickers for continue mode: {tickers}")
+        logger.info("About to run light training for continue mode...")
         light_results = await PipelineExecutor._run_light_training_for_continue(
             orchestrator, features_df, targets_df, tickers, args
         )
+        logger.info(f"Light training results: {light_results}")
 
-        # 4. Run final stages
-        return await PipelineExecutor._run_final_stages_for_continue(
-            orchestrator, features_df, targets_df, colab_results, light_results,
-            tickers, manifest, news_data, economic_data, args
+        # 4. Run final stages (5-7) after light training
+        logger.info("Running final stages (5-7) after light training...")
+        final_results = await PipelineExecutor._run_final_stages_for_continue(
+            orchestrator,
+            features_df,
+            targets_df,
+            colab_results,
+            light_results,
+            tickers,
+            manifest,
+            news_data,
+            economic_data,
+            args
         )
+        logger.info("Final stages completed")
+
+        return {
+            'status': 'completed',
+            'light_results': light_results,
+            'final_results': final_results
+        }
 
     @staticmethod
     async def _run_light_training_for_continue(orchestrator, features_df, targets_df, tickers, args):
@@ -208,7 +545,11 @@ class PipelineExecutor:
             'batch_name': getattr(args, 'batch_name', None),
             'news_data': news_data,
             'economic_data': economic_data,
-            'stages_to_run': getattr(args, 'stages', None)
+            'stages_to_run': getattr(args, 'stages', None),
+            'execution_mode': getattr(args, 'execution_mode', 'review_only'),
+            'evaluation_notification_authorized': getattr(
+                args, 'evaluation_notification_authorized', False
+            ),
         }
         return await orchestrator.run_final_stages(final_request)
 
@@ -222,7 +563,7 @@ class PipelineExecutor:
     def _log_manifest_details(manifest: dict):
         """Logs details from the batch manifest with sanitization."""
         logger.info('✨ Explicit local-Colab contract verified successfully! Manifest details:')
-        
+
         # CWE-117: Sanitize user-controlled data before logging
         def sanitize(val):
             if val is None: return "None"
@@ -313,7 +654,7 @@ class PipelineExecutor:
     def _reconstruct_data_from_db(orchestrator, current_news, current_econ):
         """Reconstructs missing news/economic data from database tables."""
         try:
-            from src.data.management.data_manager import DataManager
+            from src.data.management.data_manager import DataManager  # noqa: F401
             from src.processing.deduplication_utils import deduplicate_dataframe
 
             db_manager, collector_configs = PipelineExecutor._initialize_db_reconstruction(orchestrator)
@@ -395,15 +736,20 @@ class PipelineExecutor:
 
     @staticmethod
     def _safe_load_parquet(path: Path, label: str, silent: bool = False) -> Any:
-        """Safely loads a parquet file, logging success or failure."""
+        """Safely loads a parquet file, logging success or failure.
+
+        Uses broad Exception catch to handle corrupted files (e.g. pyarrow ArrowInvalid,
+        OSError) alongside the usual pandas/type errors.
+        """
         if path.exists():
             try:
                 df = pd.read_parquet(path)
                 if not silent:
                     logger.info(f"Loaded {label}: {df.shape}")
                 return df
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                logger.exception(f"Failed to load {label} from {path}: {e}")
+            except Exception as e:  # noqa: BLE001 — intentional: corrupted parquet raises ArrowInvalid
+                label_sanitized = PipelineExecutor._sanitize(label)
+                logger.warning(f"Failed to load {label_sanitized} from {path}: {e}")
         elif not silent:
             label_sanitized = PipelineExecutor._sanitize(label)
             logger.error(f"{label_sanitized} file not found: {path}")
@@ -449,7 +795,7 @@ class PipelineExecutor:
     def _extract_target_columns(targets_df):
         """Extract target columns from targets dataframe."""
         # audit-ignore: ARCHITECTURAL_USAGE
-        return [col for col in targets_df.columns if str(col).startswith('target_')]
+        return [col for col in targets_df.columns if is_direct_target_column(col)]
 
     @staticmethod
     def _resolve_tickers(args, colab_results, features_df):
@@ -495,7 +841,7 @@ class PipelineExecutor:
         """Resolve tickers and timeframes from args or config."""
         tickers = PipelineExecutor._get_tickers(args, config_manager)
         timeframes = PipelineExecutor._get_timeframes(config_manager)
-        
+
         tickers_final_sanitized = PipelineExecutor._sanitize(tickers)
         timeframes_sanitized = PipelineExecutor._sanitize(timeframes)
         logger.info(f'Final tickers: {tickers_final_sanitized}')
@@ -575,28 +921,3 @@ class PipelineExecutor:
         if args.test_target:
             ttg_sanitized = PipelineExecutor._sanitize(args.test_target)
             logger.info(f'   Target: {ttg_sanitized}')
-        if args.test_model:
-            tm_sanitized = PipelineExecutor._sanitize(args.test_model)
-            logger.info(f'   Model: {tm_sanitized}')
-        logger.info(f'   Iterations: {args.max_iterations}')
-
-    @staticmethod
-    async def execute_calibrate_mode(orchestrator, args):
-        """Execute calibration mode for DEAN hyperparameter tuning."""
-        logger.info('Running DEAN calibration...')
-        n_trials = getattr(args, 'n_trials', 50)
-        results = await orchestrator.run_calibration(test_ticker=getattr(
-            args, 'test_ticker', None), test_target=getattr(args,
-            'test_target', None), n_trials=n_trials)
-        if results.get('status') == 'success':
-            logger.info('Calibration successful!')
-            metric_sanitized = PipelineExecutor._sanitize(results.get('metric'))
-            logger.info(
-                f"   Best {metric_sanitized}: {results['best_value']:.4f}")
-            
-            params_sanitized = PipelineExecutor._sanitize(results.get('best_params'))
-            logger.info(f"   Best hyperparameters: {params_sanitized}")
-        else:
-            reason_sanitized = PipelineExecutor._sanitize(results.get('reason'))
-            logger.error(f"Calibration failed: {reason_sanitized}")
-        return results

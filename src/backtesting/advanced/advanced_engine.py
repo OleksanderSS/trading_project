@@ -15,6 +15,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from src.analytics.detectors.bias_detector import BiasDetector
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 
@@ -60,80 +61,7 @@ class TransactionCostModel:
             (total_cost / trade_value_abs) if trade_value_abs > 0 else 0}
 
 
-class BiasDetector:
-    """Виявлення систематичних упереджень у бектестах"""
-
-    def __init__(self):
-        self.logger = ProjectLogger.get_logger('BiasDetector')
-
-    def detect_look_ahead_bias(self, signals: (pd.DataFrame | pd.Series), future_prices: (pd.DataFrame | pd.Series), lag_periods: int=1) ->dict[str, Any]:
-        """
-        Виявлення look-ahead bias через векторизований аналіз кореляцій.
-        Підтримує DataFrame та Series.
-        """
-        try:
-            # Нормалізація вхідних даних та кодування сигналів у числові значення
-            if isinstance(signals, pd.Series):
-                signals = signals.to_frame()
-
-            # Map categorical signals to numeric values
-            signals = signals.replace({
-                'BUY': 1.0, 'LONG': 1.0, 'SELL': -1.0, 'SHORT': -1.0,
-                'HOLD': 0.0, 'FLAT': 0.0, 'CLOSE': 0.0
-            })
-            signals = signals.apply(pd.to_numeric, errors='coerce').fillna(0.0)  # audit-ignore: SIGNAL_FILLNA_ZERO_VALID - Trading signals default to HOLD (0) when invalid
-
-            if isinstance(future_prices, pd.Series):
-                future_prices = future_prices.to_frame()
-
-            common_cols = signals.columns.intersection(future_prices.columns)
-            if common_cols.empty:
-                return {'has_look_ahead_bias': False, 'suspicious_signals':
-                    [], 'message': 'Немає спільних тікерів'}
-            correlations = signals[common_cols].corrwith(future_prices[
-                common_cols].shift(-lag_periods))  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL
-            n = len(signals)
-            critical_corr = 1.96 / np.sqrt(n)
-            suspicious_mask = correlations.abs() > critical_corr
-            suspicious_results = []
-            for ticker, corr in correlations[suspicious_mask].items():
-                is_bias = abs(corr) > critical_corr * 1.5
-                suspicious_results.append({'signal': ticker, 'correlation':
-                    float(corr), 'is_suspicious': is_bias, 'message':
-                    'Виявлено look-ahead bias' if is_bias else
-                    'Підозріло висока кореляція'})
-            return {'lookahead_bias_detected': len(suspicious_results) > 0,
-                'has_look_ahead_bias': len(suspicious_results) > 0,
-                'suspicious_signals': suspicious_results,
-                'critical_threshold': float(critical_corr), 'sample_size': n}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Помилка виявлення look-ahead bias: {e}')
-            return {'error': str(e), 'lookahead_bias_detected': False,
-                'has_look_ahead_bias': False}
-
-    def detect_survivorship_bias(self, historical_universe: list[str],
-        current_universe: list[str], delisted_dates: dict[str, datetime]
-        ) ->dict[str, Any]:
-        """
-        Виявлення survivorship bias
-
-        Survivorship bias виникає коли бектест подвійно використовує акції що вилучені з індексу
-        """
-        try:
-            delisted = set(historical_universe) - set(current_universe)
-            delisted_performance_warning = []
-            for ticker, delisted_date in delisted_dates.items():
-                delisted_performance_warning.append({'ticker': ticker,
-                    'delisted_date': delisted_date.isoformat(), 'warning':
-                    f'Акція {ticker} була делістена {delisted_date.date()}'})
-            return {'has_survivorship_bias': len(delisted) > 0,
-                'delisted_count': len(delisted), 'delisted_tickers': list(
-                delisted), 'bias_impact': len(delisted) / len(
-                historical_universe) if len(historical_universe) > 0 else 0.0, 'delisted_warnings':
-                delisted_performance_warning}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Помилка виявлення survivorship bias: {e}')
-            return {'error': str(e)}
+# BiasDetector is imported from src.analytics.detectors.bias_detector to avoid duplication
 
 
 class WalkForwardOptimizer:
@@ -215,8 +143,10 @@ class WalkForwardOptimizer:
                 return {'return': 0.0, 'sharpe': 0.0, 'max_drawdown': 0.0}
             total_return = (1 + returns).prod() - 1
             std_val = float(returns.std())
+            from src.algorithms.metrics_mixin import _infer_periods_per_year
+            ppy = _infer_periods_per_year(returns)
             sharpe = (
-                float(returns.mean() / std_val * np.sqrt(252))
+                float(returns.mean() / std_val * np.sqrt(ppy))
                 if np.isfinite(std_val) and std_val > 1e-12
                 else 0.0
             )
@@ -250,8 +180,10 @@ class WalkForwardOptimizer:
         return {'avg_return': float(avg_return), 'avg_sharpe': float(
             avg_sharpe), 'avg_max_drawdown': float(avg_dd)}
 
+from src.algorithms.metrics_mixin import PerformanceMetricsMixin
 
-class AdvancedBacktestEngine:
+
+class AdvancedBacktestEngine(PerformanceMetricsMixin):
     """
     Головний engine для розширеного бектестингу
     """
@@ -288,21 +220,26 @@ class AdvancedBacktestEngine:
                 bias_analysis['look_ahead'
                     ] = self.bias_detector.detect_look_ahead_bias(signals,
                     price_data)
-            returns = self._simulate_returns(
+            returns_series = self._simulate_returns(
                 price_data,
                 initial_capital,
                 signals=signals,
                 apply_costs=slippage_adj,
             )
-            valid_equity = returns.dropna()
+            # Calculate returns for metrics
+            daily_returns = returns_series.pct_change(fill_method=None).dropna()
+
+            valid_equity = returns_series.dropna()
             final_equity = valid_equity.iloc[-1] if not valid_equity.empty else initial_capital
-            daily_returns = returns.pct_change(fill_method=None).dropna()
+
+            from src.algorithms.metrics_mixin import _infer_periods_per_year as _ppy
+            _ppy_val = _ppy(daily_returns) if not daily_returns.empty else 252
             report['performance_metrics'] = {'total_return': float((
                 final_equity - initial_capital) / initial_capital),
-                'annual_return': float(daily_returns.mean() * 252) if not daily_returns.empty else 0.0,
-                'sharpe_ratio': float(self._calculate_sharpe(returns)),
-                'max_drawdown': float(self._calculate_max_drawdown(returns)
-                ), 'win_rate': float(self._calculate_win_rate(returns))}
+                'annual_return': float(daily_returns.mean() * _ppy_val) if not daily_returns.empty else 0.0,
+                'sharpe_ratio': float(self._calculate_sharpe(daily_returns)),
+                'max_drawdown': float(self._calculate_max_drawdown(returns_series)
+                ), 'win_rate': float(self._calculate_win_rate(daily_returns))}
             bias_analysis_result = report['bias_analysis']
             if isinstance(bias_analysis_result, dict):
                 look_ahead = bias_analysis_result.get('look_ahead', {})
@@ -339,9 +276,22 @@ class AdvancedBacktestEngine:
             costs)}
 
     def _simulate_returns(self, prices: pd.DataFrame, initial_cap: float,
-        signals: (pd.DataFrame | None)=None, apply_costs: bool=False
-        ) ->pd.Series:
-        """Симуляція повернень портфеля"""
+        signals: (pd.DataFrame | None)=None, apply_costs: bool=False,
+        fillna_policy: str='zero') ->pd.Series:
+        """
+        Симуляція повернень портфеля.
+        
+        Args:
+            prices: Price data for assets
+            initial_cap: Initial capital
+            signals: Trading signals (optional)
+            apply_costs: Whether to apply transaction costs
+            fillna_policy: Policy for handling missing returns for active positions:
+                - 'zero': Fill with 0.0 (default, understates risk)
+                - 'ffill': Forward fill from last known value
+                - 'drop': Drop periods with missing returns
+                - 'warn_only': Keep NaN and warn (most conservative)
+        """
         if prices.empty:
             return pd.Series(dtype=float)
         asset_returns = prices.pct_change(fill_method=None).replace([np.inf,
@@ -354,12 +304,26 @@ class AdvancedBacktestEngine:
             lagged_weights = lagged_weights.mask(lagged_weights.isna(), 0.0)
             weighted_returns = lagged_weights * asset_returns
 
-            # Fill missing returns for active positions with 0.0 to prevent portfolio-level NaN propagation
+            # Handle missing returns for active positions based on policy
             missing_position_returns = asset_returns.isna() & lagged_weights.ne(0.0)
             if missing_position_returns.any().any():
-                self.logger.warning("Missing return data detected for active positions. Treating missing returns as 0.0.")
+                self.logger.warning(f"Missing return data detected for active positions. Using fillna_policy: '{fillna_policy}'")
 
-            weighted_returns = weighted_returns.fillna(0.0)  # audit-ignore: PORTFOLIO_RETURN_FILLNA_ZERO_VALID - Missing returns treated as 0 for active positions with warning logged
+            if fillna_policy == 'zero':
+                weighted_returns = weighted_returns.fillna(0.0)  # audit-ignore: PORTFOLIO_RETURN_FILLNA_ZERO - User-configurable policy
+            elif fillna_policy == 'ffill':
+                weighted_returns = weighted_returns.ffill()
+            elif fillna_policy == 'drop':
+                # Drop rows with missing returns for active positions
+                weighted_returns = weighted_returns.dropna()
+                lagged_weights = lagged_weights.reindex(weighted_returns.index)
+            elif fillna_policy == 'warn_only':
+                # Keep NaN, will propagate to portfolio returns
+                pass
+            else:
+                self.logger.warning(f"Unknown fillna_policy '{fillna_policy}', defaulting to 'zero'")
+                weighted_returns = weighted_returns.fillna(0.0)
+
             portfolio_returns = weighted_returns.sum(axis=1)
             no_position = lagged_weights.abs().sum(axis=1) == 0
             portfolio_returns = portfolio_returns.mask(no_position, 0.0)
@@ -397,31 +361,9 @@ class AdvancedBacktestEngine:
         return float(self.cost_model.commission_pct + spread_pct +
             self.cost_model.slippage_pct)
 
-    def _calculate_sharpe(self, equity: pd.Series, risk_free_rate: float=0.02
-        ) ->float:
-        """Розрахунок Sharpe Ratio"""
-        returns = equity.pct_change(fill_method=None).dropna()
-        if len(returns) < 2:
-            return 0.0
-        excess_returns = returns - risk_free_rate / 252
-        std_val = excess_returns.std()
-        if not np.isfinite(std_val) or std_val <= 1e-12:
-            return 0.0
-        return float(excess_returns.mean() / std_val * np.sqrt(252))
-
-    def _calculate_max_drawdown(self, equity: pd.Series) ->float:
-        """Розрахунок maximum drawdown"""
-        valid_equity = equity.dropna()
-        if valid_equity.empty:
-            return 0.0
-        running_max = valid_equity.cummax()
-        drawdown = (valid_equity - running_max) / running_max
-        min_drawdown = drawdown.min()
-        return float(min_drawdown) if np.isfinite(min_drawdown) else 0.0
-
-    def _calculate_win_rate(self, returns: pd.Series) ->float:
-        """Розрахунок win rate"""
-        daily_returns = returns.pct_change(fill_method=None).dropna()
+    def _calculate_win_rate(self, equity_curve: pd.Series) ->float:
+        """Розрахунок win rate (частка днів з позитивними поверненнями)"""
+        daily_returns = equity_curve.pct_change(fill_method=None).dropna()
         wins = (daily_returns > 0).sum()
         return float(wins / len(daily_returns)) if len(daily_returns
             ) > 0 else 0

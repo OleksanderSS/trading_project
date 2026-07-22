@@ -74,5 +74,5 @@ class MemoryMonitor:
     def save_log(self, filepath):
         """Зберегти лог пам'яті у файл"""
         with open(filepath, 'w') as f:
-            json.dump(self.memory_log, f, indent=2)
+            json.dump(self.memory_log, f, indent=2, default=str)
         logger.info(f"💾 Memory log saved to {filepath}")
