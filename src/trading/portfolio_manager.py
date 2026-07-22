@@ -26,15 +26,20 @@ class PortfolioManager:
     """
 
     def __init__(self, virtual_portfolio: VirtualPortfolio,
-        elite_risk_sizer=None, config: (dict[str, Any] | None)=None):
+        elite_risk_sizer=None, config: (dict[str, Any] | None)=None,
+        diary=None, adaptive_selector=None):
         """
         Args:
             virtual_portfolio: The stateful portfolio object.
             elite_risk_sizer: EliteRiskSizer for optimal position sizing (Kelly + correlation-aware).
             config: Risk management configuration.
+            diary: DiaryEngine instance — used to derive real win_rate for Kelly sizing.
+            adaptive_selector: AdaptiveModelSelector — leaderboard-based win_rate source.
         """
         self.portfolio = virtual_portfolio
         self.elite_risk_sizer = elite_risk_sizer
+        self.diary = diary
+        self.adaptive_selector = adaptive_selector
         self.logger = logger
         risk_config = config if config is not None else {}
         self.risk_per_trade_pct = risk_config.get('risk_per_trade_pct', 0.03)
@@ -101,13 +106,16 @@ class PortfolioManager:
             return None
         price = float(current_prices[ticker])
         confidence = float(signal.get('confidence', 0.5))
+        model_id = signal.get('selected_primary_model') or signal.get('model_id')
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
-                f'[PORTFOLIO] Analyzing signal: ticker={ticker}, action={action}, confidence={confidence}, price={price}'
-                )
+                f'[PORTFOLIO] Analyzing signal: ticker={ticker}, action={action}, '
+                f'confidence={confidence}, price={price}, model_id={model_id}'
+            )
+        cognitive_scenarios = signal.get('cognitive_scenarios')
         if action == 'BUY':
-            return self._create_buy_order(ticker, price, confidence, signal
-                .get('report'))
+            return self._create_buy_order(ticker, price, confidence,
+                signal.get('report'), model_id=model_id, cognitive_scenarios=cognitive_scenarios)
         if action == 'SELL':
             return self._create_sell_order(ticker, price)
         if action:
@@ -116,13 +124,13 @@ class PortfolioManager:
         return None
 
     def _create_buy_order(self, ticker: str, price: float, confidence:
-        float, report: (Any | None)) ->(TradeOrder | None):
+        float, report: (Any | None), model_id: str | None = None, cognitive_scenarios: list[dict] | None = None) ->(TradeOrder | None):
         """Create a BUY order with calculated position sizing."""
         regime = 'NORMAL'
         if report and hasattr(report, 'market_regime'):
             regime = str(report.market_regime)
         shares = self._calculate_position_size(ticker, price, confidence,
-            regime=regime)
+            regime=regime, model_id=model_id, cognitive_scenarios=cognitive_scenarios)
         if shares > 0:
             return TradeOrder(ticker=ticker, quantity=shares, price=price,
                 action='BUY', reason=
@@ -166,9 +174,13 @@ class PortfolioManager:
         return exit_orders
 
     def _calculate_position_size(self, ticker: str, price: float,
-        confidence: float, regime: str='NORMAL') ->int:
+        confidence: float, regime: str = 'NORMAL',
+        model_id: str | None = None,
+        cognitive_scenarios: list[dict] | None = None) -> int:
         """
-        Calculates optimal position size using available sizing algorithms (Adaptive, Elite, or Basic).
+        Calculates optimal position size using available sizing algorithms.
+        Passes model_id, diary and adaptive_selector to EliteRiskSizer so
+        Kelly sizing uses real win_rate instead of a binary heuristic.
         """
         total_equity = self.portfolio.get_total_value({ticker: price})
         try:
@@ -186,7 +198,7 @@ class PortfolioManager:
             shares = int(capital_allocated / price) if price > 0 else 0
             self.logger.info(
                 f'💰 ADAPTIVE [{ticker}]: cap={capital_allocated:.2f}, shares={shares}, conf={confidence:.2f}'
-                )
+            )
             return max(0, shares)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
@@ -197,18 +209,30 @@ class PortfolioManager:
             try:
                 portfolio_vol = 0.15
                 correlation_matrix: dict[str, Any] = {}
-                position_pct, sizing_details = (self.elite_risk_sizer.
-                    compute_optimal_position_size(ticker=ticker, confidence
-                    =confidence, prediction=0.0, total_capital=total_equity,
+                position_pct, sizing_details = self.elite_risk_sizer.compute_optimal_position_size(
+                    ticker=ticker,
+                    confidence=confidence,
+                    prediction=0.0,
+                    total_capital=total_equity,
                     ticker_volatility=portfolio_vol * 1.2,
-                    portfolio_volatility=portfolio_vol, portfolio_positions
-                    =self.portfolio.positions, correlation_matrix=
-                    correlation_matrix, current_price=price))
+                    portfolio_volatility=portfolio_vol,
+                    portfolio_positions=self.portfolio.positions,
+                    correlation_matrix=correlation_matrix,
+                    current_price=price,
+                    model_id=model_id,
+                    diary=self.diary,
+                    adaptive_selector=self.adaptive_selector,
+                    cognitive_scenarios=cognitive_scenarios,
+                )
                 capital_allocated = total_equity * position_pct
                 shares = int(capital_allocated / price) if price > 0 else 0
+                wr_source = sizing_details.get('win_rate_source', 'unknown')
+                wr = sizing_details.get('win_rate', 0.0)
                 self.logger.info(
-                    f"💰 ELITE [{ticker}]: pct={position_pct:.2%}, shares={shares}, Kelly={sizing_details.get('stages', {}).get('kelly_size', 0):.2%}"
-                    )
+                    f"💰 ELITE [{ticker}]: pct={position_pct:.2%}, shares={shares}, "
+                    f"Kelly={sizing_details.get('stages', {}).get('kelly_size', 0):.2%}, "
+                    f"win_rate={wr:.3f} ({wr_source})"
+                )
                 return max(0, shares)
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
@@ -230,10 +254,12 @@ class PortfolioManager:
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(
                 f'[POSITION_SIZE] ticker={ticker}, price={price:.2f}, total_equity={total_equity:.2f}'
-                )
-        self.logger.info(
-            f'💰 BASIC [{ticker}]: shares={final_shares} (final) | constraints: risk={int(shares_from_risk)}, exposure={int(shares_from_exposure)}, cash={int(shares_from_cash)}'
             )
+        self.logger.info(
+            f'💰 BASIC [{ticker}]: shares={final_shares} (final) | '
+            f'constraints: risk={int(shares_from_risk)}, '
+            f'exposure={int(shares_from_exposure)}, cash={int(shares_from_cash)}'
+        )
         return max(0, final_shares)
 
     def optimize_allocation(self, current_prices: dict[str, float],

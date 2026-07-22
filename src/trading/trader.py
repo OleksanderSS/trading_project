@@ -30,12 +30,12 @@ class Trader:
     def __init__(self, paper_trading: bool = True):
         self.paper_trading = paper_trading
         self.logger = logger
-        if self.paper_trading:
-            self.logger.info("Trader initialized in PAPER TRADING mode.")
-        else:
-            self.logger.warning("Trader initialized in LIVE TRADING mode. Real orders will be placed.")
-            # In a real scenario, you would initialize the broker connection here.
-            # e.g., self.broker = Alpaca(...)
+        if not self.paper_trading:
+            self.logger.critical(
+                "LIVE TRADING initialization rejected: no live execution adapter is allowed."
+            )
+            raise ValueError("Live trading is intentionally disabled.")
+        self.logger.info("Trader initialized in PAPER TRADING mode.")
 
     def execute_order(self, order: TradeOrder) -> bool:
         """

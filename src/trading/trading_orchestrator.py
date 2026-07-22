@@ -46,6 +46,7 @@ class TradingOrchestrator:
         self.regime_detector = regime_detector
         self.knn_finder = knn_finder
         self.macro_analyzer = macro_analyzer
+        self.error_handler = None  # Optional; set externally if needed
         self.logger.info(
             'TradingOrchestrator initialized with full Elite-stack support (KNN + Macro).'
             )
@@ -75,11 +76,18 @@ class TradingOrchestrator:
                 'Cycle complete: No actionable signals identified by Consensus protocol.'
                 )
             return
+        
         self.logger.info(
             f'Consensus Engine identified {len(consensus_signals)} actionable trading opportunities.'
             )
+            
+        filtered_signals = self._apply_veto_committee(consensus_signals)
+        if not filtered_signals:
+             self.logger.info('Veto Committee rejected all signals. Cycle finished.')
+             return
+
         self._handle_risk_exits(current_prices)
-        trade_orders = self._generate_trade_orders(consensus_signals,
+        trade_orders = self._generate_trade_orders(filtered_signals,
             current_prices)
         if not trade_orders:
             self.logger.info(
@@ -94,6 +102,76 @@ class TradingOrchestrator:
         self.logger.info(
             'Trading cycle concluded. Portfolio metrics and state successfully synchronized.'
             )
+
+    def _apply_veto_committee(self, consensus_signals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """
+        Passes the mathematical consensus signals through the AgenticVetoSystem (Investment Committee).
+        Filters out signals that the agent vetoed.
+        """
+        try:
+            import asyncio
+            from src.agents.veto_system import veto_system
+            
+            # 1. Adapt data for the agent
+            agent_payload = []
+            for sig in consensus_signals:
+                fingerprint = "unknown"
+                if 'report' in sig and hasattr(sig['report'], 'context_data'):
+                    fingerprint = sig['report'].context_data.get('fingerprint', 'unknown')
+                    
+                agent_payload.append({
+                    'ticker': sig['ticker'],
+                    'action': sig['final_signal'],
+                    'confidence': sig.get('confidence', 0.5),
+                    'context_fingerprint': fingerprint
+                })
+            
+            # 2. Run async agent synchronously (safely handle existing event loops)
+            self.logger.info("Passing signals to AgenticVetoSystem for review...")
+            
+            def run_async_in_thread(coro):
+                import threading
+                result = []
+                err = []
+                def target():
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        result.append(loop.run_until_complete(coro))
+                    except Exception as ex:
+                        err.append(ex)
+                    finally:
+                        loop.close()
+                t = threading.Thread(target=target)
+                t.start()
+                t.join()
+                if err:
+                    raise err[0]
+                return result[0]
+                
+            try:
+                asyncio.get_running_loop()
+                # Loop exists, run in thread
+                reviewed_recs = run_async_in_thread(veto_system.review_recommendations(agent_payload, latest_news=""))
+            except RuntimeError:
+                # No loop exists, safe to use asyncio.run
+                reviewed_recs = asyncio.run(veto_system.review_recommendations(agent_payload, latest_news=""))
+            
+            # 3. Filter and map back
+            approved_signals = []
+            for orig_sig, rev_rec in zip(consensus_signals, reviewed_recs):
+                if rev_rec.get('vetoed'):
+                    self.logger.warning(f"VETOED {orig_sig['ticker']}: {rev_rec.get('veto_reason')}")
+                else:
+                    self.logger.info(f"APPROVED {orig_sig['ticker']}: {rev_rec.get('veto_reason', 'OK')}")
+                    orig_sig['veto_causal_graph'] = rev_rec.get('causal_graph', [])
+                    approved_signals.append(orig_sig)
+            
+            return approved_signals
+
+        except Exception as e:
+            self.logger.error(f"AgenticVetoSystem failed: {e}. Falling back to mathematical consensus.", exc_info=True)
+            return consensus_signals
 
     def _apply_pre_filtering(self, raw_predictions: list[dict[str, Any]]
         ) ->list[dict[str, Any]]:
@@ -145,7 +223,8 @@ class TradingOrchestrator:
                     target_features.index[-1], [])
             except (ValueError, TypeError, Exception) as e:
                 self.logger.error(f'KNN analysis failed for {ticker}: {e}', exc_info=True)
-                self.error_handler.handle_error(e, context={'ticker': ticker})
+                if self.error_handler:
+                    self.error_handler.handle_error(e, context={'ticker': ticker})
                 raise RuntimeError(f"KNN analysis failed for {ticker}: {e}") from e
         try:
             if self.consensus_engine is not None:
@@ -168,7 +247,8 @@ class TradingOrchestrator:
                         )
         except (ValueError, TypeError, Exception) as e:
             self.logger.error(f'Consensus synthesis failed for {ticker}: {e}', exc_info=True)
-            self.error_handler.handle_error(e, context={'ticker': ticker})
+            if self.error_handler:
+                self.error_handler.handle_error(e, context={'ticker': ticker})
             raise RuntimeError(f"Consensus synthesis failed for {ticker}: {e}") from e
         return None
 

@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
@@ -32,7 +32,7 @@ class ModelFactory:
     """
 
     # Mapping to actual classes
-    _class_map = {
+    _class_map: ClassVar[dict[str, Any]] = {
         'Linear': LinearModel, 'SVM': SVMModel, 'KNN': KNNModel,
         'LSTM': LSTMModel, 'GRU': GRUModel, 'CNN': CNNModel,
         'Transformer': TransformerModel, 'TabNet': TabNetModel, 'MLP':

@@ -1,6 +1,5 @@
 from datetime import date, datetime
 
-import holidays
 import pandas as pd
 from pandas.tseries.offsets import BDay
 
@@ -28,10 +27,21 @@ class TradingCalendar:
             )
 
     def _get_holidays(self) ->set[date]:
-        """Fetches holidays for the specified country and year range."""
+        """
+        Fetches holidays for the specified country and year range.
+        
+        Uses lazy import of holidays library with fallback to weekend-only calendar
+        if the library is not available.
+        """
         try:
+            import holidays
             return set(holidays.CountryHoliday(self.country, years=range(
                 self.start_year, self.end_year + 1), observed=True))
+        except ImportError:
+            logger.warning(
+                "holidays library not available. Using weekend-only calendar fallback."
+            )
+            return set()
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(
                 f"Could not fetch holidays for country '{self.country}'. Defaulting to empty set. Error: {e}"

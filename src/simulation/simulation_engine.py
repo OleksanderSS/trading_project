@@ -17,6 +17,11 @@ from scipy import stats
 
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
+from src.data.collectors.synthetic_generator import (
+    BUILTIN_SCENARIOS,
+    GeneratorConfig,
+    SyntheticGenerator,
+)
 from src.metrics.calculator import MetricsCalculator
 from src.trading.virtual_portfolio import VirtualPortfolio
 
@@ -59,18 +64,29 @@ class SimulationEngine:
         self.optimization_config = self.sim_config.get('optimization', {})
         self.defaults_config = self.sim_config.get('defaults', {})
 
+        # Initialize synthetic generator for stress tests
+        random_seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
+        gen_config = GeneratorConfig(
+            n_paths=self.defaults_config.get('monte_carlo_runs', 1000),
+            horizon_days=self.defaults_config.get('horizon_days', 252),
+            random_seed=random_seed,
+        )
+        self.synthetic_generator = SyntheticGenerator(config=gen_config)
+        self.rng = np.random.default_rng(seed=random_seed)
+
     def run_monte_carlo_for_strategy(
         self,
         strategy_logic: Callable[[pd.DataFrame], pd.Series], # Expects a function that takes market data and returns trade signals
         initial_context: SimulationContext,
         horizon: int,
-        runs: int = None
+        runs: int = None,
+        scenario_name: str | None = None
     ) -> list[SimulationRiskReport]:
         runs = runs or self.defaults_config.get('monte_carlo_runs', 1000)
 
         reports = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            futures = [executor.submit(self._run_single_path_simulation, strategy_logic, initial_context, horizon) for _ in range(runs)]
+            futures = [executor.submit(self._run_single_path_simulation, strategy_logic, initial_context, horizon, scenario_name) for _ in range(runs)]
             for future in futures:
                 report = future.result()
                 if report:
@@ -81,35 +97,61 @@ class SimulationEngine:
         self,
         strategy_logic: Callable[[pd.DataFrame], pd.Series],
         context: SimulationContext,
-        horizon: int
+        horizon: int,
+        scenario_name: str | None = None
     ) -> SimulationRiskReport | None:
         try:
             # 1. Generate synthetic market data path
-            price_path_df = self._generate_price_path(context, horizon)
+            price_path_df = self._generate_price_path(context, horizon, scenario_name)
 
             # 2. Initialize a virtual portfolio for this simulation run
-            portfolio = VirtualPortfolio(initial_cash=100000) # Configurable
+            portfolio = VirtualPortfolio(initial_balance=100000.0)
 
             # 3. Run the strategy logic on the generated data
             signals = strategy_logic(price_path_df)
+            equity_curve = []
+            
             for timestamp, row in price_path_df.iterrows():
                 signal = signals.get(timestamp)
+                price = row['close']
+                
                 if signal is not None:
-                    # Simple logic: 1 for buy, -1 for sell
                     if signal == 1:
-                        portfolio.execute_order(context.ticker, 10, row['close'], timestamp, 'buy')
+                        portfolio.buy_stock({'ticker': context.ticker, 'quantity': 10, 'price': price})
                     elif signal == -1:
-                        portfolio.execute_order(context.ticker, 10, row['close'], timestamp, 'sell')
+                        portfolio.sell_stock(ticker=context.ticker, quantity=10, price=price, reason='signal')
+                
+                # Calculate current equity
+                pos_value = portfolio.positions.get(context.ticker, {}).get('quantity', 0) * price
+                equity_curve.append(portfolio.current_balance + pos_value)
 
             # 4. Calculate metrics for this path
-            metrics_calculator = MetricsCalculator(portfolio.get_history_df())
+            eq_series = pd.Series(equity_curve)
+            returns = eq_series.pct_change().dropna()
+            
+            if len(returns) > 0:
+                var_95 = float(np.percentile(returns, 5))
+                var_99 = float(np.percentile(returns, 1))
+                es_95 = float(returns[returns <= var_95].mean()) if len(returns[returns <= var_95]) > 0 else var_95
+                
+                # Sharpe (annualized assuming daily data for simplicity in simulation)
+                sharpe_ratio = float(returns.mean() / returns.std() * np.sqrt(252)) if returns.std() != 0 else 0.0
+                
+                # Max Drawdown
+                cum_returns = (1 + returns).cumprod()
+                running_max = cum_returns.cummax()
+                drawdowns = (cum_returns - running_max) / running_max
+                max_drawdown = float(drawdowns.min())
+            else:
+                var_95 = var_99 = es_95 = sharpe_ratio = max_drawdown = 0.0
+
             report = SimulationRiskReport(
                 ticker=context.ticker,
-                var_95=metrics_calculator.calculate_value_at_risk(0.05),
-                var_99=metrics_calculator.calculate_value_at_risk(0.01),
-                expected_shortfall=metrics_calculator.calculate_expected_shortfall(0.05),
-                sharpe_ratio=metrics_calculator.calculate_sharpe_ratio(),
-                max_drawdown=metrics_calculator.calculate_max_drawdown()
+                var_95=var_95,
+                var_99=var_99,
+                expected_shortfall=es_95,
+                sharpe_ratio=sharpe_ratio,
+                max_drawdown=max_drawdown
             )
             return report
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
@@ -118,8 +160,30 @@ class SimulationEngine:
                 f"Single path simulation failed for {context.ticker}"
             ) from e
 
-    def _generate_price_path(self, context: SimulationContext, horizon: int) -> pd.DataFrame:
+    def _generate_price_path(self, context: SimulationContext, horizon: int, scenario_name: str | None = None) -> pd.DataFrame:
         """Generates a DataFrame with OHLCV data for a single path."""
+        
+        if scenario_name and scenario_name in BUILTIN_SCENARIOS:
+            # Use the robust SyntheticGenerator for specific scenarios
+            # Build a base_df from historical returns so the generator can calibrate
+            base_df = None
+            if context.historical_returns is not None and not context.historical_returns.empty:
+                base_df = pd.DataFrame({'close': (1 + context.historical_returns).cumprod() * 100})
+            paths = self.synthetic_generator.generate_scenarios(
+                scenario_names=[scenario_name],
+                base_df=base_df,
+            )
+            path_list = paths.get(scenario_name, [])
+            if path_list:
+                df = path_list[0]  # take the first generated path
+                dates = self._generate_dates(context.timestamp, horizon)
+                df = df.iloc[:horizon] if len(df) >= horizon else df
+                if len(df) == len(dates):
+                    df.index = dates
+                return df
+            # fallthrough to GBM if no paths generated
+
+        # Fallback to simple logic (historical bootstrap or simple GBM)
         market_params = self._extract_market_parameters(context)
 
         self._ensure_determinism()
@@ -139,10 +203,7 @@ class SimulationEngine:
             'trend': context.market_conditions.get('trend', 0)
         }
 
-    def _ensure_determinism(self):
-        """Ensure deterministic random number generation using thread-safe RNG."""
-        seed = self.config.get(RANDOM_SEED_CONFIG_KEY, DEFAULT_RANDOM_SEED)
-        self.rng = np.random.default_rng(seed)
+    # _ensure_determinism is removed — RNG is now initialized once in __init__
 
     def _generate_daily_returns(self, context: SimulationContext, horizon: int, market_params: dict) -> np.ndarray:
         """Generate daily returns based on configuration."""
@@ -194,6 +255,50 @@ class SimulationEngine:
             'volume': [self.rng.integers(1000, 10000) for _ in range(len(prices))]
         }, index=dates)
 
+    def run_stress_test_suite(
+        self,
+        base_df: pd.DataFrame | None = None,
+        scenario_names: list[str] | None = None,
+    ) -> dict[str, dict]:
+        """Run a full stress test suite using the SyntheticGenerator.
+
+        Generates Monte Carlo paths for each scenario and returns
+        summary statistics (VaR, max drawdown, loss probability, etc.).
+
+        Args:
+            base_df: Optional real data to calibrate from.
+            scenario_names: List of scenarios to test. Defaults to all built-in.
+
+        Returns:
+            Dict mapping scenario_name -> summary statistics dict.
+        """
+        if scenario_names is None:
+            scenario_names = list(BUILTIN_SCENARIOS.keys())
+
+        self.logger.info(
+            f"🧪 Running stress test suite: {len(scenario_names)} scenarios, "
+            f"{self.synthetic_generator.config.n_paths} paths each"
+        )
+
+        all_paths = self.synthetic_generator.generate_scenarios(
+            scenario_names=scenario_names,
+            base_df=base_df,
+        )
+
+        results = {}
+        for name, paths in all_paths.items():
+            summary = self.synthetic_generator.summarise_paths(paths)
+            results[name] = summary
+            self.logger.info(
+                f"  📊 {name}: mean_ret={summary['mean_return']:.2%}, "
+                f"VaR95={summary['var_95']:.2%}, "
+                f"worst_dd={summary['worst_max_drawdown']:.2%}, "
+                f"P(loss)={summary['prob_loss']:.1%}"
+            )
+
+        return results
+
+
 _simulation_engine = None
 
 def get_simulation_engine() -> 'SimulationEngine':
@@ -201,3 +306,4 @@ def get_simulation_engine() -> 'SimulationEngine':
     if _simulation_engine is None:
         _simulation_engine = SimulationEngine()
     return _simulation_engine
+

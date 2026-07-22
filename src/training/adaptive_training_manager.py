@@ -373,7 +373,7 @@ def main():
     """Diagnostic entry point for the Adaptive Training Manager."""
     import argparse
 
-    from src.config.tickers import get_tickers
+    from src.config.unified_config_manager import UnifiedConfigManager
     parser = argparse.ArgumentParser(description=
         'Adaptive Training Manager Diagnostic Utility')
     parser.add_argument('--tickers', default='core', help=
@@ -386,7 +386,23 @@ def main():
     logging.basicConfig(level=logging.INFO, format=
         '%(asctime)s - %(levelname)s - %(message)s')
     try:
-        tickers = get_tickers(args.tickers)
+        cfg_mgr = UnifiedConfigManager()
+        assets_cfg = cfg_mgr.get_specific_config("assets")
+        preset_name = args.tickers
+        preset = assets_cfg.get("presets", {}).get(preset_name, {})
+        if preset and "tickers" in preset:
+            tickers = preset["tickers"]
+        else:
+            sector = assets_cfg.get("sectors", {}).get(preset_name, {})
+            if sector and "assets" in sector:
+                tickers = sector["assets"]
+            elif preset_name == "all":
+                all_tickers = set()
+                for sect_data in assets_cfg.get("sectors", {}).values():
+                    all_tickers.update(sect_data.get("assets", []))
+                tickers = list(all_tickers)
+            else:
+                tickers = []
     except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
         logging.error(f'Виникла помилка: {e}', exc_info=True)
         tickers = ['NVDA', 'AMD', 'MSFT', 'TSLA']

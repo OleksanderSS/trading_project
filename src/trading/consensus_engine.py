@@ -218,9 +218,8 @@ class ConsensusEngine:
                 final_signal = 'HOLD'
                 blocked_by_critic = True
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            self.logger.warning(f'DEAN Critic unavailable, skipping filter: {e}')
             critic_score = 0.0
-            raise
         anomaly_score = context_data.get('anomaly_score', 0.0)
         anomaly_threshold = self.config_manager.get(
             'strategy.risk_management.anomaly_threshold', 0.8)
@@ -246,43 +245,120 @@ class ConsensusEngine:
 
 
 class EnhancedConsensusEngine(ConsensusEngine):
-    """Refined ensembling logic focusing on regime-dependent sensitivity."""
+    """Refined ensembling logic focusing on regime-dependent sensitivity.
+
+    Extends ConsensusEngine by inserting a regime-aware weighted ensemble
+    step *before* the standard KNN-adjustment + critic-filter pipeline.
+    When the market context carries predictions_by_model data, the ensemble
+    score replaces the raw weighted aggregation of the base class.
+    """
 
     def __init__(self):
         """Initializes EnhancedConsensusEngine with regime detection capabilities."""
-        from src.algorithms.regime_detector import MarketRegimeDetector
+        from src.analytics.detectors.regime_detector import MarketRegimeDetector
+        # Provide minimal stubs so the parent ConsensusEngine initializes safely.
+        class _NoopDiary:
+            def get_contextual_model_weights(self, *a, **kw):
+                return {}
+        class _NoopThreshold:
+            def analyze(self, *a, **kw):
+                return {}
+        super().__init__(
+            experience_diary=_NoopDiary(),
+            threshold_analyzer=_NoopThreshold(),
+        )
         self.regime_detector = MarketRegimeDetector()
         self.logger = ProjectLogger.get_logger('EnhancedConsensusEngine')
-        self.regime_weights = {'trending_up': {'transformer': 0.35, 'lstm':
-            0.25, 'cnn': 0.2, 'linear': 0.1, 'catboost': 0.1}, 'ranging': {
-            'linear': 0.3, 'catboost': 0.25, 'knn': 0.2, 'transformer':
-            0.15, 'lstm': 0.1}, 'volatile': {'cnn': 0.3, 'transformer':
-            0.25, 'lstm': 0.2, 'linear': 0.15, 'catboost': 0.1}}
+        # regime_weights now covers all four live regimes including trending_down.
+        # A strong downtrend favours models that capture momentum (lstm/cnn)
+        # and penalises trend-following ones (transformer).
+        self.regime_weights = {
+            'trending_up': {
+                'transformer': 0.35, 'lstm': 0.25, 'cnn': 0.20,
+                'linear': 0.10, 'catboost': 0.10,
+            },
+            'trending_down': {
+                'lstm': 0.30, 'cnn': 0.25, 'catboost': 0.20,
+                'linear': 0.15, 'transformer': 0.10,
+            },
+            'ranging': {
+                'linear': 0.30, 'catboost': 0.25, 'knn': 0.20,
+                'transformer': 0.15, 'lstm': 0.10,
+            },
+            'volatile': {
+                'cnn': 0.30, 'transformer': 0.25, 'lstm': 0.20,
+                'linear': 0.15, 'catboost': 0.10,
+            },
+        }
 
-    def _determine_regime(self, market_context: dict[str, Any]) ->str:
-        """Identifies current market regime using provided technical context."""
+    def _determine_regime(self, market_context: dict[str, Any]) -> str:
+        """Identify current market regime from context signals.
+
+        Returns one of: 'trending_up', 'trending_down', 'volatile', 'ranging'.
+        """
         try:
             volatility = market_context.get('volatility', 0.01)
             trend = market_context.get('trend', 0.0)
             if volatility > 0.03:
                 return 'volatile'
-            elif abs(trend) > 0.5:
-                return 'trending_up' if trend > 0 else 'ranging'
-            else:
-                return 'ranging'
+            if abs(trend) > 0.5:
+                # Differentiate bullish vs bearish trends
+                return 'trending_up' if trend > 0 else 'trending_down'
+            return 'ranging'
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(
-                f'Market regime determination failed: {e}. Defaulting to neutral state.'
-                )
+                f'Market regime determination failed: {e}. Defaulting to ranging.')
             return 'ranging'
+
+    def generate_consensus(
+        self,
+        model_predictions: dict[str, float],
+        context_data: dict[str, Any],
+        knn_results: dict[str, Any] | None = None,
+    ) -> ConsensusReport:
+        """Override: inject regime-aware weighted ensemble before the
+        standard KNN + critic pipeline.
+
+        If predictions_by_model is available in context_data (as populated
+        by Stage 5), use generate_weighted_ensemble to compute a more
+        accurate raw_score that reflects the current regime.  Fall back to
+        the base class implementation when no model-level predictions exist.
+        """
+        predictions_by_model: dict[str, float] = (
+            context_data.get('predictions_by_model') or model_predictions or {}
+        )
+
+        if predictions_by_model:
+            ensemble_result = self.generate_weighted_ensemble(
+                predictions_by_model, context_data
+            )
+            regime_score = ensemble_result['ensemble_prediction']
+            regime = ensemble_result['regime']
+            # Build a single-key dict so the parent aggregation logic still
+            # accounts for contributions correctly.
+            model_predictions_for_parent = {'enhanced_ensemble': regime_score}
+            context_data = dict(context_data)
+            context_data['regime'] = regime
+            self.logger.info(
+                f"[ENHANCED] regime={regime}, "
+                f"ensemble_score={regime_score:.4f}, "
+                f"architectures={ensemble_result['participating_architectures']}"
+            )
+        else:
+            model_predictions_for_parent = model_predictions
+
+        return super().generate_consensus(
+            model_predictions=model_predictions_for_parent,
+            context_data=context_data,
+            knn_results=knn_results,
+        )
 
     def generate_weighted_ensemble(self, predictions_dict: dict[str, float],
         market_context: dict[str, Any]) ->dict[str, Any]:
         """Generates a weighted ensemble score based on active market regime."""
         regime = self._determine_regime(market_context)
-        weights = self.regime_weights.get(regime, self.regime_weights[
-            'ranging'])
+        weights = self.regime_weights.get(regime, self.regime_weights['ranging'])
         ensemble_score = 0.0
         total_weight = 0.0
         for arch_type, arch_pred in predictions_dict.items():
@@ -297,10 +373,15 @@ class EnhancedConsensusEngine(ConsensusEngine):
                     if self.logger.isEnabledFor(logging.DEBUG):
                         self.logger.debug(
                             f'Prediction from architecture {arch_type} is non-numeric: {e}'
-                            )
+                        )
                     raise
         if total_weight > 0:
             ensemble_score = ensemble_score / total_weight
-        return {'ensemble_prediction': ensemble_score, 'regime': regime,
-            'active_weights': weights, 'participating_architectures': [arch for
-            arch, w in weights.items() if w > 0]}
+        return {
+            'ensemble_prediction': ensemble_score,
+            'regime': regime,
+            'active_weights': weights,
+            'participating_architectures': [
+                arch for arch, w in weights.items() if w > 0
+            ],
+        }

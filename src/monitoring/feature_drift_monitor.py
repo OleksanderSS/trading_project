@@ -61,7 +61,7 @@ class FeatureDriftMonitor:
         }
 
         if not EVIDENTLY_AVAILABLE:
-            logger.error("❌ Evidently AI not available. Drift monitoring disabled.")
+            logger.warning("⚠️ Evidently AI not available. Drift monitoring disabled.")
 
     def set_reference_data(self, reference_data: pd.DataFrame):
         """Set or update reference data."""

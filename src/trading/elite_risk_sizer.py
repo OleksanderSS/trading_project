@@ -4,12 +4,16 @@ Elite Risk Sizing Engine
 - Correlation-aware diversification factor
 - Dynamic adjustment за волатильністю
 """
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+
+if TYPE_CHECKING:
+    from src.meta_learning.memory.diary_engine import DiaryEngine
+    from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
 
 
 class EliteRiskSizer:
@@ -197,32 +201,188 @@ class EliteRiskSizer:
                     )
         return rebalance_trades
 
+    def get_win_rate_for_sizing(
+        self,
+        ticker: str,
+        model_id: str | None = None,
+        confidence: float = 0.5,
+        *,
+        diary: "DiaryEngine | None" = None,
+        adaptive_selector: "AdaptiveModelSelector | None" = None,
+        min_trades: int = 20,
+    ) -> tuple[float, str]:
+        """
+        Resolve the best available win_rate estimate for Kelly sizing.
+
+        Priority (best → worst):
+        1. AdaptiveModelSelector.arena_leaderboard — EMA-updated win_rate
+           per (context_fingerprint, model_id).  Most accurate because it
+           learns online from real feedback.
+        2. DiaryEngine._calculate_performance_metrics — historical win_rate
+           from the experience diary per (agent_id=model_id, ticker).
+        3. Confidence-based heuristic (original fallback, 0.55/0.51).
+
+        Returns
+        -------
+        (win_rate, source_label)
+        """
+        # --- Source 1: AdaptiveModelSelector leaderboard ---
+        if adaptive_selector is not None and model_id is not None:
+            try:
+                leaderboard = getattr(adaptive_selector, 'arena_leaderboard', {})
+                # Leaderboard is keyed by context_fingerprint → {model_id: {win_rate, ...}}
+                # We aggregate across all contexts for this model+ticker
+                rates = []
+                for ctx_key, models in leaderboard.items():
+                    if ticker.upper() in ctx_key.upper() and model_id in models:
+                        wr = models[model_id].get('win_rate')
+                        n = models[model_id].get('total_predictions', 0)
+                        if wr is not None and n >= min_trades:
+                            rates.append(wr)
+                if not rates:
+                    # Wider search: any context for this model
+                    for ctx_key, models in leaderboard.items():
+                        if model_id in models:
+                            wr = models[model_id].get('win_rate')
+                            n = models[model_id].get('total_predictions', 0)
+                            if wr is not None and n >= min_trades:
+                                rates.append(wr)
+                if rates:
+                    wr = float(np.mean(rates))
+                    self.logger.info(
+                        f"[KELLY] {ticker}/{model_id}: win_rate={wr:.3f} "
+                        f"(source=adaptive_leaderboard, n_contexts={len(rates)})"
+                    )
+                    return float(np.clip(wr, 0.35, 0.80)), "adaptive_leaderboard"
+            except Exception as e:  # noqa: BLE001
+                self.logger.warning(f"AdaptiveSelector win_rate lookup failed: {e}")
+
+        # --- Source 2: DiaryEngine historical win_rate ---
+        if diary is not None and model_id is not None:
+            try:
+                history = diary.get_history_by_agent(model_id)
+                if not history.empty:
+                    ticker_history = history[history['ticker'].str.upper() == ticker.upper()]
+                    subset = ticker_history if len(ticker_history) >= min_trades else history
+                    if len(subset) >= min_trades:
+                        metrics = diary._calculate_performance_metrics(
+                            subset['profit_loss'].dropna().values
+                        )
+                        wr = float(metrics.get('win_rate', 0.0))
+                        if wr > 0:
+                            self.logger.info(
+                                f"[KELLY] {ticker}/{model_id}: win_rate={wr:.3f} "
+                                f"(source=diary, n={len(subset)})"
+                            )
+                            return float(np.clip(wr, 0.35, 0.80)), "diary"
+            except Exception as e:  # noqa: BLE001
+                self.logger.warning(f"DiaryEngine win_rate lookup failed: {e}")
+
+        # --- Source 3: Confidence-based heuristic (original fallback) ---
+        wr = 0.55 if confidence > 0.6 else 0.51
+        self.logger.info(
+            f"[KELLY] {ticker}: win_rate={wr:.2f} "
+            f"(source=heuristic, confidence={confidence:.2f}, "
+            f"reason=insufficient_history)"
+        )
+        return wr, "heuristic"
+
     def compute_optimal_position_size(self, ticker: str, confidence: float,
         prediction: float, total_capital: float, ticker_volatility: float,
         portfolio_volatility: float, portfolio_positions: dict[str, Any],
-        correlation_matrix: dict[str, Any] | None=None,
-        current_price: float | None=None) ->tuple[float, dict[str, Any]]:
+        correlation_matrix: dict[str, Any] | None = None,
+        current_price: float | None = None,
+        model_id: str | None = None,
+        diary: "DiaryEngine | None" = None,
+        adaptive_selector: "AdaptiveModelSelector | None" = None,
+        cognitive_scenarios: list[dict[str, Any]] | None = None,
+    ) -> tuple[float, dict[str, Any]]:
         """
         Elite sizing interface expected by PortfolioManager.
 
+        win_rate and win_loss_ratio are now derived from real measured
+        statistics (AdaptiveSelector leaderboard → DiaryEngine history →
+        confidence heuristic) instead of binary step-functions.
+
         Args:
-            prediction: Expected return (%)
-            total_capital: Current portfolio value
+            model_id: ID of the model that produced the signal.
+                      Used to look up per-model win_rate from leaderboard/diary.
+            diary: DiaryEngine instance for historical win_rate lookup.
+            adaptive_selector: AdaptiveModelSelector instance for leaderboard lookup.
+            prediction: Expected return (fraction, e.g. 0.03 = 3%).
+            total_capital: Current portfolio value.
+            cognitive_scenarios: List of scenario dictionaries from CognitiveAnalyst (Lenses).
 
         Returns:
             (position_fraction, metadata)
         """
-        win_rate = 0.55 if confidence > 0.6 else 0.51
+        # --- Win rate: measured > heuristic ---
+        win_rate, wr_source = self.get_win_rate_for_sizing(
+            ticker=ticker,
+            model_id=model_id,
+            confidence=confidence,
+            diary=diary,
+            adaptive_selector=adaptive_selector,
+        )
+
+        # --- Win/loss ratio: use |prediction| as proxy for expected gain
+        #     magnitude; scale from historical avg_win/avg_loss if diary data
+        #     is available (simple estimate: mean_pos / mean_neg returns). ---
         win_loss_ratio = 1.8 if abs(prediction) > 0.02 else 1.5
+        if diary is not None and model_id is not None:
+            try:
+                history = diary.get_history_by_agent(model_id)
+                if not history.empty:
+                    pnl = history['profit_loss'].dropna()
+                    wins = pnl[pnl > 0]
+                    losses = pnl[pnl < 0]
+                    if len(wins) >= 5 and len(losses) >= 5:
+                        ratio = float(wins.mean() / abs(losses.mean()))
+                        if 0.5 <= ratio <= 5.0:   # sanity bounds
+                            win_loss_ratio = ratio
+            except Exception:  # noqa: BLE001
+                pass
+
         entry_price = current_price if current_price and current_price > 0 else 100.0
-        shares = self.calculate_optimal_position_size(ticker=ticker,
-            entry_price=entry_price, win_rate=win_rate, avg_win_loss_ratio=
-            win_loss_ratio, current_positions=portfolio_positions,
-            total_equity=total_capital, position_value_limit=0.15,
-            portfolio_volatility=portfolio_volatility, cash_available=
-            total_capital)
-        position_fraction = (shares * entry_price / total_capital if
-            total_capital > 0 else 0)
-        metadata = {'stages': {'kelly_size': position_fraction, 'vol_adj': 1.0}
-            }
+        shares = self.calculate_optimal_position_size(
+            ticker=ticker,
+            entry_price=entry_price,
+            win_rate=win_rate,
+            avg_win_loss_ratio=win_loss_ratio,
+            current_positions=portfolio_positions,
+            total_equity=total_capital,
+            position_value_limit=0.15,
+            portfolio_volatility=portfolio_volatility,
+            cash_available=total_capital,
+        )
+        position_fraction = (shares * entry_price / total_capital
+                             if total_capital > 0 else 0)
+
+        # --- Cognitive Risk Penalty ---
+        cognitive_risk_penalty = 1.0
+        if cognitive_scenarios:
+            for scenario in cognitive_scenarios:
+                prob = float(scenario.get('probability', 0.0))
+                impact_text = str(scenario.get('impact', '')).lower()
+                negative_keywords = ['negative', 'bearish', 'shortage', 'disruption', 'crisis', 'ban', 'inflation']
+                if prob >= 0.6 and any(word in impact_text for word in negative_keywords):
+                    self.logger.warning(
+                        f"[COGNITIVE RISK] High probability ({prob}) negative scenario detected for {ticker}: {scenario.get('node')}. "
+                        "Applying 50% penalty to position size."
+                    )
+                    cognitive_risk_penalty = min(cognitive_risk_penalty, 0.5)
+
+        position_fraction *= cognitive_risk_penalty
+
+        metadata = {
+            'stages': {
+                'kelly_size': (position_fraction / cognitive_risk_penalty) if cognitive_risk_penalty > 0 else 0, 
+                'vol_adj': 1.0,
+                'cognitive_penalty': cognitive_risk_penalty
+            },
+            'win_rate': win_rate,
+            'win_rate_source': wr_source,
+            'win_loss_ratio': win_loss_ratio,
+            'model_id': model_id,
+        }
         return position_fraction, metadata

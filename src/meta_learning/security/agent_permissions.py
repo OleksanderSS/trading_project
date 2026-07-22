@@ -341,8 +341,9 @@ class AgentPermissionSystem:
     def _initialize_default_permissions(self):
         """Initialize default permission sets for each role."""
         self._permissions[AgentRole.CHAMPION] = {Permission(ActionType.
-            READ_DATA, True), Permission(ActionType.EXECUTE_TRADE, True, {
-            'max_position_size': 0.1, 'max_risk_per_trade': 0.02}),
+            READ_DATA, True), Permission(ActionType.EXECUTE_TRADE, False, {
+            'max_position_size': 0.1, 'max_risk_per_trade': 0.02,
+            'requires_explicit_enablement': True}),
             Permission(ActionType.ACCESS_MEMORY, True), Permission(
             ActionType.MODIFY_PARAMETERS, True, {'max_change_pct': 0.1}),
             Permission(ActionType.WRITE_DATA, True), Permission(ActionType.
@@ -425,6 +426,16 @@ class AgentPermissionSystem:
                     f"Parameter change {context['parameter_change_pct']}% exceeds limit {condition_value}%"}
         return None
 
+    def _check_requires_explicit_enablement(self, condition_value: Any, context: dict[str, Any] | None) -> dict[str, Any] | None:
+        """Check if trading execution has been explicitly enabled."""
+        if context and 'explicitly_enabled' in context:
+            if not context['explicitly_enabled']:
+                return {'passed': False, 'reason': 'Trading execution requires explicit enablement'}
+        else:
+            # If context doesn't have explicitly_enabled flag, deny by default for safety
+            return {'passed': False, 'reason': 'Trading execution requires explicit enablement (not provided in context)'}
+        return None
+
     def _evaluate_conditions_dict(self, conditions: dict[str, Any], context:
         dict[str, Any] | None, agent: AgentIdentity) -> dict[str, Any]:
         """Check permission conditions against context."""
@@ -439,6 +450,8 @@ class AgentPermissionSystem:
                     result = self._check_simulation_only(condition_value, context)
                 elif condition_name == 'max_change_pct':
                     result = self._check_max_change_pct(condition_value, context)
+                elif condition_name == 'requires_explicit_enablement':
+                    result = self._check_requires_explicit_enablement(condition_value, context)
 
                 if result:
                     return result
@@ -542,7 +555,7 @@ class AgentPermissionSystem:
             audit_file = (self.storage_path /
                 f"agent_audit_{datetime.now().strftime('%Y%m%d')}.json")
             with open(audit_file, 'w') as f:
-                json.dump(self.audit_log, f, indent=2)
+                json.dump(self.audit_log, f, indent=2, default=str)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Failed to save audit log: {e}')
 

@@ -131,6 +131,35 @@ class UnifiedTrainingManager:
         """Select optimal models for a ticker using contextual analysis."""
         context_fingerprint = data.get('context_fingerprint', 'default'
             ) if data else 'default'
+
+        self.logger.info(f"_select_models_for_ticker called for ticker={ticker}, context_fingerprint={context_fingerprint}")
+
+        # Check if model categories are configured (light/heavy) first
+        # This takes precedence over contextual selection
+        models_config = self.config_manager.get_config('models', {})
+        categories = models_config.get('categories', {})
+        self.logger.info(f"Model categories config: {categories}")
+        if categories:
+            # Use models from configured categories (light or heavy)
+            # If 'light' category exists, use only light models
+            if 'light' in categories and isinstance(categories['light'], list):
+                self.logger.info(f"Using light models from config: {categories['light']}")
+                return categories['light']
+            # If 'heavy' category exists, use only heavy models
+            elif 'heavy' in categories and isinstance(categories['heavy'], list):
+                self.logger.info(f"Using heavy models from config: {categories['heavy']}")
+                return categories['heavy']
+            # Otherwise, use all models from all categories
+            else:
+                all_category_models = []
+                for category_name, models in categories.items():
+                    if isinstance(models, list):
+                        all_category_models.extend(models)
+                if all_category_models:
+                    self.logger.info(f"Using all models from categories: {all_category_models}")
+                    return all_category_models
+
+        # Only use contextual selection if no categories are configured
         try:
             select_models = getattr(self.context_selector, 'select_models',
                 None)
@@ -138,13 +167,21 @@ class UnifiedTrainingManager:
                 # Prefer contextual selection when caller provided the required inputs.
                 recommended = select_models(ticker, context_fingerprint, data=data)
                 if recommended:
+                    self.logger.info(f"Using contextual selection for {ticker}: {recommended}")
                     return recommended
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
                 f'Contextual model selection failed for {ticker}: {e}. Falling back to configured models.'
                 )
-        models_config = self.config_manager.get_config('models', {})
-        return models_config.get('enabled_types') or self._get_available_model_names()
+
+        enabled_types = models_config.get('enabled_types')
+        if enabled_types:
+            self.logger.info(f"Using enabled_types from config: {enabled_types}")
+            return enabled_types
+
+        available_models = self._get_available_model_names()
+        self.logger.info(f"Using all available models: {available_models}")
+        return available_models
 
     def _get_available_model_names(self) ->list[str]:
         from src.factories.model_factory import ModelFactory
@@ -204,12 +241,12 @@ class UnifiedTrainingManager:
         filepath = (self.plans_dir /
             f"unified_plan_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
         with open(filepath, 'w') as f:
-            json.dump(plan, f, indent=2)
+            json.dump(plan, f, indent=2, default=str)
         return str(filepath)
 
     def save_unified_results(self, results: dict[str, Any]) ->str:
         filepath = (self.results_dir /
             f"unified_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
         with open(filepath, 'w') as f:
-            json.dump(results, f, indent=2)
+            json.dump(results, f, indent=2, default=str)
         return str(filepath)

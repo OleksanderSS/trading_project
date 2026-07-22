@@ -451,26 +451,51 @@ class EliteRiskMetrics:
         dict[str, Any]], daily_pnl: float, current_drawdown: float) ->dict[
         str, Any]:
         """
-        Check if portfolio adheres to risk limits
+        Check if portfolio adheres to risk limits.
 
-        Args:
-            portfolio_value: Total portfolio value
-            positions: Dict of positions with size/value
-            daily_pnl: Daily P&L
-            current_drawdown: Current drawdown
-
-        Returns:
-            Limit check report with violations and warnings
+        Previously used ``estimated_var = portfolio_value * 0.02`` (a hard-coded
+        2% flat estimate) which always evaluated to less than the default
+        ``max_portfolio_var`` limit of 5%, so the portfolio-VaR check never
+        triggered.  Now delegates to ``compute_comprehensive_risk_metrics`` for
+        each position and aggregates to a real ensemble-VaR figure — consistent
+        with ``get_risk_report``.
         """
         violations = []
         warnings = []
-        estimated_var = portfolio_value * 0.02
-        if estimated_var > portfolio_value * self.limits['max_portfolio_var']:
-            violations.append({'type': 'portfolio_var', 'current':
-                estimated_var / portfolio_value, 'limit': self.limits[
-                'max_portfolio_var'], 'message':
-                f'Portfolio VaR {estimated_var / portfolio_value:.1%} exceeds limit'
-                })
+
+        # --- Portfolio VaR (ensemble of HS / Cornish-Fisher / GARCH) ---
+        total_var_dollars = 0.0
+        for ticker, pos_data in positions.items():
+            pos_value = pos_data.get('value', 0.0)
+            if pos_value <= 0 or ticker not in self.returns_history:
+                # Fallback: use DEFAULT_VAR_LOSS when no history available
+                total_var_dollars += pos_value * self.DEFAULT_VAR_LOSS
+                continue
+            try:
+                entry_price = pos_data.get('entry_price', pos_data.get('price', 1.0))
+                position_size = int(pos_value / entry_price) if entry_price > 0 else 0
+                if position_size > 0:
+                    risk = self.compute_comprehensive_risk_metrics(
+                        ticker, position_size, entry_price, portfolio_value
+                    )
+                    total_var_dollars += risk['var_95_dollars']
+                else:
+                    total_var_dollars += pos_value * self.DEFAULT_VAR_LOSS
+            except Exception as e:  # noqa: BLE001
+                self.logger.warning(f"check_limits: could not compute VaR for {ticker}: {e}")
+                total_var_dollars += pos_value * self.DEFAULT_VAR_LOSS
+
+        estimated_var_pct = total_var_dollars / portfolio_value if portfolio_value > 0 else 0.0
+
+        if estimated_var_pct > self.limits['max_portfolio_var']:
+            violations.append({
+                'type': 'portfolio_var',
+                'current': estimated_var_pct,
+                'limit': self.limits['max_portfolio_var'],
+                'message': f'Portfolio VaR {estimated_var_pct:.1%} exceeds limit {self.limits["max_portfolio_var"]:.1%}'
+            })
+
+        # --- Concentration limits ---
         for ticker, pos_data in positions.items():
             concentration = pos_data['value'] / portfolio_value
             if concentration > self.limits['max_single_position']:
@@ -479,22 +504,28 @@ class EliteRiskMetrics:
                     'max_single_position'], 'message':
                     f'Position {ticker} concentration {concentration:.1%} exceeds limit'
                     })
-        daily_loss_pct = abs(daily_pnl
-            ) / portfolio_value if daily_pnl < 0 else 0
+
+        # --- Daily loss limit ---
+        daily_loss_pct = abs(daily_pnl) / portfolio_value if daily_pnl < 0 else 0
         if daily_loss_pct > self.limits['max_daily_loss']:
             violations.append({'type': 'daily_loss', 'current':
                 daily_loss_pct, 'limit': self.limits['max_daily_loss'],
                 'message': f'Daily loss {daily_loss_pct:.1%} exceeds limit'})
+
+        # --- Drawdown limit ---
         if current_drawdown > self.limits['max_drawdown']:
             violations.append({'type': 'drawdown', 'current':
                 current_drawdown, 'limit': self.limits['max_drawdown'],
                 'message': f'Drawdown {current_drawdown:.1%} exceeds limit'})
-        if estimated_var / portfolio_value > self.limits['max_portfolio_var'
-            ] * 0.8:
+
+        # --- Warnings (approaching thresholds) ---
+        if estimated_var_pct > self.limits['max_portfolio_var'] * 0.8:
             warnings.append('Portfolio VaR approaching critical threshold')
         if daily_loss_pct > self.limits['max_daily_loss'] * 0.7:
             warnings.append('Daily P&L approaching stop-loss threshold')
+
         return {'limits_respected': len(violations) == 0, 'violations':
             violations, 'warnings': warnings, 'checked_at': datetime.now().
             isoformat(), 'portfolio_value': portfolio_value,
+            'estimated_var_pct': estimated_var_pct,
             'positions_count': len(positions)}

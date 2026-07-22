@@ -9,6 +9,7 @@ All trainer implementations share common workflow:
 3. Generate results summary
 """
 import logging
+import shutil
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -183,7 +184,7 @@ class BaseTrainer(ABC):
 
             self.logger.info(
                 f"✅ Training complete. Success rate: {summary['success_rate']:.1%} "
-                f"({summary['successful']}/{summary['total_tickers']})"
+                f"({summary['successful_tickers']}/{summary['total_tickers']})"
             )
 
             return {
@@ -194,7 +195,6 @@ class BaseTrainer(ABC):
 
         except (ValueError, TypeError, Exception) as e:
             self.logger.error(f"❌ Training failed: {e}", exc_info=True)
-            self.error_handler.handle_error(e, context={'plan': plan})
             raise TrainingException(f"Training failed: {e}") from e
 
     def execute_batch_training(self, plan: dict[str, Any], data_context: dict[str, Any]) -> dict[str, Any]:
@@ -244,7 +244,14 @@ class BaseTrainer(ABC):
     # CodeScene: Complex Method (cc=10), Large Method (77 lines) - acceptable for training orchestration
     def _train_ticker_suite(self, ticker: str, data: dict[str, Any]) -> dict:
         """Train all configured models for a specific ticker."""
-        results = {"status": "success", "models": [], "metrics": {}, "ticker": ticker}
+        results = {
+            "status": "success",
+            "models": [],
+            "metrics": {},
+            "ticker": ticker,
+            "target_name": data.get("target_name", "unknown"),
+            "selected_features": list(data.get("feature_names") or []),
+        }
 
         # 1. Data validation and prep
         X_train, y_train = data.get('X_train'), data.get('y_train')
@@ -305,6 +312,7 @@ class BaseTrainer(ABC):
         model = self.model_factory.create_model(
             model_name=m_type,
             config=self.config_manager.get_config(f"models.{m_type}", {}),
+            task_type="classification" if is_classif else "regression",
             is_classification=is_classif
         )
 
@@ -323,8 +331,19 @@ class BaseTrainer(ABC):
             'mse': float(score.get('MSE', 0.0)) if not is_classif else None
         }
 
-        # Side effects: Champion saving and logging
-        self._save_champion(model, ticker, data.get('target_name', 'unknown'))
+        # Persist every candidate separately; promote only the actual winner.
+        model_path = self._save_model_candidate(
+            model,
+            ticker=ticker,
+            target=data.get("target_name", "unknown"),
+            model_type=m_type,
+        )
+        results["models"].append(
+            {
+                "model_type": m_type,
+                "model_path": str(model_path),
+            }
+        )
         self.diary.log_event(
             ticker=ticker, model_name=m_type, target=data.get('target_name', 'unknown'),
             metrics=score_val,
@@ -339,19 +358,76 @@ class BaseTrainer(ABC):
         results['winner'] = winner
         results['best_score'] = float(best_score) if best_score > -np.inf else None
         results['winner_metrics'] = results['metrics'].get(winner, {})
+        winner_record = next(
+            (
+                item
+                for item in results.get("models", [])
+                if item.get("model_type") == winner
+            ),
+            None,
+        )
+        if winner_record:
+            winner_path = Path(winner_record["model_path"])
+            champion_path = self._promote_champion_file(
+                winner_path,
+                ticker=str(results.get("ticker") or "unknown"),
+                target=str(results.get("target_name") or "unknown"),
+            )
+            results["winner_model_path"] = str(winner_path)
+            results["model_path"] = str(champion_path)
         return results
 
-    def _save_champion(self, model: Any, ticker: str, target: str):
-        """Save best model to disk"""
-        filename = f"CHAMP_{ticker}_{target}.joblib"
+    def _save_model_candidate(
+        self,
+        model: Any,
+        *,
+        ticker: str,
+        target: str,
+        model_type: str,
+    ) -> Path:
+        """Persist one trained candidate without overwriting other models."""
+        filename = f"model_{ticker}_{target}_{model_type}.joblib"
         path = self.output_dir / filename
         try:
             joblib.dump(model, path)
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"Champion saved: {path}")
+                self.logger.debug(f"Model candidate saved: {path}")
+            return path
         except (OSError, TypeError, Exception) as e:
-            self.logger.error(f"Error saving champion {filename}: {e}", exc_info=True)
-            raise TrainingException(f"Failed to save champion {filename}: {e}") from e
+            self.logger.error(
+                f"Error saving model candidate {filename}: {e}",
+                exc_info=True,
+            )
+            raise TrainingException(
+                f"Failed to save model candidate {filename}: {e}"
+            ) from e
+
+    def _promote_champion_file(
+        self,
+        winner_path: Path,
+        *,
+        ticker: str,
+        target: str,
+    ) -> Path:
+        """Copy the selected winner to the stable champion path."""
+        champion_path = self.output_dir / f"CHAMP_{ticker}_{target}.joblib"
+        shutil.copy2(winner_path, champion_path)
+        return champion_path
+
+    def _save_champion(self, model: Any, ticker: str, target: str):
+        """Compatibility helper for callers that already selected a winner."""
+        path = self.output_dir / f"CHAMP_{ticker}_{target}.joblib"
+        try:
+            joblib.dump(model, path)
+            return path
+        except (OSError, TypeError, Exception) as e:
+            self.logger.error(
+                f"Error saving champion {path.name}: {e}",
+                exc_info=True,
+            )
+            raise TrainingException(
+                f"Failed to save champion {path.name}: {e}"
+            ) from e
 
     def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """

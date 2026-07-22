@@ -114,7 +114,7 @@ class ComprehensiveReporter:
         try:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             with open(output_path, 'w') as f:
-                json.dump(report, f, indent=4)
+                json.dump(report, f, indent=4, default=str)
             logger.info(f"Comprehensive report saved to {output_path}")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Failed to save report: {e}")

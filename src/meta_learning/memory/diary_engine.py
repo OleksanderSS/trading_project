@@ -15,6 +15,7 @@ for an objective comparison of their effectiveness.
 import json
 import logging
 import sys
+import uuid
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -26,10 +27,7 @@ import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
-from src.data.management.data_manager import DataManager
 from src.meta_learning.base import BaseMetaComponent
-from src.meta_learning.memory.contextual_weight_calculator import ContextualWeightCalculator
-from src.meta_learning.memory.knn_context_finder import KnnContextFinder
 
 
 class DecisionType(Enum):
@@ -74,7 +72,7 @@ class DecisionRecord:
 
     # Other Metadata
     decision_timestamp: int = field(default_factory=lambda: int(datetime.now(UTC).timestamp()))
-    decision_id: int | None = None
+    decision_id: str = field(default_factory=lambda: str(uuid.uuid4()))  # Stable UUID string instead of random 31-bit int
 
 
 class DiaryEngine(BaseMetaComponent):
@@ -82,22 +80,44 @@ class DiaryEngine(BaseMetaComponent):
     The main class that implements the logic for recording, reading, and analyzing trading experience.
     Migrated to DuckDB for high-performance meta-analysis. Supporting Context Map 2.0.
     Acts as the system's memory engine for tracking trade performance and context.
+    
+    Note: DataManager is lazy-imported to allow DiaryEngine to work without immediate DB initialization.
+    Falls back to in-memory-only mode if DuckDB is not available.
     """
-    def __init__(self, data_manager: DataManager | None = None, maxsize: int = 10000):
+    def __init__(self, data_manager=None, maxsize: int = 10000):
         self.config = get_current_config()
-        self.data_manager = data_manager or DataManager(self.config, None)
-        self.table_name = "experience_diary"
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
+
+        # Lazy import DataManager with fallback for missing DuckDB
+        try:
+            from src.data.management.data_manager import DataManager
+            self.data_manager = data_manager or DataManager(self.config, None)
+            self._db_available = True
+        except ImportError as e:
+            self.logger.warning(f"DataManager/DuckDB not available: {e}. Using in-memory fallback mode.")
+            self.data_manager = None
+            self._db_available = False
+
+        self.table_name = "experience_diary"
 
         # ✅ Phase 4 Quality: Add memory-limited in-memory buffer
         self.maxsize = maxsize
         self.entries: deque[DecisionRecord] = deque(maxlen=maxsize)  # Auto-evict oldest entries
 
-        # Initialize contextual weight calculator and KNN finder
-        self.weight_calculator = ContextualWeightCalculator(self.data_manager, self.logger)
-        self.knn_finder = KnnContextFinder(self.data_manager, self.weight_calculator, self.logger)
+        # Initialize contextual components only if DB is available
+        self.weight_calculator = None
+        self.knn_finder = None
+        if self._db_available and self.data_manager:
+            try:
+                from src.meta_learning.memory.contextual_weight_calculator import ContextualWeightCalculator
+                from src.meta_learning.memory.knn_context_finder import KnnContextFinder
+                self.weight_calculator = ContextualWeightCalculator(self.data_manager, self.logger)
+                self.knn_finder = KnnContextFinder(self.data_manager, self.weight_calculator, self.logger)
+            except ImportError as e:
+                self.logger.warning(f"Contextual components not available: {e}. Using basic mode.")
 
-        self._initialize_database()
+        # Lazy database initialization - only initialize when first needed
+        self._db_initialized = False
 
     @property
     def name(self) -> str:
@@ -122,6 +142,17 @@ class DiaryEngine(BaseMetaComponent):
         Returns the current internal state of the diary.
         """
         try:
+            # Ensure DB is initialized before querying
+            self._ensure_db_initialized()
+
+            if not self._db_available or not self.data_manager:
+                # Fallback to in-memory state
+                return {
+                    "total_trades_recorded": len(self.entries),
+                    "table_name": self.table_name,
+                    "mode": "in-memory"
+                }
+
             # Use literal table name instead of f-string for security
             query = "SELECT COUNT(*) as total_trades FROM experience_diary"
             result_list = self.data_manager.fetch_all(query)
@@ -137,12 +168,19 @@ class DiaryEngine(BaseMetaComponent):
                 exc_info=True)
             return {"error": str(e)}
 
+    def _ensure_db_initialized(self):
+        """Lazily initialize the database only when first needed."""
+        if not self._db_initialized and self._db_available and self.data_manager:
+            self._initialize_database()
+            self._db_initialized = True
+
     def _initialize_database(self):
         """Initializes the DuckDB table for the experience diary."""
         # Ensured context_fingerprint is VARCHAR to handle long strings (30+ drivers)
+        # Changed id from INTEGER to VARCHAR to support stable UUID strings
         query = """
         CREATE TABLE IF NOT EXISTS experience_diary (
-            id INTEGER PRIMARY KEY,
+            id VARCHAR PRIMARY KEY,
             agent_id VARCHAR NOT NULL,
             decision_timestamp BIGINT NOT NULL,
             ticker VARCHAR NOT NULL,

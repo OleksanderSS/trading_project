@@ -1,5 +1,5 @@
 import inspect
-from typing import Any
+from typing import Any, ClassVar
 
 from src.core.logging.logger import ProjectLogger
 from src.models.interfaces import BaseModel
@@ -13,7 +13,7 @@ logger = ProjectLogger.get_logger('TreeModelFactory')
 class TreeModelFactory:
     """Factory for creating tree-based models with parameter filtering."""
 
-    _model_map: dict[str, type[BaseModel]] = {
+    _model_map: ClassVar[dict[str, type[BaseModel]]] = {
         'XGBoost': XGBoostModel,
         'LightGBM': LightGBMModel,
         'CatBoost': CatBoostModel,

@@ -40,21 +40,56 @@ class DataCleaner:
                 if col not in df_out.columns:
                     continue
                 if 'ticker' in df_out.columns:
-                    log_returns = df_out.groupby('ticker', group_keys=False
-                        )[col].apply(lambda s: np.log(s / s.shift(1)))
-                    rolling_mean = log_returns.groupby(df_out['ticker'],
-                        group_keys=False).apply(lambda s: s.rolling(20,
-                        min_periods=1).mean())
-                    rolling_std = log_returns.groupby(df_out['ticker'],
-                        group_keys=False).apply(lambda s: s.rolling(20,
-                        min_periods=1).std())
+                    group_columns = ['ticker']
+                    if 'interval' in df_out.columns:
+                        group_columns.append('interval')
+                    sort_columns = list(group_columns)
+                    if 'datetime' in df_out.columns:
+                        sort_columns.append('datetime')
+                    ordered = df_out.sort_values(
+                        sort_columns,
+                        kind='mergesort',
+                    )
+                    log_returns = ordered.groupby(
+                        group_columns,
+                        group_keys=False,
+                    )[col].transform(
+                        lambda series: np.log(
+                            series / series.shift(1)
+                        )
+                    )
+                    grouping = [
+                        ordered[column]
+                        for column in group_columns
+                    ]
+                    rolling_mean = log_returns.groupby(
+                        grouping,
+                        group_keys=False,
+                    ).transform(
+                        lambda series: series.rolling(
+                            20,
+                            min_periods=1,
+                        ).mean()
+                    )
+                    rolling_std = log_returns.groupby(
+                        grouping,
+                        group_keys=False,
+                    ).transform(
+                        lambda series: series.rolling(
+                            20,
+                            min_periods=1,
+                        ).std()
+                    )
                 else:
                     log_returns = np.log(df_out[col] / df_out[col].shift(1))
                     rolling_mean = log_returns.rolling(20, min_periods=1).mean()
                     rolling_std = log_returns.rolling(20, min_periods=1).std()
                 z_scores = (log_returns - rolling_mean) / rolling_std
                 col_mask = (z_scores.abs() > threshold).where(z_scores.notna(), False)
-                total_mask |= col_mask
+                total_mask |= col_mask.reindex(
+                    df_out.index,
+                    fill_value=False,
+                )
             outlier_count = total_mask.sum()
             if outlier_count > 0:
                 df_out = df_out[~total_mask]
@@ -68,6 +103,54 @@ class DataCleaner:
             return df
 
     @staticmethod
+    def clean_text_data(df: pd.DataFrame, text_columns: list[str]) -> pd.DataFrame:
+        """
+        Cleans text columns by removing HTML tags, special characters, and lowercasing.
+        """
+        if df is None or df.empty:
+            return df
+        df_out = df.copy()
+
+        for col in text_columns:
+            if col in df_out.columns:
+                df_out[col] = df_out[col].fillna('')
+                df_out[col] = df_out[col].astype(str).str.replace(r'<[^>]*>', '', regex=True)
+                df_out[col] = df_out[col].str.replace(r'[^\w\s\.,!?]', '', regex=True)
+                df_out[col] = df_out[col].str.replace(r'\s+', ' ', regex=True).str.strip()
+                df_out[col] = df_out[col].str.lower()
+
+        logger.info(f"Cleaned text data for columns: {text_columns}")
+        return df_out
+
+    @staticmethod
+    def clean_macro_data(df: pd.DataFrame, numeric_columns: list[str], threshold: float = 3.0) -> pd.DataFrame:
+        """
+        Cleans macro-economic data by clipping outliers instead of dropping them, and interpolating missing values.
+        """
+        if df is None or df.empty:
+            return df
+        df_out = df.copy()
+
+        for col in numeric_columns:
+            if col not in df_out.columns:
+                continue
+
+            df_out[col] = pd.to_numeric(df_out[col], errors='coerce')
+            df_out[col] = df_out[col].ffill().bfill()
+
+            rolling_median = df_out[col].rolling(window=20, min_periods=1, center=True).median()
+            rolling_mad = df_out[col].rolling(window=20, min_periods=1, center=True).apply(lambda x: np.median(np.abs(x - np.median(x))))
+            rolling_std = rolling_mad * 1.4826
+
+            lower_bound = rolling_median - (threshold * rolling_std)
+            upper_bound = rolling_median + (threshold * rolling_std)
+
+            df_out[col] = df_out[col].clip(lower=lower_bound, upper=upper_bound)
+
+        logger.info(f"Cleaned macro data for columns: {numeric_columns}")
+        return df_out
+
+    @staticmethod
     def handle_missing_values(df: pd.DataFrame, method: str='ffill'
         ) ->pd.DataFrame:
         """
@@ -78,18 +161,84 @@ class DataCleaner:
         df_out = df.copy()
         nan_count = df_out.isna().sum().sum()
         if nan_count > 0:
-            data_cols = [col for col in df_out.columns if col != 'ticker']
+            group_columns = [
+                column
+                for column in ('ticker', 'interval')
+                if column in df_out.columns
+            ]
+            service_columns = {
+                'ticker',
+                'interval',
+                'datetime',
+                'timestamp',
+                'date',
+            }
+            data_cols = [
+                col
+                for col in df_out.columns
+                if col not in service_columns
+            ]
             if method == 'ffill':
-                if 'ticker' in df_out.columns:
-                    df_out[data_cols] = df_out.groupby('ticker')[data_cols].ffill()
+                if group_columns:
+                    sort_columns = list(group_columns)
+                    datetime_column = next(
+                        (
+                            column
+                            for column in (
+                                'datetime',
+                                'timestamp',
+                                'date',
+                            )
+                            if column in df_out.columns
+                        ),
+                        None,
+                    )
+                    if datetime_column:
+                        sort_columns.append(datetime_column)
+                    ordered = df_out.sort_values(
+                        sort_columns,
+                        kind='mergesort',
+                    )
+                    ordered[data_cols] = ordered.groupby(
+                        group_columns,
+                        dropna=False,
+                    )[data_cols].ffill()
+                    df_out.loc[ordered.index, data_cols] = ordered[
+                        data_cols
+                    ]
                 else:
                     df_out = df_out.ffill()
             elif method == 'bfill':
                 logger.warning(
                     "Backfill is disabled for causal time series cleaning; using forward-fill instead."
                     )
-                if 'ticker' in df_out.columns:
-                    df_out[data_cols] = df_out.groupby('ticker')[data_cols].ffill()
+                if group_columns:
+                    sort_columns = list(group_columns)
+                    datetime_column = next(
+                        (
+                            column
+                            for column in (
+                                'datetime',
+                                'timestamp',
+                                'date',
+                            )
+                            if column in df_out.columns
+                        ),
+                        None,
+                    )
+                    if datetime_column:
+                        sort_columns.append(datetime_column)
+                    ordered = df_out.sort_values(
+                        sort_columns,
+                        kind='mergesort',
+                    )
+                    ordered[data_cols] = ordered.groupby(
+                        group_columns,
+                        dropna=False,
+                    )[data_cols].ffill()
+                    df_out.loc[ordered.index, data_cols] = ordered[
+                        data_cols
+                    ]
                 else:
                     df_out = df_out.ffill()
             logger.info(f'Handled {nan_count} missing values using {method}.')
@@ -309,5 +458,3 @@ def filter_by_terms(df: pd.DataFrame, terms: list[str], search_col: str=
         f"Filtered records: {len(df)} -> {len(filtered_df)} based on terms in '{search_col}'."
         )
     return filtered_df
-n filtered_df
-n filtered_df

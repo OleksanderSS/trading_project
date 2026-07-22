@@ -1,7 +1,8 @@
 
+import logging
+
 import numpy as np
 from sklearn.model_selection import TimeSeriesSplit, cross_val_score
-import logging
 
 try:
     import optuna
@@ -35,7 +36,7 @@ class BayesianOptimizer:
                 params[param_name] = trial.suggest_categorical(param_name, args[0])
 
         model = self.model_func(**params)
-        
+
         # Using cross-validation to get a robust score
         scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=self.cv), scoring=self.scoring)
         return scores.mean()
@@ -43,8 +44,8 @@ class BayesianOptimizer:
     def optimize(self, X, y):
         """Run the optimization process."""
         study = optuna.create_study(direction='maximize', sampler=optuna.samplers.TPESampler())
-        
-        study.optimize(lambda trial: self.objective(trial, X, y), 
+
+        study.optimize(lambda trial: self.objective(trial, X, y),
                       n_trials=self.n_trials, show_progress_bar=False)
 
         self.best_params = study.best_params
@@ -52,5 +53,5 @@ class BayesianOptimizer:
 
         logger.info(f"Bayesian optimization finished. Best score: {self.best_score:.4f}")
         logger.info(f"Best parameters: {self.best_params}")
-        
+
         return self.best_params

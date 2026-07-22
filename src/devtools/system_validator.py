@@ -2,9 +2,10 @@
 
 import importlib
 import os
-import psutil
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Any
+
+import psutil
 
 from src.core.file_management.file_manager import FileManager
 from src.core.logging.logger import ProjectLogger
@@ -22,12 +23,12 @@ class SystemValidator:
     def __init__(self, file_manager: FileManager, root_path: str = "."):
         self.fm = file_manager
         self.root = Path(root_path)
-        self.results: Dict[str, Any] = {}
-        self.errors: List[str] = []
+        self.results: dict[str, Any] = {}
+        self.errors: list[str] = []
         self.secrets_manager = SecretsManager()
         logger.info("SystemValidator initialized.")
 
-    def run_all_checks(self) -> Tuple[bool, Dict[str, Any]]:
+    def run_all_checks(self) -> tuple[bool, dict[str, Any]]:
         """
         Executes all validation checks and returns the overall status and detailed results.
 
@@ -65,7 +66,7 @@ class SystemValidator:
 
         self._summarize_results()
         self.print_report()
-        
+
         is_success = not self.errors
         if not is_success:
             logger.error(f"System validation failed with {len(self.errors)} errors.")
@@ -74,7 +75,7 @@ class SystemValidator:
 
         return is_success, self.results
 
-    def _check_directories(self, dir_paths: List[str]):
+    def _check_directories(self, dir_paths: list[str]):
         """Checks for the existence of essential directories."""
         results = {}
         for dir_path in dir_paths:
@@ -87,7 +88,7 @@ class SystemValidator:
         self.results["directories"] = results
         logger.info("Directory structure validation complete.")
 
-    def _check_files(self, file_paths: List[str]):
+    def _check_files(self, file_paths: list[str]):
         """Checks for the existence of critical files."""
         results = {}
         for file_path in file_paths:
@@ -100,7 +101,7 @@ class SystemValidator:
         self.results["core_files"] = results
         logger.info("Core file validation complete.")
 
-    def _check_python_libraries(self, libraries: List[str]):
+    def _check_python_libraries(self, libraries: list[str]):
         """Checks if essential third-party libraries can be imported."""
         results = {}
         for lib in libraries:
@@ -135,12 +136,12 @@ class SystemValidator:
                 gpu_status = "NOT_AVAILABLE (CUDA not detected)"
         except ImportError:
             gpu_status = "NOT_CHECKED (torch not installed)"
-        
+
         results["gpu"] = {"status": "INFO", "details": gpu_status}
         self.results["system_resources"] = results
         logger.info("System resource check complete.")
 
-    def _check_secrets(self, critical_keys: List[str]):
+    def _check_secrets(self, critical_keys: list[str]):
         """Validates that critical API keys and secrets are present."""
         results = {}
         for key in critical_keys:
@@ -150,7 +151,7 @@ class SystemValidator:
             else:
                 results[key] = {"status": "FAILED", "error": "Secret missing from .env or environment."}
                 self.errors.append(f"Missing critical secret: {key}")
-        
+
         self.results["secrets"] = results
         logger.info("Secrets validation complete.")
 
@@ -167,7 +168,7 @@ class SystemValidator:
     #     except Exception as e:
     #         results[db_path] = {"status": "FAILED", "error": str(e)}
     #         self.errors.append(f"Database error at {db_path}: {str(e)}")
-    #     
+    #
     #     self.results["database"] = results
     #     logger.info("Database availability check complete.")
 
@@ -182,9 +183,9 @@ class SystemValidator:
                         total_checks += 1
                         if item.get("status") in ["PASSED", "INFO"]:
                             passed_checks += 1
-        
+
         success_rate = (passed_checks / total_checks * 100) if total_checks > 0 else 100
-        
+
         self.results["summary"] = {
             "total_checks": total_checks,
             "passed_checks": passed_checks,

@@ -10,7 +10,7 @@ defined in the `adaptive_training_manager`.
 
 import argparse
 
-from src.config.tickers import get_tickers
+from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.training.adaptive_training_manager import AdaptiveTrainingManager, TrainingMode
 from src.training.base_trainer import TrainerConfig
@@ -50,8 +50,30 @@ def main():
         if "," in args.tickers:
             ticker_list = [t.strip().upper() for t in args.tickers.split(",")]
         else:
-            # Fetch tickers from a predefined category
-            ticker_list = get_tickers(args.tickers)
+            # Fetch tickers from unified config manager
+            cfg_mgr = UnifiedConfigManager()
+            assets_cfg = cfg_mgr.get_specific_config("assets")
+            preset_name = args.tickers
+            
+            # First try presets
+            preset = assets_cfg.get("presets", {}).get(preset_name, {})
+            if preset and "tickers" in preset:
+                ticker_list = preset["tickers"]
+            else:
+                # Then try sectors
+                sector = assets_cfg.get("sectors", {}).get(preset_name, {})
+                if sector and "assets" in sector:
+                    ticker_list = sector["assets"]
+                elif preset_name == "all":
+                    # Collect all tickers from all sectors
+                    all_tickers = set()
+                    for sect_data in assets_cfg.get("sectors", {}).values():
+                        all_tickers.update(sect_data.get("assets", []))
+                    ticker_list = list(all_tickers)
+                else:
+                    logger.error(f"Ticker category '{preset_name}' not found in assets.yaml")
+                    ticker_list = []
+
             # Limit for safety during testing/development
             if args.tickers == 'all':
                 logger.warning("Running with 'all' tickers, limiting to first 50 for this run.")

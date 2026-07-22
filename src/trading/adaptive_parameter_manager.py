@@ -25,6 +25,7 @@ class AssetClass(Enum):
     SMALL_CAP = "small_cap"  # Low liquidity (more slippage)
     CRYPTO = "crypto"  # Very volatile
     COMMODITY = "commodity"  # Mean-reverting
+    ETF = "etf"  # Diversified baskets — low single-name risk
 
 @dataclass
 class AdaptiveParameters:
@@ -215,7 +216,12 @@ class AdaptiveParameterManager:
                 'risk_multiplier': 0.8,
                 'slippage_adjustment': 0.9975,  # 25 bps
                 'confidence_multiplier': 1.08,
-            }
+            },
+            AssetClass.ETF: {
+                'risk_multiplier': 1.1,   # Broader diversification → slightly larger size
+                'slippage_adjustment': 0.9997,  # ~3 bps (very liquid)
+                'confidence_multiplier': 0.95,  # Easier signal → lower confidence bar
+            },
         }
 
     def _normalize_regime_input(self, regime) -> MarketRegime:

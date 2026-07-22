@@ -66,7 +66,7 @@ class VirtualPortfolio:
         except (json.JSONDecodeError, ValueError) as e:
             logger.warning(f"⚠️ Portfolio file {self.portfolio_file} is corrupted. Resetting. Error: {e}")
             self.reset_portfolio()
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.error(f'Виникла помилка: {e}', exc_info=True)
             error_handler.handle_error(e, 'Loading Virtual Portfolio')
             raise
@@ -98,7 +98,7 @@ class VirtualPortfolio:
         try:
             data = self._prepare_portfolio_data()
             with open(self.portfolio_file, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, default=str)
             if logger.isEnabledFor(logging.DEBUG):
                 logger.debug(f'Portfolio saved to {self.portfolio_file}')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:

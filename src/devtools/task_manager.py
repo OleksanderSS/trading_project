@@ -2,10 +2,10 @@
 
 import re
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any
 
 from src.core.file_management.file_manager import FileManager
 from src.core.logging.logger import Logger as ProjectLogger
@@ -40,14 +40,14 @@ class Task:
         self.description: str = kwargs.get('description', "")
         self.status: TaskStatus = kwargs.get('status', TaskStatus.PENDING)
         self.priority: TaskPriority = kwargs.get('priority', TaskPriority.MEDIUM)
-        self.assigned_to: Optional[str] = kwargs.get('assigned_to')
+        self.assigned_to: str | None = kwargs.get('assigned_to')
         self.created_at: datetime = kwargs.get('created_at', datetime.now())
-        self.due_date: Optional[datetime] = kwargs.get('due_date')
-        self.tags: List[str] = kwargs.get('tags', [])
-        self.dependencies: List[str] = kwargs.get('dependencies', [])
+        self.due_date: datetime | None = kwargs.get('due_date')
+        self.tags: list[str] = kwargs.get('tags', [])
+        self.dependencies: list[str] = kwargs.get('dependencies', [])
         self.updated_at: datetime = datetime.now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serializes the task object to a dictionary."""
         return {
             'id': self.id,
@@ -64,7 +64,7 @@ class Task:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "Task":
+    def from_dict(cls, data: dict[str, Any]) -> "Task":
         """Deserializes a dictionary into a Task object."""
         return cls(
             id=data['id'],
@@ -85,15 +85,15 @@ class TaskManager:
     def __init__(self, file_manager: FileManager, storage_path: str = "tasks.json"):
         self.fm = file_manager
         self.storage_path = Path("devtools") / storage_path # Store tasks in a dedicated folder
-        self.tasks: Dict[str, Task] = self._load_tasks()
+        self.tasks: dict[str, Task] = self._load_tasks()
 
-    def _load_tasks(self) -> Dict[str, Task]:
+    def _load_tasks(self) -> dict[str, Task]:
         """Loads tasks from the storage file using FileManager."""
         data = self.fm.load_json(self.storage_path)
         if not data:
             logger.info("No existing tasks file found. Starting fresh.")
             return {}
-        
+
         tasks = {task_id: Task.from_dict(task_data) for task_id, task_data in data.items()}
         logger.info(f"Successfully loaded {len(tasks)} tasks from {self.storage_path}")
         return tasks
@@ -113,17 +113,17 @@ class TaskManager:
         logger.info(f"Created task '{task.id}': {task.title}")
         return task
 
-    def get_task(self, task_id: str) -> Optional[Task]:
+    def get_task(self, task_id: str) -> Task | None:
         """Retrieves a task by its ID."""
         return self.tasks.get(task_id)
 
-    def update_task(self, task_id: str, **updates: Any) -> Optional[Task]:
+    def update_task(self, task_id: str, **updates: Any) -> Task | None:
         """Updates attributes of an existing task."""
         task = self.get_task(task_id)
         if not task:
             logger.warning(f"Cannot update. Task with ID '{task_id}' not found.")
             return None
-        
+
         for key, value in updates.items():
             if hasattr(task, key):
                 # Handle enums
@@ -138,17 +138,17 @@ class TaskManager:
         logger.info(f"Updated task '{task_id}'.")
         return task
 
-    def list_tasks(self, **filters) -> List[Task]:
+    def list_tasks(self, **filters) -> list[Task]:
         """Lists tasks, optionally filtering by status, priority, etc."""
         filtered_tasks = list(self.tasks.values())
-        
+
         if not filters:
             return sorted(filtered_tasks, key=lambda t: t.created_at, reverse=True)
 
         for key, value in filters.items():
             if value is None:
                 continue
-            
+
             # Convert string to Enum if necessary
             if key == 'status' and isinstance(value, str):
                 value_enum = TaskStatus(value.lower())
@@ -164,7 +164,7 @@ class TaskManager:
 
         return sorted(filtered_tasks, key=lambda t: t.created_at, reverse=True)
 
-    def consolidate_codebase_todos(self, project_root: str = ".") -> List[Task]:
+    def consolidate_codebase_todos(self, project_root: str = ".") -> list[Task]:
         """Scans the codebase for TODO comments and creates tasks."""
         newly_created_tasks = []
         project_path = Path(project_root)
@@ -177,7 +177,7 @@ class TaskManager:
                         if match:
                             todo_type, todo_text = match.groups()
                             task_title = f"[{todo_type.upper()}] {todo_text[:60]}..."
-                            
+
                             # Avoid creating duplicate tasks
                             if any(task.title.startswith(f"[{todo_type.upper()}]") and todo_text[:60] in task.title for task in self.tasks.values()):
                                 continue

@@ -335,10 +335,10 @@ class ProgressiveTrainer(BaseTrainer):
 
         try:
             with open(results_file, 'w') as f:
-                json.dump(results, f, indent=2)
+                json.dump(results, f, indent=2, default=str)
 
             with open(analytics_file, 'w') as f:
-                json.dump(dict(self.analytics), f, indent=2)
+                json.dump(dict(self.analytics), f, indent=2, default=str)
 
             self.logger.info(f"Cycle intelligence saved to {results_file}")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:

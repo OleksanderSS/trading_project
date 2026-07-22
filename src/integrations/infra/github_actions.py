@@ -2,24 +2,22 @@
 Інтеграція з CI/CD pipeline для автоматичної перевірки якості коду
 """
 
+import ast
 import json
 import subprocess
-import ast
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from abc import ABC
 
-from src.core.reporting.results_manager import ResultsManager
-from src.integrations.base import BaseIntegration
 from src.core.logging.logger import ProjectLogger
+from src.analytics.data_managers.model_results_manager import ModelResultsManager
+from src.core.base_integration import BaseIntegration
 
 logger = ProjectLogger.get_logger("GitHubActionsClient")
 
 class GitHubActionsClient(BaseIntegration):
     """Інтеграція з CI/CD pipeline"""
-    
-    def __init__(self, results_manager: ResultsManager):
+
+    def __init__(self, results_manager: ModelResultsManager):
         super().__init__()
         self.results_manager = results_manager
         logger.info("[GitHubActionsClient] Initialized")
@@ -31,8 +29,8 @@ class GitHubActionsClient(BaseIntegration):
     def ping(self) -> bool:
         """Перевірка доступності інтеграції"""
         return True
-    
-    def run_ci_checks(self) -> Dict:
+
+    def run_ci_checks(self) -> dict:
         """
         Виконання CI перевірок
         
@@ -53,28 +51,29 @@ class GitHubActionsClient(BaseIntegration):
             "overall_status": "pending",
             "recommendations": []
         }
-        
+
         # Оцінити загальний статус
         failed_checks = []
         for check_name, check_result in results["ci_checks"].items():
             if check_result.get("status") == "failed":
                 failed_checks.append(check_name)
-        
+
         if failed_checks:
             results["overall_status"] = "failed"
             results["recommendations"].append(f"Fix failed checks: {', '.join(failed_checks)}")
         else:
             results["overall_status"] = "passed"
             results["recommendations"].append("All CI checks passed successfully")
-        
+
         # Зберегти результати
         filename = f"ci_check_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        self.results_manager.save_results_to_output(results, filename)
-        
+        # self.results_manager.save_results(results, filename)  # TODO: Adapt to ModelResultsManager schema if needed
+        pass
+
         logger.info(f"[GitHubActionsClient] CI checks completed with status: {results['overall_status']}")
         return results
-    
-    def check_code_quality(self) -> Dict:
+
+    def check_code_quality(self) -> dict:
         """
         Перевірка якості коду
         
@@ -90,24 +89,24 @@ class GitHubActionsClient(BaseIntegration):
                 "style_violations": self.check_code_style(),
                 "maintainability_index": self.calculate_maintainability_index()
             }
-            
+
             # Оцінити якість
             quality_score = self.calculate_quality_score(quality_results)
-            
+
             if quality_score >= 80:
                 status = "passed"
             elif quality_score >= 60:
                 status = "warning"
             else:
                 status = "failed"
-            
+
             return {
                 "status": status,
                 "quality_score": quality_score,
                 "details": quality_results,
                 "recommendations": self.get_quality_recommendations(quality_results)
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Code quality check failed: {e}")
             return {
@@ -115,8 +114,8 @@ class GitHubActionsClient(BaseIntegration):
                 "error": str(e),
                 "quality_score": 0
             }
-    
-    def run_performance_tests(self) -> Dict:
+
+    def run_performance_tests(self) -> dict:
         """
         Запуск тестів продуктивності
         
@@ -131,24 +130,24 @@ class GitHubActionsClient(BaseIntegration):
                 "memory_usage": self.test_memory_usage(),
                 "cpu_efficiency": self.test_cpu_efficiency()
             }
-            
+
             # Оцінити продуктивність
             performance_score = self.calculate_performance_score(performance_results)
-            
+
             if performance_score >= 80:
                 status = "passed"
             elif performance_score >= 60:
                 status = "warning"
             else:
                 status = "failed"
-            
+
             return {
                 "status": status,
                 "performance_score": performance_score,
                 "details": performance_results,
                 "recommendations": self.get_performance_recommendations(performance_results)
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Performance tests failed: {e}")
             return {
@@ -156,8 +155,8 @@ class GitHubActionsClient(BaseIntegration):
                 "error": str(e),
                 "performance_score": 0
             }
-    
-    def run_unit_tests(self) -> Dict:
+
+    def run_unit_tests(self) -> dict:
         """
         Запуск unit тестів
         
@@ -174,7 +173,7 @@ class GitHubActionsClient(BaseIntegration):
                 "test_duration": 0,
                 "failed_tests": []
             }
-            
+
             # Запуск pytest
             try:
                 result = subprocess.run(
@@ -183,12 +182,12 @@ class GitHubActionsClient(BaseIntegration):
                     text=True,
                     timeout=300  # 5 хвилин
                 )
-                
+
                 # Завантажити результати
                 if Path("test_results.json").exists():
-                    with open("test_results.json", 'r') as f:
+                    with open("test_results.json") as f:
                         pytest_results = json.load(f)
-                    
+
                     test_results.update({
                         "total_tests": pytest_results.get("summary", {}).get("total", 0),
                         "passed": pytest_results.get("summary", {}).get("passed", 0),
@@ -197,7 +196,7 @@ class GitHubActionsClient(BaseIntegration):
                         "coverage": pytest_results.get("coverage", {}).get("percent", 0),
                         "test_duration": pytest_results.get("duration", 0)
                     })
-                    
+
                     # Деталі про провалені тести
                     for test in pytest_results.get("tests", []):
                         if test.get("outcome") == "failed":
@@ -205,11 +204,11 @@ class GitHubActionsClient(BaseIntegration):
                                 "name": test.get("name"),
                                 "error": test.get("call", {}).get("longrepr", "Unknown error")
                             })
-                
+
                 # Очистка
                 if Path("test_results.json").exists():
                     Path("test_results.json").unlink()
-                
+
             except subprocess.TimeoutExpired:
                 return {
                     "status": "failed",
@@ -220,7 +219,7 @@ class GitHubActionsClient(BaseIntegration):
                 logger.warning(f"[GitHubActionsClient] Pytest not available: {e}")
                 # Альтернативна перевірка
                 test_results = self.run_simple_tests()
-            
+
             # Оцінити результати
             if test_results["failed"] == 0 and test_results["coverage"] >= 70:
                 status = "passed"
@@ -228,21 +227,21 @@ class GitHubActionsClient(BaseIntegration):
                 status = "warning"
             else:
                 status = "failed"
-            
+
             return {
                 "status": status,
                 "details": test_results,
                 "recommendations": self.get_test_recommendations(test_results)
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Unit tests failed: {e}")
             return {
                 "status": "failed",
                 "error": str(e)
             }
-    
-    def run_integration_tests(self) -> Dict:
+
+    def run_integration_tests(self) -> dict:
         """
         Запуск інтеграційних тестів
         
@@ -256,18 +255,18 @@ class GitHubActionsClient(BaseIntegration):
                 "model_integration": self.test_model_integration(),
                 "api_integration": self.test_api_integration()
             }
-            
+
             # Оцінити результати
             passed_tests = sum(1 for result in integration_results.values() if result.get("status") == "passed")
             total_tests = len(integration_results)
-            
+
             if passed_tests == total_tests:
                 status = "passed"
             elif passed_tests >= total_tests * 0.8:
                 status = "warning"
             else:
                 status = "failed"
-            
+
             return {
                 "status": status,
                 "details": integration_results,
@@ -275,15 +274,15 @@ class GitHubActionsClient(BaseIntegration):
                 "total_tests": total_tests,
                 "recommendations": self.get_integration_recommendations(integration_results)
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Integration tests failed: {e}")
             return {
                 "status": "failed",
                 "error": str(e)
             }
-    
-    def run_security_scan(self) -> Dict:
+
+    def run_security_scan(self) -> dict:
         """
         Запуск сканування безпеки
         
@@ -297,32 +296,32 @@ class GitHubActionsClient(BaseIntegration):
                 "dependency_vulnerabilities": self.scan_dependency_vulnerabilities(),
                 "code_injection": self.scan_code_injection()
             }
-            
+
             # Оцінити безпеку
             total_issues = sum(len(results.get("issues", [])) for results in security_results.values())
-            
+
             if total_issues == 0:
                 status = "passed"
             elif total_issues <= 5:
                 status = "warning"
             else:
                 status = "failed"
-            
+
             return {
                 "status": status,
                 "total_issues": total_issues,
                 "details": security_results,
                 "recommendations": self.get_security_recommendations(security_results)
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Security scan failed: {e}")
             return {
                 "status": "failed",
                 "error": str(e)
             }
-    
-    def check_dependencies(self) -> Dict:
+
+    def check_dependencies(self) -> dict:
         """
         Перевірка залежностей
         
@@ -336,36 +335,36 @@ class GitHubActionsClient(BaseIntegration):
                 "license_compliance": self.check_licenses(),
                 "dependency_tree": self.analyze_dependency_tree()
             }
-            
+
             # Оцінити залежності
             critical_issues = 0
             for result in dependency_results.values():
                 if isinstance(result, dict) and result.get("critical", 0):
                     critical_issues += result["critical"]
-            
+
             if critical_issues == 0:
                 status = "passed"
             elif critical_issues <= 3:
                 status = "warning"
             else:
                 status = "failed"
-            
+
             return {
                 "status": status,
                 "critical_issues": critical_issues,
                 "details": dependency_results,
                 "recommendations": self.get_dependency_recommendations(dependency_results)
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Dependency check failed: {e}")
             return {
                 "status": "failed",
                 "error": str(e)
             }
-    
+
     # Helper methods for code quality
-    def calculate_complexity(self) -> Dict:
+    def calculate_complexity(self) -> dict:
         """Розрахувати складність коду"""
         try:
             complexity_data = {
@@ -374,33 +373,33 @@ class GitHubActionsClient(BaseIntegration):
                 "halstead_volume": 0,
                 "maintainability_index": 0
             }
-            
+
             # Аналіз Python файлів
             python_files = list(Path('.').rglob('*.py'))
-            
+
             for file_path in python_files:
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, encoding='utf-8') as f:
                         content = f.read()
-                    
+
                     tree = ast.parse(content)
-                    
+
                     # Простий розрахунок складності
                     functions = [node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
                     for func in functions:
                         # Cyclomatic complexity (спрощено)
                         complexity_data["cyclomatic_complexity"] += len([n for n in ast.walk(func) if isinstance(n, (ast.If, ast.While, ast.For, ast.ExceptHandler))])
-                        
+
                 except Exception as e:
                     logger.warning(f"[GitHubActionsClient] Failed to analyze {file_path}: {e}")
-            
+
             return complexity_data
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Complexity calculation failed: {e}")
             return {"error": str(e)}
-    
-    def get_code_coverage(self) -> Dict:
+
+    def get_code_coverage(self) -> dict:
         """Отримати покриття коду тестами"""
         try:
             # Спроба запустити coverage
@@ -411,7 +410,7 @@ class GitHubActionsClient(BaseIntegration):
                     text=True,
                     timeout=60
                 )
-                
+
                 if result.returncode == 0:
                     coverage_data = json.loads(result.stdout)
                     return {
@@ -421,19 +420,19 @@ class GitHubActionsClient(BaseIntegration):
                     }
             except Exception as e:
                 logger.warning(f"Failed to parse coverage: {e}")
-            
+
             # Альтернативний розрахунок
             return {
                 "total_coverage": 65,  # Mock data
                 "line_coverage": 1250,
                 "missing_lines": 450
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Code coverage check failed: {e}")
             return {"error": str(e)}
-    
-    def find_duplicates(self) -> Dict:
+
+    def find_duplicates(self) -> dict:
         """Знайти дублікати коду"""
         try:
             # Спрощений пошук дублікатів
@@ -446,19 +445,19 @@ class GitHubActionsClient(BaseIntegration):
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Duplicate detection failed: {e}")
             return {"error": str(e)}
-    
-    def check_security(self) -> Dict:
+
+    def check_security(self) -> dict:
         """Перевірити безпеку коду"""
         try:
             security_issues = []
-            
+
             python_files = list(Path('.').rglob('*.py'))
-            
+
             for file_path in python_files:
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, encoding='utf-8') as f:
                         content = f.read()
-                    
+
                     # Перевірка на небезпечні патерни
                     dangerous_patterns = [
                         "eval(",
@@ -467,7 +466,7 @@ class GitHubActionsClient(BaseIntegration):
                         "os.system(",
                         "pickle.loads("
                     ]
-                    
+
                     for pattern in dangerous_patterns:
                         if pattern in content:
                             security_issues.append({
@@ -475,21 +474,21 @@ class GitHubActionsClient(BaseIntegration):
                                 "issue": f"Potentially dangerous pattern: {pattern}",
                                 "severity": "medium"
                             })
-                
+
                 except Exception as e:
                     logger.warning(f"[GitHubActionsClient] Failed to scan {file_path}: {e}")
-            
+
             return {
                 "security_issues": security_issues,
                 "total_issues": len(security_issues),
                 "high_severity": len([i for i in security_issues if i.get("severity") == "high"])
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Security check failed: {e}")
             return {"error": str(e)}
-    
-    def check_code_style(self) -> Dict:
+
+    def check_code_style(self) -> dict:
         """Перевірити стиль коду"""
         try:
             # Спроба запустити flake8
@@ -500,7 +499,7 @@ class GitHubActionsClient(BaseIntegration):
                     text=True,
                     timeout=60
                 )
-                
+
                 if result.stdout:
                     violations = json.loads(result.stdout)
                     return {
@@ -511,19 +510,19 @@ class GitHubActionsClient(BaseIntegration):
                     }
             except Exception as e:
                 logger.warning(f"Failed to parse coverage: {e}")
-            
+
             # Альтернативні дані
             return {
                 "total_violations": 15,
                 "error_count": 8,
                 "warning_count": 7
             }
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Code style check failed: {e}")
             return {"error": str(e)}
-    
-    def calculate_maintainability_index(self) -> Dict:
+
+    def calculate_maintainability_index(self) -> dict:
         """Розрахувати індекс підтримки"""
         try:
             return {
@@ -535,9 +534,9 @@ class GitHubActionsClient(BaseIntegration):
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Maintainability index calculation failed: {e}")
             return {"error": str(e)}
-    
+
     # Helper methods for performance tests
-    def test_pipeline_performance(self) -> Dict:
+    def test_pipeline_performance(self) -> dict:
         """Тест продуктивності pipeline"""
         return {
             "status": "passed",
@@ -546,8 +545,8 @@ class GitHubActionsClient(BaseIntegration):
             "benchmark_time": 150.0,
             "performance_ratio": 0.84
         }
-    
-    def test_model_inference_speed(self) -> Dict:
+
+    def test_model_inference_speed(self) -> dict:
         """Тест швидкості inference моделей"""
         return {
             "status": "passed",
@@ -556,8 +555,8 @@ class GitHubActionsClient(BaseIntegration):
             "models_tested": 5,
             "benchmark_time_ms": 15.0
         }
-    
-    def test_database_performance(self) -> Dict:
+
+    def test_database_performance(self) -> dict:
         """Тест продуктивності бази даних"""
         return {
             "status": "passed",
@@ -566,8 +565,8 @@ class GitHubActionsClient(BaseIntegration):
             "total_queries": 100,
             "connection_pool_efficiency": 0.85
         }
-    
-    def test_memory_usage(self) -> Dict:
+
+    def test_memory_usage(self) -> dict:
         """Тест використання пам'яті"""
         return {
             "status": "passed",
@@ -576,8 +575,8 @@ class GitHubActionsClient(BaseIntegration):
             "memory_leaks_detected": 0,
             "efficiency_score": 0.82
         }
-    
-    def test_cpu_efficiency(self) -> Dict:
+
+    def test_cpu_efficiency(self) -> dict:
         """Тест ефективності CPU"""
         return {
             "status": "passed",
@@ -586,9 +585,9 @@ class GitHubActionsClient(BaseIntegration):
             "cpu_efficiency_score": 0.75,
             "bottlenecks_detected": 0
         }
-    
+
     # Helper methods for unit tests
-    def run_simple_tests(self) -> Dict:
+    def run_simple_tests(self) -> dict:
         """Прості тести якщо pytest unavailable"""
         return {
             "total_tests": 25,
@@ -602,9 +601,9 @@ class GitHubActionsClient(BaseIntegration):
                 {"name": "test_data_pipeline", "error": "TimeoutError"}
             ]
         }
-    
+
     # Helper methods for integration tests
-    def test_pipeline_integration(self) -> Dict:
+    def test_pipeline_integration(self) -> dict:
         """Тест інтеграції pipeline"""
         return {
             "status": "passed",
@@ -612,8 +611,8 @@ class GitHubActionsClient(BaseIntegration):
             "data_flow_correct": True,
             "error_handling": True
         }
-    
-    def test_database_integration(self) -> Dict:
+
+    def test_database_integration(self) -> dict:
         """Тест інтеграції бази даних"""
         return {
             "status": "passed",
@@ -621,8 +620,8 @@ class GitHubActionsClient(BaseIntegration):
             "transactions_successful": 9,
             "rollback_successful": True
         }
-    
-    def test_model_integration(self) -> Dict:
+
+    def test_model_integration(self) -> dict:
         """Тест інтеграції моделей"""
         return {
             "status": "passed",
@@ -630,8 +629,8 @@ class GitHubActionsClient(BaseIntegration):
             "predictions_successful": True,
             "model_compatibility": True
         }
-    
-    def test_api_integration(self) -> Dict:
+
+    def test_api_integration(self) -> dict:
         """Тест інтеграції API"""
         return {
             "status": "warning",
@@ -639,9 +638,9 @@ class GitHubActionsClient(BaseIntegration):
             "responses_successful": 7,
             "authentication_working": True
         }
-    
+
     # Helper methods for security scan
-    def scan_vulnerabilities(self) -> Dict:
+    def scan_vulnerabilities(self) -> dict:
         """Сканування вразливостей"""
         return {
             "issues": [
@@ -649,14 +648,14 @@ class GitHubActionsClient(BaseIntegration):
                 {"type": "XSS", "severity": "low", "file": "api.py"}
             ]
         }
-    
-    def scan_secrets(self) -> Dict:
+
+    def scan_secrets(self) -> dict:
         """Сканування секретів"""
         return {
             "issues": []  # Немає секретів в коді
         }
-    
-    def scan_dependency_vulnerabilities(self) -> Dict:
+
+    def scan_dependency_vulnerabilities(self) -> dict:
         """Сканування вразливостей залежностей"""
         return {
             "issues": [
@@ -664,17 +663,17 @@ class GitHubActionsClient(BaseIntegration):
                 {"package": "numpy", "version": "1.21.0", "severity": "low"}
             ]
         }
-    
-    def scan_code_injection(self) -> Dict:
+
+    def scan_code_injection(self) -> dict:
         """Сканування code injection"""
         return {
             "issues": [
                 {"type": "eval usage", "severity": "high", "file": "utils.py"}
             ]
         }
-    
+
     # Helper methods for dependency check
-    def check_outdated_packages(self) -> Dict:
+    def check_outdated_packages(self) -> dict:
         """Перевірка застарілих пакетів"""
         return {
             "outdated_count": 3,
@@ -683,8 +682,8 @@ class GitHubActionsClient(BaseIntegration):
                 {"name": "scikit-learn", "current": "1.0.0", "latest": "1.2.0"}
             ]
         }
-    
-    def check_package_vulnerabilities(self) -> Dict:
+
+    def check_package_vulnerabilities(self) -> dict:
         """Перевірка вразливостей пакетів"""
         return {
             "critical": 1,
@@ -692,16 +691,16 @@ class GitHubActionsClient(BaseIntegration):
             "medium": 3,
             "low": 5
         }
-    
-    def check_licenses(self) -> Dict:
+
+    def check_licenses(self) -> dict:
         """Перевірка ліцензій"""
         return {
             "compliant": 45,
             "non_compliant": 2,
             "unknown": 3
         }
-    
-    def analyze_dependency_tree(self) -> Dict:
+
+    def analyze_dependency_tree(self) -> dict:
         """Аналіз дерева залежностей"""
         return {
             "total_dependencies": 67,
@@ -709,52 +708,52 @@ class GitHubActionsClient(BaseIntegration):
             "transitive_dependencies": 44,
             "circular_dependencies": 0
         }
-    
+
     # Scoring methods
-    def calculate_quality_score(self, quality_results: Dict) -> float:
+    def calculate_quality_score(self, quality_results: dict) -> float:
         """Розрахувати оцінку якості"""
         try:
             scores = []
-            
+
             # Складність (чим менше, тим краще)
             complexity = quality_results.get("complexity_score", {}).get("cyclomatic_complexity", 0)
             complexity_score = max(0, 100 - complexity)
             scores.append(complexity_score)
-            
+
             # Покриття коду
             coverage = quality_results.get("code_coverage", {}).get("total_coverage", 0)
             scores.append(coverage)
-            
+
             # Дублікати (чим менше, тим краще)
             duplicates = quality_results.get("duplicate_code", {}).get("duplicate_blocks", 0)
             duplicate_score = max(0, 100 - duplicates * 10)
             scores.append(duplicate_score)
-            
+
             # Безпека
             security_issues = quality_results.get("security", {}).get("total_issues", 0)
             security_score = max(0, 100 - security_issues * 20)
             scores.append(security_score)
-            
+
             # Стиль коду
             style_violations = quality_results.get("style_violations", {}).get("total_violations", 0)
             style_score = max(0, 100 - style_violations * 2)
             scores.append(style_score)
-            
+
             return round(sum(scores) / len(scores), 2)
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Quality score calculation failed: {e}")
             return 0.0
-    
-    def calculate_performance_score(self, performance_results: Dict) -> float:
+
+    def calculate_performance_score(self, performance_results: dict) -> float:
         """Розрахувати оцінку продуктивності"""
         try:
             scores = []
-            
+
             for test_name, test_result in performance_results.items():
                 if isinstance(test_result, dict) and test_result.get("status") == "passed":
                     scores.append(80)  # Базова оцінка за пройдений тест
-                    
+
                     # Бонуси за хороші показники
                     if "performance_ratio" in test_result:
                         ratio = test_result["performance_ratio"]
@@ -764,80 +763,80 @@ class GitHubActionsClient(BaseIntegration):
                             scores.append(10)
                 else:
                     scores.append(0)
-            
+
             return round(sum(scores) / len(scores), 2) if scores else 0.0
-            
+
         except Exception as e:
             logger.error(f"[GitHubActionsClient] Performance score calculation failed: {e}")
             return 0.0
-    
+
     # Recommendation methods
-    def get_quality_recommendations(self, quality_results: Dict) -> List[str]:
+    def get_quality_recommendations(self, quality_results: dict) -> list[str]:
         """Отримати рекомендації по якості"""
         recommendations = []
-        
+
         if quality_results.get("code_coverage", {}).get("total_coverage", 0) < 70:
             recommendations.append("Increase test coverage to at least 70%")
-        
+
         if quality_results.get("duplicate_code", {}).get("duplicate_blocks", 0) > 5:
             recommendations.append("Refactor duplicate code blocks")
-        
+
         if quality_results.get("security", {}).get("total_issues", 0) > 0:
             recommendations.append("Fix security vulnerabilities")
-        
+
         return recommendations
-    
-    def get_performance_recommendations(self, performance_results: Dict) -> List[str]:
+
+    def get_performance_recommendations(self, performance_results: dict) -> list[str]:
         """Отримати рекомендації по продуктивності"""
         recommendations = []
-        
+
         for test_name, test_result in performance_results.items():
             if isinstance(test_result, dict) and test_result.get("status") != "passed":
                 recommendations.append(f"Fix {test_name} performance issues")
-        
+
         return recommendations
-    
-    def get_test_recommendations(self, test_results: Dict) -> List[str]:
+
+    def get_test_recommendations(self, test_results: dict) -> list[str]:
         """Отримати рекомендації по тестах"""
         recommendations = []
-        
+
         if test_results.get("failed", 0) > 0:
             recommendations.append(f"Fix {test_results['failed']} failing tests")
-        
+
         if test_results.get("coverage", 0) < 70:
             recommendations.append("Increase test coverage")
-        
+
         return recommendations
-    
-    def get_integration_recommendations(self, integration_results: Dict) -> List[str]:
+
+    def get_integration_recommendations(self, integration_results: dict) -> list[str]:
         """Отримати рекомендації по інтеграції"""
         recommendations = []
-        
+
         for test_name, test_result in integration_results.items():
             if isinstance(test_result, dict) and test_result.get("status") != "passed":
                 recommendations.append(f"Fix {test_name} integration issues")
-        
+
         return recommendations
-    
-    def get_security_recommendations(self, security_results: Dict) -> List[str]:
+
+    def get_security_recommendations(self, security_results: dict) -> list[str]:
         """Отримати рекомендації по безпеці"""
         recommendations = []
-        
+
         for category, results in security_results.items():
             if isinstance(results, dict) and results.get("issues"):
                 recommendations.append(f"Fix {category} security issues")
-        
+
         return recommendations
-    
-    def get_dependency_recommendations(self, dependency_results: Dict) -> List[str]:
+
+    def get_dependency_recommendations(self, dependency_results: dict) -> list[str]:
         """Отримати рекомендації по залежностях"""
         recommendations = []
-        
+
         if dependency_results.get("outdated_packages", {}).get("outdated_count", 0) > 0:
             recommendations.append("Update outdated packages")
-        
+
         critical_vulns = dependency_results.get("security_vulnerabilities", {}).get("critical", 0)
         if critical_vulns > 0:
             recommendations.append(f"Fix {critical_vulns} critical security vulnerabilities")
-        
+
         return recommendations

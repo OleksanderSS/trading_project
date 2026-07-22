@@ -52,8 +52,7 @@ def get_finbert_pipeline(device: int = None):
         logger.info("📥 Downloading FinBERT model...")
         model = AutoModelForSequenceClassification.from_pretrained(
             "ProsusAI/finbert",
-            token=hf_token,
-            timeout=300  # 5 minutes
+            token=hf_token
         )
 
         logger.info("🔧 Creating pipeline...")

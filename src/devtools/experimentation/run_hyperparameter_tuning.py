@@ -1,11 +1,11 @@
 # src/devtools/experimentation/run_hyperparameter_tuning.py
 
-import numpy as np
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.datasets import make_regression
+from sklearn.ensemble import RandomForestRegressor
 
-from src.optimization.factory import OptimizationFactory
 from src.core.logging.logger import ProjectLogger
+from src.scripts.optimization.factory import OptimizationFactory
+
 
 def main():
     """
@@ -54,7 +54,7 @@ def main():
     logger.info("Starting optimization...")
     try:
         best_params = optimizer.optimize(X, y)
-        
+
         if not best_params:
             logger.warning("Optimization did not yield any parameters. Check logs for errors.")
             return

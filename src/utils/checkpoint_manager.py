@@ -41,7 +41,7 @@ class CheckpointManager:
 
         checkpoint_file = params.model_path.replace('.pt', '_checkpoint.json')
         with open(checkpoint_file, 'w') as f:
-            json.dump(checkpoint_data, f, indent=2)
+            json.dump(checkpoint_data, f, indent=2, default=str)
 
     @staticmethod
     def load_checkpoint(checkpoint_path: str, model: object, optimizer: object) -> dict[str, Any]:
