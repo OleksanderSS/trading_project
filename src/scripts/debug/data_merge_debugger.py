@@ -6,12 +6,12 @@ Provides a structured way to debug data merging issues at various stages
 of the data processing pipeline.
 """
 
-import os
 import sys
-import pandas as pd
-import numpy as np
+from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Set
+
+import numpy as np
+import pandas as pd
 
 # Ensure the project root is in the Python path
 project_root = Path(__file__).resolve().parent.parent.parent.parent
@@ -19,6 +19,7 @@ sys.path.append(str(project_root))
 
 # It's better to use a logger for structured output
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DataMergeDebugger")
 
@@ -50,12 +51,12 @@ class DataMergeDebugger:
         """Checks basic integrity of each Parquet file in the stages directory."""
         logger.info("--- Checking Stage File Integrity ---")
         stage_files = sorted(self.data_dir.glob("*.parquet"))
-        
+
         for file_path in stage_files:
             try:
                 df = pd.read_parquet(file_path)
                 logger.info(f"  - [OK] {file_path.name}: Shape={df.shape}")
-                
+
                 key_cols = ['published_at', 'ticker', 'date']
                 present_keys = [col for col in key_cols if col in df.columns]
                 if not present_keys:
@@ -65,7 +66,7 @@ class DataMergeDebugger:
                     primary_key = present_keys[0]
                     if df[primary_key].isnull().any():
                         logger.warning(f"    - Null values found in primary key '{primary_key}' of {file_path.name}")
-                        
+
             except Exception as e:
                 logger.error(f"  - [FAIL] Could not read {file_path.name}: {e}")
 
@@ -77,7 +78,7 @@ class DataMergeDebugger:
             logger.warning("No Parquet files found to check for consistency.")
             return
 
-        file_columns: Dict[str, Set[str]] = {}
+        file_columns: dict[str, set[str]] = {}
         for file_path in all_files:
             try:
                 df = pd.read_parquet(file_path, columns=[]) # Read only metadata
@@ -92,14 +93,14 @@ class DataMergeDebugger:
         # Find common and unique columns
         all_cols = set.union(*file_columns.values())
         common_cols = set.intersection(*file_columns.values())
-        
+
         logger.info(f"Total unique columns across all files: {len(all_cols)}")
         logger.info(f"Common columns present in all files: {len(common_cols)}")
-        
+
         for file_name, columns in file_columns.items():
             unique_to_file = columns - common_cols
             if unique_to_file:
-                logger.info(f"  - Unique to {file_name} ({len(unique_to_file)}): {list(sorted(unique_to_file))[:5]}...")
+                logger.info(f"  - Unique to {file_name} ({len(unique_to_file)}): {sorted(unique_to_file)[:5]}...")
 
     def check_data_types_and_values(self):
         """Checks data types and value ranges in the final merged file."""
@@ -163,14 +164,14 @@ class DataMergeDebugger:
                 return
 
             df[time_col] = pd.to_datetime(df[time_col])
-            
+
             for interval, group in df.groupby(interval_col):
                 logger.info(f"  - Analyzing interval: {interval}")
                 for ticker, ticker_data in group.groupby(ticker_col):
                     sorted_data = ticker_data.sort_values(time_col)
                     gaps = sorted_data[time_col].diff()
                     max_gap = gaps.max()
-                    
+
                     # Define a reasonable max gap threshold (e.g., 2 days for daily data)
                     # This threshold might need to be adjusted per interval.
                     threshold = pd.Timedelta(days=3)

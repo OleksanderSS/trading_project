@@ -1,72 +1,90 @@
-
 assets:
   presets:
     default_volatile:
-      description: "A comprehensive and diversified set of volatile tickers from key sectors, as per user specification."
-      sectors: ["ai_big_tech", "semiconductors", "market_etfs", "consumer_staples", "energy", "finance"]
-      tickers: ["TSLA", "NVDA", "SPY", "QQQ", "AMD", "KO", "WMT", "XOM", "JPM", "GS", "AAPL", "MSFT", "GOOGL", "AMZN", "INTC", "TSM", "IWM", "BAC"]
-
-  active_preset: "default_volatile"
-
+      description: A comprehensive and diversified set of volatile tickers from key
+        sectors, as per user specification.
+      sectors: [ai_big_tech, semiconductors, market_etfs, consumer_staples, energy,
+        finance]
+      tickers: [TSLA, NVDA, SPY, QQQ, AMD, KO, WMT, XOM, JPM, GS, AAPL, MSFT, GOOGL,
+        AMZN, INTC, TSM, IWM, BAC]
+  active_preset: default_volatile
   sectors:
     ai_big_tech:
-      description: "Large-cap technology stocks with a strong focus on AI."
-      assets: ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "TSLA"]
-    
+      description: Large-cap technology stocks with a strong focus on AI.
+      assets: [AAPL, MSFT, GOOGL, AMZN, NVDA, TSLA]
     semiconductors:
-      description: "Companies involved in the semiconductor industry."
-      assets: ["NVDA", "AMD", "INTC", "TSM"]
-
+      description: Companies involved in the semiconductor industry.
+      assets: [NVDA, AMD, INTC, TSM]
     market_etfs:
-      description: "Major market index ETFs."
-      assets: ["SPY", "QQQ", "IWM"]
-
+      description: Major market index ETFs.
+      assets: [SPY, QQQ, IWM]
     finance:
-      description: "Major financial institutions."
-      assets: ["JPM", "BAC", "GS"]
-      
+      description: Major financial institutions.
+      assets: [JPM, BAC, GS]
     consumer_staples:
-      description: "Large-cap consumer staple companies."
-      assets: ["KO", "WMT"]
-
+      description: Large-cap consumer staple companies.
+      assets: [KO, WMT]
     energy:
-      description: "Major integrated oil and gas companies."
-      assets: ["XOM"]
-
+      description: Major integrated oil and gas companies.
+      assets: [XOM]
+    core:
+      description: Auto-imported category core
+      assets: [SPY, QQQ, IWM, DIA, AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA, JPM,
+        BAC, WFC, GS, JNJ, PFE, UNH, ABBV, PG, KO, HD, MCD, WMT, COST, XOM, CVX, COP,
+        CAT, DE, BA, GE]
+    etf:
+      description: Auto-imported category etf
+      assets: [SPY, QQQ, DIA, IWM, VTI, GLD, SLV, TLT, XLF, XLE, XLI, XLU, XLK, XLV,
+        XME]
+    tech_giants:
+      description: Auto-imported category tech_giants
+      assets: [AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA]
+    additional_tech:
+      description: Auto-imported category additional_tech
+      assets: [AMD, INTC, CSCO, IBM, ORCL, CRM, ADBE, NFLX]
+    healthcare:
+      description: Auto-imported category healthcare
+      assets: [JNJ, PFE, UNH, ABT, MRK, LLY, BMY, AMGN, GILD]
+    consumer:
+      description: Auto-imported category consumer
+      assets: [PG, KO, PEP, WMT, HD, MCD, NKE, SBUX]
+    industrial:
+      description: Auto-imported category industrial
+      assets: [GE, MMM, HON, CAT, DE, UPS, RTX, BA]
+    materials:
+      description: Auto-imported category materials
+      assets: [DD, DOW, LIN, ECL, APD, NEM, FCX, BHP]
+    utilities:
+      description: Auto-imported category utilities
+      assets: [NEE, DUK, SO, AEP, EXC, SRE, ED, PEG]
+    realestate:
+      description: Auto-imported category realestate
+      assets: [AMT, PLD, EQIX, PSA, CBRE, WELL, VTR, AVB]
+    communication:
+      description: Auto-imported category communication
+      assets: [VZ, T, TMUS, CMCSA, CHTR, DIS, FOXA]
+    international:
+      description: Auto-imported category international
+      assets: [BABA, BIDU, JD, PDD, NIO, XPEV, LI, BILI]
+    crypto:
+      description: Auto-imported category crypto
+      assets: [COIN, MARA, RIOT, SQ, PYPL, BLOCK, GBTC, EBAY]
   details:
-    TSLA:
-      cik: 1318605
-    NVDA:
-      cik: 1045810
-    SPY:
-      cik: 896976
-    QQQ:
-      cik: 1067839
-    AMD:
-      cik: 2488
-    KO:
-      cik: 21344
-    WMT:
-      cik: 104169
-    XOM:
-      cik: 34088
-    JPM:
-      cik: 19617
-    GS:
-      cik: 886982
-    AAPL:
-      cik: 320193
-    MSFT:
-      cik: 789019
-    GOOGL:
-      cik: 1652044
-    AMZN:
-      cik: 1018724
-    INTC:
-      cik: 50863
-    TSM:
-      cik: 1046179
-    IWM:
-      cik: 1112953
-    BAC:
-      cik: 70858
+    TSLA: {cik: 1318605}
+    NVDA: {cik: 1045810}
+    SPY: {cik: 896976}
+    QQQ: {cik: 1067839}
+    AMD: {cik: 2488}
+    KO: {cik: 21344}
+    WMT: {cik: 104169}
+    XOM: {cik: 34088}
+    JPM: {cik: 19617}
+    GS: {cik: 886982}
+    AAPL: {cik: 320193}
+    MSFT: {cik: 789019}
+    GOOGL: {cik: 1652044}
+    AMZN: {cik: 1018724}
+    INTC: {cik: 50863}
+    TSM: {cik: 1046179}
+    IWM: {cik: 1112953}
+    BAC: {cik: 70858}

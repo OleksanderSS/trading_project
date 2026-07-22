@@ -1,6 +1,7 @@
 import atexit
 import logging
 import sqlite3
+from typing import ClassVar
 
 import duckdb
 
@@ -18,7 +19,7 @@ def _logging_streams_open() -> bool:
 
 class ConnectionRegistry:
     """Centralized registry for all database connections to prevent resource leaks."""
-    _connections: dict[str, duckdb.DuckDBPyConnection | sqlite3.Connection] = {}
+    _connections: ClassVar[dict[str, duckdb.DuckDBPyConnection | sqlite3.Connection]] = {}
 
     @classmethod
     def register(cls, name: str, conn: duckdb.DuckDBPyConnection | sqlite3.Connection):

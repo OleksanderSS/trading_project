@@ -15,6 +15,7 @@ from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
 from src.features.feature_orchestrator import FeatureOrchestrator
 from src.pipeline.stages.stage_1_collection import CollectionStage
+
 # audit-ignore: ARCHITECTURAL_USAGE
 from src.targets.target_orchestrator import TargetOrchestrator
 

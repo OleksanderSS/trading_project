@@ -59,7 +59,19 @@ class PredictMode(BaseMode):
                 run_mode='predict'
             )
             if inspect.isawaitable(results):
-                results = asyncio.run(results)
+                # Check if there's already a running event loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    # If we're in an async context, we can't use asyncio.run()
+                    # Return the coroutine to be awaited by the caller
+                    return {
+                        'status': 'async_required',
+                        'coroutine': results,
+                        'message': 'Mode requires async execution - coroutine returned for awaiting'
+                    }
+                except RuntimeError:
+                    # No running loop, safe to use asyncio.run()
+                    results = asyncio.run(results)
 
             if not results:
                 self.logger.warning("Pipeline completed but returned no results.")

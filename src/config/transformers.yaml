@@ -2,7 +2,7 @@
 transformers:
   # - StandardScaler: Scales features to have a mean of 0 and a standard deviation of 1.
   #   Best for algorithms that assume a Gaussian distribution.
-  - module: "src.feature_engineering.transformers.transformers"
+  - module: "src.features.transformers.transformers"
     class: "StandardScalerTransformer"
     params:
       columns: [
@@ -12,7 +12,7 @@ transformers:
 
   # - MinMaxScaler: Scales features to a given range, typically [0, 1].
   #   Useful for neural networks and algorithms sensitive to feature magnitudes.
-  - module: "src.feature_engineering.transformers.transformers"
+  - module: "src.features.transformers.transformers"
     class: "MinMaxScalerTransformer"
     params:
       columns: [] # Specify columns here if needed, or leave empty if unused

@@ -1,6 +1,7 @@
 import time
 from pathlib import Path
 
+from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import storage
 
 from src.config.unified_config_manager import get_current_config
@@ -33,7 +34,13 @@ class GCSManager:
             self.bucket = self.client.get_bucket(self.bucket_name)
             logger.info(
                 f"Successfully connected to GCS bucket: '{self.bucket_name}'")
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except DefaultCredentialsError as e:
+            logger.warning(
+                f'GCS disabled: {e}. Continuing without cloud storage.'
+                )
+            self.client = None
+            self.bucket = None
+        except Exception as e:
             logger.error(
                 f'Failed to initialize GCS: {e}. Continuing without cloud storage.',
                 exc_info=True

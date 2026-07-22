@@ -9,12 +9,14 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 from cryptography.fernet import Fernet
 
 # Utilize centralized project-wide logger
 from src.core.logging.logger import ProjectLogger
 from src.core.security.path_validator import PathValidationError, validate_safe_path
+from src.utils.path_safety import get_path_safety
 
 logger = ProjectLogger.get_logger(__name__)
 
@@ -73,10 +75,11 @@ def load_dotenv(dotenv_path: str = '.env'):
         potential_paths.extend(config_paths)
 
     found_path: Path | None = None
+    path_safety = get_path_safety()
     for path in potential_paths:
         try:
-            # Validate against current working directory to keep it local
-            validated_path = validate_safe_path(path, base_dir=Path.cwd())
+            # Validate against project root to keep it local
+            validated_path = validate_safe_path(path, base_dir=path_safety.get_project_root())
             if validated_path.exists():
                 found_path = validated_path
                 logger.info(f"Environment configuration identified: {found_path}")
@@ -118,7 +121,7 @@ class SecretsManager:
     """Secure Secrets Manager designed for production stability and observability."""
 
     # Predefined validation patterns for known API providers
-    FORMAT_PATTERNS: dict[str, str] = {
+    FORMAT_PATTERNS: ClassVar[dict[str, str]] = {
         'FRED_API_KEY': r'^[a-f0-9]{32}$',
         'NEWS_API_KEY': r'^[a-f0-9]{32}$',
         'TELEGRAM_TOKEN': r'^\d+:[A-Za-z0-9_-]{35}$',
@@ -140,7 +143,8 @@ class SecretsManager:
         crypto_key = os.getenv("CRYPTO_KEY")
         # Validate path before checking existence
         try:
-            safe_path = validate_safe_path(path, base_dir=Path.cwd())
+            path_safety = get_path_safety()
+            safe_path = validate_safe_path(path, base_dir=path_safety.get_project_root())
         except PathValidationError:
             logger.warning(f"Invalid path for encrypted secrets: {path}")
             return
@@ -190,7 +194,8 @@ class SecretsManager:
 
         try:
             # Validate output path before writing
-            safe_output_path = validate_safe_path(output_path, base_dir=Path.cwd())
+            path_safety = get_path_safety()
+            safe_output_path = validate_safe_path(output_path, base_dir=path_safety.get_project_root())
 
             # Derive a proper Fernet key from CRYPTO_KEY
             key_bytes = crypto_key.encode()

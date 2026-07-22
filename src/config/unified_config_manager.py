@@ -79,13 +79,20 @@ class UnifiedConfigManager:
     # Class-level flag to prevent circular dependency during initialization
     _initializing = False
 
-    def __init__(self, env: Environment = Environment.DEVELOPMENT, config_dir: str | Path | None = None):
+    def __init__(self, env: Environment = Environment.DEVELOPMENT, config_dir: str | Path | None = None,
+                 create_paths: bool = True, resolve_secrets: bool = True, validate_cloud: bool = True):
         """
         Initializes the manager.
 
         Args:
             env: Active deployment environment.
             config_dir: Directory containing YAML configuration templates.
+            create_paths: Whether to create directories specified in config (default: True).
+                          Set to False for tests/devtools to avoid filesystem side effects.
+            resolve_secrets: Whether to resolve secret placeholders (default: True).
+                            Set to False for tests/devtools to avoid secret manager dependency.
+            validate_cloud: Whether to validate cloud storage configuration (default: True).
+                           Set to False for tests/devtools to avoid cloud validation.
         """
         self.env = env
         if config_dir:
@@ -100,16 +107,25 @@ class UnifiedConfigManager:
         self.merged_config: dict[str, Any] = {}
         self.feature_sets: dict[str, list[str]] = {}
 
+        # Store side effect flags for reload()
+        self._create_paths = create_paths
+        self._resolve_secrets_flag = resolve_secrets
+        self._validate_cloud_flag = validate_cloud
+
         UnifiedConfigManager._initializing = True
         try:
             self._load_and_resolve_configs()
             self._setup_dynamic_attributes()
 
-            self.validate_configuration()
-            self._ensure_paths_exist()
+            if validate_cloud:
+                self.validate_configuration()
+
+            if create_paths:
+                self._ensure_paths_exist()
 
             # Resolve secrets after full initialization to avoid circular dependency
-            self._resolve_secrets_in_config()
+            if resolve_secrets:
+                self._resolve_secrets_in_config()
 
             self.feature_sets = self._generate_feature_lists()
         finally:
@@ -123,10 +139,17 @@ class UnifiedConfigManager:
         self.merged_config = {}
         self._load_and_resolve_configs()
         self._setup_dynamic_attributes()
-        self.validate_configuration()
-        self._ensure_paths_exist()
+
+        if self._validate_cloud_flag:
+            self.validate_configuration()
+
+        if self._create_paths:
+            self._ensure_paths_exist()
+
         # Resolve secrets after full initialization to avoid circular dependency
-        self._resolve_secrets_in_config()
+        if self._resolve_secrets_flag:
+            self._resolve_secrets_in_config()
+
         self.feature_sets = self._generate_feature_lists()
         logger.info("Configuration successfully refreshed.")
 
@@ -152,7 +175,7 @@ class UnifiedConfigManager:
             raise
 
     def _process_config_files(self, config_files: Sequence[str | Path], key_sources: dict[str, str]):
-        """Process and merge configuration files with deduplication."""
+        """Process and merge configuration files with deduplication and explicit precedence."""
         # Deduplicate config files - use set to ensure each file is processed only once
         seen_paths = set()
         processed_files = []
@@ -164,6 +187,10 @@ class UnifiedConfigManager:
                 seen_paths.add(normalized_path)
                 processed_files.append(config_path)
 
+        # Sort config files by explicit precedence order
+        # Lower precedence files are loaded first, higher precedence files override
+        processed_files = self._sort_config_by_precedence(processed_files)
+
         for config_path in processed_files:
             path_obj = Path(config_path)
             if logger.isEnabledFor(logging.DEBUG):
@@ -174,6 +201,77 @@ class UnifiedConfigManager:
                 self._merge_config_data(config_data, path_obj, key_sources)
             else:
                 logger.warning(f"Template parsing failed or file is empty: {path_obj}")
+
+    def _sort_config_by_precedence(self, config_files: list[str | Path]) -> list[str | Path]:
+        """
+        Sort configuration files by explicit precedence order.
+        
+        Precedence (lowest to highest):
+        1. Base infrastructure configs (paths, system, version) - foundational
+        2. Data source configs (data_sources, collectors) - data layer
+        3. Feature configs (features, transformers, enrichment) - feature layer
+        4. Model configs (models, experiments, analysis) - model layer
+        5. Strategy/trading configs (strategy, risk_management, simulation) - trading layer
+        6. Monitoring/configs (monitoring_config, error_handling) - observability layer
+        7. Override configs (unified_config) - highest precedence overrides
+        
+        This ensures predictable merge behavior instead of filesystem-dependent alphabetical order.
+        """
+        precedence_order = [
+            # Layer 1: Base infrastructure (lowest precedence)
+            'paths.yaml',
+            'system.yaml',
+            'version.yaml',
+            'cloud_storage.yaml',
+            # Layer 2: Data sources
+            'data_sources.yaml',
+            'collectors.yaml',
+            # Layer 3: Features
+            'features.yaml',
+            'transformers.yaml',
+            'enrichment.yaml',
+            'noise_filter_config.yaml',
+            'sentiment.yaml',
+            'news_impact_classification.yaml',
+            # Layer 4: Models
+            'models.yaml',
+            'experiments.yaml',
+            'analysis.yaml',
+            # Layer 5: Trading/Strategy
+            'strategy.yaml',
+            'risk_management.yaml',
+            'simulation.yaml',
+            'targets.yaml',
+            # Layer 6: Monitoring/Observability
+            'monitoring_config.yaml',
+            'error_handling.yaml',
+            'processing.yaml',
+            # Layer 7: Context/Knowledge
+            'context.yaml',
+            'knowledge_base.yaml',
+            'generated_context_rules.yaml',
+            # Layer 8: Assets/Other
+            'assets.yaml',
+            # Layer 9: Unified override (highest precedence)
+            'unified_config.yaml',
+        ]
+
+        # Create a mapping from filename to precedence index
+        precedence_map = {name: idx for idx, name in enumerate(precedence_order)}
+
+        def get_precedence(file_path: str | Path) -> int:
+            """Get precedence index for a config file."""
+            filename = Path(file_path).name
+            # Files not in precedence map get highest precedence (loaded last)
+            return precedence_map.get(filename, len(precedence_order))
+
+        # Sort by precedence
+        sorted_files = sorted(config_files, key=get_precedence)
+
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f"Config files sorted by precedence: {[Path(f).name for f in sorted_files]}")
+
+        return sorted_files
 
     def _merge_config_data(self, config_data: dict[str, Any], config_path: Path, key_sources: dict[str, str]):
         """Merge configuration data and track key sources."""
@@ -421,6 +519,21 @@ class UnifiedConfigManager:
             value = self._resolve_placeholders_in_value(value)
         return value
 
+    def get_specific_config(self, section: str, subsection: str | None = None, default: Any = None) -> Any:
+        """
+        Two-level nested accessor (e.g. get_specific_config('strategy', 'backtesting')).
+
+        Backward-compatible shim kept for call sites that predate dotted
+        notation. Equivalent to get(f'{section}.{subsection}') when a
+        subsection is given, otherwise get(section). Returns ``default``
+        (None by default) when the path is absent.
+        """
+        key = f"{section}.{subsection}" if subsection else section
+        value = self.get(key, default)
+        if value is None:
+            return default
+        return value
+
     def _traverse_nested_keys(self, key: str, default: Any) -> Any:
         """Traverse nested keys using dotted notation."""
         keys = key.split('.')
@@ -467,21 +580,50 @@ _config_instance: UnifiedConfigManager | None = None
 _config_lock = threading.Lock()
 
 
-def get_current_config(config_dir: str | None = None) -> UnifiedConfigManager:
+def get_current_config(config_dir: str | None = None, force_reload: bool = False) -> UnifiedConfigManager:
     """
     Standard thread-safe singleton factory for the UnifiedConfigManager interface.
     Utilizes double-checked locking for optimized initial concurrency.
+
+    Args:
+        config_dir: Directory containing YAML configuration templates.
+                    If provided and differs from existing instance, a warning is logged.
+                    Use force_reload=True to reinitialize with a different config_dir.
+        force_reload: If True, forces reinitialization even if instance exists.
+                     Useful for loading different configurations in tests.
+
+    Returns:
+        The singleton UnifiedConfigManager instance.
     """
     global _config_instance
 
     # Fast path: instance already initialized
-    if _config_instance is not None:
+    if _config_instance is not None and not force_reload:
+        # Check if config_dir differs from existing instance
+        if config_dir is not None:
+            existing_config_dir = str(_config_instance.config_dir)
+            requested_config_dir = str(Path(config_dir).resolve())
+            if existing_config_dir != requested_config_dir:
+                logger.warning(
+                    f"Config directory mismatch: existing='{existing_config_dir}', "
+                    f"requested='{requested_config_dir}'. Using existing instance. "
+                    f"Set force_reload=True to reinitialize with new config_dir."
+                )
         return _config_instance
 
     # Protected path: locked initialization
     with _config_lock:
         # Re-verify instance in case of race condition during wait
-        if _config_instance is not None:
+        if _config_instance is not None and not force_reload:
+            if config_dir is not None:
+                existing_config_dir = str(_config_instance.config_dir)
+                requested_config_dir = str(Path(config_dir).resolve())
+                if existing_config_dir != requested_config_dir:
+                    logger.warning(
+                        f"Config directory mismatch: existing='{existing_config_dir}', "
+                        f"requested='{requested_config_dir}'. Using existing instance. "
+                        f"Set force_reload=True to reinitialize with new config_dir."
+                    )
             return _config_instance
 
         # Establish operational context
@@ -492,6 +634,9 @@ def get_current_config(config_dir: str | None = None) -> UnifiedConfigManager:
         except ValueError:
             logger.warning(f"Unrecognized TRADING_ENV state '{env_str}'. Defaulting to development protocol.")
             env = Environment.DEVELOPMENT
+
+        if force_reload and _config_instance is not None:
+            logger.info(f"Force reloading configuration from: {effective_config_dir}")
 
         _config_instance = UnifiedConfigManager(env, effective_config_dir)
         return _config_instance

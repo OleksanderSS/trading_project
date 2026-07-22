@@ -20,10 +20,14 @@ logger = ProjectLogger.get_logger(__name__)
 class BacktestMode(BaseMode):
     """Режим бектестингу, що використовує нову архітектуру пайплайну."""
 
-    def run(self) ->dict[str, Any]:
+    def run(self, **kwargs) ->dict[str, Any]:
         """
         Запускає повний цикл бектестингу: від збору даних до аналізу прибутковості,
         використовуючи PipelineOrchestrator з walk-forward validation.
+
+        Args:
+            **kwargs: Additional parameters (tickers, timeframes, etc.) for compatibility
+                      with SystemOrchestrator. Currently unused but accepted for future extension.
         """
         self.logger.info(
             '--- Starting Integrated Backtesting Mode using PipelineOrchestrator ---'

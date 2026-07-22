@@ -8,12 +8,12 @@ knowledge_base:
       url: https://feeds.bloomberg.com/economics/news.rss
     - name: bloomberg_business
       url: https://feeds.bloomberg.com/business/news.rss
-    - name: bloomberg_politics
-      url: https://feeds.bloomberg.com/politics/news.rss
-    - name: cnbc_earnings
-      url: https://www.cnbc.com/id/10000664/device/rss/rss.html
-    - name: cnbc_world
-      url: https://www.cnbc.com/id/10000664/device/rss/rss.html
+    # - name: bloomberg_politics  # Вимкнено: HTTP timeout
+    #   url: https://feeds.bloomberg.com/politics/news.rss
+    # - name: cnbc_earnings  # Вимкнено: не працює
+    #   url: https://www.cnbc.com/id/10000664/device/rss/rss.html
+    # - name: cnbc_world  # Вимкнено: не працює
+    #   url: https://www.cnbc.com/id/10000664/device/rss/rss.html
     - name: yahoo_finance_general
       url: https://finance.yahoo.com/news/rssindex
     - name: bbc_business
@@ -40,6 +40,25 @@ knowledge_base:
       url: https://cointelegraph.com/rss
     - name: npr_business
       url: https://feeds.npr.org/1006/rss.xml
+    - name: nber_working_papers
+      url: https://www.nber.org/rss/new.xml
+    - name: ecb_working_papers
+      url: https://www.ecb.europa.eu/rss/wpp.html
+    - name: bis_research
+      url: https://www.bis.org/doclist/research.rss
+    # --- Секторальні стрічки для Лінз ---
+    - name: usda_agriculture
+      url: https://www.usda.gov/rss/home.xml
+    - name: fierce_biotech
+      url: https://www.fiercebiotech.com/rss/xml
+    - name: techcrunch
+      url: https://techcrunch.com/feed/
+    - name: oilprice_energy
+      url: https://oilprice.com/rss/main
+    - name: mining_com_metals
+      url: https://www.mining.com/feed/
+    - name: inman_real_estate
+      url: https://www.inman.com/feed/
   twitter_accounts_official:
   - Bloomberg
   - Reuters
@@ -79,6 +98,11 @@ knowledge_base:
     healthcare_biotech: [fda approval, clinical trial, biotech, pharmaceutical, medical device]
     financial_services: [banking, insurance, fintech, payments, lending]
     energy_commodities: [oil, crude, brent, energy, commodities, opec, gas, renewables]
+    industrial_logistics: [logistics, supply chain, shipping, freight, maritime, container, transport, rail, aviation, trucking, port, inventory]
+    metals_mining: [metallurgy, mining, steel, aluminum, copper, lithium, rare earth, ore, refining, smelter, iron]
+    consumer_retail: [retail, consumer spending, fmcg, e-commerce, discretionary, staples, supermarket, luxury]
+    real_estate_construction: [real estate, reit, housing, construction, commercial property, mortgage, building materials]
+    agriculture_food: [agriculture, farming, fertilizer, crop, grain, wheat, food supply, livestock]
     geopolitics: [sanctions, tariffs, trade war, conflict, china, eu, us fed, antitrust]
     huggingface_models: [transformers, bert, gpt, classification, sentiment, nlp, model, huggingface, tokenizer, finetuned]
     # professional_indicators: ["ted spread", "yield curve inversion", "high yield spreads", "credit spreads", "repo rates", "libor", "commercial paper", "money market", "liquidity crisis", "margin calls", "volatility spike", "risk parity", "carry trade", "currency intervention", "central bank swap"]

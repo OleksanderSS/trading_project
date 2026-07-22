@@ -20,3 +20,20 @@ sentiment:
       enabled: true
       positive_words: ["good", "great", "excellent", "positive", "bullish", "buy", "strong", "growth", "profit", "gain", "up", "rise", "increase", "win", "success", "breakthrough", "innovation", "record", "high", "best", "top", "leader", "outperform", "beat", "rally", "surge"]
       negative_words: ["bad", "terrible", "negative", "bearish", "sell", "weak", "loss", "decline", "fall", "decrease", "drop", "crash", "risk", "threat", "concern", "worry", "fear", "panic", "crisis", "recession", "low", "worst", "fail", "struggle", "problem", "issue", "challenge", "miss", "underperform", "plunge", "slump"]
+    distilbert:
+      enabled: true
+      source: "huggingface"
+      model_name: "distilbert-base-uncased-finetuned-sst-2-english"
+      positive_threshold: 0.05
+      negative_threshold: -0.05
+      neutral_range: [-0.05, 0.05]
+  
+  defaults:
+    weights:
+      rss: 1.0
+      web: 1.0
+      twitter: 0.8
+      telegram: 0.8
+      reddit: 0.9
+    normalize: true
+    scale: 1.0

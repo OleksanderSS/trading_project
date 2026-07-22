@@ -47,10 +47,10 @@ class BaseMode(ABC):
         """
         return True
 
-    @abstractmethod
     def cleanup(self) -> None:
         """
         Очищення ресурсів після завершення роботи режиму.
+        Default no-op implementation - can be overridden by subclasses if needed.
         """
         pass
 

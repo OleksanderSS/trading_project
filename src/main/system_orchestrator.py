@@ -11,13 +11,37 @@ from typing import Any
 
 from src.config.unified_config_manager import UnifiedConfigManager, get_current_config
 from src.core.logging.logger import ProjectLogger
-from src.data.management.data_manager import DataManager
-from src.main.modes.backtest import BacktestMode
-from src.main.modes.predict import PredictMode
-from src.main.modes.train import TrainMode
-from src.main.modes.training_data_pipeline import run_pipeline as run_training_data_pipeline
-from src.models.dean.dean_bootstrap_system import get_dean_system
-from src.pipeline.hybrid_orchestrator import HybridOrchestrator
+
+
+def _run_single_instance_worker(mode_class_path: str, config_dict: dict[str, Any],
+    tickers: list[str], timeframes: list[str], **kwargs) -> dict[str, Any]:
+    """
+    Top-level worker function for parallel execution.
+    This function must be at module level to be picklable for ProcessPoolExecutor.
+    
+    Args:
+        mode_class_path: Import path to the mode class (e.g., 'src.main.modes.train.TrainMode')
+        config_dict: Serialized config manager settings
+        tickers: List of tickers to process
+        timeframes: List of timeframes to process
+        **kwargs: Additional arguments
+        
+    Returns:
+        dict[str, Any]: Execution results
+    """
+    # Import the mode class dynamically
+    module_path, class_name = mode_class_path.rsplit('.', 1)
+    module = __import__(module_path, fromlist=[class_name])
+    mode_class = getattr(module, class_name)
+
+    # Reconstruct config manager from dict
+    config_manager = UnifiedConfigManager()
+    config_manager.config = config_dict
+
+    # Create mode instance and run
+    instance = mode_class(config_manager)
+    result = instance.run(tickers=tickers, timeframes=timeframes, **kwargs)
+    return result
 
 
 @dataclass
@@ -85,12 +109,19 @@ class SystemOrchestrator:
 
     def _get_mode_class(self, mode: str) ->Any:
         """Get the mode class for the specified mode."""
+        from src.main.modes.backtest import BacktestMode
+        from src.main.modes.predict import PredictMode
+        from src.main.modes.train import TrainMode
+
         mode_classes = {'train': TrainMode, 'predict': PredictMode,
             'backtest': BacktestMode}
         return mode_classes.get(mode)
 
     async def _run_training_data_pipeline(self) ->dict[str, Any]:
         """Run the training data pipeline."""
+        from src.data.management.data_manager import DataManager
+        from src.main.modes.training_data_pipeline import run_pipeline as run_training_data_pipeline
+
         db_manager = DataManager(self.config_manager)
         await run_training_data_pipeline(config_manager=self.config_manager,
             db_manager=db_manager)
@@ -136,9 +167,14 @@ class SystemOrchestrator:
             )
         max_workers = self.config_manager.get_config('execution.max_workers',
             os.cpu_count())
+
+        # Get serializable config snapshot
+        config_dict = self.config_manager.config if hasattr(self.config_manager, 'config') else {}
+        mode_class_path = f'{mode_class.__module__}.{mode_class.__name__}'
+
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(self._run_single_instance_sync,
-                mode_class, [ticker], config.timeframes, **kwargs): ticker for
+            futures = {executor.submit(_run_single_instance_worker,
+                mode_class_path, config_dict, [ticker], config.timeframes, **kwargs): ticker for
                 ticker in config.tickers or []}
             for future in as_completed(futures):
                 ticker = futures[future]
@@ -161,16 +197,6 @@ class SystemOrchestrator:
                 ] = config.tickers if config.tickers else ['all_configured']
         return results
 
-    def _run_single_instance_sync(self, mode_class: Any, tickers: (list[str
-        ] | None), timeframes: (list[str] | None), **kwargs):
-        """Sync helper for parallel execution in ProcessPoolExecutor."""
-        instance = mode_class(self.config_manager)
-        result = instance.run(tickers=tickers or [], timeframes=timeframes or
-            [], **kwargs)
-        if inspect.isawaitable(result):
-            return None  # Cannot await in sync context
-        return result
-
     async def _run_single_instance(self, mode_class: Any, tickers: (list[
         str] | None), timeframes: (list[str] | None), **kwargs):
         """Initializes and runs a single mode instance in the current event loop."""
@@ -184,7 +210,8 @@ class SystemOrchestrator:
     async def _run_hybrid_mode(self, tickers: (list[str] | None),
         timeframes: (list[str] | None), **kwargs) ->dict[str, Any]:
         """Runs the hybrid pipeline via HybridOrchestrator."""
-        from src.pipeline.hybrid_orchestrator import HybridPipelineRequest
+        from src.pipeline.hybrid_orchestrator import HybridOrchestrator, HybridPipelineRequest
+
         self.logger.info('🚀 Running hybrid pipeline mode...')
         batch_name = kwargs.pop('batch_name', 'main_database')
         orchestrator = HybridOrchestrator(self.config_manager, batch_name=
@@ -211,6 +238,10 @@ class SystemOrchestrator:
         timeframes: (list[str] | None), parallel: bool, **kwargs) ->dict[
         str, Any]:
         """Runs INTELLIGENT mode with self-diagnosis."""
+        from src.main.modes.predict import PredictMode
+        from src.main.modes.train import TrainMode
+        from src.models.dean.dean_bootstrap_system import get_dean_system
+
         self.logger.info('🧠 Running INTELLIGENT mode...')
         dean_brain = get_dean_system()
         mode_type: type[PredictMode] | type[TrainMode] = PredictMode
@@ -242,4 +273,5 @@ class SystemOrchestrator:
             'monster_test.tickers', ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL'])
         config = ExecutionConfig(mode='monster_test', tickers=test_tickers,
             timeframes=timeframes, parallel=parallel)
-        return await self._dispatch(TrainMode, config, **kwargs)
+        from .modes import MonsterTestMode
+        return await self._dispatch(MonsterTestMode, config, **kwargs)

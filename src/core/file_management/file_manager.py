@@ -11,6 +11,7 @@ import yaml
 
 from src.core.logging.logger import ProjectLogger
 from src.core.security.path_validator import PathValidationError, validate_safe_path
+from src.utils.path_safety import get_path_safety
 
 logger = ProjectLogger.get_logger('FileManager')
 
@@ -19,7 +20,8 @@ class FileManager:
     """Provides a centralized and robust interface for file operations with atomic writes and background tasks."""
 
     def __init__(self, base_dir: (str | Path | None)=None, max_workers: int=4):
-        self.base_dir = Path(base_dir).resolve() if base_dir else Path.cwd().resolve()
+        path_safety = get_path_safety()
+        self.base_dir = Path(base_dir).resolve() if base_dir else path_safety.get_project_root()
         self.logger = logger
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
 

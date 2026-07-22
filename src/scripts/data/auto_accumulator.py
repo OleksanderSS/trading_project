@@ -6,25 +6,26 @@ Automatic Intraday Data Accumulator Script
 Діє як 'Integrity Guard' для забезпечення цілісності 4-х таймфреймів.
 """
 
-import sys
 import argparse
-import time
-import pandas as pd
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 import asyncio
+import sys
+import time
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
 
 # Додавання кореня проекту до шляху
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.core.logging.logger import ProjectLogger
 from src.config.unified_config_manager import get_current_config
-from src.data.management.data_manager import DataManager
-from src.core.error_handling.error_handler import ErrorHandler
-from src.data.collector_factory import create_all_collectors
 from src.core.clients.http_client_factory import HttpClientFactory
-from src.data.management.asset_manager import AssetUniverseManager, TradingStyle, MarketFocus
+from src.core.error_handling.error_handler import ErrorHandler
+from src.core.logging.logger import ProjectLogger
+from src.data.collector_factory import create_all_collectors
+from src.data.management.asset_manager import AssetUniverseManager
+from src.data.management.data_manager import DataManager
 
 # Налаштування логування через ProjectLogger
 logger = ProjectLogger.get_logger("AutoAccumulatorGuard")
@@ -39,7 +40,7 @@ class AutoAccumulatorGuard:
         self.error_handler = ErrorHandler()
         self.db_manager = DataManager(self.config_manager, self.error_handler)
         self.http_factory = HttpClientFactory(self.config_manager, self.error_handler)
-        
+
         # --- INTEGRATION OF AssetUniverseManager ---
         self.asset_manager = AssetUniverseManager(self.config_manager.get_config('asset_universe', {}))
         # For example, using the 'day_trading_tech' preset.
@@ -48,7 +49,7 @@ class AutoAccumulatorGuard:
         self.active_tickers = trading_config.tickers
         logger.info(f"Loaded {len(self.active_tickers)} tickers from AssetUniverseManager preset: 'day_trading_tech'")
         # --- END INTEGRATION ---
-        
+
         # Стандартні ліміти для 4-х таймфреймів згідно з архітектурою та обмеженнями yfinance
         self.timeframes = self.config_manager.get_config('assets', {}).get('timeframes', {
             '5m': {'period': '60d', 'minutes': 5},
@@ -56,7 +57,7 @@ class AutoAccumulatorGuard:
             '1h': {'period': '730d', 'minutes': 60},
             '1d': {'period': 'max', 'minutes': 1440}
         })
-        
+
         logger.info(f"Integrity Guard initialized for {len(self.active_tickers)} tickers and {len(self.timeframes)} timeframes.")
 
     def check_integrity_gaps(self, ticker: str, interval: str) -> bool:
@@ -70,33 +71,33 @@ class AutoAccumulatorGuard:
             ORDER BY datetime DESC LIMIT 100
             """
             df = self.db_manager.con.execute(query).fetchdf()
-            
+
             if df.empty:
                 logger.warning(f"Дані для {ticker} ({interval}) відсутні в базі. Потрібне повне завантаження.")
                 return True
-            
+
             # Перевірка останньої свічки на актуальність
             df['datetime'] = pd.to_datetime(df['datetime'])
             latest_time = df['datetime'].max()
             now = pd.Timestamp.now(tz=latest_time.tz)
-            
+
             interval_min = self.timeframes.get(interval, {}).get('minutes', 5)
             diff_minutes = (now - latest_time).total_seconds() / 60
-            
+
             # Якщо лаг більше ніж 3 інтервали - вважаємо це діркою
             if diff_minutes > (interval_min * 3):
                 logger.info(f"Виявлено лаг для {ticker} ({interval}): {diff_minutes:.1f} хв. Запуск дозавантаження.")
                 return True
-                
+
             return False
         except Exception as e:
             logger.error(f"Помилка перевірки цілісності для {ticker} ({interval}): {e}")
             return True
 
-    async def _run_collection_task(self, tickers: List[str], timeframes: Dict[str, Any]):
+    async def _run_collection_task(self, tickers: list[str], timeframes: dict[str, Any]):
         """Запускає колектори для конкретних тікерів та таймфреймів."""
         collectors_config = self.config_manager.get_config('collectors', {})
-        
+
         # Динамічне налаштування конфігурації для Yahoo Finance
         if 'yahoo_finance' in collectors_config:
             collectors_config['yahoo_finance']['enabled'] = True
@@ -110,7 +111,7 @@ class AutoAccumulatorGuard:
             error_handler=self.error_handler,
             normalizer=None
         )
-        
+
         if not collectors:
             logger.error("Не вдалося ініціалізувати колектори для дозавантаження.")
             return
@@ -121,15 +122,15 @@ class AutoAccumulatorGuard:
     def run_guard_cycle(self):
         """Проводить повну перевірку та виправлення дірок для всіх активів."""
         logger.info("--- Початок циклу Integrity Guard ---")
-        
+
         needed_updates = {}
-        
+
         for ticker in self.active_tickers:
             ticker_tf_needed = {}
             for interval, params in self.timeframes.items():
                 if self.check_integrity_gaps(ticker, interval):
                     ticker_tf_needed[interval] = params
-            
+
             if ticker_tf_needed:
                 needed_updates[ticker] = ticker_tf_needed
 
@@ -138,19 +139,19 @@ class AutoAccumulatorGuard:
             return True
 
         logger.info(f"Потрібне дозавантаження для {len(needed_updates)} тікерів.")
-        
+
         # Групуємо оновлення по інтервалах для ефективності колектора
         unique_intervals = set()
         for tf_dict in needed_updates.values():
             unique_intervals.update(tf_dict.keys())
-            
+
         for interval in unique_intervals:
             tickers_for_interval = [t for t, tfs in needed_updates.items() if interval in tfs]
             interval_params = {interval: self.timeframes[interval]}
-            
+
             logger.info(f"Дозавантаження '{interval}' для: {tickers_for_interval}")
             asyncio.run(self._run_collection_task(tickers_for_interval, interval_params))
-            
+
         logger.info("--- Цикл Integrity Guard завершено ---")
         return True
 
@@ -170,35 +171,38 @@ class AutoAccumulatorGuard:
 
 def main():
     parser = argparse.ArgumentParser(description='Integrity Guard for 5m, 15m, 1h, 1d Timeframes')
-    parser.add_argument('--mode', default='once', 
+    parser.add_argument('--mode', default='once',
                        choices=['once', 'cycle'],
                        help='Режим роботи: once (одноразово перед пайплайном) або cycle (постійний моніторинг)')
     parser.add_argument('--interval', type=int, default=15,
                        help='Інтервал перевірки в хвилинах для режиму cycle')
     parser.add_argument('--report', action='store_true', help='Показати звіт бази даних')
-    
+
     args = parser.parse_args()
     guard = AutoAccumulatorGuard()
-    
-    if args.report:
-        guard.get_db_report()
-        return
 
-    if args.mode == 'once':
-        guard.run_guard_cycle()
-    elif args.mode == 'cycle':
-        logger.info(f"Запуск в режимі моніторингу кожні {args.interval} хв.")
-        while True:
-            try:
-                guard.run_guard_cycle()
-                logger.info(f"Очікування {args.interval} хв до наступної перевірки...")
-                time.sleep(args.interval * 60)
-            except KeyboardInterrupt:
-                logger.info("Моніторинг зупинено користувачем.")
-                break
-            except Exception as e:
-                logger.error(f"Критична помилка в циклі моніторингу: {e}")
-                time.sleep(60)
+    try:
+        if args.report:
+            guard.get_db_report()
+            return
+
+        if args.mode == 'once':
+            guard.run_guard_cycle()
+        elif args.mode == 'cycle':
+            logger.info(f"Запуск в режимі моніторингу кожні {args.interval} хв.")
+            while True:
+                try:
+                    guard.run_guard_cycle()
+                    logger.info(f"Очікування {args.interval} хв до наступної перевірки...")
+                    time.sleep(args.interval * 60)
+                except KeyboardInterrupt:
+                    logger.info("Моніторинг зупинено користувачем.")
+                    break
+                except Exception as e:
+                    logger.error(f"Критична помилка в циклі моніторингу: {e}")
+                    time.sleep(60)
+    finally:
+        DataManager.close_all_connections()
 
 if __name__ == "__main__":
     main()

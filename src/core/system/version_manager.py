@@ -73,7 +73,7 @@ class ConfigVersionManager:
                 "versions": [asdict(v) for v in self.versions]
             }
             with open(self.history_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=4, ensure_ascii=False)
+                json.dump(data, f, indent=4, ensure_ascii=False, default=str)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f"Failed to save version history: {e}")
 

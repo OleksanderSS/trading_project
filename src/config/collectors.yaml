@@ -1,30 +1,135 @@
 collectors:
-  yahoo_finance:
-    enabled: true
-    type: yahoo_finance
-    critical: true
-    table_name: market_data_raw
-    cache_ttl: 900
-    cache_duration_minutes: 15
-    timeframes:
-      15m:
-        period: 60d
-      60m:
-        period: 60d
-      1d:
-        period: 60d
-  fred:
-    enabled: true
-    type: fred
-    critical: false
-    table_name: fred_data
-    cache_ttl: 86400
+  aaii_sentiment:
     cache_duration_minutes: 1440
+    cache_ttl: 86400
+    critical: false
+    enabled: true
+    hash_keys:
+    - date
+    - bullish
+    - bearish
+    - neutral
+    table_name: aaii_sentiment_data
+    type: aaii_sentiment
+  bigquery:
+    credentials_path: D:/trading_project/credentials/gcp_credentials.json
+    critical: false
+    enabled: false
+    essential_columns:
+    - date
+    - ticker
+    - close
+    - volume
+    - high
+    - low
+    - open
+    hash_keys:
+    - date
+    - ticker
+    max_days: 90
+    max_rows: 10000
+    project_id: seismic-vista-470410-i5
+    query: "SELECT\n  date,\n  ticker,\n  close,\n  volume,\n  high,\n  low,\n  open\n\
+      FROM `seismic-vista-470410-i5.market_data.daily_prices`\nWHERE date >= DATE_SUB(CURRENT_DATE(),\
+      \ INTERVAL 90 DAY)\nAND ticker IN UNNEST(@tickers)\nLIMIT 10000\n"
+    table_name: bigquery_data
+    type: bigquery
+  cftc:
+    allow_sample_fallback: false
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
+    critical: false
+    enabled: true
+    hash_keys:
+    - date
+    - instrument
+    - net_position
+    table_name: cftc_data
+    type: cftc
+  custom_csv:
+    critical: false
+    data_type: macro_context
+    date_column: date
+    enabled: false
+    encoding: utf-8
+    file_path: data/macro_context/news_patterns.csv
+    table_name: news_patterns
+    type: custom_csv
+  economic_calendar:
+    api_url: https://sb-inv-prod.investing.com/api/economic-calendar/v1/events
+    backoff_factor: 2.0
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
+    countries:
+    - us
+    - eu
+    - gb
+    - cn
+    - jp
+    - de
+    critical: false
+    days_ahead: 30
+    days_back: 7
+    enabled: true
+    filter:
+      exclude_title_keywords:
+      - horoscope
+      - celebrity
+      - sports score
+      - weather
+      - recipe
+      min_source_quality: 0.4
+      require_keywords_in_title: false
+    hash_keys:
+    - timestamp
+    - country
+    - event
+    headers:
+      Accept: application/json, text/plain, */*
+      Content-Type: application/x-www-form-urlencoded
+      Origin: https://www.investing.com
+      Referer: https://www.investing.com/economic-calendar/
+      User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/120.0.0.0 Safari/537.36
+      X-Requested-With: XMLHttpRequest
+    importance:
+    - medium
+    - high
+    max_retries: 5
+    params:
+      country: us
+      language: en
+      max_results: 5
+      period: 7d
+    retry_delay: 1.0
+    table_name: economic_calendar
+    time_zone: '5'
+    timeout: 60
+    type: economic_calendar
+  fear_greed:
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
+    critical: false
+    enabled: true
+    hash_keys:
+    - date
+    - fear_greed_index
+    - classification
+    table_name: fear_greed_data
+    type: fear_greed
+  fred:
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
+    critical: false
+    enabled: true
     hash_keys:
     - series_id
     - date
+    - realtime_start
+    - value
     params:
-      period: 60d
+      max_retries: 3
+      period: 2y
       series_ids:
       - FEDFUNDS
       - DGS10
@@ -56,272 +161,291 @@ collectors:
       - DEXCHUS
       - DCOILWTICO
       - DSPIC96
-      max_retries: 3
-  google_news:
-    enabled: true
-    type: google_news
-    data_type: news
+      # --- Галузеві індикатори для Лінз ---
+      - CSUSHPINSA
+      - WPU01
+      - WPU0561
+      - WPU055
+      - WPU101
+      - PCU334413334413
+    table_name: fred_data
+    type: fred
+  free_google_trends:
+    base_delay: 10
+    batch_delay_max: 75
+    batch_delay_min: 45
+    batch_size: 4
+    cache_duration_minutes: 120
+    cache_ttl: 7200
     critical: false
-    table_name: google_news
-    cache_ttl: 3600
+    enabled: false
+    geo: US
+    language: en-US
+    max_delay: 300
+    max_retries: 5
+    min_batch_size: 1
+    request_delay_seconds: 5
+    table_name: google_trends_data
+    timeframe: today 1-m
+    type: free_google_trends
+  google_news:
     cache_duration_minutes: 60
-    max_concurrent_terms: 5
-    delay: 0.3
+    cache_ttl: 3600
+    critical: false
+    deduplication:
+      max_features: 500
+      n_clusters: 10
+    enabled: true
     filter:
-      min_source_quality: 0.0
-      require_keywords_in_title: false
+      allowed_domains: []
       exclude_title_keywords:
       - horoscope
       - celebrity
       - sports score
       - weather
       - recipe
-      allowed_domains: []
-    params:
-      period: 60d
-      language: en
-      country: US
-      max_results: 10
-    deduplication:
-      n_clusters: 10
-      max_features: 500
-  rss:
-    enabled: true
-    type: rss
-    data_type: news
-    critical: false
-    table_name: rss_news
-    cache_ttl: 3600
-    cache_duration_minutes: 60
-    filter:
-      min_source_quality: 0.0
+      min_source_quality: 0.4
       require_keywords_in_title: false
+    hash_keys:
+    - link
+    headers:
+      Accept: application/rss+xml, application/xml, text/xml, */*
+      Accept-Language: en-US,en;q=0.9
+      User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/120.0.0.0 Safari/537.36
+    max_concurrent_terms: 5
+    max_terms: 30
+    params:
+      country: US
+      language: en
+      max_results: 5
+      period: 7d
+    table_name: google_news
+    timeout: 500
+    type: google_news
+  huggingface:
+    cache_duration_minutes: 10080
+    cache_ttl: 604800
+    critical: false
+    dataset_name: zeroshot/twitter-financial-news-topic
+    enabled: true
+    essential_columns:
+    - date
+    - text
+    - label
+    - sentiment
+    - timestamp
+    filter_by_keywords: true
+    hf_token: ${HF_TOKEN}
+    keywords_categories:
+    - market_terms
+    - finance_economy
+    - sectors_tech
+    max_days: 90
+    max_rows: 10000
+    split: train
+    subset_name: null
+    table_name: huggingface_data
+    type: huggingface
+  insider:
+    cache_duration_minutes: 240
+    cache_ttl: 14400
+    column_mapping:
+      delta_own: 9
+      filing_date: 0
+      insider_name: 3
+      owned: 8
+      price: 6
+      quantity: 7
+      ticker: 2
+      title: 4
+      trade_date: 1
+      trade_type: 5
+      value: 10
+    critical: false
+    enabled: true
+    hash_keys:
+    - filing_date
+    - ticker
+    - insider_name
+    table_name: insider_trades
+    timeout: 500
+    type: insider
+    urls:
+    - http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd=0&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&xs=1&vl=&vh=&ocl=&och=&sic1=&sicl=&sich=&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1
+    user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+  local_file:
+    class: LocalFileCollector
+    critical: false
+    enabled: false
+    module: src.data.collectors.local_file_collector
+    params:
+      date_col: date
+      file_path: data/raw/market_data.csv
+      file_type: csv
+    table_name: local_market_data
+    type: local_file
+  newsapi:
+    api_key_env: NEWS_API_KEY
+    base_url: https://newsapi.org/v2/everything
+    cache_duration_minutes: 60
+    cache_ttl: 86400
+    critical: false
+    enabled: false
+    filter:
+      exclude_title_keywords:
+      - horoscope
+      - celebrity
+      min_source_quality: 0.4
+    hash_keys:
+    - url
+    - publishedAt
+    language: en
+    max_terms: 10
+    page_size: 20
+    requires_api_key: true
+    table_name: newsapi_articles
+    timeout: 500
+    type: newsapi
+  put_call_ratio:
+    allow_sample_fallback: false
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
+    critical: false
+    enabled: true
+    hash_keys:
+    - date
+    - put_call_ratio
+    - sentiment_signal
+    table_name: put_call_ratio_data
+    type: put_call_ratio
+  reddit_sentiment:
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
+    critical: false
+    enabled: true
+    hash_keys:
+    - date
+    - subreddit
+    - post_id
+    subreddits:
+    - wallstreetbets
+    - stocks
+    - investing
+    - economics
+    table_name: sociological_sentiment_data
+    type: reddit_sentiment
+    use_synthetic_data: false
+  rss:
+    cache_duration_minutes: 60
+    cache_ttl: 3600
+    critical: false
+    deduplication:
+      max_features: 300
+      n_clusters: 10
+    enabled: true
+    filter:
       exclude_title_keywords:
       - horoscope
       - celebrity
       - sports
-    params:
-      period: 60d
-      limit_per_feed: 20
-    deduplication:
-      n_clusters: 10
-      max_features: 300
-  newsapi:
-    enabled: true
-    type: newsapi
-    data_type: news
-    critical: false
-    table_name: newsapi_articles
-    cache_ttl: 3600
-    cache_duration_minutes: 60
-    requires_api_key: true
-    api_key_name: NEWS_API_KEY
-    base_url: https://newsapi.org/v2/everything
-    language: en
-    page_size: 20
-    hash_keys:
-    - url
-    - publishedAt
-    filter:
       min_source_quality: 0.4
-      exclude_title_keywords:
-      - horoscope
-      - celebrity
-  economic_calendar:
-    enabled: false
-    type: economic_calendar
-    critical: false
-    table_name: economic_calendar
-    cache_ttl: 86400
-    cache_duration_minutes: 1440
-    api_url: https://sb-inv-prod.investing.com/api/economic-calendar/v1/events
-    days_back: 7
-    days_ahead: 30
-    countries:
-    - us
-    - eu
-    - gb
-    - cn
-    - jp
-    - de
-    importance:
-    - medium
-    - high
-  free_google_trends:
-    enabled: false
-    type: free_google_trends
-    critical: false
-    table_name: google_trends_data
-    cache_ttl: 7200
-    cache_duration_minutes: 120
-    geo: US
-    timeframe: today 1-m
-    language: en-US
-    batch_size: 4
-    request_delay_seconds: 5
+      require_keywords_in_title: false
+    hash_keys:
+    - link
+    headers:
+      Accept: application/rss+xml, application/xml, text/xml, */*
+      Accept-Language: en-US,en;q=0.9
+      User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+        like Gecko) Chrome/120.0.0.0 Safari/537.36
+    params:
+      limit_per_feed: 20
+      period: 7d
+    table_name: rss_news
+    timeout: 500
+    type: rss
   sec_filings:
-    enabled: false
-    type: sec_filings
-    critical: false
-    table_name: sec_filings
-    cache_ttl: 14400
     cache_duration_minutes: 240
-    submissions_url_template: https://data.sec.gov/submissions/CIK{cik}.json
+    cache_ttl: 14400
+    critical: false
+    enabled: true
     hash_keys:
     - accessionNumber
     - cik
     params:
       period: 60d
-  insider:
-    enabled: false
-    type: insider
-    critical: false
-    table_name: insider_trades
-    cache_ttl: 14400
-    cache_duration_minutes: 240
-    hash_keys:
-    - filing_date
-    - ticker
-    - insider_name
-    urls:
-    - https://openinsider.com/screener
-    column_mapping:
-      col_0: filing_date
-      col_1: ticker
-      col_2: insider_name
-      col_3: transaction_type
-      col_4: shares
-      col_5: price
-    user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
-  hugging_face:
-    enabled: true
-    type: huggingface
-    critical: false
-    table_name: huggingface_data
-    cache_ttl: 604800
-    cache_duration_minutes: 10080
-    dataset_name: m-ric/financial-news-2024
-    split: train
-    hash_keys:
-    - content
-  bigquery:
-    enabled: false
-    type: bigquery
-    critical: false
-    table_name: bigquery_data
-  custom_csv:
-    enabled: false
-    type: custom_csv
-    critical: false
-  alternative_me:
-    enabled: true
-    type: alternative_me
-    data_type: alternative
-    critical: false
-    table_name: fear_greed_data
-    cache_ttl: 3600
-    cache_duration_minutes: 60
-    hash_keys:
-    - date
-    - value
-    base_url: https://api.alternative.me
-    timeout: 30
-    params:
-      limit: 100
+    submissions_url_template: https://data.sec.gov/submissions/CIK{cik}.json
+    table_name: sec_filings
+    type: sec_filings
   vix:
-    enabled: true
-    type: vix
-    data_type: alternative
+    cache_duration_minutes: 1440
+    cache_ttl: 86400
     critical: false
-    table_name: vix_data
-    cache_ttl: 3600
-    cache_duration_minutes: 60
+    enabled: true
     hash_keys:
     - date
     - vix_current
     - volatility_regime
-    ticker: ^VIX
-    timeout: 30
     params:
-      period: 60d
       interval: 1d
-  put_call_ratio:
-    enabled: false  # Вимкнено: зараз генерує синтетичні дані через помилку підключення до CBOE
-    type: put_call_ratio
-    data_type: alternative
-    critical: false
-    table_name: put_call_ratio_data
-    cache_ttl: 3600
-    cache_duration_minutes: 60
-    hash_keys:
-    - date
-    - put_call_ratio
-    - sentiment_signal
-    base_url: https://www.cboe.com
+      period: 30d
+    table_name: vix_data
+    ticker: ^VIX
+    type: vix
+  yahoo_finance:
+    cache_duration_minutes: 15
+    cache_ttl: 900
+    critical: true
+    daily_max_years: 2
+    enabled: true
+    intraday_max_days: 60
+    max_retries: 3
+    retry_delay: 5
+    table_name: market_data_raw
+    timeframes:
+      15m:
+        period: 60d
+      1d:
+        period: 2y
+      1h:
+        period: 60d
     timeout: 30
-  cftc:
-    enabled: false  # Вимкнено: URL застарілі (404)
-    type: cftc
-    data_type: alternative
-    critical: false
-    table_name: cftc_data
-    cache_ttl: 86400
-    cache_duration_minutes: 1440
-    hash_keys:
-    - date
-    - instrument
-    - net_position
-    base_url: https://www.cftc.gov
-    timeout: 30
-    instruments:
-    - S&P
-    - NASDAQ
-    - DOW
-    - GOLD
-    - CRUDE OIL
-  aaii_sentiment:
-    enabled: false
-    type: aaii_sentiment
-    data_type: alternative
-    critical: false
-    table_name: aaii_sentiment_data
-    cache_ttl: 86400
-    cache_duration_minutes: 1440
-    hash_keys:
-    - date
-    - bullish
-    - bearish
-    - neutral
-    timeout: 30
-  fear_greed:
-    enabled: false
-    type: fear_greed
-    data_type: alternative
-    critical: false
-    table_name: fear_greed_data
-    cache_ttl: 3600
-    cache_duration_minutes: 60
-    hash_keys:
-    - date
-    - fear_greed_index
-    - classification
-    base_url: https://production.datapoint.cloud/api/fear-greed
-    timeout: 30
-  reddit_sentiment:
-    enabled: false
-    type: reddit_sentiment
-    data_type: alternative
-    critical: false
-    table_name: reddit_sentiment_data
-    cache_ttl: 3600
-    cache_duration_minutes: 60
-    hash_keys:
-    - date
-    - sentiment_score
-    - viral_posts
-    subreddits:
-    - wallstreetbets
-    - stocks
-    - investing
-    timeout: 30
-    use_synthetic_data: false
+    type: yahoo_finance
+    benchmark_tickers:
+      - XLK
+      - XLE
+      - XLV
+      - XLF
+      - XHB
+      - MOO
+  wikimedia_attention:
+    enabled: true
+    frequency: daily
+    table_name: wikipedia_attention_data
+    days_back: 30
+    project: en.wikipedia
+    type: wikimedia_attention
+  sdmx_macro:
+    enabled: true
+    frequency: daily
+    table_name: macro_sdmx_data
+    agencies:
+      - WB
+      - ECB
+      - IMF
+      - OECD
+      - BIS
+    indicators:
+      WB:
+        - FP.CPI.TOTL.ZG
+        - NY.GDP.MKTP.KD.ZG
+      ECB:
+        - ICP
+      IMF:
+        - CPI
+        - GDP
+      OECD:
+        - MEI
+      BIS:
+        - WS_CBPOL_D
+    type: sdmx_macro

@@ -101,6 +101,11 @@ enrichment:
     text_column: "title"
     date_column: "publishedAt"
 
+  economic_calendar:
+    module: "src.features.enrichers.economic_calendar_enricher"
+    class: "EconomicCalendarEnricher"
+    params: {}
+
   keyword_entity:
     keywords:
       tickers: ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA", "META", "AMD", "INTC"]

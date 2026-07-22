@@ -6,17 +6,18 @@ Provides a structured class to apply various fixes to the dataset,
 addressing common issues like outliers, missing values, and incorrect data types.
 """
 
-import os
 import sys
-import pandas as pd
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Ensure the project root is in the Python path
 project_root = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.append(str(project_root))
 
 import logging
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("DataFixer")
 
@@ -122,7 +123,7 @@ class DataFixer:
             'rsi': (0, 100, 50),
             'stochastic': (0, 100, 50),
             'macd': (None, None, 0),
-            'bollinger': (None, None, 0) 
+            'bollinger': (None, None, 0)
         }
 
         for pattern, (clip_low, clip_high, fill_val) in indicator_patterns.items():
@@ -130,7 +131,7 @@ class DataFixer:
                 if df[col].isnull().any():
                     df[col] = df[col].fillna(fill_val)
                     logger.info(f"Filled NaN in '{col}' with {fill_val}.")
-                
+
                 if clip_low is not None:
                     clipped_before = df[col].copy()
                     df[col] = df[col].clip(clip_low, clip_high)

@@ -79,49 +79,56 @@ targets:
     type: "indicator_prediction"
     params:
       description: "Predict future value of RSI(14) in 1 period."
-      indicator_col: "RSI_14"
+      indicator_col: "RSI_14_1d"
+      source_timeframe: "1d"
       shift: -1
 
   target_sma_20_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of SMA(20) in 1 period."
-      indicator_col: "SMA_20"
+      indicator_col: "SMA_20_1d"
+      source_timeframe: "1d"
       shift: -1
 
   target_ema_20_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of EMA(20) in 1 period."
-      indicator_col: "EMA_20"
+      indicator_col: "EMA_20_1d"
+      source_timeframe: "1d"
       shift: -1
 
   target_macd_hist_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of MACD Histogram in 1 period."
-      indicator_col: "MACD_Histogram"
+      indicator_col: "MACD_Histogram_1d"
+      source_timeframe: "1d"
       shift: -1
 
   target_atr_14_f5:
     type: "indicator_prediction"
     params:
       description: "Predict future value of ATR(14) in 5 periods."
-      indicator_col: "ATR_14"
+      indicator_col: "ATR_14_1d"
+      source_timeframe: "1d"
       shift: -5
 
   target_bb_upper_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future value of Upper Bollinger Band in 1 period."
-      indicator_col: "BB_Upper"
+      indicator_col: "BB_Upper_1d"
+      source_timeframe: "1d"
       shift: -1
 
   target_volume_ratio_f1:
     type: "indicator_prediction"
     params:
       description: "Predict future Volume Ratio in 1 period."
-      indicator_col: "market_context_volume_ratio"  # Виправлено назву
+      indicator_col: "market_context_volume_ratio_1d"
+      source_timeframe: "1d"
       shift: -1
 
   # ===================================================================
@@ -132,6 +139,7 @@ targets:
     type: "classification_binary"
     params:
       description: "Price goes up by > 0.1% in next 15min? (0=No, 1=Yes)"
+      horizon: "15m"
       base_col: "close"
       shift: -1
       threshold: 0.001
@@ -140,6 +148,7 @@ targets:
     type: "regression"
     params:
       description: "Future return over next 15min."
+      horizon: "15m"
       base_col: "close"
       shift: -1
       adjust_for_costs: true
@@ -152,6 +161,7 @@ targets:
     type: "regression"
     params:
       description: "Predict volatility in next 15min (via high-low range as proxy)."
+      horizon: "15m"
       base_col: "high"
       shift: -1
       window: 3
@@ -164,6 +174,7 @@ targets:
     type: "classification_binary"
     params:
       description: "Price goes up by > 0.3% in next hour? (0=No, 1=Yes)"
+      horizon: "1h"
       base_col: "close"
       shift: -4  # 4 × 15min = 1 hour
       threshold: 0.003
@@ -172,6 +183,7 @@ targets:
     type: "regression"
     params:
       description: "Future return over next hour."
+      horizon: "1h"
       base_col: "close"
       shift: -4
       adjust_for_costs: true
@@ -184,6 +196,7 @@ targets:
     type: "classification_binary"
     params:
       description: "Volume spike > 2x average in next hour? (0=No, 1=Yes)"
+      horizon: "1h"
       base_col: "volume"
       shift: -4
       threshold: 2.0
@@ -193,6 +206,7 @@ targets:
     type: "classification_binary"
     params:
       description: "Price breaks Bollinger Bands in next hour? (0=No, 1=Yes)"
+      horizon: "1h"
       base_col: "close"
       shift: -4
       indicator_col: "BB_Upper"
@@ -239,3 +253,32 @@ targets:
       shift: -1
       method: "rate_of_change"
       window: 10
+
+  # ===================================================================
+  # NEW: Volatility Spike Targets (Across Timeframes)
+  # ===================================================================
+  
+  target_volatility_spike_1d:
+    type: "classification_binary"
+    params:
+      description: "Volatility (ATR) spikes by > 10% in the next 1 day? (0=No, 1=Yes)"
+      base_col: "ATR_14_1d"
+      shift: -1
+      threshold: 0.10
+
+  target_volatility_spike_1h:
+    type: "classification_binary"
+    params:
+      description: "Volatility (ATR) spikes by > 10% in the next 1 hour? (0=No, 1=Yes)"
+      base_col: "ATR_14_1h"
+      shift: -1
+      threshold: 0.10
+
+  target_volatility_spike_15m:
+    type: "classification_binary"
+    params:
+      description: "Volatility (ATR) spikes by > 10% in the next 15 mins? (0=No, 1=Yes)"
+      base_col: "ATR_14_15m"
+      shift: -1
+      threshold: 0.10
+

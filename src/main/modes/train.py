@@ -40,7 +40,19 @@ class TrainMode(BaseMode):
 
             final_results = orchestrator.run(**initial_data)
             if inspect.isawaitable(final_results):
-                final_results = asyncio.run(final_results)
+                # Check if there's already a running event loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    # If we're in an async context, we can't use asyncio.run()
+                    # Return the coroutine to be awaited by the caller
+                    return {
+                        'status': 'async_required',
+                        'coroutine': final_results,
+                        'message': 'Mode requires async execution - coroutine returned for awaiting'
+                    }
+                except RuntimeError:
+                    # No running loop, safe to use asyncio.run()
+                    final_results = asyncio.run(final_results)
 
             if not final_results:
                 raise RuntimeError("Training pipeline did not return any results.")

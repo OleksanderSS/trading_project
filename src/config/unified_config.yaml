@@ -212,99 +212,15 @@ data:
       technical_analysis: {enabled: true}
       time_features: {enabled: true}
       context_map: {enabled: true}
+      derived_features: {enabled: true}
+      news_quality: {enabled: true}
+      volatility: {enabled: true}
+      volume: {enabled: true}
 
 # ---------------------------------
 # Analysis Section
 # ---------------------------------
 analysis:
-  # Configuration for the UnifiedAnalyticsEngine
-  engine:
-    max_workers: 8
-    analyzers:
-      - name: "critical_signal_detector"
-        module: "src.analytics.detectors.critical_signal_detector" # UPDATED PATH
-        class: "CriticalSignalDetector"
-        data_mapping:
-          - "price_data"
-      - name: "macro_context_analyzer"
-        module: "src.analytics.context.macro_context_analyzer" # PATH VERIFIED
-        class: "MacroContextAnalyzer"
-        data_mapping:
-          - "economic_data"
-          - "historical_economic_data"
-      - name: "news_impact_analyzer"
-        module: "src.analytics.analyzers.news_impact_analyzer" # PATH VERIFIED
-        class: "NewsImpactAnalyzer"
-        data_mapping:
-          - "news_data"
-          - "price_data"
-      - name: "market_context_analyzer"
-        module: "src.analytics.context.market_context_analyzer"
-        class: "MarketContextAnalyzer"
-        params:
-          context_features:
-            - "volatility_5d"
-            - "volatility_20d"
-            - "volatility_ratio"
-            - "trend_5d"
-            - "trend_20d"
-            - "trend_alignment"
-            - "rsi_current"
-            - "volume_ratio"
-            - "price_to_ma20"
-            - "hour_of_day"
-            - "day_of_week"
-            # ✅ NEW CONTEXT INDICATORS (from CONTEXT_FEATURES_RECOMMENDATIONS.md)
-            - "yield_curve_slope"        # Yield curve slope (10Y - 2Y)
-            - "yield_curve_inverted"     # Inversion flag (0/1)
-            - "fed_funds_trend"          # Fed Funds rate trend (3 months)
-            - "fed_funds_velocity"       # Rate change velocity (1 month)
-            - "market_breadth"           # Market breadth (advance/decline)
-            - "dollar_strength"          # Dollar strength (DXY)
-            - "put_call_ratio"           # Put/Call ratio (market fear)
-        data_mapping:
-          - "price_data"
-          - "market_indicators"
-      - name: "market_phase_analyzer"
-        module: "src.analytics.context.market_phase_analyzer"
-        class: "MarketPhaseAnalyzer"
-        data_mapping:
-          - "price_data"
-      - name: "prediction_adjuster"
-        module: "src.analytics.context.prediction_adjuster"
-        class: "PredictionAdjuster"
-        data_mapping:
-          - "predictions"
-          - "market_context"
-      - name: "hedge_fund_style"
-        module: "src.analytics.analyzers.hedge_fund_analyzer"
-        class: "HedgeFundAnalyzer"
-        data_mapping:
-          - "price_data"
-          - "returns"
-      - name: "adaptive_confidence"
-        module: "src.analytics.analyzers.adaptive_confidence_analyzer"
-        class: "AdaptiveConfidenceAnalyzer"
-        data_mapping:
-          - "predictions"
-          - "performance_metrics"
-      - name: "causal_events"
-        module: "src.analytics.analyzers.causal_event_finder"
-        class: "CausalEventFinder"
-        params:
-          treatment: "event_detected"
-          outcome: "future_return"
-          common_causes: ["volatility", "volume"]
-        data_mapping:
-          - "macro_data"
-          - "price_data"
-      - name: "knn_similarity"
-        module: "src.analytics.analyzers.knn_similarity_finder"
-        class: "KnnSimilarityFinder"
-        data_mapping:
-          - "price_data"
-          - "feature_space"
-
   # Configuration for the CriticalSignalDetector
   critical_signal_detector:
     price_shock:
