@@ -58,11 +58,33 @@ class QuickNewsAnalyzer:
             self.kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
             df_copy.loc[nonempty_idx, 'cluster'] = self.kmeans.fit_predict(tfidf_matrix)
 
-            # Use existing sentiment from FinBERT if available, otherwise use TextBlob
-            if 'sentiment' in df_copy.columns:
+            # Use existing sentiment from FinBERT if available, otherwise use TextBlob.
+            # BUGFIX: 'sentiment' in df_copy.columns only checks the column
+            # exists — not that it has usable content. The upstream news
+            # schema always includes a 'sentiment' column (a placeholder for
+            # the async FinBERT cloud function; see README's "Serverless
+            # NLP Microservice"), which stays as empty strings whenever that
+            # pipeline hasn't populated it yet. Trusting column presence
+            # alone silently propagated 15344/15344 empty-string 'sentiment'
+            # values straight into sentiment_score for a real pipeline run,
+            # permanently starving every downstream sentiment feature of
+            # signal — and skipping the working TextBlob fallback right
+            # below, which would have produced real (if less accurate)
+            # sentiment from the same article text already in hand.
+            existing_sentiment = df_copy['sentiment'] if 'sentiment' in df_copy.columns else None
+            has_usable_existing_sentiment = (
+                existing_sentiment is not None
+                and pd.to_numeric(existing_sentiment, errors='coerce').notna().any()
+            )
+            if has_usable_existing_sentiment:
                 logger.info("[QuickNewsAnalyzer] Using existing FinBERT sentiment scores")
-                df_copy['sentiment_score'] = df_copy['sentiment']
+                df_copy['sentiment_score'] = pd.to_numeric(existing_sentiment, errors='coerce')
             else:
+                if existing_sentiment is not None:
+                    logger.warning(
+                        "[QuickNewsAnalyzer] 'sentiment' column present but empty/non-numeric "
+                        "(FinBERT scores not yet populated) — falling back to TextBlob"
+                    )
                 logger.info("[QuickNewsAnalyzer] Computing sentiment with TextBlob")
                 sentiments = [TextBlob(t).sentiment for t in texts_nonempty]
                 df_copy.loc[nonempty_idx, 'sentiment_score'] = [s.polarity for s in sentiments]
