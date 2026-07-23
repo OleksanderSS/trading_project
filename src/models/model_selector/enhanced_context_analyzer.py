@@ -23,7 +23,7 @@ class EnhancedContextAnalyzer:
         self.feature_importance = {}
         self.market_regime_history = []
         self.volatility_history = []
-        self.causal_engine = causal_engine or CausalEngine()
+        self.causal_engine = causal_engine or CausalRippleEngine()
 
     def analyze_dynamic_context(self, df: pd.DataFrame, ticker: str, trigger_event: str | None = None) -> dict[str, Any]:
         """Analyze market context with dynamic weighting and causal factors"""

@@ -172,12 +172,13 @@ class OutcomeEvaluator:
         exit_date = as_of_date + pd.Timedelta(days=horizon_days)
 
         for ticker, direction in recommendations.items():
-            # Get entry price (closest to as_of_date)
-            entry_row = self._get_price_at_or_before(ticker, as_of_date)
+            # Get entry price (first available T+1 price to avoid look-ahead)
+            entry_row = self._get_price_after(ticker, as_of_date)
             if entry_row is None:
                 continue
 
-            entry_price = float(entry_row["close"])
+            # Prefer open price for entry, fallback to close
+            entry_price = float(entry_row.get("open", entry_row["close"]))
             entry_date = str(entry_row["date"])
 
             # Get exit price (closest to exit_date)
@@ -204,7 +205,7 @@ class OutcomeEvaluator:
                     actual_direction = "neutral"
 
                 if direction == "neutral":
-                    direction_correct = True  # neutral is always "correct" for small moves
+                    direction_correct = (actual_direction == "neutral")
                 else:
                     direction_correct = direction == actual_direction
             else:
@@ -283,6 +284,20 @@ class OutcomeEvaluator:
 
         # Return the most recent
         return valid.iloc[-1]
+
+    def _get_price_after(
+        self, ticker: str, target_date: pd.Timestamp
+    ) -> pd.Series | None:
+        """Get the first available price row for ticker strictly after target_date."""
+        ticker_prices = self.prices[self.prices["ticker"] == ticker]
+        if ticker_prices.empty:
+            return None
+
+        valid = ticker_prices[ticker_prices["date"] > target_date]
+        if valid.empty:
+            return None
+
+        return valid.iloc[0]
 
     def _build_summary(
         self,

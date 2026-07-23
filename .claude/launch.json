@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "streamlit-dashboard",
+      "runtimeExecutable": "streamlit",
+      "runtimeArgs": ["run", "src/dashboard/main_app.py"],
+      "port": 8501
+    },
+    {
+      "name": "cloud-function-news-sentiment",
+      "runtimeExecutable": "functions-framework",
+      "runtimeArgs": ["--target=process_news_file", "--signature-type=cloudevent", "--source=cloud_function/main.py"],
+      "port": 8080
+    }
+  ]
+}

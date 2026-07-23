@@ -52,11 +52,20 @@ class XGBoostModel(BaseModel):
             if isinstance(X, pd.DataFrame):
                 self.feature_cols = X.columns.tolist()
 
+            eval_set = kwargs.pop("eval_set", None)
+            early_stopping_rounds = kwargs.pop("early_stopping_rounds", None)
+
             # Update parameters if they are provided
             if kwargs:
                 self.model.set_params(**kwargs)
 
-            self.model.fit(X, y)
+            fit_kwargs = {}
+            if eval_set is not None:
+                fit_kwargs["eval_set"] = eval_set
+            if early_stopping_rounds is not None:
+                fit_kwargs["early_stopping_rounds"] = early_stopping_rounds
+
+            self.model.fit(X, y, **fit_kwargs)
             self.is_trained = True
             self.logger.info(f"XGBoost model trained successfully (task: {self.task_type})")
 

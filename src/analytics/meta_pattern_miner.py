@@ -59,17 +59,20 @@ class MetaPatternMiner:
         # 4. Bin continuous variables for context
         try:
             df['rsi_bin'] = pd.qcut(df['pre_event_rsi'], q=5, labels=['VeryLow', 'Low', 'Medium', 'High', 'VeryHigh'], duplicates='drop')
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to bin rsi, using fallback: {e}")
             df['rsi_bin'] = 'Medium'
             
         try:
             df['vol_bin'] = pd.qcut(df['pre_event_vol'], q=5, labels=['VeryLow', 'Low', 'Medium', 'High', 'VeryHigh'], duplicates='drop')
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to bin vol, using fallback: {e}")
             df['vol_bin'] = 'Medium'
             
         try:
             df['severity_bin'] = pd.qcut(df['drop_severity'], q=3, labels=['Severe', 'Moderate', 'Mild'], duplicates='drop')
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to bin severity, using fallback: {e}")
             df['severity_bin'] = 'Moderate'
 
         rules = {

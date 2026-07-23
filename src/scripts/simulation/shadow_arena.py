@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from src.agents.veto_system import AgenticVetoSystem
+from src.agents.archive.veto_system import AgenticVetoSystem
 from src.meta_learning.memory.diary_engine import DiaryEngine, DecisionRecord, DecisionType, DecisionOutcome
 from src.core.logging.logger import ProjectLogger
 
@@ -16,7 +16,7 @@ import asyncio
 import logging
 from typing import Dict, Any, List
 
-from src.agents.veto_system import AgenticVetoSystem
+from src.agents.archive.veto_system import AgenticVetoSystem
 from src.meta_learning.memory.diary_engine import DiaryEngine, DecisionRecord, DecisionType, DecisionOutcome
 from src.core.logging.logger import ProjectLogger
 

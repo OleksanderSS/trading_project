@@ -143,6 +143,37 @@ class VirtualPortfolio:
                 total_value += position['quantity'] * price
         return total_value
 
+    def get_daily_drawdown(self, current_prices: dict[str, float]) -> float:
+        """
+        Calculates the portfolio's daily drawdown by comparing the current value 
+        to the value at the start of the trading day.
+        """
+        current_value = self.get_total_value(current_prices)
+        if current_value == 0:
+            return 0.0
+
+        today_date = datetime.now().date()
+        start_value = None
+
+        # Look for the last value from previous days
+        for record in reversed(self.performance_history):
+            record_date = datetime.fromisoformat(record['timestamp']).date()
+            if record_date < today_date:
+                start_value = record['total_value']
+                break
+                
+        # Fallback to initial balance or first available record if no history from previous days
+        if start_value is None:
+            if self.performance_history:
+                start_value = self.performance_history[0]['total_value']
+            else:
+                start_value = self.initial_balance
+                
+        if start_value == 0:
+            return 0.0
+            
+        return (current_value - start_value) / start_value
+
     def buy_stock(self, order_params: dict[str, Any]) ->dict[str, Any]:
         """Executes a virtual buy order with transaction costs."""
         try:

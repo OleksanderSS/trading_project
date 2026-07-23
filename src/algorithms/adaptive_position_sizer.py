@@ -31,6 +31,8 @@ class PositionSizingParams:
     daily_volume: float | None = None
     current_price: float | None = None
     historical_returns: np.ndarray | None = None
+    win_rate: float | None = None
+    payout_ratio: float | None = None
 
 
 @dataclass
@@ -107,13 +109,15 @@ class AdaptivePositionSizer:
             'active_positions', 0), market_regime=kwargs.get(
             'market_regime', 'NORMAL'), daily_volume=kwargs.get(
             'daily_volume', None), current_price=kwargs.get('current_price',
-            None), historical_returns=kwargs.get('historical_returns', None))
+            None), historical_returns=kwargs.get('historical_returns', None),
+            win_rate=kwargs.get('win_rate', None), payout_ratio=kwargs.get('payout_ratio', None))
 
     def calculate_position_size_legacy(self, portfolio_value: float,
         volatility: float, confidence: float, max_drawdown: float=0.0,
         active_positions: int=0, market_regime: str='NORMAL', daily_volume:
         float | None=None, current_price: float | None=None,
-        historical_returns: np.ndarray | None=None) ->dict[str, Any]:
+        historical_returns: np.ndarray | None=None, win_rate: float | None=None,
+        payout_ratio: float | None=None) ->dict[str, Any]:
         """
         @deprecated: Use calculate_position_size(params) instead.
         This method has too many parameters and is kept for backward compatibility only.
@@ -136,7 +140,8 @@ class AdaptivePositionSizer:
             volatility=volatility, confidence=confidence, max_drawdown=
             max_drawdown, active_positions=active_positions, market_regime=
             market_regime, daily_volume=daily_volume, current_price=
-            current_price, historical_returns=historical_returns)
+            current_price, historical_returns=historical_returns,
+            win_rate=win_rate, payout_ratio=payout_ratio)
         return self._calculate_position_size_from_params(params)
 
     def _calculate_position_size_from_params(self, params: PositionSizingParams
@@ -147,7 +152,7 @@ class AdaptivePositionSizer:
             var_adjustment = self._calculate_var_adjustment(params.
                 historical_returns)
             kelly_adjustment = self._calculate_kelly_adjustment(params.
-                confidence)
+                confidence, params.win_rate, params.payout_ratio)
             conf_adjustment = (params.confidence if params.confidence is not
                 None else 1.0)
             vol_adjustment = self._calculate_volatility_adjustment(params.
@@ -218,11 +223,21 @@ class AdaptivePositionSizer:
             self.logger.warning(f'VaR calculation failed, using fallback: {e}')
             return 1.0
 
-    def _calculate_kelly_adjustment(self, confidence: float) ->float:
+    def _calculate_kelly_adjustment(self, confidence: float, win_rate: float | None = None, payout_ratio: float | None = None) ->float:
         """Calculate Kelly Criterion adjustment factor"""
-        if not self.use_kelly or confidence is None:
+        if not self.use_kelly:
             return 1.0
-        kelly_f = (confidence - (1 - confidence)) / 1.0
+            
+        if win_rate is not None and win_rate > 0 and payout_ratio is not None and payout_ratio > 0:
+            b = payout_ratio
+            p = win_rate
+            q = 1.0 - p
+            kelly_f = (b * p - q) / b
+        elif confidence is not None:
+            kelly_f = (confidence - (1 - confidence)) / 1.0
+        else:
+            return 1.0
+            
         return max(0.1, min(kelly_f * self.kelly_fraction, 2.0))
 
     def _calculate_volatility_adjustment(self, volatility: float) ->float:
