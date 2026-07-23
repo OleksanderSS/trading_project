@@ -3,6 +3,7 @@ from typing import Any
 
 import pandas as pd
 
+from src.analytics.calculators.advanced_econometrics_calculator import AdvancedEconometricsCalculator
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.error_handling.error_handler import ErrorHandler
 from src.core.logging.logger import ProjectLogger
@@ -40,6 +41,7 @@ class FeatureEngineeringStage(BaseStage):
         self.target_gen = TargetGenerator(config_manager)
         self.timeframe_context_assembler = BackwardTimeframeContextAssembler()
         self._last_timeframe_context_report: dict[str, Any] = {}
+        self._last_causal_evidence: dict[str, Any] = {}
 
         self.logger.info("✅ FeatureEngineeringStage (Modular) initialized")
 
@@ -111,6 +113,7 @@ class FeatureEngineeringStage(BaseStage):
             'selected_features': selected_features,
             'feature_importance': feature_importance,
             'timeframe_context_report': self._last_timeframe_context_report,
+            'causal_evidence': self._last_causal_evidence,
             'timestamp': datetime.now().isoformat()
         }
 
@@ -279,6 +282,74 @@ class FeatureEngineeringStage(BaseStage):
             return parts[0].append(parts[1:]) if parts else frame.index[:0]
         return _prefix(frame)
 
+    # Column-name prefixes/substrings that identify an "external" predictor
+    # (macro, sentiment, news, economic-calendar) as opposed to a technical
+    # indicator derived from the ticker's own price — Granger-testing a
+    # technical indicator against the price it was computed from is close
+    # to circular, so those are deliberately excluded from this diagnostic.
+    _EXTERNAL_PREDICTOR_MARKERS: tuple[str, ...] = (
+        'FRED_', 'sentiment', 'nlp_sentiment', 'finbert_', 'news_', 'economic_', 'macro_', 'surprise_index',
+    )
+    _MAX_CAUSAL_DIAGNOSTIC_PREDICTORS = 15
+
+    def _diagnose_external_predictor_causality(
+        self,
+        candidate_features: pd.DataFrame,
+        target_series: pd.Series,
+        target_col: str,
+    ) -> dict[str, Any]:
+        """Diagnostic-only Granger/stationarity/cointegration check for
+        external (macro/sentiment/news) predictors against the target.
+
+        Does NOT filter or reweight feature selection — this is attached to
+        the Stage 3 output as `causal_evidence` purely so a human (or a
+        later, explicitly-approved change) can see which external
+        predictors show real lead-lag structure versus which are along for
+        the ride on correlation alone. Best-effort: any failure returns an
+        empty/partial result rather than blocking feature selection, and a
+        predictor count cap keeps this from dominating Stage 3 runtime,
+        since each predictor fits a VAR model plus stationarity/
+        cointegration/impulse-response/variance-decomposition tests.
+        """
+        external_cols = [
+            col
+            for col in candidate_features.columns
+            if any(marker in col for marker in self._EXTERNAL_PREDICTOR_MARKERS)
+        ][: self._MAX_CAUSAL_DIAGNOSTIC_PREDICTORS]
+
+        if not external_cols:
+            return {}
+
+        frame = candidate_features[external_cols].copy()
+        frame[target_col] = target_series
+
+        try:
+            causality_results = AdvancedEconometricsCalculator.run_comprehensive_causal_analysis(
+                frame, target_col, external_cols, maxlag=10, lag_selection='aic',
+            )
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.warning(f"Causal diagnostic failed, skipping: {e}")
+            return {}
+
+        evidence = {
+            col: {
+                'is_significant': result.get('is_significant'),
+                'causality_strength': result.get('causality_strength'),
+                'p_value': (result.get('granger_test') or {}).get('p_value'),
+                'is_cointegrated': (result.get('cointegration') or {}).get('is_cointegrated'),
+            }
+            for col, result in causality_results.items()
+            if col != '_summary' and isinstance(result, dict) and 'error' not in result
+        }
+
+        if evidence:
+            significant = sum(1 for v in evidence.values() if v.get('is_significant'))
+            self.logger.info(
+                f"Causal diagnostic: {significant}/{len(evidence)} external predictors show "
+                f"significant Granger causality vs '{target_col}' (diagnostic only, selection unaffected)."
+            )
+        return evidence
+
     async def _select_features(
         self,
         final_features: pd.DataFrame,
@@ -311,6 +382,12 @@ class FeatureEngineeringStage(BaseStage):
         if candidate_features.empty or len(valid_index) < 5 or target_series.loc[valid_index].nunique() < 2:
             fallback = list(candidate_features.columns)
             return fallback, dict.fromkeys(fallback, 1.0)
+
+        self._last_causal_evidence = self._diagnose_external_predictor_causality(
+            candidate_features.loc[train_only_index],
+            target_series.loc[train_only_index],
+            target_col,
+        )
 
         try:
             selection_result = await self.selector.select_with_full_analysis(

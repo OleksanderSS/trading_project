@@ -129,7 +129,13 @@ class AdvancedEconometricsCalculator: # audit-ignore: ARCHITECTURAL_USAGE
         try:
             granger_result = grangercausalitytests(test_data, maxlag=lag,
                 verbose=False)
-            f_p_values = [result['ssr_ftest'][1] for result in granger_result]
+            # grangercausalitytests returns {lag: (test_result_dict, [ols_results])};
+            # iterating the dict directly yields lag-number keys, not the
+            # per-lag result tuples — this previously raised IndexError on
+            # every call (`result['ssr_ftest']` on an int key), which went
+            # unnoticed because nothing in the active codebase called this
+            # method until now.
+            f_p_values = [value[0]['ssr_ftest'][1] for value in granger_result.values()]
             min_p_value = min(f_p_values)
             best_lag = f_p_values.index(min_p_value) + 1
             model = VAR(test_data)
