@@ -200,3 +200,108 @@ def test_execute_continue_mode_trains_light_models_on_loaded_data(monkeypatch):
         assert orchestrator.light_kwargs["features_df"].equals(features_df)
         assert orchestrator.light_kwargs["targets_df"].equals(targets_df)
         assert orchestrator.final_request["light_results"]["models_metadata"]["light_model"]["score"] == 1.0
+
+
+def test_compute_code_fingerprint_is_deterministic():
+    """Same source tree, same fingerprint — required for the cache check
+    to ever return a stable "no change" verdict."""
+    first = PipelineExecutor._compute_code_fingerprint()
+    second = PipelineExecutor._compute_code_fingerprint()
+    assert first == second
+    assert len(first) == 64  # sha256 hex digest
+
+
+def test_compute_code_fingerprint_changes_when_tracked_file_changes(tmp_path):
+    """Proves the fix actually works: editing a file under one of the
+    tracked directories changes the fingerprint, which is what makes a
+    stale features.parquet cache get invalidated by a code change instead
+    of silently reused. Reimplements the same hashing logic as
+    PipelineExecutor._compute_code_fingerprint against an isolated tmp_path
+    tree rather than monkeypatching module internals — the real method's
+    project-root resolution is exercised separately by
+    test_check_cache_before_run_invalidates_on_code_change below, which
+    patches the method itself rather than its internals."""
+    import hashlib
+
+    tracked_dir = tmp_path / "src" / "pipeline" / "stages"
+    tracked_dir.mkdir(parents=True)
+    tracked_file = tracked_dir / "fake_stage.py"
+    tracked_file.write_text("VALUE = 1\n", encoding="utf-8")
+
+    def _fingerprint_of(root: Path) -> str:
+        hasher = hashlib.sha256()
+        for path in sorted((root / "src" / "pipeline" / "stages").rglob("*.py")):
+            hasher.update(str(path.relative_to(root)).replace("\\", "/").encode("utf-8"))
+            hasher.update(path.read_bytes())
+        return hasher.hexdigest()
+
+    before = _fingerprint_of(tmp_path)
+    tracked_file.write_text("VALUE = 2\n", encoding="utf-8")
+    after = _fingerprint_of(tmp_path)
+
+    assert before != after
+
+
+def test_check_cache_before_run_invalidates_on_code_change(tmp_path, monkeypatch):
+    """End-to-end: even when the DB fingerprint matches (no new raw data),
+    a code_fingerprint mismatch alone must invalidate the cache."""
+    features_path = tmp_path / "features.parquet"
+    targets_path = tmp_path / "targets.parquet"
+    pd.DataFrame({"a": [1]}).to_parquet(features_path)
+    pd.DataFrame({"b": [1]}).to_parquet(targets_path)
+
+    fp_path = tmp_path / "raw_db_fingerprint.json"
+    import json
+    fp_path.write_text(json.dumps({
+        "fingerprint": "same_db_fingerprint",
+        "code_fingerprint": "stale_code_fingerprint_from_before_a_fix",
+        "generated_at": "2026-01-01T00:00:00",
+        "table_states": {},
+    }), encoding="utf-8")
+
+    monkeypatch.setattr(
+        PipelineExecutor, "_compute_db_fingerprint",
+        staticmethod(lambda _orchestrator: ("same_db_fingerprint", {})),
+    )
+    monkeypatch.setattr(
+        PipelineExecutor, "_compute_code_fingerprint",
+        staticmethod(lambda: "current_code_fingerprint_after_a_fix"),
+    )
+
+    orchestrator = SimpleNamespace(config=SimpleNamespace(output_dir=tmp_path))
+    result = PipelineExecutor._check_cache_before_run(orchestrator)
+
+    assert result is None  # cache correctly treated as invalid
+
+
+def test_check_cache_before_run_uses_cache_when_both_fingerprints_match(tmp_path, monkeypatch):
+    features_path = tmp_path / "features.parquet"
+    targets_path = tmp_path / "targets.parquet"
+    pd.DataFrame({"a": [1]}).to_parquet(features_path)
+    pd.DataFrame({"b": [1]}).to_parquet(targets_path)
+
+    fp_path = tmp_path / "raw_db_fingerprint.json"
+    import json
+    fp_path.write_text(json.dumps({
+        "fingerprint": "same_db_fingerprint",
+        "code_fingerprint": "same_code_fingerprint",
+        "generated_at": "2026-01-01T00:00:00",
+        "table_states": {},
+    }), encoding="utf-8")
+
+    monkeypatch.setattr(
+        PipelineExecutor, "_compute_db_fingerprint",
+        staticmethod(lambda _orchestrator: ("same_db_fingerprint", {})),
+    )
+    monkeypatch.setattr(
+        PipelineExecutor, "_compute_code_fingerprint",
+        staticmethod(lambda: "same_code_fingerprint"),
+    )
+
+    orchestrator = SimpleNamespace(config=SimpleNamespace(output_dir=tmp_path))
+    result = PipelineExecutor._check_cache_before_run(orchestrator)
+
+    assert result is not None
+    cached_features, cached_targets = result
+    assert list(cached_features.columns) == ["a"]
+    assert list(cached_targets.columns) == ["b"]

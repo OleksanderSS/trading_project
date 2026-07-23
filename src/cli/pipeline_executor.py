@@ -44,6 +44,39 @@ TARGETS_FILE = 'targets.parquet'
 class PipelineExecutor:
     """Handles pipeline execution for different modes."""
 
+    # Source trees whose content determines what stages 0-3 actually
+    # compute. Hashed together into the cache fingerprint (see
+    # _compute_code_fingerprint) so a code change — a bug fix, a leakage
+    # fix, a new diagnostic — invalidates a stale features.parquet cache
+    # even when the raw DB hasn't grown. Previously the cache was purely
+    # data-driven, which meant Stage 3 logic changes were silently skipped
+    # by cached (pre-fix) features unless someone manually deleted
+    # features.parquet/targets.parquet/the fingerprint file first.
+    _CODE_FINGERPRINT_DIRS = (
+        'src/pipeline/stages',
+        'src/features',
+        'src/analytics/calculators',
+    )
+
+    @staticmethod
+    def _compute_code_fingerprint() -> str:
+        """SHA-256 over every .py file's path + content under
+        _CODE_FINGERPRINT_DIRS, in sorted (deterministic) order."""
+        project_root = Path(__file__).resolve().parent.parent.parent
+        hasher = hashlib.sha256()
+        file_paths: list[Path] = []
+        for rel_dir in PipelineExecutor._CODE_FINGERPRINT_DIRS:
+            dir_path = project_root / rel_dir
+            if dir_path.exists():
+                file_paths.extend(dir_path.rglob('*.py'))
+        for path in sorted(file_paths):
+            try:
+                hasher.update(str(path.relative_to(project_root)).replace('\\', '/').encode('utf-8'))
+                hasher.update(path.read_bytes())
+            except OSError as e:
+                logger.warning(f'Code fingerprint: could not read {path}: {e}')
+        return hasher.hexdigest()
+
     @staticmethod
     @profile_execution
     async def execute_local_mode(orchestrator, tickers: list, timeframes: list
@@ -160,9 +193,10 @@ class PipelineExecutor:
 
     @staticmethod
     def _save_db_fingerprint(output_dir: Path, fingerprint: str, table_states: dict) -> None:
-        """Persist the current DB fingerprint alongside features.parquet."""
+        """Persist the current DB + code fingerprint alongside features.parquet."""
         meta = {
             'fingerprint': fingerprint,
+            'code_fingerprint': PipelineExecutor._compute_code_fingerprint(),
             'generated_at': datetime.now().isoformat(),
             'table_states': table_states,
         }
@@ -176,10 +210,15 @@ class PipelineExecutor:
     @staticmethod
     def _check_cache_before_run(orchestrator) -> tuple[pd.DataFrame, pd.DataFrame] | None:
         """
-        Data-driven cache check:
+        Data- and code-driven cache check:
         1. features.parquet must exist and be non-empty.
         2. DB fingerprint must match what was used to generate those features.
            → If new rows accumulated in raw tables since last run, re-run stages 0-3.
+        3. Code fingerprint (stages 0-3 + feature/analytics source) must
+           match too → a logic change (bug fix, leakage fix, new
+           diagnostic) invalidates the cache even when the raw DB hasn't
+           changed, so cached features are never silently stale relative
+           to the code that would now produce them.
         """
         output_dir = orchestrator.config.output_dir
         features_path = output_dir / 'features.parquet'
@@ -200,10 +239,24 @@ class PipelineExecutor:
         try:
             saved_meta = json.loads(fp_path.read_text(encoding='utf-8'))
             saved_fp = saved_meta.get('fingerprint', '')
+            saved_code_fp = saved_meta.get('code_fingerprint')
             saved_states = saved_meta.get('table_states', {})
             saved_at = saved_meta.get('generated_at', 'unknown')
         except Exception as e:
             logger.warning(f'Cache: could not read fingerprint file ({e}) — running full pipeline.')
+            return None
+
+        # Step 2b: code fingerprint. saved_code_fp is None for
+        # fingerprint files written before this check existed — treated as
+        # a mismatch (conservative: re-run once to establish a code
+        # baseline) rather than silently trusting pre-existing cache files
+        # of unknown code provenance.
+        current_code_fp = PipelineExecutor._compute_code_fingerprint()
+        if saved_code_fp != current_code_fp:
+            logger.info(
+                'Cache: stages 0-3 source code changed since this cache was generated '
+                f'(cached {saved_at}) — re-running stages 0-3.'
+            )
             return None
 
         current_fp, current_states = PipelineExecutor._compute_db_fingerprint(orchestrator)

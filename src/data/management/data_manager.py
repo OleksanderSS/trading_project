@@ -244,6 +244,27 @@ class DataManager(IDatabaseManager):
             raise DataLoadError(f"Failed to load data for tickers {tickers}: {e}") from e
 
     def upsert(self, table_name: str, df: pd.DataFrame, unique_on: list[str] | None = None):
+        """Insert rows from `df` whose `unique_on` key does not already
+        exist in `table_name`. Despite the name, this is INSERT-IF-ABSENT,
+        not update-on-conflict: a row whose key already exists is silently
+        skipped, never rewritten, even if its other column values differ
+        from what's stored (see _prepare_upsert_df).
+
+        This is intentional for how this project treats raw source data —
+        prices, VIX readings, news, macro releases — as an immutable
+        historical chronicle (see pipeline_executor.py's fingerprinting
+        docstring: "Raw data ... is a permanent chronicle — it never
+        expires"). Silently allowing updates here would let a later run
+        rewrite what an earlier bar/reading/article looked like, which is
+        exactly the kind of retroactive change that can leak
+        look-ahead information into a backtest.
+
+        If a specific table genuinely needs update-on-conflict semantics
+        (e.g. correcting a known-bad value), that should be a separate,
+        explicitly-named method — not a silent mode change here, since
+        every other caller of `upsert()` is relying on existing keys being
+        left alone.
+        """
         if df.empty:
             return
 
