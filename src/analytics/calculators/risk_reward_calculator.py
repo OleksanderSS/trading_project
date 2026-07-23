@@ -4,6 +4,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from src.metrics.financial.financial_metrics_library import FinancialMetricsLibrary
+
 from .volatility_calculator import VolatilityCalculator
 
 logger = logging.getLogger(__name__)
@@ -79,22 +81,22 @@ class RiskRewardCalculator:
 
     @staticmethod
     def calculate_sharpe_ratio(returns: pd.Series, config: TradeConfig | None = None) -> float:
-        """Calculates the annualized Sharpe Ratio."""
+        """Calculates the annualized Sharpe Ratio.
+
+        Delegates to FinancialMetricsLibrary.calculate_sharpe_ratio (the
+        canonical implementation) — this wrapper only exists to keep the
+        TradeConfig-based call signature existing callers already use.
+        Behavior is unchanged: same formula, same defaults
+        (risk_free_rate=0.0, periods_per_year=252 via TradeConfig), NaN on
+        insufficient data or zero/non-finite excess-return std.
+        """
         if config is None:
             config = TradeConfig()
-
-        clean_returns = RiskRewardCalculator._clean_return_series(returns)
-        periods_per_year = max(int(config.periods_per_year), 1)
-        if len(clean_returns) < 2:
-            return np.nan
-
-        excess_returns = clean_returns - (config.risk_free_rate / periods_per_year)
-        excess_std = excess_returns.std()
-        if not np.isfinite(excess_std) or excess_std <= 1e-12:
-            return np.nan
-
-        annualized_sharpe = (excess_returns.mean() / excess_std) * np.sqrt(periods_per_year)
-        return float(annualized_sharpe) if np.isfinite(annualized_sharpe) else np.nan
+        return FinancialMetricsLibrary.calculate_sharpe_ratio(
+            returns,
+            risk_free_rate=config.risk_free_rate,
+            trading_days_per_year=config.periods_per_year,
+        )
 
     @staticmethod
     def calculate_sortino_ratio(returns: pd.Series, config: TradeConfig | None = None) -> float:

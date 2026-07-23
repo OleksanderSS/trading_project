@@ -3,46 +3,15 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-
-def _infer_periods_per_year(returns: pd.Series) -> int:
-    """
-    Infer annualisation factor from the DatetimeIndex of *returns*.
-
-    Falls back to 252 (daily) when the index is not a DatetimeIndex or the
-    median gap cannot be determined reliably.
-
-    Typical values:
-        252  – daily  (1 bar ≈ 1 trading day)
-        52   – weekly (1 bar ≈ 1 week)
-        12   – monthly
-        1440 – 1-minute bars  (252 * 390 ≈ ~98 280, but conventionally capped)
-        390  – 1-minute intra-day per day * 252 trading days / 252 = 390
-
-    We map calendar-day median gaps to the conventional annualisation buckets
-    used in finance.
-    """
-    if not isinstance(returns.index, pd.DatetimeIndex) or len(returns) < 2:
-        return 252
-
-    gaps = returns.index.to_series().diff().dropna()
-    if gaps.empty:
-        return 252
-
-    median_seconds = gaps.median().total_seconds()
-    # Map to conventional annualisation buckets
-    if median_seconds <= 90:           # ≤ 1.5 min → 1-minute bars
-        return 252 * 390               # ~98 280  (1-min bars per trading year)
-    if median_seconds <= 1200:         # ≤ 20 min → 15-minute bars
-        return 252 * 26                # ~6 552
-    if median_seconds <= 5400:         # ≤ 90 min → 1-hour bars
-        return 252 * 7                 # ~1 764   (≈ 6-7 h per trading day)
-    if median_seconds <= 100_000:      # ≤ ~1.15 days → daily
-        return 252
-    if median_seconds <= 800_000:      # ≤ ~9 days → weekly
-        return 52
-    if median_seconds <= 2_800_000:    # ≤ ~32 days → monthly
-        return 12
-    return 4                           # quarterly
+# Canonical home is now FinancialMetricsLibrary — re-exported here under the
+# original name since src/backtesting/advanced/advanced_engine.py,
+# src/pipeline/stages/evaluation/metrics_calculator.py, and
+# src/analytics/analyzers/performance_attribution_analyzer.py all import
+# `_infer_periods_per_year` directly from this module.
+from src.metrics.financial.financial_metrics_library import (
+    FinancialMetricsLibrary,
+    infer_periods_per_year as _infer_periods_per_year,
+)
 
 
 class PerformanceMetricsMixin:
@@ -54,15 +23,22 @@ class PerformanceMetricsMixin:
         risk_free_rate: float = 0.02,
         periods_per_year: int | None = None,
     ) -> float:
-        if len(returns) < 2:
-            return 0.0
-        ppy = periods_per_year if periods_per_year is not None else _infer_periods_per_year(returns)
-        excess_returns = returns - risk_free_rate / ppy
-        std_val = excess_returns.std()
-        if not np.isfinite(std_val) or std_val <= 1e-12:
-            return 0.0
-        sharpe = (np.sqrt(ppy) * excess_returns.mean()) / std_val
-        return float(sharpe) if np.isfinite(sharpe) else 0.0
+        """Delegates to FinancialMetricsLibrary.calculate_sharpe_ratio (the
+        canonical implementation) — this wrapper only exists to keep this
+        mixin's own call signature and defaults for existing callers.
+        Behavior is unchanged: risk_free_rate=0.02 default (unlike the
+        other two Sharpe call sites, which default to 0.0 — preserved here
+        rather than silently unified, since changing it would change every
+        backtest metric this mixin produces), cadence-aware
+        periods_per_year auto-inference when not given, and 0.0 (not NaN)
+        on insufficient data or zero/non-finite excess-return std.
+        """
+        return FinancialMetricsLibrary.calculate_sharpe_ratio(
+            returns,
+            risk_free_rate=risk_free_rate,
+            trading_days_per_year=periods_per_year,
+            on_error=0.0,
+        )
 
     def _calculate_max_drawdown(self, equity: pd.Series) -> float:
         rolling_max = equity.cummax()

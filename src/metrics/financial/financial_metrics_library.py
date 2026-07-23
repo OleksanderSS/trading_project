@@ -19,6 +19,40 @@ from src.metrics.utils.calculation_tools import (  # noqa: F401
     annualize_returns,
 )
 
+
+def infer_periods_per_year(returns: pd.Series) -> int:
+    """Infer annualisation factor from the DatetimeIndex of *returns*.
+
+    Falls back to 252 (daily) when the index is not a DatetimeIndex or the
+    median gap cannot be determined reliably. Moved here from
+    src/algorithms/metrics_mixin.py so a single canonical Sharpe
+    implementation (below) can offer cadence-aware annualisation to every
+    caller, not just the backtest engine — this project runs 15m/1h/1d
+    timeframes side by side, and a fixed 252 assumes daily bars regardless
+    of what's actually being measured.
+    """
+    if not isinstance(returns.index, pd.DatetimeIndex) or len(returns) < 2:
+        return 252
+
+    gaps = returns.index.to_series().diff().dropna()
+    if gaps.empty:
+        return 252
+
+    median_seconds = gaps.median().total_seconds()
+    if median_seconds <= 90:           # ≤ 1.5 min → 1-minute bars
+        return 252 * 390
+    if median_seconds <= 1200:         # ≤ 20 min → 15-minute bars
+        return 252 * 26
+    if median_seconds <= 5400:         # ≤ 90 min → 1-hour bars
+        return 252 * 7
+    if median_seconds <= 100_000:      # ≤ ~1.15 days → daily
+        return 252
+    if median_seconds <= 800_000:      # ≤ ~9 days → weekly
+        return 52
+    if median_seconds <= 2_800_000:    # ≤ ~32 days → monthly
+        return 12
+    return 4                           # quarterly
+
 logger = ProjectLogger.get_logger("FinancialMetricsLibrary")
 
 
@@ -65,19 +99,42 @@ class FinancialMetricsLibrary:
 
     @staticmethod
     def calculate_sharpe_ratio(
-        returns: pd.Series, risk_free_rate: float = 0.0, trading_days_per_year: int = 252
+        returns: pd.Series,
+        risk_free_rate: float = 0.0,
+        trading_days_per_year: int | None = 252,
+        on_error: float = np.nan,
     ) -> float:
-        """Calculates annualized Sharpe Ratio."""
+        """Calculates annualized Sharpe Ratio.
+
+        This is the canonical implementation — src/analytics/calculators/
+        risk_reward_calculator.py and src/algorithms/metrics_mixin.py both
+        delegate here instead of maintaining their own copy of the formula,
+        after a same-session audit found three independently-maintained
+        Sharpe implementations that could silently disagree (different
+        risk-free-rate defaults, different NaN-vs-0.0 failure behavior).
+
+        Args:
+            trading_days_per_year: pass None to auto-infer the
+                annualisation factor from `returns`' DatetimeIndex cadence
+                (see infer_periods_per_year) instead of assuming daily
+                bars — useful for callers measuring 15m/1h/1d returns.
+            on_error: value returned when there's insufficient data or the
+                excess-return std is zero/non-finite. Defaults to NaN
+                (explicit "could not compute"); some callers prefer 0.0 to
+                avoid propagating NaN through downstream aggregations —
+                pass on_error=0.0 to preserve that behavior.
+        """
         clean_returns = pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
         if len(clean_returns) < 2:
-            return np.nan
-        periods = max(int(trading_days_per_year), 1)
+            return on_error
+        periods = trading_days_per_year if trading_days_per_year is not None else infer_periods_per_year(clean_returns)
+        periods = max(int(periods), 1)
         excess_returns = clean_returns - risk_free_rate / periods
         excess_std = excess_returns.std()
         if not np.isfinite(excess_std) or excess_std <= 1e-12:
-            return np.nan
+            return on_error
         sharpe = excess_returns.mean() / excess_std * np.sqrt(periods)
-        return float(sharpe) if np.isfinite(sharpe) else np.nan
+        return float(sharpe) if np.isfinite(sharpe) else on_error
 
     @staticmethod
     def calculate_sortino_ratio(
