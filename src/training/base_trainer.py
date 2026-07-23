@@ -15,7 +15,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import joblib
 import numpy as np
 
 from src.config.unified_config_manager import get_current_config
@@ -23,6 +22,7 @@ from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.metrics.model.ml_evaluator import MLEvaluator
+from src.models.artifact_store import get_model_artifact_store
 
 
 class TrainingException(Exception):
@@ -122,6 +122,7 @@ class BaseTrainer(ABC):
         self.model_factory = ModelFactory()
         self.diary = DiaryEngine()
         self.evaluator = MLEvaluator()
+        self.artifact_store = get_model_artifact_store()
 
         # Initialize output directory
         try:
@@ -429,19 +430,11 @@ class BaseTrainer(ABC):
         """Persist one trained candidate without overwriting other models."""
         filename = f"model_{ticker}_{target}_{model_type}.joblib"
         path = self.output_dir / filename
-        try:
-            joblib.dump(model, path)
-            if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug(f"Model candidate saved: {path}")
-            return path
-        except (OSError, TypeError, Exception) as e:
-            self.logger.error(
-                f"Error saving model candidate {filename}: {e}",
-                exc_info=True,
-            )
-            raise TrainingException(
-                f"Failed to save model candidate {filename}: {e}"
-            ) from e
+        if not self.artifact_store.save_joblib(model, path):
+            raise TrainingException(f"Failed to save model candidate {filename}")
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"Model candidate saved: {path}")
+        return path
 
     def _promote_champion_file(
         self,
@@ -458,17 +451,9 @@ class BaseTrainer(ABC):
     def _save_champion(self, model: Any, ticker: str, target: str):
         """Compatibility helper for callers that already selected a winner."""
         path = self.output_dir / f"CHAMP_{ticker}_{target}.joblib"
-        try:
-            joblib.dump(model, path)
-            return path
-        except (OSError, TypeError, Exception) as e:
-            self.logger.error(
-                f"Error saving champion {path.name}: {e}",
-                exc_info=True,
-            )
-            raise TrainingException(
-                f"Failed to save champion {path.name}: {e}"
-            ) from e
+        if not self.artifact_store.save_joblib(model, path):
+            raise TrainingException(f"Failed to save champion {path.name}")
+        return path
 
     def _generate_summary(self, results: dict[str, Any]) -> dict[str, Any]:
         """
