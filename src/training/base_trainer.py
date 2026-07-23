@@ -289,26 +289,44 @@ class BaseTrainer(ABC):
     def _execute_model_training_cycle(self, ticker: str, model_types: list[str],
                                    data: dict[str, Any], is_classif: bool,
                                    results: dict[str, Any]) -> tuple[float, str | None]:
-        """Iterates through model types and trains each one."""
+        """Iterates through model types and trains each one.
+
+        Selection uses each candidate's validation score, never the test
+        score — the test set is reserved for a single, honest post-selection
+        read of the winner (see _record_winner_test_score).
+        """
         best_score = -np.inf
         winner_name = None
+        winner_model = None
 
         for m_type in model_types:
             try:
-                score_val = self._train_individual_model(ticker, m_type, data, is_classif, results)
+                score_val, model = self._train_individual_model(ticker, m_type, data, is_classif, results)
 
                 if score_val > best_score:
                     best_score = score_val
                     winner_name = m_type
+                    winner_model = model
             except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 self.logger.error(f"Failed to train {m_type} for {ticker}: {e}")
                 continue
 
+        if winner_model is not None:
+            self._record_winner_test_score(winner_model, data, is_classif, results)
+
         return best_score, winner_name
 
     def _train_individual_model(self, ticker: str, m_type: str, data: dict[str, Any],
-                              is_classif: bool, results: dict[str, Any]) -> float:
-        """Handles creation, training, and evaluation of a single model instance."""
+                              is_classif: bool, results: dict[str, Any]) -> tuple[float, Any]:
+        """Handles creation, training, and evaluation of a single model instance.
+
+        LEAKAGE FIX: model selection must score candidates on the validation
+        split, not the test split — scoring on test here would let the
+        "best model" choice itself be informed by the held-out data that's
+        supposed to give an unbiased final read. Falls back to the test
+        split only when no validation split is present in `data` (older
+        callers that don't produce one), so this stays backward compatible.
+        """
         model = self.model_factory.create_model(
             model_name=m_type,
             config=self.config_manager.get_config(f"models.{m_type}", {}),
@@ -317,10 +335,13 @@ class BaseTrainer(ABC):
         )
 
         model.train(data['X_train'], data['y_train'])
-        preds = model.predict(data['X_test'])
+
+        eval_X = data['X_val'] if data.get('X_val') is not None else data['X_test']
+        eval_y = data['y_val'] if data.get('y_val') is not None else data['y_test']
+        preds = model.predict(eval_X)
 
         score = self.evaluator.calculate(
-            data['y_test'], preds,
+            eval_y, preds,
             task_type="classification" if is_classif else "regression"
         )
 
@@ -351,7 +372,27 @@ class BaseTrainer(ABC):
             context_pattern_seq=data.get('context_pattern_seq')
         )
 
-        return score_val
+        return score_val, model
+
+    def _record_winner_test_score(self, winner_model: Any, data: dict[str, Any],
+                                is_classif: bool, results: dict[str, Any]) -> None:
+        """Scores the already-selected winner on the untouched test split.
+
+        This is the only place the test set is used. It never influences
+        which model wins — it's recorded purely so downstream consumers get
+        one honest, selection-independent number instead of the
+        validation score being mistaken for a true out-of-sample result.
+        """
+        preds = winner_model.predict(data['X_test'])
+        score = self.evaluator.calculate(
+            data['y_test'], preds,
+            task_type="classification" if is_classif else "regression"
+        )
+        results['winner_test_metrics'] = {
+            'score': float(score.get('F1' if is_classif else 'R2', 0.0)),
+            'accuracy': float(score.get('Accuracy', -score.get('MSE', 0.0) if not is_classif else 0.0)),
+            'mse': float(score.get('MSE', 0.0)) if not is_classif else None,
+        }
 
     def _finalize_ticker_results(self, results: dict[str, Any], winner: str | None, best_score: float) -> dict:
         """Packages the final results dictionary."""
