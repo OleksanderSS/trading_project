@@ -432,6 +432,7 @@ class BaseTrainer(ABC):
         path = self.output_dir / filename
         if not self.artifact_store.save_joblib(model, path):
             raise TrainingException(f"Failed to save model candidate {filename}")
+        self._invalidate_model_pool_entry(path.stem)
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"Model candidate saved: {path}")
         return path
@@ -443,10 +444,35 @@ class BaseTrainer(ABC):
         ticker: str,
         target: str,
     ) -> Path:
-        """Copy the selected winner to the stable champion path."""
+        """Copy the selected winner to the stable champion path.
+
+        Always writes to the same fixed CHAMP_{ticker}_{target}.joblib name,
+        so the ModelPool entry keyed by that stem must be invalidated after
+        overwriting — see _invalidate_model_pool_entry().
+        """
         champion_path = self.output_dir / f"CHAMP_{ticker}_{target}.joblib"
         shutil.copy2(winner_path, champion_path)
+        self._invalidate_model_pool_entry(champion_path.stem)
         return champion_path
+
+    @staticmethod
+    def _invalidate_model_pool_entry(model_stem: str) -> None:
+        """Evict `model_stem` from the global ModelPool if present.
+
+        ModelPool.get_model() is a pure cache lookup by this same stem key
+        (see model_resolver.py) — it never re-invokes loader_fn for a hit,
+        so writing a new file under a name that's already cached would
+        otherwise be invisible to a long-running process until the entry
+        aged out via LRU eviction, which could be arbitrarily far in the
+        future (or never, if the pool isn't full).
+        """
+        try:
+            from src.models.model_pool import get_model_pool
+            get_model_pool().remove_model(model_stem)
+        except (ImportError, AttributeError) as e:
+            logging.getLogger(__name__).warning(
+                f"Could not invalidate model pool cache for {model_stem}: {e}"
+            )
 
     def _save_champion(self, model: Any, ticker: str, target: str):
         """Compatibility helper for callers that already selected a winner."""
