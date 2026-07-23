@@ -32,6 +32,7 @@ from src.ensembling.caching import get_ensemble_cache
 from src.ensembling.stacked_ensemble import StackedEnsemble
 from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.models.calibration.adaptive_confidence_calibrator import get_confidence_calibrator
+from src.models.calibration.prediction_ledger import record_prediction
 from src.models.loader import ModelLoaderStrategy
 from src.models.model_pool import get_model_pool
 from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
@@ -461,9 +462,20 @@ class PredictionStage(BaseStage):
             request.meta.get("timeframe")
             or prediction_timeframe(request.ticker_df_clean)
         )
+        target_name = request.meta.get('target_name') or request.meta.get('target')
+        last_price = self._get_last_price(request.ticker_df_clean, request.ticker)
+        self._record_prediction_for_calibration(
+            ticker=request.ticker,
+            target_name=target_name,
+            timeframe=resolved_timeframe,
+            predicted_value=pred_value,
+            last_price=last_price,
+            raw_confidence=raw_confidence,
+            calibrated_confidence=final_confidence,
+        )
         return {'ticker': request.ticker,
             'model_context_id': request.context_id,
-            'target_name': request.meta.get('target_name') or request.meta.get('target'),
+            'target_name': target_name,
             'model_type': request.meta.get('model_type') or request.best_model_name,
             'timeframe': resolved_timeframe,
             'timeframe_lineage': request.meta.get(
@@ -482,7 +494,7 @@ class PredictionStage(BaseStage):
             'predictions_by_model': request.model_contributions,
             'selected_primary_model': request.best_model_name, 'confidence':
             final_confidence, 'raw_confidence': raw_confidence, 'anomaly_score': anomaly_score, 'last_price':
-            self._get_last_price(request.ticker_df_clean, request.ticker),
+            last_price,
             'timestamp': observed_at,
             'lineage_sources': {
                 'timeframe': (
@@ -516,6 +528,34 @@ class PredictionStage(BaseStage):
         elif f'{ticker}_1d_close' in ticker_df.columns:
             return float(ticker_df[f'{ticker}_1d_close'].iloc[-1])
         return None
+
+    def _record_prediction_for_calibration(
+        self,
+        *,
+        ticker: str,
+        target_name: str | None,
+        timeframe: str | None,
+        predicted_value: float,
+        last_price: float | None,
+        raw_confidence: float,
+        calibrated_confidence: float,
+    ) -> None:
+        """Best-effort ledger write for the confidence-calibrator outcome
+        feedback loop (see src/models/calibration/prediction_ledger.py).
+        Never blocks prediction generation — a ledger write failure is a
+        lost calibration data point, not a reason to fail the pipeline."""
+        try:
+            record_prediction(
+                ticker=ticker,
+                target_name=target_name or 'unknown',
+                timeframe=timeframe or 'unknown',
+                predicted_value=predicted_value,
+                last_price=last_price,
+                raw_confidence=raw_confidence,
+                calibrated_confidence=calibrated_confidence,
+            )
+        except (ValueError, TypeError, AttributeError, KeyError, OSError) as e:
+            self.logger.warning(f'Failed to record prediction to calibration ledger: {e}')
 
     def _prepare_final_results(self, prediction_results: dict[str, Any],
         models_meta: dict[str, Any], kwargs: dict[str, Any]) ->dict[str, Any]:
