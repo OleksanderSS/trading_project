@@ -31,6 +31,7 @@ from src.core.logging.logger import ProjectLogger
 from src.ensembling.caching import get_ensemble_cache
 from src.ensembling.stacked_ensemble import StackedEnsemble
 from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.models.calibration.adaptive_confidence_calibrator import get_confidence_calibrator
 from src.models.loader import ModelLoaderStrategy
 from src.models.model_pool import get_model_pool
 from src.models.model_selector.adaptive_selector import AdaptiveModelSelector
@@ -440,7 +441,12 @@ class PredictionStage(BaseStage):
         confidence_info = self.anomaly_engine.calculate_ensemble_confidence(
             models=request.models or {}, X=request.ticker_df_clean, prediction=request.
             adjusted_prediction, context_id=request.context_id)
-        final_confidence = confidence_info.get('score', 0.5) * anomaly_score
+        raw_confidence = confidence_info.get('score', 0.5) * anomaly_score
+        try:
+            final_confidence = float(get_confidence_calibrator().calibrate(raw_confidence))
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            self.logger.warning(f'Confidence calibration unavailable, using raw score: {e}')
+            final_confidence = raw_confidence
         if anomaly_score < 0.8:
             self.logger.warning(
                 f'Low anomaly score ({anomaly_score:.2f}) - potential data anomaly!'
@@ -475,7 +481,7 @@ class PredictionStage(BaseStage):
             adjusted_prediction, 'raw_forecast': request.raw_prediction,
             'predictions_by_model': request.model_contributions,
             'selected_primary_model': request.best_model_name, 'confidence':
-            final_confidence, 'anomaly_score': anomaly_score, 'last_price':
+            final_confidence, 'raw_confidence': raw_confidence, 'anomaly_score': anomaly_score, 'last_price':
             self._get_last_price(request.ticker_df_clean, request.ticker),
             'timestamp': observed_at,
             'lineage_sources': {

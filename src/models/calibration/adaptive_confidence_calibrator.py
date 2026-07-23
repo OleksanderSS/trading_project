@@ -340,3 +340,31 @@ class AdaptiveConfidenceCalibrator:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)
             self.logger.warning(f'Simple training failed: {e}')
             raise
+
+
+# Default persistence path — one global calibrator shared across tickers/
+# targets. Calibration is a property of "when the model says X% confidence,
+# how often is it actually right," which is standard to pool across
+# instances rather than requiring ~500 samples (window_size default) per
+# individual ticker+target pair before it becomes useful.
+DEFAULT_CALIBRATOR_PATH = "data/models/confidence_calibrator.joblib"
+
+_calibrator_instance: "AdaptiveConfidenceCalibrator | None" = None
+
+
+def get_confidence_calibrator(
+    filepath: str = DEFAULT_CALIBRATOR_PATH,
+) -> "AdaptiveConfidenceCalibrator":
+    """Singleton accessor: loads persisted calibration state if present.
+
+    Safe to call even if no prior state exists on disk — `calibrate()`
+    degrades to `np.clip(raw_confidence, 0.01, 0.99)` (an effective no-op)
+    until enough outcomes have been recorded via `update_with_outcome()`
+    to fit the Platt/Isotonic models.
+    """
+    global _calibrator_instance
+    if _calibrator_instance is None:
+        _calibrator_instance = AdaptiveConfidenceCalibrator()
+        if Path(filepath).exists():
+            _calibrator_instance.load(filepath)
+    return _calibrator_instance
