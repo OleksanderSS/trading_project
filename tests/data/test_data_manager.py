@@ -28,32 +28,47 @@ class TestDataManager(unittest.TestCase):
         """Set up the test environment once for all tests."""
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
         cls.db_path = project_root / "data" / "test_main.duckdb"
-        cls.dummy_config_path = project_root / "src"/ "config" / "system.yaml"
-
-        # Create a dummy config for testing config-based initialization
-        with open(cls.dummy_config_path, "w") as f:
-            f.write(f"storage:\n  db_path: {cls.db_path.as_posix()}\n")
-
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up the test environment after all tests."""
-        if os.path.exists(cls.dummy_config_path):
-            os.remove(cls.dummy_config_path)
+        # PREVIOUSLY: this wrote a dummy fixture directly over
+        # src/config/system.yaml — a REAL file in UnifiedConfigManager's
+        # config precedence chain (layer 1, base infrastructure; see
+        # unified_config_manager.py's load-order list), then deleted it in
+        # tearDownClass. The only test that ever read this dummy file
+        # (test_initialization_from_config, below) is commented out/skipped,
+        # so this write+delete served no purpose for any currently-active
+        # test while repeatedly clobbering a real, shared, load-bearing
+        # config file — the version of system.yaml already committed to git
+        # is itself this exact dummy fixture content, meaning a past test
+        # run already overwrote whatever real config used to be there.
+        # Removed entirely rather than pointed at a temp path, since nothing
+        # active needs it; if test_initialization_from_config is ever
+        # un-skipped, it should write its dummy config to an isolated temp
+        # directory, never to a real path under src/config/.
 
     def setUp(self):
         """Set up a fresh database for each test."""
         # Mocks for dependencies
         self.mock_config_manager = MagicMock(spec=UnifiedConfigManager)
+        # DataManager.__init__ no longer accepts db_path directly — it reads
+        # config_manager.get('paths.raw_db', MEMORY_DB) instead. This test
+        # previously passed db_path= as a kwarg, which TypeErrors against
+        # the current constructor signature (pre-existing breakage, found
+        # while adding a regression test for the vix_data upsert bug below —
+        # unrelated to that fix, corrected here since it blocked every test
+        # in this file, not just the new one).
+        self.mock_config_manager.get.return_value = str(self.db_path)
         self.mock_error_handler = MagicMock(spec=IErrorHandler)
 
-        self.dm = DataManager(config_manager=self.mock_config_manager, 
-                              error_handler=self.mock_error_handler, 
-                              db_path=str(self.db_path))
+        self.dm = DataManager(config_manager=self.mock_config_manager,
+                              error_handler=self.mock_error_handler)
         self.dm.execute_query("DROP TABLE IF EXISTS test_stocks")
 
     def tearDown(self):
         """Close connection and clean up database file after each test."""
-        self.dm.close()
+        # DataManager has no per-instance close() — connections are shared/
+        # pooled by db_path (DataManager._connections), so this must close
+        # via the classmethod instead (another pre-existing API drift this
+        # test predates: no per-instance close() method exists at all).
+        DataManager.close_all_connections()
         if os.path.exists(self.db_path):
             os.remove(self.db_path)
         wal_file = Path(f"{self.db_path}.wal")
@@ -67,12 +82,30 @@ class TestDataManager(unittest.TestCase):
             'timestamp': pd.to_datetime(['2023-01-01', '2023-01-01'])
         })
         self.dm.upsert('test_stocks', df1)
-        loaded_df = self.dm.load_data("SELECT * FROM test_stocks ORDER BY ticker")
+        loaded_df = self.dm.fetch_df("SELECT * FROM test_stocks ORDER BY ticker")
         self.assertEqual(len(loaded_df), 2, "Initial save should result in 2 rows.")
         self.assertEqual(loaded_df['ticker'].tolist(), ['AAPL', 'GOOG'], "Data mismatch after initial save.")
 
     def test_upsert_operation(self):
-        """Test the upsert functionality (update existing, insert new)."""
+        """Test DataManager.upsert()'s actual current semantics: insert
+        genuinely new (unique_on) keys, silently SKIP rows whose key
+        already exists — it does not update them. This matches the
+        project's stated design elsewhere (pipeline_executor.py:
+        "Raw data (news, prices, macro) is a permanent chronicle — it
+        never expires") for immutable historical facts.
+
+        NOTE: this assertion previously expected AAPL's price to be
+        updated from 150.0 to 155.0 (see git history) — that was already
+        failing (unrelated to any change in this session) because
+        _prepare_upsert_df's dedup-against-existing-keys step filters out
+        rows whose key exists, it never issues an UPDATE. If true
+        update-on-conflict semantics are ever needed for some table, that
+        needs a deliberate design decision (and likely a differently-named
+        method, since "upsert" implying update-on-conflict while actually
+        doing insert-if-absent is a footgun) — not a change made here
+        without knowing which behavior the project owner actually wants
+        for which tables.
+        """
         df1 = pd.DataFrame({
             'ticker': ['AAPL', 'GOOG'], 'price': [150.0, 2800.0],
             'timestamp': pd.to_datetime(['2023-01-01', '2023-01-01'])
@@ -85,12 +118,53 @@ class TestDataManager(unittest.TestCase):
         })
         self.dm.upsert('test_stocks', df2, unique_on=['ticker', 'timestamp'])
 
-        loaded_df = self.dm.load_data("SELECT * FROM test_stocks ORDER BY ticker")
-        self.assertEqual(len(loaded_df), 3, "Upsert should result in 3 rows.")
+        loaded_df = self.dm.fetch_df("SELECT * FROM test_stocks ORDER BY ticker")
+        self.assertEqual(len(loaded_df), 3, "Upsert should result in 3 rows (AAPL kept once, GOOG kept, MSFT added).")
         self.assertEqual(sorted(loaded_df['ticker'].tolist()), ['AAPL', 'GOOG', 'MSFT'], "Ticker list incorrect after upsert.")
-        
+
         aapl_price = loaded_df[loaded_df['ticker'] == 'AAPL']['price'].iloc[0]
-        self.assertEqual(aapl_price, 155.0, "AAPL price should have been updated.")
+        self.assertEqual(aapl_price, 150.0, "Existing AAPL row's key already existed — current upsert() skips it, keeping the original price.")
+
+    def test_upsert_composite_key_with_internal_duplicates_does_not_raise(self):
+        """Reproduces a production bug (vix_data upserts, 2026-07-21 and
+        2026-07-23 pipeline runs): _prepare_upsert_df's composite-key branch
+        built df_insert_keys with a fresh RangeIndex instead of df_insert's
+        own index. drop_duplicates() (called just before) does not reset the
+        index, so any input with internal duplicates on the composite key
+        produces a non-contiguous df_insert index that no longer lines up
+        with the RangeIndex — raising
+        "pandas.errors.IndexingError: Unalignable boolean Series provided
+        as indexer" the moment the boolean mask is applied. This needs a
+        multi-column unique_on (single-column reuses df_insert's own index
+        and never hits this path) AND an internal duplicate so
+        drop_duplicates() actually removes a row and creates the gap.
+        """
+        df1 = pd.DataFrame({
+            'ticker': ['SPY'], 'price': [400.0],
+            'timestamp': pd.to_datetime(['2023-01-01']),
+        })
+        self.dm.upsert('test_stocks', df1, unique_on=['ticker', 'timestamp'])
+
+        # Row 0 and row 1 are an internal duplicate on (ticker, timestamp);
+        # row 2 is genuinely new. After drop_duplicates(keep='first') the
+        # surviving index is [0, 2] — not contiguous — which is what
+        # exposed the bug.
+        df2 = pd.DataFrame({
+            'ticker': ['AAPL', 'AAPL', 'MSFT'],
+            'price': [150.0, 151.0, 300.0],
+            'timestamp': pd.to_datetime(['2023-01-01', '2023-01-01', '2023-01-01']),
+        })
+
+        # Must not raise pandas.errors.IndexingError.
+        self.dm.upsert('test_stocks', df2, unique_on=['ticker', 'timestamp'])
+
+        loaded_df = self.dm.fetch_df("SELECT * FROM test_stocks ORDER BY ticker")
+        self.assertEqual(
+            sorted(loaded_df['ticker'].tolist()), ['AAPL', 'MSFT', 'SPY'],
+            "Expected one deduplicated AAPL row, one new MSFT row, and the original SPY row.",
+        )
+        aapl_price = loaded_df[loaded_df['ticker'] == 'AAPL']['price'].iloc[0]
+        self.assertEqual(aapl_price, 150.0, "Internal duplicate should keep the first occurrence (price=150.0).")
 
     def test_load_with_query(self):
         """Test loading data using a specific SQL query."""
@@ -98,7 +172,7 @@ class TestDataManager(unittest.TestCase):
             'ticker': ['NVDA', 'AMD'], 'price': [450.0, 120.0],
         })
         self.dm.upsert('test_stocks', df)
-        nvda_df = self.dm.load_data("SELECT * FROM test_stocks WHERE ticker = 'NVDA'")
+        nvda_df = self.dm.fetch_df("SELECT * FROM test_stocks WHERE ticker = 'NVDA'")
         self.assertEqual(len(nvda_df), 1, "Query should return a single row.")
         self.assertEqual(nvda_df['price'].iloc[0], 450.0, "Incorrect data retrieved by query.")
 

@@ -337,7 +337,18 @@ class DataManager(IDatabaseManager):
                     else:
                         # Multiple columns: use tuple composite keys
                         existing_keys_set = set(tuple(row) for row in existing_keys_df[valid_unique_in_table].values)
-                        df_insert_keys = pd.Series([tuple(row) for row in df_insert[valid_unique_in_table].values])
+                        # BUGFIX: must share df_insert's index (not a fresh
+                        # RangeIndex) — the drop_duplicates() call above does
+                        # not reset the index, so a mismatched index here
+                        # raises "Unalignable boolean Series provided as
+                        # indexer" the moment df_insert has any non-contiguous
+                        # index (e.g. after internal duplicates were dropped).
+                        # Reproduced against vix_data in production (2026-07-21,
+                        # 2026-07-23 runs) before this fix.
+                        df_insert_keys = pd.Series(
+                            [tuple(row) for row in df_insert[valid_unique_in_table].values],
+                            index=df_insert.index,
+                        )
 
                 except (duckdb.Error, Exception) as e:
                     logger.error(f"Error fetching existing keys for deduplication in '{table_name}': {e}", exc_info=True)
