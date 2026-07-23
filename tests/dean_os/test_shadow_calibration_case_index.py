@@ -4,7 +4,7 @@ import json
 
 import pandas as pd
 
-from dean_os.pipeline_prediction_review_packet import (
+from dean_os.packets.pipeline_prediction_review_packet import (
     PipelinePredictionReviewPacket,
 )
 from dean_os.shadow_calibration_case_index import (

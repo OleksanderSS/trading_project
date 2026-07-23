@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_control_caution_review_packet import PipelineControlCautionReviewPacket
+from dean_os.pipeline_control.pipeline_control_caution_review_packet import PipelineControlCautionReviewPacket
 
 
 def _write_json(path: Path, payload: dict) -> Path:

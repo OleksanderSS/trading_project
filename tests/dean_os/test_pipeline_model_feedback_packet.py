@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_model_feedback_packet import (
+from dean_os.packets.pipeline_model_feedback_packet import (
     PipelineModelFeedbackPacket,
 )
 from dean_os.chief_review_index import classify_review_index

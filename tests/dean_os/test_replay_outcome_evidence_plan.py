@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 
-from dean_os.replay_outcome_evidence_plan import ReplayOutcomeEvidencePlanBuilder
+from dean_os.replays.replay_outcome_evidence_plan import ReplayOutcomeEvidencePlanBuilder
 
 
 def _write(path, payload):

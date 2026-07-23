@@ -5,7 +5,7 @@ import hashlib
 
 import pandas as pd
 
-from dean_os.replay_checkpoint_due_router import ReplayCheckpointDueRouter
+from dean_os.replays.replay_checkpoint_due_router import ReplayCheckpointDueRouter
 
 
 def _write(path, payload):

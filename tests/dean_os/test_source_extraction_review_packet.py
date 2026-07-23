@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 
-from dean_os.real_source_normalized_packet import RealSourceNormalizedPacketBuilder
+from dean_os.packets.real_source_normalized_packet import RealSourceNormalizedPacketBuilder
 from dean_os.source_evidence_validation_gate import SourceEvidenceValidationGate
-from dean_os.source_extraction_review_packet import SourceExtractionReviewPacket
+from dean_os.packets.source_extraction_review_packet import SourceExtractionReviewPacket
 
 
 def _write_json(path, payload):

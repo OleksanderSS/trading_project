@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from dean_os.replays.historical_replay_batch import resolve_as_of_dates
-from dean_os.historical_research_replay import HistoricalResearchReplayRunner
+from dean_os.historical_research_replay import HistoricalReplayRunner
 from dean_os.schemas import utc_now_iso
 from dean_os.utils import json_ready
 
@@ -58,7 +58,7 @@ class HistoricalResearchReplayBatchRunner:
         compact_runs: list[dict[str, Any]] = []
         for as_of in dates:
             for horizon in horizons:
-                replay = await HistoricalResearchReplayRunner(output_dir=run_dir / f"h{horizon}").run(
+                replay = await HistoricalReplayRunner(output_dir=run_dir / f"h{horizon}").run(
                     price_data_path=price_data_path,
                     tickers=tickers,
                     as_of=as_of,

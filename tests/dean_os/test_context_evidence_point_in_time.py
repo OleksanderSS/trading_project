@@ -15,7 +15,7 @@ from dean_os.context_evidence_provenance import (
     audit_news_records,
     audit_research_documents,
 )
-from dean_os.context_evidence_review_packet import (
+from dean_os.packets.context_evidence_review_packet import (
     ContextEvidenceReviewPacket,
 )
 from dean_os.pipeline_adapter import HybridPipelineAdapter

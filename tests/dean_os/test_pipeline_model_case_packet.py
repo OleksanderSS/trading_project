@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_model_case_packet import (
+from dean_os.packets.pipeline_model_case_packet import (
     PipelineModelCasePacket,
     inspect_pipeline_model_case,
 )

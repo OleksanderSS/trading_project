@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.real_source_normalized_packet import RealSourceNormalizedPacketBuilder
+from dean_os.packets.real_source_normalized_packet import RealSourceNormalizedPacketBuilder
 from dean_os.review_only_real_source_normalized_packet_validation_gate import build_validation_gate
 
 

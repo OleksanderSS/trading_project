@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.pipeline_control_train_validation_diagnostic import (
+from dean_os.pipeline_control.pipeline_control_train_validation_diagnostic import (
     PipelineControlTrainValidationDiagnostic,
 )
 

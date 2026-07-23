@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dean_os.domain_analyst_pipeline_news_taxonomy import classify_pipeline_news_context
+from dean_os.analyst_core.domain_analyst_pipeline_news_taxonomy import classify_pipeline_news_context
 
 
 def test_pipeline_news_taxonomy_classifies_crisis_patterns_without_prediction_adjustment():

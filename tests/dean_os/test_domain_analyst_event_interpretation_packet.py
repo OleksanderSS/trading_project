@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.domain_analyst_event_interpretation_packet import DomainAnalystEventInterpretationPacket
+from dean_os.analyst_core.domain_analyst_event_interpretation_packet import DomainAnalystEventInterpretationPacket
 
 
 def test_event_interpretation_packet_preserves_detailed_news_analysis(tmp_path):

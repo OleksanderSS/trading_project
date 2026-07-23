@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from dean_os.pipeline_control_feature_causality_audit import (
+from dean_os.pipeline_control.pipeline_control_feature_causality_audit import (
     compare_feature_prefix_invariance,
 )
 

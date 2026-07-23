@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from dean_os.replay_evaluation_router import ReplayEvaluationRouter
+from dean_os.replays.replay_evaluation_router import ReplayEvaluationRouter
 
 
 def test_hypothesis_task_is_not_misrouted_to_event_study() -> None:

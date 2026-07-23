@@ -5,7 +5,7 @@ import json
 
 import pandas as pd
 
-from dean_os.historical_replay_outcome_review import HistoricalReplayOutcomeReview
+from dean_os.replays.historical_replay_outcome_review import HistoricalReplayOutcomeReview
 
 
 def _write(path, payload):

@@ -10,7 +10,7 @@ from dean_os.world_model_replay_review_gate import (
     WORLD_MODEL_REPLAY_REVIEW_GATE_CONTRACT,
     WorldModelReplayReviewGate,
 )
-from dean_os.world_model_resolution_journal import (
+from dean_os.world_model.world_model_resolution_journal import (
     append_world_model_resolution_journal,
 )
 from dean_os.world_model_review_resolution import (

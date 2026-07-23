@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.replay_lifecycle_journal_bridge import ReplayLifecycleJournalBridge
+from dean_os.replays.replay_lifecycle_journal_bridge import ReplayLifecycleJournalBridge
 
 
 def _write(path, payload):

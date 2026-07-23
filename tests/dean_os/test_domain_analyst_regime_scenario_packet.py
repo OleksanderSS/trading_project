@@ -5,8 +5,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.domain_analyst_event_interpretation_packet import DomainAnalystEventInterpretationPacket
-from dean_os.domain_analyst_regime_scenario_packet import DomainAnalystRegimeScenarioPacket, REGIME_FIELDS
+from dean_os.analyst_core.domain_analyst_event_interpretation_packet import DomainAnalystEventInterpretationPacket
+from dean_os.analyst_core.domain_analyst_regime_scenario_packet import DomainAnalystRegimeScenarioPacket, REGIME_FIELDS
 
 
 def test_regime_scenario_packet_builds_context_vector_and_graph(tmp_path):

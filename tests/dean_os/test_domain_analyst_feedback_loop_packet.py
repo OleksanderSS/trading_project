@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.domain_analyst_feedback_loop_packet import DomainAnalystFeedbackLoopPacket
+from dean_os.analyst_core.domain_analyst_feedback_loop_packet import DomainAnalystFeedbackLoopPacket
 
 
 def test_feedback_loop_packet_waits_for_manual_feedback(tmp_path):

@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from dean_os.agents.working_domain_analyst import WorkingDomainAnalystAgent
-from dean_os.analyst_knowledge_readiness import AnalystKnowledgeReadiness
+from dean_os.analyst_core.analyst_knowledge_readiness import AnalystKnowledgeReadiness
 from dean_os.analyst_knowledge.schemas import (
     KnowledgeItem,
     KnowledgePack,

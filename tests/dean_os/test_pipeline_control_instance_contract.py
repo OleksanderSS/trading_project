@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_control_instance_contract import PipelineControlInstanceContract
+from dean_os.pipeline_control.pipeline_control_instance_contract import PipelineControlInstanceContract
 
 
 def _write_json(path: Path, payload: dict) -> Path:

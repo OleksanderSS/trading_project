@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_control_locked_evaluation_assembler import PipelineControlLockedEvaluationAssembler
+from dean_os.pipeline_control.pipeline_control_locked_evaluation_assembler import PipelineControlLockedEvaluationAssembler
 
 
 def test_locked_evaluation_assembler_blocks_partial_stage4_stage7_join(tmp_path):

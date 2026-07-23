@@ -5,7 +5,7 @@ import json
 
 import pandas as pd
 
-from dean_os.replay_outcome_lifecycle_orchestrator import (
+from dean_os.replays.replay_outcome_lifecycle_orchestrator import (
     ReplayOutcomeLifecycleOrchestrator,
 )
 

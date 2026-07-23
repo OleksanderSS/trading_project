@@ -1,6 +1,6 @@
 import json
 
-from dean_os.replay_checkpoint_monitor import ReplayCheckpointMonitorBuilder
+from dean_os.replays.replay_checkpoint_monitor import ReplayCheckpointMonitorBuilder
 
 
 def _write(path, payload):

@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_control_locked_feature_stability_assembler import PipelineControlLockedFeatureStabilityAssembler
+from dean_os.pipeline_control.pipeline_control_locked_feature_stability_assembler import PipelineControlLockedFeatureStabilityAssembler
 
 
 def test_locked_feature_stability_assembler_blocks_importance_only_candidate(tmp_path):

@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_control_real_metric_evidence_run import PipelineControlRealMetricEvidenceRun
+from dean_os.pipeline_control.pipeline_control_real_metric_evidence_run import PipelineControlRealMetricEvidenceRun
 
 
 def _write_json(path: Path, payload: dict) -> Path:

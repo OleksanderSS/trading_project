@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.sector_to_ticker_review_packet import DomainSpecialistReviewPacket, SectorToTickerReviewPacket
+from dean_os.packets.sector_to_ticker_review_packet import DomainSpecialistReviewPacket, SectorToTickerReviewPacket
 
 
 def _write_json(path, payload):

@@ -585,6 +585,8 @@ class EventCausalGraphBuilder:
                 all_sectors.update(c_sectors)
                 all_tickers.update(c_tickers)
 
+        overall_confidence = (
+            sum(n.estimate_confidence for n in nodes) / len(nodes)
         ) if len(nodes) > 1 else 0.0
 
         graph = CausalGraph(

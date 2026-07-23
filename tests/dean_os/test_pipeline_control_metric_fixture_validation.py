@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.pipeline_control_metric_fixture_validation import PipelineControlMetricFixtureValidation
+from dean_os.pipeline_control.pipeline_control_metric_fixture_validation import PipelineControlMetricFixtureValidation
 
 
 def test_pipeline_control_metric_fixture_validation_passes_clean_synthetic_flow(tmp_path):

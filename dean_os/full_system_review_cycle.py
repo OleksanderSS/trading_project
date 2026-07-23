@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from dean_os.accumulation_authorization_ledger import AccumulationAuthorizationLedger
-from dean_os.analyst_core.pipeline_manager import PipelineManagerAgent
+from dean_os.agents.pipeline_manager import PipelineManagerAgent
 from dean_os.artifact_writer import ReviewArtifactWriter
 from dean_os.current_system_manifest import CurrentSystemManifestBuilder
 from dean_os.schemas import MarketContext, PipelineReport, utc_now_iso

@@ -5,7 +5,7 @@ import json
 import pandas as pd
 import pytest
 
-from dean_os.pipeline_control_walk_forward_validation_run import (
+from dean_os.pipeline_control.pipeline_control_walk_forward_validation_run import (
     PipelineControlWalkForwardValidationRun,
     _load_development_frames,
     _load_forward_development_frames,

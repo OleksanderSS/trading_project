@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from dean_os.pipeline_control_historical_price_recovery import (
+from dean_os.pipeline_control.pipeline_control_historical_price_recovery import (
     PipelineControlHistoricalPriceRecovery,
 )
 

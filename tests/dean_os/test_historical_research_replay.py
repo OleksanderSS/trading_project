@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from dean_os.historical_research_replay import HistoricalResearchReplayRunner, _research_direction, _research_stance
+from dean_os.historical_research_replay import HistoricalReplayRunner, _research_direction, _research_stance
 from dean_os.schemas import ResearchNote
 
 
@@ -47,7 +47,7 @@ def test_historical_research_replay_combines_research_and_price_outcome(tmp_path
     ).to_csv(macro_path, index=False)
 
     payload = asyncio.run(
-        HistoricalResearchReplayRunner(output_dir=tmp_path / "reports").run(
+        HistoricalReplayRunner(output_dir=tmp_path / "reports").run(
             price_data_path=price_path,
             news_data_paths=[news_path],
             macro_data_paths=[macro_path],
@@ -97,7 +97,7 @@ def test_historical_research_replay_filters_future_evidence(tmp_path):
     ).to_csv(news_path, index=False)
 
     payload = asyncio.run(
-        HistoricalResearchReplayRunner(output_dir=tmp_path / "reports").run(
+        HistoricalReplayRunner(output_dir=tmp_path / "reports").run(
             price_data_path=price_path,
             news_data_paths=[news_path],
             tickers=["AAPL", "SPY"],
@@ -187,7 +187,7 @@ def test_historical_research_replay_can_apply_focused_overlay(tmp_path):
     )
 
     payload = asyncio.run(
-        HistoricalResearchReplayRunner(output_dir=tmp_path / "reports").run(
+        HistoricalReplayRunner(output_dir=tmp_path / "reports").run(
             price_data_path=price_path,
             news_data_paths=[news_path],
             tickers=["AAPL", "SPY"],
@@ -219,7 +219,7 @@ def test_historical_research_replay_preserves_original_when_overlay_not_applied(
     overlay_path.write_text(json.dumps({"run_overlays": []}), encoding="utf-8")
 
     payload = asyncio.run(
-        HistoricalResearchReplayRunner(output_dir=tmp_path / "reports").run(
+        HistoricalReplayRunner(output_dir=tmp_path / "reports").run(
             price_data_path=price_path,
             tickers=["AAPL", "SPY"],
             as_of="2026-01-06T00:00:00+00:00",

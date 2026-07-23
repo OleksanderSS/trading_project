@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from dean_os.domain_analyst_vertical_slice_run import DomainAnalystVerticalSliceRun
+from dean_os.analyst_core.domain_analyst_vertical_slice_run import DomainAnalystVerticalSliceRun
 
 
 def _write_local_inputs(tmp_path: Path) -> dict[str, Path]:

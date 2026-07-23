@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.source_extraction_fixture_packet import SourceExtractionFixturePacket
+from dean_os.packets.source_extraction_fixture_packet import SourceExtractionFixturePacket
 
 
 def _write_json(path, payload):

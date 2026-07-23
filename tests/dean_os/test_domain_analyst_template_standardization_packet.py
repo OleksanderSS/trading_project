@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.domain_analyst_template_standardization_packet import DomainAnalystTemplateStandardizationPacket
+from dean_os.analyst_core.domain_analyst_template_standardization_packet import DomainAnalystTemplateStandardizationPacket
 
 
 def _write_json(path: Path, payload: dict) -> Path:

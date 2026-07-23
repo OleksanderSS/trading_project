@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from dean_os.analysts.schemas import DomainProfile
-from dean_os.domain_analyst_profile_policy_packet import DomainAnalystProfilePolicyPacket
+from dean_os.analyst_core.domain_analyst_profile_policy_packet import DomainAnalystProfilePolicyPacket
 
 
 def test_profile_policy_packet_reviews_all_profiles_as_policy_ready(tmp_path):
@@ -48,8 +48,8 @@ def test_profile_policy_packet_blocks_malformed_profile(monkeypatch, tmp_path):
         feedback_label_policy={"policy_id": "bad_feedback_policy", "issue_types": [], "severity_labels": []},
     )
 
-    monkeypatch.setattr("dean_os.domain_analyst_profile_policy_packet.list_domain_profiles", lambda: ["bad_domain"])
-    monkeypatch.setattr("dean_os.domain_analyst_profile_policy_packet.get_domain_profile", lambda domain_id: bad_profile)
+    monkeypatch.setattr("dean_os.analyst_core.domain_analyst_profile_policy_packet.list_domain_profiles", lambda: ["bad_domain"])
+    monkeypatch.setattr("dean_os.analyst_core.domain_analyst_profile_policy_packet.get_domain_profile", lambda domain_id: bad_profile)
 
     payload = DomainAnalystProfilePolicyPacket(tmp_path / "reports").build(save=False)
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from dean_os.pipeline_control_forward_data_accrual_plan import (
+from dean_os.pipeline_control.pipeline_control_forward_data_accrual_plan import (
     PipelineControlForwardDataAccrualPlan,
 )
 

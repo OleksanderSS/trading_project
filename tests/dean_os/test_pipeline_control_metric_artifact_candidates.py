@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from dean_os.pipeline_control_evidence_inventory import PipelineControlEvidenceInventory
-from dean_os.pipeline_control_metric_artifact_materializer import PipelineControlMetricArtifactMaterializer
+from dean_os.pipeline_control.pipeline_control_evidence_inventory import PipelineControlEvidenceInventory
+from dean_os.pipeline_control.pipeline_control_metric_artifact_materializer import PipelineControlMetricArtifactMaterializer
 from src.pipeline.stages.modeling.pipeline_control_artifacts import (
     build_feature_distribution_stability_analysis,
     build_feature_stability_candidate,

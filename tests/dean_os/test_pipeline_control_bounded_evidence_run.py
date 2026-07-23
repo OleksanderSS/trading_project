@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from dean_os.pipeline_control_bounded_evidence_run import (
+from dean_os.pipeline_control.pipeline_control_bounded_evidence_run import (
     PipelineControlBoundedEvidenceRun,
     _prepare_macro_input,
     _resolve_enriched_datetime,

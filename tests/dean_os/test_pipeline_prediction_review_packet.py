@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.pipeline_prediction_review_packet import (
+from dean_os.packets.pipeline_prediction_review_packet import (
     PipelinePredictionReviewPacket,
 )
 from src.pipeline.stages.prediction.output_contract import (

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 
-from dean_os.replay_evidence_refresh_controller import (
+from dean_os.replays.replay_evidence_refresh_controller import (
     ReplayEvidenceRefreshController,
 )
 
@@ -108,11 +108,11 @@ def test_apply_executes_one_snapshot_and_one_lifecycle_rerun(tmp_path, monkeypat
         }
 
     monkeypatch.setattr(
-        "dean_os.replay_evidence_refresh_controller.CleanYahooMarketSnapshot.build",
+        "dean_os.replays.replay_evidence_refresh_controller.CleanYahooMarketSnapshot.build",
         fake_snapshot,
     )
     monkeypatch.setattr(
-        "dean_os.replay_evidence_refresh_controller.ReplayOutcomeLifecycleOrchestrator.build",
+        "dean_os.replays.replay_evidence_refresh_controller.ReplayOutcomeLifecycleOrchestrator.build",
         fake_lifecycle,
     )
     payload = asyncio.run(

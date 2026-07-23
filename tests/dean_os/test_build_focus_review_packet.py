@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dean_os.build_focus_review_packet import BuildFocusReviewPacket
+from dean_os.packets.build_focus_review_packet import BuildFocusReviewPacket
 
 
 def _write_json(path: Path, payload: dict) -> Path:

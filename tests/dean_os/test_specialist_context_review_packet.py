@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.specialist_context_review_packet import (
+from dean_os.packets.specialist_context_review_packet import (
     SpecialistContextReviewPacket,
 )
 

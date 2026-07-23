@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from dean_os.replay_evidence_window_selector import ReplayEvidenceWindowSelector
+from dean_os.replays.replay_evidence_window_selector import ReplayEvidenceWindowSelector
 
 
 def _write_prices(path, start="2026-01-01", periods=80):
