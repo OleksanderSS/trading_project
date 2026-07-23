@@ -251,6 +251,34 @@ class FeatureEngineeringStage(BaseStage):
                 result[column] = source_df[column].to_numpy(copy=True)
         return result
 
+    # Held-out fraction (chronological tail, per ticker) that feature selection
+    # must never see. Matches the test_size=0.2 convention already used by
+    # src/models/adapters/data_preparation.py's train/val/test split, so the
+    # rows Stage 4's walk-forward validator eventually treats as unseen were
+    # never used to decide which columns exist.
+    _SELECTION_HOLDOUT_FRACTION = 0.2
+
+    def _train_only_index(self, frame: pd.DataFrame) -> pd.Index:
+        """Chronological prefix of `frame`, excluding the final holdout tail.
+
+        Grouped per ticker (when a 'ticker' column is present) so a
+        multi-symbol frame doesn't leak one ticker's future into another's
+        selection window. Falls back to positional order (frame is expected
+        to already be time-sorted per timeframe) when no explicit time
+        column is available.
+        """
+        time_col = next((c for c in ('datetime', 'timestamp', 'date') if c in frame.columns), None)
+
+        def _prefix(group: pd.DataFrame) -> pd.Index:
+            ordered = group.sort_values(time_col) if time_col else group
+            cutoff = int(len(ordered) * (1.0 - self._SELECTION_HOLDOUT_FRACTION))
+            return ordered.index[:cutoff]
+
+        if 'ticker' in frame.columns:
+            parts = [_prefix(g) for _, g in frame.groupby('ticker', sort=False)]
+            return parts[0].append(parts[1:]) if parts else frame.index[:0]
+        return _prefix(frame)
+
     async def _select_features(
         self,
         final_features: pd.DataFrame,
@@ -270,16 +298,26 @@ class FeatureEngineeringStage(BaseStage):
         candidate_features = candidate_features.drop(columns=[target_col], errors='ignore')
         valid_index = candidate_features.index.intersection(target_series.dropna().index)
 
+        # LEAKAGE FIX: restrict the index used for selection to a chronological
+        # train-only prefix. Selecting against the full dataset (including the
+        # rows Stage 4 later holds out) lets feature choice "see" future
+        # target values, inflating apparent walk-forward skill.
+        train_only_index = self._train_only_index(final_features).intersection(valid_index)
+        if len(train_only_index) < 5:
+            # Not enough train-only rows (e.g. tiny fixture data) — fall back
+            # to the full valid_index rather than failing selection outright.
+            train_only_index = valid_index
+
         if candidate_features.empty or len(valid_index) < 5 or target_series.loc[valid_index].nunique() < 2:
             fallback = list(candidate_features.columns)
             return fallback, dict.fromkeys(fallback, 1.0)
 
         try:
             selection_result = await self.selector.select_with_full_analysis(
-                candidate_features.loc[valid_index],
-                target_series.loc[valid_index],
+                candidate_features.loc[train_only_index],
+                target_series.loc[train_only_index],
                 context_id=kwargs.get('context_id', f'stage3_{target_col}'),
-                market_data=final_features.loc[valid_index],
+                market_data=final_features.loc[train_only_index],
                 max_features=kwargs.get('max_features'),
             )
             selected = selection_result.get('selected_features') or []
