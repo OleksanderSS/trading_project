@@ -102,6 +102,24 @@ class MacroFeaturesEnricher(BaseEnricher):
                     return pivoted
                 full_cache = self._load_full_macro_from_cache()
                 if not full_cache.empty:
+                    # BUGFIX: ./cache/macro_data.parquet is shared with the
+                    # older _load_macro_data()/_load_fred_series() fallback
+                    # path (used only when Stage 1 provides no macro_data),
+                    # which writes semantically-named columns (fed_funds_rate,
+                    # cpi, gdp, vix, ... — from self.config's series-name
+                    # mapping) instead of this path's FRED_-prefixed ones.
+                    # Concatenating an unfiltered legacy cache pulls those
+                    # semantic columns into the merged frame, but they're
+                    # never populated for any date this (Stage-1-driven) path
+                    # covers — silently 100% NaN for the whole current run,
+                    # discovered via feature_lineage_report.json showing
+                    # fed_funds_rate/cpi/gdp/vix/consumer_sentiment/etc. all
+                    # at nan_ratio=1.0. Keeping only FRED_* columns from the
+                    # cache avoids reintroducing that dead, incompatible
+                    # schema while still getting the actual benefit of the
+                    # cache (accumulating more historical FRED_* rows).
+                    fred_cache_cols = [c for c in full_cache.columns if c.startswith('FRED_')]
+                    full_cache = full_cache[fred_cache_cols]
                     # Normalize cached index to tz-naive
                     if isinstance(full_cache.index, pd.DatetimeIndex) and full_cache.index.tz is not None:
                         full_cache.index = full_cache.index.tz_localize(None)
