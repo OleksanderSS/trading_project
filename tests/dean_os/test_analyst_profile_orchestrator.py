@@ -4,8 +4,8 @@ import asyncio
 
 import pandas as pd
 
-from dean_os.analyst_evidence_pack import AnalystEvidencePackRunner
-from dean_os.analyst_profile_orchestrator import AnalystProfileOrchestrator
+from dean_os.analyst_core.analyst_evidence_pack import AnalystEvidencePackRunner
+from dean_os.analyst_core.analyst_profile_orchestrator import AnalystProfileOrchestrator
 
 
 def _pack(tmp_path):

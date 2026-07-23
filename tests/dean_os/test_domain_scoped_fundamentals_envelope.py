@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from dean_os.context_acquisition_state_machine import ContextAcquisitionStateMachine
-from dean_os.domain_analyst_binding_planner import DomainAnalystBindingPlanner
+from dean_os.analyst_core.domain_analyst_binding_planner import DomainAnalystBindingPlanner
 from dean_os.domain_scoped_fundamentals_envelope import (
     CONTRACT,
     DomainScopedFundamentalsEnvelope,

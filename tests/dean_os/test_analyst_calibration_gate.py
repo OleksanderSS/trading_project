@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.analyst_calibration_gate import AnalystCalibrationGate
+from dean_os.analyst_core.analyst_calibration_gate import AnalystCalibrationGate
 from dean_os.learning import LearningStore
 from dean_os.schemas import AgentLearningRecord
 

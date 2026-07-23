@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.analyst_profile_scorecard import AnalystProfileScorecard
+from dean_os.analyst_core.analyst_profile_scorecard import AnalystProfileScorecard
 
 
 def test_analyst_profile_scorecard_scores_saved_profile_runs(tmp_path):

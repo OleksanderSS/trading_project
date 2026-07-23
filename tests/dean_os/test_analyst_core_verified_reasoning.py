@@ -10,7 +10,7 @@ from dean_os.analyst_core.artifact_evidence_loader import ArtifactEvidenceLoader
 from dean_os.analyst_core.lens_contract import AnalysisPacket
 from dean_os.analyst_core.lenses.event_classifier_lens import EventClassifierLens
 from dean_os.analyst_core.sector_analyst import _build_default_registry
-from dean_os.analyst_core_reasoning_snapshot import AnalystCoreReasoningSnapshot
+from dean_os.analyst_core.analyst_core_reasoning_snapshot import AnalystCoreReasoningSnapshot
 
 
 DOMAIN_ID = "semiconductor_ai_infrastructure"

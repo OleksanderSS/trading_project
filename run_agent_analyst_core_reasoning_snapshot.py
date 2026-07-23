@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from dean_os.analyst_core_reasoning_snapshot import (
+from dean_os.analyst_core.analyst_core_reasoning_snapshot import (
     AnalystCoreReasoningSnapshot,
 )
 

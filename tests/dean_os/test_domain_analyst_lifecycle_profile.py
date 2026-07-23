@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from dean_os.domain_analyst_lifecycle_profile import (
+from dean_os.analyst_core.domain_analyst_lifecycle_profile import (
     DomainAnalystLifecycleProfileCompiler,
     DomainAnalystLifecycleProfileReport,
 )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.domain_analyst_binding_planner import DomainAnalystBindingPlanner
+from dean_os.analyst_core.domain_analyst_binding_planner import DomainAnalystBindingPlanner
 
 
 def test_energy_plan_creates_six_proposal_only_binding_tasks():

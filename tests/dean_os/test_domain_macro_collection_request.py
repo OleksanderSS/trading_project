@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from dean_os.domain_analyst_lifecycle_profile import DomainAnalystLifecycleProfileCompiler
+from dean_os.analyst_core.domain_analyst_lifecycle_profile import DomainAnalystLifecycleProfileCompiler
 from dean_os.domain_macro_binding_quality_review import CONTRACT as QUALITY_CONTRACT
 from dean_os.domain_macro_collection_request import DomainMacroCollectionRequest
 from dean_os.system_journal import SystemJournal

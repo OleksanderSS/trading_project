@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.analyst_loop_daily_check import AnalystLoopDailyCheck
+from dean_os.analyst_core.analyst_loop_daily_check import AnalystLoopDailyCheck
 
 
 def _write_json(path, payload):

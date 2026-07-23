@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from dean_os.analyst_outcome_evaluation_loop import AnalystOutcomeEvaluationLoop
+from dean_os.analyst_core.analyst_outcome_evaluation_loop import AnalystOutcomeEvaluationLoop
 from dean_os.learning import LearningStore
 from dean_os.schemas import AgentLearningRecord
 

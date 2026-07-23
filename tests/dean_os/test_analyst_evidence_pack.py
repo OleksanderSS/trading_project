@@ -4,7 +4,7 @@ import json
 
 import pandas as pd
 
-from dean_os.analyst_evidence_pack import (
+from dean_os.analyst_core.analyst_evidence_pack import (
     AnalystEvidencePackRunner,
     documents_from_evidence_pack,
     render_analyst_evidence_pack_markdown,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from dean_os.analyst_learning_promotion_bridge import AnalystLearningPromotionBridge
+from dean_os.analyst_core.analyst_learning_promotion_bridge import AnalystLearningPromotionBridge
 from dean_os.learning import LearningStore
 from dean_os.review_actions import ReviewActionStore
 from dean_os.schemas import AgentLabRunReport, ResearchNote

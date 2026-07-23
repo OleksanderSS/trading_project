@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 
-from dean_os.analyst_review_inbox import AnalystReviewInbox
+from dean_os.analyst_core.analyst_review_inbox import AnalystReviewInbox
 
 
 def _write_json(path, payload):
