@@ -70,6 +70,14 @@ class CoherenceScanAgent(AnalyticalAgent):
         if not reports:
             return self._empty("No agent reports to scan.")
 
+        # orchestrator.py sets context._agent_reports to the raw PipelineReport/
+        # AnalyticalReport pydantic instances (no .get()), and only the
+        # metadata["agent_reports"] fallback is pre-dumped to dicts. Since
+        # _agent_reports is truthy on every real run (preflight guardians
+        # always produce reports), the `or` above almost always picks the
+        # model-instance list, so this must normalize both shapes itself.
+        reports = [r.model_dump(mode="json") if hasattr(r, "model_dump") else r for r in reports]
+
         verdicts: dict[str, dict[str, Any]] = {}
         for r in reports:
             name = r.get("agent_name", r.get("name", ""))

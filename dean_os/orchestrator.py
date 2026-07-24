@@ -16,6 +16,12 @@ PipelineRunner = Callable[[MarketContext], Awaitable[dict[str, Any]] | dict[str,
 
 
 class DEANOrchestrator:
+    # Analytical-branch agents whose job is to reconcile *other* agents'
+    # verdicts (e.g. CoherenceScanAgent) rather than produce their own --
+    # these must run after analytical_reports is known, not inside the same
+    # asyncio.gather() batch as their peers. See the phase-2 pass in run().
+    PEER_SYNTHESIS_AGENTS: frozenset[str] = frozenset({"coherence_scan"})
+
     def __init__(
         self,
         registry: AgentRegistry,
@@ -60,8 +66,16 @@ class DEANOrchestrator:
             ]
 
         context.phase = "post_pipeline"
+        analytical_agents = self.registry.load_branch("analytical", context)
+        # PEER_SYNTHESIS_AGENTS reconcile other agents' verdicts, so they can't
+        # run inside the same asyncio.gather() batch as those peers (branches.py's
+        # AnalyticalBranch.run_parallel) -- the merged report set below only
+        # exists once that whole batch has already returned. Held back and run
+        # as an explicit second pass, once analytical_reports is known.
+        peer_synthesis_agents = [a for a in analytical_agents if a.name in self.PEER_SYNTHESIS_AGENTS]
+        analytical_agents = [a for a in analytical_agents if a.name not in self.PEER_SYNTHESIS_AGENTS]
         analytical_reports = await AnalyticalBranch(
-            self.registry.load_branch("analytical", context),
+            analytical_agents,
             trace_store=self.trace_store,
         ).run_parallel(context)
 
@@ -74,9 +88,21 @@ class DEANOrchestrator:
         # Expose reports so post-hoc agents (coherence_scan) can read them
         if not isinstance(context.metadata, dict):
             context.metadata = {}
+        context._agent_reports = pipeline_reports + analytical_reports
         context.metadata["agent_reports"] = [
             r.model_dump(mode="json") for r in pipeline_reports + analytical_reports
         ]
+
+        if peer_synthesis_agents:
+            synthesis_reports = await AnalyticalBranch(
+                peer_synthesis_agents,
+                trace_store=self.trace_store,
+            ).run_parallel(context)
+            analytical_reports = analytical_reports + synthesis_reports
+            context._agent_reports = pipeline_reports + analytical_reports
+            context.metadata["agent_reports"] = [
+                r.model_dump(mode="json") for r in pipeline_reports + analytical_reports
+            ]
 
         decision = self.consensus.combine(
             pipeline_reports,
