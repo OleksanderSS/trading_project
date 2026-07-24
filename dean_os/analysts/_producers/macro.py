@@ -33,7 +33,12 @@ SAVED_MACRO_PRODUCER_CONTRACT = (
     "dean_saved_macro_evidence_producer_v1"
 )
 DEFAULT_SERIES_REGISTRY = (
-    Path(__file__).parent / "config" / "macro_series_registry.yaml"
+    # dean_os/analysts/_producers/macro.py -> dean_os/config/macro_series_registry.yaml.
+    # Was `Path(__file__).parent / "config" / ...`, which resolves to the
+    # non-existent dean_os/analysts/_producers/config/ and made every default
+    # call return blocked_registry_missing_or_empty (the real registry lives
+    # at dean_os/config/, three levels up from this file, not one).
+    Path(__file__).resolve().parent.parent.parent / "config" / "macro_series_registry.yaml"
 )
 OBSERVATION_FIELDS = ("datetime", "date", "timestamp")
 SERIES_FIELDS = ("series_id", "series", "indicator")

@@ -36,40 +36,51 @@ def _load_evidence_keywords(domain_id: str) -> dict[str, tuple[str, ...]]:
     return {k: tuple(v) for k, v in data.items()}
 
 
+# Keyed by registry context_key, not the raw FRED series id (e.g. "cpi", not
+# "CPIAUCSL"). SavedMacroEvidenceProducer's market_context_fragment.macro dict
+# -- and therefore audit_structured_context's observation["name"], which is
+# what `_structured_context_evidence` below actually reads as `series_id` --
+# is keyed by context_key (dean_os/config/macro_series_registry.yaml). A
+# first version of this map used the raw FRED series id and silently matched
+# nothing against live data: every macro observation, for every domain,
+# fell through to the generic domain-default evidence_type regardless of
+# which series it actually was. Caught by an end-to-end smoke test against a
+# real SavedMacroEvidenceProducer artifact (same failure mode already found
+# and fixed in RegimeContextLens's MACRO_SERIES_TO_DIMENSION).
 MACRO_SERIES_EVIDENCE_MAP: dict[str, dict[str, str]] = {
-    # series_id -> domain_id -> evidence_type
-    "CPIAUCSL": {"macro_policy": "inflation", "energy": "policy_or_geopolitical", "real_estate": "market_confirmation", "liquidity_credit": "inflation"},
-    "PCEPI": {"macro_policy": "inflation", "liquidity_credit": "inflation"},
-    "PCEPILFE": {"macro_policy": "inflation", "liquidity_credit": "inflation"},
-    "PPIACO": {"macro_policy": "inflation", "energy": "policy_or_geopolitical", "agriculture": "supply", "logistics": "market_confirmation"},
-    "FEDFUNDS": {"macro_policy": "rates_policy", "energy": "market_confirmation", "real_estate": "policy_or_geopolitical", "liquidity_credit": "rates_policy"},
-    "DGS10": {"macro_policy": "rates_policy", "energy": "market_confirmation", "real_estate": "market_confirmation", "liquidity_credit": "rates_policy"},
-    "GS10": {"macro_policy": "rates_policy", "real_estate": "market_confirmation", "liquidity_credit": "rates_policy"},
-    "GS2": {"macro_policy": "rates_policy", "liquidity_credit": "rates_policy"},
-    "T10Y2Y": {"macro_policy": "rates_policy", "energy": "market_confirmation", "liquidity_credit": "market_confirmation", "real_estate": "market_confirmation"},
-    "WALCL": {"macro_policy": "rates_policy", "liquidity_credit": "policy_or_geopolitical"},
-    "UNRATE": {"macro_policy": "labor_market", "real_estate": "demand", "liquidity_credit": "market_confirmation"},
-    "PAYEMS": {"macro_policy": "labor_market", "energy": "demand", "real_estate": "demand"},
-    "MANEMP": {"macro_policy": "labor_market", "energy": "demand", "logistics": "demand"},
-    "CCSA": {"macro_policy": "labor_market"},
-    "INDPRO": {"macro_policy": "growth", "energy": "demand", "logistics": "demand", "semiconductor_ai_infrastructure": "demand"},
-    "RSAFS": {"macro_policy": "growth", "energy": "demand", "logistics": "demand", "real_estate": "demand"},
-    "HOUST": {"macro_policy": "growth", "energy": "demand", "real_estate": "supply", "logistics": "demand"},
-    "PERMIT": {"macro_policy": "growth", "real_estate": "supply"},
-    "DGORDER": {"macro_policy": "growth", "semiconductor_ai_infrastructure": "demand", "logistics": "demand"},
-    "DSPIC96": {"macro_policy": "growth", "real_estate": "demand"},
-    "TOTALSA": {"macro_policy": "growth", "energy": "demand", "logistics": "demand"},
-    "UMCSENT": {"macro_policy": "growth", "energy": "market_confirmation", "real_estate": "market_confirmation", "liquidity_credit": "market_confirmation"},
-    "DEXCHUS": {"macro_policy": "growth", "agriculture": "market_confirmation"},
-    "DEXUSEU": {"macro_policy": "growth"},
-    "VIXCLS": {"macro_policy": "market_confirmation", "energy": "market_confirmation", "liquidity_credit": "market_confirmation", "geopolitics": "market_confirmation", "real_estate": "market_confirmation"},
-    "BAMLH0A0HYM2": {"macro_policy": "market_confirmation", "energy": "market_confirmation", "liquidity_credit": "market_confirmation", "real_estate": "market_confirmation"},
-    "DCOILWTICO": {"macro_policy": "inflation", "energy": "supply", "logistics": "supply", "agriculture": "supply", "geopolitics": "market_confirmation"},
+    # context_key -> domain_id -> evidence_type
+    "cpi": {"macro_policy": "inflation", "energy": "policy_or_geopolitical", "real_estate": "market_confirmation", "liquidity_credit": "inflation"},
+    "pce_price_index": {"macro_policy": "inflation", "liquidity_credit": "inflation"},
+    "core_pce_price_index": {"macro_policy": "inflation", "liquidity_credit": "inflation"},
+    "producer_price_index": {"macro_policy": "inflation", "energy": "policy_or_geopolitical", "agriculture": "supply", "logistics": "market_confirmation"},
+    "fed_funds_rate": {"macro_policy": "rates_policy", "energy": "market_confirmation", "real_estate": "policy_or_geopolitical", "liquidity_credit": "rates_policy"},
+    "treasury_10y_daily": {"macro_policy": "rates_policy", "energy": "market_confirmation", "real_estate": "market_confirmation", "liquidity_credit": "rates_policy"},
+    "treasury_10y_monthly": {"macro_policy": "rates_policy", "real_estate": "market_confirmation", "liquidity_credit": "rates_policy"},
+    "treasury_2y_monthly": {"macro_policy": "rates_policy", "liquidity_credit": "rates_policy"},
+    "yield_curve_10y_2y": {"macro_policy": "rates_policy", "energy": "market_confirmation", "liquidity_credit": "market_confirmation", "real_estate": "market_confirmation"},
+    "federal_reserve_total_assets": {"macro_policy": "rates_policy", "liquidity_credit": "policy_or_geopolitical"},
+    "unemployment_rate": {"macro_policy": "labor_market", "real_estate": "demand", "liquidity_credit": "market_confirmation"},
+    "nonfarm_payrolls": {"macro_policy": "labor_market", "energy": "demand", "real_estate": "demand"},
+    "manufacturing_employment": {"macro_policy": "labor_market", "energy": "demand", "logistics": "demand"},
+    "continued_claims": {"macro_policy": "labor_market"},
+    "industrial_production": {"macro_policy": "growth", "energy": "demand", "logistics": "demand", "semiconductor_ai_infrastructure": "demand"},
+    "retail_sales": {"macro_policy": "growth", "energy": "demand", "logistics": "demand", "real_estate": "demand"},
+    "housing_starts": {"macro_policy": "growth", "energy": "demand", "real_estate": "supply", "logistics": "demand"},
+    "building_permits": {"macro_policy": "growth", "real_estate": "supply"},
+    "durable_goods_orders": {"macro_policy": "growth", "semiconductor_ai_infrastructure": "demand", "logistics": "demand"},
+    "real_disposable_personal_income": {"macro_policy": "growth", "real_estate": "demand"},
+    "total_vehicle_sales": {"macro_policy": "growth", "energy": "demand", "logistics": "demand"},
+    "consumer_sentiment": {"macro_policy": "growth", "energy": "market_confirmation", "real_estate": "market_confirmation", "liquidity_credit": "market_confirmation"},
+    "usd_cny": {"macro_policy": "growth", "agriculture": "market_confirmation"},
+    "usd_eur": {"macro_policy": "growth"},
+    "vix": {"macro_policy": "market_confirmation", "energy": "market_confirmation", "liquidity_credit": "market_confirmation", "geopolitics": "market_confirmation", "real_estate": "market_confirmation"},
+    "high_yield_oas": {"macro_policy": "market_confirmation", "energy": "market_confirmation", "liquidity_credit": "market_confirmation", "real_estate": "market_confirmation"},
+    "wti_crude_oil": {"macro_policy": "inflation", "energy": "supply", "logistics": "supply", "agriculture": "supply", "geopolitics": "market_confirmation"},
 }
 
 
-def _macro_series_evidence_type(series_id: str, domain_id: str) -> str | None:
-    mapping = MACRO_SERIES_EVIDENCE_MAP.get(series_id)
+def _macro_series_evidence_type(context_key: str, domain_id: str) -> str | None:
+    mapping = MACRO_SERIES_EVIDENCE_MAP.get(context_key)
     if mapping is None:
         return None
     return mapping.get(domain_id)
@@ -506,15 +517,32 @@ class MarketContextEvidenceAdapter:
                 tickers = []
                 source_type = "macro"
                 directness = "macro"
-                series_id = str(observation.get("name", ""))
+                # observation["name"] is the registry context_key (e.g.
+                # "fed_funds_rate"), not the raw FRED series id -- see
+                # MACRO_SERIES_EVIDENCE_MAP's docstring above.
+                context_key = str(observation.get("name", ""))
+                # NOT self._first_required_or(...): every domain profile sets
+                # macro_evidence_type: "macro_context" as a deliberate sentinel
+                # -- EventClassifierLens._classify_macro_observation special-
+                # cases evidence_type == "macro_context" to keyword-classify
+                # the series by name (cpi/pce -> inflation_observation,
+                # fed_funds/central_bank -> liquidity_observation) instead of
+                # falling through to generic text detection. Routing an
+                # unmapped macro series through _first_required_or instead
+                # silently replaced that sentinel with the domain's first
+                # required_evidence_types entry (non-empty for every real
+                # domain profile), which both defeated the classifier's
+                # macro_context branch entirely and let irrelevant macro
+                # noise falsely "satisfy" an unrelated required lane (e.g. a
+                # random unmapped FRED series counting as semiconductor
+                # sector-demand evidence).
                 evidence_type = str(
                     observation.get("evidence_type")
                     or _macro_series_evidence_type(
-                        series_id, self.domain_id
+                        context_key, self.domain_id
                     )
-                    or self._first_required_or(
-                        self.profile.macro_evidence_type or "market_confirmation"
-                    )
+                    or self.profile.macro_evidence_type
+                    or "market_confirmation"
                 )
                 strength = 0.55
                 reliability = 0.55

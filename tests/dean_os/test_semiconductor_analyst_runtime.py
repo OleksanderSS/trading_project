@@ -177,17 +177,17 @@ def _policy_fragment():
 
 def _patch_loaders(monkeypatch):
     monkeypatch.setattr(
-        "dean_os.semiconductor_analyst_runtime."
+        "dean_os.analysts._producers.runtime."
         "load_verified_merged_fundamental_context_fragment",
         lambda *args, **kwargs: _fundamental_fragment(),
     )
     monkeypatch.setattr(
-        "dean_os.semiconductor_analyst_runtime."
+        "dean_os.analysts._producers.runtime."
         "load_verified_macro_context_fragment",
         lambda *args, **kwargs: _macro_fragment(),
     )
     monkeypatch.setattr(
-        "dean_os.semiconductor_analyst_runtime."
+        "dean_os.analysts._producers.runtime."
         "load_verified_sector_market_context_fragment",
         lambda *args, **kwargs: _sector_fragment(),
     )
@@ -217,6 +217,12 @@ def test_runtime_combines_context_but_blocks_incomplete_sector_thesis(
     assert payload["status"] == "semiconductor_analysis_needs_more_data"
     assert payload["summary"]["recommendation"] == "needs_more_data"
     assert payload["summary"]["market_confirmation_ready"] is True
+    # Only market_confirmation (from the sector fragment) is satisfied here.
+    # The macro item's context_key ("policy_rate") isn't registry-mapped, so
+    # its evidence_type falls back to the domain's macro_evidence_type
+    # ("macro_context") -- not any of the domain's required_evidence_types --
+    # so it correctly does NOT count as satisfying sector_demand or any other
+    # required lane just because it happened to be unclassified macro noise.
     assert payload["summary"]["satisfied_required_lane_count"] == 1
     assert payload["summary"]["missing_required_evidence"] == [
         "sector_demand",
@@ -304,7 +310,7 @@ def test_runtime_accepts_only_verified_news_lane_eligibility(
 ):
     _patch_loaders(monkeypatch)
     monkeypatch.setattr(
-        "dean_os.semiconductor_analyst_runtime."
+        "dean_os.analysts._producers.runtime."
         "load_verified_semiconductor_news_context_fragment",
         lambda *args, **kwargs: _news_fragment(),
     )
@@ -353,12 +359,12 @@ def test_runtime_reaches_five_lanes_with_verified_official_policy(
 ):
     _patch_loaders(monkeypatch)
     monkeypatch.setattr(
-        "dean_os.semiconductor_analyst_runtime."
+        "dean_os.analysts._producers.runtime."
         "load_verified_semiconductor_news_context_fragment",
         lambda *args, **kwargs: _news_fragment(),
     )
     monkeypatch.setattr(
-        "dean_os.semiconductor_analyst_runtime."
+        "dean_os.analysts._producers.runtime."
         "load_verified_official_policy_context_fragment",
         lambda *args, **kwargs: _policy_fragment(),
     )
