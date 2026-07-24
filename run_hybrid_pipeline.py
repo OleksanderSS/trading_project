@@ -61,7 +61,22 @@ async def _save_runtime_params(args, batch_name: str) -> None:
     has_test_params = args.test_ticker or args.test_target or args.test_model or getattr(args, 'epochs', None) or getattr(args, 'max_iterations', None)
 
     if not has_test_params:
-        logger.info("📊 Full mode: NOT creating runtime_params.json")
+        # A runtime_params.json left over from an earlier --epochs/--test-*
+        # invocation must not silently survive into a full-mode run: Colab's
+        # ConfigLoader only checks whether the file *exists*, not whether
+        # this run is actually in test mode, so a stale file forces every
+        # model to train with that old (often epochs=1) test configuration
+        # while batch_metadata.json still reports test_mode: false.
+        stale_path = Path("data/colab/accumulated") / batch_name / "runtime_params.json"
+        if stale_path.exists():
+            stale_path.unlink()
+            logger.warning(
+                f"📊 Full mode: removed stale test-mode runtime_params.json "
+                f"at {stale_path} so this run isn't silently trained with "
+                f"leftover test epochs/iterations."
+            )
+        else:
+            logger.info("📊 Full mode: NOT creating runtime_params.json")
         return  # ← Не створюємо файл для повноцінного режиму
 
     # Тільки для тестового# Only for test mode:
