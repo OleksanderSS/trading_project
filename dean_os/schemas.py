@@ -191,6 +191,11 @@ class ConsensusDecision(BaseModel):
     risk_context: dict[str, Any] | None = None
     world_state: dict[str, Any] | None = None
     agent_report_hashes: dict[str, str] = Field(default_factory=dict)
+    # Count of reports that actually influenced final_score (decision_influence
+    # is not False), unlike len(agent_report_hashes) which includes every
+    # report that ran -- review-only domain analysts always run and would
+    # otherwise mask a real "too few decision-relevant agents responded" state.
+    decision_influencing_agent_count: int = 0
     config_hash: str = ""
     narrative: str = ""
     timestamp: str = Field(default_factory=utc_now_iso)

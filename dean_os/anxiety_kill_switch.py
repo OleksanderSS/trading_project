@@ -124,7 +124,13 @@ class AnxietyKillSwitch:
             )
 
         # Trigger 5: Too few agents responded
-        active_agents = len(decision.agent_report_hashes)
+        # decision_influencing_agent_count (not len(agent_report_hashes),
+        # which counts every report including review-only domain analysts
+        # that always run and never move the score) -- otherwise this check
+        # would almost never fire even when every decision-relevant guardian
+        # is missing or failing, since 8+ review-only agents alone already
+        # clear most min_active_agents thresholds.
+        active_agents = decision.decision_influencing_agent_count
         metrics["active_agents"] = active_agents
         if active_agents < self.config.min_active_agents:
             reasons.append(

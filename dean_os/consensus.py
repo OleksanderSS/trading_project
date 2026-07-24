@@ -54,6 +54,7 @@ class ConsensusEngine:
             for report in pipeline_reports
             if self._has_decision_influence(report)
         ]
+        decision_influencing_agent_count = len(decision_pipeline_reports) + len(analytical_reports)
 
         hard_veto = self._find_hard_veto(decision_pipeline_reports)
         if hard_veto is not None:
@@ -69,6 +70,7 @@ class ConsensusEngine:
                 evidence=hard_veto.evidence,
                 risk_context=hard_veto.risk_context,
                 agent_report_hashes=report_hashes,
+                decision_influencing_agent_count=decision_influencing_agent_count,
                 config_hash=self._config_hash(),
             )
 
@@ -100,6 +102,7 @@ class ConsensusEngine:
             evidence=self._collect_evidence(pipeline_reports, analytical_reports),
             risk_context=self._risk_context(pipeline_reports),
             agent_report_hashes=report_hashes,
+            decision_influencing_agent_count=decision_influencing_agent_count,
             config_hash=self._config_hash(),
         )
 
