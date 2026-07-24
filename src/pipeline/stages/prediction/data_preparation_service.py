@@ -246,7 +246,17 @@ class DataPreparationService:
         model_feature_cols: list[str],
         context_id: str
     ) -> pd.DataFrame | None:
-        """Drop rows with unavailable model inputs instead of fabricating zeros."""
+        """Drop rows with unavailable model inputs instead of fabricating zeros.
+
+        Zero-filling a missing technical-indicator value (e.g. RSI, SMA)
+        feeds the model a real, in-range number that looks like legitimate
+        data -- the model has no way to know it's fabricated, so it can
+        produce a confident, silently wrong prediction. Dropping the row is
+        the honest choice: no prediction is safer than a wrong one that
+        looks fine. (This function's own name and docstring already said
+        this was the intent; the implementation was doing the opposite --
+        always filling zeros and never dropping a row.)
+        """
         if not model_feature_cols:
             return ticker_df
 
@@ -257,16 +267,13 @@ class DataPreparationService:
         dropped = int((~complete_rows).sum())
         self.logger.warning(
             f'Context {context_id} has {dropped} incomplete feature row(s); '
-            'filling missing values with zeros instead of dropping rows.'
+            'dropping them rather than fabricating zeros.'
         )
-        # Fill missing values with zeros instead of dropping rows
-        ticker_df = ticker_df.copy()
-        ticker_df[model_feature_cols] = ticker_df[model_feature_cols].fillna(0)
+        ticker_df = ticker_df[complete_rows].copy()
 
-        # Add validation to ensure we have data after filling
         if ticker_df.empty:
             self.logger.error(
-                f'Context {context_id} has no data after filling missing values; skipping prediction.'
+                f'Context {context_id} has no data after dropping incomplete rows; skipping prediction.'
             )
             return None
 

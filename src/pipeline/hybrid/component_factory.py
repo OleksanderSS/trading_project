@@ -18,7 +18,6 @@ from .data_utils import DataUtils
 from .feature_processor import FeatureProcessor
 from .feature_selection_manager import FeatureSelectionManager
 from .feature_selection_validator import FeatureSelectionValidator
-from .final_stages_executor import FinalStagesExecutor
 from .final_stages_orchestrator import FinalStagesOrchestrator
 from .light_models_trainer import LightModelsTrainer
 from .metadata_manager import MetadataManager
@@ -74,7 +73,6 @@ class OrchestratorComponentFactory:
             })
 
             components['colab_workflow_manager'] = ColabWorkflowManager(output_dir, batch_name, config.light_models)
-            components['final_stages_executor'] = FinalStagesExecutor(config_manager, str(output_dir), batch_name)
             components['data_processor'] = DataProcessor(components['data_utils'])
             components['data_batch_manager'] = DataBatchManager()
             components['model_training_orchestrator'] = ModelTrainingOrchestrator(config_manager)

@@ -145,6 +145,23 @@ class PredictionStage(BaseStage):
         features_df, models_meta, market_regime = self._prepare_inputs(kwargs)
         if features_df is None or hasattr(features_df, 'empty'
             ) and features_df.empty or not models_meta:
+            # DataPreparationService._validate_inputs already logs the
+            # detailed reason (features_df is None/empty, models_meta
+            # empty) when it's the one that rejected these inputs -- this
+            # check is defense-in-depth in case that contract ever changes,
+            # so it must never itself return {} silently. Also: since the
+            # champion filter (ResultsProcessor.build_models_metadata ->
+            # filter_to_champions) now hard-drops any (ticker, target)
+            # group with no comparable metric, an empty models_meta here is
+            # a realistic, expected-to-happen case, not just a data bug.
+            self.logger.warning(
+                'PredictionStage.run: no usable inputs after prepare_inputs '
+                f'(features_df is None: {features_df is None}, models_meta '
+                f'empty: {not models_meta}) -- Stage 5 will produce no '
+                'predictions. If models_meta is empty, check whether the '
+                'champion filter dropped every (ticker, target) group '
+                '(see ResultsProcessor.build_models_metadata logs).'
+            )
             return {}
         if not self._ensure_local_models(models_meta, kwargs):
             return {}
