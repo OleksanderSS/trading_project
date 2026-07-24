@@ -74,7 +74,12 @@ class DataManager(IDatabaseManager):
             try:
                 conn.close()
                 logger.info(f"Closed connection to '{db_path}'")
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            except Exception as e:
+                # Broad catch is intentional: the same connection is also registered
+                # with ConnectionRegistry (see get_connection() below), whose own
+                # atexit hook may close it again during interpreter shutdown. An
+                # escaping exception there (e.g. duckdb.Error on a closed connection)
+                # would make the OS-level exit code non-zero even after a clean run.
                 logger.error(f"Error closing connection to '{db_path}': {e}", exc_info=True)
         cls._connections.clear()
         cls._connection_lock.clear()

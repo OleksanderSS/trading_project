@@ -41,7 +41,11 @@ class ConnectionRegistry:
                 conn.close()
                 if _logging_streams_open():
                     logger.info(f"Closed connection: {name}")
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            except Exception as e:
+                # Broad catch is intentional: this runs as an atexit hook during
+                # interpreter shutdown, where an escaping exception (e.g. duckdb.Error
+                # on an already-closed connection) makes the OS-level exit code non-zero
+                # even though the pipeline itself completed and logged success.
                 if _logging_streams_open():
                     logger.error(f"Error closing connection {name}: {e}", exc_info=True)
         cls._connections.clear()
