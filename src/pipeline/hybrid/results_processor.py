@@ -9,7 +9,9 @@ import os
 from pathlib import Path
 from typing import Any
 
+from src.config.target_type_registry import load_target_types
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.hybrid.champion_selector import filter_to_champions
 
 
 class ResultsProcessor:
@@ -116,7 +118,12 @@ class ResultsProcessor:
 
     def build_models_metadata(self, colab_results: dict[str, Any],
         light_results: dict[str, Any] | None) ->dict[str, Any]:
-        """Build models metadata from colab and light results."""
+        """Build models metadata from colab and light results, then hard-
+        filter it down to the single empirical champion model_type per
+        (ticker, target) -- see src/pipeline/hybrid/champion_selector.py.
+        Stage 5 never sees, and can never accidentally predict with, an
+        architecture that trained worse than another candidate for the
+        same (ticker, target)."""
         models_metadata = {}
         if 'models_metadata' in colab_results:
             models_metadata.update(colab_results['models_metadata'])
@@ -125,6 +132,20 @@ class ResultsProcessor:
         if light_results and 'models_metadata' in light_results:
             models_metadata.update(light_results['models_metadata'])
         self.logger.info(f'✅ Built metadata for {len(models_metadata)} models')
+
+        candidate_count = len(models_metadata)
+        target_types = load_target_types()
+        models_metadata = filter_to_champions(models_metadata, target_types)
+        self.logger.info(
+            f'🏆 Filtered to {len(models_metadata)} champion model(s) '
+            f'(from {candidate_count} candidate(s) across all (ticker, target) groups)'
+        )
+        if candidate_count and not models_metadata:
+            self.logger.warning(
+                '⚠️ Champion filter removed every candidate -- no (ticker, target) '
+                'group had a model with a comparable metric. Stage 5 will have no '
+                'models_metadata to predict with.'
+            )
         return models_metadata
 
     def _update_selected_features_from_ticker_results(self, models_metadata:
