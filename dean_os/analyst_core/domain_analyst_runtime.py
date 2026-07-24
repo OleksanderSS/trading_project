@@ -169,6 +169,12 @@ class DomainAnalystRuntime:
             core_questions=kwargs.get("core_questions"),
             required_evidence_types=kwargs.get("required_evidence_types"),
         )
+        # __init__ above set self.profile from the shared registry default
+        # for domain_id, ignoring any overrides -- SectorAnalyst.clone()
+        # already built the correctly-overridden private profile and bound
+        # it to new_runtime.analyst.profile, so reuse that same object
+        # instead of leaving the two out of sync.
+        new_runtime.profile = new_runtime.analyst.profile
 
         return new_runtime
 

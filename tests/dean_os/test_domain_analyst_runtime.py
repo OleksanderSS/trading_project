@@ -17,6 +17,13 @@ def _make_news_artifact(tmp: Path, domain: str = "energy") -> Path:
     artifact_dir = tmp / "news"
     artifact_dir.mkdir()
     data = {
+        # _validated_producer (artifact_evidence_loader.py) requires this
+        # producer-contract wrapper on every artifact -- created_at/status/
+        # safety.review_only -- regardless of the inner fragment shape.
+        "created_at": "2026-06-28T12:00:00+00:00",
+        "status": "ready",
+        "safety": {"review_only": True},
+        "inputs": {"as_of": "2026-06-28T12:00:00+00:00"},
         "market_context_fragment": {
             "news": [
                 {
@@ -123,6 +130,12 @@ class TestRunWithArtifactDir:
         news_dir.mkdir(parents=True)
         
         data = {
+            # See _make_news_artifact's comment above -- _validated_producer
+            # requires this wrapper regardless of the inner fragment shape.
+            "created_at": "2026-06-28T12:00:00+00:00",
+            "status": "ready",
+            "safety": {"review_only": True},
+            "inputs": {"as_of": "2026-06-28T12:00:00+00:00"},
             "market_context_fragment": {
                 "news": [
                     {
