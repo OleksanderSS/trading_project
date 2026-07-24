@@ -240,7 +240,10 @@ def test_current_database_has_verified_amd_periodic_filing():
     )
 
     assert payload["status"] == "filing_index_ready"
-    assert payload["summary"]["database_row_count"] == 10191
+    # The real database keeps growing as new data is ingested -- this was
+    # exactly 10191 when the test was written; assert a floor instead of an
+    # exact snapshot so real, expected growth doesn't fail the test.
+    assert payload["summary"]["database_row_count"] >= 10191
     assert payload["summary"]["accepted_filing_count"] == 1
     assert payload["filings"][0]["ticker"] == "AMD"
     assert payload["filings"][0]["form"] == "10-Q"
