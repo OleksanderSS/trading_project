@@ -162,5 +162,5 @@ def test_portability_review_saves_markdown_and_cli_runs(tmp_path):
     )
 
     assert "Review status: domain_analyst_portability_review_ready" in result.stdout
-    assert "Can clone now: False" in result.stdout
+    assert "Can clone domains now: False" in result.stdout
     assert (tmp_path / "cli_reports" / "latest.json").exists()
