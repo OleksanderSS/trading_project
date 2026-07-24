@@ -300,9 +300,6 @@ _EXPORT_GROUPS: dict[str, tuple[str, ...]] = {
         "StagedWorkbenchIntegrationReview",
     ),
     "dean_os.agents.chief_review": ("ChiefReviewAgent",),
-    "dean_os.agents.collector_inventory": (
-        "CollectorInventoryAgent",
-    ),
     "dean_os.agents.diary_bridge": ("DiaryBridgeAgent",),
     "dean_os.agents.market_data_freshness": (
         "MarketDataFreshnessAgent",

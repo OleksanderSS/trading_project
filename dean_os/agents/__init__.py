@@ -57,8 +57,6 @@ META / OPERATIONS  (pipeline branch, dry-run / proposal only)
   DiaryBridgeAgent        — decision diary + memory bridge
   PaperPortfolioAgent     — paper trading simulation (no real execution)
   EvidenceSynthesisAgent  — evidence aggregation across sources
-  CollectorHealthAgent    — data collector health monitoring
-  CollectorInventoryAgent — data collector inventory management
 
 WORKING TOOLS  (standalone / not in orchestrator loop)
 ───────────────────────────────────────────────────────
@@ -115,8 +113,6 @@ from dean_os.agents.chief_review import ChiefReviewAgent
 from dean_os.agents.diary_bridge import DiaryBridgeAgent
 from dean_os.agents.paper_portfolio import PaperPortfolioAgent
 from dean_os.agents.synthesis import EvidenceSynthesisAgent
-from dean_os.agents.collector_health import CollectorHealthAgent
-from dean_os.agents.collector_inventory import CollectorInventoryAgent
 
 # ── Working Tools (standalone) ────────────────────────────────────────────────
 from dean_os.agents.working_domain_analyst import WorkingDomainAnalystAgent
@@ -163,8 +159,6 @@ __all__ = [
     "DiaryBridgeAgent",
     "PaperPortfolioAgent",
     "EvidenceSynthesisAgent",
-    "CollectorHealthAgent",
-    "CollectorInventoryAgent",
     # Working tools
     "WorkingDomainAnalystAgent",
 ]
