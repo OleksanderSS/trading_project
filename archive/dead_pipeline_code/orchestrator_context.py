@@ -1,3 +1,8 @@
+# ARCHIVED (found during stages 5-7 audit, 2026-07-24): confirmed zero
+# importers anywhere in src/ or tests/ -- a parallel, never-adopted
+# lazy-component-wiring approach that mirrors src/pipeline/hybrid/
+# component_factory.py (the one actually used). Moved here rather than
+# deleted in case the migration this was meant to enable is picked back up.
 from functools import cached_property
 from pathlib import Path
 from typing import Any

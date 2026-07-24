@@ -1,3 +1,14 @@
+# ARCHIVED (found during stages 5-7 audit, 2026-07-24): instantiated in
+# component_factory.py but .run_final_stages() was never called anywhere --
+# the live pipeline uses FinalStagesOrchestrator (a different class)
+# exclusively. Its _train_heavy_models also fabricates placeholder metrics
+# ({'accuracy': 0.75, 'loss': 0.5}), confirming this was a stub that was
+# never finished/wired up, not a regression. Archived with its dedicated
+# test file (test_autoencoder_routing_policy.py) rather than deleted, since
+# that test does lock in a real policy decision (autoencoder must not be
+# used as a target predictor) that may be worth re-implementing against the
+# live FinalStagesOrchestrator/ModelTrainingOrchestrator path someday.
+#
 # audit-ignore: ARCHITECTURAL_USAGE
 """
 Final Stages Executor - Handles final stages execution
