@@ -589,6 +589,8 @@ class EventCausalGraphBuilder:
             sum(n.estimate_confidence for n in nodes) / len(nodes)
         ) if len(nodes) > 1 else 0.0
 
+        watch_list = sorted(all_tickers)
+
         graph = CausalGraph(
             graph_id=graph_id,
             trigger_headline=event.headline,
