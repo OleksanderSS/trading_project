@@ -180,7 +180,7 @@ def render_current_system_alignment_review_markdown(payload: dict[str, Any]) -> 
         "# DEAN-OS Current System Alignment Review",
         "",
         f"- Run ID: `{payload.get('run_id')}`",
-        f"- Alignment status: `{summary.get('alignment_status')}`",
+        f"- Alignment: `{summary.get('alignment_status')}`",
         f"- Recommended action: `{summary.get('recommended_action')}`",
         f"- Next operation type: `{summary.get('next_operation_type')}`",
         f"- Useful integrations: {summary.get('useful_integrations_count')}",

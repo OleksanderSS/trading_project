@@ -112,7 +112,7 @@ def render_domain_analyst_case_registry_packet_markdown(payload: dict[str, Any])
         f"- Registry status: `{summary.get('registry_status')}`",
         f"- Domain: `{summary.get('domain_id')}`",
         f"- Cases: {summary.get('case_count')}",
-        f"- Expectation cases: {summary.get('expectation_case_count')}",
+        f"- Expectation cases: expectations={summary.get('expectation_case_count')}",
         f"- Observations: {summary.get('source_observation_count')}",
         f"- Outcome buckets: `{summary.get('outcome_bucket_counts')}`",
         f"- Manual review required: {summary.get('manual_review_required')}",

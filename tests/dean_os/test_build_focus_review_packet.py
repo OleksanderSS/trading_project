@@ -204,5 +204,5 @@ def test_build_focus_review_saves_markdown_and_cli_runs(tmp_path):
     )
 
     assert "Focus status: focus_review_ready" in result.stdout
-    assert "Stop domain template gates: True" in result.stdout
+    assert "Should stop adding domain template gates: True" in result.stdout
     assert (tmp_path / "cli_reports" / "latest.json").exists()

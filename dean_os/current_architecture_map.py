@@ -399,7 +399,7 @@ def render_current_architecture_map_markdown(payload: dict[str, Any]) -> str:
         "",
         f"- Run ID: `{payload.get('run_id')}`",
         f"- Version: `{payload.get('architecture_version')}`",
-        f"- Status: `{summary.get('architecture_status')}`",
+        f"- Architecture: `{summary.get('architecture_status')}`",
         f"- Active design: `{summary.get('active_design')}`",
         f"- Pipeline metric planes: {summary.get('pipeline_metric_plane_count')}",
         f"- Domain profiles: {summary.get('domain_profile_count')}",

@@ -81,7 +81,7 @@ def render_real_source_dropzone_inventory_markdown(payload: dict[str, Any]) -> s
         "",
         f"- Run ID: `{payload.get('run_id')}`",
         f"- Dropzone: `{payload.get('input', {}).get('dropzone')}`",
-        f"- Status: `{summary.get('dropzone_status')}`",
+        f"- Dropzone status: `{summary.get('dropzone_status')}`",
         f"- Supported files: {summary.get('supported_file_count')}",
         f"- Ignored files: {summary.get('ignored_file_count')}",
         f"- Unsupported files: {summary.get('unsupported_file_count')}",

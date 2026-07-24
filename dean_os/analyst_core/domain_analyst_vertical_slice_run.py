@@ -278,7 +278,7 @@ def render_domain_analyst_vertical_slice_markdown(payload: dict[str, Any]) -> st
         f"- Documents: {summary.get('document_count')}",
         f"- Evidence items: {summary.get('evidence_item_count')}",
         f"- Source gate: `{summary.get('source_gate_status')}`",
-        f"- Event interpretation: `{summary.get('event_interpretation_status')}` ({summary.get('event_packet_count')} packets)",
+        f"- Event interpretation: packets={summary.get('event_packet_count')} status=`{summary.get('event_interpretation_status')}`",
         f"- Regime scenario: `{summary.get('regime_scenario_status')}` nodes={summary.get('scenario_node_count')} gaps={summary.get('scenario_evidence_gap_count')}",
         f"- Pipeline context: `{summary.get('pipeline_context_status')}` tags={summary.get('pipeline_context_tag_count')}",
         f"- Pipeline crisis-pattern events: {summary.get('pipeline_crisis_pattern_event_count')}",

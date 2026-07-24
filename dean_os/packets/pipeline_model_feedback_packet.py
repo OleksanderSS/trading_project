@@ -198,7 +198,7 @@ def render_pipeline_model_feedback_packet_markdown(
         )
     lines.extend(["", "## Existing Learning Loop", ""])
     lines.append(
-        f"- Compatible: {compatibility.get('compatible')}"
+        f"- Can route to analyst apply loop: {compatibility.get('compatible')}"
     )
     lines.append(f"- Reason: {compatibility.get('reason')}")
     lines.extend(["", "## Review Checks", ""])
