@@ -332,8 +332,61 @@ class RecommendationMemoryStore:
             "lessons": [record.lesson for record in records if record.lesson],
         }
 
+    @staticmethod
+    def _migrate_legacy_table_without_revision(conn: sqlite3.Connection) -> None:
+        """One-time migration for recommendation_memory.sqlite files created
+        before the memory_id/revision versioning scheme existed (a single
+        row per memory_id, memory_id as PRIMARY KEY). `CREATE TABLE IF NOT
+        EXISTS` below is a no-op against such a file -- the missing `revision`
+        column would otherwise persist forever, breaking every query that
+        reads it (e.g. RecommendationMemoryStore.list_records's ORDER BY
+        rm.rowid / JOIN on MAX(revision))."""
+        existing = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='recommendation_memory'"
+        ).fetchone()
+        if existing is None:
+            return
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(recommendation_memory)")}
+        if "revision" in columns:
+            return
+        conn.execute("ALTER TABLE recommendation_memory RENAME TO recommendation_memory_legacy")
+        conn.execute(
+            """
+            CREATE TABLE recommendation_memory (
+                rowid INTEGER PRIMARY KEY AUTOINCREMENT,
+                memory_id TEXT NOT NULL,
+                revision INTEGER NOT NULL,
+                source_type TEXT NOT NULL,
+                source_id TEXT NOT NULL,
+                agent_name TEXT NOT NULL,
+                topic TEXT NOT NULL,
+                expected_direction TEXT NOT NULL,
+                outcome_label TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                outcome_at TEXT,
+                context_tags TEXT NOT NULL,
+                payload TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            INSERT INTO recommendation_memory (
+                memory_id, revision, source_type, source_id, agent_name, topic,
+                expected_direction, outcome_label, created_at, outcome_at,
+                context_tags, payload
+            )
+            SELECT memory_id, 1, source_type, source_id, agent_name, topic,
+                expected_direction, outcome_label, created_at, outcome_at,
+                context_tags, payload
+            FROM recommendation_memory_legacy
+            """
+        )
+        conn.execute("DROP TABLE recommendation_memory_legacy")
+
     def _init_db(self) -> None:
         with self._connect() as conn:
+            self._migrate_legacy_table_without_revision(conn)
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS recommendation_memory (

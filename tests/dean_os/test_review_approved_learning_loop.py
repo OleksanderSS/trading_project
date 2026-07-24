@@ -64,6 +64,7 @@ def test_review_loop_preview_blocks_unreviewed_source(tmp_path):
     payload = ReviewApprovedLearningLoop(tmp_path / "loop").run(
         profile_run_path=profile_path,
         learning_path=tmp_path / "learning.sqlite",
+        memory_path=tmp_path / "recommendation_memory.sqlite",
         review_actions_path=tmp_path / "review.sqlite",
         apply=False,
     )
@@ -80,6 +81,7 @@ def test_review_loop_marks_reviewed_without_learning_write(tmp_path):
     payload = ReviewApprovedLearningLoop(tmp_path / "loop").run(
         profile_run_path=profile_path,
         learning_path=tmp_path / "learning.sqlite",
+        memory_path=tmp_path / "recommendation_memory.sqlite",
         review_actions_path=tmp_path / "review.sqlite",
         mark_reviewed=True,
         review_notes="Reviewed citations and accepted for pending outcome tracking.",
@@ -100,6 +102,7 @@ def test_review_loop_mark_reviewed_and_apply_promotes_learning(tmp_path):
     payload = ReviewApprovedLearningLoop(tmp_path / "loop").run(
         profile_run_path=profile_path,
         learning_path=tmp_path / "learning.sqlite",
+        memory_path=tmp_path / "recommendation_memory.sqlite",
         review_actions_path=tmp_path / "review.sqlite",
         mark_reviewed=True,
         review_notes="Reviewed citations and accepted for pending outcome tracking.",
@@ -123,6 +126,7 @@ def test_review_loop_needs_more_data_blocks_apply(tmp_path):
     payload = ReviewApprovedLearningLoop(tmp_path / "loop").run(
         profile_run_path=profile_path,
         learning_path=tmp_path / "learning.sqlite",
+        memory_path=tmp_path / "recommendation_memory.sqlite",
         review_actions_path=tmp_path / "review.sqlite",
         needs_more_data_request="Add filings or transcript evidence before learning promotion.",
         review_notes="Current source is too thin.",
