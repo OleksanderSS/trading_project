@@ -611,9 +611,15 @@ def test_current_bridge_accepts_ticker_evidence_but_keeps_forecast_blocked(
     assert candidates["AMD"]["candidate_status"] == (
         "ticker_evidence_ready_pipeline_blocked"
     )
+    # 2 news items x up to 2 evidence_type lanes each (market_confirmation +
+    # sector_demand, since "AI demand"/"sales forecast" phrasing satisfies
+    # both independently) = 4 records, not 2 -- this only became reachable
+    # once semiconductor_issuer_identity_registry.yaml was filled in with the
+    # domain's full ticker universe; before that this test failed earlier,
+    # on a missing-registry-entry error, and never reached this assertion.
     assert candidates["AMD"]["ticker_specific_evidence"][
         "eligible_record_count"
-    ] == 2
+    ] == 4
     assert (
         "ticker_specific_directional_evidence"
         not in candidates["AMD"]["required_next_inputs"]

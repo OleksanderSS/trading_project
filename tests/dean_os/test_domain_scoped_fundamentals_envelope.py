@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import yaml
+
 from dean_os.context_acquisition_state_machine import ContextAcquisitionStateMachine
 from dean_os.analyst_core.domain_analyst_binding_planner import DomainAnalystBindingPlanner
 from dean_os.domain_scoped_fundamentals_envelope import (
@@ -119,9 +121,55 @@ def _dispatch(tmp_path: Path) -> Path:
     )
 
 
+def _issuer_registry(tmp_path: Path) -> Path:
+    # A self-contained snapshot matching exactly the CIKS tickers this fixture
+    # uses -- not the shared dean_os/config/semiconductor_issuer_identity_registry.yaml,
+    # whose issuer count this test's exact-scope-match assertions must not be
+    # coupled to (that file legitimately grew to cover the domain's full
+    # ticker_universe_hint; this test intentionally exercises a *narrower*
+    # registry scope than the full domain universe to hit the "with_gaps"
+    # partial-coverage path).
+    path = tmp_path / "issuer_identity_registry.yaml"
+    path.write_text(
+        yaml.safe_dump(
+            {
+                "registry_id": "dean_semiconductor_issuer_identity_registry_v1",
+                "domain_id": DOMAIN,
+                "review_status": "initial_mapping_requires_manual_acceptance",
+                "eligibility": {
+                    "strong_source_tiers": [
+                        "tier_1_primary_or_wire",
+                        "tier_2_strong_context",
+                    ],
+                    "minimum_independent_strong_sources": 2,
+                    "require_consistent_directional_stance": True,
+                    "plain_substring_match_allowed": False,
+                    "raw_fundamental_fact_is_directional_evidence": False,
+                    "sector_context_can_close_ticker_lane": False,
+                },
+                "issuers": {
+                    ticker: {
+                        "cik": cik,
+                        "legal_name": f"{ticker} Test Issuer",
+                        "aliases": [ticker],
+                    }
+                    for ticker, cik in CIKS.items()
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
 def _build(tmp_path: Path, monkeypatch, *, wrong_cik: bool = False) -> dict:
     merger = _merger(tmp_path, wrong_cik=wrong_cik)
     ratio = _ratio(tmp_path, merger)
+    registry_path = _issuer_registry(tmp_path)
+    monkeypatch.setattr(
+        "dean_os.domain_scoped_fundamentals_envelope._configured_registry_path",
+        lambda policy: registry_path,
+    )
     monkeypatch.setattr(
         "dean_os.domain_scoped_fundamentals_envelope."
         "load_verified_merged_fundamental_context_fragment",

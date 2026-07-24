@@ -98,9 +98,16 @@ def test_ticker_specific_producer_requires_exact_alias_and_corroboration(
         "ticker_specific_evidence_ready_with_gaps"
     )
     assert payload["summary"]["eligible_tickers"] == ["AMD"]
+    # Every other ticker in the semiconductor domain's 12-ticker universe
+    # (DEFAULT_TICKERS) lacks corroborated news evidence in this fixture --
+    # this list grew from 3 names once semiconductor_issuer_identity_registry.yaml
+    # was filled in with the domain's full ticker_universe_hint (previously
+    # only NVDA/AMD/INTC/TSM were registered, silently short-circuiting this
+    # producer for the other 8 with a missing-registry-entry error before it
+    # ever got this far).
     assert payload["summary"][
         "missing_corroborated_tickers"
-    ] == ["INTC", "NVDA", "TSM"]
+    ] == ["AMAT", "ARM", "ASML", "AVGO", "INTC", "KLAC", "LRCX", "MU", "NVDA", "QCOM", "TSM"]
     amd_demand = next(
         item
         for item in payload["lane_review"]

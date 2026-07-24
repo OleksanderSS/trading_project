@@ -41,3 +41,54 @@ issuers:
       - Taiwan Semiconductor
       - TSMC
       - TSM
+  ASML:
+    cik: "0000937966"
+    legal_name: ASML Holding N.V.
+    aliases:
+      - ASML Holding
+      - ASML
+  AMAT:
+    cik: "0000006951"
+    legal_name: Applied Materials, Inc.
+    aliases:
+      - Applied Materials
+      - AMAT
+  LRCX:
+    cik: "0000707549"
+    legal_name: Lam Research Corporation
+    aliases:
+      - Lam Research
+      - LRCX
+  KLAC:
+    cik: "0000319201"
+    legal_name: KLA Corporation
+    aliases:
+      - KLA Corporation
+      - KLA-Tencor
+      - KLAC
+  AVGO:
+    cik: "0001730168"
+    legal_name: Broadcom Inc.
+    aliases:
+      - Broadcom
+      - AVGO
+  MU:
+    cik: "0000723125"
+    legal_name: Micron Technology, Inc.
+    aliases:
+      - Micron Technology
+      - Micron
+      - MU
+  ARM:
+    cik: "0001973239"
+    legal_name: Arm Holdings plc
+    aliases:
+      - Arm Holdings
+      - Arm
+      - ARM
+  QCOM:
+    cik: "0000804328"
+    legal_name: QUALCOMM Incorporated
+    aliases:
+      - Qualcomm
+      - QCOM

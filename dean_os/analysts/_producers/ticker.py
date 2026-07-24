@@ -31,9 +31,12 @@ SAVED_TICKER_SPECIFIC_EVIDENCE_CONTRACT = (
     "dean_saved_ticker_specific_evidence_v1"
 )
 DEFAULT_ISSUER_REGISTRY = (
-    Path(__file__).resolve().parent
-    / "config"
-    / "semiconductor_issuer_identity_registry.yaml"
+    # dean_os/analysts/_producers/ticker.py -> dean_os/config/semiconductor_issuer_identity_registry.yaml.
+    # Was `Path(__file__).resolve().parent / "config" / ...`, which resolves
+    # to the non-existent dean_os/analysts/_producers/config/ -- the real
+    # registry lives at dean_os/config/, three levels up from this file, same
+    # as the sibling news.py/policy.py producers (Path(__file__).resolve().parents[2]).
+    Path(__file__).resolve().parents[2] / "config" / "semiconductor_issuer_identity_registry.yaml"
 )
 _DOMAIN_ID = "semiconductor_ai_infrastructure"
 DEFAULT_TICKERS = tuple(get_domain_profile(_DOMAIN_ID).ticker_universe_hint)
