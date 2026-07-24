@@ -291,6 +291,21 @@ class ValueScreeningAgent(KeywordDomainAgent):
             or gate.get("structured_accepted_fingerprint")
             or (gate.get("structured_context_audit") or {}).get("accepted_fingerprint")
         )
+        if (
+            gate_fingerprint
+            and gate_fingerprint != structured_audit.get("accepted_fingerprint")
+        ):
+            # The gate reviewed a different fundamentals payload than what's
+            # actually attached to this context now -- accepting it anyway
+            # would let stale or substituted data ride on a stale approval.
+            return self._blocked_by_fundamental_gate(
+                context,
+                gate,
+                extra_reason=(
+                    "fingerprint_mismatch: gate's reviewed fundamentals do "
+                    "not match the fundamentals attached to this context"
+                ),
+            )
         average_score = sum(scores.values()) / len(scores)
         best_ticker = max(scores, key=scores.get)
         best_score = scores[best_ticker]
@@ -476,7 +491,19 @@ class ValueScreeningAgent(KeywordDomainAgent):
             input_hash=self.context_hash(context),
         )
 
-    def _blocked_by_fundamental_gate(self, context: MarketContext, gate: dict[str, Any]) -> AnalyticalReport:
+    def _blocked_by_fundamental_gate(
+        self,
+        context: MarketContext,
+        gate: dict[str, Any],
+        *,
+        extra_reason: str | None = None,
+    ) -> AnalyticalReport:
+        reasons = [
+            f"Fundamental input gate status: {gate.get('readiness_status')}",
+            "Value screening requires a clean reviewed fundamental input gate when one is attached.",
+        ]
+        if extra_reason:
+            reasons.append(extra_reason)
         return AnalyticalReport(
             agent_name=self.name,
             agent_version=self.version,
@@ -495,10 +522,7 @@ class ValueScreeningAgent(KeywordDomainAgent):
             catalysts=[],
             tailwinds=[],
             headwinds=[],
-            reasons=[
-                f"Fundamental input gate status: {gate.get('readiness_status')}",
-                "Value screening requires a clean reviewed fundamental input gate when one is attached.",
-            ],
+            reasons=reasons,
             risks=_fundamental_gate_risks(gate),
             blind_spots=[
                 "Fundamental values were not used for scoring.",
@@ -515,7 +539,12 @@ class ValueScreeningAgent(KeywordDomainAgent):
 
     def _score_fundamentals(self, fundamentals: dict[str, dict[str, Any]]) -> dict[str, float]:
         scores: dict[str, float] = {}
-        for ticker, metrics in fundamentals.items():
+        for ticker, entry in fundamentals.items():
+            # FundamentalInputReadinessGate's structured contract nests metric
+            # values under entry["metrics"][name]["value"] (plus unit/period/
+            # available_at); a bare flat dict is also accepted for callers
+            # that don't go through the gate.
+            metrics = entry.get("metrics", entry) if isinstance(entry, dict) else entry
             points = 0.0
             checks = 0
             pe = self._extract_value(metrics.get("pe") or metrics.get("price_to_earnings"))
@@ -550,20 +579,24 @@ class ValueScreeningAgent(KeywordDomainAgent):
 
 
 def _fundamental_gate(context: MarketContext) -> dict[str, Any]:
+    # context.metadata["fundamental_input_readiness_gate"] is the flat summary
+    # dict agent_lab.py's _fundamental_gate_summary() builds (readiness_status,
+    # can_feed_value_screening_after_manual_review, etc. all top-level) --
+    # not a wrapper with a nested "summary" key.
     gate = context.metadata.get("fundamental_input_readiness_gate")
     if not isinstance(gate, dict):
         return {"gate_attached": False, "readiness_status": "not_attached"}
-    summary = gate.get("summary") or {}
     gate_enhanced = {
         "gate_attached": True,
         "can_feed_value_screening_after_manual_review": (
-            summary.get("can_feed_value_screening_after_manual_review") or False
+            gate.get("can_feed_value_screening_after_manual_review") or False
         ),
         "structured_accepted_fingerprint": (
-            summary.get("structured_accepted_fingerprint")
+            gate.get("gate_structured_accepted_fingerprint")
+            or gate.get("structured_accepted_fingerprint")
             or (gate.get("structured_context_audit") or {}).get("accepted_fingerprint")
         ),
-        "readiness_status": summary.get("readiness_status", "not_attached"),
+        "readiness_status": gate.get("readiness_status", "not_attached"),
     }
     return gate_enhanced
 
