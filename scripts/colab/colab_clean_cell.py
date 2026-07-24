@@ -16,7 +16,19 @@ logger = ProjectLogger.get_logger(__name__)
 import numpy as np
 import pandas as pd
 
+from src.config.target_type_registry import (  # noqa: E402
+    CLASSIFICATION_BINARY_TYPE,
+    CLASSIFICATION_MULTICLASS_TYPE,
+    CLASSIFICATION_TARGET_TYPES,
+    load_target_types,
+)
+
 warnings.filterwarnings('ignore')
+
+# Target type taxonomy re-exported from src/config/target_type_registry.py
+# (the single source of truth, shared with the live pipeline's champion
+# selector) so `from scripts.colab.colab_clean_cell import
+# CLASSIFICATION_BINARY_TYPE` etc. keeps working for existing callers/tests.
 
 # ML Audit tools
 try:
@@ -196,6 +208,32 @@ class ConfigLoader:
         self.REDUCED_EPOCHS: int = 1
         self.MAX_ITERATIONS: int = 100
         self._load_runtime_params()
+        self.target_types: dict[str, str] = self._load_target_types()
+
+    def _load_target_types(self) -> dict[str, str]:
+        """Read each target's declared `type:` from src/config/targets.yaml
+        via the shared registry loader (src/config/target_type_registry.py)
+        -- the live pipeline's champion selector reads the same file the
+        same way, so the two can never disagree on what a target is.
+
+        Every model-training function needs to know whether a target is
+        classification_binary/classification_multiclass (needs a sigmoid/
+        softmax head, cross-entropy loss, accuracy/AUC -- never MSE) or
+        regression/indicator_prediction (needs a scaled continuous target
+        and MSE) BEFORE this fix, every target was silently trained as
+        plain regression regardless of what it actually was.
+        """
+        targets_path = self.project_path / "src" / "config" / "targets.yaml"
+        if not targets_path.exists():
+            print(f"⚠️ {targets_path} не знайдено -- усі таргети тренуватимуться як regression")
+            return {}
+        types = load_target_types(targets_path)
+        if not types:
+            print(f"⚠️ Не вдалося прочитати {targets_path} -- усі таргети тренуватимуться як regression")
+        return types
+
+    def target_type_for(self, target_col: str) -> str:
+        return self.target_types.get(target_col, "regression")
 
     def _load_runtime_params(self):
         """Завантаження runtime параметрів"""
@@ -556,6 +594,11 @@ class ColabTrainingController:
             common_cols.append('datetime')
 
         merged = pd.merge(t_feat, t_targ, on=common_cols, how='inner', validate='one_to_one')
+        if 'datetime' in merged.columns:
+            # Sequence models need genuine chronological order to build
+            # real historical windows -- merge's output row order isn't a
+            # documented guarantee, so this must be explicit, not assumed.
+            merged = merged.sort_values('datetime').reset_index(drop=True)
         print(f"  ✅ Merged: {merged.shape}")
 
         # Get target columns
@@ -599,6 +642,18 @@ class ColabTrainingController:
 
         y_ser = pd.to_numeric(y_ser, errors='coerce').fillna(0).astype(np.float32)
 
+        # Target type: classification_binary/classification_multiclass targets
+        # are already integer-coded labels (0/1 or 0/1/2) and must never be
+        # scaled or trained with MSE; regression/indicator_prediction targets
+        # are continuous and get their own StandardScaler (mirroring X) so a
+        # price-level target like SMA/EMA doesn't dominate the loss purely
+        # from its raw unit magnitude. src/config/targets.yaml is the source
+        # of truth -- this script used to ignore it entirely and train every
+        # target, including binary up/down targets, as plain regression.
+        target_type = self.config_loader.target_type_for(target_col)
+        is_classification = target_type in CLASSIFICATION_TARGET_TYPES
+        y_scaler = None
+
         # Scaling - CRITICAL FOR NEURAL NETWORKS
         try:
             from sklearn.preprocessing import StandardScaler
@@ -613,11 +668,22 @@ class ColabTrainingController:
         except Exception as e:
             print(f"    ⚠️ Помилка масштабування: {e}")
 
+        if not is_classification:
+            try:
+                from sklearn.preprocessing import StandardScaler
+                y_scaler = StandardScaler()
+                y_scaled_values = y_scaler.fit_transform(y_ser.to_numpy().reshape(-1, 1)).ravel()
+                y_ser = pd.Series(y_scaled_values.astype(np.float32), index=y_ser.index, name=y_ser.name)
+                print("    ⚖️ Таргет масштабовано (StandardScaler)")
+            except Exception as e:
+                print(f"    ⚠️ Помилка масштабування таргету: {e}")
+                y_scaler = None
+
         # Train models
         for model_type in heavy_models:
-            self._train_model(ticker, target_col, model_type, x_df, y_ser)
+            self._train_model(ticker, target_col, model_type, x_df, y_ser, target_type, is_classification, y_scaler)
 
-    def _train_model(self, ticker, target_col, model_type, x_df, y_ser):
+    def _train_model(self, ticker, target_col, model_type, x_df, y_ser, target_type, is_classification, y_scaler):
         """Тренування однієї моделі"""
         # Check if model already exists to skip re-training
         ext = ".keras" if model_type in ['cnn', 'lstm', 'gru', 'transformer', 'autoencoder'] else ".pkl"
@@ -634,7 +700,7 @@ class ColabTrainingController:
                 max_features = self._get_model_max_features(model_type)
                 selected_features = self.feature_selector.select_features(
                     X=x_df, y=y_ser, context_id=f"{ticker}_{target_col}_{model_type}",
-                    is_classification=False, max_features=max_features
+                    is_classification=is_classification, max_features=max_features
                 )
             except Exception as e:
                 self.logger.error("Failed to select features, using all columns", exc_info=True)
@@ -654,13 +720,20 @@ class ColabTrainingController:
             
             self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = model_result
             
-            # Add to models_metadata
+            # Add to models_metadata. Key is 'model_path', not 'path' --
+            # every downstream consumer (model_resolver.py, prediction/
+            # orchestrator.py, scaler_service.py, data_preparer.py,
+            # result_builder.py) reads meta.get('model_path'); a 'path' key
+            # here is invisible to all of them, silently forcing Stage 5
+            # onto its slower filename-glob fallback instead of the direct
+            # path, and skipping ResultsProcessor._convert_model_paths'
+            # localization step entirely.
             meta_key = f"{ticker}_{target_col}_{model_type}"
             self.results['models_metadata'][meta_key] = {
                 'ticker': ticker,
                 'target': target_col,
                 'model_type': model_type,
-                'path': model_filename,
+                'model_path': model_filename,
                 'metrics': {'info': 'already_exists'},
                 'selected_features': selected_features
             }
@@ -675,7 +748,7 @@ class ColabTrainingController:
                 X=x_df,
                 y=y_ser,
                 context_id=f"{ticker}_{target_col}_{model_type}",
-                is_classification=False,
+                is_classification=is_classification,
                 max_features=max_features
             )
 
@@ -686,7 +759,10 @@ class ColabTrainingController:
             print(f"✅ OK ({len(selected_features)} фіч)")
 
             # Train the model
-            metrics = self._train_model_with_features(ticker, target_col, model_type, x_df, y_ser, selected_features)
+            metrics = self._train_model_with_features(
+                ticker, target_col, model_type, x_df, y_ser, selected_features,
+                target_type, is_classification, y_scaler,
+            )
             
             # Record result
             ext = ".keras" if model_type in ['cnn', 'lstm', 'gru', 'transformer', 'autoencoder'] else ".pkl"
@@ -702,13 +778,15 @@ class ColabTrainingController:
             
             self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = model_result
             
-            # Add to models_metadata for easier access
+            # Add to models_metadata for easier access. 'model_path', not
+            # 'path' -- see the matching comment in the skipped-model branch
+            # above for why this key name matters.
             meta_key = f"{ticker}_{target_col}_{model_type}"
             self.results['models_metadata'][meta_key] = {
                 'ticker': ticker,
                 'target': target_col,
                 'model_type': model_type,
-                'path': model_filename,
+                'model_path': model_filename,
                 'metrics': metrics,
                 'selected_features': selected_features
             }
@@ -722,29 +800,49 @@ class ColabTrainingController:
                     'message': str(e)[:100]
                 }
 
-    def _train_model_with_features(self, ticker, target_col, model_type, x_df, y_ser, selected_features):
+    def _train_model_with_features(
+        self, ticker, target_col, model_type, x_df, y_ser, selected_features,
+        target_type, is_classification, y_scaler,
+    ):
         """Тренування моделі з вибраними фічами"""
         try:
             # Prepare data with selected features
             x_train = x_df[selected_features]
+            # Computed once here (while x_df still has real column names,
+            # before any model-specific selection/windowing) so every
+            # trainer reports the same context regardless of its own
+            # feature subset or data shape -- see _context_windows.
+            context_windows = self._context_windows(x_df)
+            kwargs = dict(is_classification=is_classification, y_scaler=y_scaler, context_windows=context_windows)
 
-            # Create model based on type
+            if model_type in self._SEQUENCE_MODEL_TYPES:
+                x_seq, y_seq = self._build_sequences(x_train, y_ser, self._SEQUENCE_WINDOW)
+                if x_seq is None:
+                    msg = f'insufficient history for sequence window {self._SEQUENCE_WINDOW} ({len(x_train)} rows)'
+                    print(f"⚠️ {msg}")
+                    return {'error': msg}
+                if model_type == 'cnn':
+                    return self._train_cnn_model(x_seq, y_seq, ticker, target_col, **kwargs)
+                elif model_type == 'lstm':
+                    return self._train_lstm_model(x_seq, y_seq, ticker, target_col, **kwargs)
+                elif model_type == 'gru':
+                    return self._train_gru_model(x_seq, y_seq, ticker, target_col, **kwargs)
+                elif model_type == 'transformer':
+                    return self._train_transformer_model(x_seq, y_seq, ticker, target_col, **kwargs)
+
+            # Create model based on type. Every branch here used to call its
+            # trainer without `return`, so a *successful* run's real metrics
+            # dict was silently discarded and replaced with None -- only the
+            # except-block's {'error': ...} ever actually reached the caller.
             if model_type == 'mlp':
-                self._train_mlp_model(x_train, y_ser, ticker, target_col)
-            elif model_type == 'cnn':
-                self._train_cnn_model(x_train, y_ser, ticker, target_col)
-            elif model_type == 'lstm':
-                self._train_lstm_model(x_train, y_ser, ticker, target_col)
-            elif model_type == 'gru':
-                self._train_gru_model(x_train, y_ser, ticker, target_col)
-            elif model_type == 'transformer':
-                self._train_transformer_model(x_train, y_ser, ticker, target_col)
+                return self._train_mlp_model(x_train, y_ser, ticker, target_col, **kwargs)
             elif model_type == 'tabnet':
-                self._train_tabnet_model(x_train, y_ser, ticker, target_col)
+                return self._train_tabnet_model(x_train, y_ser, ticker, target_col, **kwargs)
             elif model_type == 'autoencoder':
-                self._train_autoencoder_model(x_train, y_ser, ticker, target_col)
+                return self._train_autoencoder_model(x_train, y_ser, ticker, target_col, **kwargs)
             else:
                 print(f"⚠️ Невідомий тип моделі: {model_type}")
+                return {'error': f'unknown model_type {model_type}'}
 
         except Exception as e:
             print(f"❌ Помилка тренування {model_type}: {str(e)[:100]}")
@@ -822,81 +920,360 @@ class ColabTrainingController:
         except Exception as e:
             print(f"⚠️ Помилка логування в MLflow: {e}")
 
-    def _train_mlp_model(self, x_train, y_train, ticker, target_col):
+    # ── target-type-aware helpers (shared by every trainer below) ──────────
+    #
+    # Before this fix, every trainer built a bare Dense(1) (linear) output,
+    # compiled with loss='mse', and reported history.history['loss'] (the
+    # TRAINING-set loss, not validation, despite validation_data being
+    # passed to .fit()) or an sklearn MSE computed on scaled-but-unlabeled
+    # y -- regardless of whether the target was a 0/1 label
+    # (classification_binary), a 0/1/2 label (classification_multiclass),
+    # or a genuinely continuous value (regression/indicator_prediction).
+    # That's why there was no accuracy/AUC anywhere for target_up_1d etc.,
+    # and why price-level targets (SMA/EMA/BB) showed MSE in the tens of
+    # thousands -- an unscaled dollar-denominated target trained with a
+    # loss function that has no notion of the target's own units.
+
+    # cnn/lstm/gru/transformer get a real (window, n_features) history per
+    # sample instead of a single flattened snapshot reshaped to a fake
+    # sequence length of 1 -- a recurrent layer or attention block cannot
+    # learn anything across a single timestep, so before this fix these
+    # three architectures were paying real compute for no more expressive
+    # power than a plain dense layer applied once. mlp/tabnet/autoencoder
+    # are non-sequential by design and correctly stay on the flat features.
+    _SEQUENCE_WINDOW = 20  # trading days of history; matches the SMA_20/BB_20 lookback already used elsewhere in this pipeline
+    _SEQUENCE_MODEL_TYPES = {'cnn', 'lstm', 'gru', 'transformer'}
+
+    @staticmethod
+    def _build_sequences(x_selected: pd.DataFrame, y_ser: pd.Series, window: int):
+        """Turn flat, chronologically-ordered, single-ticker rows into
+        overlapping (window, n_features) sequences. The target for each
+        sequence is the target value on the sequence's LAST (most recent)
+        day -- the target's own meaning (e.g. "up in the next 5 days") is
+        unchanged; this only gives the model real prior days as context
+        instead of one flattened snapshot. Returns (None, None) if there
+        isn't enough history for even one full window.
+        """
+        values = x_selected.to_numpy(dtype=np.float32)
+        if len(values) < window:
+            return None, None
+        windows = np.lib.stride_tricks.sliding_window_view(values, window, axis=0)
+        # sliding_window_view appends the window axis last -> (n, features,
+        # window); Keras wants (n, window, features).
+        x_seq = np.ascontiguousarray(np.transpose(windows, (0, 2, 1)))
+        y_seq = y_ser.to_numpy(dtype=np.float32)[window - 1:]
+        return x_seq, y_seq
+
+    @staticmethod
+    def _chronological_split(x, y, val_fraction: float = 0.2, purge: int = 0):
+        """Time-ordered train/validation split -- replaces the random
+        train_test_split(..., random_state=42) used everywhere in this file.
+
+        A random split lets validation rows sit chronologically before, or
+        interleaved with, training rows -- already a lookahead concern for
+        autocorrelated daily data, and far worse once cnn/lstm/gru/
+        transformer started receiving overlapping 20-day windows: a random
+        split could put a validation window sharing up to 19 of its 20 days
+        with an adjacent training window, making validation metrics -- and
+        therefore champion selection -- look better than genuine
+        out-of-sample performance would. `purge` drops that many rows
+        between train and validation to remove window-overlap leakage at
+        the boundary entirely: pass `window - 1` for the sequence models,
+        0 for flat single-row samples (mlp/tabnet/autoencoder), which have
+        no such overlap to purge.
+
+        Assumes `x`/`y` are already in chronological order (the caller is
+        responsible for that -- see the explicit sort in _process_ticker
+        and the ordering _build_sequences preserves).
+        """
+        n = len(x)
+        val_size = max(1, int(n * val_fraction))
+        val_start = n - val_size
+        train_end = max(0, val_start - purge)
+        if isinstance(x, pd.DataFrame):
+            return x.iloc[:train_end], x.iloc[val_start:], y.iloc[:train_end], y.iloc[val_start:]
+        return x[:train_end], x[val_start:], y[:train_end], y[val_start:]
+
+    # ── windowed validation reporting (metric + market context per slice) ──
+    #
+    # One aggregate metric from one validation split hides two things: (a)
+    # whether a model was consistently good or just got lucky/unlucky in
+    # one stretch of the period, and (b) whether performance correlates
+    # with market conditions at all -- the question behind the "context
+    # map" idea. Slicing the *already-computed* validation predictions into
+    # a few contiguous chronological windows, and reading a context
+    # snapshot for each window, answers both without any extra training:
+    # this is purely a richer way to report on the one train/val split
+    # every trainer already does. Full regime-conditioned model *selection*
+    # (a champion per regime, not just per ticker/target) is deliberately
+    # NOT implemented here -- a single validation window per model doesn't
+    # give enough regime-labeled observations to trust that comparison yet,
+    # and ModelSelectionService.select_best_model_for_context() already
+    # owns regime-based selection at prediction time; this only attaches
+    # evidence a future version of that could eventually be fed with.
+
+    _VALIDATION_REPORT_WINDOWS = 3
+    # Reuses columns MarketContextAnalyzer already computes
+    # (src/analytics/context/market_context_analyzer.py) -- matched by
+    # prefix since the real column names carry a timeframe suffix (e.g.
+    # "market_context_volatility_ratio_1d"). Never recomputes context from
+    # raw prices here; there is exactly one place in this codebase that
+    # defines what "market context" means.
+    _CONTEXT_COLUMN_PREFIXES = (
+        "market_context_volatility_ratio",
+        "market_context_trend_20d",
+        "market_context_rsi_current",
+        "market_context_volume_ratio",
+        "market_context_market_breadth",
+        "market_context_yield_curve_slope",
+        "market_context_yield_curve_inverted",
+    )
+
+    @classmethod
+    def _context_snapshot(cls, x_window: pd.DataFrame) -> dict:
+        """Mean of each available market_context_* column over one window."""
+        snapshot = {}
+        for prefix in cls._CONTEXT_COLUMN_PREFIXES:
+            matching = [c for c in x_window.columns if c.startswith(prefix)]
+            if matching:
+                value = pd.to_numeric(x_window[matching[0]], errors="coerce").mean()
+                if pd.notna(value):
+                    snapshot[prefix] = float(value)
+        return snapshot
+
+    @classmethod
+    def _context_windows(
+        cls, x_df: pd.DataFrame, val_fraction: float = 0.2, n_windows: int | None = None,
+    ) -> list[dict]:
+        """Context snapshot for each of n_windows contiguous chronological
+        slices of the validation portion (last val_fraction of x_df).
+
+        Computed once from the FULL feature set (not a model's
+        selected_features), so it's identical across every model_type for
+        the same (ticker, target) regardless of which columns that
+        particular model happened to select. Purely descriptive metadata --
+        never used to change which champion is selected.
+        """
+        n_windows = n_windows or cls._VALIDATION_REPORT_WINDOWS
+        n = len(x_df)
+        val_start = n - max(1, int(n * val_fraction))
+        val_df = x_df.iloc[val_start:]
+        if val_df.empty:
+            return []
+        chunk_size = max(1, len(val_df) // n_windows)
+        windows = []
+        for i in range(n_windows):
+            start = i * chunk_size
+            end = len(val_df) if i == n_windows - 1 else (i + 1) * chunk_size
+            if start >= len(val_df):
+                break
+            windows.append(cls._context_snapshot(val_df.iloc[start:end]))
+        return windows
+
+    @classmethod
+    def _windowed_metric_report(
+        cls, y_true, y_pred, is_classification: bool, target_type: str,
+        y_scaler, n_windows: int | None = None,
+    ) -> list[dict]:
+        """Per-window metric over the SAME (already chronologically-ordered)
+        validation predictions used for the aggregate metric -- same metric
+        family as the aggregate (accuracy for classification, real-unit MSE
+        for regression via _unscale_mse), just sliced into contiguous
+        chronological chunks instead of one number for the whole period.
+
+        Window boundaries here are independent of _context_windows' (the
+        validation set for sequence models has `window - 1` fewer rows than
+        the flat feature set, so exact row-for-row alignment between the
+        two isn't attempted) -- both slice "the same relative portion of
+        the validation period" into n_windows, which is precise enough to
+        see whether performance tracks market conditions without requiring
+        surgical index-matching across flat and sequence representations.
+        """
+        import numpy as np
+        from sklearn.metrics import accuracy_score, mean_squared_error, roc_auc_score
+
+        n_windows = n_windows or cls._VALIDATION_REPORT_WINDOWS
+        y_true = np.asarray(y_true)
+        y_pred = np.asarray(y_pred)
+        n = len(y_true)
+        if n == 0:
+            return []
+        chunk_size = max(1, n // n_windows)
+        report = []
+        for i in range(n_windows):
+            start = i * chunk_size
+            end = n if i == n_windows - 1 else (i + 1) * chunk_size
+            if start >= n:
+                break
+            yt, yp = y_true[start:end], y_pred[start:end]
+            if len(yt) == 0:
+                continue
+            entry = {"n_samples": int(len(yt))}
+            if is_classification:
+                yt_int = yt.astype(int)
+                yp_labels = yp if yp.dtype.kind in "iu" or set(np.unique(yp)) <= {0, 1, 2} else (yp >= 0.5).astype(int)
+                entry["accuracy"] = float(accuracy_score(yt_int, yp_labels))
+                if target_type != CLASSIFICATION_MULTICLASS_TYPE and len(np.unique(yt_int)) == 2:
+                    try:
+                        entry["auc"] = float(roc_auc_score(yt_int, yp))
+                    except ValueError:
+                        pass  # single-class window can't score AUC
+            else:
+                entry["mse"] = cls._unscale_mse(mean_squared_error(yt, yp), y_scaler)
+            report.append(entry)
+        return report
+
+    def _keras_final_layer(self, is_classification: bool, target_type: str, num_classes: int):
+        import tensorflow as tf
+        if target_type == CLASSIFICATION_MULTICLASS_TYPE:
+            return tf.keras.layers.Dense(num_classes, activation='softmax')
+        if is_classification:
+            return tf.keras.layers.Dense(1, activation='sigmoid')
+        return tf.keras.layers.Dense(1)
+
+    def _keras_compile_kwargs(self, is_classification: bool, target_type: str) -> dict:
+        if target_type == CLASSIFICATION_MULTICLASS_TYPE:
+            return {'loss': 'sparse_categorical_crossentropy', 'metrics': ['accuracy']}
+        if is_classification:
+            import tensorflow as tf
+            return {'loss': 'binary_crossentropy', 'metrics': ['accuracy', tf.keras.metrics.AUC(name='auc')]}
+        return {'loss': 'mse', 'metrics': []}
+
+    @staticmethod
+    def _label_dtype(is_classification: bool, target_type: str):
+        # sparse_categorical_crossentropy requires integer class indices;
+        # binary_crossentropy and mse both accept float32.
+        return np.int32 if target_type == CLASSIFICATION_MULTICLASS_TYPE else np.float32
+
+    @staticmethod
+    def _keras_val_metrics(history, is_classification: bool) -> dict:
+        """Held-out validation metrics only -- never the training-set loss."""
+        metrics = {'val_loss': float(history.history['val_loss'][-1])}
+        if is_classification:
+            if 'val_accuracy' in history.history:
+                metrics['val_accuracy'] = float(history.history['val_accuracy'][-1])
+            if 'val_auc' in history.history:
+                metrics['val_auc'] = float(history.history['val_auc'][-1])
+        return metrics
+
+    @staticmethod
+    def _keras_windowed_predictions(model, x_val, is_classification: bool, target_type: str):
+        """Predictions shaped for _windowed_metric_report: probability of
+        class 1 for binary (sigmoid output is already that), hard label for
+        multiclass (argmax over the softmax output), raw value for
+        regression. Keras' own history object only has the ONE aggregate
+        val_loss/val_accuracy/val_auc for the whole split -- an explicit
+        predict() call is needed to slice performance into windows."""
+        raw = model.predict(x_val, verbose=0)
+        if target_type == CLASSIFICATION_MULTICLASS_TYPE:
+            return np.argmax(raw, axis=1)
+        return raw.reshape(-1)
+
+    @staticmethod
+    def _unscale_mse(mse_scaled: float, y_scaler) -> float:
+        """MSE computed on a StandardScaler-scaled target, converted back to
+        the target's real units: Var(scaled)=1 => MSE_real = MSE_scaled *
+        scale_^2. Regression-only; never called for classification targets
+        (which are never scaled in the first place)."""
+        if y_scaler is None:
+            return float(mse_scaled)
+        return float(mse_scaled * (y_scaler.scale_[0] ** 2))
+
+    def _train_mlp_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
         """Тренування MLP моделі"""
         import joblib
-        from sklearn.metrics import mean_squared_error
-        from sklearn.model_selection import train_test_split
-        from sklearn.neural_network import MLPRegressor
+        from sklearn.metrics import accuracy_score, mean_squared_error, roc_auc_score
+        from sklearn.neural_network import MLPClassifier, MLPRegressor
 
-        # Split data
-        x_train_split, x_val, y_train_split, y_val = train_test_split(
-            x_train, y_train, test_size=0.2, random_state=42
-        )
+        target_type = self.config_loader.target_type_for(target_col)
 
-        # Create and train model
-        model = MLPRegressor(
+        # Chronological split (flat single-row samples -> no window overlap to purge)
+        x_train_split, x_val, y_train_split, y_val = self._chronological_split(x_train, y_train)
+
+        model_cls = MLPClassifier if is_classification else MLPRegressor
+        model = model_cls(
             hidden_layer_sizes=(128, 64),
             max_iter=self.config_loader.REDUCED_EPOCHS,
             random_state=42,
             verbose=0
         )
-
-        model.fit(x_train_split, y_train_split)
-
-        # Evaluate
-        y_pred = model.predict(x_val)
-        mse = mean_squared_error(y_val, y_pred)
+        model.fit(x_train_split, y_train_split.astype(int) if is_classification else y_train_split)
 
         # Save model
         model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_mlp.pkl"
         joblib.dump(model, model_path)
 
-        # Log to MLflow
+        if is_classification:
+            y_pred = model.predict(x_val)
+            accuracy = accuracy_score(y_val.astype(int), y_pred)
+            metrics = {'accuracy': float(accuracy)}
+            windowed_pred = y_pred  # hard labels -- correct as-is for multiclass windowed accuracy
+            if len(np.unique(y_val)) == 2:
+                try:
+                    proba = model.predict_proba(x_val)[:, 1]
+                    metrics['auc'] = float(roc_auc_score(y_val.astype(int), proba))
+                    windowed_pred = proba  # probabilities, so windowed AUC is meaningful too
+                except ValueError:
+                    pass  # a validation split with a single class can't score AUC
+            print(f"    🎯 MLP - Accuracy: {accuracy:.4f} - збережено: {model_path.name}")
+        else:
+            y_pred = model.predict(x_val)
+            mse = self._unscale_mse(mean_squared_error(y_val, y_pred), y_scaler)
+            metrics = {'mse': mse}
+            windowed_pred = y_pred
+            print(f"    🎯 MLP - MSE: {mse:.6f} - збережено: {model_path.name}")
+
+        metrics['validation_windows'] = self._windowed_metric_report(
+            y_val, windowed_pred, is_classification, target_type, y_scaler
+        )
+        metrics['context_windows'] = context_windows
+
         self._log_mlflow_run(
             ticker, target_col, "mlp",
-            params={"hidden_layers": "128,64", "max_iter": 1},
-            metrics={"mse": mse},
+            params={"hidden_layers": "128,64", "max_iter": self.config_loader.REDUCED_EPOCHS},
+            metrics={k: v for k, v in metrics.items() if k not in ('validation_windows', 'context_windows')},
             artifact_path=str(model_path)
         )
+        return metrics
 
-        print(f"    🎯 MLP - MSE: {mse:.6f} - збережено: {model_path.name}")
-        return {'mse': float(mse)}
-
-    def _train_cnn_model(self, x_train, y_train, ticker, target_col):
-        """Тренування CNN моделі"""
+    def _train_cnn_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+        """Тренування CNN моделі. x_train: (n, window, n_features) real
+        chronological sequences (see _build_sequences) -- Conv1D applies
+        genuine temporal kernels across `window` consecutive trading days,
+        not an arbitrary axis over one flattened feature vector."""
         import tensorflow as tf
-        from sklearn.model_selection import train_test_split
 
-        # Split data
-        x_train_split, x_val, y_train_split, y_val = train_test_split(
-            x_train, y_train, test_size=0.2, random_state=42
+        target_type = self.config_loader.target_type_for(target_col)
+        num_classes = int(len(np.unique(y_train)))
+        label_dtype = self._label_dtype(is_classification, target_type)
+        window, num_features = x_train.shape[1], x_train.shape[2]
+
+        # Chronological split, purging (window - 1) rows at the boundary so
+        # no validation window shares days with the last training window.
+        x_train_split, x_val, y_train_split, y_val = self._chronological_split(
+            x_train, y_train, purge=window - 1
         )
-
-        # Ensure numpy float32 and reshape for CNN (add channel dimension)
-        x_train_reshaped = x_train_split.values.astype(np.float32).reshape(x_train_split.shape[0], x_train_split.shape[1], 1)
-        x_val_reshaped = x_val.values.astype(np.float32).reshape(x_val.shape[0], x_val.shape[1], 1)
-        y_train_split = y_train_split.values.astype(np.float32)
-        y_val = y_val.values.astype(np.float32)
+        y_train_split = y_train_split.astype(label_dtype)
+        y_val = y_val.astype(label_dtype)
 
         # Create CNN model
         model = tf.keras.Sequential([
-            tf.keras.layers.Input(shape=(x_train.shape[1], 1)),
+            tf.keras.layers.Input(shape=(window, num_features)),
             tf.keras.layers.Conv1D(32, 3, activation='relu'),
             tf.keras.layers.MaxPooling1D(2),
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(64, activation='relu'),
-            tf.keras.layers.Dense(1)
+            self._keras_final_layer(is_classification, target_type, num_classes)
         ])
 
-        model.compile(optimizer='adam', loss='mse')
+        model.compile(optimizer='adam', **self._keras_compile_kwargs(is_classification, target_type))
 
         # Train
         epochs = self.config_loader.REDUCED_EPOCHS or 10
         history = model.fit(
-            x_train_reshaped, y_train_split,
+            x_train_split, y_train_split,
             epochs=epochs,
-            validation_data=(x_val_reshaped, y_val),
+            validation_data=(x_val, y_val),
             verbose=0
         )
 
@@ -904,183 +1281,224 @@ class ColabTrainingController:
         model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_cnn.keras"
         model.save(model_path)
 
+        metrics = self._keras_val_metrics(history, is_classification)
+        if not is_classification:
+            metrics['mse'] = self._unscale_mse(metrics.pop('val_loss'), y_scaler)
+
+        windowed_pred = self._keras_windowed_predictions(model, x_val, is_classification, target_type)
+        metrics['validation_windows'] = self._windowed_metric_report(
+            y_val, windowed_pred, is_classification, target_type, y_scaler
+        )
+        metrics['context_windows'] = context_windows
+
         # Log to MLflow
         self._log_mlflow_run(
             ticker, target_col, "cnn",
-            params={"conv_filters": 32, "kernel_size": 3, "epochs": 1},
-            metrics={"loss": history.history['loss'][0]},
+            params={"conv_filters": 32, "kernel_size": 3, "epochs": epochs, "window": window},
+            metrics={k: v for k, v in metrics.items() if k not in ('validation_windows', 'context_windows')},
             artifact_path=str(model_path)
         )
 
-        print(f"    🎯 CNN - Loss: {history.history['loss'][-1]:.6f} - збережено: {model_path.name}")
-        return {'loss': float(history.history['loss'][-1])}
+        print(f"    🎯 CNN - {metrics} - збережено: {model_path.name}")
+        return metrics
 
-    def _train_lstm_model(self, x_train, y_train, ticker, target_col):
-        """Тренування LSTM моделі"""
+    def _train_lstm_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+        """Тренування LSTM моделі. x_train: (n, window, n_features) real
+        chronological sequences -- LSTM recurrence now runs across `window`
+        real trading days instead of a fake sequence length of 1."""
         import tensorflow as tf
-        from sklearn.model_selection import train_test_split
 
-        # Split data
-        x_train_split, x_val, y_train_split, y_val = train_test_split(
-            x_train, y_train, test_size=0.2, random_state=42
+        target_type = self.config_loader.target_type_for(target_col)
+        num_classes = int(len(np.unique(y_train)))
+        label_dtype = self._label_dtype(is_classification, target_type)
+        window, num_features = x_train.shape[1], x_train.shape[2]
+
+        x_train_split, x_val, y_train_split, y_val = self._chronological_split(
+            x_train, y_train, purge=window - 1
         )
-
-        # Ensure numpy float32 and reshape for LSTM (add timestep dimension)
-        x_train_reshaped = x_train_split.values.astype(np.float32).reshape(x_train_split.shape[0], 1, x_train_split.shape[1])
-        x_val_reshaped = x_val.values.astype(np.float32).reshape(x_val.shape[0], 1, x_val.shape[1])
-        y_train_split = y_train_split.values.astype(np.float32)
-        y_val = y_val.values.astype(np.float32)
+        y_train_split = y_train_split.astype(label_dtype)
+        y_val = y_val.astype(label_dtype)
 
         # Create LSTM model
         model = tf.keras.Sequential([
-            tf.keras.layers.Input(shape=(1, x_train.shape[1])),
+            tf.keras.layers.Input(shape=(window, num_features)),
             tf.keras.layers.LSTM(64),
             tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1)
+            self._keras_final_layer(is_classification, target_type, num_classes)
         ])
 
-        model.compile(optimizer='adam', loss='mse')
+        model.compile(optimizer='adam', **self._keras_compile_kwargs(is_classification, target_type))
 
         # Train
         epochs = self.config_loader.REDUCED_EPOCHS or 10
         history = model.fit(
-            x_train_reshaped, y_train_split,
+            x_train_split, y_train_split,
             epochs=epochs,
-            validation_data=(x_val_reshaped, y_val),
+            validation_data=(x_val, y_val),
             verbose=0
         )
 
         # Save model
         model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_lstm.keras"
         model.save(model_path)
-        
+
+        metrics = self._keras_val_metrics(history, is_classification)
+        if not is_classification:
+            metrics['mse'] = self._unscale_mse(metrics.pop('val_loss'), y_scaler)
+
+        windowed_pred = self._keras_windowed_predictions(model, x_val, is_classification, target_type)
+        metrics['validation_windows'] = self._windowed_metric_report(
+            y_val, windowed_pred, is_classification, target_type, y_scaler
+        )
+        metrics['context_windows'] = context_windows
+
         # Log to MLflow
         self._log_mlflow_run(
             ticker, target_col, "lstm",
-            params={"units": 64, "epochs": epochs},
-            metrics={"loss": history.history['loss'][0]},
+            params={"units": 64, "epochs": epochs, "window": window},
+            metrics={k: v for k, v in metrics.items() if k not in ('validation_windows', 'context_windows')},
             artifact_path=str(model_path)
         )
 
-        print(f"    🎯 LSTM - Loss: {history.history['loss'][-1]:.6f} - збережено: {model_path.name}")
-        return {'loss': float(history.history['loss'][-1])}
+        print(f"    🎯 LSTM - {metrics} - збережено: {model_path.name}")
+        return metrics
 
-    def _train_gru_model(self, x_train, y_train, ticker, target_col):
-        """Тренування GRU моделі"""
+    def _train_gru_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+        """Тренування GRU моделі. x_train: (n, window, n_features) real
+        chronological sequences."""
         import tensorflow as tf
-        from sklearn.model_selection import train_test_split
 
-        # Split data
-        x_train_split, x_val, y_train_split, y_val = train_test_split(
-            x_train, y_train, test_size=0.2, random_state=42
+        target_type = self.config_loader.target_type_for(target_col)
+        num_classes = int(len(np.unique(y_train)))
+        label_dtype = self._label_dtype(is_classification, target_type)
+        window, num_features = x_train.shape[1], x_train.shape[2]
+
+        x_train_split, x_val, y_train_split, y_val = self._chronological_split(
+            x_train, y_train, purge=window - 1
         )
-
-        # Ensure numpy float32 and reshape for GRU
-        x_train_reshaped = x_train_split.values.astype(np.float32).reshape(x_train_split.shape[0], 1, x_train_split.shape[1])
-        x_val_reshaped = x_val.values.astype(np.float32).reshape(x_val.shape[0], 1, x_val.shape[1])
-        y_train_split = y_train_split.values.astype(np.float32)
-        y_val = y_val.values.astype(np.float32)
+        y_train_split = y_train_split.astype(label_dtype)
+        y_val = y_val.astype(label_dtype)
 
         # Create GRU model
         model = tf.keras.Sequential([
-            tf.keras.layers.Input(shape=(1, x_train.shape[1])),
+            tf.keras.layers.Input(shape=(window, num_features)),
             tf.keras.layers.GRU(64),
             tf.keras.layers.Dense(32, activation='relu'),
-            tf.keras.layers.Dense(1)
+            self._keras_final_layer(is_classification, target_type, num_classes)
         ])
 
-        model.compile(optimizer='adam', loss='mse')
+        model.compile(optimizer='adam', **self._keras_compile_kwargs(is_classification, target_type))
 
         # Train
         epochs = self.config_loader.REDUCED_EPOCHS or 10
         history = model.fit(
-            x_train_reshaped, y_train_split,
+            x_train_split, y_train_split,
             epochs=epochs,
-            validation_data=(x_val_reshaped, y_val),
+            validation_data=(x_val, y_val),
             verbose=0
         )
 
         # Save model
         model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_gru.keras"
         model.save(model_path)
-        
+
+        metrics = self._keras_val_metrics(history, is_classification)
+        if not is_classification:
+            metrics['mse'] = self._unscale_mse(metrics.pop('val_loss'), y_scaler)
+
+        windowed_pred = self._keras_windowed_predictions(model, x_val, is_classification, target_type)
+        metrics['validation_windows'] = self._windowed_metric_report(
+            y_val, windowed_pred, is_classification, target_type, y_scaler
+        )
+        metrics['context_windows'] = context_windows
+
         # Log to MLflow
         self._log_mlflow_run(
             ticker, target_col, "gru",
-            params={"units": 64, "epochs": epochs},
-            metrics={"loss": history.history['loss'][0]},
+            params={"units": 64, "epochs": epochs, "window": window},
+            metrics={k: v for k, v in metrics.items() if k not in ('validation_windows', 'context_windows')},
             artifact_path=str(model_path)
         )
 
-        print(f"    🎯 GRU - Loss: {history.history['loss'][-1]:.6f} - збережено: {model_path.name}")
-        return {'loss': float(history.history['loss'][-1])}
+        print(f"    🎯 GRU - {metrics} - збережено: {model_path.name}")
+        return metrics
 
-    def _train_transformer_model(self, x_train, y_train, ticker, target_col):
-        """Тренування Transformer моделі"""
+    def _train_transformer_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+        """Тренування Transformer моделі. x_train: (n, window, n_features)
+        real chronological sequences -- MultiHeadAttention now has `window`
+        real trading days to attend over instead of a single timestep,
+        where self-attention over one position is a no-op."""
         import tensorflow as tf
-        from sklearn.model_selection import train_test_split
 
-        # Split data
-        x_train_split, x_val, y_train_split, y_val = train_test_split(
-            x_train, y_train, test_size=0.2, random_state=42
+        target_type = self.config_loader.target_type_for(target_col)
+        num_classes = int(len(np.unique(y_train)))
+        label_dtype = self._label_dtype(is_classification, target_type)
+        window, num_features = x_train.shape[1], x_train.shape[2]
+
+        x_train_split, x_val, y_train_split, y_val = self._chronological_split(
+            x_train, y_train, purge=window - 1
         )
-
-        # Ensure numpy float32 and reshape for Transformer
-        x_train_reshaped = x_train_split.values.astype(np.float32).reshape(x_train_split.shape[0], 1, x_train_split.shape[1])
-        x_val_reshaped = x_val.values.astype(np.float32).reshape(x_val.shape[0], 1, x_val.shape[1])
-        y_train_split = y_train_split.values.astype(np.float32)
-        y_val = y_val.values.astype(np.float32)
+        y_train_split = y_train_split.astype(label_dtype)
+        y_val = y_val.astype(label_dtype)
 
         # Create Transformer model (functional API for better stability with MultiHeadAttention)
-        inputs = tf.keras.layers.Input(shape=(1, x_train.shape[1]))
+        inputs = tf.keras.layers.Input(shape=(window, num_features))
         attention = tf.keras.layers.MultiHeadAttention(num_heads=4, key_dim=32)(inputs, inputs)
         pooling = tf.keras.layers.GlobalAveragePooling1D()(attention)
         dense1 = tf.keras.layers.Dense(64, activation='relu')(pooling)
-        outputs = tf.keras.layers.Dense(1)(dense1)
+        outputs = self._keras_final_layer(is_classification, target_type, num_classes)(dense1)
 
         model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
-        model.compile(optimizer='adam', loss='mse')
+        model.compile(optimizer='adam', **self._keras_compile_kwargs(is_classification, target_type))
 
         # Train
         epochs = self.config_loader.REDUCED_EPOCHS or 10
         history = model.fit(
-            x_train_reshaped, y_train_split,
+            x_train_split, y_train_split,
             epochs=epochs,
-            validation_data=(x_val_reshaped, y_val),
+            validation_data=(x_val, y_val),
             verbose=0
         )
 
         # Save model
         model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_transformer.keras"
         model.save(model_path)
-        
+
+        metrics = self._keras_val_metrics(history, is_classification)
+        if not is_classification:
+            metrics['mse'] = self._unscale_mse(metrics.pop('val_loss'), y_scaler)
+
+        windowed_pred = self._keras_windowed_predictions(model, x_val, is_classification, target_type)
+        metrics['validation_windows'] = self._windowed_metric_report(
+            y_val, windowed_pred, is_classification, target_type, y_scaler
+        )
+        metrics['context_windows'] = context_windows
+
         # Log to MLflow
         self._log_mlflow_run(
             ticker, target_col, "transformer",
-            params={"head_size": 128, "num_heads": 4, "epochs": epochs},
-            metrics={"loss": history.history['loss'][0]},
+            params={"head_size": 128, "num_heads": 4, "epochs": epochs, "window": window},
+            metrics={k: v for k, v in metrics.items() if k not in ('validation_windows', 'context_windows')},
             artifact_path=str(model_path)
         )
 
-        print(f"    🎯 Transformer - Loss: {history.history['loss'][-1]:.6f} - збережено: {model_path.name}")
-        return {'loss': float(history.history['loss'][-1])}
+        print(f"    🎯 Transformer - {metrics} - збережено: {model_path.name}")
+        return metrics
 
-    def _train_tabnet_model(self, x_train, y_train, ticker, target_col):
+    def _train_tabnet_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
         """Тренування TabNet моделі"""
         try:
             import torch
-            from pytorch_tabnet.tab_model import TabNetRegressor
-            from sklearn.metrics import mean_squared_error
-            from sklearn.model_selection import train_test_split
+            from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
+            from sklearn.metrics import accuracy_score, mean_squared_error, roc_auc_score
 
-            # Split data
-            x_train_split, x_val, y_train_split, y_val = train_test_split(
-                x_train, y_train, test_size=0.2, random_state=42
-            )
+            target_type = self.config_loader.target_type_for(target_col)
 
-            # Create TabNet model
-            model = TabNetRegressor(
+            # Chronological split (flat single-row samples -> no window overlap to purge)
+            x_train_split, x_val, y_train_split, y_val = self._chronological_split(x_train, y_train)
+
+            tabnet_kwargs = dict(
                 n_d=64, n_a=64,
                 n_steps=3,
                 gamma=1.5,
@@ -1088,54 +1506,91 @@ class ColabTrainingController:
                 optimizer_fn=torch.optim.Adam,
                 optimizer_params={"lr": 2e-2},
                 mask_type='entmax',
-                scheduler_params={"step_size":10, "gamma":0.9},
+                scheduler_params={"step_size": 10, "gamma": 0.9},
                 verbose=0
             )
-
-            # Train
             max_epochs = self.config_loader.REDUCED_EPOCHS or 20
-            model.fit(
-                X_train=x_train_split.values, 
-                y_train=y_train_split.values.reshape(-1, 1),
-                eval_set=[(x_val.values, y_val.values.reshape(-1, 1))],
-                max_epochs=max_epochs,
-                patience=5,
-                batch_size=1024,
-                virtual_batch_size=128,
-                num_workers=0,
-                drop_last=False
+
+            if is_classification:
+                model = TabNetClassifier(**tabnet_kwargs)
+                y_train_labels = y_train_split.values.astype(np.int64)
+                y_val_labels = y_val.values.astype(np.int64)
+                model.fit(
+                    X_train=x_train_split.values,
+                    y_train=y_train_labels,
+                    eval_set=[(x_val.values, y_val_labels)],
+                    max_epochs=max_epochs,
+                    patience=5,
+                    batch_size=1024,
+                    virtual_batch_size=128,
+                    num_workers=0,
+                    drop_last=False
+                )
+                model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_tabnet.zip"
+                model.save_model(str(model_path))
+
+                y_pred = model.predict(x_val.values)
+                accuracy = accuracy_score(y_val_labels, y_pred)
+                metrics = {'accuracy': float(accuracy)}
+                windowed_pred = y_pred
+                if len(np.unique(y_val_labels)) == 2:
+                    try:
+                        proba = model.predict_proba(x_val.values)[:, 1]
+                        metrics['auc'] = float(roc_auc_score(y_val_labels, proba))
+                        windowed_pred = proba
+                    except ValueError:
+                        pass
+                print(f"    🎯 TabNet - Accuracy: {accuracy:.4f} - збережено: {model_path.name}")
+            else:
+                model = TabNetRegressor(**tabnet_kwargs)
+                model.fit(
+                    X_train=x_train_split.values,
+                    y_train=y_train_split.values.reshape(-1, 1),
+                    eval_set=[(x_val.values, y_val.values.reshape(-1, 1))],
+                    max_epochs=max_epochs,
+                    patience=5,
+                    batch_size=1024,
+                    virtual_batch_size=128,
+                    num_workers=0,
+                    drop_last=False
+                )
+                model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_tabnet.zip"
+                model.save_model(str(model_path))
+
+                y_pred = model.predict(x_val.values).reshape(-1)
+                mse = self._unscale_mse(mean_squared_error(y_val, y_pred), y_scaler)
+                metrics = {'mse': mse}
+                windowed_pred = y_pred
+                print(f"    🎯 TabNet - MSE: {mse:.6f} - збережено: {model_path.name}")
+
+            metrics['validation_windows'] = self._windowed_metric_report(
+                y_val_labels if is_classification else y_val, windowed_pred,
+                is_classification, target_type, y_scaler
             )
-
-            # Save model
-            model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_tabnet.zip"
-            model.save_model(str(model_path))
-
-            # Evaluate
-            y_pred = model.predict(x_val.values)
-            mse = mean_squared_error(y_val, y_pred)
-
-            print(f"    🎯 TabNet - MSE: {mse:.6f} - збережено: {model_path.name}")
-            return {'mse': float(mse)}
+            metrics['context_windows'] = context_windows
+            return metrics
 
         except ImportError:
             print("    ⚠️ TabNet не встановлено, пропускаємо")
+            return {'error': 'pytorch_tabnet not installed'}
 
-    def _train_autoencoder_model(self, x_train, y_train, ticker, target_col):
-        """Тренування Autoencoder моделі"""
+    def _train_autoencoder_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+        """Тренування Autoencoder моделі (encoder + supervised head, not a
+        reconstruction autoencoder despite the name -- kept as-is)."""
         import tensorflow as tf
-        from sklearn.model_selection import train_test_split
 
-        # Split data
-        # Split data
-        x_train_split, x_val, y_train_split, y_val = train_test_split(
-            x_train, y_train, test_size=0.2, random_state=42
-        )
+        target_type = self.config_loader.target_type_for(target_col)
+        num_classes = int(pd.Series(y_train).nunique())
+        label_dtype = self._label_dtype(is_classification, target_type)
+
+        # Chronological split (flat single-row samples -> no window overlap to purge)
+        x_train_split, x_val, y_train_split, y_val = self._chronological_split(x_train, y_train)
 
         # Ensure numpy float32
         x_train_np = x_train_split.values.astype(np.float32)
         x_val_np = x_val.values.astype(np.float32)
-        y_train_np = y_train_split.values.astype(np.float32)
-        y_val_np = y_val.values.astype(np.float32)
+        y_train_np = y_train_split.values.astype(label_dtype)
+        y_val_np = y_val.values.astype(label_dtype)
 
         # Create autoencoder model
         input_dim = x_train.shape[1]
@@ -1145,14 +1600,14 @@ class ColabTrainingController:
         input_layer = tf.keras.layers.Input(shape=(input_dim,))
         encoder = tf.keras.layers.Dense(encoding_dim, activation='relu')(input_layer)
 
-        # Regression head
-        regression = tf.keras.layers.Dense(64, activation='relu')(encoder)
-        output = tf.keras.layers.Dense(1)(regression)
+        # Supervised head
+        head = tf.keras.layers.Dense(64, activation='relu')(encoder)
+        output = self._keras_final_layer(is_classification, target_type, num_classes)(head)
 
         # Create model
         model = tf.keras.Model(inputs=input_layer, outputs=output)
 
-        model.compile(optimizer='adam', loss='mse')
+        model.compile(optimizer='adam', **self._keras_compile_kwargs(is_classification, target_type))
 
         # Train
         epochs = self.config_loader.REDUCED_EPOCHS or 50
@@ -1169,8 +1624,18 @@ class ColabTrainingController:
         model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_autoencoder.keras"
         model.save(model_path)
 
-        print(f"    🎯 Autoencoder - Loss: {history.history['loss'][-1]:.6f} - збережено: {model_path.name}")
-        return {'loss': float(history.history['loss'][-1])}
+        metrics = self._keras_val_metrics(history, is_classification)
+        if not is_classification:
+            metrics['mse'] = self._unscale_mse(metrics.pop('val_loss'), y_scaler)
+
+        windowed_pred = self._keras_windowed_predictions(model, x_val_np, is_classification, target_type)
+        metrics['validation_windows'] = self._windowed_metric_report(
+            y_val_np, windowed_pred, is_classification, target_type, y_scaler
+        )
+        metrics['context_windows'] = context_windows
+
+        print(f"    🎯 Autoencoder - {metrics} - збережено: {model_path.name}")
+        return metrics
 
     def _get_model_max_features(self, model_type):
         """Отримати максимальну кількість фіч для моделі"""
