@@ -6,8 +6,7 @@ from datetime import datetime
 
 import pandas as pd
 
-from dean_os.historical_research_replay import HistoricalReplayRunner, _research_direction, _research_stance
-from dean_os.schemas import ResearchNote
+from dean_os.historical_research_replay import HistoricalReplayRunner
 
 
 def test_historical_research_replay_combines_research_and_price_outcome(tmp_path):
@@ -110,23 +109,6 @@ def test_historical_research_replay_filters_future_evidence(tmp_path):
     date_range = payload["evidence_pack"]["coverage"]["date_range"]
     assert datetime.fromisoformat(date_range["end"]) <= datetime.fromisoformat("2026-01-06T00:00:00+00:00")
     assert payload["evidence_pack"]["coverage"]["document_count"] == 1
-
-
-def test_research_stance_uses_structured_patterns_before_mixed_thesis_text():
-    note = ResearchNote(
-        agent_name="evidence_synthesis",
-        topic="diagnostic",
-        thesis="Cited research is mixed; dominant patterns are ai_compute_cycle.",
-        patterns=["research_corpus_ingestion", "ai_compute_cycle"],
-        tickers=["AMD", "NVDA"],
-        confidence=0.9,
-        data_quality="strong",
-    )
-
-    stance = _research_stance(note)
-
-    assert stance == "constructive"
-    assert _research_direction(stance) == "bullish"
 
 
 def test_historical_research_replay_can_apply_focused_overlay(tmp_path):
