@@ -92,6 +92,13 @@ class TestPipelineManagerRunAnalysis:
         artifact_dir = tmp_path / "news"
         artifact_dir.mkdir(parents=True)
         data = {
+            # _validated_producer (artifact_evidence_loader.py) requires this
+            # producer-contract wrapper on every artifact regardless of the
+            # inner fragment shape.
+            "created_at": "2026-06-28T12:00:00+00:00",
+            "status": "ready",
+            "safety": {"review_only": True},
+            "inputs": {"as_of": "2026-06-28T12:00:00+00:00"},
             "market_context_fragment": {
                 "news": [
                     {
@@ -116,7 +123,7 @@ class TestPipelineManagerRunAnalysis:
         pm = SectorPipelineManager(domain_id="energy")
         result = pm.run_analysis(
             news_path=artifact_dir,
-            as_of="2026-07-01",
+            as_of="2026-07-01T00:00:00+00:00",
         )
         assert result.analysis_result is not None
         assert result.analysis_result["domain_id"] == "energy"
@@ -125,6 +132,10 @@ class TestPipelineManagerRunAnalysis:
         news_dir = tmp_path / "news"
         news_dir.mkdir(parents=True)
         data = {
+            "created_at": "2026-06-28T12:00:00+00:00",
+            "status": "ready",
+            "safety": {"review_only": True},
+            "inputs": {"as_of": "2026-06-28T12:00:00+00:00"},
             "market_context_fragment": {
                 "news": [
                     {
@@ -148,7 +159,7 @@ class TestPipelineManagerRunAnalysis:
 
         pm = SectorPipelineManager(domain_id="energy")
         discovered = pm.discover_artifacts(tmp_path)
-        result = pm.run_analysis(artifact_dirs=discovered, as_of="2026-07-01")
+        result = pm.run_analysis(artifact_dirs=discovered, as_of="2026-07-01T00:00:00+00:00")
         assert result.analysis_result is not None
 
     def test_unknown_domain_raises(self):

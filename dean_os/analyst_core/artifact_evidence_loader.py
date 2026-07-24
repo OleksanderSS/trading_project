@@ -763,6 +763,12 @@ def load_evidence_from_artifacts(
     Returns:
         List of AnalystEvidenceItem instances.
     """
+    # run_analyst.py (the real CLI entry point) already defaults an unset
+    # as_of to utc_now_iso() before calling this -- push that same fallback
+    # in here so every other caller (and this function's own default of "")
+    # doesn't have to remember to do it, instead of failing deep inside
+    # _validated_producer with a message that doesn't point back here.
+    as_of = as_of or datetime.now(UTC).isoformat()
     loader = ArtifactEvidenceLoader()
 
     if "runtime" in artifact_paths:

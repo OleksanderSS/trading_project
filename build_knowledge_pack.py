@@ -25,6 +25,7 @@ from dean_os.analyst_core.artifact_evidence_loader import ArtifactEvidenceLoader
 from dean_os.analyst_knowledge.schemas import KnowledgeItem, KnowledgePack, KnowledgeSource
 from dean_os.analyst_knowledge.pack_loader import save_knowledge_pack
 from dean_os.analysts.schemas import AnalystEvidenceItem
+from dean_os.utils import sha256_json
 
 
 def _evidence_to_knowledge_items(
@@ -48,6 +49,10 @@ def _evidence_to_knowledge_items(
                 reference=ev.source,
                 published_at=ev.published_at,
                 retrieved_at=ev.as_of,
+                content_sha256=sha256_json(ev.summary),
+                known_limitations=[
+                    "This is a normalized evidence record summary, not the verbatim raw source content."
+                ],
                 reliability=_reliability_to_quality(ev.reliability_score),
             ))
 
@@ -76,6 +81,7 @@ def _evidence_to_knowledge_items(
                 "directness": ev.directness,
                 "freshness_score": ev.freshness_score,
                 "strength": ev.strength,
+                "required_lane_eligible": bool(ev.provenance.get("required_lane_eligible", False)),
             },
         ))
 
@@ -155,6 +161,7 @@ def build_knowledge_pack(
     Returns:
         KnowledgePack with items and sources.
     """
+    as_of = as_of or datetime.now(UTC).isoformat()
     loader = ArtifactEvidenceLoader()
 
     # Load evidence from artifacts
