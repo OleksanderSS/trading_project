@@ -207,16 +207,31 @@ class NewsEvent:
         headline: str,
         source: str = "",
         published_at: str = "",
+        event_type: str | None = None,
+        shock: str | None = None,
+        shock_confidence: float | None = None,
+        impact: float | None = None,
+        predictability: float | None = None,
+        time_to_impact: str | None = None,
+        affected_sectors: list[str] | None = None,
     ):
+        # Every override below defaults to text classification of `headline`;
+        # callers with a known-good classification (e.g. a quantitative
+        # indicator like a VIX spike, where keyword classification of a
+        # synthetic headline would be unreliable) can supply it directly
+        # instead.
         self.headline = headline
         self.source = source
         self.published_at = published_at
-        self.event_type = classify_event_type(headline)
-        self.shock, self.shock_confidence = classify_shock(headline)
-        self.impact = estimate_impact(headline, self.shock)
-        self.predictability = estimate_predictability(headline)
-        self.time_to_impact = estimate_time_to_impact(headline)
-        self.affected_sectors = self._detect_sectors(headline)
+        self.event_type = event_type if event_type is not None else classify_event_type(headline)
+        if shock is not None and shock_confidence is not None:
+            self.shock, self.shock_confidence = shock, shock_confidence
+        else:
+            self.shock, self.shock_confidence = classify_shock(headline)
+        self.impact = impact if impact is not None else estimate_impact(headline, self.shock)
+        self.predictability = predictability if predictability is not None else estimate_predictability(headline)
+        self.time_to_impact = time_to_impact if time_to_impact is not None else estimate_time_to_impact(headline)
+        self.affected_sectors = affected_sectors if affected_sectors is not None else self._detect_sectors(headline)
 
     def _detect_sectors(self, text: str) -> list[str]:
         text_lower = text.lower()
@@ -278,7 +293,20 @@ class NewsEventAnalyzerAgent(AnalyticalAgent):
         if not news_items:
             return self._empty_report()
 
-        events = [NewsEvent(**item) for item in news_items]
+        # NewsEvent's constructor only accepts headline/source/published_at
+        # (plus optional classification overrides, used by the VIX injection
+        # below) -- news_items are raw dataframe records (src/features/nlp's
+        # news collectors use a "title" column, not "headline"), so splatting
+        # the whole dict as **item would raise TypeError on any unrecognized
+        # key the collector schema happens to include.
+        events = [
+            NewsEvent(
+                headline=item.get("headline") or item.get("title") or "",
+                source=item.get("source", ""),
+                published_at=item.get("published_at") or item.get("date") or item.get("timestamp") or "",
+            )
+            for item in news_items
+        ]
         
         # Inject macro events from quantitative dataframes (Collector Integration)
         if "vix_data" in context.dataframes:
