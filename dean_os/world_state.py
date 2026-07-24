@@ -113,10 +113,11 @@ class WorldStateBuilder:
     DOMAIN_SECTOR_MAP: dict[str, str] = {
         "semiconductor_ai_infrastructure": "Semiconductors & AI Infrastructure",
         "energy": "Energy",
-        "macro_policy": "Macro / Policy",
         "agriculture": "Agriculture & Soft Commodities",
         "logistics": "Logistics & Supply Chain",
         "real_estate": "Real Estate & REITs",
+        "geopolitics": "Geopolitics",
+        "liquidity_credit": "Liquidity & Credit",
     }
 
     def build(
@@ -190,6 +191,11 @@ class WorldStateBuilder:
             return
 
         if agent_name == "macro_analyst" or agent_name == "macro_policy_analyst":
+            # Macro is a global economic indicator, not a per-sector state --
+            # it always returns here, before _sector_id_from_agent() and
+            # DOMAIN_SECTOR_MAP are even consulted. A "macro_policy" sector
+            # entry used to exist in both, but could never actually be
+            # reached; removed rather than left as dead code.
             global_state.macro_stance = str(verdict)
             global_state.macro_confidence = confidence
             return
@@ -231,13 +237,16 @@ class WorldStateBuilder:
 
     @staticmethod
     def _sector_id_from_agent(agent_name: str) -> str | None:
+        # macro_analyst is deliberately excluded -- _ingest_report returns
+        # early for it above, before this is ever consulted.
         mapping = {
             "semiconductor_analyst": "semiconductor_ai_infrastructure",
             "energy_analyst": "energy",
-            "macro_analyst": "macro_policy",
             "agriculture_analyst": "agriculture",
             "logistics_analyst": "logistics",
             "real_estate_analyst": "real_estate",
+            "geopolitics_analyst": "geopolitics",
+            "liquidity_credit_analyst": "liquidity_credit",
         }
         return mapping.get(agent_name)
 
