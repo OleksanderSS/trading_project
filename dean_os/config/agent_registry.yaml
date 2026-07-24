@@ -136,13 +136,23 @@ agents:
     class_path: dean_os.agents.pipeline_manager:PipelineManagerAgent
     branch: pipeline
     veto_level: none
-    enabled: true
+    # Disabled by default: this composite duplicates semiconductor_analyst
+    # (standalone, below) for the same domain_id. semiconductor_analyst
+    # already has real artifact paths wired (news/macro/fundamental/
+    # sector_market/runtime); pipeline_manager has none configured. Enable
+    # this INSTEAD of semiconductor_analyst, never alongside it -- the
+    # execution_group below makes the registry's own exclusive-group check
+    # (_validate_exclusive_groups) enforce that if someone flips this on.
+    enabled: false
     error_behavior: skip
     timeout_seconds: 30
     domain_id: semiconductor_ai_infrastructure
     horizon_days: 180
     agent_role: composite_domain_pipeline_manager
     decision_influence: false
+    execution_group: semiconductor_domain_analysis
+    run_phases:
+      - pre_trade
     execution_group: semiconductor_domain_pipeline_manager
     run_phases:
       - pre_trade

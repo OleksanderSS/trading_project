@@ -170,6 +170,73 @@ CAPABILITY_CONTRACTS: dict[str, dict[str, Any]] = {
         "inputs": ["keyword news", "structured context marker"],
         "effects": ["analytical report"],
     },
+    "agriculture_analyst": {
+        "inputs": [
+            "timezone-aware MarketContext",
+            "domain profile",
+        ],
+        "effects": ["standalone review-only sector report"],
+    },
+    "geopolitics_analyst": {
+        "inputs": [
+            "timezone-aware MarketContext",
+            "domain profile",
+        ],
+        "effects": ["standalone review-only sector report"],
+    },
+    "liquidity_credit_analyst": {
+        "inputs": [
+            "timezone-aware MarketContext",
+            "domain profile",
+        ],
+        "effects": ["standalone review-only sector report"],
+    },
+    "logistics_analyst": {
+        "inputs": [
+            "timezone-aware MarketContext",
+            "domain profile",
+        ],
+        "effects": ["standalone review-only sector report"],
+    },
+    "real_estate_analyst": {
+        "inputs": [
+            "timezone-aware MarketContext",
+            "domain profile",
+        ],
+        "effects": ["standalone review-only sector report"],
+    },
+    "agent_evaluation_controller": {
+        "inputs": ["recent agent execution traces"],
+        "effects": ["hard safety veto on observed unsafe-action attempts"],
+        "gap": "quality thresholds only caution until enough reviewed runs exist",
+    },
+    "pipeline_readiness": {
+        "inputs": ["configured Stage 4/5 readiness artifact paths"],
+        "effects": ["review report", "context metadata"],
+        "gap": "returns needs_more_data when no artifact_paths are configured",
+    },
+    "coherence_scan": {
+        "inputs": [
+            "pipeline + analytical agent reports merged after the "
+            "analytical branch completes",
+        ],
+        "effects": ["cross-agent contradiction report"],
+        "gap": (
+            "runs as an explicit second orchestration pass "
+            "(DEANOrchestrator.PEER_SYNTHESIS_AGENTS) rather than inside "
+            "the analytical branch's own asyncio.gather() batch, since it "
+            "reconciles the verdicts those peers just produced"
+        ),
+    },
+    "freshness_audit": {
+        "inputs": ["MarketContext news/macro/prices/fundamentals timestamps"],
+        "effects": ["staleness report", "context metadata"],
+    },
+    "news_event_analyzer": {
+        "inputs": ["news items", "vix_data dataframe"],
+        "effects": ["event classification report", "causal graph metadata"],
+        "gap": "disabled: NewsEvent(**item) construction predates real news collector schemas",
+    },
 }
 
 
