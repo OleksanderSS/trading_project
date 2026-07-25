@@ -56,22 +56,30 @@ class AgentPerformanceByContext:
         by_agent = self._bucket_by(records, ("agent_name",), limit=limit)
         by_context_tag = self._bucket_by_tags(records, "context_tags", "context_tag", limit=limit)
         by_regime_tag = self._bucket_by_tags(records, "regime_tags", "regime_tag", limit=limit, empty_tag="no_regime")
-        by_agent_context = self._bucket_by_agent_and_tags(
+        # Weak/strength detection must see every agent/context bucket, not just
+        # the top-`limit` by volume -- a low-volume, high-miss-rate bucket is
+        # exactly what these are meant to surface, and truncating by volume
+        # first would silently drop it before miss-rate is ever considered.
+        all_agent_context_buckets = self._bucket_by_agent_and_tags(
             records,
             "context_tags",
             "context_tag",
-            limit=limit,
         )
-        by_agent_regime = self._bucket_by_agent_and_tags(
+        all_agent_regime_buckets = self._bucket_by_agent_and_tags(
             records,
             "regime_tags",
             "regime_tag",
-            limit=limit,
             empty_tag="no_regime",
         )
+        by_agent_context = all_agent_context_buckets[:limit]
+        by_agent_regime = all_agent_regime_buckets[:limit]
 
-        weak_contexts = self._weak_contexts([*by_agent_context, *by_agent_regime], min_completed=min_completed, limit=limit)
-        strengths = self._strengths([*by_agent_context, *by_agent_regime], min_completed=min_completed, limit=limit)
+        weak_contexts = self._weak_contexts(
+            [*all_agent_context_buckets, *all_agent_regime_buckets], min_completed=min_completed, limit=limit
+        )
+        strengths = self._strengths(
+            [*all_agent_context_buckets, *all_agent_regime_buckets], min_completed=min_completed, limit=limit
+        )
 
         return {
             "query": {
@@ -189,7 +197,7 @@ class AgentPerformanceByContext:
         records: list[dict[str, Any]],
         tags_field: str,
         label_name: str,
-        limit: int,
+        limit: int | None = None,
         empty_tag: str = "untagged",
     ) -> list[dict[str, Any]]:
         grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
@@ -201,7 +209,8 @@ class AgentPerformanceByContext:
             self._bucket(group, {"agent_name": agent_name, label_name: tag})
             for (agent_name, tag), group in grouped.items()
         ]
-        return self._sort_buckets(buckets)[:limit]
+        sorted_buckets = self._sort_buckets(buckets)
+        return sorted_buckets[:limit] if limit is not None else sorted_buckets
 
     def _bucket(self, records: list[dict[str, Any]], label: dict[str, Any]) -> dict[str, Any]:
         completed = [record for record in records if record["outcome_label"] in COMPLETED_OUTCOMES]
