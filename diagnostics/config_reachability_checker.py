@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -23,6 +24,19 @@ from pathlib import Path
 
 NAME_RE = re.compile(r"\b[A-Z][A-Za-z0-9_]*(?:Enricher|Calculator|Validator|Collector|Model|Factory|Analyzer|Detector|Selector|Guard|Stage|Agent)\b")
 KEY_VALUE_RE = re.compile(r"(?P<key>model|model_name|enricher|calculator|validator|collector|stage|class|class_path|component|name)\s*[:=]\s*['\"]?(?P<value>[A-Za-z0-9_.\-]+)")
+
+# Path.rglob() can't skip a subtree once it descends into it -- it only
+# filters yielded results afterward, so scanning "." for config files did the
+# expensive directory-listing/stat I/O for data/, models/, reports/, mlruns/
+# (tens of thousands of files) before any filter ran. Same root cause as
+# tests/contracts/test_config_reachability.py's 2+ hour scan (fixed in
+# 226e2162) -- that fix only patched the test, not this sibling scanner.
+# os.walk(topdown=True) prunes excluded dirnames before descending into them.
+_EXCLUDED_DIRS = {
+    "__pycache__", ".git", ".venv", "venv", "data", "reports", "logs",
+    "outputs", "mlruns", "models", "archive", "audit", "node_modules",
+    ".trunk",
+}
 
 
 @dataclass
@@ -51,11 +65,12 @@ def iter_config_files(paths: list[Path]):
         if path.is_file() and path.suffix.lower() in {".yaml", ".yml", ".json", ".toml", ".ini", ".cfg", ".py"}:
             files.append(path)
         elif path.is_dir():
-            for p in path.rglob("*"):
-                if "__pycache__" in p.parts or ".git" in p.parts or ".venv" in p.parts or "venv" in p.parts:
-                    continue
-                if p.suffix.lower() in {".yaml", ".yml", ".json", ".toml", ".ini", ".cfg"}:
-                    files.append(p)
+            for dirpath, dirnames, filenames in os.walk(path, topdown=True):
+                dirnames[:] = [d for d in dirnames if d not in _EXCLUDED_DIRS]
+                for name in filenames:
+                    p = Path(dirpath) / name
+                    if p.suffix.lower() in {".yaml", ".yml", ".json", ".toml", ".ini", ".cfg"}:
+                        files.append(p)
     return sorted(set(files))
 
 

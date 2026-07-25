@@ -1,0 +1,151 @@
+file,stage_symbols,imported_by_count,has_execute_or_run,status,recommendation
+agents/pipeline_bridge.py,PipelineBridge,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+cli/pipeline_data_loader.py,PipelineDataLoader,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+cli/pipeline_executor.py,PipelineExecutor,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+features/feature_orchestrator.py,FeatureOrchestrator,5,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+main/system_orchestrator.py,SystemOrchestrator,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/constants.py,,10,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid_orchestrator.py,HybridOrchestrator,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/modeling_context.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/pipeline_factory.py,PipelineFactory,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/pipeline_orchestrator.py,StageLoggingRequest;PipelineOrchestrator,8,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stage_loader.py,StageLoader,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/target_column_utils.py,,12,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/timeframe_lineage.py,,8,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+scripts/test_modular_pipeline.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+targets/target_orchestrator.py,TargetOrchestrator,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+trading/trading_orchestrator.py,TradingOrchestrator,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+validation/pipeline_schemas.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/archive/cognitive_pipeline.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+agents/modular_pipeline/base_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/orchestrator.py,ModularAnalystOrchestrator,46,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/agriculture_food_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/consumer_retail_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/cross_platform_innovation_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/energy_commodity_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/financial_services_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/geopolitical_risk_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/healthcare_biotech_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/industrial_logistics_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/macro_regime_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/metals_mining_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/real_estate_construction_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/technology_lens.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+agents/modular_pipeline/lenses/_prompted_lens.py,,12,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+analytics/arena/arena_orchestrator.py,ArenaOrchestrator,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+archive/reporting/reporting_orchestrator.py,ReportingOrchestrator,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+archive/pipeline/stages/stage_3_improvements.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+archive/pipeline/stages/prediction/result_builder.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+archive/pipeline/stages/prediction/result_request.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+features/nlp/models/finbert_pipeline.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+main/modes/training_data_pipeline.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/cache/results_cache_manager.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/guards/macro_release_timing_guard.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/guards/safe_feature_combiner.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/guards/temporal_leakage_guard.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/guards/temporal_target_guard.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/guards/timeframe_alignment_guard.py,,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/guards/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/cache_manager.py,,31,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/champion_selector.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/colab_manager.py,,6,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/colab_workflow_manager.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/component_factory.py,OrchestratorComponentFactory,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/context_builder.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/contracts.py,HybridPipelineRequest;HybridPipelineConfig;HybridFinalStagesRequest,6,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/data_batch_manager.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/data_cache_manager.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/data_components_context.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/hybrid/data_manager.py,,54,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/data_processor.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/data_utils.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/feature_loader.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/hybrid/feature_processor.py,,5,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/feature_selection_manager.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/feature_selection_validator.py,,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/final_stages_orchestrator.py,FinalStagesOrchestrator,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/hybrid_dataclasses.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/hybrid/light_models_trainer.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/metadata_manager.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/model_training_orchestrator.py,ModelTrainingOrchestrator,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/orchestrator_config.py,PipelineConfig;OrchestratorConfigManager,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/orchestrator_interface.py,OrchestratorInterface,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/pipeline_cache_checker.py,PipelineCacheChecker,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/pipeline_config.py,PipelineParams;FinalStagesParams,5,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/pipeline_executor.py,PipelineExecutor,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/pipeline_manager.py,PipelineManager,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/pipeline_metadata_manager.py,PipelineMetadataManager,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/pipeline_runner.py,PipelineRunner,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/results_processor.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/selected_features_processor.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/storage_helpers.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/hybrid/storage_manager.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/test_mode_manager.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/hybrid/__init__.py,,477,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/base_stage.py,BaseStage,9,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/stage_0_data_generation.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/stage_0_setup.py,Stage0Setup,0,True,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/stage_1_collection.py,CollectionStage,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/stage_2_processing.py,ProcessingStage,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/stage_3_feature_engineering.py,FeatureEngineeringStage,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/stage_4_modeling.py,ModelingStage,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/stage_5_prediction.py,PredictionStage,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/stage_6_trading_execution.py,TradingExecutionStage,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/stage_7_evaluation.py,EvaluationStage,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/cache/feature_cache_manager.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/collection/orchestrator.py,CollectionStage,47,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/evaluation/analytics.py,,53,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/backtest_adapter.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/backtest_analyzer.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/data_recovery.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/io.py,,648,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/metrics_calculator.py,,14,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/orchestrator.py,EvaluationStage,47,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/evaluation/pipeline_control_artifacts.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/reporting.py,,11,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/report_generator.py,,2,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/evaluation/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/features/orchestrator_manager.py,FeatureEngineeringOrchestratorManager,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/feature_engineering/enricher.py,,27,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/feature_engineering/guards.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/feature_engineering/orchestrator.py,FeatureEngineeringStage,47,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/feature_engineering/targets.py,,84,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/feature_engineering/timeframe_context.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/feature_engineering/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/dataclasses.py,,55,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/io.py,,648,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/metrics.py,,177,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/orchestration.py,,6,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/orchestrator.py,ModelingStage,47,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/modeling/pipeline_control_artifacts.py,,4,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/training.py,,128,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/utils.py,,91,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/walk_forward_validation.py,PipelineWalkForwardValidationEvaluator,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/modeling/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/monitoring/feature_monitoring.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/news/news_manager.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/prediction/anomaly_engine.py,,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/data_preparation_service.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/data_preparer.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/prediction/lineage.py,,17,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/model_resolver.py,,6,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/model_selection_service.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/orchestrator.py,PredictionStage,47,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/prediction/output_contract.py,,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/prediction_context_manager.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/prediction_generator.py,,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/scaler_service.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/prediction/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/processing/data_handler.py,,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/processing/orchestrator.py,ProcessingStage,47,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/processing/storage.py,,54,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/processing/validator.py,,20,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/processing/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/trading/data_io.py,,1,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/trading/orchestrator.py,TradingExecutionStage,46,True,LIKELY_REACHABLE,Add smoke/runtime test for this stage.
+pipeline/stages/trading/recommendation_engine.py,,3,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/trading/__init__.py,,478,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
+pipeline/stages/utils/collection_manager.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+pipeline/stages/utils/data_schema_mapper.py,,0,False,POSSIBLY_ORPHAN_STAGE,Check if this stage is loaded by config/dynamic import before deleting.
+processing/filters/orchestrator.py,,47,False,NEEDS_REVIEW,"Stage-like file found, but run/execute/process contract is unclear."
