@@ -775,6 +775,7 @@ def load_evidence_from_artifacts(
         return loader.from_runtime_artifact(
             Path(artifact_paths["runtime"]),
             domain_id=domain_id,
+            as_of=as_of,
         )
 
     return loader.from_producer_artifacts(
