@@ -169,7 +169,7 @@ class ReviewActionStore:
         self.add_action(action)
         return action
 
-    def void_action(self, action_id: str, reason: str = "") -> ReviewActionRecord:
+    def void_action(self, action_id: str, reason: str = "", reviewer: str = "human") -> ReviewActionRecord:
         action = self.get_action(action_id)
         if action is None:
             raise KeyError(f"Review action not found: {action_id}")
@@ -177,10 +177,13 @@ class ReviewActionStore:
         reason_text = f"Voided: {reason}" if reason else "Voided."
         action.notes = f"{action.notes}\n{reason_text}".strip()
         if action.linked_proposal_id:
+            # OperationQueue.reject() requires non-empty reviewer/reason
+            # (raises ValueError otherwise) -- this call previously passed
+            # neither, raising TypeError on every single invocation.
             OperationQueue(
                 self.operations_path,
                 event_log_path=self.event_log.log_path if self.event_log else None,
-            ).reject(action.linked_proposal_id)
+            ).reject(action.linked_proposal_id, reviewer=reviewer, reason=reason_text)
         self.add_action(action)
         self._log("review_action_voided", action.model_dump(mode="json"))
         return action
