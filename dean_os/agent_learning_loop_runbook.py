@@ -274,6 +274,13 @@ def _stop_reason(stage_id: str, status: str, payload: dict[str, Any], artifact_e
         "no_calibration_proposals": "No calibration proposals are available for review.",
         "operation_queue_empty": "Operation queue has no approved calibration implementation task.",
         "no_manual_tasks_in_scope": "No approved manual implementation task is in scope.",
+        # profile_scorecard / calibration_gate / calibration_proposals can emit
+        # these two -- they were missing here, so _loop_position() silently
+        # walked past a not-actually-ready stage instead of stopping on it.
+        # analyst_loop_daily_check.py's soft_loop_statuses already expects
+        # both to surface as a stop reason.
+        "gated": "Profiles exist but none have cleared the gate yet.",
+        "no_profiles": "No profiles are available at this stage yet.",
     }
     if status in blocking_statuses:
         return blocking_statuses[status]

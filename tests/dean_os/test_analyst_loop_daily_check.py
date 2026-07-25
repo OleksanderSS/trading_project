@@ -43,7 +43,10 @@ def _write_ready_artifacts(paths, *, learning_bridge_status="dry_run_ready"):
         },
     )
     _write_json(paths["analyst_profiles"], {"mode": "analyst_profile_orchestrator", "profile_runs": [{"status": "completed"}]})
-    _write_json(paths["profile_scorecard"], {"mode": "analyst_profile_scorecard", "summary": {"profile_count": 1}})
+    _write_json(
+        paths["profile_scorecard"],
+        {"mode": "analyst_profile_scorecard", "summary": {"profile_count": 1, "activation_ready_profiles": ["generalist_base_analyst"]}},
+    )
     _write_json(
         paths["learning_bridge"],
         {"mode": "analyst_learning_promotion_bridge", "promotion_gate": {"status": learning_bridge_status}},
