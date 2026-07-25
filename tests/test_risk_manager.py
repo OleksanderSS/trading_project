@@ -4,7 +4,7 @@ Tests for RiskManager - Kill-Switch and Exposure Limits
 
 import pytest
 import numpy as np
-from src.risk.risk_manager import RiskManager, Position, RiskLevel
+from src.archive.risk.risk_manager import RiskManager, Position, RiskLevel
 
 
 class TestKillSwitch:

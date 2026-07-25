@@ -4,7 +4,7 @@ import pandas as pd
 from src.data.synthetic.data_generator import DataGenerator
 from src.features.enrichers.volume_enricher import VolumeEnricher
 from src.scripts.optimization.portfolio.optimizer import PortfolioOptimizer
-from src.patterns.pattern_analyzer import PatternAnalyzer
+from src.archive.patterns.pattern_analyzer import PatternAnalyzer
 
 
 def test_fractal_similarity_ignores_initial_pct_change_nan():

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.meta_learning.real_time_learning import RealTimeLearning
+from src.archive.meta_learning.real_time_learning import RealTimeLearning
 
 
 def test_calculate_sharpe_ratio_returns_zero_for_constant_returns():

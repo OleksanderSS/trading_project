@@ -10,7 +10,7 @@ class TestCalibrationEngine:
 
     def test_define_hyperparameter_space_returns_all_keys(self):
         """Test that define_hyperparameter_space returns all expected keys."""
-        from src.calibration.calibration_engine import CalibrationEngine
+        from src.archive.calibration.calibration_engine import CalibrationEngine
 
         engine = CalibrationEngine.__new__(CalibrationEngine)
         expected_keys = {
@@ -34,7 +34,7 @@ class TestCalibrationEngine:
 
     def test_mock_evaluation_returns_float(self):
         """Test that _mock_evaluation returns a float."""
-        from src.calibration.calibration_engine import CalibrationEngine
+        from src.archive.calibration.calibration_engine import CalibrationEngine
 
         engine = CalibrationEngine.__new__(CalibrationEngine)
         result = engine._mock_evaluation({'actor_lr': 0.001, 'hidden_dim': 256})
@@ -49,7 +49,7 @@ class TestCalibrationEngine:
         so realised trade returns equal the absolute y_true values → strictly positive
         mean return → Sharpe > 0.  The implementation clips Sharpe to [-5, 5].
         """
-        from src.calibration.calibration_engine import CalibrationEngine
+        from src.archive.calibration.calibration_engine import CalibrationEngine
 
         engine = CalibrationEngine.__new__(CalibrationEngine)
         y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
@@ -61,7 +61,7 @@ class TestCalibrationEngine:
 
     def test_calculate_sharpe_ratio_with_variance(self):
         """Test Sharpe ratio calculation with varying predictions."""
-        from src.calibration.calibration_engine import CalibrationEngine
+        from src.archive.calibration.calibration_engine import CalibrationEngine
 
         engine = CalibrationEngine.__new__(CalibrationEngine)
         y_true = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
@@ -73,7 +73,7 @@ class TestCalibrationEngine:
 
     def test_evaluate_on_synthetic_empty_scenarios(self):
         """Test synthetic evaluation with empty scenarios."""
-        from src.calibration.calibration_engine import CalibrationEngine
+        from src.archive.calibration.calibration_engine import CalibrationEngine
 
         engine = CalibrationEngine.__new__(CalibrationEngine)
         result = engine._evaluate_on_synthetic(MagicMock(), {'typical': [], 'shock': [], 'context': []})
@@ -82,7 +82,7 @@ class TestCalibrationEngine:
 
     def test_evaluate_on_synthetic_with_scenarios(self):
         """Test synthetic evaluation with mock scenarios."""
-        from src.calibration.calibration_engine import CalibrationEngine
+        from src.archive.calibration.calibration_engine import CalibrationEngine
 
         engine = CalibrationEngine.__new__(CalibrationEngine)
         scenarios = {
@@ -98,7 +98,7 @@ class TestCalibrationEngine:
     def test_chronological_split_preserves_order(self):
         """Validation data must come after training data."""
         import pandas as pd
-        from src.calibration.calibration_engine import CalibrationEngine
+        from src.archive.calibration.calibration_engine import CalibrationEngine
 
         engine = CalibrationEngine.__new__(CalibrationEngine)
         X = pd.DataFrame({"feature": range(10)})
@@ -117,7 +117,7 @@ class TestAdaptiveConfidenceCalibrator:
 
     def test_calibrate_clips_extreme_values(self):
         """Test that calibration clips values to [0.01, 0.99]."""
-        from src.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
+        from src.archive.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
 
         calibrator = AdaptiveConfidenceCalibrator()
 
@@ -129,7 +129,7 @@ class TestAdaptiveConfidenceCalibrator:
 
     def test_update_with_outcome_records_history(self):
         """Test that update_with_outcome records to history."""
-        from src.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
+        from src.archive.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
 
         calibrator = AdaptiveConfidenceCalibrator()
         calibrator.update_with_outcome(0.7, 1)
@@ -141,7 +141,7 @@ class TestAdaptiveConfidenceCalibrator:
 
     def test_get_calibration_report_structure(self):
         """Test that calibration report has expected structure."""
-        from src.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
+        from src.archive.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
 
         calibrator = AdaptiveConfidenceCalibrator()
         report = calibrator.get_calibration_report()
@@ -155,7 +155,7 @@ class TestAdaptiveConfidenceCalibrator:
 
     def test_window_size_limit(self):
         """Test that calibration history respects window size limit."""
-        from src.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
+        from src.archive.calibration.adaptive_confidence_calibrator import AdaptiveConfidenceCalibrator
 
         calibrator = AdaptiveConfidenceCalibrator(window_size=10)
 

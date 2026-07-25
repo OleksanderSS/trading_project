@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from src.features.utils.simple_adaptive_technical_indicators import SimpleAdaptiveTechnicalIndicators
+from src.archive.features.utils.simple_adaptive_technical_indicators import SimpleAdaptiveTechnicalIndicators
 
 def test_indicators_causality():
     # Create dummy price data

@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from src.features.utils.hybrid_adaptive_technical_indicators import HybridAdaptiveTechnicalIndicators
+from src.archive.features.utils.hybrid_adaptive_technical_indicators import HybridAdaptiveTechnicalIndicators
 
 def test_indicators_causality():
     # Create dummy price data with a trend

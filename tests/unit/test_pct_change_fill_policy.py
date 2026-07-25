@@ -7,7 +7,7 @@ from src.features.enrichers.significance_features_enricher import SignificanceFe
 from src.features.enrichers.technical_analysis_enricher import TechnicalAnalysisEnricher
 from src.features.enrichers.volatility_enricher import VolatilityEnricher
 from src.features.selection.volatility_driver_selector import VolatilityDriverSelector
-from src.features.utils.modular_adaptive_technical_indicators import _clean_price_returns
+from src.archive.features.utils.modular_adaptive_technical_indicators import _clean_price_returns
 from src.pipeline.stages.trading.recommendation_engine import TradingRecommendationEngine
 
 

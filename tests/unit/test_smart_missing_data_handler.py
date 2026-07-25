@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.utils.smart_missing_data_handler import SmartMissingDataHandler
+from src.archive.utils.smart_missing_data_handler import SmartMissingDataHandler
 
 
 def test_indicator_fill_does_not_backfill_future_values():

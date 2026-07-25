@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
-from src.utils.data_safety import safe_rolling
+from src.archive.utils.data_safety import safe_rolling
 
 logger = ProjectLogger.get_logger("RiskMetrics")
 

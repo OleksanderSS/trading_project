@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.training.portfolio_optimizer import PortfolioOptimizer
+from src.archive.portfolio_optimizer import PortfolioOptimizer
 
 
 def _optimizer():

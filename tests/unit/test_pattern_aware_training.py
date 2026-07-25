@@ -1,6 +1,6 @@
 import pandas as pd
 
-from src.training.pattern_aware_training import PatternAwareModelTrainer, train_pattern_aware_models
+from src.archive.training.pattern_aware_training import PatternAwareModelTrainer, train_pattern_aware_models
 
 
 def test_pattern_aware_training_trains_and_selects_champion():

@@ -1,4 +1,4 @@
-from src.trading.signal_processor import SignalProcessor
+from src.archive.trading.signal_processor import SignalProcessor
 
 
 class DummyReport:

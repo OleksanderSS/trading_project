@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from src.models.feature_selector import ModelFeatureSelector
+from src.archive.models.feature_selector import ModelFeatureSelector
 
 
 def test_feature_leakage_prevention():

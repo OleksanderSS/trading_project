@@ -18,10 +18,8 @@ from src.pipeline.stages.modeling.pipeline_control_artifacts import (
     build_split_evaluation_window,
 )
 from src.pipeline.stages.stage_4_modeling import ModelingStage
-from src.pipeline.stages.stage_5_prediction import (
-    PredictionResultRequest,
-    PredictionStage,
-)
+from src.pipeline.stages.prediction.result_request import PredictionResultRequest
+from src.pipeline.stages.stage_5_prediction import PredictionStage
 from src.training.batch_trainer import BatchTrainer
 
 

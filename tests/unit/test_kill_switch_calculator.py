@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from src.risk.kill_switch.calculator import KillSwitchCalculator
+from src.archive.risk.kill_switch.calculator import KillSwitchCalculator
 from src.core.exceptions import DataProcessingError
 from unittest.mock import MagicMock
 

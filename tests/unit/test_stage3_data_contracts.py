@@ -5,7 +5,7 @@ import logging
 from src.features.enrichers.sentiment_features_enricher import SentimentFeaturesEnricher
 from src.pipeline.guards.temporal_target_guard import TemporalTargetGuard
 from src.pipeline.stages.feature_engineering.orchestrator import FeatureEngineeringStage
-from src.pipeline.stages.stage_3_improvements import validate_and_align_features_targets
+from src.archive.pipeline.stages.stage_3_improvements import validate_and_align_features_targets
 
 
 def test_temporal_target_guard_preserves_return_and_volatility_targets():

@@ -3,7 +3,7 @@ import pandas as pd
 
 from src.analytics.detectors.bias_detector import BiasDetector
 from src.algorithms.risk_parity_allocator import RiskParityAllocator
-from src.algorithms.walk_forward_optimizer import WalkForwardOptimizer
+from src.archive.algorithms.walk_forward_optimizer import WalkForwardOptimizer
 
 
 def test_risk_parity_integrity():
