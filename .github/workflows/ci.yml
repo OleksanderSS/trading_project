@@ -56,10 +56,29 @@ jobs:
         continue-on-error: true
         run: mypy src/ --ignore-missing-imports
 
+      - name: Verify test collection (blocking)
+        env:
+          PYTHONPATH: .
+        run: pytest --collect-only -q
+        # Deliberately has NO continue-on-error / || true: this must fail the
+        # build. A collection error (a broken import in any test file) means
+        # the ENTIRE test suite silently stops proving anything past that
+        # point -- this is what let 52 deleted CLI wrappers and 100+ deleted
+        # src/ modules go unnoticed for days in 2026-07, since the actual
+        # test step below can't fail no matter what.
+
       - name: Run pytest with coverage
         env:
           PYTHONPATH: .
         run: pytest --cov=src --cov-report=xml --cov-report=lcov || true
+        # NOTE: this `|| true` means this step can never fail the build,
+        # regardless of how many tests fail. As of 2026-07-25 there are 10
+        # known, individually-documented pre-existing failures (see
+        # tests/dean_os and tests/contracts) -- removing `|| true` today
+        # would start failing every CI run on those, not on new breakage.
+        # Recommended next step: mark those 10 as explicit `@pytest.mark.xfail`
+        # (with reasons) so a clean pass/fail baseline can be established,
+        # then remove `|| true` here so this step actually gates merges.
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4.4.3  # Фікс під Node.js 24
