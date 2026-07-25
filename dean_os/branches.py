@@ -117,6 +117,8 @@ class AnalyticalBranch:
         except Exception as exc:
             if agent.capabilities.error_behavior == "warn":
                 logger.warning("%s failed: %s", agent.name, exc)
+            else:
+                logger.info("%s skipped after failure: %s", agent.name, exc)
             label = "schema_violation" if isinstance(exc, TypeError) else "agent_execution_error"
             _fail_trace(trace, exc, label)
             if trace is not None:
