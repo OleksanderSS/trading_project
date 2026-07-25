@@ -1,5 +1,27 @@
 # Component Audit System — How To Use
 
+## ⚠️ Known blind spot: dean_os's CLI-artifact-chained governance layer
+
+This toolkit (and `orphan_modules.txt`/`dead_code_classification.csv` in
+particular) finds reachability via **Python-level imports/string
+references**. Part of `dean_os/` — the "chief review cycle" governance
+layer (`chief_review_index.py`, `full_system_cycle_closure.py`,
+`current_architecture_map.py`, `current_cycle_journal.py`, most of
+`dean_os/replays/`, plus their `run_agent_*.py` CLI wrappers) — is wired
+by a **different mechanism entirely**: one CLI script writes a JSON
+artifact to a fixed `reports/dean_os/<name>_current/latest.json` path,
+and the next CLI script reads that same path as a default constructor
+argument. No Python import ever connects them, so this toolkit will
+always flag them as orphans — confirmed a false positive on this exact
+chain on 2026-07-26 (user runs it manually; real dated artifacts exist in
+`reports/dean_os/chief_review_index/` etc.).
+
+**Before treating a `dean_os/*.py` file's `UNUSED_*` classification here
+as real dead code, check `reports/dean_os/<module_name>_current/` (or a
+similarly-named report dir) for dated real artifacts first.** If they
+exist and are reasonably recent, the module is live via artifact handoff,
+not via imports, and this toolkit simply can't see it.
+
 ## Run full audit
 ```bash
 # Step 1: Engagement scan (fast, ~30s)
