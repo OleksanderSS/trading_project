@@ -86,6 +86,16 @@ def _macro_series_evidence_type(context_key: str, domain_id: str) -> str | None:
     return mapping.get(domain_id)
 
 
+# Derived from MACRO_SERIES_EVIDENCE_MAP itself so this can never drift out of
+# sync with it again -- a hand-maintained duplicate of this set previously
+# only listed 4 domains, silently excluding macro evidence for real_estate,
+# agriculture, logistics, and geopolitics even though the map above has
+# explicit entries for all of them.
+MACRO_RELEVANT_DOMAINS: frozenset[str] = frozenset(
+    domain_id for mapping in MACRO_SERIES_EVIDENCE_MAP.values() for domain_id in mapping
+)
+
+
 _POSITIVE_TERMS = {
     "accelerating",
     "growth",
@@ -481,16 +491,10 @@ class MarketContextEvidenceAdapter:
         )
         exclusions = list(audit["exclusions"])
         as_of_dt = parse_timezone_aware(as_of)
-        macro_domains = {
-            "macro_policy",
-            "liquidity_credit",
-            "energy",
-            "semiconductor_ai_infrastructure",
-        }
 
         for observation in audit["accepted_observations"]:
             family = observation["family"]
-            if family == "macro" and self.domain_id not in macro_domains:
+            if family == "macro" and self.domain_id not in MACRO_RELEVANT_DOMAINS:
                 exclusions.append(
                     {
                         "family": family,
