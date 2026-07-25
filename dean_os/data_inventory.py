@@ -109,7 +109,11 @@ def data_quality_report() -> dict[str, dict[str, Any]]:
                         if rng[0] and rng[1]:
                             from datetime import UTC, datetime
                             mx = rng[1]
-                            days = (datetime.now(UTC) - mx).days if isinstance(mx, datetime) and mx.tzinfo else 0
+                            if isinstance(mx, datetime):
+                                now = datetime.now(UTC) if mx.tzinfo else datetime.now()
+                                days = (now - mx).days
+                            else:
+                                days = 0
                             date_gaps = f"{str(rng[0])[:10]} .. {str(rng[1])[:10]} (latest: {days}d ago)"
                             break
                     except Exception:
