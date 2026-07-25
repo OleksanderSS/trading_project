@@ -600,9 +600,13 @@ def _ticker_matches(payload: dict[str, Any], requested_tickers: list[str]) -> bo
     if not requested_tickers:
         return True
     scope = payload.get("scope", {}) if isinstance(payload, dict) else {}
+    # [scope.get("ticker")] is always truthy even when scope.get("ticker")
+    # is None -- a bare `or` chain here would make payload.get("tickers")
+    # unreachable dead code. Only use the singular-ticker wrapping when
+    # there's an actual ticker to wrap.
     payload_tickers = _normalize_tickers(
         scope.get("tickers")
-        or [scope.get("ticker")]
+        or ([scope.get("ticker")] if scope.get("ticker") else None)
         or payload.get("tickers")
         or []
     )
