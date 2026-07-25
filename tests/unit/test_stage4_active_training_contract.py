@@ -9,8 +9,9 @@ import joblib
 import numpy as np
 import pandas as pd
 
-import src.pipeline.stages.stage_4_modeling as stage4_module
+import src.pipeline.stages.modeling.orchestrator as stage4_orchestrator_module
 from src.models.adapters.data_preparation import prepare_data_for_models
+from src.models.artifact_store import ModelArtifactStore
 from src.pipeline.stages.evaluation.pipeline_control_artifacts import (
     build_evaluation_metric_candidate,
 )
@@ -18,7 +19,7 @@ from src.pipeline.stages.modeling.pipeline_control_artifacts import (
     build_split_evaluation_window,
 )
 from src.pipeline.stages.stage_4_modeling import ModelingStage
-from src.pipeline.stages.prediction.result_request import PredictionResultRequest
+from src.pipeline.stages.prediction.orchestrator import PredictionResultRequest
 from src.pipeline.stages.stage_5_prediction import PredictionStage
 from src.training.batch_trainer import BatchTrainer
 
@@ -221,7 +222,7 @@ def test_active_stage4_emits_honest_partial_evidence_and_prediction_metadata(
 ):
     prepared = _prepared_data()
     monkeypatch.setattr(
-        stage4_module,
+        stage4_orchestrator_module,
         "prepare_data_for_models",
         lambda **kwargs: prepared,
     )
@@ -314,6 +315,7 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
     trainer = object.__new__(BatchTrainer)
     trainer.output_dir = tmp_path
     trainer.logger = logging.getLogger("test-base-trainer-persistence")
+    trainer.artifact_store = ModelArtifactStore()
     first = trainer._save_model_candidate(
         {"name": "first"},
         ticker="NVDA",
@@ -379,7 +381,6 @@ def test_stage5_result_carries_stage4_lineage_into_stage7_candidate(tmp_path):
             "timeframe": "15m",
             "context_fingerprint": "ctx-nvda-15m",
         },
-        models={},
     )
 
     result = stage._create_prediction_result(request)

@@ -1,3 +1,8 @@
+# Archived: orphaned duplicate. The real, live PredictionResultRequest is
+# defined inline in src/pipeline/stages/modeling/../prediction/orchestrator.py
+# (Stage 5's actual class, with a `models` field instead of
+# `shap_explanations`) -- orchestrator.py never imported this module, so this
+# was a diverged, unused copy with zero real callers when archived.
 from dataclasses import dataclass
 from typing import Any
 
