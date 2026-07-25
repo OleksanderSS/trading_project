@@ -59,9 +59,11 @@ class ShadowCalibrationReadinessPacket:
         self.output_dir = Path(output_dir)
 
     def build(self, save: bool = True) -> dict[str, Any]:
-        policy = yaml.safe_load(
-            self.policy_path.read_text(encoding="utf-8")
-        ) or {}
+        policy = (
+            yaml.safe_load(self.policy_path.read_text(encoding="utf-8")) or {}
+            if self.policy_path.is_file()
+            else {}
+        )
         artifacts = {
             name: _artifact_state(path)
             for name, path in self.sources.items()
