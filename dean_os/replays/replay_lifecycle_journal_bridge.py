@@ -45,8 +45,14 @@ class ReplayLifecycleJournalBridge:
             if ingestion_path is not None and ingestion_path.is_file()
             else None
         )
+        # lifecycle["inputs"] never actually contains "domain_id" (see
+        # ReplayOutcomeLifecycleOrchestrator.build()'s inputs dict) -- the
+        # real domain lives on the loaded registration artifact instead.
+        # Without this, every journaled event silently mis-tagged its
+        # domain_id as the hardcoded fallback.
         domain_id = str(
             ((lifecycle.get("inputs") or {}).get("domain_id"))
+            or (registration.get("source_packet") or {}).get("domain_id")
             or "semiconductor_ai_infrastructure"
         )
         events: list[dict[str, Any]] = []
