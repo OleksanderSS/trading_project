@@ -89,7 +89,6 @@ _EXPORT_GROUPS: dict[str, tuple[str, ...]] = {
     "dean_os.evidence_timestamp_audit": ("EvidenceTimestampAudit",),
     "dean_os.execution.execution_gateway": (
         "ExecutionGateway",
-        "ExecutionPolicy",
     ),
     "dean_os.evidence_gap_resolution_plan": (
         "EvidenceGapResolutionPlan",
