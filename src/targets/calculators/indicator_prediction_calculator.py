@@ -29,5 +29,10 @@ class IndicatorPredictionCalculator:
             logger.error(f"Shift must be negative for future targets. Got shift={shift}.")
             raise ValueError(f"Shift must be negative for future targets. Got shift={shift}.")
 
-        target_series = df[indicator_col].shift(shift)
+        # Shift per-ticker so a multi-ticker frame never leaks the next
+        # ticker's indicator value into the previous ticker's future target.
+        if "ticker" in df.columns:
+            target_series = df.groupby("ticker")[indicator_col].shift(shift)
+        else:
+            target_series = df[indicator_col].shift(shift)
         return target_series

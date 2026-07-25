@@ -40,7 +40,15 @@ class RegressionCalculator:
             raise ValueError(f"shift must be negative for future targets, got {shift}")
 
         # Standard lookahead return: (Price[T+n] - Price[T]) / Price[T]
-        future_price = df[base_col].shift(shift)
+        # Shift per-ticker so a multi-ticker frame never leaks the next
+        # ticker's price into the previous ticker's future-return target.
+        # TargetOrchestrator already groups by ticker before calling this,
+        # but the calculator must not depend on that -- a caller passing a
+        # multi-ticker frame directly would otherwise silently leak.
+        if "ticker" in df.columns:
+            future_price = df.groupby("ticker")[base_col].shift(shift)
+        else:
+            future_price = df[base_col].shift(shift)
         target_series = (future_price - df[base_col]) / df[base_col]
 
         # TRANSACTION COST ADJUSTMENT

@@ -23,7 +23,12 @@ class ClassificationCalculator:
             logger.error(f"Shift must be negative for future targets. Got shift={shift}.")
             raise ValueError(f"Shift must be negative for future targets. Got shift={shift}.")
 
-        future_price = df[base_col].shift(shift)
+        # Shift per-ticker so a multi-ticker frame never leaks the next
+        # ticker's price into the previous ticker's future-return target.
+        if "ticker" in df.columns:
+            future_price = df.groupby("ticker")[base_col].shift(shift)
+        else:
+            future_price = df[base_col].shift(shift)
         returns = (future_price - df[base_col]) / df[base_col]
 
         target_series = pd.Series(
@@ -45,7 +50,12 @@ class ClassificationCalculator:
             logger.error(f"Shift must be negative for future targets. Got shift={shift}.")
             raise ValueError(f"Shift must be negative for future targets. Got shift={shift}.")
 
-        future_price = df[base_col].shift(shift)
+        # Shift per-ticker so a multi-ticker frame never leaks the next
+        # ticker's price into the previous ticker's future-return target.
+        if "ticker" in df.columns:
+            future_price = df.groupby("ticker")[base_col].shift(shift)
+        else:
+            future_price = df[base_col].shift(shift)
         returns = (future_price - df[base_col]) / df[base_col]
 
         # Use np.select for clear, vectorized logic
