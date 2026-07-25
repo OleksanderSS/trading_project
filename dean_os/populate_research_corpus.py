@@ -17,7 +17,7 @@ from pathlib import Path
 import duckdb
 
 from dean_os.research_corpus import ResearchCorpus
-from dean_os.schemas import ResearchDocument, SourceCitation
+from dean_os.schemas import ResearchDocument
 
 
 def _hash_text(text: str) -> str:
@@ -38,7 +38,6 @@ def _make_doc(source_type: str, title: str, text: str,
         tickers=tickers or [],
         sectors=[],
         tags=[source_type],
-        citations=[],
     )
 
 
