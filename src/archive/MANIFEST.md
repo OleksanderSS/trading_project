@@ -113,6 +113,25 @@ deletion) into its original relative path under `src/archive/`.
   the one test that had been mistakenly pointed at it. If you're looking
   for the real `PredictionResultRequest`, it's in `orchestrator.py`, not
   here.
+- `pipeline/stages/prediction/result_builder.py` (archived 2026-07-26) —
+  the class `PredictionResultBuilder` this file defines is a complete,
+  never-wired-in parallel implementation of the same "build Stage 5
+  result" job `orchestrator.py`'s own `_create_prediction_result`/
+  `_prepare_final_results`/`_save_stage_5_results` already do live. Its
+  own `from .result_request import PredictionResultRequest` broke the
+  moment `result_request.py` (above) was archived, and it had zero real
+  callers anywhere (grep found only comments referencing the filename) —
+  confirmed via direct import before archiving. The live orchestrator
+  path is more advanced in one way (confidence calibration +
+  `prediction_ledger` recording, absent here) but this file has one
+  capability the live path lacks: `_integrate_autoencoder_anomaly()`
+  blends an autoencoder reconstruction-error "normalcy" score into the
+  anomaly score, using a model keyed `{ticker}_{target}_autoencoder` in
+  the batch dir. If that signal is ever wanted in production, port
+  `_load_autoencoder_model`/`_calculate_autoencoder_normalcy`/
+  `_integrate_autoencoder_anomaly` into `orchestrator.py`'s
+  `_create_prediction_result` — don't resurrect this file as-is, since
+  it duplicates the surrounding logic that already diverged.
 - `data_sources/local_file_data_source.py` was already archived in
   Wave 1; this session only fixed its own internal cross-import
   (`__init__.py` was still importing from the pre-archival `src.data_sources.*`
