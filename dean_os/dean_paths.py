@@ -26,9 +26,13 @@ Usage:
 # Optional import of PathValidationError and validate_safe_path from src, with fallback to local definitions
 try:
     from src.core.security.path_validator import PathValidationError, validate_safe_path  # type: ignore
+    _HAS_HARDENED_PATH_VALIDATOR = True
 except Exception:  # pragma: no cover
-    # Fallback definitions are provided later in this file
-    pass
+    # Fallback definitions are provided below -- the module-level class/def
+    # used to run unconditionally regardless of whether this import
+    # succeeded, silently discarding the hardened (symlink-checking)
+    # validator even when it was available.
+    _HAS_HARDENED_PATH_VALIDATOR = False
 
 import json
 import os
@@ -39,50 +43,51 @@ from typing import Any
 import pandas as pd
 
 
-class PathValidationError(Exception):
-    """Raised when a path validation fails."""
-    pass
+if not _HAS_HARDENED_PATH_VALIDATOR:
 
+    class PathValidationError(Exception):
+        """Raised when a path validation fails."""
+        pass
 
-def validate_safe_path(path: Path, base_dir: Path) -> Path:
-    """
-    Validate that a path is within the base directory.
-    
-    Args:
-        path: Path to validate
-        base_dir: Base directory to check against
-    
-    Returns:
-        Resolved absolute path
-    
-    Raises:
-        PathValidationError: If path is outside base directory or contains traversal attempts
-    """
-    # Resolve to absolute path using standard library os.path for Snyk
-    import os
-    resolved_str = os.path.abspath(str(path))
-    base_str = os.path.abspath(str(base_dir))
+    def validate_safe_path(path: Path, base_dir: Path) -> Path:
+        """
+        Validate that a path is within the base directory.
 
-    # Security check: must use commonpath to ensure no traversal
-    try:
-        common = os.path.commonpath([base_str, resolved_str])
-    except ValueError:
-        # Cross-drive paths (Windows) or other commonpath errors -> treat as outside
-        common = None
-    if common != base_str:
-        raise PathValidationError(
-            f"Path {resolved_str} is outside base directory {base_str}"
-        )
+        Args:
+            path: Path to validate
+            base_dir: Base directory to check against
 
-    resolved = Path(resolved_str)
+        Returns:
+            Resolved absolute path
 
-    # Check for suspicious patterns
-    if ".." in str(path):
-        raise PathValidationError(
-            f"Path contains parent directory references: {path}"
-        )
+        Raises:
+            PathValidationError: If path is outside base directory or contains traversal attempts
+        """
+        # Resolve to absolute path using standard library os.path for Snyk
+        import os
+        resolved_str = os.path.abspath(str(path))
+        base_str = os.path.abspath(str(base_dir))
 
-    return resolved
+        # Security check: must use commonpath to ensure no traversal
+        try:
+            common = os.path.commonpath([base_str, resolved_str])
+        except ValueError:
+            # Cross-drive paths (Windows) or other commonpath errors -> treat as outside
+            common = None
+        if common != base_str:
+            raise PathValidationError(
+                f"Path {resolved_str} is outside base directory {base_str}"
+            )
+
+        resolved = Path(resolved_str)
+
+        # Check for suspicious patterns
+        if ".." in str(path):
+            raise PathValidationError(
+                f"Path contains parent directory references: {path}"
+            )
+
+        return resolved
 
 
 def get_project_root() -> Path:
