@@ -247,9 +247,17 @@ def _check(status: str, code: str, message: str) -> dict[str, str]:
 
 
 def _load_json(path: str | Path) -> dict[str, Any]:
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    # Every downstream reader of this dict already uses .get() defensively
+    # (see _review_checks/_instance_status), so a missing/corrupt required
+    # artifact degrades to review_checks failing -> "blocked_pipeline_control_
+    # instance", matching how every sibling stage in this fixed chain treats
+    # a missing input, instead of an uncaught FileNotFoundError/JSONDecodeError.
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {"load_error": f"{type(exc).__name__}: {exc}"}
     if not isinstance(payload, dict):
-        raise ValueError(f"Expected JSON object: {path}")
+        return {"load_error": f"Expected JSON object: {path}"}
     return payload
 
 
