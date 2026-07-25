@@ -13,14 +13,16 @@ from src.backtesting.advanced.advanced_engine import BiasDetector
 def test_look_ahead_bias_detection():
     """Перевірка виявлення look-ahead bias."""
     detector = BiasDetector()
-    
-    # Створюємо трендові дані
+
+    # detect_look_ahead_bias's second argument is a raw PRICE series -- it
+    # derives future returns internally via pct_change(lag).shift(-lag), it
+    # does not accept a pre-computed returns series directly.
     n = 100
-    x = np.linspace(0, 10, n)
-    returns = pd.Series(x)
-    signals = returns  # Очевидний витік: сигнал t = дохідність t
-    result = detector.detect_look_ahead_bias(signals, returns)
-    
+    prices = pd.Series(100.0 + np.linspace(0, 10, n))
+    future_returns = prices.pct_change(1, fill_method=None).shift(-1)
+    signals = future_returns  # Очевидний витік: сигнал t = майбутня дохідність t
+    result = detector.detect_look_ahead_bias(signals, prices)
+
     assert bool(result['lookahead_bias_detected']) is True
     # print(f"\n✅ Look-ahead bias успішно виявлено")
 

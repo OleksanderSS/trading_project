@@ -54,6 +54,6 @@ def test_trading_calendar_import_does_not_import_yfinance():
 
 
 def test_enhanced_ensemble_import_does_not_import_torch():
-    state = _import_state_after("src.models.ensemble.enhanced_ensemble")
+    state = _import_state_after("src.archive.models_dead.enhanced_ensemble")
 
     assert state["torch"] is False

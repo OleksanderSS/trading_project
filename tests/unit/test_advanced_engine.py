@@ -59,24 +59,18 @@ class TestBiasDetector:
 
     def test_detect_survivorship_bias_with_delisted(self):
         """Test survivorship bias detection with delisted tickers."""
-        from datetime import datetime
-
         from src.backtesting.advanced.advanced_engine import BiasDetector
 
         detector = BiasDetector()
         historical = ['AAPL', 'MSFT', 'GOOG', 'DELISTED1', 'DELISTED2']
         current = ['AAPL', 'MSFT', 'GOOG']
-        delisted_dates = {
-            'DELISTED1': datetime(2023, 1, 1),
-            'DELISTED2': datetime(2023, 6, 1)
-        }
 
-        result = detector.detect_survivorship_bias(historical, current, delisted_dates)
+        result = detector.detect_survivorship_bias(historical, current)
 
-        assert result['has_survivorship_bias'] == True
-        assert result['delisted_count'] == 2
-        assert 'DELISTED1' in result['delisted_tickers']
-        assert 'DELISTED2' in result['delisted_tickers']
+        assert result['potential_bias'] is True
+        assert result['missing_assets_count'] == 2
+        assert 'DELISTED1' in result['missing_assets']
+        assert 'DELISTED2' in result['missing_assets']
 
 
 class TestWalkForwardOptimizer:

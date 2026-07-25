@@ -17,7 +17,7 @@ def _load_yaml(path):
     [
         ("src.analytics.detectors.regime_detector", "MarketRegimeDetector"),
         ("src.features.enrichers.significance_features_enricher", "SignificanceFeaturesEnricher"),
-        ("src.data_sources.local_file_data_source", "LocalFileDataSource"),
+        ("src.archive.data_sources.local_file_data_source", "LocalFileDataSource"),
         ("src.features.transformers.transformers", "StandardScalerTransformer"),
         ("src.features.transformers.transformers", "MinMaxScalerTransformer"),
     ],
@@ -34,8 +34,11 @@ def test_yaml_config_paths_match_real_classes():
     data_sources = _load_yaml("src/config/data_sources.yaml")
     transformers = _load_yaml("src/config/transformers.yaml")
 
+    # MarketRegimeDetector was deliberately removed from calculators_config
+    # (it's a detector, not a calculator, per analysis.yaml's own comment) --
+    # covered separately by test_config_referenced_classes_are_importable.
     refs = [
-        analysis["calculators_config"]["market_regime_calc"],
+        analysis["calculators_config"]["volatility"],
         enrichment["enrichment"]["significance_features"],
         data_sources["data_sources"][0],
         *transformers["transformers"],
@@ -47,7 +50,7 @@ def test_yaml_config_paths_match_real_classes():
 
 
 def test_local_file_data_source_loads_csv():
-    from src.data_sources.local_file_data_source import LocalFileDataSource
+    from src.archive.data_sources.local_file_data_source import LocalFileDataSource
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         path = Path(tmp_dir) / "prices.csv"
@@ -108,7 +111,7 @@ def test_processing_handler_unwraps_filters_and_normalizes_nested_prices():
 
 def test_legacy_ensemble_selector_import_uses_active_implementation():
     from src.analytics.context.ensemble_selector import EnsembleContext, EnsembleSelector
-    from src.integration.ensemble_selector import EnsembleSelector as LegacySelector
+    from src.archive.integration.ensemble_selector import EnsembleSelector as LegacySelector
 
     context = EnsembleContext(
         data_size=100,

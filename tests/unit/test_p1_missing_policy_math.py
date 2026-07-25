@@ -3,7 +3,7 @@ import pandas as pd
 
 
 def test_algorithms_backtest_keeps_missing_price_gap_when_position_is_open():
-    from src.algorithms.advanced_backtest_engine import AdvancedBacktestEngine
+    from src.archive.algorithms.advanced_backtest_engine import AdvancedBacktestEngine
 
     engine = object.__new__(AdvancedBacktestEngine)
     prices = pd.DataFrame(
@@ -20,7 +20,7 @@ def test_algorithms_backtest_keeps_missing_price_gap_when_position_is_open():
 
 
 def test_algorithms_backtest_missing_price_gap_is_neutral_without_position():
-    from src.algorithms.advanced_backtest_engine import AdvancedBacktestEngine
+    from src.archive.algorithms.advanced_backtest_engine import AdvancedBacktestEngine
 
     engine = object.__new__(AdvancedBacktestEngine)
     prices = pd.DataFrame(
@@ -235,7 +235,7 @@ def test_drawdown_underwater_duration_handles_initial_boundary_without_fillna_ze
 
 
 def test_feature_preparation_uses_median_imputation_not_zero_fill():
-    from src.utils.feature_preparation import prepare_features_for_training
+    from src.archive.utils.feature_preparation import prepare_features_for_training
 
     df = pd.DataFrame(
         {
