@@ -176,15 +176,15 @@ def _zip_inventory(bundle: Path) -> list[dict[str, Any]]:
 def _main_repo_alignment(*, dropzone: Path) -> dict[str, Any]:
     required_paths = {
         "dropzone_inventory": Path("dean_os/real_source_dropzone_inventory.py"),
-        "normalized_packet_builder": Path("dean_os/real_source_normalized_packet.py"),
+        "normalized_packet_builder": Path("dean_os/packets/real_source_normalized_packet.py"),
         "normalized_packet_validation_gate": Path("dean_os/review_only_real_source_normalized_packet_validation_gate.py"),
         "source_evidence_validation_gate": Path("dean_os/source_evidence_validation_gate.py"),
-        "analyst_evidence_pack": Path("dean_os/analyst_evidence_pack.py"),
-        "domain_analyst_intake": Path("dean_os/domain_analyst_intake_packet.py"),
-        "domain_analyst_thesis_review": Path("dean_os/domain_analyst_thesis_review_packet.py"),
-        "build_focus_review": Path("dean_os/build_focus_review_packet.py"),
-        "source_extraction_contract": Path("dean_os/source_extraction_review_packet.py"),
-        "source_extraction_fixture": Path("dean_os/source_extraction_fixture_packet.py"),
+        "analyst_evidence_pack": Path("dean_os/analyst_core/analyst_evidence_pack.py"),
+        "domain_analyst_intake": Path("dean_os/analyst_core/domain_analyst_intake_packet.py"),
+        "domain_analyst_thesis_review": Path("dean_os/analyst_core/domain_analyst_thesis_review_packet.py"),
+        "build_focus_review": Path("dean_os/packets/build_focus_review_packet.py"),
+        "source_extraction_contract": Path("dean_os/packets/source_extraction_review_packet.py"),
+        "source_extraction_fixture": Path("dean_os/packets/source_extraction_fixture_packet.py"),
         "source_extraction_fixture_review": Path("dean_os/source_extraction_fixture_review_gate.py"),
         "legacy_245_fixture": Path("dean_os/review_only_real_source_normalized_packet_fixture.py"),
     }
