@@ -52,6 +52,17 @@ class HybridPipelineAdapter:
 
         # If the src/ pipeline could not be imported, degrade to a no-op so
         # the agent branches (review/analysis) still run and produce a decision.
+        if not self._src_unavailable:
+            try:
+                orchestrator = self._get_orchestrator()
+            except ImportError:
+                # _get_orchestrator() already set _src_unavailable/_reason
+                # before re-raising -- on the very first call self._src_unavailable
+                # was still False when we entered this block, so the check above
+                # never caught it and the exception would otherwise propagate
+                # straight out of __call__, defeating the no-op degradation this
+                # whole branch exists for.
+                pass
         if self._src_unavailable:
             normalized = {
                 "status": "pipeline_skipped",
@@ -71,8 +82,6 @@ class HybridPipelineAdapter:
             self._apply_news_point_in_time_boundary(context)
             self._apply_structured_context_boundary(context)
             return normalized
-
-        orchestrator = self._get_orchestrator()
 
         if self.mode == "local":
             result = await orchestrator.run_local_pipeline(
