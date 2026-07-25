@@ -395,7 +395,11 @@ def _document_to_evidence_item(
     text = _search_text(document)
     evidence_type = _classify_evidence_type(text, document, profile_required_types, profile_useful_types)
     directness = _classify_directness(document, evidence_type, requested_tickers)
-    if evidence_type == "domain_context" and directness == "domain" and not _domain_relevant(text, requested_sectors):
+    if (
+        evidence_type == "domain_context"
+        and directness == "domain"
+        and not _domain_relevant(text, requested_sectors, [*profile_required_types, *profile_useful_types])
+    ):
         return None
     limitations = _limitations(document, source_gate_context)
     blocked_windows = ["missing_published_at"] if not document.published_at else []
@@ -547,10 +551,14 @@ def _limitations(document: ResearchDocument, source_gate_context: dict[str, Any]
     return limitations
 
 
-def _domain_relevant(text: str, requested_sectors: list[str]) -> bool:
+def _domain_relevant(text: str, requested_sectors: list[str], candidate_types: list[str]) -> bool:
     if any(sector.lower() in text for sector in requested_sectors):
         return True
-    return any(term in text for terms in EVIDENCE_TYPE_ALIASES.values() for term in terms)
+    return any(
+        term in text
+        for evidence_type in candidate_types
+        for term in EVIDENCE_TYPE_ALIASES.get(evidence_type, [])
+    )
 
 
 def _summary(document: ResearchDocument) -> str:
