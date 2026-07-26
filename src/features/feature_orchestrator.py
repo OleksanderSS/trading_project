@@ -188,13 +188,32 @@ class FeatureOrchestrator:
             logger.error(f'Виникла помилка під час перевірки сигнатури {enricher_id}: {e}', exc_info=True)
             expects_args = False
         if expects_args:
-            old_config = config_manager.get_config('features', {}).get(
-                'enrichers', {}).get(enricher_id, {})
-            enricher_config = old_config if isinstance(old_config, dict) else {
-                }
+            enricher_config = FeatureOrchestrator._resolve_enricher_config(
+                config_manager, enricher_id)
             return obj(enricher_config)
         else:
             return obj()
+
+    @staticmethod
+    def _resolve_enricher_config(config_manager: Any, enricher_id: str
+        ) ->dict:
+        """Resolve an enricher's own settings block from enrichment.yaml.
+
+        Real per-enricher settings live under enrichment.<enricher_id> -
+        some blocks nest them one level deeper under .params (e.g.
+        enrichment.market_context.params.context_features), others don't
+        (e.g. enrichment.keyword_entity.keywords/.entities directly).
+        Try the nested shape first, then the flat one. (The previous
+        features.enrichers.<id> path never matched anything real - no
+        config file defines settings there, only enable-flag stubs in
+        unified_config.yaml.)
+        """
+        params_config = config_manager.get(f'enrichment.{enricher_id}.params',
+            None)
+        if isinstance(params_config, dict):
+            return params_config
+        flat_config = config_manager.get(f'enrichment.{enricher_id}', {})
+        return flat_config if isinstance(flat_config, dict) else {}
 
     @staticmethod
     def _dedupe_enrichers(enrichers: list[BaseEnricher]) ->list[BaseEnricher]:
