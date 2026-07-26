@@ -12,13 +12,15 @@ def test_capability_matrix_matches_registry_and_preserves_boundaries():
         for item in payload["entries"]
     }
 
+    # matrix_complete (not undeclared and not stale_contracts) is the real
+    # invariant: every agent_registry.yaml entry has a declared, non-stale
+    # CAPABILITY_CONTRACTS entry. A hardcoded agent_count assertion was
+    # here before and had already gone stale once (registry grew 28->39
+    # agents without the test being updated) -- removed rather than bumped
+    # again, since matrix_complete already proves coverage without a magic
+    # number that drifts every time the registry grows.
     assert payload["summary"]["matrix_complete"] is True
-    # Registry grew from 28 to 39 agents since this test was written
-    # (coherence_scan, freshness_audit, agent_evaluation_controller,
-    # pipeline_readiness, and 5 more standalone domain analysts) -- all
-    # confirmed live, not scaffolding. See CAPABILITY_CONTRACTS in
-    # agent_capability_matrix.py for their contract entries.
-    assert payload["summary"]["agent_count"] == 39
+    assert payload["summary"]["agent_count"] == len(entries) > 0
     assert entries["pipeline_manager"]["decision_influence"] is False
     assert entries["pipeline_manager"]["run_phases"] == ["pre_trade"]
     assert entries["semiconductor_analyst"][
