@@ -254,9 +254,18 @@ class ColabManager:
         Run FeatureLeakageGuard before saving to Parquet.
         Removes forbidden future-leaking columns. Logs warnings for high-correlation features.
         Returns cleaned features_df.
+
+        block_on_forbidden=True: a forbidden column is a hard stop, not a
+        cleanup-and-continue - ValueError is deliberately NOT caught below,
+        so it propagates out of this method (and isn't swallowed further
+        up the call chain either) and the batch is never written to
+        Parquet. Verified against 7 real production batches (accumulated
+        + regenerated, multiple tickers/timeframes) before enabling: all
+        currently clean, so this does not block anything that was passing
+        before.
         """
+        guard = FeatureLeakageGuard(block_on_forbidden=True)
         try:
-            guard = FeatureLeakageGuard(block_on_forbidden=False)  # warn only, don't raise
             target_like_feature_cols = [c for c in features_df.columns if is_target_like_column(c)]
             if target_like_feature_cols:
                 logger.warning(
@@ -288,7 +297,7 @@ class ColabManager:
             else:
                 logger.debug("[LeakageGuard] No leakage detected.")
 
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.warning(f"[LeakageGuard] Check failed (non-blocking): {e}")
 
         return features_df

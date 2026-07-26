@@ -6,8 +6,12 @@ Checks if features "see" the future via:
 2. Presence of forbidden columns (future_price, next_close, etc.) in X
 3. Stops transmission of contaminated data to Colab for training heavy models.
 
-Integration: called at the end of Stage 3 (FeatureEngineeringStage)
-and before saving to Parquet in HybridOrchestrator.
+Integration: called from ColabManager._check_feature_leakage()
+(src/pipeline/hybrid/colab_manager.py) before saving a batch's
+features/targets to Parquet, with block_on_forbidden=True - a forbidden
+column stops the save. NOT currently called from Stage 3
+(FeatureEngineeringStage) itself, despite an earlier version of this
+docstring claiming otherwise.
 """
 import json
 import logging
@@ -206,7 +210,10 @@ def get_leakage_guard(corr_threshold: float=0.95, block_on_forbidden: bool=
     True, report_dir: str='reports/leakage') ->FeatureLeakageGuard:
     """
     Returns singleton instance of FeatureLeakageGuard for pipeline use.
-    Called from Stage3 or HybridOrchestrator before saving to Parquet.
+    Currently unused - ColabManager._check_feature_leakage() constructs
+    its own FeatureLeakageGuard instance directly instead of using this
+    singleton factory. Kept for any future caller that wants a shared
+    instance.
     """
     global _guard_instance
     if _guard_instance is None:
