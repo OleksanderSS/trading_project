@@ -245,6 +245,22 @@ deletion) into its original relative path under `src/archive/`.
   inconsistent with the sibling function 3 lines away. Not fixed since
   the whole file is dead; fix before ever re-wiring it in.
 
+## Wave 7 — commit TBD, 2026-07-26 (`src/data/` audit pass)
+
+- `data/collectors/alternative_me_collector.py`,
+  `data/collectors/market_data_collector.py` — neither `collector_type`
+  (`alternative_me`, `market_data`) is a key under `collectors:` in
+  `src/config/collectors.yaml`, so `CollectorFactory.get_all_collectors()`
+  (which iterates `collectors_config.keys()`) can never produce either,
+  even though `CollectorFactory._discover_collector_classes()` still
+  auto-discovers both classes via `pkgutil.walk_packages`. Confirmed zero
+  callers anywhere in `src/`/`tests/` before archiving.
+  `alternative_me_collector.py` is a near-duplicate of the live
+  `fear_greed_collector.py` (both target the Fear & Greed Index, different
+  endpoints). Both files' relative `from .base_collector import
+  BaseCollector` fixed to the absolute `from src.data.collectors.base_collector
+  import BaseCollector` (that module stayed live, only these two moved).
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
