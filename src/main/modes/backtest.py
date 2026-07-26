@@ -6,11 +6,9 @@ from typing import Any
 
 import pandas as pd
 
-from src.backtesting.advanced.advanced_engine import BiasDetector, WalkForwardOptimizer
+from src.backtesting.advanced.advanced_engine import WalkForwardOptimizer
 from src.core.logging.logger import ProjectLogger
-from src.metrics.calculator import MetricsCalculator
 from src.pipeline.pipeline_orchestrator import PipelineOrchestrator
-from src.trading.virtual_portfolio import VirtualPortfolio
 
 from .base import BaseMode
 
@@ -45,20 +43,24 @@ class BacktestMode(BaseMode):
             return {'status': 'failed', 'error': str(e)}
 
     def _run_standard_backtest(self) ->dict[str, Any]:
-        """Standard backtest execution."""
+        """Standard backtest execution.
+
+        Stage 7 (EvaluationStage) already runs as part of
+        execute_full_pipeline() and performs the real backtest itself
+        (signal generation from predictions, per-ticker pivot, and
+        AdvancedBacktestEngine simulation with its own built-in
+        look-ahead-bias detection) - this mode just reads that result
+        instead of re-simulating it separately.
+        """
         orchestrator = PipelineOrchestrator(self.config_manager)
         final_data = self._execute_pipeline(orchestrator)
-        _, signals_df = self._extract_predictions_and_signals(final_data)
-        price_data = self._validate_price_data(final_data)
-        bias_results = self._detect_biases(signals_df, price_data)
-        embargoed_signals = self._apply_embargo_period(signals_df, price_data)
-        aligned_prices, aligned_signals = self._align_data(price_data,
-            embargoed_signals)
-        performance_metrics = self._run_portfolio_simulation(aligned_prices,
-            aligned_signals)
-        performance_metrics['bias_analysis'] = bias_results
+        evaluation_summary = self._validate_evaluation_summary(final_data)
+        performance_metrics = evaluation_summary.get('metrics', {})
+        performance_metrics['backtest_stats'] = evaluation_summary.get(
+            'backtest_stats', {})
         self._log_results(performance_metrics)
-        return {'status': 'success', 'metrics': performance_metrics}
+        return {'status': 'success', 'metrics': performance_metrics,
+            'evaluation_summary': evaluation_summary}
 
     def _run_walk_forward_validation(self) ->dict[str, Any]:
         """Walk-forward validation execution."""
@@ -82,55 +84,6 @@ class BacktestMode(BaseMode):
         self._log_walk_forward_results(performance_metrics, wf_results)
         return {'status': 'success', 'metrics': performance_metrics,
             'walk_forward_results': wf_results}
-
-    def _detect_biases(self, signals_df: pd.DataFrame, price_data: pd.DataFrame
-        ) ->dict[str, Any]:
-        """Detect various biases in backtest data."""
-        bias_detector = BiasDetector()
-        bias_results = {'look_ahead_bias': None, 'survivorship_bias': None,
-            'warnings': []}
-        try:
-            if ('signal' in signals_df.columns and 'close' in price_data.
-                columns):
-                look_ahead_results = bias_detector.detect_look_ahead_bias(
-                    signals=signals_df[['signal']], future_prices=
-                    price_data[['close']], lag_periods=1)
-                bias_results['look_ahead_bias'] = look_ahead_results
-                if look_ahead_results.get('has_look_ahead_bias'):
-                    bias_results['warnings'].append('Look-ahead bias detected!'
-                        )
-            bias_results['survivorship_bias'] = {'has_survivorship_bias':
-                False, 'message': 'Not enough data for analysis'}
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.logger.warning(f'Bias detection failed: {e}')
-            bias_results['warnings'].append(f'Bias detection error: {e}')
-            raise
-        return bias_results
-
-    def _apply_embargo_period(self, signals_df: pd.DataFrame, price_data:
-        pd.DataFrame) ->pd.DataFrame:
-        """Apply embargo period to signals to prevent look-ahead bias."""
-        try:
-            backtest_config = self.config_manager.get_config(
-                'backtest.bias_prevention', {})
-            embargo_periods = backtest_config.get('embargo_periods', 1)
-            self.logger.info(
-                f'[Backtest] Applying {embargo_periods} period embargo to signals...'
-                )
-            embargoed_signals = signals_df.copy()
-            if 'signal' in embargoed_signals.columns:
-                embargoed_signals['signal'] = embargoed_signals['signal'
-                    ].shift(embargo_periods)
-                embargoed_signals = embargoed_signals.dropna(subset=['signal'])
-                self.logger.info(
-                    f'[Backtest] Embargo applied: {len(signals_df)} -> {len(embargoed_signals)} signals'
-                    )
-            return embargoed_signals
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-            self.logger.warning(f'Embargo application failed: {e}')
-            return signals_df
 
     def _get_historical_data(self, orchestrator: PipelineOrchestrator
         ) ->pd.DataFrame:
@@ -186,68 +139,32 @@ class BacktestMode(BaseMode):
             '[Backtest] Running the full data and prediction pipeline...')
         return orchestrator.execute_full_pipeline()
 
-    def _extract_predictions_and_signals(self, final_data: dict[str, Any]
-        ) ->tuple:
-        """Витягує прогнози та сигнали з результатів пайплайну."""
-        predictions = final_data.get('prediction_results') or final_data.get(
-            'predictions')
-        if predictions is None or hasattr(predictions, 'empty'
-            ) and predictions.empty:
+    def _validate_evaluation_summary(self, final_data: dict[str, Any]
+        ) ->dict[str, Any]:
+        """Перевіряє, що Stage 7 (EvaluationStage) реально відпрацював."""
+        evaluation_summary = final_data.get('evaluation_summary')
+        if not evaluation_summary:
             raise ValueError(
-                'Pipeline did not generate any predictions. Backtesting cannot proceed.'
+                'Pipeline did not produce an evaluation summary (Stage 7). '
+                'Backtesting cannot proceed.'
                 )
-        signals_df = final_data.get('signals')
-        if signals_df is None:
-            signals_df = final_data.get('prediction_results'
-                ) or final_data.get('predictions')
-            if isinstance(signals_df, dict):
-                signals_df = pd.DataFrame(signals_df)
-        if signals_df is None or hasattr(signals_df, 'empty'
-            ) and signals_df.empty:
-            raise ValueError(
-                'Pipeline did not generate any signal data for backtesting.')
-        return predictions, signals_df
-
-    def _validate_price_data(self, final_data: dict[str, Any]) ->pd.DataFrame:
-        """Перевіряє наявність та коректність даних про ціни."""
-        price_data = final_data.get('processed_data')
-        if price_data is None or 'close' not in price_data.columns:
-            raise ValueError(
-                "Price data with 'close' column is missing from pipeline results."
-                )
-        return price_data
-
-    def _align_data(self, price_data: pd.DataFrame, signals_df: pd.DataFrame
-        ) ->tuple:
-        """Узгоджує дані про ціни та сигнали за часом."""
-        aligned_prices, aligned_signals = price_data['close'].align(signals_df
-            ['signal'], join='inner')
-        if aligned_prices.empty or aligned_signals.empty:
-            raise ValueError(
-                'After alignment, there are no overlapping data points between prices and signals.'
-                )
-        return aligned_prices, aligned_signals
-
-    def _run_portfolio_simulation(self, aligned_prices: pd.Series,
-        aligned_signals: pd.Series) ->dict[str, float]:
-        """Запускає симуляцію портфеля та розраховує метрики."""
-        self.logger.info(
-            '[Backtest] Initializing and running the virtual portfolio...')
-        portfolio_config = self.config_manager.get_config('trading')
-        initial_capital = portfolio_config.get('initial_capital', 100000)
-        portfolio = VirtualPortfolio(initial_capital=initial_capital)
-        portfolio.run_simulation(aligned_prices, aligned_signals)
-        self.logger.info('[Backtest] Calculating performance metrics...')
-        metrics_calculator = MetricsCalculator(portfolio.get_equity_curve())
-        return metrics_calculator.calculate_all_metrics()
+        return evaluation_summary
 
     def _log_results(self, performance_metrics: dict[str, float]) ->None:
         """Логує результати бектестингу."""
         self.logger.info('--- Backtest Completed Successfully ---')
+        if 'final_equity' not in performance_metrics:
+            self.logger.warning(
+                '[Backtest] Stage 7 returned a basic (non-simulated) '
+                'evaluation - no portfolio metrics available.'
+                )
+            return
         self.logger.info(
-            f"Final Portfolio Value: ${performance_metrics.get('final_equity'):,.2f}"
+            f"Final Portfolio Value: ${performance_metrics.get('final_equity', 0.0):,.2f}"
             )
         self.logger.info(
-            f"Total Return: {performance_metrics.get('total_return_pct'):.2%}")
+            f"Total Return: {performance_metrics.get('total_return_pct', 0.0):.2%}"
+            )
         self.logger.info(
-            f"Sharpe Ratio: {performance_metrics.get('sharpe_ratio'):.2f}")
+            f"Sharpe Ratio: {performance_metrics.get('sharpe_ratio', 0.0):.2f}"
+            )
