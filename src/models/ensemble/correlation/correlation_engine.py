@@ -93,7 +93,6 @@ class CorrelationEngine:
             if sample_size and sample_size < len(X):
                 indices = np.random.choice(len(X), sample_size, replace=False)
                 X_sample = X.iloc[indices]
-                y.iloc[indices]
             else:
                 X_sample = X
 
@@ -127,7 +126,7 @@ class CorrelationEngine:
             self.logger.info(f"✅ Correlation analysis complete. Redundant pairs: {len(redundant_pairs)}")
             return results
 
-        except (ValueError, TypeError, KeyError, Exception) as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error in correlation analysis: {e}", exc_info=True)
             self.error_handler.handle_error(e, context={'models_count': len(models)})
             raise RuntimeError(f"Correlation analysis failed: {e}") from e
@@ -196,7 +195,7 @@ class CorrelationEngine:
                 self.logger.warning("Correlation result is NaN, returning 0.0")
                 return 0.0
             return float(correlation)
-        except (ValueError, TypeError, Exception) as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error calculating correlation: {e}",
                 exc_info=True)
             self.error_handler.handle_error(e, context={'method': self.correlation_method})
@@ -358,7 +357,6 @@ class CorrelationEngine:
         """Find best subset of given size using greedy algorithm."""
         try:
             best_subset = None
-            -float('inf')
 
             remaining_models = model_names.copy()
             selected_models = []
@@ -455,7 +453,14 @@ class CorrelationEngine:
 
                 if model_name in correlation_matrix:
                     correlations = list(correlation_matrix[model_name].values())
-                    avg_correlation = np.mean([abs(c) for c in correlations if c != 1.0])
+                    other_correlations = [abs(c) for c in correlations if c != 1.0]
+                    # If every other model is perfectly correlated with this
+                    # one (or there are no other models), that's the worst
+                    # case for diversity, not "no data" - default to the max
+                    # penalty (1.0) instead of np.mean([]) silently producing
+                    # NaN, which would otherwise corrupt every downstream
+                    # weight (max()/sum()/normalization all propagate NaN).
+                    avg_correlation = np.mean(other_correlations) if other_correlations else 1.0
                     correlation_penalty = avg_correlation ** 2
                     adjusted_weight = base_weight * (1 - correlation_penalty)
                 else:
