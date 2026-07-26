@@ -140,7 +140,7 @@ deletion) into its original relative path under `src/archive/`.
   today — inert drift, not a live crash, but fixed to keep the config
   honest).
 
-## Wave 4 — commit TBD, 2026-07-26 (`src/targets/` audit pass)
+## Wave 4 — commit `0f0aa460`, 2026-07-26 (`src/targets/` audit pass)
 
 - `targets/calculators/base_news_target_calculator.py`,
   `post_news_target_calculator.py`, `pre_news_target_calculator.py` —
@@ -168,6 +168,26 @@ deletion) into its original relative path under `src/archive/`.
   diverged copy inline instead. Fix the `.get()` bug and route both
   through the base class before ever wiring these back into
   `CALCULATOR_MAPPING`.
+
+## Wave 5 — commit TBD, 2026-07-26 (`src/algorithms/` audit pass)
+
+- `algorithms/transaction_cost_model.py` — a second, diverged
+  `TransactionCostModel` class. The LIVE one is a different class in
+  `src/backtesting/advanced/advanced_engine.py`, imported by
+  `src/trading/virtual_portfolio.py`. The two have identical `__init__`
+  config keys but diverged `calculate_execution_costs()` signatures: this
+  archived version takes `(trade_value, daily_volume=1000000.0)` and
+  returns a `float`; the live one requires an extra positional
+  `volatility` arg and returns a `dict[str, float]`. Confirmed zero real
+  callers outside this file and `src/algorithms/__init__.py`'s own
+  re-export (removed) before archiving — only reference elsewhere was
+  `archive/algorithms/advanced_backtest_engine.py`, already-archived
+  Wave-3 dead code (its own import fixed to
+  `from src.archive.algorithms.transaction_cost_model import ...` per the
+  cross-import gotcha below). Same duplicate-class-divergence pattern as
+  `PredictionResultRequest`/`result_builder.py` and the `backtest.py`-vs-
+  Stage-7 case — if you're looking for the real `TransactionCostModel`,
+  it's in `src/backtesting/advanced/advanced_engine.py`, not here.
 
 ## Known cross-import gotcha
 

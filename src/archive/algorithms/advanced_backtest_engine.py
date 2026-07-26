@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 from src.archive.algorithms.bias_detector import BiasDetector
-from src.algorithms.transaction_cost_model import TransactionCostModel
+from src.archive.algorithms.transaction_cost_model import TransactionCostModel
 from src.archive.algorithms.walk_forward_optimizer import WalkForwardOptimizer
 from src.algorithms.metrics_mixin import PerformanceMetricsMixin
 from src.core.exceptions import DataProcessingError

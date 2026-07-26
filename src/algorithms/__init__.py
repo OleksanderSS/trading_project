@@ -10,11 +10,9 @@
 from .adaptive_position_sizer import AdaptivePositionSizer
 from .regime.types import MarketRegime
 from .risk_parity_allocator import RiskParityAllocator
-from .transaction_cost_model import TransactionCostModel
 
 __all__ = [
     'MarketRegime',
     'AdaptivePositionSizer',
     'RiskParityAllocator',
-    'TransactionCostModel'
 ]
