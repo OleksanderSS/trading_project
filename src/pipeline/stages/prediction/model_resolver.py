@@ -332,7 +332,16 @@ class ModelResolver:
             cur_model_name = path.stem.replace(f'_{context_id}', '')
             model_meta = self._create_model_meta(context_id, models_meta,
                 cur_model_name, str(path))
-            loaded_model = self.model_pool.get_model(cur_model_name,
+            # ModelPool is a single process-wide cache shared across every
+            # ticker/context resolved in a run - it must be keyed by
+            # something globally unique (path.stem), not cur_model_name,
+            # which collapses to a generic constant (e.g. "model") for any
+            # file matching the standard "model_{ticker}_{target}_{type}"
+            # naming convention. Using cur_model_name here would cache the
+            # first ticker's model under that generic key and silently
+            # serve it to every other ticker that reaches this path
+            # (cache hits never call loader_fn again).
+            loaded_model = self.model_pool.get_model(path.stem,
                 loader_fn=lambda path=str(path), meta=model_meta: self.
                 model_loader.load_path(path, meta))
             if loaded_model is not None:
