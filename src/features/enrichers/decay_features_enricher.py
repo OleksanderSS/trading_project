@@ -37,29 +37,47 @@ class DecayFeaturesEnricher(BaseEnricher):
         return np.exp(-np.log(2) / half_life_periods)
 
     def _apply_decay_to_column(self, df: pd.DataFrame, col: str, decay_factor: float) -> np.ndarray:
-        """Apply exponential decay to a single column."""
+        """Apply exponential decay to a single column.
+
+        The decay state is sequential/stateful, so it must reset at ticker
+        boundaries - otherwise a recent event in one ticker's last rows
+        leaks a nonzero decayed value into the next ticker's first rows.
+
+        Returns a plain positional numpy array (length == len(df)), not an
+        index-aligned Series: multiple tickers naturally share the same
+        trading dates, so df's index is commonly non-unique by this point
+        in the pipeline (e.g. a shared DatetimeIndex) - reindex()/index
+        based reassembly breaks or silently misaligns against duplicate
+        labels, while boolean-mask numpy assignment is purely positional
+        and unaffected by the index at all.
+        """
         if col not in df.columns:
             logger.warning(f"Event column '{col}' not found in DataFrame. Skipping.")
             return np.zeros(len(df))
 
-        # Identify indices where events occur
-        is_event = df[col].values >= 1
-        event_indices = np.nonzero(is_event)[0]
-
+        values = df[col].to_numpy()
         decayed_values = np.zeros(len(df))
 
-        # Apply decay
-        if len(event_indices) > 0:
-            decayed_values = np.zeros(len(df))
-            current_value = 0.0
-            values = df[col].values
-            for i in range(len(df)):
-                if values[i] >= 1:
-                    current_value = 1.0
-                else:
-                    current_value *= decay_factor
-                decayed_values[i] = current_value
+        if 'ticker' in df.columns:
+            tickers = df['ticker'].to_numpy()
+            for ticker in pd.unique(tickers):
+                mask = tickers == ticker
+                decayed_values[mask] = self._decay_single_array(values[mask], decay_factor)
+        else:
+            decayed_values = self._decay_single_array(values, decay_factor)
 
+        return decayed_values
+
+    def _decay_single_array(self, values: np.ndarray, decay_factor: float) -> np.ndarray:
+        """Apply exponential decay to a single (already single-ticker) array."""
+        decayed_values = np.zeros(len(values))
+        current_value = 0.0
+        for i in range(len(values)):
+            if values[i] >= 1:
+                current_value = 1.0
+            else:
+                current_value *= decay_factor
+            decayed_values[i] = current_value
         return decayed_values
 
     def _enrich_impl(self, df: pd.DataFrame, event_columns: list[str] | None = None, half_life_periods: int | None = None, **kwargs) -> pd.DataFrame:

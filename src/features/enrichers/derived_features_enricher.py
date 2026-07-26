@@ -56,6 +56,21 @@ class DerivedFeaturesEnricher(BaseEnricher): # audit-ignore: ARCHITECTURAL_USAGE
         """
         df_enriched = df.copy()
 
+        if 'ticker' in df_enriched.columns:
+            groups = []
+            for _ticker, group in df_enriched.groupby('ticker'):
+                group = group.copy()
+                self._enrich_single_ticker(group, kwargs)
+                groups.append(group)
+            df_enriched = pd.concat(groups).sort_index()
+        else:
+            self._enrich_single_ticker(df_enriched, kwargs)
+
+        logger.info(f"Derived features enrichment complete. Added {len(df_enriched.columns) - len(df.columns)} features.")
+        return df_enriched
+
+    def _enrich_single_ticker(self, df_enriched: pd.DataFrame, kwargs: dict) -> None:
+        """Adds all derived features in place, for a single ticker's chronological rows."""
         # Process price-based derived features
         price_target_col = self._resolve_price_target_column(df_enriched, kwargs.get('target_column', self.target_column))
         if price_target_col:
@@ -65,9 +80,6 @@ class DerivedFeaturesEnricher(BaseEnricher): # audit-ignore: ARCHITECTURAL_USAGE
         returns_col = kwargs.get('returns_column', self.returns_column)
         if isinstance(returns_col, str) and returns_col in df_enriched.columns:
             self._add_returns_based_features(df_enriched, returns_col)
-
-        logger.info(f"Derived features enrichment complete. Added {len(df_enriched.columns) - len(df.columns)} features.")
-        return df_enriched
 
     def _resolve_price_target_column(self, df_enriched: pd.DataFrame, target_col: str) -> str | None:
         """Resolve the price target column to use."""

@@ -169,17 +169,31 @@ class ContextMapEnricher(BaseEnricher):
 
     def _process_numeric_column(self, res_df: pd.DataFrame, col: str, state_col_name: str, state_cols: list[str]):
         """Адаптивний фільтр шуму."""
-        returns = res_df[col].pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
-        rolling_std = returns.rolling(window=20, min_periods=2).std()
+        if 'ticker' in res_df.columns:
+            returns = res_df.groupby('ticker')[col].pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
+            rolling_std = returns.groupby(res_df['ticker']).rolling(window=20, min_periods=2).std().reset_index(level=0, drop=True)
+        else:
+            returns = res_df[col].pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
+            rolling_std = returns.rolling(window=20, min_periods=2).std()
         threshold = (rolling_std * self.noise_sensitivity).clip(lower=1e-6)
-        state = pd.Series(0, index=res_df.index, dtype=int)
-        valid = returns.notna() & threshold.notna()
-        state.loc[valid] = np.where(
-            returns.loc[valid] > threshold.loc[valid],
+
+        # Positional numpy arrays, not .loc[boolean_mask]: res_df's index
+        # can carry duplicate labels by this point in the pipeline (other
+        # enrichers reset per-ticker indices during their own merge_asof
+        # steps), and .loc[] with a duplicate-labeled index misaligns or
+        # raises instead of a plain positional match. returns/threshold
+        # are already positionally aligned with res_df (groupby-transform
+        # preserves row order and length), so operate on .to_numpy().
+        returns_vals = returns.to_numpy()
+        threshold_vals = threshold.to_numpy()
+        valid = ~np.isnan(returns_vals) & ~np.isnan(threshold_vals)
+        state_vals = np.zeros(len(res_df), dtype=int)
+        state_vals[valid] = np.where(
+            returns_vals[valid] > threshold_vals[valid],
             1,
-            np.where(returns.loc[valid] < -threshold.loc[valid], -1, 0),
+            np.where(returns_vals[valid] < -threshold_vals[valid], -1, 0),
         )
-        res_df[state_col_name] = state
+        res_df[state_col_name] = state_vals
         if state_col_name not in state_cols:
             state_cols.append(state_col_name)
 
