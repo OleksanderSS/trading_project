@@ -17,8 +17,8 @@ import seaborn as sns
 from devtools.experimentation.base import BaseExperiment
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
-from src.ensembling.base_ensemble import ensemble_forecast
-from src.meta_learning.memory.diary_engine import ExperienceDiaryEngine
+from src.ensembling.stacked_ensemble import ensemble_forecast
+from src.meta_learning.memory.diary_engine import DiaryEngine
 from src.metrics.financial.financial_metrics_library import FinancialMetricsLibrary
 
 # Updated imports for current project structure
@@ -48,7 +48,7 @@ class CompareLayersExperiment(BaseExperiment):
             for combo in itertools.combinations(self.all_layers, r):
                 self.layer_sets.append(list(combo))
 
-        self.diary = ExperienceDiaryEngine()
+        self.diary = DiaryEngine()
         logger.info(f"CompareLayersExperiment initialized with {len(self.layer_sets)} layer combinations.")
 
     def get_metrics(self) -> list[str]:

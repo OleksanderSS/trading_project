@@ -22,7 +22,7 @@ from src.config.unified_config_manager import get_current_config
 from src.core.error_handling.error_handler import get_error_handler
 from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
-from src.ensembling.base_ensemble import StackedEnsemble
+from src.ensembling.stacked_ensemble import StackedEnsemble
 
 # Setup logger
 ProjectLogger.setup_logging()
