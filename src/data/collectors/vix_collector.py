@@ -163,7 +163,7 @@ class VIXCollector(BaseCollector):
                     'vix_percentile_20': vix_percentile_20,
                     'vix_percentile_80': vix_percentile_80,
                     'vix_range': vix_high - vix_low,
-                    'vix_change': vix_close - hist['Close'].shift(1).iloc[-1] if len(hist) > 1 else 0,
+                    'vix_change': vix_close - hist_up_to_now['Close'].shift(1).iloc[-1] if len(hist_up_to_now) > 1 else 0,
                     'extreme_volatility': 1 if vix_close >= 30 or vix_close <= 12 else 0,
                     'timestamp': date
                 })
