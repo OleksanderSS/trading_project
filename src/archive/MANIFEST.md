@@ -140,6 +140,35 @@ deletion) into its original relative path under `src/archive/`.
   today — inert drift, not a live crash, but fixed to keep the config
   honest).
 
+## Wave 4 — commit TBD, 2026-07-26 (`src/targets/` audit pass)
+
+- `targets/calculators/base_news_target_calculator.py`,
+  `post_news_target_calculator.py`, `pre_news_target_calculator.py` —
+  never wired into `TargetOrchestrator.CALCULATOR_MAPPING` (which only has
+  `regression`/`classification_binary`/`classification_multiclass`/
+  `indicator_prediction`) and no config anywhere names a `post_news`/
+  `pre_news` target type. Confirmed zero callers outside their own three
+  files (repo-wide grep; the only other hits are `dean_os/draft/` and
+  `audit/legacy/quarantine/`, both already-known non-live). Archived
+  instead of deleted because they contain a real logic bug worth
+  remembering if anyone ever re-wires them: `_get_upcoming_news()` /
+  the inline equivalent in `post_news_target_calculator.py` build the
+  ticker filter as
+  `news_df[(news_df['ticker'] == ticker) | (news_df.get('news_type', 'general') == 'general')]`.
+  `DataFrame.get(key, default)` returns the scalar `default` (not a
+  per-row fallback) when the column is missing — if `news_type` isn't
+  present on `news_df`, that OR clause becomes `True` for every row,
+  silently matching ALL tickers' news instead of just the target
+  ticker's, the same cross-ticker-contamination failure class as the
+  `shift()`-without-`groupby` bug fixed earlier in this project's
+  `regression_calculator.py`/`classification_calculator.py`/
+  `indicator_prediction_calculator.py`. Also: neither subclass actually
+  uses `BaseNewsTargetCalculator` (defined in the same directory) despite
+  it existing specifically to share this logic — they reimplement a
+  diverged copy inline instead. Fix the `.get()` bug and route both
+  through the base class before ever wiring these back into
+  `CALCULATOR_MAPPING`.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
