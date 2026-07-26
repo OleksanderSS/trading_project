@@ -60,7 +60,11 @@ class EvaluationMetricsCalculator:
 
             # Use PortfolioMetricsCalculator if available
             if self.metrics_calculator:
-                financial_metrics = self.metrics_calculator.calculate(portfolio_history[['total_value']])
+                # PortfolioMetricsCalculator.calculate() requires a Series
+                # (validate_input rejects a DataFrame outright, returning {}
+                # silently) - portfolio_history[['total_value']] (double
+                # brackets) is a one-column DataFrame, not a Series.
+                financial_metrics = self.metrics_calculator.calculate(portfolio_history['total_value'])
                 return financial_metrics
 
             # Fallback to manual calculation
