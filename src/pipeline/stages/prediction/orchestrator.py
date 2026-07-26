@@ -279,6 +279,8 @@ class PredictionStage(BaseStage):
                 filtered_features_list,
                 market_regime,
                 context_id,
+                ticker,
+                meta.get('timeframe'),
             )
         )
         if raw_prediction is None:

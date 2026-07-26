@@ -23,19 +23,21 @@ class PredictionGenerator:
 
     def generate_prediction(self, models: dict[str, Any], best_model_name:
         str, ticker_df_clean: pd.DataFrame, filtered_features_list: list[
-        str], market_regime: str, context_id: str) ->tuple[float | None,
+        str], market_regime: str, context_id: str, ticker: str | None = None,
+        timeframe: str | None = None) ->tuple[float | None,
         dict[str, float]]:
         """Route to ensemble or single-model prediction."""
         if len(models) > 1:
             return self.generate_ensemble_prediction(models,
                 ticker_df_clean, filtered_features_list, market_regime,
-                context_id)
+                context_id, ticker, timeframe)
         return self.generate_single_model_prediction(models,
             best_model_name, ticker_df_clean, filtered_features_list)
 
     def generate_ensemble_prediction(self, models: dict[str, Any],
         ticker_df_clean: pd.DataFrame, filtered_features_list: list[str],
-        market_regime: str, context_id: str) ->tuple[float | None, dict[
+        market_regime: str, context_id: str, ticker: str | None = None,
+        timeframe: str | None = None) ->tuple[float | None, dict[
         str, float]]:
         """Generate ensemble prediction from multiple models."""
         model_preds: dict[str, Any] = {}
@@ -104,7 +106,16 @@ class PredictionGenerator:
                 trend_state = 1 if sma20 > sma50 else 0
         
         context_params = {
-            'ticker': ticker_df_clean.get('ticker', 'unknown'), 
+            # ticker_df_clean has already had its 'ticker' column dropped
+            # as metadata upstream (DataPreparationService) - .get() there
+            # always hit the 'unknown' default (and even if the column
+            # existed, .get() on a DataFrame returns a whole Series, not a
+            # scalar). Use the real ticker passed down from the caller's
+            # meta instead, so per-ticker live performance weighting
+            # (StackedEnsemble._predict_stacked's context_fingerprint)
+            # doesn't collapse into one shared bucket across every ticker.
+            'ticker': ticker or 'unknown',
+            'tf': timeframe or 'any',
             'regime': market_regime,
             'hour_of_day': hour_of_day,
             'day_of_week': day_of_week,
