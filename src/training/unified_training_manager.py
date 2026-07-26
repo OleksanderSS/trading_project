@@ -216,7 +216,7 @@ class UnifiedTrainingManager:
 
     def _create_progressive_plan(self, tickers: list[str]) ->dict[str, Any]:
         trainer = self.trainers[TrainingStrategy.PROGRESSIVE.value]
-        batches = trainer.create_progressive_batches(tickers)
+        batches = trainer._prepare_ticker_groups({'tickers': tickers})
         return {'total_tickers': len(tickers), 'total_batches': len(batches
             ), 'strategy': 'progressive', 'batches': [{'batch_id': i + 1,
             'tickers': b} for i, b in enumerate(batches)]}

@@ -74,7 +74,7 @@ class LightModelTrainer:
 
             # Get model from factory (consistent with batch/progressive trainers)
             is_classification = task_type == 'classification'
-            model_params = params or self.config_manager.get_config(f"models.{model_type}", {})
+            model_params = params or self.config_manager.get(f"models.per_model.{model_type}", {})
 
             model = self.factory.create_model(
                 model_type,

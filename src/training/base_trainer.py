@@ -330,7 +330,7 @@ class BaseTrainer(ABC):
         """
         model = self.model_factory.create_model(
             model_name=m_type,
-            config=self.config_manager.get_config(f"models.{m_type}", {}),
+            config=self.config_manager.get(f"models.per_model.{m_type}", {}),
             task_type="classification" if is_classif else "regression",
             is_classification=is_classif
         )
