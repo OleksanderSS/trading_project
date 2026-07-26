@@ -535,6 +535,59 @@ no bugs found.
 Verified: `tests/ -k "ensemble or consensus"` → 27 passed, zero
 regressions.
 
+## Wave 10 — `src/pipeline/` core sweep begins: spine + `stages/modeling/` (2026-07-26)
+
+User explicitly asked to finish `src/pipeline/` (the ~117-file execution
+core) before moving to peripheral directories (scripts/devtools/cli/etc.)
+— those call into the pipeline, they aren't part of its execution.
+
+**Spine pass** (top-level orchestration + stage 0-7 entry points + the 5
+guard classes in `guards/`) — 3 real bugs found and fixed in the guard
+classes (all currently dormant/orphaned, but would fire the moment any
+gets wired in): `TemporalTargetGuard` called a `.calculate()` method that
+doesn't exist on `ClassificationCalculator`; `TimeframeAlignmentGuard`
+re-read a `'datetime'` column from the wrong (untransformed) DataFrame,
+`KeyError` on any DatetimeIndex-only frame; `MacroReleaseTimingGuard`
+mixed `.iterrows()` index labels with `.iloc` positional indexing. No
+bugs found in the 8 top-level orchestration files or the 8 stage entry
+points — all correctly delegate to their real implementations.
+
+**`stages/modeling/` pass** — archived `orchestration.py`, `training.py`,
+`io.py`, `metrics.py`, `dataclasses.py` (all to
+`src/archive/dead_pipeline_code/modeling/`): a fully self-contained dead
+island. `orchestration.py`/`training.py` call `stage._get_context_fingerprint()`/
+`_log_training_debug_info()`/`_create_champion_info()`/`_log_to_diary()`/
+`_get_light_model_training_data()`/`_determine_task_type()`/
+`_get_light_model_types()` on `ModelingStage`
+(`src/pipeline/stages/modeling/orchestrator.py`) — none of which exist
+there (`ModelingStage` was rewritten around `_process_ticker_with_async`
+and never adopted them). `io.py`/`metrics.py`/`dataclasses.py` are
+imported only by this dead chain. Zero callers, zero tests for any of
+the 5 files. The working, tested implementations of the same operations
+already exist as free functions in `utils.py` — kept live (real test
+coverage in `tests/unit/test_modeling_utils.py`) but its docstring
+falsely claimed `ModelingStage` calls them; corrected to say it doesn't.
+
+Also fixed a live bug: `walk_forward_validation.py`'s
+`_get_target_horizon_rows()` (computes the purge gap that prevents label
+leakage at the train/validation boundary) swallowed any lookup exception
+via a bare `except Exception: pass`, silently falling back to
+`purge=1` with zero logging — for any real target with `shift` < -1 (e.g.
+`target_up_5d`, `shift: -5`), a silent failure here means an
+under-purged, leaky fold boundary with no trace. Narrowed the exception
+types and added a warning log. Verified real targets with `shift=-5`
+correctly resolve to `horizon=5`.
+
+`pipeline_control_artifacts.py` (modeling) was double-checked and
+confirmed genuinely live (used directly by `ModelingStage.orchestrator.py`,
+`walk_forward_validation.py`, `evaluation/orchestrator.py`, `dean_os`
+pipeline-control chain, multiple tests) — NOT part of the dead
+`training.py` island despite `training.py` importing it too.
+
+Verified: `tests/ -k "guard"` → 12 passed; `tests/unit/test_stage3_data_contracts.py`
+→ 10 passed; `tests/ -k "walk_forward"` → 14 passed. Zero regressions
+across all of Wave 10 so far.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
