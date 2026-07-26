@@ -588,6 +588,61 @@ Verified: `tests/ -k "guard"` → 12 passed; `tests/unit/test_stage3_data_contra
 → 10 passed; `tests/ -k "walk_forward"` → 14 passed. Zero regressions
 across all of Wave 10 so far.
 
+**`stages/evaluation/` pass (2026-07-26, commits `d1344a2a`, `68312ed2`,
+`3587af62`, `c343acae`, `dbba3cee`, `7b5ba095`) — 5 real bugs fixed, 1
+file archived.** This is Stage 7, the final stage that decides whether a
+model/strategy actually worked — extra scrutiny paid off:
+- **Most severe**: `AdvancedBacktestEngine.run_comprehensive_backtest()`
+  (`src/backtesting/advanced/advanced_engine.py`) computes a genuine
+  simulated equity curve internally but never returned it — the only
+  consumer, `BacktestAnalyzer._normalize_backtest_results()`, detected
+  the "missing" curve and fabricated a fake straight-line substitute via
+  `np.linspace(initial_capital, final_value, n)`, discarding the real
+  daily-return path entirely. **Every evaluation report, notification,
+  equity plot, and dean_os pipeline-control artifact was computed from
+  this fabricated line** — any profitable run reported `max_drawdown ≈ 0`
+  regardless of real volatility. Fixed by exposing the real equity curve
+  in the engine's own return; verified a synthetic up-crash-recover path
+  (real max_drawdown ~47%) now correctly propagates instead of showing
+  ~0.
+- Backtests silently fall back to `np.random.normal`-generated fake data
+  whenever real pivoted input has fewer than 2 rows (reachable — the
+  entry gate doesn't check row count), with only a log line marking it —
+  nothing in the results/summary/artifacts recorded the metrics came from
+  fabricated data. Added an `is_simulated_data` flag threaded through to
+  `final_summary` with a loud warning.
+- `_run_stress_testing()`'s `market_crash` scenario checked
+  `'max_drawdown_pct'`, but the real metrics calculator only ever
+  produces `'max_drawdown'` (a fraction) — this scenario has silently
+  never run in production (gated behind a config flag that's `False`
+  everywhere today, so no current blast radius, but a real bug for
+  whenever it's enabled). Fixed the key + unit conversion.
+- `EvaluationMetricsCalculator`'s optional `PortfolioMetricsCalculator`
+  branch passed a one-column DataFrame where a Series is required —
+  `validate_input()` silently returns `{}` instead of raising. Dormant
+  today (that branch is never constructed in production) but would
+  silently zero out all financial metrics the moment anyone wires in a
+  real calculator — which is the entire reason that constructor param
+  exists.
+- `analytics.py`'s benchmark-return calculation (`_build_data_map`) had
+  no per-ticker grouping before `.pct_change()` — a bogus spike at every
+  ticker boundary in a multi-ticker frame. Dormant-but-tested
+  (`orchestrator.py` has its own separate, already-correct partitioned
+  implementation and doesn't call this module) — fixed anyway, cheap and
+  matches this audit's most-repeated bug class.
+- Archived `data_recovery.py` (confirmed zero callers/tests, correct but
+  never wired implementation).
+- Also confirmed (no bug, no action): `pipeline_control_artifacts.py`
+  (evaluation) is genuinely live, no new issues beyond the
+  already-documented deliberate candidate/locked provenance gap.
+  `backtest_adapter.py`/`reporting.py` are dormant-but-tested (real test
+  coverage, just not called by the live `orchestrator.py`, which uses
+  `BacktestAnalyzer`/`ReportGenerator` instead) — left alone per the
+  standing "orphaned but tested" rule.
+- Verified: `tests/ -k "stage7 or evaluation or backtest_analyzer or
+  metrics_calculator or portfolio_metrics"` → 48 passed, zero
+  regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
