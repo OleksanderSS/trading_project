@@ -373,15 +373,98 @@ Also fixed (not archived — these are live, just broken):
   raised `ModuleNotFoundError` instead of a clean `AttributeError` for an
   unknown name. Removed the stale entries.
 
-**Not yet resolved, deferred to a future pass** (documented in
+**Second recon batch (2026-07-26), 22 remaining `src/models/` files
+(calibration, dean, adapters, quality, registry, linear, tree, prototypes,
+model_selector) — 3 more archived, 1 more live bug fixed, 2 real findings
+documented but deliberately not touched:**
+
+- `src/models/adapters/adapters.py` (`LightModelInterface`,
+  `HeavyModelInterface`) → `src/archive/models_dead/adapters/adapters.py`.
+  Both confirmed broken even on their own terms:
+  `LightModelInterface.train()` called
+  `self.trainer.train_light_model(features_df=..., model_type=..., ticker=...,
+  timeframe=..., target_col=..., task_type=...)`, but the real
+  `LightModelTrainer.train_light_model(self, features_df, config)`
+  (`src/training/light_model_trainer.py`) only takes a single `config`
+  dict — guaranteed `TypeError` on every call.
+  `HeavyModelInterface._initialize_manager()` imported
+  `from utils.colab_manager import ColabManager`, a path that has never
+  existed (no top-level `utils` package; the real class is
+  `src/pipeline/hybrid/colab_manager.ColabManager`) — guaranteed
+  `ImportError` on every call. Zero external callers, zero test coverage
+  for either class.
+- `src/models/adapters/unified_model_adapter.py`
+  (`UnifiedModelAdapter`) and `src/models/adapters/categorical_helper.py`
+  (`handle_categorical_features_split`) → also archived to
+  `src/archive/models_dead/adapters/`. Both confirmed zero callers, zero
+  tests. `data_preparation.py` and `sentiment_integration.py` in the same
+  directory are real, live (imported by
+  `src/pipeline/stages/modeling/orchestrator.py` and
+  `src/scripts/predictions/models_predict.py` respectively, both with real
+  test coverage) — left untouched.
+- **Fixed**: `src/models/model_selector/smart_selector.py`'s
+  `PerformanceHistorySelector.critique_action()` called
+  `_get_historical_reliability(model_name, ticker, target_type)` against a
+  signature of `_get_historical_reliability(self, model_name, target_type,
+  context)` — `ticker` bound to the `target_type` parameter, so the
+  key-matching (`key.endswith(target_type)`, keys are
+  `f'{model_name}_{ticker}_{target_type}'`) essentially never matched a
+  real key, silently defaulting historical reliability to a neutral `0.5`
+  every time regardless of real performance history. Fixed the call to
+  pass `(model_name, target_type, context)`, matching both the real
+  signature and the ticker-agnostic matching its sibling
+  `_get_historical_score(model_name, target_type)` already uses. Only
+  reachable via `bootstrap_action_critique()` (see the DEAN Critic finding
+  below), so no live blast radius today — fixed anyway since it's cheap
+  and a landmine for whenever that path gets wired up.
+- **Found, documented only — real but low-priority, self-acknowledged
+  incomplete feature**: `src/models/prototypes/registry.py`'s
+  `PrototypeRegistry._load_registry()` reconstructs every prototype
+  persisted to disk with `model_class=Any` (a literal `typing.Any`, not a
+  real class) — the code's own comment admits this ("we need a way to
+  resolve model_class from name... In production, we'd use a registry or
+  importlib"). Any prototype reloaded from JSON (rather than freshly
+  `register()`-ed in the same process) is unclonable — `clone()` raises
+  `RuntimeError` at first real use. Not fixed: the whole
+  `EnhancedModelFactory`/`PrototypeRegistry` prototype-pattern subsystem
+  has zero live callers anywhere in `src/`/`dean_os/` (confirmed via
+  grep — only its own test file, `tests/models/prototypes/test_registry.py`,
+  which passes today because it never exercises reload-then-clone
+  together), and fixing it properly needs a real name→class resolution
+  design, not a one-line patch.
+- **Found, NOT fixed — needs your input, this is a policy/design
+  question, not a quick bug fix**: `src/models/dean/dean_bootstrap_system.py`'s
+  `DeanBootstrapSystem.bootstrap_action_critique()` requires at least one
+  registered `ACTOR` and one registered `CRITIC` model
+  (`self.models`, populated only via `register_model()`); grepping the
+  entire live tree, **nothing ever calls `register_model()`** on the real
+  singleton returned by `get_dean_system()` (only an unrelated
+  `arena.register_model` elsewhere). This is called from a genuinely live
+  path — `src/trading/consensus_engine.py`'s `ConsensusEngine._apply_critic_filter()`,
+  used by every real `ConsensusEngine.decide()`/`evaluate()` call — but
+  the call is wrapped in a broad `except (...) as e:
+  logger.warning('DEAN Critic unavailable, skipping filter: {e}');
+  critic_score = 0.0`, so this permanently-unconfigured subsystem has
+  silently no-op'd on every single trade decision since it was written,
+  with only a warning log (not an alert) marking it. `ConsensusReport`'s
+  `blocked_by_critic`/`critic_score` fields exist and look load-bearing
+  but can never actually block a trade today. Same class of finding as
+  the already-noted "safety net that looks wired but isn't" pattern this
+  whole audit keeps surfacing, but this one is a genuine risk-management
+  gap on a live trading-decision path, not dormant code — worth a
+  deliberate conversation about whether real actor/critic models should
+  be registered (and if so, which ones), or whether this feature should
+  be removed/disabled explicitly rather than silently inert. Zero test
+  coverage for `dean_bootstrap_system.py`.
+
+**Still not yet resolved, deferred to a future pass** (documented in
 `memory/project_colab_pipeline_audit.md`, not repeated here): the
 model-health/drift/overfitting stack's remaining orphaned peripherals
-(`LightModelInterface` signature drift, `PersistentModelPool` disconnected
-duplicate cache, duplicate `EnsembleModel` in `src/ensembling/`, a dormant
-second `ConfidenceCalibrator` concept, orphaned ensembling infra —
+(`PersistentModelPool` disconnected duplicate cache, duplicate
+`EnsembleModel` in `src/ensembling/`, a dormant second
+`ConfidenceCalibrator` concept, orphaned ensembling infra —
 `EnsembleComposer`/`DynamicWeightCalculator`/`WeightStabilityMonitor` + 6
-files, `ModelCorrelationAnalyzer` facade), and DEAN Critic's permanently
-inert safety filter in `consensus_engine.py`.
+files, `ModelCorrelationAnalyzer` facade).
 
 ## Known cross-import gotcha
 
