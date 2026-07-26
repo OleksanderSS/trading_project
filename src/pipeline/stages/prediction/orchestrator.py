@@ -20,12 +20,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
 from src.analytics.context.prediction_adjuster import PredictionAdjuster
-from src.analytics.detectors.anomaly_detector import AnomalyDetector
-from src.analytics.detectors.critical_signal_detector import CriticalSignalDetector
-from src.analytics.signals.signal_analytics import analyze_signals
-from src.analytics.signals.significance_detector import detect_significant_events
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.logging.logger import ProjectLogger
 from src.ensembling.caching import get_ensemble_cache
@@ -122,15 +117,6 @@ class PredictionStage(BaseStage):
         self.prediction_generator = PredictionGenerator(ensemble_factory=
             self.ensemble_factory, ensemble_cache=self.ensemble_cache,
             adjuster=self.adjuster)
-        self.anomaly_detector = AnomalyDetector()
-        self.critical_signal_detector = CriticalSignalDetector()
-        self.market_context_analyzer = MarketContextAnalyzer(['volatility',
-            'trend', 'momentum'])
-        self.signal_analytics = analyze_signals
-        self.significance_detector = detect_significant_events
-        self.logger.info(
-            '✅ MarketContextAnalyzer, SignalAnalytics and SignificanceDetector functions initialized'
-            )
 
     async def run(self, **kwargs) ->dict[str, Any]:
         """

@@ -1,8 +1,9 @@
 import pandas as pd
 
-from src.analytics.analyzer_registry import ANALYZER_REGISTRY
 from src.analytics.arena.arena_battle import get_trading_arena
 from src.analytics.context.market_context_analyzer import MarketContextAnalyzer
+from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
+from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.risk.elite_risk_metrics import EliteRiskMetrics
 
@@ -12,9 +13,11 @@ def run_smoke_test():
     report = {"INTEGRATED": [], "ORPHANED": []}
     logger.info("Starting System Health & Integration Check...")
 
-    # 1. Check Registry (Integrated Components)
-    logger.info(f"Registry status: {len(ANALYZER_REGISTRY)} components registered.")
-    for name in ANALYZER_REGISTRY:
+    # 1. Check the real analyzer registration path (analysis.yaml-driven,
+    # not the archived static ANALYZER_REGISTRY dict)
+    engine = UnifiedAnalyticsEngine(get_current_config())
+    logger.info(f"Registry status: {len(engine.analyzers)} components registered.")
+    for name in engine.analyzers:
         report["INTEGRATED"].append(f"Analyzer: {name}")
 
     # 2. Check Market Context Analyzer (Feature Engine)

@@ -189,6 +189,62 @@ deletion) into its original relative path under `src/archive/`.
   Stage-7 case — if you're looking for the real `TransactionCostModel`,
   it's in `src/backtesting/advanced/advanced_engine.py`, not here.
 
+## Wave 6 — commit TBD, 2026-07-26 (`src/analytics/` audit pass)
+
+- `analytics/analyzer_registry.py` — a static `ANALYZER_REGISTRY` dict
+  registering 8 analyzers by hand, stale against the real analyzer set
+  (missing 6 of the 11 real classes under `analytics/analyzers/`) and
+  unrelated to the actual live registration mechanism,
+  `UnifiedAnalyticsEngine._register_analyzers_from_config()` (dynamically
+  imports classes per `src/config/analysis.yaml`). Confirmed zero
+  production callers (only `tests/smoke_test_system.py`, a standalone
+  diagnostic script, not a pytest test) before archiving.
+  `smoke_test_system.py` updated to check the real
+  `UnifiedAnalyticsEngine.analyzers` dict instead — running it now
+  correctly reports only the 2 analyzers actually enabled in
+  `analysis.yaml` (`market_regime`, `critical_signals`), not the stale
+  registry's fake 8. Note: `ANALYZER_REGISTRY["ensemble_selector"] =
+  EnsembleSelector  # type: ignore` registered a class that doesn't
+  implement `IAnalyzer.analyze()` at all (has
+  `select_best_ensemble`/`create_ensemble_instance` instead) — a real
+  contract mismatch, moot now that the registry itself is archived, but
+  don't resurrect this entry as-is if this file is ever un-archived.
+  `analytics/analyzers/wrappers.py` (the 3 classes this registry also
+  registered) was deliberately **kept live, not archived**, despite also
+  having zero production callers — `tests/unit/analytics/analyzers/test_wrappers.py`
+  exercises it directly and found no bugs in it, only in the registry
+  that pointed at it. Same reasoning kept `analytics/detectors/anomaly_detector.py`
+  and `analytics/utils/analytics_math.py` live too (both zero production
+  callers but real regression tests in `tests/unit/test_p1_missing_policy_math.py`
+  locking in a specific historical missing-data-imputation fix) — orphaned
+  code with real, passing test coverage stays, only orphaned code with
+  zero test coverage gets archived.
+- `analytics/detectors/critical_signal_detector.py`,
+  `analytics/signals/signal_analytics.py`,
+  `analytics/signals/significance_detector.py` — all three were
+  initialized in `src/pipeline/stages/prediction/orchestrator.py.__init__`
+  (`self.critical_signal_detector`/`self.signal_analytics`/
+  `self.significance_detector`) but never called anywhere else in that
+  file or the rest of `src/pipeline/stages/prediction/` — confirmed via
+  grep, and confirmed zero test coverage for all three (unlike
+  `anomaly_detector.py`/`wrappers.py`/`analytics_math.py` above). The
+  file's own docstring documents the real refactor
+  ("AnomalyEngine → anomaly detection & confidence scoring" - a
+  *different*, actually-used class) that made these three obsolete
+  leftovers. Removed the dead init block + the misleading `'✅ ...
+  initialized'` log line from `orchestrator.py` and archived all three.
+  `critical_signal_detector.py`'s `from ..interfaces import IAnalyzer`
+  relative import was fixed to the absolute
+  `from src.analytics.interfaces import IAnalyzer` (interfaces.py itself
+  stayed live, only this file moved). Worth noting for whoever
+  reconsiders re-enabling `significance_detector.py`:
+  `_create_significance_column` correctly does
+  `df.groupby('ticker')[col].shift(1)` but the neighboring
+  `_create_macro_significance_column` does a plain `df[col].shift(1)`
+  with no groupby — a cross-ticker leak for macro columns specifically,
+  inconsistent with the sibling function 3 lines away. Not fixed since
+  the whole file is dead; fix before ever re-wiring it in.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
