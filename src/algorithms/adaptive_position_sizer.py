@@ -153,8 +153,9 @@ class AdaptivePositionSizer:
                 historical_returns)
             kelly_adjustment = self._calculate_kelly_adjustment(params.
                 confidence, params.win_rate, params.payout_ratio)
-            conf_adjustment = (params.confidence if params.confidence is not
-                None else 1.0)
+            conf_adjustment = float(np.clip(
+                params.confidence if params.confidence is not None else 1.0,
+                0.0, 1.0))
             vol_adjustment = self._calculate_volatility_adjustment(params.
                 volatility)
             dd_adjustment = self._calculate_drawdown_adjustment(params.
@@ -292,9 +293,16 @@ class AdaptivePositionSizer:
 
     def _apply_position_limits(self, position_size: float, portfolio_value:
         float) ->float:
-        """Apply min/max position size limits"""
-        return np.clip(position_size, portfolio_value * self.
-            min_position_size_pct, portfolio_value * self.max_position_size_pct
+        """Apply min/max position size limits.
+
+        Floors portfolio_value at 0 first: with a negative portfolio_value
+        (blown/underwater account), min_pct*value would exceed max_pct*value,
+        and np.clip silently returns the (negative) upper bound instead of
+        raising - this would return a nonsensical negative position size.
+        """
+        safe_portfolio_value = max(portfolio_value, 0.0)
+        return np.clip(position_size, safe_portfolio_value * self.
+            min_position_size_pct, safe_portfolio_value * self.max_position_size_pct
             )
 
     def calculate_kelly_fraction(self, win_rate: float, avg_win: float,
