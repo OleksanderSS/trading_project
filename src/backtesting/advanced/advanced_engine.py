@@ -240,6 +240,15 @@ class AdvancedBacktestEngine(PerformanceMetricsMixin):
                 'sharpe_ratio': float(self._calculate_sharpe(daily_returns)),
                 'max_drawdown': float(self._calculate_max_drawdown(returns_series)
                 ), 'win_rate': float(self._calculate_win_rate(daily_returns))}
+            # Expose the real simulated equity curve so downstream
+            # consumers (BacktestAnalyzer._normalize_backtest_results)
+            # don't have to fabricate a fake straight-line approximation
+            # between initial/final capital - that discards the actual
+            # daily-return path this method already computed, silently
+            # zeroing out real drawdown/volatility in any derived metrics.
+            report['portfolio_history'] = pd.DataFrame(
+                {'total_value': returns_series}
+            )
             bias_analysis_result = report['bias_analysis']
             if isinstance(bias_analysis_result, dict):
                 look_ahead = bias_analysis_result.get('look_ahead', {})
