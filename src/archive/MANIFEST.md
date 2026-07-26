@@ -460,11 +460,80 @@ documented but deliberately not touched:**
 **Still not yet resolved, deferred to a future pass** (documented in
 `memory/project_colab_pipeline_audit.md`, not repeated here): the
 model-health/drift/overfitting stack's remaining orphaned peripherals
-(`PersistentModelPool` disconnected duplicate cache, duplicate
-`EnsembleModel` in `src/ensembling/`, a dormant second
+(`PersistentModelPool` disconnected duplicate cache, a dormant second
 `ConfidenceCalibrator` concept, orphaned ensembling infra —
 `EnsembleComposer`/`DynamicWeightCalculator`/`WeightStabilityMonitor` + 6
 files, `ModelCorrelationAnalyzer` facade).
+
+## Wave 9 — `src/ensembling/` cleanup + a real trainer/consumer format mismatch (2026-07-26)
+
+`src/ensembling/ensemble/ensemble_model.py` (`EnsembleModel`) →
+`src/archive/models_dead/ensembling/ensemble_model.py`. Broken import
+(`src.models.model_interface` doesn't exist; real path is
+`src.models.interfaces`), not even exported by its own package's
+`__init__.py`, zero callers. The duplicate `EnsembleModel` flagged
+earlier this session as "needs triage" — a separate, correctly-tested,
+LIVE `EnsembleModel` exists at `src/models/ensemble/ensemble_model.py`
+(the one `test_ensemble_correlation_weighting.py` exercises, and whose
+`correlation_engine.py` sibling was fixed earlier this session) — this
+one was just an orphaned, broken copy under a different package.
+
+`src/ensembling/base_ensemble.py` (`StackedEnsemble`/`EnsembleResult`/
+`ensemble_forecast`) → `src/archive/models_dead/ensembling/base_ensemble.py`.
+Confirmed superseded duplicate of `src/ensembling/stacked_ensemble.py`'s
+same-named classes (which the package's `__init__.py` actually exports) —
+older, simpler, `pickle`-based save/load with no path-security check,
+vs. the live version's `joblib` + `resolve_trusted_artifact_path`. Also
+had a broken import of its own
+(`ExperienceDiaryEngine` — renamed to `DiaryEngine` long ago, no longer
+exists under the old name).
+
+**Real bug found and fixed, not just archived**: `src/scripts/modeling/train_consensus_model.py`
+— whose own docstring says it trains "the meta-model... used by the
+real-time ConsensusEngine" — imported `StackedEnsemble` from the stale
+`base_ensemble.py` above. `ConsensusEngine` (`src/trading/consensus_engine.py`,
+confirmed live) loads its meta-model via
+`stacked_ensemble.StackedEnsemble.load()`, which expects a very different
+on-disk format (joblib state dict) than `base_ensemble.py`'s
+`pickle.dump(self, f)`. So even setting aside the broken
+`ExperienceDiaryEngine` import (which made the trainer crash before it
+could run at all), whatever this script produced would never have loaded
+correctly in the real consumer — a genuine trainer/consumer format
+mismatch. No live blast radius today only because
+`data/trained_models/consensus_meta_model.pkl` doesn't exist yet
+(`ConsensusEngine` gracefully falls back to live-adaptive ensembling when
+the file is absent), but the training path itself had never worked.
+Fixed by redirecting the import to `src.ensembling.stacked_ensemble`,
+matching the real consumer.
+
+Same stale-import pattern (`ExperienceDiaryEngine`/`base_ensemble`) also
+fixed in `src/scripts/experiments/compare_layers.py` for consistency, but
+**that script remains non-functional for unrelated reasons, documented
+here rather than chased further** (out of scope for an ensembling pass):
+it also imports a `devtools.experimentation.base` module that doesn't
+exist, its own `ensemble_forecast(...)` call unpacks the 5-field
+`EnsembleResult` NamedTuple into 2 variables (`ensemble_result, stats =
+ensemble_forecast(...)`, which would raise `ValueError` even with a
+correct import), and it calls a `DiaryEngine.add_entry()` method that
+doesn't exist on the real class. This script needs a proper rewrite, not
+a spot-fix — worth a dedicated look in a future `scripts/`/`devtools`
+audit pass.
+
+`src/ensembling/ensemble/archive/adaptive_ensemble.py` → moved to
+`src/archive/models_dead/ensembling/adaptive_ensemble.py` (was already
+informally set aside in a folder literally named `archive/` inside live
+`src/`, with a stale header comment from a pre-restructure path
+`core/pipeline/adaptive_ensemble.py` and a broken `from utils.logger`
+import — moved to the project's actual archival convention for
+consistency). Zero live callers; the real, live equivalent is
+`src/trading/live_adaptive_ensemble.py`'s `LiveAdaptiveEnsemble`.
+
+`src/ensembling/caching.py` (`PredictionCache`/`EnsembleResultCache`) —
+read in full, confirmed live (`src/pipeline/stages/prediction/orchestrator.py`),
+no bugs found.
+
+Verified: `tests/ -k "ensemble or consensus"` → 27 passed, zero
+regressions.
 
 ## Known cross-import gotcha
 
