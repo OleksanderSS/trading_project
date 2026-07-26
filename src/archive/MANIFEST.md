@@ -643,6 +643,51 @@ model/strategy actually worked — extra scrutiny paid off:
   metrics_calculator or portfolio_metrics"` → 48 passed, zero
   regressions.
 
+**`stages/prediction/` pass (2026-07-26, commits `7da457eb`,
+`651c5f0c`) — 2 real bugs fixed (silent wrong-prediction class, the most
+dangerous kind for a live prediction stage), 1 dead file archived.**
+- **`ModelResolver`'s fallback model-loading path
+  (`_try_load_model_from_path`, used whenever Colab-sourced model
+  metadata has no `model_path`, a normal case) computed its `ModelPool`
+  cache key by stripping `context_id` from the filename stem — for any
+  file matching the standard `model_{ticker}_{target}_{model_type}`
+  naming convention, this collapses to the literal string `"model"` for
+  every ticker/target/model_type.** `ModelPool` is a single
+  process-wide cache; a cache hit never re-invokes the loader. The first
+  ticker resolved through this path caches its model under `"model"`;
+  every subsequent ticker hits that same cache entry and **silently
+  receives the first ticker's model instance instead of its own** — a
+  silent wrong-model, wrong-prediction bug, not a crash. The sibling
+  direct-load path already keyed correctly (full `path.stem`), confirming
+  this was never intentional. Fixed to match.
+- `PredictionGenerator.generate_ensemble_prediction()`'s `context_params`
+  built `'ticker'` from a DataFrame column that had already been dropped
+  as metadata upstream — always resolved to the `'unknown'` default (and
+  a `.get()` on a DataFrame returns a Series, not a scalar, a second
+  latent defect on the same line) — and never included a `'tf'` key at
+  all. `StackedEnsemble._predict_stacked` (the default ensemble method)
+  builds its live-performance-weighting context fingerprint from exactly
+  these two fields — with both broken, **live per-ticker performance
+  weights and dynamic-router adjustments collapsed onto one shared bucket
+  and leaked across every ticker being predicted**. Fixed by threading
+  the real ticker/timeframe (already available in the caller's `meta`
+  dict) down as explicit parameters instead of trying to recover them
+  from data that had already been stripped.
+- Archived `data_preparer.py` (`PredictionDataPreparer`) — a duplicate of
+  the live, already-fixed `DataPreparationService`, but still containing
+  the OLD, unfixed bug the sibling class's own docstring narrates
+  (zero-filling missing technical-indicator values for a live prediction
+  row instead of dropping it — feeding the model a fabricated,
+  indistinguishable-from-real value). Confirmed zero callers anywhere,
+  not even re-exported by the package's `__init__.py`, zero test
+  coverage.
+- Also noted, not archived (instantiated but unused, not itself a bug):
+  `PredictionContextManager` is constructed in `orchestrator.py` but none
+  of its methods are ever called again anywhere.
+- Verified: `tests/ -k "stage5 or prediction_generator or prediction_stage
+  or model_pool or model_resolver or select_champions"` → 31 passed,
+  zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
