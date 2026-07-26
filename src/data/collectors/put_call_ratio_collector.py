@@ -117,7 +117,13 @@ class PutCallRatioCollector(BaseCollector):
         """Fetches Put/Call Ratio data from CBOE - FREE!"""
         try:
             # CBOE provides Put/Call Ratio data - FREE and no API key required!
-            url = "https://www.cboe.org/us/options/market_statistics/exchange_volume/"
+            # NOTE: cboe.com (not the old .org domain, which doesn't even
+            # resolve) - verified reachable, but CBOE returns HTTP 403 for
+            # automated requests regardless (external bot-blocking, not
+            # fixable here without evading it - see put/call ratio recon
+            # notes). This fixes a genuine dead-domain bug even though it
+            # alone doesn't make the fetch succeed.
+            url = "https://www.cboe.com/us/options/market_statistics/exchange_volume/"
 
             self.logger.info(f"Fetching FREE Put/Call Ratio from {url}")
 
