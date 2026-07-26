@@ -44,7 +44,7 @@ class IDatabaseManager:
     def table_exists(self, table_name: str) -> bool:
         raise NotImplementedError
 
-    def filter_new_records(self, table_name: str, df: pd.DataFrame) -> pd.DataFrame:
+    def filter_new_records(self, table_name: str, df: pd.DataFrame, unique_cols: list[str] | None = None) -> pd.DataFrame:
         raise NotImplementedError
 
     def get_all_table_names(self) -> list[str]:
@@ -450,11 +450,11 @@ class DataManager(IDatabaseManager):
             logger.error(f'Помилка при перевірці існування таблиці {table_name}: {e}', exc_info=True)
             raise DataLoadError(f"Failed to check existence of table '{table_name}': {e}") from e
 
-    def filter_new_records(self, table_name: str, df: pd.DataFrame) -> pd.DataFrame:
+    def filter_new_records(self, table_name: str, df: pd.DataFrame, unique_cols: list[str] | None = None) -> pd.DataFrame:
         if not self.table_exists(table_name) or df.empty:
             return df
 
-        hash_col = 'hash'
+        hash_col = unique_cols[0] if unique_cols else 'hash'
         if hash_col not in df.columns:
             logger.warning(f"Hash column '{hash_col}' not found in DataFrame for table '{table_name}'. Cannot filter new records.")
             return df
