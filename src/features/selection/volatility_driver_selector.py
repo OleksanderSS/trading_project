@@ -36,8 +36,13 @@ class VolatilityDriverSelector:
             return []
 
         # 1. Target: Realized Volatility (Proxy for regime shifts)
+        # Grouped by ticker: df may be a multi-ticker concatenated batch
+        # (the feature pipeline only ever splits by interval, not ticker),
+        # so an ungrouped pct_change()/ffill() would blend one ticker's
+        # values into another's at the ticker boundary.
+        target_series = df.groupby('ticker')[target_col] if 'ticker' in df.columns else df[target_col]
         y_vol = (
-            df[target_col]
+            target_series
             .pct_change(fill_method=None)
             .replace([np.inf, -np.inf], np.nan)
             .abs()
@@ -46,7 +51,10 @@ class VolatilityDriverSelector:
 
         # 2. Prepare Auxiliary Pool
         valid_aux = [c for c in auxiliary_pool if c in df.columns]
-        x_sub = df[valid_aux].ffill().replace([np.inf, -np.inf], np.nan)
+        if 'ticker' in df.columns:
+            x_sub = df.groupby('ticker')[valid_aux].ffill().replace([np.inf, -np.inf], np.nan)
+        else:
+            x_sub = df[valid_aux].ffill().replace([np.inf, -np.inf], np.nan)
         training_data = pd.concat([y_vol, x_sub], axis=1).dropna(how="any")
         if len(training_data) < 30:
             logger.warning("Insufficient complete data for volatility driver discovery.")

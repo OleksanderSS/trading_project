@@ -101,7 +101,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         returns = (
             df_enriched['close']
             .pct_change(fill_method=None)
-            .replace([float('inf'), float('inf')], float('nan'))
+            .replace([float('inf'), float('-inf')], float('nan'))
         )
         self._add_advanced_features(df_enriched, returns)
         logger.info('Technical analysis enrichment complete.')
