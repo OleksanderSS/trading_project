@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import warnings
 from typing import Any
 
@@ -184,8 +185,14 @@ class TransformerModel(BaseModel):
         ff_output = tf.keras.layers.Dropout(self.dropout)(ff_output)
         ff_output = tf.keras.layers.LayerNormalization(epsilon=1e-6)(ff_output + attention_output)
 
-        # Global Average Pooling instead of Flatten
-        x = tf.reduce_mean(ff_output, axis=1)  # Global average pooling
+        # Global Average Pooling instead of Flatten. Uses the Keras layer
+        # (not the raw tf.reduce_mean op) - a bare TF op can't be applied
+        # directly to a KerasTensor in the Functional API on newer
+        # Keras/TF versions ("A KerasTensor cannot be used as input to a
+        # TensorFlow function"), which silently made every real training
+        # attempt raise and fall back to the sklearn RandomForest instead
+        # of ever training the actual transformer architecture.
+        x = tf.keras.layers.GlobalAveragePooling1D()(ff_output)
         x = tf.keras.layers.Dense(64, activation="relu")(x)
         x = tf.keras.layers.Dropout(0.3)(x)
 
@@ -281,6 +288,63 @@ class TransformerModel(BaseModel):
             return probas
         else:
             return predictions
+
+    def train(self, X, y, **kwargs) -> dict[str, Any]:
+        """BaseModel-contract entry point. TransformerModel predates the
+        train()/save_model()/load_model() abstract-method contract
+        BaseModel now requires - it was never actually instantiable
+        (TypeError on construction) until this method plus save_model/
+        load_model below were added. Delegates to the existing fit()
+        rather than rewriting the working TF-or-sklearn-fallback logic.
+        """
+        seq_len = kwargs.get('seq_len', 10)
+        epochs = kwargs.get('epochs', 20)
+        batch_size = kwargs.get('batch_size', 32)
+        self.fit(X, y, seq_len=seq_len, epochs=epochs, batch_size=batch_size)
+        return {}
+
+    def save_model(self, path: str) -> bool:
+        """Saves whichever model actually trained: the TF transformer or the sklearn fallback."""
+        try:
+            if self.model is not None:
+                self.model.save(f"{path}.h5")
+                logger.info(f"OK Saved TensorFlow transformer to {path}.h5")
+                return True
+            if self.fallback_model is not None:
+                import joblib
+                joblib.dump(self.fallback_model, f"{path}_fallback.joblib")
+                logger.info(f"OK Saved fallback model to {path}_fallback.joblib")
+                return True
+            logger.warning("No trained model to save")
+            return False
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, OSError) as e:
+            logger.exception(f"Error saving transformer model: {e}")
+            return False
+
+    def load_model(self, path: str) -> bool:
+        """Loads whichever artifact exists: the TF transformer or the sklearn fallback."""
+        try:
+            h5_path = f"{path}.h5"
+            fallback_path = f"{path}_fallback.joblib"
+            if os.path.exists(h5_path):
+                resolved = self._resolve_model_artifact_path(h5_path, allowed_suffixes={'.h5'})
+                import tensorflow as tf
+                self.model = tf.keras.models.load_model(str(resolved))
+                self.is_trained = True
+                logger.info(f"OK Loaded TensorFlow transformer from {h5_path}")
+                return True
+            if os.path.exists(fallback_path):
+                resolved = self._resolve_model_artifact_path(fallback_path, allowed_suffixes={'.joblib'})
+                import joblib
+                self.fallback_model = joblib.load(resolved)
+                self.is_trained = True
+                logger.info(f"OK Loaded fallback model from {fallback_path}")
+                return True
+            logger.warning(f"No model artifact found at {path}")
+            return False
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, OSError) as e:
+            logger.exception(f"Error loading transformer model: {e}")
+            return False
 
     def get_params(self) -> dict[str, Any]:
         """Model parameters"""
