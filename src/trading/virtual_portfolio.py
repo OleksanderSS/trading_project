@@ -205,7 +205,7 @@ class VirtualPortfolio:
                 )
             return {'success': True, 'transaction': transaction}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.error(f'Виникла помилка: {e}', exc_info=True)
             error_handler.handle_error(e,
                 f"Buy Stock {order_params.get('ticker', 'unknown')}")
             return {'success': False, 'error': str(e)}
@@ -273,7 +273,7 @@ class VirtualPortfolio:
                 )
             return {'success': True, 'transaction': transaction}
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.error(f'Виникла помилка: {e}', exc_info=True)
             error_handler.handle_error(e, f'Sell Stock {ticker}')
             return {'success': False, 'error': str(e)}
 
