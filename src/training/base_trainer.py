@@ -284,7 +284,7 @@ class BaseTrainer(ABC):
 
         if not model_types:
             from src.factories.model_factory import ModelFactory
-            model_types = self.config_manager.get_config('models.enabled_types', ModelFactory.get_available_models())
+            model_types = self.config_manager.get('models.enabled_types', ModelFactory.get_available_models())
         return list(model_types) if model_types else []
 
     def _execute_model_training_cycle(self, ticker: str, model_types: list[str],

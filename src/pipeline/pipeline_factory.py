@@ -23,7 +23,7 @@ class PipelineFactory:
         normalizer = NormalizationManager(scaler_dir=scaler_path)
         health_hub = HealthHub(config_manager, data_manager, results_manager)
 
-        memory_warn_gb = config_manager.get_config("performance.memory_warn_gb", 10.0)
+        memory_warn_gb = config_manager.get("performance.memory_warn_gb", 10.0)
         memory_profiler = get_memory_profiler(warn_threshold_gb=memory_warn_gb)
 
         return {

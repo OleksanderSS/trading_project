@@ -35,14 +35,13 @@ class VirtualPortfolio:
         self.transactions: list[dict[str, Any]] = []
         self.performance_history: list[dict[str, Any]] = []
         self.metrics_calculator = PortfolioMetricsCalculator()
-        risk_config = self.config_manager.get_config('strategy.risk_management'
-            , {})
+        risk_config = self.config_manager.get('strategy.risk_management', {})
         self.max_position_size = risk_config.get('max_position_size', 0.1)
         self.max_total_risk = risk_config.get('max_total_risk', 0.3)
         self.stop_loss_pct = risk_config.get('stop_loss_pct', 0.05)
         self.take_profit_pct = risk_config.get('take_profit_pct', 0.1)
-        cost_config = self.config_manager.get_config(
-            'backtest.transaction_costs', {})
+        cost_config = self.config_manager.get(
+            'backtesting.transaction_costs', {})
         self.transaction_cost_model = TransactionCostModel(cost_config)
         portfolio_dir = Path('data/portfolios')
         portfolio_dir.mkdir(parents=True, exist_ok=True)

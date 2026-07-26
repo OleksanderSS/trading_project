@@ -65,7 +65,7 @@ class PipelineOrchestrator:
         self.normalizer = NormalizationManager(scaler_dir=scaler_path)
         self.health_hub = HealthHub(self.config_manager, self.data_manager,
             self.results_manager)
-        memory_warn_gb = self.config_manager.get_config(
+        memory_warn_gb = self.config_manager.get(
             'performance.memory_warn_gb', 10.0)
         self.memory_profiler = get_memory_profiler(warn_threshold_gb=
             memory_warn_gb)

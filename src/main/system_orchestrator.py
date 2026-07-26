@@ -74,7 +74,7 @@ class SystemOrchestrator:
         """
         self.logger.info(f"--- Starting execution of mode: '{mode}' ---")
         try:
-            parallel = self.config_manager.get_config(
+            parallel = self.config_manager.get(
                 'execution.parallel_tickers', False)
             config = ExecutionConfig(mode=mode, tickers=tickers, timeframes
                 =timeframes, parallel=parallel)
@@ -165,7 +165,7 @@ class SystemOrchestrator:
         self.logger.info(
             f'Running {mode_class.__name__} in parallel for {len(config.tickers or [])} tickers.'
             )
-        max_workers = self.config_manager.get_config('execution.max_workers',
+        max_workers = self.config_manager.get('execution.max_workers',
             os.cpu_count())
 
         # Get serializable config snapshot
@@ -269,7 +269,7 @@ class SystemOrchestrator:
         Runs the stress test (Monster Test).
         """
         self.logger.info('👹 Running MONSTER TEST...')
-        test_tickers = tickers or self.config_manager.get_config(
+        test_tickers = tickers or self.config_manager.get(
             'monster_test.tickers', ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL'])
         config = ExecutionConfig(mode='monster_test', tickers=test_tickers,
             timeframes=timeframes, parallel=parallel)

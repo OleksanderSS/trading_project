@@ -65,7 +65,7 @@ class BacktestMode(BaseMode):
     def _run_walk_forward_validation(self) ->dict[str, Any]:
         """Walk-forward validation execution."""
         self.logger.info('[Backtest] Running walk-forward validation...')
-        backtest_config = self.config_manager.get_config(
+        backtest_config = self.config_manager.get(
             'backtest.walk_forward', {})
         in_sample_months = backtest_config.get('in_sample_months', 12)
         out_sample_months = backtest_config.get('out_sample_months', 3)
