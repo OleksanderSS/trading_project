@@ -2,7 +2,7 @@ from typing import Any
 
 import pandas as pd
 
-from ..interfaces import IAnalyzer
+from src.analytics.interfaces import IAnalyzer
 
 
 class CriticalSignalDetector(IAnalyzer):
