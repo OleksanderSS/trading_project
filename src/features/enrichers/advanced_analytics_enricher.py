@@ -145,7 +145,18 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
             logger.exception(f'Error calculating macro composite score: {e}')
 
     def _add_market_phase_detection(self, df_enriched: pd.DataFrame) ->None:
-        """Add market phase detection to DataFrame."""
+        """Add market phase detection to DataFrame.
+
+        Computed per-row (point-in-time), not once from the physically
+        last row of the whole batch: the old approach used
+        market_data.iloc[-1] and broadcast that single scalar to every
+        row, which both mixed tickers together in a multi-ticker batch
+        and leaked future information into every historical row's
+        feature. MarketPhaseAnalyzer._determine_market_phase() only ever
+        needs a single row's own indicator values (no trailing window),
+        so evaluating it per-row is correct and needs no groupby('ticker')
+        - each row's own already-per-ticker indicator columns are enough.
+        """
         if not self.phase_analyzer:
             return
         try:
@@ -156,13 +167,19 @@ class AdvancedAnalyticsEnricher(BaseEnricher):
                 logger.warning(
                     f'Cannot detect market phase: missing columns {missing}')
                 return
-            phase_result = self.phase_analyzer.analyze({'market_data':
-                df_enriched})
-            market_phase = phase_result.get('market_phase', 'unknown')
             phase_map = self._get_phase_mapping()
-            df_enriched['market_phase'] = phase_map.get(market_phase, 5)
+            phases = [
+                phase_map.get(
+                    self.phase_analyzer.analyze(
+                        {'market_data': df_enriched.iloc[[i]]}
+                    ).get('market_phase', 'unknown'),
+                    5,
+                )
+                for i in range(len(df_enriched))
+            ]
+            df_enriched['market_phase'] = phases
             logger.info(
-                f"Detected market phase: {market_phase} (encoded as {df_enriched['market_phase'].iloc[0]})"
+                f'Added per-row market phase detection ({len(set(phases))} distinct phases across {len(phases)} rows)'
                 )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             logger.exception(f'Error detecting market phase: {e}')
