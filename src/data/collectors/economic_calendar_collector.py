@@ -1,10 +1,4 @@
-import asyncio
-import hashlib
-from datetime import datetime, timedelta
-from io import StringIO
 from typing import Any
-
-import pandas as pd
 
 from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
@@ -14,7 +8,26 @@ from .base_collector import BaseCollector
 
 
 class EconomicCalendarCollector(BaseCollector):
-    """Fetches economic calendar records mapping Investing.com HTTP payloads data structures string bounds bounds layers limits."""
+    """Fetches upcoming economic calendar events from ForexFactory's free
+    JSON feed (this-week window), filtered by configured countries.
+
+    Note: collectors.yaml's economic_calendar block still documents an
+    Investing.com-based config (api_url, headers, days_ahead/days_back,
+    filter.exclude_title_keywords, backoff_factor, max_retries, timeout)
+    that this implementation does not read at all - that config predates
+    the ForexFactory rewrite and is currently inert. Also: hash_keys is
+    (timestamp, country, event), deliberately excluding actual/forecast/
+    previous - once an event is first stored before its release (actual
+    empty), a later fetch with the real actual value hashes identically
+    and is filtered out by DataManager.filter_new_records as a duplicate,
+    so the eventual actual print is never persisted anywhere. This is a
+    real, known gap (not a design choice to preserve point-in-time
+    integrity - DataManager.upsert's insert-if-absent semantics already
+    handle that correctly elsewhere); fixing it needs a data-model change
+    (e.g. a separate collected_at dimension distinguishing the
+    pre-release and post-release snapshots as two legitimate historical
+    facts), not a quick patch - left as-is pending that decision.
+    """
     collector_type = 'economic_calendar'
     data_type = 'economic'
 
@@ -22,31 +35,6 @@ class EconomicCalendarCollector(BaseCollector):
         HttpClientFactory, db_manager: DataManager, cache_manager: CacheManager | None=None, **kwargs):
         super().__init__(configs, http_client_factory, db_manager,
             cache_manager, **kwargs)
-
-    async def run(self, **kwargs) -> pd.DataFrame | None:
-        table_name = self.configs.get('table_name', 'economic_calendar')
-        cache_key = f'{self.__class__.__name__}_run'
-        
-        raw_data = await self.fetch_raw_data()
-        if not raw_data:
-            return None
-            
-        df = pd.DataFrame(raw_data)
-        if df.empty:
-            return None
-            
-        df['hash'] = df.apply(lambda row: hashlib.sha256(
-            f"{row.get('date', '')}|{row.get('title', '')}|{row.get('country', '')}".encode()
-        ).hexdigest(), axis=1)
-        
-        new_df = self.db_manager.filter_new_records(table_name, df)
-        if new_df.empty:
-            self.logger.info('[EconCalendar] No new events found.')
-            return None
-            
-        self.db_manager.upsert(table_name, new_df, unique_on=['hash'])
-        self.logger.info(f'[EconCalendar] Inserted {len(new_df)} new events.')
-        return new_df
 
     async def run(self, tickers: list[str] | None = None, **kwargs) -> list[dict[str, Any]]:
         # Using ForexFactory free JSON calendar
