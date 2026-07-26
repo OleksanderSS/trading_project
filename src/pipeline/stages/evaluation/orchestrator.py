@@ -182,6 +182,12 @@ class EvaluationStage(BaseStage):
             final_summary = self.report_gen.create_evaluation_summary(
                 financial_metrics, backtest_results, analysis_results, signals_df
             )
+            if backtest_results.get('is_simulated_data'):
+                final_summary['is_simulated_data'] = True
+                self.logger.warning(
+                    '⚠️ Evaluation metrics are based on randomly-generated '
+                    'simulation data (input signals were too thin), not real market data'
+                )
 
             # 6. Add stress testing results if available
             if stress_test_results:
@@ -512,11 +518,15 @@ class EvaluationStage(BaseStage):
                 }
 
             # Scenario 2: Market Crash Stress
-            if 'max_drawdown_pct' in financial_metrics:
+            # EvaluationMetricsCalculator._calculate_basic_metrics() only
+            # ever produces 'max_drawdown' (a fraction, e.g. -0.47), never
+            # 'max_drawdown_pct' - this scenario silently never ran before.
+            if 'max_drawdown' in financial_metrics:
+                max_drawdown_pct = abs(financial_metrics['max_drawdown']) * 100
                 stress_results['scenarios']['market_crash'] = {
                     'description': 'Portfolio performance during market crash',
-                    'max_drawdown_stress': abs(financial_metrics['max_drawdown_pct']) * 1.5,
-                    'status': 'passed' if abs(financial_metrics['max_drawdown_pct']) < 20 else 'warning'
+                    'max_drawdown_stress': max_drawdown_pct * 1.5,
+                    'status': 'passed' if max_drawdown_pct < 20 else 'warning'
                 }
 
             # Scenario 3: Low Liquidity Stress
