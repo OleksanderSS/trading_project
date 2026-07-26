@@ -71,9 +71,9 @@ class BaseModel(ABC):
         if effective_task_type == 'classification' and hasattr(self, 'predict_proba'):
             try:
                 y_prob = self.predict_proba(X)
-            except Exception:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
                 # If predict_proba fails, continue without probabilities
-                pass
+                self.logger.warning(f"predict_proba failed during evaluate(), continuing without probabilities: {e}")
 
         # Use unified calculator for ML metrics with task_type instead of is_classification
         results = calculator.get_ml_metrics(
