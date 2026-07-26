@@ -59,8 +59,10 @@ backtesting:
     sqrt_coefficient: 0.0001
     volatility_factor: 0.5
 
-# --- Risk Management Settings ---
-risk_management:
-  max_position_size_pct: 0.15
-  stop_loss_pct: 0.10
-  take_profit_pct: 0.20
+# Risk management settings live in risk_management.yaml under
+# strategy.risk_management (that's the path PortfolioManager/
+# VirtualPortfolio/AdaptivePositionSizer actually read via
+# config_manager.get_config('strategy.risk_management')). A
+# top-level `risk_management:` block here would sit at a sibling
+# path ('risk_management', not 'strategy.risk_management') that no
+# code reads - confirmed via repo-wide grep before removing it.

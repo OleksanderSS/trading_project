@@ -11,9 +11,20 @@ strategy:
     # Risk Limits
     max_portfolio_var_pct: 0.05      # 5% max portfolio VaR
     max_single_position_pct: 0.10    # 10% max single position
+    max_position_size_pct: 0.10      # same limit, read by PortfolioManager/AdaptivePositionSizer under this name
     max_daily_loss_pct: 0.03         # 3% max daily loss
     max_drawdown_pct: 0.15           # 15% max drawdown
     max_leverage: 2.0                # 2x max leverage
+    stop_loss_pct: 0.10              # read by VirtualPortfolio
+    take_profit_pct: 0.20            # read by VirtualPortfolio
+
+    # Adaptive position sizing (src/algorithms/adaptive_position_sizer.py)
+    position_sizer:
+      max_position_size_pct: 0.10
+      min_position_size_pct: 0.005
+
+    # Risk-parity allocation (src/algorithms/risk_parity_allocator.py)
+    risk_allocator: {}
 
     # Stress Testing Scenarios
     stress_scenarios:
