@@ -74,7 +74,15 @@ def _build_data_map(signals_df, portfolio_history, enriched_data, brain) -> dict
         "portfolio_returns": pd.DataFrame({"Strategy": returns}) if not returns.empty else pd.DataFrame(),
         "benchmark_returns": pd.DataFrame(
             {
-                "Benchmark": price_data["close"]
+                "Benchmark": (
+                    # Multiple tickers are commonly concatenated into one
+                    # frame upstream - a plain pct_change() here would
+                    # compute a bogus "return" across a ticker boundary
+                    # (last row of ticker A to first row of ticker B).
+                    price_data["close"].groupby(signals_df["ticker"])
+                    if "ticker" in signals_df.columns
+                    else price_data["close"]
+                )
                 .pct_change(fill_method=None)
                 .replace([np.inf, -np.inf], np.nan)
             }
