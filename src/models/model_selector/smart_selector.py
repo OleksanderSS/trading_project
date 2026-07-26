@@ -141,9 +141,8 @@ class PerformanceHistorySelector:
         context_adjustment = self._calculate_context_adjustment(model_name,
             context)
         expected_error = self._get_expected_error(context)
-        ticker = action.get('ticker', 'default')
         historical_reliability = self._get_historical_reliability(model_name,
-            ticker, target_type)
+            target_type, context)
         critique_score = self._calculate_critique_score(expected_error,
             context_adjustment, historical_reliability)
         points = self._generate_critique_points(context, expected_error,
