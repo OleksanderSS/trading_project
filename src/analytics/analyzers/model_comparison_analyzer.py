@@ -169,7 +169,7 @@ class ModelComparisonAnalyzer(IAnalyzer):
                 continue
 
             winner = ticker_data.get('winner', 'unknown')
-            metrics = ticker_data.get('metrics', {})
+            metrics = ticker_data.get('winner_metrics', {})
 
             model_type = self._classify_model_type(winner)
             accuracy = self._extract_performance_metric(metrics)
