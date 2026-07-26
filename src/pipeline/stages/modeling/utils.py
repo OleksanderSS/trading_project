@@ -1,6 +1,16 @@
 """
 Utility helpers for stage 4 modeling: context fingerprints, diary logging,
-and small helper extractors used by `stage_4_modeling.ModelingStage`.
+and small helper extractors.
+
+NOTE: despite the name, ModelingStage (orchestrator.py) does NOT call
+these - it was rewritten around `_process_ticker_with_async` and never
+adopted them. These are only exercised by tests/unit/test_modeling_utils.py
+today. They were originally written for orchestration.py/training.py (an
+alternate training pipeline archived to
+src/archive/dead_pipeline_code/modeling/ - it called stage._get_x_y_z()
+methods that ModelingStage never implemented, so that whole chain was
+unreachable). Kept live rather than archived because they're real,
+tested, working implementations - just currently unused by anything else.
 """
 
 import datetime

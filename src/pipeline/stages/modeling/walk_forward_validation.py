@@ -36,8 +36,16 @@ def _get_target_horizon_rows(target_name: str) -> int:
         shift = target_params.get("shift")
         if shift is not None:
             return max(1, abs(int(shift)))
-    except Exception:  # noqa: BLE001 — config may not be available in unit tests
-        pass
+    except (ValueError, TypeError, AttributeError, KeyError) as e:
+        # This computes the purge gap that prevents label leakage at the
+        # train/validation boundary - falling back to 1 silently would
+        # under-purge for any target with a real horizon > 1, so this
+        # must be logged rather than swallowed.
+        import logging
+        logging.getLogger(__name__).warning(
+            f"Could not resolve horizon for target '{target_name}', "
+            f"falling back to purge=1 rows: {e}"
+        )
     return 1
 
 
