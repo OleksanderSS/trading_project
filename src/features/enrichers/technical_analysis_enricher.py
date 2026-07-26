@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from src.config.unified_config_manager import get_current_config
+from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 from src.features.utils.technical_indicators_lib import TechnicalIndicators
 
@@ -228,7 +229,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 logger.exception(f'Error adding volatility features: {e}')
             try:
                 self._add_market_regime_features(df_enriched, returns)
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, DataProcessingError) as e:
                 logger.exception(f'Error adding market regime features: {e}')
             try:
                 self._add_drawdown_features(df_enriched, returns)
@@ -291,9 +292,15 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                     regimes.append('UNKNOWN')
                     confidence.append(float('nan'))
                     continue
-                regime_result = self.MarketRegimeCalculator.detect_regime(
-                    history.to_numpy(dtype=float)
-                )
+                try:
+                    regime_result = self.MarketRegimeCalculator.detect_regime(
+                        history.to_numpy(dtype=float)
+                    )
+                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, DataProcessingError) as e:
+                    logger.warning(f'detect_regime failed for one row, marking UNKNOWN: {e}')
+                    regimes.append('UNKNOWN')
+                    confidence.append(float('nan'))
+                    continue
                 regimes.append(regime_result.get('regime', 'UNKNOWN'))
                 confidence.append(regime_result.get('confidence', 0.0))
             df_enriched['MARKET_REGIME'] = regimes

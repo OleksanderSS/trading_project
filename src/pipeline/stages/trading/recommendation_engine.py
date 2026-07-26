@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 from src.core.utils.prediction_utils import normalize_prediction
 from src.models.registry.model_registry import ModelRegistry
@@ -242,7 +243,7 @@ class TradingRecommendationEngine:
                     global_regime = 'ranging'
 
                 self.logger.info(f'📊 Dynamically detected global regime: {global_regime} (from {detected})')
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, DataProcessingError) as e:
             self.logger.warning(f'⚠️ Failed to detect dynamic regime: {e}. Falling back to "ranging".')
             # Graceful degradation: regime detection failure must not abort
             # all recommendations for the entire batch of tickers.

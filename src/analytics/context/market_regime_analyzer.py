@@ -11,6 +11,7 @@ import pandas as pd
 
 from src.analytics.detectors.regime_detector import MarketRegimeDetector
 from src.analytics.interfaces import IAnalyzer
+from src.core.exceptions import DataProcessingError
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class MarketRegimeAnalyzer(IAnalyzer):
             )
             return result
 
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, DataProcessingError):
             logger.exception("MarketRegimeAnalyzer error")
             return self._empty_result()
 
