@@ -179,6 +179,12 @@ class TimeframeAlignmentGuard:
         self.logger.info(f"🔍 Validating timeframe compatibility for {current_time}")
 
         for tf, df in features_by_tf.items():
+            # _validate_single_timeframe may fabricate a 'datetime' column
+            # from a DatetimeIndex internally, but that transformation is
+            # local to its own df parameter - apply it here too so the
+            # re-read below doesn't KeyError on frames that only carry a
+            # DatetimeIndex (no explicit 'datetime' column).
+            df, _ = self._ensure_datetime_column(df, tf)
             is_valid, issue, warning = self._validate_single_timeframe(tf, df, current_time)
 
             if issue:

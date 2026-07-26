@@ -360,9 +360,12 @@ class MacroReleaseTimingGuard:
         if validation_result['status'] == 'valid':
             return macro_df.copy()
 
-        # Return only valid rows
+        # Return only valid rows. valid_data holds iterrows() index LABELS,
+        # not positions - .loc (not .iloc) is required, otherwise this
+        # silently returns the wrong rows (or raises) whenever macro_df
+        # doesn't have a fresh default RangeIndex.
         valid_indices = validation_result['valid_data']
-        safe_df = macro_df.iloc[valid_indices].copy()
+        safe_df = macro_df.loc[valid_indices].copy()
 
         self.logger.info(f"🛡️ Filtered macro data: {len(safe_df)} safe from {len(macro_df)} total")
 

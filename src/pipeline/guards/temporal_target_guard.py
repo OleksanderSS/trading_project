@@ -65,6 +65,15 @@ class TemporalTargetGuard:
 
         return True, None
 
+    # ClassificationCalculator doesn't expose a plain calculate() - only
+    # calculate_binary()/calculate_multiclass() - unlike Regression/
+    # IndicatorPrediction. Mirrors target_orchestrator.py's own
+    # METHOD_MAPPING for the same reason.
+    METHOD_MAPPING = {
+        "classification_binary": "calculate_binary",
+        "classification_multiclass": "calculate_multiclass",
+    }
+
     def _get_calculator(self, calc_type: str):
         """Get calculator instance for given calculation type."""
         from src.targets.calculators.classification_calculator import ClassificationCalculator
@@ -74,6 +83,7 @@ class TemporalTargetGuard:
         mapping = {
             "regression": RegressionCalculator,
             "classification_binary": ClassificationCalculator,
+            "classification_multiclass": ClassificationCalculator,
             "indicator_prediction": IndicatorPredictionCalculator,
         }
 
@@ -93,7 +103,9 @@ class TemporalTargetGuard:
             calc = self._get_calculator(calc_type)
             params = config.get('params', {}).copy()
 
-            result = calc.calculate(df_enriched, **params)
+            method_name = self.METHOD_MAPPING.get(calc_type, 'calculate')
+            calculation_method = getattr(calc, method_name)
+            result = calculation_method(df_enriched, **params)
             return name, result
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
