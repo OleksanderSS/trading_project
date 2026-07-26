@@ -169,14 +169,29 @@ class KeywordEntityEnricher(BaseEnricher):
 
     def _aggregate_by_time(self, news_copy: pd.DataFrame, time_col: str
         ) ->pd.DataFrame:
-        """Aggregate news data by time (hourly)."""
+        """Aggregate news data by time (hourly), split by ticker.
+
+        news_df carries per-company vs general news via a 'ticker' or
+        'type' column (see sentiment_features_enricher.py for the same
+        convention) - aggregating without it collapses every article's
+        keyword/entity counts into one global series, which then leaks
+        one ticker's news into every other ticker's feature rows on merge.
+        """
+        news_copy = news_copy.copy()
+        if 'ticker' in news_copy.columns:
+            news_copy['_agg_ticker'] = news_copy['ticker'].fillna('general')
+        elif 'type' in news_copy.columns:
+            news_copy['_agg_ticker'] = news_copy['type'].fillna('general')
+        else:
+            news_copy['_agg_ticker'] = 'general'
         news_copy = news_copy.set_index(time_col)
-        return news_copy.resample('1h').agg({'keyword_count': 'sum',
-            'entity_count': 'sum'})
+        aggregated = news_copy.groupby('_agg_ticker').resample('1h').agg(
+            {'keyword_count': 'sum', 'entity_count': 'sum'})
+        return aggregated.rename_axis(index={'_agg_ticker': 'ticker'})
 
     def _merge_with_main_df(self, df: pd.DataFrame, aggregated: pd.
         DataFrame, time_col: str) ->pd.DataFrame:
-        """Merge aggregated features with main DataFrame."""
+        """Merge aggregated features with main DataFrame, per ticker."""
         df_enriched = df.copy()
         if not self._ensure_datetime_index(df_enriched):
             return df
@@ -184,10 +199,35 @@ class KeywordEntityEnricher(BaseEnricher):
         df_reset = self._prepare_df_for_merge(df_enriched)
         aggregated_reset = self._prepare_aggregated_for_merge(aggregated,
             time_col)
-        df_merged = pd.merge_asof(df_reset.sort_values('datetime'),
-            aggregated_reset.sort_values('datetime'), on='datetime',
-            direction='backward')
+        if 'ticker' in df_reset.columns:
+            df_merged = self._merge_per_ticker(df_reset, aggregated_reset)
+        else:
+            general = aggregated_reset[aggregated_reset['ticker'] ==
+                'general'].drop(columns=['ticker'])
+            df_merged = pd.merge_asof(df_reset.sort_values('datetime'),
+                general.sort_values('datetime'), on='datetime',
+                direction='backward')
         return self._finalize_merge_result(df_merged)
+
+    def _merge_per_ticker(self, df_reset: pd.DataFrame, aggregated_reset:
+        pd.DataFrame) ->pd.DataFrame:
+        """Merge aggregated news features per ticker group (no cross-ticker leakage)."""
+        parts = []
+        for ticker, group in df_reset.groupby('ticker'):
+            ticker_features = aggregated_reset[aggregated_reset['ticker']
+                == ticker]
+            if ticker_features.empty:
+                ticker_features = aggregated_reset[aggregated_reset[
+                    'ticker'] == 'general']
+            ticker_features = ticker_features.drop(columns=['ticker']
+                ).drop_duplicates(subset=['datetime'], keep='last')
+            merged_group = pd.merge_asof(group.sort_values('datetime'),
+                ticker_features.sort_values('datetime'), on='datetime',
+                direction='backward')
+            parts.append(merged_group)
+        if not parts:
+            return df_reset
+        return pd.concat(parts).sort_index()
 
     def _ensure_datetime_index(self, df_enriched: pd.DataFrame) ->bool:
         """Ensure DataFrame has DatetimeIndex."""
@@ -202,11 +242,17 @@ class KeywordEntityEnricher(BaseEnricher):
 
     def _normalize_timezones(self, df_enriched: pd.DataFrame, aggregated:
         pd.DataFrame):
-        """Normalize timezones in both DataFrames."""
+        """Normalize timezones in both DataFrames.
+
+        aggregated now has a (ticker, time) MultiIndex (see
+        _aggregate_by_time) rather than a plain DatetimeIndex, so its
+        tz-awareness can't be read via a plain .index.tz - it doesn't
+        need to be here anyway, since _prepare_aggregated_for_merge's
+        reset_index() + _normalize_datetime_column() already normalizes
+        the resulting 'datetime' column right after this is called.
+        """
         if df_enriched.index.tz is not None:
             df_enriched.index = df_enriched.index.tz_localize(None)
-        if aggregated.index.tz is not None:
-            aggregated.index = aggregated.index.tz_localize(None)
 
     def _prepare_df_for_merge(self, df_enriched: pd.DataFrame) ->pd.DataFrame:
         """Prepare main DataFrame for merge."""
