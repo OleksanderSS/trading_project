@@ -89,7 +89,14 @@ class PutCallRatioCollector(BaseCollector):
         return 1, "Very Bullish"
 
     def _create_historical_data_point(self, date_obj: datetime, latest_ratio: float, previous_ratio: float) -> dict[str, Any]:
-        """Create a single historical data point."""
+        """Create a single FABRICATED historical data point.
+
+        CBOE only ever exposes the current ratio, so the other 59 "historical"
+        days are extrapolated from it via a deterministic formula, not real
+        data - must be flagged the same way _create_sample_put_call_data's
+        explicit fallback path already flags fabricated rows, otherwise
+        these are indistinguishable from real observations downstream.
+        """
         variation = ((date_obj - (datetime.now() - timedelta(days=60))).days % 14 - 7) * 0.1
         historical_ratio = max(0.3, min(2.0, latest_ratio + variation))
         sentiment_signal, sentiment_classification = self._classify_sentiment(historical_ratio)
@@ -101,7 +108,9 @@ class PutCallRatioCollector(BaseCollector):
             'sentiment_classification': sentiment_classification,
             'extreme_reading': 1 if historical_ratio >= 1.2 or historical_ratio <= 0.4 else 0,
             'ratio_change': historical_ratio - previous_ratio,
-            'timestamp': date_obj
+            'timestamp': date_obj,
+            'is_synthetic': True,
+            'eligible_for_training': False
         }
 
     async def _fetch_put_call_data(self) -> list[dict[str, Any]]:
@@ -156,7 +165,8 @@ class PutCallRatioCollector(BaseCollector):
                 previous_ratio = data[-1]['put_call_ratio'] if data else latest_ratio
                 data.append(self._create_historical_data_point(date_obj, latest_ratio, previous_ratio))
 
-            # Add current reading as the most recent
+            # Add current reading as the most recent - this ONE row is real
+            # (scraped from CBOE), unlike the 59 fabricated rows above it.
             if data:
                 data[-1] = {
                     'date': datetime.now().strftime('%Y-%m-%d'),
@@ -165,7 +175,9 @@ class PutCallRatioCollector(BaseCollector):
                     'sentiment_classification': "Bullish" if latest_ratio < 0.8 else "Bearish",
                     'extreme_reading': 1 if latest_ratio >= 1.2 or latest_ratio <= 0.4 else 0,
                     'ratio_change': latest_ratio - (data[-2]['put_call_ratio'] if len(data) > 1 else 0),
-                    'timestamp': datetime.now()
+                    'timestamp': datetime.now(),
+                    'is_synthetic': False,
+                    'eligible_for_training': True
                 }
 
             return data
