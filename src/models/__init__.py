@@ -20,8 +20,6 @@ __all__ = [
     'WeightStabilityMonitor',
     'get_weight_stability_monitor',
     'monitor_weight_stability_quick',
-    'IntegratedModelManager',
-    'get_integrated_model_manager',
     'SmartModelSelector',
     'PredictionDriftMonitor',
     'get_prediction_drift_monitor',
@@ -90,12 +88,6 @@ def __getattr__(name: str):
             return monitor_weight_stability_quick
 
     # Integrated model management
-    elif name == "IntegratedModelManager" or name == "get_integrated_model_manager":
-        from .integrated_model_manager import IntegratedModelManager, get_integrated_model_manager
-        if name == "IntegratedModelManager":
-            return IntegratedModelManager
-        elif name == "get_integrated_model_manager":
-            return get_integrated_model_manager
     elif name == "SmartModelSelector":
         from .model_selector import SmartModelSelector
         return SmartModelSelector
