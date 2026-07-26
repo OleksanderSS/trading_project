@@ -13,7 +13,7 @@ from src.core.cache.cache_manager import CacheManager
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
 
-from .base_collector import BaseCollector
+from src.data.collectors.base_collector import BaseCollector
 
 
 class AlternativeMeCollector(BaseCollector):

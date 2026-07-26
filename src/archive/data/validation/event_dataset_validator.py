@@ -69,7 +69,7 @@ class EventDatasetValidator:
                 try:
                     pd.to_datetime(df[column], errors='raise')
                 except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                    self.logger.error(f'Виникла помилка під час парсингу {column}: {e}', exc_info=True)
+                    logger.error(f'Виникла помилка під час парсингу {column}: {e}', exc_info=True)
                     issues.append(
                         f"CRITICAL: Column '{column}' contains unparseable datetime values."
                         )

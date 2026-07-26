@@ -10,7 +10,7 @@ from src.core.clients.http_client_factory import HttpClientFactory
 from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
 
-from .base_collector import BaseCollector
+from src.data.collectors.base_collector import BaseCollector
 
 logger = ProjectLogger.get_logger("MarketDataCollector")
 

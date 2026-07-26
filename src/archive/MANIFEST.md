@@ -260,6 +260,72 @@ deletion) into its original relative path under `src/archive/`.
   endpoints). Both files' relative `from .base_collector import
   BaseCollector` fixed to the absolute `from src.data.collectors.base_collector
   import BaseCollector` (that module stayed live, only these two moved).
+- `data/quality/temporal_alignment_checker.py`,
+  `data/quality/news_price_availability_filter.py`,
+  `data/quality/data_freshness_checker.py`,
+  `data/validation/event_dataset_validator.py`,
+  `data/management/data_versioning.py`,
+  `data/management/handlers/connection_handler.py` — **an entire
+  point-in-time-leakage-prevention layer that was never wired into the
+  live pipeline.** Every one of these modules is built specifically to
+  prevent exactly the leak bugs this project has repeatedly had, and
+  every one has zero callers anywhere in `src/` or `tests/` — confirmed
+  via repo-wide grep before archiving each. The real, live equivalent of
+  `temporal_alignment_checker.py`'s intent is a completely separate
+  implementation, `src/pipeline/guards/timeframe_alignment_guard.py::TimeframeAlignmentGuard`
+  (see the `src/pipeline/guards/` note below for whether even *that* one
+  is fully wired in). `event_dataset_validator.py` also had a live
+  `self.logger`-doesn't-exist bug (same pattern fixed multiple times
+  elsewhere this session) inside `_check_datetime_columns` — fixed before
+  archiving, so it's at least correct if anyone resurrects it.
+  `data_versioning.py`'s `cleanup_stale_files` has a partial-completion
+  bug (a deletion failure appends to `failed_deletions` then re-raises,
+  aborting the loop and skipping any remaining stale files in the batch)
+  — not fixed, since the whole file is dead; fix before re-wiring it in.
+  `connection_handler.py` is a near-verbatim duplicate of the connection-
+  pooling logic already in the live `DataManager`
+  (`src/data/management/data_manager.py` lines 57-145) — if this predates
+  `DataManager`'s pooling, it's a superseded draft; if it postdates it,
+  someone started migrating and never finished. Either way, don't treat
+  it as the "real" connection handler.
+- `data/management/data_cleaner.py`'s `DataCleaner` was deliberately
+  **kept live, not archived**, despite zero production callers — same
+  "orphaned but has real regression test coverage" rule as Wave 6:
+  `tests/unit/test_p1_missing_policy_math.py::test_management_data_cleaner_preserves_missing_numeric_values`
+  exercises `clean_numeric_data()` directly, locking in the same
+  historical "don't zero-fill missing values" fix as `anomaly_detector.py`
+  and `analytics_math.py` (Wave 6). **Real landmine, addressed via a
+  docstring warning rather than a rename**: this class shares its exact
+  name with the actually-live `DataCleaner` in
+  `src/processing/cleaners.py` (imported by
+  `src/pipeline/stages/processing/data_handler.py` for
+  `remove_outliers_zscore`/`handle_missing_values`) — a future
+  contributor or AI edit could easily patch this dead one believing
+  they've fixed the pipeline. Added a docstring pointing to the real
+  file.
+
+**Also found, not archived (in `src/pipeline/guards/`, discovered while
+tracing `temporal_alignment_checker.py`'s live equivalent)**:
+`FeatureGuards._initialize_guards()` (`src/pipeline/stages/feature_engineering/guards.py`,
+confirmed live via `FeatureEngineeringStage.__init__`) constructs 5
+guards but `apply_guards()` only ever invokes one of them
+(`temporal_leakage_guard.validate_rolling_windows`) — `timeframe_guard`,
+`safe_combiner` (wrapping `TimeframeAlignmentGuard`), `macro_guard`
+(`MacroReleaseTimingGuard` — checks that macro data wasn't used before
+its real official release time, exactly the point-in-time bug class this
+project has been bitten by before), and `temporal_target_guard` are all
+constructed and then never invoked anywhere. Confirmed via grep that
+none of their real validation methods
+(`validate_macro_data_timing`/`combine_features_safe`/
+`generate_targets_safe`) are called from anywhere except their own
+defining files. This is the same "safety net that looks wired but
+isn't" shape as `FeatureLeakageGuard` (fixed this session, commit
+`919cda10`, with explicit user sign-off after a dry-run risk check) —
+**not fixed yet, needs the same treatment**: present findings, dry-run
+against real data, get explicit approval before wiring any of these in,
+since enabling a never-battle-tested check in production carries real
+risk of blocking legitimate data. `macro_guard` (`MacroReleaseTimingGuard`)
+is the highest-priority one to investigate first.
 
 ## Known cross-import gotcha
 
