@@ -37,6 +37,7 @@ class BacktestAnalyzer:
         """
         self.logger = logger
         self.backtester = backtester
+        self._used_simulated_data = False
         self.logger.info("✅ BacktestAnalyzer initialized")
 
     def prepare_pivot(self, signals_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -162,6 +163,7 @@ class BacktestAnalyzer:
         if len(price_pivot) < 2:
             self.logger.warning('⚠️ Insufficient data points for backtest - creating simulation')
             price_pivot, signal_pivot = self.create_simulation_data(signals_df)
+            self._used_simulated_data = True
 
         return price_pivot, signal_pivot
 
@@ -225,6 +227,7 @@ class BacktestAnalyzer:
                 return {}
 
             # Prepare pivot tables
+            self._used_simulated_data = False
             pivot_data = self._prepare_pivot_data(signals_df)
             if not pivot_data:
                 return {}
@@ -243,6 +246,12 @@ class BacktestAnalyzer:
 
             # Normalize results
             results = self._normalize_backtest_results(results, price_pivot)
+            # Surface whenever real input was too thin and got replaced by
+            # randomly-generated simulation data - without this, a backtest
+            # run entirely on fabricated data is indistinguishable from a
+            # real one anywhere downstream (reports, notifications,
+            # dean_os pipeline-control artifacts) except for a log line.
+            results['is_simulated_data'] = self._used_simulated_data
 
             return results
 
