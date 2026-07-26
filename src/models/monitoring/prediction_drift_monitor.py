@@ -112,148 +112,92 @@ class PredictionDriftMonitor:
     async def _detect_prediction_drift(self,
                                        current_predictions: np.ndarray,
                                        timestamp: datetime) -> dict[str, Any]:
-        """Detect drift in prediction distributions using DriftCalculator."""
-
-        drift_analysis = {
-            'status': 'completed',
-            'drift_detected': False,
-            'drift_methods': {},
-            'overall_drift_score': 0.0,
-            'drift_severity': 'none'
-        }
+        """Detect drift in prediction distributions, delegating to DriftAnalyzer."""
 
         try:
-            # Get reference predictions
-            if len(self.reference_predictions) < self.min_samples_for_drift:
-                drift_analysis['status'] = 'insufficient_reference_data'
-                return drift_analysis
-
-            reference_preds = np.array([r['prediction'] for r in self.reference_predictions])
-
-            # Use DriftCalculator for statistical tests
-            ks_result = self.drift_calculator.perform_ks_test(current_predictions, reference_preds)
-            drift_analysis['drift_methods']['ks_test'] = ks_result
-
-            psi_result = self.drift_calculator.calculate_psi(current_predictions, reference_preds)
-            drift_analysis['drift_methods']['psi'] = psi_result
-
-            wasserstein_result = self.drift_calculator.calculate_wasserstein_distance(current_predictions, reference_preds)
-            drift_analysis['drift_methods']['wasserstein'] = wasserstein_result
-
-            # Calculate overall drift score
-            drift_analysis['overall_drift_score'] = self.drift_calculator.calculate_overall_drift_score(
-                drift_analysis['drift_methods']
-            )
-            drift_analysis['drift_detected'] = drift_analysis['overall_drift_score'] > 0.2
-            drift_analysis['drift_severity'] = self.drift_calculator.determine_drift_severity(
-                drift_analysis['overall_drift_score']
+            reference_preds = np.array(
+                [r['prediction'] for r in self.history_manager.reference_predictions]
             )
 
-            # Store drift detection
-            self.drift_history.append({
-                'timestamp': timestamp,
-                'drift_detected': drift_analysis['drift_detected'],
-                'drift_severity': drift_analysis['drift_severity'],
-                'drift_score': drift_analysis['overall_drift_score'],
-                'methods': drift_analysis['drift_methods']
-            })
+            drift_analysis = await self.drift_analyzer.detect_prediction_drift(
+                current_predictions, reference_preds, timestamp
+            )
+
+            if drift_analysis['status'] == 'completed':
+                self.history_manager.add_drift_record(
+                    timestamp,
+                    drift_analysis['drift_detected'],
+                    drift_analysis['drift_severity'],
+                    drift_analysis['overall_drift_score'],
+                    drift_analysis['drift_methods'],
+                )
 
             return drift_analysis
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error detecting prediction drift: {e}")
-            drift_analysis['status'] = 'error'
-            drift_analysis['error'] = str(e)
-            return drift_analysis
+            return {
+                'status': 'error',
+                'error': str(e),
+                'drift_detected': False,
+                'drift_methods': {},
+                'overall_drift_score': 0.0,
+                'drift_severity': 'none',
+            }
 
     def _analyze_performance_degradation(self,
                                       actuals: np.ndarray,
                                       predictions: np.ndarray,
                                       timestamp: datetime) -> dict[str, Any]:
-        """Analyze performance degradation over time using DriftCalculator."""
-
-        performance_analysis = {
-            'status': 'completed',
-            'current_performance': {},
-            'performance_trend': {},
-            'degradation_detected': False,
-            'degradation_score': 0.0
-        }
+        """Analyze performance degradation over time, delegating to DriftAnalyzer."""
 
         try:
-            # Calculate current performance metrics
-            current_metrics = self.drift_calculator.calculate_performance_metrics(actuals, predictions)
-            performance_analysis['current_performance'] = current_metrics
-
-            # Add to performance history
-            self.performance_history.append({
-                'timestamp': timestamp,
-                'metrics': current_metrics,
-                'sample_count': len(predictions)
-            })
-
-            # Analyze performance trend if we have enough history
-            if len(self.performance_history) >= 10:
-                trend_analysis = self.drift_calculator.analyze_performance_trend(
-                    list(self.performance_history)
-                )
-                performance_analysis['performance_trend'] = trend_analysis
-
-                # Check for degradation
-                degradation_score = trend_analysis.get('degradation_score', 0.0)
-                performance_analysis['degradation_detected'] = degradation_score > 0.1
-                performance_analysis['degradation_score'] = degradation_score
-
+            performance_analysis = self.drift_analyzer.analyze_performance_degradation(
+                actuals, predictions, list(self.history_manager.performance_history)
+            )
+            self.history_manager.add_performance_record(
+                performance_analysis['current_performance'], timestamp, len(predictions)
+            )
+            performance_analysis['status'] = 'completed'
             return performance_analysis
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing performance degradation: {e}")
-            performance_analysis['status'] = 'error'
-            performance_analysis['error'] = str(e)
-            return performance_analysis
+            return {
+                'status': 'error',
+                'error': str(e),
+                'current_performance': {},
+                'performance_trend': {},
+                'degradation_detected': False,
+                'degradation_score': 0.0,
+            }
 
     def _analyze_confidence_drift(self,
                                    confidences: np.ndarray,
                                    timestamp: datetime) -> dict[str, Any]:
-        """Analyze confidence distribution drift using DriftCalculator."""
-
-        confidence_analysis = {
-            'status': 'completed',
-            'current_confidence_stats': {},
-            'confidence_drift_detected': False,
-            'drift_score': 0.0
-        }
+        """Analyze confidence distribution drift, delegating to DriftAnalyzer."""
 
         try:
-            # Calculate current confidence statistics
-            current_stats = self.drift_calculator.calculate_confidence_stats(confidences)
-            confidence_analysis['current_confidence_stats'] = current_stats
-
-            # Get reference confidence statistics
-            reference_confidences = [
-                r['confidence'] for r in self.reference_predictions
+            reference_confidences = np.array([
+                r['confidence'] for r in self.history_manager.reference_predictions
                 if r['confidence'] is not None
-            ]
+            ])
 
-            if len(reference_confidences) >= self.min_samples_for_drift:
-                ref_confidences = np.array(reference_confidences)
-
-                # Calculate confidence drift using DriftCalculator
-                drift_result = self.drift_calculator.calculate_confidence_drift(
-                    confidences, ref_confidences
-                )
-
-                confidence_analysis['confidence_drift_detected'] = drift_result['drift_detected']
-                confidence_analysis['drift_score'] = drift_result['drift_score']
-                confidence_analysis['reference_stats'] = drift_result['reference_stats']
-
+            confidence_analysis = self.drift_analyzer.analyze_confidence_drift(
+                confidences, reference_confidences
+            )
+            confidence_analysis['status'] = 'completed'
             return confidence_analysis
 
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Error analyzing confidence drift: {e}")
-            confidence_analysis['status'] = 'error'
-            confidence_analysis['error'] = str(e)
-            return confidence_analysis
+            return {
+                'status': 'error',
+                'error': str(e),
+                'current_confidence_stats': {},
+                'confidence_drift_detected': False,
+                'drift_score': 0.0,
+            }
 
     def _generate_retraining_recommendations(self,
                                             drift_analysis: dict[str, Any],
@@ -346,7 +290,7 @@ class PredictionDriftMonitor:
 
         # Filter recent drift history
         recent_drift = [
-            record for record in self.drift_history
+            record for record in self.history_manager.drift_history
             if record['timestamp'] >= cutoff_time
         ]
 
@@ -372,7 +316,7 @@ class PredictionDriftMonitor:
         """Trigger model retraining using AlertSystem."""
 
         retraining_record = self.alert_system.record_retraining(reason, severity, timestamp)
-        self.retraining_history.append(retraining_record)
+        self.history_manager.retraining_history.append(retraining_record)
         return retraining_record
 
 
