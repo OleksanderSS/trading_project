@@ -5,10 +5,7 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
-from src.models.analysis.baseline_dominance_detector import BaselineDominanceDetector
-from src.models.analysis.overfitting_detector import OverfittingDetector
-from src.models.analysis.regime_winner_analyzer import RegimeWinnerAnalyzer
-from src.models.monitoring.prediction_drift_monitor import PredictionDriftMonitor
+from src.models.analysis.model_analyzer import ModelAnalyzer
 
 logger = ProjectLogger.get_logger("ModelHealthAnalyzer")
 
@@ -17,10 +14,13 @@ class ModelHealthAnalyzer:
 
     def __init__(self, config: dict[str, Any]):
         self.config = config
-        self.baseline_detector = BaselineDominanceDetector(self.config.get("baseline_detector", {}))
-        self.regime_analyzer = RegimeWinnerAnalyzer(self.config.get("regime_analyzer", {}))
-        self.overfitting_detector = OverfittingDetector(self.config.get("overfitting_detector", {}))
-        self.drift_monitor = PredictionDriftMonitor(self.config.get("drift_monitor", {}))
+        # Delegates to ModelAnalyzer, which builds the model_results dict
+        # (model/predictions/metrics) each sub-detector's real API actually
+        # requires. The direct calls this class used before
+        # (baseline_detector.analyze(), regime_analyzer.analyze(),
+        # overfitting_detector.analyze(), drift_monitor.monitor()) targeted
+        # method names none of those classes have ever defined.
+        self.model_analyzer = ModelAnalyzer(self.config)
         logger.info("✅ ModelHealthAnalyzer components initialized")
 
     async def analyze(
@@ -53,20 +53,28 @@ class ModelHealthAnalyzer:
         analysis_results = results["analysis_results"]
 
         # 1. Baseline dominance
-        analysis_results["baseline"] = await self.baseline_detector.analyze(model, X_train, y_train, X_val, y_val)
+        analysis_results["baseline"] = await self.model_analyzer.perform_baseline_analysis(
+            model, X_train, y_train, X_val, y_val
+        )
 
         # 2. Regime consistency
         if market_data is not None:
-            analysis_results["regime"] = await self.regime_analyzer.analyze(model, market_data, X_train, y_train)
+            analysis_results["regime"] = await self.model_analyzer.perform_regime_analysis(
+                model, market_data, X_train, y_train
+            )
         else:
             analysis_results["regime"] = {"status": "no_market_data"}
 
         # 3. Overfitting detection
-        analysis_results["overfitting"] = await self.overfitting_detector.analyze(model, X_train, y_train, X_val, y_val)
+        analysis_results["overfitting"] = await self.model_analyzer.perform_overfitting_analysis(
+            model, X_train, y_train, X_val, y_val
+        )
 
         # 4. Drift monitoring
         if predictions is not None:
-            analysis_results["drift"] = await self.drift_monitor.monitor(predictions, actuals, confidences)
+            analysis_results["drift"] = await self.model_analyzer.perform_drift_monitoring(
+                predictions, actuals, confidences
+            )
         else:
             analysis_results["drift"] = {"status": "no_predictions"}
 

@@ -14,20 +14,17 @@ async def test_model_health_analyzer_analyze():
         "drift_monitor": {}
     }
     
-    # We must patch the components in __init__ because they instantiate real objects
+    # We must patch ModelAnalyzer in __init__ because it instantiates real components
     with pytest.MonkeyPatch.context() as m:
-        m.setattr("src.models.analysis.model_health_analyzer.BaselineDominanceDetector", MagicMock())
-        m.setattr("src.models.analysis.model_health_analyzer.RegimeWinnerAnalyzer", MagicMock())
-        m.setattr("src.models.analysis.model_health_analyzer.OverfittingDetector", MagicMock())
-        m.setattr("src.models.analysis.model_health_analyzer.PredictionDriftMonitor", MagicMock())
-        
+        m.setattr("src.models.analysis.model_health_analyzer.ModelAnalyzer", MagicMock())
+
         analyzer = ModelHealthAnalyzer(config)
-        
-        # Setup AsyncMocks for component methods
-        analyzer.baseline_detector.analyze = AsyncMock(return_value={"status": "ok"})
-        analyzer.regime_analyzer.analyze = AsyncMock(return_value={"status": "ok"})
-        analyzer.overfitting_detector.analyze = AsyncMock(return_value={"status": "ok"})
-        analyzer.drift_monitor.monitor = AsyncMock(return_value={"status": "ok"})
+
+        # Setup AsyncMocks matching ModelAnalyzer's real public method names
+        analyzer.model_analyzer.perform_baseline_analysis = AsyncMock(return_value={"status": "ok"})
+        analyzer.model_analyzer.perform_regime_analysis = AsyncMock(return_value={"status": "ok"})
+        analyzer.model_analyzer.perform_overfitting_analysis = AsyncMock(return_value={"status": "ok"})
+        analyzer.model_analyzer.perform_drift_monitoring = AsyncMock(return_value={"status": "ok"})
         
         # Test Data
         model = MagicMock()
@@ -53,7 +50,7 @@ async def test_model_health_analyzer_analyze():
         assert result["analysis_results"]["baseline"]["status"] == "ok"
         assert result["analysis_results"]["drift"]["status"] == "ok"
         
-        analyzer.baseline_detector.analyze.assert_awaited()
-        analyzer.regime_analyzer.analyze.assert_awaited()
-        analyzer.overfitting_detector.analyze.assert_awaited()
-        analyzer.drift_monitor.monitor.assert_awaited()
+        analyzer.model_analyzer.perform_baseline_analysis.assert_awaited()
+        analyzer.model_analyzer.perform_regime_analysis.assert_awaited()
+        analyzer.model_analyzer.perform_overfitting_analysis.assert_awaited()
+        analyzer.model_analyzer.perform_drift_monitoring.assert_awaited()

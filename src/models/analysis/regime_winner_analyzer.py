@@ -82,13 +82,13 @@ class RegimeWinnerAnalyzer:
     def _init_components(self):
         """Ініціалізує модульні компоненти."""
         from .regime import (
-            MarketRegimeDetector,
+            RegimeDetector,
             RegimeMetrics,
             RegimePatternAnalyzer,
             RegimeRecommendationEngine,
             RegimeStabilityAnalyzer,
         )
-        self.detector = MarketRegimeDetector(self.REGIME_TYPES)
+        self.detector = RegimeDetector(self.REGIME_TYPES)
         self.metrics_calculator = RegimeMetrics()
         self.pattern_analyzer = RegimePatternAnalyzer(self.REGIME_TYPES)
         self.stability_analyzer = RegimeStabilityAnalyzer()
