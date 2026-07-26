@@ -497,7 +497,7 @@ class EliteRiskMetrics:
 
         # --- Concentration limits ---
         for ticker, pos_data in positions.items():
-            concentration = pos_data['value'] / portfolio_value
+            concentration = pos_data.get('value', 0.0) / portfolio_value
             if concentration > self.limits['max_single_position']:
                 violations.append({'type': 'single_position', 'ticker':
                     ticker, 'current': concentration, 'limit': self.limits[
