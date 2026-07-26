@@ -45,16 +45,12 @@ class DynamicConfig:
         return self._data
 
     def __getattr__(self, name: str) -> Any:
-        value = self._get_attribute_value(name)
-        if value is not None:
-            return value
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        if name not in self._data:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        return self._get_attribute_value(name)
 
     def _get_attribute_value(self, name: str) -> Any:
         """Get attribute value from internal data."""
-        if name not in self._data:
-            return None
-
         value = self._data[name]
         return DynamicConfig(value) if isinstance(value, dict) else value
 
