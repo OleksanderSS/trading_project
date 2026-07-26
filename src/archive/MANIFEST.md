@@ -327,6 +327,62 @@ since enabling a never-battle-tested check in production carries real
 risk of blocking legitimate data. `macro_guard` (`MacroReleaseTimingGuard`)
 is the highest-priority one to investigate first.
 
+## Wave 8 — `src/models/` monitoring/health/actions cleanup (2026-07-26)
+
+`src/models/actions/action_trigger.py` (`ActionTrigger`),
+`src/models/health/model_health_evaluator.py` (`ModelHealthEvaluator`),
+`src/models/statistics/model_statistics.py` (`ModelStatistics`) → moved to
+`src/archive/models_dead/actions/`, `.../health/`, `.../statistics/`.
+Confirmed via grep: each class's only callers were the already-archived
+`src/archive/models_dead/integrated_model_manager.py` and its
+never-promoted `dean_os/draft/dean_os_agent_system_v7/` duplicate — zero
+live callers, zero test coverage for any of the three. Each was the sole
+file in its directory; the now-empty `actions/`, `health/`, `statistics/`
+directories were removed.
+
+Also fixed (not archived — these are live, just broken):
+- `src/models/analysis/model_health_analyzer.py`'s `ModelHealthAnalyzer`
+  called method names that don't exist on any of its sub-components
+  (`.analyze()`/`.monitor()` vs. the real `analyze_baseline_dominance()`/
+  `analyze_regime_consistency()`/`detect_overfitting()`/
+  `monitor_predictions()`), two of which also needed a `model_results`
+  dict neither ModelHealthAnalyzer nor its own test ever built. Found
+  `src/models/analysis/model_analyzer.py`'s `ModelAnalyzer` already
+  implements this correctly (was itself dead — only caller was the
+  archived `IntegratedModelManager`). Rewired `ModelHealthAnalyzer` to
+  delegate to `ModelAnalyzer` instead of duplicating the logic, which
+  fixes both classes' orphan status at once.
+- `src/models/analysis/regime_winner_analyzer.py` imported a class named
+  `MarketRegimeDetector` from `.regime` that has never existed there
+  (real name: `RegimeDetector`) — constructor crashed unconditionally,
+  on every instantiation. Zero test coverage existed for this class.
+- `src/models/monitoring/prediction_drift_monitor.py`'s
+  `PredictionDriftMonitor` read `self.reference_predictions`/
+  `self.performance_history`/`self.drift_history`/`self.retraining_history`
+  directly, but `__init__` only ever sets `self.history_manager` (a
+  `HistoryManager` that actually holds all four) — guaranteed
+  `AttributeError` the first time enough samples accumulated for real
+  drift detection to run. `self.drift_analyzer` (`DriftAnalyzer`, already
+  constructed in `__init__`) already implements the correct modular
+  equivalents; rewired the three broken private methods to pull data from
+  `self.history_manager` and delegate computation to `self.drift_analyzer`.
+  Zero test file existed for this class at all.
+- `src/models/__init__.py` still lazy-exported `IntegratedModelManager`/
+  `get_integrated_model_manager` from `.integrated_model_manager` — a
+  module archived out of `src/models/` earlier this session. Accessing it
+  raised `ModuleNotFoundError` instead of a clean `AttributeError` for an
+  unknown name. Removed the stale entries.
+
+**Not yet resolved, deferred to a future pass** (documented in
+`memory/project_colab_pipeline_audit.md`, not repeated here): the
+model-health/drift/overfitting stack's remaining orphaned peripherals
+(`LightModelInterface` signature drift, `PersistentModelPool` disconnected
+duplicate cache, duplicate `EnsembleModel` in `src/ensembling/`, a dormant
+second `ConfidenceCalibrator` concept, orphaned ensembling infra —
+`EnsembleComposer`/`DynamicWeightCalculator`/`WeightStabilityMonitor` + 6
+files, `ModelCorrelationAnalyzer` facade), and DEAN Critic's permanently
+inert safety filter in `consensus_engine.py`.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
