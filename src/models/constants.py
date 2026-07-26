@@ -8,7 +8,7 @@ from typing import Final
 XGBOOST: Final = "xgboost"
 CATBOOST: Final = "catboost"
 LIGHTGBM: Final = "lightgbm"
-RANDOM_FOREST: Final = "randomforest"
+RANDOM_FOREST: Final = "random_forest"
 
 # Neural Models
 MLP: Final = "mlp"
