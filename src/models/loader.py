@@ -64,7 +64,7 @@ class ModelLoaderStrategy:
         except ModelLoadingError as e:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Direct load failed for {model_path}: {e}')
-        except (ValueError, TypeError, Exception) as e:
+        except Exception as e:  # noqa: BLE001 - multi-strategy loader fallback, deliberately broad, always logged
             self.logger.warning(f'Direct load error for model {model_id} at {model_path}: {e}. Trying fallbacks.')
         return None
 
@@ -80,7 +80,7 @@ class ModelLoaderStrategy:
         except ModelLoadingError as e:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug(f'Loader {loader.__name__} failed: {e}')
-        except (ValueError, TypeError, Exception) as e:
+        except Exception as e:  # noqa: BLE001 - multi-strategy loader fallback, deliberately broad, always logged
             self.logger.error(f'Помилка завантажувача {loader.__name__} для моделі {model_id}: {e}', exc_info=True)
         return None
 
@@ -198,7 +198,7 @@ class ModelLoaderStrategy:
             trusted_path = resolve_trusted_artifact_path(consensus_path,
                 allowed_suffixes={'.pkl'}, must_exist=True)
             return joblib.load(str(trusted_path))  # NOSONAR
-        except (ValueError, TypeError, Exception) as e:
+        except Exception as e:  # noqa: BLE001 - multi-strategy loader fallback, deliberately broad, always logged
             self.logger.error(f'Помилка завантаження consensus моделі: {e}', exc_info=True)
             raise RuntimeError(f"Failed to load consensus model: {e}") from e
 
@@ -212,7 +212,7 @@ class ModelLoaderStrategy:
                 'Creating default stacked ensemble as final fallback')
             from src.ensembling.stacked_ensemble import StackedEnsemble
             return StackedEnsemble()
-        except (ValueError, TypeError, ImportError, Exception) as e:
+        except Exception as e:  # noqa: BLE001 - multi-strategy loader fallback, deliberately broad, always logged
             self.logger.error(f'Помилка створення default ensemble: {e}', exc_info=True)
             raise RuntimeError(f"Failed to create default ensemble: {e}") from e
 
@@ -369,11 +369,15 @@ class ModelLoaderStrategy:
                             repeated = np.repeat(last_row, expected_timesteps, axis=0)
                             x_input = repeated.reshape(1, expected_timesteps, -1)
                             self.logger.debug(f"Repeated last row: {x_input.shape}")
-                    elif self.model.input_shape[-1] == 1 or 'cnn' in self.model_type.lower():
-                        # CNN models: add channel dimension
-                        x_input = np.expand_dims(x_input, axis=-1)
                     else:
-                        # Other models: add sequence dimension (legacy behavior)
+                        # Non-sequential neural models (CNN and any others):
+                        # timesteps=1, matching how CNNModel.train()/predict()
+                        # actually shape their data - (n_samples, 1,
+                        # n_features) via x_norm.reshape((n, 1, n_features)) -
+                        # NOT (n_samples, n_features, 1). A previous version
+                        # of this branch special-cased 'cnn' to expand on the
+                        # last axis instead, which fed CNN's own trained model
+                        # a transposed, incompatible shape.
                         x_input = np.expand_dims(x_input, axis=1)
                 elif len(self.model.input_shape) == 2 and len(x_input.shape) == 3:
                     x_input = x_input.squeeze(axis=1)
