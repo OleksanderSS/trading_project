@@ -103,8 +103,8 @@ class HistoricalEventReplayMode(BaseMode):
                 if f"_{ticker}_" in mname and "knn" not in mname and "svm" not in mname:
                     try:
                         active_models[mname] = joblib.load(mpath)
-                    except:
-                        pass
+                    except Exception as e:
+                        self.logger.warning(f"Failed to load model '{mname}' from {mpath}: {e}")
                         
             if not active_models:
                 continue
@@ -200,8 +200,8 @@ class HistoricalEventReplayMode(BaseMode):
                             'direction_correct': direction_correct
                         })
                 except Exception as e:
-                    pass
-        
+                    self.logger.warning(f"Prediction failed for model '{model_name}' ({ticker}/{interval}): {e}", exc_info=True)
+
         # 5. Meta-Analysis
         if results:
             results_df = pd.DataFrame(results)
