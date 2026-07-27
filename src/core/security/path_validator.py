@@ -34,10 +34,12 @@ def validate_safe_path(
             raise PathValidationError("Symlinks are not allowed.")
 
         # Check if the target is within the base directory
-        if not str(target_path).startswith(str(base_path)):
+        try:
+            target_path.relative_to(base_path)
+        except ValueError:
             raise PathValidationError(
                 f"Path '{target_path}' is outside authorized base directory '{base_path}'"
-            )
+            ) from None
 
         return target_path
 
