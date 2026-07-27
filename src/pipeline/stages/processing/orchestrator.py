@@ -118,6 +118,14 @@ class ProcessingStage(BaseStage):
             news_df = __import__('pandas').DataFrame(news_df).fillna('')
             cleaned_data_map['news'] = news_df
 
+        # Pass reddit_sentiment through - IntelligentDataFilter.filter_quality_data
+        # already has a dedicated reddit_sentiment branch (filter_reddit_data),
+        # but it only fires if this key is actually present here. Without this,
+        # data collected by RedditSentimentCollector in Stage 1 vanished with
+        # zero logging: never filtered, never stored, never available downstream.
+        if 'reddit_sentiment' in raw_data and isinstance(raw_data['reddit_sentiment'], __import__('pandas').DataFrame):
+            cleaned_data_map['reddit_sentiment'] = raw_data['reddit_sentiment'].copy()
+
     def _finalize_results(self, cleaned_data: dict[str, Any], storage_paths: dict[str, Any]) -> dict[str, Any]:
         return {
             'status': 'success',
