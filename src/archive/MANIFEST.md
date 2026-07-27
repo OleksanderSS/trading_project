@@ -688,6 +688,53 @@ dangerous kind for a live prediction stage), 1 dead file archived.**
   or model_pool or model_resolver or select_champions"` → 31 passed,
   zero regressions.
 
+**`stages/processing/` (Stage 2) + `stages/trading/` (Stage 6) pass
+(2026-07-27, commits `532bead9`, `5dcd106b`, `62db25ca`, `9ec3fb73`) — 4
+real bugs fixed, including one genuine data-corruption bug.**
+- **Data corruption**: `ProcessingStorage._save_persistent_macro_snapshot()`
+  wrote each run's incremental FRED delta to a fixed "persistent" parquet
+  path via a pure overwrite, with no read-merge-write step — every Stage
+  2 cycle with new FRED data silently destroyed all previously
+  accumulated macro history, leaving only that cycle's few new rows.
+  Downstream consumers (`cli/pipeline_data_loader.py`,
+  `cli/pipeline_executor.py`) read this file as the full historical
+  fallback. Fixed with a proper read-merge-dedupe-write (newest row wins
+  per `series_id`+`datetime`, so revisions still apply). Verified two
+  sequential incremental writes now correctly accumulate instead of the
+  second wiping the first.
+- `ProcessingStage._process_all_data_types()` never copied
+  `raw_data['reddit_sentiment']` into `cleaned_data_map` — real data
+  collected by `RedditSentimentCollector` in Stage 1 vanished every
+  cycle with zero logging; the downstream filter already has a dedicated
+  `reddit_sentiment` branch, it just never received anything. Fixed.
+- `ProcessingValidator.run_system_validation()`/`create_quality_metrics()`
+  were non-functional stubs — the validator's own comment admitted it:
+  *"In the original code, this likely calls self.validator.validate(...).
+  For now, we provide the structure to hold this logic."* Every run
+  logged/reported that validation passed and quality was perfect
+  (`data_consistency_score: 1.0`) regardless of real data state. Wired in
+  the real (pure, non-blocking) `UnifiedValidator.validate_cleaned_data()`
+  call and computed real row/missing-value/consistency numbers (walking
+  nested dicts like `{'prices': {'1d': df, '1h': df}}`). No downstream
+  code branches on these values today, so this was giving false
+  assurance rather than causing a wrong decision — but matches this
+  audit's "safety net that looks wired but isn't" pattern.
+- `TradingExecutionStage._find_latest_batch_name()` (Stage 6) only
+  globbed for `test_ticker_*` dirs, missing the `'main_database'`
+  default-batch check that the sibling (otherwise orphaned)
+  `TradingDataIO` already has correctly. Any invocation without an
+  explicit `batch_name` (e.g. CLI runs) would silently fail to find real
+  Stage 5 output even when it exists, returning `'no_predictions'`
+  instead. Fixed to match.
+- Also confirmed (status, not a new bug): `TradingRecommendationEngine`
+  is entirely orphaned from the live Stage 6 flow — matches
+  `dean_os/current_architecture_map.py`'s own
+  `can_generate_recommendations_now: False` flags, consistent with the
+  already-documented DEAN-Critic-inert finding (review-only system state
+  today, not an accidental wiring bug).
+- Verified: `tests/ -k "stage2 or stage6 or processing or trading_stage or
+  macro_point_in_time"` → 39 passed, zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
