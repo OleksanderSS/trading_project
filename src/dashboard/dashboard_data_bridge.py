@@ -154,7 +154,7 @@ class DashboardDataBridge:
                 SELECT model_name, model_type, avg_win_rate, avg_sharpe_ratio,
                        avg_precision, total_trades, last_updated
                 FROM model_performance
-                WHERE last_updated >= datetime('now', '-7 days')
+                WHERE last_updated >= CURRENT_TIMESTAMP - INTERVAL 7 DAY
                 ORDER BY avg_sharpe_ratio DESC
                 """
                 data = self._query_df(query)
@@ -189,7 +189,7 @@ class DashboardDataBridge:
                 query = """
                 SELECT ticker, signal_type, confidence, timestamp, pnl
                 FROM trading_signals
-                WHERE timestamp >= datetime('now', '-1 day')
+                WHERE timestamp >= CURRENT_TIMESTAMP - INTERVAL 1 DAY
                 ORDER BY timestamp DESC
                 """
                 data = self._query_df(query)
@@ -224,7 +224,7 @@ class DashboardDataBridge:
                 query = """
                 SELECT total_value, returns, volatility, sharpe_ratio, max_drawdown
                 FROM portfolio_performance
-                WHERE date >= datetime('now', '-30 days')
+                WHERE date >= CURRENT_TIMESTAMP - INTERVAL 30 DAY
                 ORDER BY date DESC
                 """
                 data = self._query_df(query)
@@ -261,7 +261,7 @@ class DashboardDataBridge:
                 query = """
                 SELECT date, open, high, low, close, volume
                 FROM market_data
-                WHERE ticker = ? AND date >= datetime('now', '-30 days')
+                WHERE ticker = ? AND date >= CURRENT_TIMESTAMP - INTERVAL 30 DAY
                 ORDER BY date ASC
                 """
                 data = self._query_df(query, [ticker])
@@ -359,7 +359,7 @@ class DashboardDataBridge:
                 query = """
                 SELECT model_name, battles_won, battles_lost, win_rate, avg_score
                 FROM model_arena_results
-                WHERE date >= datetime('now', '-7 days')
+                WHERE date >= CURRENT_TIMESTAMP - INTERVAL 7 DAY
                 ORDER BY win_rate DESC
                 """
                 data = self._query_df(query)
