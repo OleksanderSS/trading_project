@@ -1,6 +1,7 @@
 # src/pipeline/stages/stage_1_collection.py
 
 import asyncio
+import hashlib
 import json
 from itertools import chain
 
@@ -163,12 +164,20 @@ class CollectionStage(BaseStage):
                 self.logger.warning(f"No specific run args for {name}, trying generic run().")
                 return await asyncio.wait_for(collector.run(tickers=tickers, keywords=keywords), timeout=timeout)
 
-        except TimeoutError:
+        except TimeoutError as e:
             self.logger.error(f"Collector {name} перевищив таймаут {timeout} секунд")
-            return None
+            # Re-raise (not return None) so this reaches
+            # process_and_save_results as an Exception via
+            # asyncio.gather(..., return_exceptions=True) - that method
+            # already has a dedicated `isinstance(res, Exception)` branch
+            # for real failures, but it was dead code as long as this
+            # swallowed every failure into None, which is treated
+            # identically to "collector ran fine, nothing new to report"
+            # and counted as a success.
+            raise
         except Exception as e:
             self.logger.error(f"Collector {name} failed: {e}", exc_info=True)
-            return None
+            raise
 
     def process_and_save_results(self, results: list, collectors: list):
         """
@@ -240,9 +249,26 @@ class CollectionStage(BaseStage):
         if date_col:
             df[date_col] = pd.to_datetime(df[date_col], utc=True, errors='coerce')
 
-        # Додаємо хеші якщо потрібно
+        # Додаємо хеші якщо потрібно.
+        # collector.generate_hash() doesn't exist on BaseCollector or most
+        # subclasses (some define a private _generate_hash, some define a
+        # public generate_hash, some define neither) - calling it here
+        # unconditionally raised AttributeError for every collector that
+        # doesn't happen to have a public generate_hash, which was silently
+        # swallowed by the broad except in process_and_save_results,
+        # discarding real collected data before it ever reached the DB.
+        # Every collector that does define a hash method uses the exact
+        # same formula (see cftc/fear_greed/put_call_ratio/vix/aaii/
+        # fred_collector.py), so compute it directly here instead of
+        # depending on a per-collector method existing at all.
         if 'hash' not in df.columns and collector.get_hash_keys():
-            df['hash'] = df.apply(lambda row: collector.generate_hash(row.to_dict()), axis=1)
+            hash_keys = collector.get_hash_keys()
+            df['hash'] = df.apply(
+                lambda row: hashlib.sha256(
+                    '|'.join(str(row.get(key, '')) for key in hash_keys).encode()
+                ).hexdigest(),
+                axis=1,
+            )
 
         return df
 
