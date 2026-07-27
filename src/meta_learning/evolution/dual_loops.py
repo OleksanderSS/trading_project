@@ -95,7 +95,8 @@ class LearningLoopsEngine(BaseMetaComponent):
         total_rules = cursor.fetchone()[0]
 
         leaderboard_data = self.arena.get_leaderboard()
-        champion = leaderboard_data.get('leaderboard', [{}])[0].get('model_name', 'unknown')
+        leaderboard = leaderboard_data.get('leaderboard') or [{}]
+        champion = leaderboard[0].get('model_name', 'unknown')
 
         return {
             "total_rules_in_db": total_rules,
