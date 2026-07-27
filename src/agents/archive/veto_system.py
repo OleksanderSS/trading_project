@@ -1,10 +1,9 @@
 import logging
 from typing import List, Dict, Any
 
-from src.agents.memory.knowledge_ingestor import KnowledgeIngestor
+from src.archive.models_dead.knowledge_ingestor import KnowledgeIngestor
 from src.meta_learning.memory.diary_engine import DiaryEngine, DecisionRecord, DecisionType, DecisionOutcome
 from src.features.enrichers.finbert_sentiment import FinBERTSentimentAnalyzer
-from src.agents.templates.cognitive_extractor import get_cognitive_prompt
 
 logger = logging.getLogger(__name__)
 

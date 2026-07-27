@@ -110,7 +110,7 @@ class TradingOrchestrator:
         """
         try:
             import asyncio
-            from src.agents.veto_system import veto_system
+            from src.agents.archive.veto_system import veto_system
             
             # 1. Adapt data for the agent
             agent_payload = []
