@@ -239,9 +239,8 @@ class DiaryEngine(BaseMetaComponent):
 
     def record_decision(self, decision: DecisionRecord):
         """Records a single trading decision in the database."""
-        import uuid
         df = pd.DataFrame([{
-            "id": uuid.uuid4().int & 0x7FFFFFFF,
+            "id": decision.decision_id,
             "agent_id": decision.agent_id,
             "decision_timestamp": decision.decision_timestamp,
             "ticker": decision.ticker,
