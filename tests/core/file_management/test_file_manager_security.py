@@ -27,9 +27,28 @@ class TestFileManagerSecurity(unittest.TestCase):
     def test_traversal_attack_blocked(self):
         # Attempt to save outside base_dir using ../
         malicious_file = "../../outside.json"
-        
+
         with self.assertRaises(PathValidationError):
             self.fm.save_json({"key": "value"}, malicious_file)
+
+    def test_atomic_write_cleans_up_temp_file_on_integrity_check_failure(self):
+        """_atomic_write raises its own OSError when validate_func fails,
+        clearly intending its except block (cleanup temp file + log) to
+        catch it - but OSError wasn't in the except tuple, so the temp
+        .tmp file was never cleaned up and the intended error log never
+        fired; the exception just propagated raw instead."""
+        target_file = self.fm_base / "validated.json"
+
+        with self.assertRaises(OSError):
+            self.fm._atomic_write(
+                target_file,
+                write_func=lambda p: p.write_text("{}"),
+                validate_func=lambda p: False,
+            )
+
+        temp_path = target_file.with_suffix(target_file.suffix + ".tmp")
+        self.assertFalse(temp_path.exists())
+        self.assertFalse(target_file.exists())
 
 if __name__ == '__main__':
     unittest.main()

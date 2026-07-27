@@ -57,7 +57,7 @@ class FileManager:
                     f'Integrity check failed for temporary file: {temp_path}')
             os.replace(temp_path, file_path)
             self.logger.info(f'Successfully saved data to {file_path}')
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, OSError) as e:
             if temp_path.exists():
                 temp_path.unlink()
             self.logger.error(f'Failed to save data to {file_path}: {e}',
