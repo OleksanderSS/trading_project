@@ -128,10 +128,7 @@ class ModelFactory:
     @staticmethod
     def _extract_model_params(canonical_name: str, config: dict[str, Any] | None) ->dict[str, Any]:
         """Extract model-specific parameters from config"""
-        model_params = {}
-        if config and canonical_name == 'KNN' and 'n_neighbors' in config:
-            model_params['n_neighbors'] = config['n_neighbors']
-        return model_params
+        return dict(config) if config else {}
 
     @staticmethod
     def _create_model_with_filtered_params(model_class: type[BaseModel],
