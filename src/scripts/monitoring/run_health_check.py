@@ -22,7 +22,7 @@ def main():
         # Initialize dependencies for HealthHub
         config_manager = UnifiedConfigManager()
         data_manager = DataManager(config_manager)
-        results_manager = ModelResultsManager(config_manager)
+        results_manager = ModelResultsManager()
 
         # Initialize the Health Hub
         health_hub = HealthHub(data_manager=data_manager, results_manager=results_manager)
