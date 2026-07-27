@@ -1252,6 +1252,82 @@ bug never manifests via this real path), `ShadowBattleMode`
   or data_cleaner or price_preprocessor or hybrid_cleaners or
   parallel_processor"` → 10 passed, zero regressions.
 
+**SystemOrchestrator archival, user-confirmed (2026-07-27, commit
+`792f4793`):** following the finding documented in the batch above, the
+user confirmed they run the pipeline via `run_hybrid_pipeline.py` — so
+`system_orchestrator.py`, `modes/intelligent.py` (a Streamlit dashboard
+launcher, zero callers outside the dead dispatcher), and `modes/web_ui.py`
+(an alternate HTTP dashboard, likewise zero callers) were archived to
+`src/archive/main/`. `TrainMode`/`PredictMode`/`BacktestMode` were left
+in place — they share the same live `BaseMode` framework as 3 confirmed-
+live standalone modes (`MonsterTestMode`/`ShadowBattleMode`/
+`HistoricalEventReplayMode`, each with its own real `run_*.py` entry
+point), so archiving them is a separate, not-yet-confirmed decision.
+Verified: `tests/ -k "main or orchestrator"` → 247 passed, zero
+regressions.
+
+**Peripheral `src/` sweep, fifth batch (2026-07-27, commits `7ced90e8`,
+`abead8ce`, `09a174a0` + this doc) — `src/meta_learning/` (19 files),
+`src/colab/` (20 files).** Recon subagent read all 39 files.
+- **Fixed, LIVE**: `meta_learning/memory/diary_engine.py`'s
+  `record_decision()` (runs on every real trading decision, called from
+  `pipeline/stages/trading/orchestrator.py`) computed a stable UUID
+  `decision_id` on `DecisionRecord` (per its own comment: "Stable UUID
+  string instead of random 31-bit int") and even had the DB schema
+  migrated from INTEGER to VARCHAR to support it — but the actual insert
+  path never used it, still generating a fresh
+  `uuid.uuid4().int & 0x7FFFFFFF` truncated int on every call. Net
+  effect: `decision_id` was dead weight, and the real primary key used a
+  collision-prone value not covered by the upsert's de-dup key. Fixed to
+  use `decision.decision_id` directly. Added a regression test (zero
+  prior coverage of this method).
+- **Fixed, dormant, cheap**: `evolution/dual_loops.py`'s `get_state()`
+  crashed (`IndexError`) on a fresh arena with zero battles fought, since
+  `TradingModelArena.get_leaderboard()` always returns the `'leaderboard'`
+  key even when its value is `[]` — the `.get(..., [{}])` default never
+  triggers when the key IS present. Fixed to handle the empty-list case
+  explicitly. (Separate from the already-documented
+  `generate_rules_from_context` finding in this same file from an
+  earlier batch — not re-flagged.)
+- **Major structural finding, NOT archived — needs your confirmation,
+  different shape from `SystemOrchestrator`**: `src/colab/` (all 20
+  files) has zero real callers anywhere via grep, and the package was
+  even completely unimportable (`ImportError`) due to
+  `utils/__init__.py` importing `retry_on_timeout` from the wrong
+  sibling module. However, `src/colab/README.md` explicitly documents
+  this as **intentional** — the package is meant to be uploaded and run
+  *inside* a Google Colab notebook, not imported by the local pipeline,
+  so local-repo grep can't observe whether it's actually used that way.
+  What grep *can* confirm: the real Colab-side script that runs today,
+  `scripts/colab/colab_clean_cell.py`, does **not** import `src.colab` —
+  it reimplements its own `MemoryMonitor` and config-loading logic from
+  scratch instead. Also found: `environment/setup.py` is a line-for-line
+  duplicate of `environment/colab_environment.py` (never imported by the
+  package's own `__init__.py`); `models/sklearn_fallback.py` and
+  `models/torch_models.py` duplicate logic already inlined in
+  `models/model_factory.py`; `model_factory.py` itself has 4 dead stub
+  functions (`pass`-only, superseded by inline lambdas) plus a second,
+  unused, duplicate `_create_autoencoder_model`. Fixed the 2 confirmed
+  bugs anyway (the `ImportError` and a `self.logger`-doesn't-exist bug in
+  `config_loader.py`, matching the earlier `monitoring/config.py`
+  pattern) since they're cheap and real regardless of whether the
+  package is actively used — but did NOT archive the package, unlike
+  every other confirmed-dead find this session, since the manual-Colab-
+  upload usage pattern genuinely can't be ruled out from this repo alone.
+- **Other confirmed-dead, no bugs in the code itself** (documented, not
+  touched — lower priority than the two structural findings above):
+  `AgentPermissionSystem` (zero callers anywhere), `SecurityConstraintEngine`/
+  `ConstraintValidators` (only caller, `DeanBootstrapSystem`, is itself
+  self-documented as "needs further work... not yet integrated into the
+  main workflow", and even there `validate_action()` is constructed but
+  never invoked — same "orphaned construction" shape as the earlier
+  `shadow_battle.py` fix, but fully inert here since the whole chain is
+  dead), a second, unrelated, fully-dead `BayesianOptimizer` class in
+  `evolution/optimization/` (distinct from the live one used by
+  `src/scripts/optimization/`).
+- Verified: `tests/ -k "diary or dual_loops or learning_loops or colab
+  or meta_learning"` → 51 passed, zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
