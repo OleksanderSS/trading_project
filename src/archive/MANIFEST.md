@@ -1171,6 +1171,87 @@ reading. Another severe batch:
   resource_monitor or performance_reports or data_freshness or utils"`
   → 21 passed, zero regressions.
 
+**Peripheral `src/` sweep, fourth batch (2026-07-27, commits `69c2858c`,
+`38a1a8e6`, `c7505a0b`, `195ee17c` + this doc) — `src/main/` (13 files),
+`src/processing/` (13 files, top-level).** Recon subagent read all 26
+files. Major structural finding, bigger than a routine dead-file
+cleanup: **`SystemOrchestrator` (`src/main/system_orchestrator.py`) — the
+"Central Control Center" the module's own docs/README call "the primary
+hub"/"Production Ready" — has zero live callers anywhere** (confirmed via
+repo-wide grep: only its own file, `modes/intelligent.py` — itself
+zero-callers — and an already-quarantined verify script reference it).
+No root-level script (110 checked) touches it; the real production path
+goes through `run_hybrid_pipeline.py` → `HybridOrchestrator` →
+`PipelineRunner`/`PipelineManager` → `PipelineOrchestrator` entirely
+separately. Zero test coverage for `SystemOrchestrator`, `TrainMode`,
+`PredictMode`, `BacktestMode`, `IntelligentMode`, or `WebUIMode`. **Not
+archived this pass** (unlike smaller confirmed-dead utilities) — this
+is architecturally significant enough, and different enough from the
+docs' own claims about it, that it's flagged for the user's holistic
+project review rather than silently archived. Two real bugs live
+entirely inside this orphaned dispatch path, documented but not fixed
+since they're moot if the whole thing gets archived:
+`MonsterTestMode.run(ticker=...)` (singular) vs. `SystemOrchestrator`
+calling it with `tickers=[...]` (plural) — silently absorbed into
+`**kwargs`, always defaults to SPY; and `_run_intelligent_mode`'s DEAN
+self-diagnosis check guards on `dean_brain.experience_diary`, an
+attribute that's never set anywhere, so the "retraining" feature is a
+permanent no-op, plus the `brain` object is never actually wired into
+`PipelineOrchestrator.self.brain` despite being passed through several
+layers. Separately, 3 Mode classes DO have real, live, standalone
+entry points bypassing `SystemOrchestrator` entirely: `MonsterTestMode`
+(`run_monster_test.py`, calls `.run()` with no args — the ticker/tickers
+bug never manifests via this real path), `ShadowBattleMode`
+(`run_shadow_battle.py`), `HistoricalEventReplayMode`
+(`run_historical_replay.py`).
+- **Fixed, LIVE** (via `run_historical_replay.py`):
+  `historical_replay.py` had 2 silent except blocks (a bare
+  `except: pass` loading candidate models, and
+  `except Exception as e: pass` around the whole per-model prediction
+  loop) discarding real errors with zero logging — the only symptom was
+  a generic "no successful predictions" warning with no way to diagnose
+  why. Added logging to both.
+- **Fixed, LIVE** (via `run_shadow_battle.py`): `shadow_battle.py`
+  constructed `SimulationEngine`/`SimulationContext` that were never
+  used again — the real scenario data comes directly from
+  `SyntheticGenerator`, bypassing the simulation framework entirely.
+  Removed the dead construction and now-unused imports.
+- **Fixed, LIVE** (via `pipeline/stages/processing/data_handler.py`,
+  called on every ingested price dataframe): `price_preprocessor.py`'s
+  `_finalize_dataframe` unconditionally indexed
+  `processed_df['datetime']` after a fallback path that can return a
+  DataFrame without that column — an unguarded, confusing `KeyError`
+  deep inside `pd.to_datetime`. Added an explicit, diagnosable check.
+- **Archived, confirmed dead** (zero callers anywhere, zero test
+  coverage): 6 standalone functions from `processing/cleaners.py`
+  (`harmonize_dataframe`, `safe_fill`, `sanitize_dataframe_timezone`,
+  `normalize_to_unified_schema`, `merge_and_deduplicate`,
+  `filter_by_terms`, plus private helpers — leftovers from an abandoned
+  "unified schema" effort; moved to
+  `src/archive/processing/cleaners_unused_functions.py`, removed 2
+  now-unused imports from the live file); `src/processing/parallel_processor.py`
+  (`ParallelProcessor`, whole file, zero callers/tests).
+- **Documented, not fixed — low priority, currently unreachable**:
+  `scripts/verify_backtesting.py` calls `mode._run_portfolio_simulation(...)`,
+  a method that no longer exists on `BacktestMode` (removed during a
+  refactor that moved simulation to Stage 7 `EvaluationStage`) — a
+  broken manual verification script, not production code.
+  `main/modes/web_ui.py`'s two catch-then-raise blocks are moot since
+  `WebUIMode` is itself dead code (see above).
+- Read clean, no bugs found: `src/main/__init__.py`,
+  `src/main/modes/__init__.py`, `src/main/modes/base.py`,
+  `src/main/modes/train.py`/`predict.py`/`backtest.py` (aside from the
+  orphaned-dispatcher context above),
+  `src/main/modes/training_data_pipeline.py`, `src/processing/__init__.py`,
+  `src/processing/data_filter.py`, `src/processing/deduplication_utils.py`,
+  `src/processing/normalization_manager.py`,
+  `src/processing/filters/*` (orchestrator, price_filter, news_filter,
+  social_filter, pattern_extractor — the last one intentionally stubbed
+  and honestly labeled).
+- Verified: `tests/ -k "historical_replay or shadow_battle or cleaners
+  or data_cleaner or price_preprocessor or hybrid_cleaners or
+  parallel_processor"` → 10 passed, zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
