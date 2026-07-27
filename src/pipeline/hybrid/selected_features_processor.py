@@ -83,7 +83,7 @@ class SelectedFeaturesProcessor:
                 test_target, light_models=config.light_models_to_train,
                 features_df=config.features_df)
             selected_features_files.extend(self.feature_selection_validator
-                ._create_mock_selected_features_for_test(mock_request))
+                .create_mock_selected_features_for_test(mock_request))
         return selected_features_files
 
     def _validate_files_exist(self, selected_features_files: list[Path]

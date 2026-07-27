@@ -269,7 +269,7 @@ class ModelTrainingOrchestrator:
         """Placeholder for data preparation logic."""
         ticker = context_data.get('ticker')
         timeframe = context_data.get('timeframe')
-        available_features = context_data.get('features', [])
+        available_features = context_data.get('selected_features', [])
 
         if ticker_col and ticker:
             ticker_mask = features_df[ticker_col] == ticker

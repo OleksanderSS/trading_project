@@ -429,8 +429,8 @@ class ColabManager:
         with open(file_path, encoding='utf-8') as f:
             data = json.load(f)
             if key == 'models_metadata' and 'models_metadata' in data:
-                results[key] = data['models_metadata']
-            elif key in results and isinstance(results[key], dict) and isinstance(data, dict):
+                data = data['models_metadata']
+            if key in results and isinstance(results[key], dict) and isinstance(data, dict):
                 results[key].update(data)
             else:
                 results[key] = data

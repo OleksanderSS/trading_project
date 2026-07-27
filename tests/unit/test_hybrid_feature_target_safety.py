@@ -12,6 +12,29 @@ from src.pipeline.hybrid.colab_manager import (
 from src.pipeline.hybrid.feature_processor import FeatureProcessor
 
 
+def test_load_colab_results_merges_wrapped_models_metadata_instead_of_overwriting(tmp_path):
+    """trained_models_metadata.json and colab_results.json both map to the
+    'models_metadata' result key and both may wrap their payload in a
+    top-level models_metadata key. _load_single_file must merge these,
+    not let the second file silently discard the first file's entries."""
+    manager = ColabManager(output_dir=tmp_path, batch_name="batch")
+    (tmp_path / "trained_models_metadata.json").write_text(
+        json.dumps({"models_metadata": {"model_a": {"score": 1.0}}}),
+        encoding="utf-8",
+    )
+    (tmp_path / "colab_results.json").write_text(
+        json.dumps({"models_metadata": {"model_b": {"score": 2.0}}}),
+        encoding="utf-8",
+    )
+
+    results = manager.load_colab_results("batch")
+
+    assert results["models_metadata"] == {
+        "model_a": {"score": 1.0},
+        "model_b": {"score": 2.0},
+    }
+
+
 def test_feature_processor_drops_target_derived_columns_from_features():
     df = pd.DataFrame(
         {
