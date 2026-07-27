@@ -9,7 +9,7 @@ class _DataManagerStub:
     def __init__(self, df):
         self.df = df
 
-    def load_data(self, *args, **kwargs):
+    def fetch_df(self, query, params=None):
         return self.df.copy()
 
 
@@ -28,6 +28,24 @@ def test_model_drift_handles_single_historical_point_as_insufficient_variability
     result = analyzer.check_model_drift("model-a", window_days=7)
 
     assert result["status"] == "insufficient_variability"
+
+
+def test_extract_features_from_metrics_does_not_silently_fall_back_to_zeros():
+    """Previously used datetime.now().dayofweek, which doesn't exist on
+    stdlib datetime (that's a pandas Timestamp attribute) - every call
+    raised AttributeError, silently caught, always returning [0.0]*17
+    regardless of real metrics."""
+    analyzer = object.__new__(MLAnalytics)
+    metrics = {
+        "system": {"cpu": {"percent": 12.0}, "memory": {"percent": 34.0}},
+        "disk": {"usage": {"percent": 56.0}},
+        "processes": {"total": 100},
+    }
+
+    features = analyzer.extract_features_from_metrics(metrics)
+
+    assert features[:4] == [34.0, 12.0, 56.0, 100.0]
+    assert features != [0.0] * 17
 
 
 def test_problem_predictor_split_is_chronological():

@@ -130,16 +130,8 @@ class MLAnalytics:
             return {'status': 'error', 'message': 'DataManager not provided'}
         try:
             # Use parameterized query to prevent SQL injection
-            try:
-                df = self.data_manager.load_data(
-                    'model_performance_logs',
-                    model_id=model_name
-                )
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.warning(f"Failed to load data directly, attempting fallback: {e}", exc_info=True)
-                # Fallback to parameterized query via query_data
-                query = "SELECT accuracy, timestamp FROM model_performance_logs WHERE model_id = ?"
-                df = self.data_manager.query_data(query, params=[model_name])
+            query = "SELECT accuracy, timestamp FROM model_performance_logs WHERE model_id = ?"
+            df = self.data_manager.fetch_df(query, params=[model_name])
 
             if len(df) < 10:
                 return {'status': 'insufficient_data'}
@@ -175,7 +167,7 @@ class MLAnalytics:
             features = [float(sys.get('memory', {}).get('percent', 0)),
                 float(sys.get('cpu', {}).get('percent', 0)), float(disk.get
                 ('percent', 0)), float(proc.get('total', 0)), float(
-                datetime.now().hour), float(datetime.now().dayofweek)]
+                datetime.now().hour), float(datetime.now().weekday())]
             while len(features) < 17:
                 features.append(0.0)
             return features
