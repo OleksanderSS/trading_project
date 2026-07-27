@@ -735,6 +735,46 @@ real bugs fixed, including one genuine data-corruption bug.**
 - Verified: `tests/ -k "stage2 or stage6 or processing or trading_stage or
   macro_point_in_time"` → 39 passed, zero regressions.
 
+**`stages/feature_engineering/` (remaining files, minus `guards.py`
+already investigated) + `stages/utils/` pass (2026-07-27, commit
+`f257af73`) — notably clean batch, no leakage/lookahead bugs found.**
+Reconfirmed this is the pipeline's most point-in-time-sensitive stage and
+gave it maximum scrutiny: `TargetOrchestrator` groups by
+`['ticker', 'interval']` and sorts chronologically before any calculator
+runs; `BackwardTimeframeContextAssembler` does a proper
+`merge_asof(direction='backward')` on a bar-close availability timestamp
+with an explicit future-violation check that raises; train-only holdout
+logic groups by ticker. No cross-ticker leakage, no lookahead bias found
+in `enricher.py`/`orchestrator.py`/`targets.py`/`timeframe_context.py`.
+- **Found, documented only — real but needs deliberate design work, not
+  a quick fix**: `FeatureEnricher.__init__` constructs a real
+  `FeatureCache` (`get_feature_cache()`, real disk I/O — creates
+  `data/cache/features`, deletes >7-day-old files on every
+  instantiation) advertised as giving "60-80% speedup for repeated
+  enrichments," but `self.feature_cache` is never read again anywhere —
+  `enrich_features()` calls `self.orchestrator.run(...)` directly, and
+  `FeatureOrchestrator` has zero references to the cache. Every Stage 3
+  run recomputes every feature from scratch regardless of ticker/date
+  repetition — the optimization is completely disconnected, while disk
+  activity gives the false impression it's working. Not fixed: the
+  cache's real API (`get_features(ticker, date, config_hash)`/
+  `save_features(...)`) operates per single ticker+date, but
+  `enrich_features(df, timeframe, **kwargs)` takes a whole
+  (possibly multi-ticker, multi-date) DataFrame — wiring this in
+  correctly requires understanding the real batch shape Stage 3 runs
+  against and a real cache-key design, not a one-line connection. Doing
+  it wrong risks a worse bug (silently serving stale features) than the
+  current "just slow" state.
+- Archived `src/pipeline/stages/utils/collection_manager.py`
+  (`CollectionManager`) and `data_schema_mapper.py`
+  (`DataSchemaMapper`) — confirmed zero callers anywhere; the directory
+  had no `__init__.py` at all, meaning it was never even a real
+  importable package. Superseded by `CollectionStage`'s own independent
+  collector-dispatch logic after a prior refactor.
+- Verified: `tests/ -k "stage3 or feature_engineering_stage or
+  timeframe_context or timeframe_lineage or target_orchestrator"` → 42
+  passed, zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
