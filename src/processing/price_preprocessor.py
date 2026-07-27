@@ -139,6 +139,13 @@ class PricePreprocessor:
 
     def _finalize_dataframe(self, processed_df: pd.DataFrame, metrics: list[str], target_columns: list[str], preserve_columns: list[str]) -> pd.DataFrame:
         """Apply final validation and timestamp conversion."""
+        if "datetime" not in processed_df.columns:
+            raise ValueError(
+                "Cannot finalize price DataFrame: no 'datetime' column found. "
+                "This means _normalize_structure could not recognize the input's "
+                "datetime column and failed to melt/pivot it into shape."
+            )
+
         # Convert datetime
         processed_df["datetime"] = pd.to_datetime(processed_df["datetime"], errors="coerce")
 
