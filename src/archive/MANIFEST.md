@@ -1328,6 +1328,82 @@ regressions.
 - Verified: `tests/ -k "diary or dual_loops or learning_loops or colab
   or meta_learning"` → 51 passed, zero regressions.
 
+**Peripheral `src/` sweep, sixth batch (2026-07-27, commits `0fdfb308`,
+`a72a8b53` + this doc) — `src/scripts/` (22 files, part of `src/` —
+distinct from the root-level `scripts/` folder, which is already
+covered by the original Colab pipeline audit).** Recon subagent read all
+22 files. Another batch with severe, currently-broken live tools:
+- **Fixed, LIVE**: `monitoring/run_health_check.py` (documented in
+  `src/scripts/README.md` as "a key tool for ensuring stability") passed
+  a `UnifiedConfigManager` instance into `ModelResultsManager.__init__`,
+  which expects a `base_path: str` — crashed with `TypeError` before
+  producing any report. Fixed to use the default path (matching the
+  other 2 real callers). Verified end-to-end: now runs and produces a
+  real health report.
+- **Fixed, dormant**: `modeling/train_consensus_model.py` (trains the
+  meta-model used by the real-time `ConsensusEngine`, per its own
+  docstring — already touched once in the earlier `src/ensembling/`
+  pass for a different bug) called 2 nonexistent `DataManager` methods
+  (`get_all_tables()`/`load_data()` — real: `get_all_table_names()`/
+  `fetch_df()`) plus a `finally: data_manager.close()` with no matching
+  instance method, which would have overridden even the graceful
+  empty-dataframe fallback with a fresh `AttributeError` on every call.
+  Fixed all 3, verified end-to-end against the real database.
+- **Archived, confirmed dead+broken, superseded by a working root-level
+  equivalent**: `analysis/generate_context_rules.py` — imports 2
+  nonexistent module paths (`src.core.analysis.rule_generator`,
+  `src.core.data.data_manager`); the real, working version lives at
+  root `scripts/core/generate_context_rules.py` with correct imports.
+- **Archived, confirmed dead+broken**: `config/ticker_config_updater.py`
+  — imports a nonexistent `config.tickers` module, plus an independent
+  path-depth bug (`project_root = current_dir.parent` resolves to
+  `src/scripts`, not the repo root) and a reference to a nonexistent
+  `collectors/collectors_config.json` (real config:
+  `src/config/collectors.yaml`, different format entirely).
+- **Documented, NOT fixed — needs a genuine rewrite, not a mechanical
+  fix, same class of deferral as `compare_layers.py` from the
+  `src/ensembling/` pass**: `data/auto_accumulator.py` has multiple
+  deeply stacked bugs: (1) `from src.data.collector_factory import
+  create_all_collectors` — wrong module path (real:
+  `src.data.collectors.collector_factory`, plural) AND the function
+  itself doesn't exist there anymore — the real API is a
+  `CollectorFactory(configs, http_client_factory).get_all_collectors()`
+  class+method, not a standalone function; (2)
+  `AssetUniverseManager(config_manager.get_config('asset_universe', {}))`
+  double-extracts the config (the class itself already does
+  `config.get('asset_universe', {})` internally), and no config
+  anywhere defines an `asset_universe` key or a `'day_trading_tech'`
+  preset at all — `self.presets` is always `{}`, crashing on
+  `.get_preset(...).tickers` since `.get_preset()` returns `None`; (3)
+  `db_manager.get_all_tables()` doesn't exist (real:
+  `get_all_table_names()`). Its own dedicated test
+  (`tests/scripts/data/test_auto_accumulator.py`) can't even collect
+  (`ModuleNotFoundError` from the same broken import) and, even setting
+  that aside, mocks a class (`AutoAccumulator`) and CLI arguments
+  (`--group`, `--hours`) that don't match the real file's actual API
+  (`AutoAccumulatorGuard`, `--mode once|cycle`) at all — the test and
+  the source have diverged completely. The near-identical root-level
+  copy `scripts/core/auto_accumulator.py` has the same broken import.
+  Needs real design work (redesign the collector-instantiation call
+  site, fix the asset-universe config wiring, reconcile or rewrite the
+  test) — left undocumented-but-broken rather than risk an incorrect
+  partial patch.
+- Read clean, no bugs found: `colab/auto_colab_sync.py`,
+  `debug/data_merge_debugger.py`, `fix/data_fixer.py`,
+  `monitoring/run_dashboard.py`, `optimization/base.py`,
+  `optimization/__init__.py`, `optimization/factory.py`,
+  `optimization/dynamic_config_updater.py`,
+  `optimization/hyperparameters/bayesian.py`,
+  `optimization/hyperparameter_searcher.py`,
+  `optimization/portfolio/optimizer.py`, `predictions/deep_predict.py`,
+  `predictions/models_predict.py`, `simulation/shadow_arena.py`
+  (cosmetic duplicate-import pyflakes hits only),
+  `test_modular_pipeline.py`. `predictions/prediction_utils.py` is an
+  intentionally-emptied stub with zero real importers, inert.
+  `experiments/compare_layers.py` reconfirmed still broken exactly as
+  previously documented — not re-investigated in depth, already deferred
+  for a full rewrite.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
