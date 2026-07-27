@@ -930,6 +930,78 @@ Real, confirmed bugs fixed:
   smoke test) confirmed via `git stash` to fail identically on the
   pre-session baseline.
 
+**Peripheral `src/` sweep begun (2026-07-27, commits `5c137c43`, `ec9c08e2`,
+`d27994bd`, `bed1874e`, `63769761`) — first batch: `src/patterns/`,
+`src/sentiment/`, `src/factories/`, `src/integrations/`, `src/simulation/`,
+`src/dashboard/` (11 files).** Recon subagent read all 11 files in full.
+Several real, live bugs found — this batch was unusually severe:
+- **CRITICAL, LIVE**: `src/dashboard/main_app.py`'s `get_data_from_db()`
+  called `_db_manager.load_data(query)` — `DataManager` has no such
+  method, only `fetch_df(query)`. Every query-backed tab (header metrics,
+  overview, trading signals, news analysis, risk management) raised
+  `AttributeError`; only System Monitoring and World State survived. This
+  is the actual live dashboard entry point (`.claude/launch.json` runs
+  `streamlit run src/dashboard/main_app.py`), so 4 of 6 tabs were broken
+  in the real, current launch path. Fixed the method name.
+- **CRITICAL, LIVE**: `src/pipeline/stages/prediction/orchestrator.py`'s
+  `_process_single_context` did `if news_data:` where `news_data` is
+  `pd.DataFrame | None` throughout its real producer chain
+  (`cli/pipeline_executor.py` → `final_stages_orchestrator.py` →
+  prediction `orchestrator.py`) — raises `ValueError: truth value of a
+  DataFrame is ambiguous` whenever real news data is present (the normal
+  case). Caught by a broad `except`, so it silently failed the *entire*
+  prediction for that context, not just the optional NLP step. Even past
+  that, `adjust_predictions_with_patterns` (`src/patterns/pattern_recognition_adjustment.py`)
+  expects `list[dict]` and iterates `news_item.get(...)` — a raw
+  DataFrame would iterate column-name strings instead of rows. Fixed both:
+  proper `is not None and not .empty` check, and `.to_dict('records')`
+  before passing through.
+- **HIGH, LIVE**: `src/factories/model_factory.py`'s
+  `_extract_model_params` only ever extracted `n_neighbors` for KNN —
+  every other model type (LSTM, GRU, CNN, Transformer, TabNet, MLP,
+  Autoencoder, SVM, Linear, and recursively every non-tree member of an
+  Ensemble) had its whole `per_model` config dict silently discarded
+  before construction, training with constructor defaults regardless of
+  what's tuned in `models.per_model.<type>`. `TreeModelFactory` already
+  does this correctly (`{**(config or {}), **kwargs}`) — matched that
+  pattern.
+- **MEDIUM, LIVE**: `ModelRegistry.MODELS` listed `'dean_ensemble'`
+  (class: `DeanEnsemble`) and `'sentiment'` (class: `SentimentModel`) —
+  neither class exists anywhere in the live codebase (confirmed via
+  repo-wide grep; the only near-match, `SentimentModelIntegrator`, is a
+  different class). `ModelFactory.get_available_models()` returns these
+  verbatim, so every "train all available models" fallback run
+  (`DEFAULT_ENABLED_MODEL_TYPES`) was guaranteed to attempt and fail on
+  both, every time — not fatal (caught, skipped per-type) but permanently
+  wasted. Removed both entries rather than speculatively building
+  never-implemented classes; no live caller requests either name
+  explicitly.
+- **Fixed, dormant**: `src/dashboard/dashboard_data_bridge.py` — all 5
+  date-range queries used SQLite-dialect `datetime('now', '-N days')`;
+  `DataManager`'s real backend is DuckDB, which doesn't implement that
+  function (`Catalog Error`, verified directly). This bridge is dormant
+  (unit-tested only via a `FakeDataManager` stub, not wired into
+  `main_app.py` yet — the project's own prior audit notes recommend
+  wiring it in as the actual fix for the `main_app.py` bug above), so
+  invisible to its own tests, but every real query would fail the moment
+  it's connected. Fixed to `CURRENT_TIMESTAMP - INTERVAL N DAY`.
+- **Archived, confirmed dead**: `src/integrations/infra/github_actions.py`
+  (`GitHubActionsClient`) — zero real callers anywhere (repo-wide grep),
+  already independently flagged as an orphan in this project's own
+  `diagnostic_reports/orphan_modules.txt`/`dead_code_classification.csv`.
+  Moved to `src/archive/integrations/infra/github_actions.py`.
+- Read clean, no bugs found: `src/sentiment/sentiment_models.py`,
+  `src/factories/tree_model_factory.py`,
+  `src/integrations/data/bigquery_client.py`,
+  `src/simulation/simulation_engine.py`, `src/simulation/__init__.py`,
+  `src/dashboard/__init__.py`.
+- Verified: `tests/ -k "model_factory or model_registry or dashboard or
+  pattern_recognition or prediction_orchestrator or stage5 or
+  dashboard_data_bridge or tree_model_factory"` → 25 passed, zero
+  regressions. One pre-existing unrelated failure
+  (`test_model_factory_import_does_not_top_level_import_neural_models`,
+  already documented earlier in this file) confirmed unaffected.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
