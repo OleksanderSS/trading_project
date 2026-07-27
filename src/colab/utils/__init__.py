@@ -1,11 +1,11 @@
 """Utility functions for Colab training"""
+from .retry import retry_on_timeout
 from .utils import (
     compute_data_signature,
     compute_metrics,
     find_latest_checkpoint,
     get_optimal_batch_size,
     load_checkpoint,
-    retry_on_timeout,
     save_checkpoint,
 )
 

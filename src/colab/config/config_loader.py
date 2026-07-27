@@ -121,7 +121,7 @@ class RuntimeConfigLoader:
             config_path.unlink()
             print('✅ config.json видалено з main_database')
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            logger.error(f'Виникла помилка: {e}', exc_info=True)
             print(f'⚠️ Не вдалося видалити: {e}')
             raise
 
