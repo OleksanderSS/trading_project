@@ -72,9 +72,26 @@ class ProcessingStorage:
                 "Persistent macro snapshot cannot contain empty or invalid "
                 f"{availability} values."
             )
+        target_path = self.file_manager.base_dir / PERSISTENT_MACRO_PATH
+        # This path is a persistent, accumulating history (read by
+        # cli/pipeline_data_loader.py and cli/pipeline_executor.py as the
+        # "persistent fallback" macro dataset), but `data` here is only
+        # this run's incremental delta (collectors like FredCollector
+        # filter to new records only). A plain overwrite would silently
+        # destroy every prior run's accumulated history down to just the
+        # latest batch - merge with whatever's already on disk instead,
+        # keeping the newest row per (series_id, datetime) so revisions
+        # to an already-seen observation still take effect.
+        existing = self.file_manager.load_dataframe(target_path, format="parquet")
+        if existing is not None and not existing.empty:
+            combined = pd.concat([existing, data], ignore_index=True)
+            combined = combined.drop_duplicates(subset=["series_id", "datetime"], keep="last")
+            combined = combined.sort_values(["series_id", "datetime"]).reset_index(drop=True)
+        else:
+            combined = data
         self.file_manager.save_dataframe(
-            data,
-            self.file_manager.base_dir / PERSISTENT_MACRO_PATH,
+            combined,
+            target_path,
             format="parquet",
             remove_tz=False,
             index=False,
