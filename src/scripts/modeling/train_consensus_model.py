@@ -42,7 +42,7 @@ def get_training_data() -> tuple[pd.DataFrame, pd.Series]:
     data_manager = DataManager(config_manager, error_handler)
 
     try:
-        tables = data_manager.get_all_tables()
+        tables = data_manager.get_all_table_names()
         if 'predictions_history' not in tables:
             logger.warning("Table 'predictions_history' not found. Meta-model training cannot proceed with real data.")
             return pd.DataFrame(), pd.Series()
@@ -60,7 +60,7 @@ def get_training_data() -> tuple[pd.DataFrame, pd.Series]:
         WHERE actual_return IS NOT NULL
         """
 
-        raw_df = data_manager.load_data(query)
+        raw_df = data_manager.fetch_df(query)
 
         if raw_df.empty:
             logger.warning("No historical prediction data with valid actual returns found.")
@@ -95,8 +95,6 @@ def get_training_data() -> tuple[pd.DataFrame, pd.Series]:
     except Exception as e:
         logger.error(f"Failed to load training data from DataManager: {e}")
         return pd.DataFrame(), pd.Series()
-    finally:
-        data_manager.close()
 
 def main(output_path: str):
     """
