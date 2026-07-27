@@ -420,8 +420,8 @@ class TimeSeriesValidator:
                 'Integrity check failed: Index is not a DatetimeIndex.')
             return {'is_valid': False, 'error': 'Index must be DatetimeIndex'}
         start_date, end_date = df.index.min(), df.index.max()
-        expected_trading_days = self.calendar.get_trading_days(start=
-            start_date, end=end_date)
+        calendar_days = self.calendar.trading_days
+        expected_trading_days = calendar_days[(calendar_days >= start_date) & (calendar_days <= end_date)]
         actual_days = df.index.normalize().unique()
         missing_trading_days = set(expected_trading_days) - set(actual_days)
         report = {'is_valid': len(missing_trading_days) == 0,

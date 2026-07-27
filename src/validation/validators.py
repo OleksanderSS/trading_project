@@ -134,8 +134,8 @@ class UnifiedValidator:
             return []
 
         gaps = self.ts_validator.validate_time_gaps(df)
-        if gaps.get('has_gaps', False):
-            return [f"[{data_key}] Time series contains gaps: {gaps.get('gap_count')} missing periods."]
+        if not gaps.get('is_valid', True):
+            return [f"[{data_key}] Time series contains gaps: {gaps.get('missing_points_count')} missing periods."]
         return []
 
     def _check_data_leakage(self, data_map: dict[str, Any]) -> list[str]:
