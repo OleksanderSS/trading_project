@@ -775,6 +775,72 @@ in `enricher.py`/`orchestrator.py`/`targets.py`/`timeframe_context.py`.
   timeframe_context or timeframe_lineage or target_orchestrator"` → 42
   passed, zero regressions.
 
+**Final `src/pipeline/` single-file stage dirs pass (2026-07-27, commits
+`2479709a`, `f145a997`) — `stages/collection/` (Stage 1, the very first
+stage everything else depends on) had 2 severe, live bugs; 3 more dead
+files archived.**
+- **Most severe finding of the whole `src/pipeline/` sweep**:
+  `CollectionStage._normalize_data()` called
+  `collector.generate_hash(row.to_dict())`, but `BaseCollector` defines
+  no such method at all, and every subclass is inconsistent — some
+  define a public `generate_hash`, most define a private `_generate_hash`
+  instead, one defines neither. For every collector matching the
+  private/absent case, this raised `AttributeError` on every run,
+  silently caught by a broad `except` in `process_and_save_results` — the
+  collector's HTTP fetch succeeds and logs "Received N records" (looks
+  like success), but the data never reaches `_save_collector_data`.
+  **Cross-checked against the live `src/config/collectors.yaml`: `cftc`,
+  `fear_greed`, `put_call_ratio`, and `economic_calendar` are all
+  `enabled: true` — 4 currently-enabled Stage 1 collectors were silently
+  discarding every record on every run, with data never reaching their DB
+  tables.** Every collector that does define a hash method uses
+  byte-for-byte the same formula
+  (`sha256('|'.join(row.get(k,'') for k in hash_keys))`) — fixed by
+  computing that directly in `_normalize_data` using
+  `collector.get_hash_keys()` (already correctly read from config),
+  instead of depending on any particular per-collector method name.
+  Verified byte-identical output against `CFTCCollector`'s own
+  `_generate_hash` for the same input.
+- Same file: `_run_collector()` caught every `TimeoutError`/`Exception`
+  from a collector's `run()` and returned `None` — `process_and_save_results`
+  treats `None` identically to "ran fine, nothing new," so a full
+  collector crash or timeout was indistinguishable from a benign empty
+  result. `process_and_save_results` already had a dedicated
+  `isinstance(res, Exception)` branch for real failures, but it was dead
+  code as long as `_run_collector` never let an exception reach
+  `asyncio.gather(..., return_exceptions=True)`. Fixed by re-raising
+  instead of swallowing — now correctly flows into the already-existing
+  handling. No test coverage existed for `CollectionStage` at all,
+  confirming why both bugs went unnoticed. Verified both fixes directly
+  (hash formula match, and a simulated crash now correctly propagates as
+  an `Exception` through `gather` instead of becoming `None`).
+- Archived 3 more confirmed-dead, zero-test single-file stage modules:
+  `stages/news/news_manager.py`, `stages/features/orchestrator_manager.py`,
+  `stages/cache/feature_cache_manager.py`.
+- **Incident during this archival, self-corrected**: `git mv` silently
+  failed for `feature_cache_manager.py` because it was never git-tracked
+  in the first place — `.gitignore` has a blanket `cache/` pattern (only
+  `src/core/cache/` is excepted), which had been silently excluding this
+  real source file from version control the whole time. The subsequent
+  `rm -rf` on the parent directory deleted it with no git history to
+  recover from. Recovered by finding and diff-confirming an identical
+  copy under `.archive_docs/draft/dean_os_agent_system_v7/`, then
+  force-adding (`git add -f`) the restored file so it's now actually
+  tracked. Confirmed no other `.py` source files in `src/` are currently
+  hidden by this same gitignore pattern. **The `cache/` gitignore pattern
+  itself is still overly broad and untouched — worth a deliberate fix in
+  a future session** (either narrow it to actual cache-data directories,
+  or add more exceptions like the existing `!src/core/cache/` one).
+- Verified: `tests/ -k "stage1 or collection_stage or collector"` → 15
+  passed, zero regressions.
+
+**`src/pipeline/` core sweep (Wave 10) is now complete for the "spine +
+all stages/" scope** — every `stages/<name>/` subdirectory and the
+top-level orchestration files have been read and fixed. Only `hybrid/`
+(36 files, partially covered by the original Colab pipeline audit at the
+top of this document) remains before `src/pipeline/` can be called fully
+closed out.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
