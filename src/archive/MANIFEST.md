@@ -1404,6 +1404,74 @@ covered by the original Colab pipeline audit).** Recon subagent read all
   previously documented — not re-investigated in depth, already deferred
   for a full rewrite.
 
+**Peripheral `src/` sweep, seventh batch (2026-07-27, commit `d2dd68af`
++ this doc) — `src/agents/` (24 files).** Recon subagent read all 24
+files. **Most severe finding of the entire peripheral sweep**: a whole
+safety layer silently dead in production, not just a dormant/edge-case
+bug.
+- **CRITICAL, FIXED, LIVE**: `src/trading/trading_orchestrator.py`'s
+  `_apply_veto_committee()` (Stage 6, runs on every real trading cycle
+  via `TradingOrchestrator.run_cycle`) did
+  `from src.agents.veto_system import veto_system` — that module path
+  has **never existed**. `git log -S` shows this line was added 36
+  seconds after the real singleton was created at
+  `src/agents/archive/veto_system.py` — the import is simply missing
+  the `.archive` path segment, wrong since the day it was written
+  (commit `bd05f935`, 2026-07-22). Every call raised
+  `ModuleNotFoundError`, caught by a broad `except Exception`, silently
+  falling back to unvetoed mathematical consensus signals — **the
+  "Investment Committee" safety layer has been a permanent no-op in
+  production since the day it was added.**
+- Even correcting that one path wasn't sufficient — `veto_system.py`
+  itself had 2 more stale imports left over from an earlier repo reorg:
+  `src.agents.memory.knowledge_ingestor` (the file was `git mv`'d to
+  `src.archive.models_dead.knowledge_ingestor` in a prior session) and
+  `src.agents.templates.cognitive_extractor` (genuinely unused —
+  removed; the real LLM call is currently simulated via
+  `_simulate_llm_decision`, not yet wired to a real prompt). **This
+  explains a false-dead-code classification from an earlier audit
+  pass**: `KnowledgeIngestor` was archived as dead code at the time
+  because grep genuinely found zero reachable callers — entirely
+  because this same import-chain bug had already disconnected it from
+  its only real caller. Confirmed all required dependencies (`faiss`,
+  `sentence-transformers`, `pypdf`) are installed and the knowledge-base
+  data files (books + FAISS index) exist on disk — the veto system is
+  now fully live end-to-end, not merely import-safe. Fixed all 3 broken
+  imports, verified `AgenticVetoSystem` constructs and
+  `_apply_veto_committee` now reaches the real review path instead of
+  the except-fallback. Added 2 regression tests (zero prior coverage
+  existed for this entire code path).
+- **Archived, confirmed dead + independently broken**:
+  `src/agents/archive/cognitive_pipeline.py` — same stale-import
+  pattern (`cognitive_extractor` + `universal_registry`, both moved in
+  earlier reorgs), zero real callers anywhere. Moved to
+  `src/archive/agents/cognitive_pipeline.py`.
+- **Noted, not touched**: `src/agents/tools/` (`comtrade_tool.py`,
+  `eia_tool.py`, `gdelt_tool.py`, `pubmed_tool.py`, `weather_tool.py`) —
+  all 5 are correctly written, self-contained async tools with proper
+  error handling, but their only callers are the now-archived
+  `cognitive_pipeline.py` and the already-archived
+  `universal_registry.py` — currently dormant with no live caller, not
+  broken in themselves, left in place. The "Cognitive Pipeline" modular
+  lens system (12 sector lenses + orchestrator) is also confirmed live
+  but currently always inert in production by design: every real caller
+  (`recommendation_engine.py`) invokes `get_default_orchestrator()` with
+  `llm_client=None`, so every lens always returns
+  `unavailable_delta("llm_client_not_configured")` — graceful, not a
+  bug, but worth knowing this feature is fully wired yet permanently
+  dormant until a real LLM client is configured.
+- `src/agents/memory/` and `src/agents/templates/` directories contain
+  only stale `__pycache__/*.pyc` files with zero corresponding `.py`
+  source (confirmed not git-tracked) — leftover from the same reorg
+  that caused the broken imports above; consistent with, and explains,
+  the findings.
+- Read clean, no bugs found: `pipeline_bridge.py` (live, dean_os
+  integration), `modular_pipeline/base_lens.py`,
+  `modular_pipeline/orchestrator.py`, `modular_pipeline/lenses/_prompted_lens.py`,
+  all 12 sector lens files, `archive/cognitive_extractor.py`.
+- Verified: `tests/ -k "trading_orchestrator or veto or agents or
+  consensus_engine or stage6"` → 19 passed, zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
