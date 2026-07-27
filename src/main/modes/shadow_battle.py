@@ -2,11 +2,9 @@ import logging
 import asyncio
 from typing import Any
 import pandas as pd
-from datetime import datetime
 
 from src.main.modes.base import BaseMode
 from src.core.logging.logger import ProjectLogger
-from src.simulation.simulation_engine import SimulationEngine, SimulationContext, SimulationGranularity
 from src.data.collectors.synthetic_generator import SyntheticGenerator, ScenarioConfig, BUILTIN_SCENARIOS, GeneratorConfig
 from src.analytics.arena.arena_battle import TradingModelArena
 import joblib
@@ -25,19 +23,10 @@ class ShadowBattleMode(BaseMode):
     def run(self, **kwargs) -> dict[str, Any]:
         self.logger.info("--- Starting SHADOW BATTLE Mode ---")
         try:
-            # 1. Initialize Simulator and Arena
-            simulator = SimulationEngine()
+            # 1. Initialize Arena
             arena = TradingModelArena()
-            
-            # 2. Setup Context
-            context = SimulationContext(
-                ticker='SPY',
-                timestamp=datetime.now(),
-                granularity=SimulationGranularity.MARKET_LEVEL,
-                historical_returns=None
-            )
-            
-            # 3. Generate Black Swan data
+
+            # 2. Generate Black Swan data
             self.logger.info("[ShadowBattle] Generating Black Swan scenario...")
             gen_config = GeneratorConfig(random_seed=42)
             generator = SyntheticGenerator(config=gen_config)
