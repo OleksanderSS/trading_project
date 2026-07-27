@@ -38,7 +38,6 @@ class BaseIntegration(ABC):
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Виникла помилка: {e}", exc_info=True)
             error = str(e)
-            raise
         return {
             "integration_name": self.name,
             "status": "online" if is_alive else "offline",

@@ -66,7 +66,7 @@ class HttpClientFactory(IHttpClientFactory):
         retries = retries if retries is not None else self.client_config.get('retries', 3)
         timeout = timeout if timeout is not None else self.client_config.get('timeout', 20.0)
         backoff_factor = backoff_factor if backoff_factor is not None else self.client_config.get('backoff_factor', 0.5)
-        status_forcelist = status_forcelist or self.client_config.get('status_forcelist', [429, 500, 502, 503, 504])
+        status_forcelist = status_forcelist if status_forcelist is not None else self.client_config.get('status_forcelist', [429, 500, 502, 503, 504])
         user_agent = user_agent if user_agent is not None else self.client_config.get('user_agent', 'TradingBot/2.0 (Unified Ecosystem)')
 
         # Use the built-in httpx retry mechanism
@@ -92,8 +92,8 @@ class HttpClientFactory(IHttpClientFactory):
 
         return client
 
-    def get_session_client(self, **kwargs) -> httpx.AsyncClient:
+    async def get_session_client(self, **kwargs) -> httpx.AsyncClient:
         """
-        Returns a configured client. Use as 'async with factory.get_session_client() as client:'.
+        Returns a configured client. Use as 'async with await factory.get_session_client() as client:'.
         """
-        return self.get_http_client(**kwargs)
+        return await self.get_http_client(**kwargs)
