@@ -1002,6 +1002,88 @@ Several real, live bugs found — this batch was unusually severe:
   (`test_model_factory_import_does_not_top_level_import_neural_models`,
   already documented earlier in this file) confirmed unaffected.
 
+**Peripheral `src/` sweep, second batch (2026-07-27, commit `a715b741`
++ this doc) — `src/validation/`, `src/cli/`, `src/metrics/`,
+`src/devtools/` (22 files).** Recon subagent read all 22 files. Another
+severe batch:
+- **CRITICAL, LIVE, two stacked bugs**: `TimeSeriesValidator.validate_time_gaps()`
+  called a nonexistent `self.calendar.get_trading_days(start=, end=)` —
+  `TradingCalendar`'s real API only has `.trading_days` (a pre-generated
+  `DatetimeIndex` attribute, meant to be sliced). Every call raised
+  `AttributeError`. Even past that, the caller
+  (`UnifiedValidator._check_time_continuity`, run on every pipeline
+  execution's Stage 2 processing validation) read
+  `gaps.get('has_gaps')`/`gaps.get('gap_count')` — keys the function
+  never produces (real keys: `is_valid`/`missing_points_count`) — so once
+  the first bug is fixed, the check still silently no-ops regardless of
+  real gaps. Zero test coverage existed for either function. Fixed both,
+  verified end-to-end with a real dropped-trading-day repro, added 4
+  regression tests (`tests/unit/test_time_series_gap_detection.py`).
+- **CRITICAL, LIVE, documented not fixed**: `run_hybrid_pipeline.py --mode
+  calibrate` calls `PipelineExecutor.execute_calibrate_mode()`, which
+  **does not exist anywhere in the codebase** — not defined, not
+  aliased. `calibrate` is a fully advertised CLI mode (in
+  `argument_parser.py`'s choices, documented in the script's own
+  docstring, has its own `--n-trials` flag), but has never worked even
+  once. The only related code (`src/devtools/experimentation/run_hyperparameter_tuning.py`)
+  is a synthetic-data demo script (`make_regression`), not a real
+  calibration pipeline wired to actual tickers/models. Building a correct
+  `execute_calibrate_mode` (load real data, run BayesianOptimizer per
+  model type, write best params into `models.per_model.<type>` — which
+  `ModelFactory` can now actually consume, per this session's earlier
+  fix) is a genuine feature build, not a quick contract fix. Asked the
+  user via AskUserQuestion (document-only vs. build a real
+  implementation vs. remove the mode) — no response given, so documented
+  only per the lower-risk default. **Still broken, needs a decision.**
+- **Documented, not fixed — needs real design work, not a typo**:
+  `src/meta_learning/evolution/dual_loops.py:143`'s
+  `run_hypothesis_generation()` (the default/normal meta-learning update
+  path) calls `self.rule_generator.generate_rules_from_context(simulated_losing_trades)`
+  — `ContextRuleGenerator` (`src/devtools/rule_generator.py`) has no such
+  method, only `run_analysis()`/private helpers operating on a
+  completely different data shape (config-driven indicator/threshold
+  scanning, not raw trade records). The caller's own comments
+  self-admit this is a "temporary compatibility layer" and "might need a
+  refactor of ContextRuleGenerator to accept vulnerability data
+  directly" — i.e. already known incomplete by whoever wrote it. Left
+  unfixed rather than guessing at the real business logic (how to derive
+  rule `conditions`/`action`/`description` from simulated trade
+  records) — this needs a deliberate design session, not a mechanical
+  fix.
+- **Archived, confirmed dead** (zero test coverage, zero real callers
+  anywhere, confirmed via repo-wide grep):
+  `src/devtools/task_manager.py` (also independently broken — imports a
+  `Logger` class that doesn't exist in `src.core.logging.logger`, only
+  `ProjectLogger`/`ContextAdapter` do — moot since nothing ever imported
+  it to trigger the `ImportError`); `src/devtools/system_validator.py`
+  (`SystemValidator`); `src/cli/pipeline_data_loader.py`
+  (`PipelineDataLoader` — its functionality was independently
+  re-implemented inline inside `pipeline_executor.py`'s own
+  `_safe_load_parquet`/`_try_load_parquet`/etc., leaving this module an
+  orphaned duplicate that nobody deleted after the inlining).
+- **Noted, not touched** (per standing "clearly-marked prototypes stay as
+  they are" convention): `src/devtools/prototypes/live_trading_ticker_manager.py`
+  self-labels as a non-functional prototype in its own header comment,
+  every method deliberately raises `NotImplementedError`.
+  `src/devtools/experimentation/run_hyperparameter_tuning.py` is an
+  intentional, documented demo/template script (guarded by
+  `if __name__ == "__main__"`), not abandoned code. Two small dead
+  helpers left alone inside otherwise-live files (low value, higher risk
+  of unrelated diff than benefit): `pipeline_schemas.py::create_validation_middleware`,
+  `pipeline_executor.py::_merge_results_data`.
+- Read clean, no bugs found: `src/validation/__init__.py`,
+  `src/validation/data_leakage_detector.py`,
+  `src/validation/pipeline_schemas.py` (aside from the one dead function
+  above), `src/cli/argument_parser.py`, `src/cli/batch_manager.py`,
+  `src/metrics/base.py`, `src/metrics/calculator.py`,
+  `src/metrics/model/ml_evaluator.py`,
+  `src/metrics/financial/portfolio_metrics.py`,
+  `src/metrics/financial/financial_metrics_library.py`,
+  `src/metrics/utils/calculation_tools.py`, `src/devtools/__init__.py`,
+  `src/devtools/rule_generator.py` (bug is on the caller side, not here).
+- Verified: `tests/ -k "stage2 or processing_stage or time_series or
+  walk_forward or cross_val or purged"` → 38 passed, zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
