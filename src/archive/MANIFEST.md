@@ -1084,6 +1084,93 @@ severe batch:
 - Verified: `tests/ -k "stage2 or processing_stage or time_series or
   walk_forward or cross_val or purged"` → 38 passed, zero regressions.
 
+**Peripheral `src/` sweep, third batch (2026-07-27, commits `9b73bf28`,
+`d1561047`, `05d21251` + this doc) — `src/utils/` (12 files),
+`src/monitoring/` (13 files, top-level).** Recon subagent read all 25
+files, cross-verified via direct execution/introspection, not just
+reading. Another severe batch:
+- **Fixed, LIVE**: `health_hub.py` (instantiated in the real pipeline,
+  `check_system_health()` runs on every use) — `extract_features_from_metrics`
+  read `metrics['system']['disk']['percent']`, but the real producer
+  (`ResourceMonitor.get_health_status()`) nests disk as a sibling
+  top-level key (`metrics['disk']['usage']['percent']`) — the disk
+  feature fed into the live ML risk-prediction models was always `0.0`
+  regardless of real usage (verified live: real 14.0% → extracted 0.0).
+  Also fixed `_load_performance_data` (used by `check_model_drift`),
+  which called two nonexistent `DataManager` methods
+  (`load_data`/`query_data` — real method: `fetch_df`), so financial
+  drift detection always failed. Zero prior test coverage; added 3
+  regression tests.
+- **Fixed, dormant-but-tested**: `ml_analytics.py`'s `check_model_drift`
+  had the identical nonexistent-`DataManager`-method bug — its own unit
+  test's hand-rolled stub only implemented the buggy method name
+  (`load_data`), matching the bug instead of the real class, which is
+  exactly why it went undetected. Updated the stub to `fetch_df`.
+  Same file's `extract_features_from_metrics` called
+  `datetime.now().dayofweek` — a pandas `Timestamp` attribute, not on
+  stdlib `datetime` — `AttributeError` on every call, silently caught,
+  always returning `[0.0]*17`. Fixed to `.weekday()`.
+- **Fixed, dormant/dead, cheap**: `monitoring/config.py`'s
+  `_parse_env_value` referenced a module-level `logger` that only exists
+  inside the file's own `__main__` guard — `NameError` on any
+  non-numeric env var. `data_freshness_monitor.py` imported
+  `UniversalNotifier` from a module that doesn't exist
+  (`src.utils.universal_notifier`; real path:
+  `src.core.logging.notifier`) — not even caught by the surrounding
+  except tuple. `reporting/performance_reports.py`'s
+  `ComprehensiveReporter._check_system_status` parsed a flat
+  `"45.2%"`-style string format `ResourceMonitor` never produces (real
+  shape is nested floats) — CPU/memory alerts could never fire. All
+  three fixed.
+- **Architectural finding, NOT fixed — same shape as the time-gap-
+  detection bug from the last batch**: `DataFreshnessMonitor` and
+  `FeatureDriftMonitor` are both constructed live inside the real
+  feature-engineering pipeline (`enhanced_smart_selector.py`, wired via
+  `pipeline/stages/feature_engineering/orchestrator.py`), but neither
+  object's check methods are ever actually called after construction —
+  the monitoring scaffolding runs on every real pipeline execution and
+  silently does nothing. Fixing this properly means deciding where in
+  the pipeline these checks should actually fire, which is a design
+  decision, not a mechanical fix — noted alongside the other
+  constructed-but-never-invoked findings for the eventual project-level
+  review.
+- **Noted, not fixed (low priority, currently unreachable)**:
+  `path_safety.py`'s hardened `validate_path()`/`safe_join()` functions
+  are never actually called by any of their 5 real call sites (all use
+  the trivial path getters instead) — and `validate_path()`'s own
+  containment check (`str(path).startswith(str(root))`) has no
+  path-separator boundary check, so a sibling directory like
+  `data_leak/` would incorrectly pass validation against an allowed
+  root `data/`. Contrast with `artifact_security.py`'s `_is_within()`,
+  which does this correctly via `Path.relative_to()`. Unreachable today
+  since nothing calls the buggy function, but worth fixing if this ever
+  gets wired in for real path-traversal protection.
+- **Archived, confirmed dead** (zero callers anywhere, including tests):
+  `src/utils/checkpoint_manager.py` (name collides with an unrelated,
+  live `CheckpointParams` in `src/colab/config/training_config.py`),
+  `src/utils/json_utils.py`, `src/utils/math_utils.py` (name collides
+  with two other, unrelated, actually-used modules of similar name —
+  `src/utils/math_safe.py` and `src/core/utils/math_utils.py` — real
+  risk of importing the wrong one), `src/monitoring/base.py`
+  (`BaseMonitor` — a second, orphaned, incompatible class of the same
+  name; `monitoring/__init__.py` actually re-exports the real
+  `BaseMonitor` from `monitoring_system.py`), `src/monitoring/drift_detector.py`,
+  `src/monitoring/performance_monitor.py`.
+- Read clean, no bugs found: `src/utils/__init__.py`,
+  `src/utils/artifact_security.py`, `src/utils/dynamic_module_loader.py`,
+  `src/utils/math_safe.py`, `src/utils/path_utils.py`,
+  `src/utils/rate_limiter.py`, `src/utils/trading_calendar.py`,
+  `src/monitoring/__init__.py`, `src/monitoring/dashboard.py`,
+  `src/monitoring/monitoring_system.py`,
+  `src/monitoring/feature_drift_monitor.py` (class itself is correct —
+  the bug is nothing calls it, see architectural finding above),
+  `src/monitoring/infrastructure/resource_monitor.py` (this is the
+  ground-truth schema both `health_hub.py` and `performance_reports.py`
+  got wrong).
+- Verified: `tests/ -k "health_hub or ml_analytics or monitoring or
+  resource_monitor or performance_reports or data_freshness or utils"`
+  → 21 passed, zero regressions.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
