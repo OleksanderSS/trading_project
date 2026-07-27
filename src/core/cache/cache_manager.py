@@ -31,7 +31,7 @@ class CacheManager:
         self.lock = threading.Lock()
 
         # Integration with DataManager for Meta-Storage
-        self.db = data_manager or DataManager(self.config.get('paths.raw_db', 'data/raw_data.duckdb'))
+        self.db = data_manager or DataManager(self.config)
         self._init_db()
 
         # Salt based on table states
@@ -143,10 +143,11 @@ class CacheManager:
                 try:
                     resolved_path = pkl_file.resolve()
                     cache_dir = self.cache_dir.resolve()
-                    if not str(resolved_path).startswith(str(cache_dir)):
-                        self.logger.error(f"Security: Attempted to load pickle from outside cache directory: {pkl_file}")
-                        return None
-                except (OSError, ValueError, RuntimeError) as e:
+                    resolved_path.relative_to(cache_dir)
+                except ValueError:
+                    self.logger.error(f"Security: Attempted to load pickle from outside cache directory: {pkl_file}")
+                    return None
+                except (OSError, RuntimeError) as e:
                     self.logger.exception(f"Security: Path validation failed for {pkl_file}: {e}")
                     return None
                 
@@ -158,7 +159,7 @@ class CacheManager:
                     self.memory_cache[cache_key] = {'value': value, 'timestamp': meta['timestamp'], 'ttl': meta['ttl']}
                 return value
 
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, OSError) as e:
             self.logger.warning(f"Failed to load cache file for {key}: {e}")
 
         return None
@@ -201,7 +202,7 @@ class CacheManager:
             }])
             self.db.upsert('cache_metadata', meta_df, unique_on=['key_hash'])
 
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, OSError) as e:
             self.logger.exception(f"Failed to save cache for {key}: {e}")
 
     def get_stats(self) -> dict[str, Any]:

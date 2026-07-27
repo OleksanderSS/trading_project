@@ -13,10 +13,12 @@ secrets/
 # Ignored large model files
 /models/
 logs/
-cache/
+# Root-level runtime cache data only - anchored so it doesn't match
+# source subdirectories named "cache" anywhere else in the tree (this
+# unanchored pattern previously hid src/pipeline/cache/ and other real
+# source directories from git entirely - see src/archive/MANIFEST.md)
+/cache/
 backups/
-# Keep src/core/cache/ for cache manager module
-!src/core/cache/
 results/
 monitoring_reports/
 src/trained_models/
