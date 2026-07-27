@@ -42,8 +42,6 @@ class ModelRegistry:
         'autoencoder': {'type': 'heavy', 'role': 'anomaly', 'can_be_primary': False, 'class': 'Autoencoder', 'default_feature_count': 42},
 
         # Enhanced/Experimental
-        'dean_ensemble': {'type': 'enhanced', 'role': 'ensemble', 'can_be_primary': True, 'class': 'DeanEnsemble', 'default_feature_count': 64},
-        'sentiment': {'type': 'enhanced', 'role': 'predictor', 'can_be_primary': False, 'class': 'SentimentModel', 'default_feature_count': 10},
         'lgbm_bayesian': {'type': 'enhanced', 'role': 'predictor', 'can_be_primary': True, 'class': 'LightGBM', 'default_feature_count': 64},
 
         # Aliases/Legacy
