@@ -841,6 +841,95 @@ top-level orchestration files have been read and fixed. Only `hybrid/`
 top of this document) remains before `src/pipeline/` can be called fully
 closed out.
 
+**`src/pipeline/hybrid/` pass complete — `src/pipeline/` core sweep now
+fully closed out.** Recon subagent read all 36 files. Key structural
+finding: roughly half this directory (~15 of ~20 components built by
+`OrchestratorComponentFactory.initialize_components()`) is constructed and
+attached to the orchestrator via `setattr`, but never actually called by
+any live code path — `HybridOrchestrator`'s own public API only touches
+`pipeline_runner`, `pipeline_manager`, `colab_manager`, and
+`light_models_trainer`. Confirmed via grep (`orchestrator.<name>.method(`
+across `src/pipeline`, `src/cli`, `src/main`) and zero test coverage for
+any of the ~15 (one apparent test hit, `test_pipeline_executor.py`, is a
+false positive — it tests the unrelated `src.cli.pipeline_executor`,
+which merely shares a class name with `src.pipeline.hybrid.pipeline_executor`).
+Real, confirmed bugs fixed:
+- `colab_manager.py`'s `_load_single_file`: when a file's JSON wraps its
+  payload in a top-level `models_metadata` key (the real shape
+  `colab_results.json` always uses — confirmed against
+  `scripts/colab/colab_clean_cell.py`'s own writer), the load
+  **overwrote** `results['models_metadata']` instead of merging into it,
+  unlike the merge path used for unwrapped data. `trained_models_metadata.json`
+  isn't written by any real script today so this never fires in practice
+  yet, but it's a live method (`load_colab_results` is called from
+  `src/cli/pipeline_executor.py`) and a latent trap the moment a second
+  wrapped-shape file is ever written alongside `colab_results.json`.
+  Fixed by unwrapping first, then always merging through the same path.
+  Added a regression test (`test_load_colab_results_merges_wrapped_models_metadata_instead_of_overwriting`
+  in `tests/unit/test_hybrid_feature_target_safety.py`) since this method
+  had zero prior coverage.
+- `selected_features_processor.py`: called
+  `self.feature_selection_validator._create_mock_selected_features_for_test(...)`
+  (leading underscore) but the real method on `FeatureSelectionValidator`
+  has no underscore — guaranteed `AttributeError` the moment this dormant
+  path is ever exercised. Fixed the call site.
+- `model_training_orchestrator.py`'s `_prepare_training_data` read
+  `context_data.get('features', [])`, but the only real producer
+  (`context_builder.py`'s `_create_context_data`) writes the key
+  `selected_features` — `available_features` was always `[]`, so
+  `train_models_for_contexts` silently trained 0 models regardless of
+  input. Fixed the key. (The same function's `timeframe` read is a
+  separate, deeper gap — `context_builder.py` never captures a timeframe
+  at all — left as-is rather than inventing new plumbing for a
+  zero-caller method; noted for whoever eventually wires this class in.)
+- Archived 4 confirmed fully-dead files (zero references anywhere,
+  including instantiation — not just "unused once built" like the ~15
+  above): `hybrid_dataclasses.py`, `storage_helpers.py`,
+  `data_components_context.py` (its only caller, `DataComponentsContext`,
+  is itself never instantiated; also independently broken —
+  `HybridDataManager(config_manager)` vs. the real
+  `HybridDataManager.__init__(self, output_dir)`), `feature_loader.py`
+  (`FeatureLoader.__init__` never sets `self.logger`, so its own except
+  blocks raise `AttributeError` masking the real error — moot, since
+  nothing instantiates it).
+- **Deliberately NOT fixed / archived, deferred for a user decision**:
+  the ~15-component dormant cluster itself (`cache_manager.py`,
+  `orchestrator_interface.py`, `feature_selection_manager.py`,
+  `feature_selection_validator.py` (only reachable via the now-fixed but
+  still-dormant chain above), `test_mode_manager.py`, `context_builder.py`,
+  `data_manager.py`/`HybridDataManager`, `data_processor.py`,
+  `data_utils.py`, `data_batch_manager.py`, `pipeline_metadata_manager.py`,
+  `pipeline_executor.py`, `colab_workflow_manager.py`,
+  `model_training_orchestrator.py`, `selected_features_processor.py`).
+  Each duplicates responsibility already handled by a working live
+  component (e.g. `colab_workflow_manager.py` is superseded by inline
+  logic already in `pipeline_manager.py`; `pipeline_executor.py`'s own
+  stage methods are literally `# Implementation would go here` stubs,
+  fully superseded by the real, working `pipeline_runner.py`). Asked the
+  user via AskUserQuestion whether to archive the whole cluster, fix
+  bugs cheaply and leave wired, or just document — no response given, so
+  took the lower-risk, reversible path (fix the 3 confirmed contract bugs
+  above in place, leave the files wired but otherwise untouched) rather
+  than the bigger, harder-to-reverse factory rewrite. Still an open
+  question for a future session.
+- Also verified, not a bug: `component_factory.py` builds
+  `components['pipeline_runner']` without passing the shared
+  `components['db_data_manager']` (unlike `light_models_trainer`, which
+  does get it), so `PipelineOrchestrator` falls back to constructing its
+  own separate `DataManager` instance for stages 0-3. Checked
+  `DataManager.__init__`: its only real shared state
+  (`_connections`, the DuckDB connection cache) is a classvar keyed by
+  `db_path`, not per-instance, so a second instance still resolves to the
+  same underlying connection. Confirmed harmless — redundant object
+  construction, not a correctness bug.
+- Verified: `tests/ -k "hybrid or colab_manager or selected_features or
+  model_training_orchestrator or component_factory or pipeline_runner"`
+  → 17 passed (plus the new regression test, 10/10 in its file), zero
+  regressions. One unrelated pre-existing failure
+  (`test_run_hybrid_pipeline_help_if_available`, a subprocess-timeout
+  smoke test) confirmed via `git stash` to fail identically on the
+  pre-session baseline.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
