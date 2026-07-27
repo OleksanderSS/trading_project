@@ -375,7 +375,7 @@ class DataFreshnessMonitor:
         """Send alert to Telegram."""
         try:
             # This would integrate with existing Telegram notifier
-            from src.utils.universal_notifier import UniversalNotifier
+            from src.core.logging.notifier import UniversalNotifier
 
             notifier = UniversalNotifier()
             await notifier.send_message(message)

@@ -76,7 +76,7 @@ class MonitoringConfig:
                 return float(value)
             return int(value)
         except ValueError as e:
-            logger.debug(f"Could not parse env value '{value}' as number: {e}")
+            self.logger.debug(f"Could not parse env value '{value}' as number: {e}")
         if value.lower() in ('true', 'yes', '1'):
             return True
         if value.lower() in ('false', 'no', '0'):

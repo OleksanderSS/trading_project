@@ -50,9 +50,9 @@ class ComprehensiveReporter:
         """Gathers real-time OS resource metrics from ResourceMonitor and triggers alerts."""
         health = self.resource_monitor.get_health_status()
 
-        # Map values from ResourceMonitor format (e.g. '45.2%') back to float for thresholds
-        cpu_val = float(health.get('cpu', '0%').replace('%', ''))
-        mem_val = float(health.get('memory', '0%').replace('%', ''))
+        system = health.get('system', {})
+        cpu_val = float(system.get('cpu', {}).get('percent', 0))
+        mem_val = float(system.get('memory', {}).get('percent', 0))
 
         status = {
             'cpu': {'percent': cpu_val, 'status': 'OK' if cpu_val < self.thresholds['cpu_percent'] else 'HIGH_LOAD'},
