@@ -314,10 +314,10 @@ class PredictionStage(BaseStage):
             )
         )
         nlp_adjustment_applied = False
-        if news_data:
+        if news_data is not None and not news_data.empty:
             from src.patterns.pattern_recognition_adjustment import adjust_predictions_with_patterns
             base_pred_dict = {ticker: adjusted_prediction}
-            pattern_adj_dict = adjust_predictions_with_patterns(base_pred_dict, news_data)
+            pattern_adj_dict = adjust_predictions_with_patterns(base_pred_dict, news_data.to_dict('records'))
             if ticker in pattern_adj_dict:
                 self.logger.info(f"📰 Applied NLP pattern adjustment: {adjusted_prediction:.4f} -> {pattern_adj_dict[ticker]:.4f}")
                 adjusted_prediction = pattern_adj_dict[ticker]
