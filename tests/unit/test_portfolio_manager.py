@@ -29,6 +29,20 @@ class PriceAwareEliteSizer:
         return 0.1, {"stages": {"kelly_size": 0.1}}
 
 
+def test_max_daily_drawdown_reads_the_real_risk_config_key():
+    """PortfolioManager previously read risk_config['max_daily_drawdown_pct'],
+    a key that doesn't exist in src/config/risk_management.yaml (real key:
+    max_daily_loss_pct) - always silently fell back to the hardcoded 0.05
+    default instead of the configured, more conservative 0.03, making the
+    kill switch 67% more permissive than intended."""
+    manager = PortfolioManager(
+        FakePortfolio(),
+        config={"max_daily_loss_pct": 0.03, "max_drawdown_pct": 0.15},
+    )
+
+    assert manager.max_daily_drawdown_pct == 0.03
+
+
 def test_position_size_falls_back_to_elite_sizer_when_adaptive_fails():
     manager = PortfolioManager(FakePortfolio(), elite_risk_sizer=EliteSizer())
     manager.position_sizer = FailingAdaptiveSizer()

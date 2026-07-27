@@ -45,7 +45,7 @@ class PortfolioManager:
         self.risk_per_trade_pct = risk_config.get('risk_per_trade_pct', 0.03)
         self.max_position_size_pct = risk_config.get('max_position_size_pct',
             0.1)
-        self.max_daily_drawdown_pct = risk_config.get('max_daily_drawdown_pct',
+        self.max_daily_drawdown_pct = risk_config.get('max_daily_loss_pct',
             0.05)
         self.position_sizer = AdaptivePositionSizer(config=risk_config.get(
             'position_sizer', {}))
