@@ -411,6 +411,16 @@ class TradingExecutionStage(BaseStage):
 
     def _find_latest_batch_name(self) -> str | None:
         output_dir = Path(self.config_manager.get('system.accumulation.output_dir', 'data/colab/accumulated'))
+        # 'main_database' is the project-wide default batch name (used by
+        # system_orchestrator.py, colab_environment.py, batch_manager.py,
+        # hybrid_orchestrator.py) - check it first, matching the sibling
+        # TradingDataIO._load_predictions_from_disk's already-correct
+        # logic. Without this, any invocation without an explicit
+        # batch_name (e.g. CLI runs where args.batch_name is None) would
+        # only ever look for test_ticker_* dirs and silently miss the real
+        # main_database/stage_5_results.json even when it exists.
+        if (output_dir / 'main_database').exists():
+            return 'main_database'
         batch_dirs = list(output_dir.glob('test_ticker_*'))
         return max(batch_dirs, key=lambda p: p.stat().st_mtime).name if batch_dirs else None
 
