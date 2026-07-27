@@ -1587,6 +1587,62 @@ Next: the promised holistic project-level architectural review, drawing
 on the accumulated list of deferred architectural/design-decision items
 scattered across this document and the standing memory file.
 
+**Post-sweep finding (2026-07-27, commit `64fea9f0`): kill-switch used
+the wrong risk config key.** While investigating whether a coherent
+"governance agent" already sets PnL/train-test bounds for the pipeline
+(user question, not part of the systematic directory sweep), found:
+`src/trading/portfolio_manager.py`'s `PortfolioManager.__init__` read
+`risk_config.get('max_daily_drawdown_pct', 0.05)`, but
+`src/config/risk_management.yaml`'s real key is `max_daily_loss_pct`
+(0.03) — `max_daily_drawdown_pct` doesn't exist anywhere in config.
+Every instantiation silently used the hardcoded 0.05 default instead of
+the configured 0.03, making `is_trading_allowed()` — the literal
+kill-switch check — 67% more permissive than intended. Fixed, added a
+regression test (zero prior coverage of this exact config path).
+Verified: `tests/ -k "portfolio_manager or risk_management or
+trading_orchestrator or kill_switch"` → 16 passed, zero regressions.
+
+**Investigation finding (2026-07-27, not a bug fix, informs future
+architecture work): no coherent "governance/policy" layer exists for
+PnL limits or train/test split ratios.** User asked whether a
+"pipeline-manager agent with pnl/train-test bounds" already exists to
+integrate hyperparameter calibration into. Full investigation (see
+standing project memory for the complete writeup) found these are
+scattered across 5 disconnected places:
+1. `src/config/risk_management.yaml` — the one real, live config (now
+   correctly wired per the fix above).
+2. `src/trading/adaptive_parameter_manager.py`'s `AdaptiveParameterManager`
+   — a fully-built, regime-aware drawdown policy (trending_up=0.06,
+   volatile=0.03, dead=0.01, etc.) that's instantiated with **no config
+   at all** (`AdaptiveParameterManager(logger=self.logger)`,
+   `pipeline/stages/trading/orchestrator.py:54`) and whose computed
+   `max_daily_drawdown_pct` output is **never read by anything
+   downstream** — same "built, never wired" shape as several other
+   findings this whole audit.
+3. `dean_os/config/risk.yaml` — dead, zero Python callers anywhere.
+4. `dean_os/anxiety_kill_switch.py`'s `build_kill_switch_from_yaml()` —
+   zero callers; `AnxietyKillSwitch` always falls back to hardcoded
+   `AnxietyConfig` defaults since `factory.py` never passes a real
+   config through.
+5. Train/test split: `src/training/constants.py`'s
+   `DEFAULT_TEST_SIZE = 0.2` is the actual hardcoded source of truth
+   (`pipeline/stages/modeling/orchestrator.py:241` reads
+   `self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)`, but
+   `self.modeling_config` is always `{}` — no `modeling:` top-level
+   section exists in any of the 26 config yaml files). Two YAML
+   duplicates of the same `0.2` number exist
+   (`unified_config.yaml:191`, `processing.yaml:16`) but nothing reads
+   either path — pure coincidental agreement, not real wiring.
+
+**User's decision (2026-07-27): build a single `PipelinePolicyManager`-
+style component consolidating all three** (risk limits, train/test
+split ratios, and calibrated-hyperparameter output from a to-be-built
+real `--mode calibrate`) — wiring the already-built
+`AdaptiveParameterManager` into it rather than duplicating its regime
+logic, per this audit's standing "fix/extend the existing mechanism,
+don't build a parallel one" rule. Not yet implemented — this is a
+design/build task for a future session, not a mechanical fix.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
