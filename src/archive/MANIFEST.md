@@ -1472,6 +1472,121 @@ bug.
 - Verified: `tests/ -k "trading_orchestrator or veto or agents or
   consensus_engine or stage6"` → 19 passed, zero regressions.
 
+**Peripheral `src/` sweep, EIGHTH AND FINAL batch (2026-07-27, commits
+`1862bcf4`, `1be84d11`, `7fe6e676`, `aa8304a9` + this doc) — `src/core/`
+(33 files, largest peripheral directory). This closes out the entire
+peripheral `src/` sweep.** Recon subagent read all 33 files —
+foundational infrastructure (config, logging, error handling, security,
+caching, HTTP clients), so bugs here have wide blast radius.
+- **Fixed, LIVE, security-relevant**: `security/path_validator.py`'s
+  `validate_safe_path()` — the sole containment gate used by
+  `FileManager._resolve_path` (every file read/write in the pipeline)
+  and `SecretsManager` — used raw `str(target).startswith(str(base))`,
+  the same sibling-directory-prefix boundary bug already fixed in
+  `src/utils/path_safety.py` earlier this sweep (there it was
+  unreachable/dormant; here it's live and reachable). Fixed to
+  `Path.relative_to()`. Added a regression test for the sibling-
+  directory escape case (confirmed it fails against the old check,
+  passes against the new one).
+- **Fixed, LIVE**: `file_management/file_manager.py`'s `_atomic_write`
+  (used throughout the pipeline via `save_dataframe`/`save_json`/
+  `save_yaml`) raises its own `OSError` on integrity-check failure,
+  clearly intending its own except block to catch it — but `OSError`
+  wasn't in the tuple. Same gap for any real disk error (permission
+  denied, disk full — the dominant real failure mode). `.tmp` files
+  were never cleaned up and the intended error log never fired; the
+  exception just propagated raw. Fixed, added a regression test.
+- **Fixed, LIVE**: `cache/cache_manager.py` had 3 separate bugs: (1)
+  `CacheManager()` with no explicit `data_manager` passed a raw path
+  string into `DataManager.__init__`, which expects a config-manager
+  object — `AttributeError`, currently masked because every real caller
+  happens to pass an explicit `data_manager`; (2) the pkl-file
+  containment check had the identical boundary bug as
+  `path_validator.py` above (not currently exploitable via real
+  attacker input since the filename is always a sha256 hash, but fixed
+  for defense-in-depth); (3) `get()`/`set()` both perform real
+  parquet/pickle/DuckDB I/O inside except tuples missing `OSError`, so
+  a failed cache write — explicitly designed to log-and-continue —
+  would instead propagate uncaught into the caller's pipeline stage.
+  Fixed all 3, added a regression test.
+- **Fixed alongside the above — an ACTUAL near-loss incident, not
+  hypothetical**: the unanchored `cache/` `.gitignore` pattern (matches
+  ANY directory named "cache" anywhere in the tree, not just the
+  intended root-level runtime cache dir) was blocking `git add` on the
+  new `tests/core/cache/` test file this session added, and — more
+  seriously — had already silently hidden `src/pipeline/cache/results_cache_manager.py`
+  from git entirely (confirmed: `git ls-files` returns nothing for it;
+  the file itself turned out to be empty with zero real callers, so no
+  actual content was lost this time, but the exposure was real). This
+  is the exact same class of incident already documented once this
+  session (the `stages/cache/feature_cache_manager.py` near-loss) —
+  flagged then as "still overly broad and untouched, worth a deliberate
+  fix." Fixed now: anchored the pattern to `/cache/` (root-only,
+  matching the style of `/data/` and `/models/` two lines above it in
+  the same file) and removed the now-unnecessary
+  `!src/core/cache/` exception. Verified via `git check-ignore`: the
+  real `/cache/unified_cache` runtime directory is still ignored;
+  `src/pipeline/cache/`, `src/core/cache/`, `tests/core/cache/`, and
+  `src/archive/*/cache/` are all correctly no longer affected.
+- **Fixed, dead + broken (cheap, low risk)**: `clients/http_client_factory.py`'s
+  `get_session_client` was a sync method wrapping the real `async def
+  get_http_client` — calling it per its own documented usage pattern
+  would fail immediately (a coroutine has no `__aenter__`). Zero real
+  callers today (every collector calls `get_http_client` directly), but
+  fixed anyway since cheap. Also fixed `status_forcelist`'s `x or
+  default` truthiness trap (every sibling parameter in the same
+  function correctly uses `is not None`) — a caller explicitly passing
+  `status_forcelist=[]` would silently get the config default instead.
+- **Fixed, minor contract bug**: `base_integration.py`'s `get_status()`
+  built the promised `error` field on `ping()` failure, then
+  unconditionally re-raised anyway, making the documented standardized
+  status dict permanently unreachable on its own failure path. Removed
+  the re-raise.
+- **Archived, confirmed dead, zero test coverage**: `version_checker.py`,
+  `cache/object_cache.py` + `cache/query_cache.py` (removed from
+  `cache/__init__.py`'s imports too), `system/archive_manager.py`,
+  `system/batch_processor.py` (shadowed by a different, live class of
+  the same name at `src/training/batch/batch_processor.py`),
+  `system/version_manager.py`, `utils/lazy_loader.py`,
+  `logging/exception_decorator.py`, `logging/log_standards.py`,
+  `validation/validators.py` (a completely separate, unrelated,
+  zero-caller `DataValidator`/`TradingSignal`/etc. module from the real,
+  live `src/validation/validators.py`'s `UnifiedValidator` — same-name
+  confusion risk, same pattern as several other duplicate-name findings
+  this sweep).
+- **Left in place, dormant-but-tested (per this sweep's established
+  precedent — has real dedicated test coverage, so not "confirmed
+  abandoned")**: `clients/llm_client.py` (`LLMClient` — tested by
+  `tests/test_llm_proposal_boundary.py`; the live orchestrator always
+  calls `get_default_orchestrator(llm_client=None)` today, so this class
+  is wired-for but not yet actually used), `utils/math_utils.py`
+  (`safe_sqrt`/`safe_log` — tested by `tests/unit/test_math_utils.py`;
+  a different, unrelated `src/utils/math_safe.py::safe_div` is the one
+  actually used in production).
+- **Noted, not touched**: `cloud/gcs_manager.py` (`GCSManager`) is
+  instantiated once in `pipeline/stages/processing/orchestrator.py` but
+  none of its methods are ever called — same "constructed but never
+  invoked" shape as several earlier findings this sweep
+  (`DataFreshnessMonitor`/`FeatureDriftMonitor`, `shadow_battle.py`'s
+  dead simulator). Its narrow except-tuples also don't match Google
+  Cloud's real exception types, but harmless while unreachable.
+- Read clean, no bugs found: `__init__.py`, `exceptions.py`,
+  `error_handling/error_handler.py`, `logging/logger.py`,
+  `logging/notifier.py`, `monitoring/memory_profiler.py`,
+  `security/secure_secrets_manager.py`, `system/connection_registry.py`,
+  `utils/prediction_utils.py`.
+- Verified: `tests/ -k "core or cache_manager or file_manager or
+  path_validator or http_client or base_integration or health_hub"` →
+  199 passed, 2 skipped, zero regressions.
+
+**`src/` peripheral sweep is now FULLY COMPLETE** — every directory
+outside `src/pipeline/` (already fully audited earlier), `src/models/`,
+`src/training/`, `src/ensembling/` (all fully audited in earlier passes
+of this same standing audit) has now been read in full at least once.
+Next: the promised holistic project-level architectural review, drawing
+on the accumulated list of deferred architectural/design-decision items
+scattered across this document and the standing memory file.
+
 ## Known cross-import gotcha
 
 Files moved into `src/archive/` sometimes still import sibling
