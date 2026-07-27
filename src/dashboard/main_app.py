@@ -43,7 +43,7 @@ logger.setLevel(logging.INFO)
 @st.cache_data(ttl=60)
 def get_data_from_db(_db_manager, query):
     """ Кешована функція для отримання даних з БД """
-    return _db_manager.load_data(query)
+    return _db_manager.fetch_df(query)
 
 @st.cache_resource
 def get_all_configured_tickers() -> list[str]:
