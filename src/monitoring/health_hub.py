@@ -181,7 +181,7 @@ class HealthHub:
             sys_m = metrics.get('system', {})
             cpu = sys_m.get('cpu', {}).get('percent', 0) / 100.0
             mem = sys_m.get('memory', {}).get('percent', 0) / 100.0
-            disk = sys_m.get('disk', {}).get('percent', 0) / 100.0
+            disk = metrics.get('disk', {}).get('usage', {}).get('percent', 0) / 100.0
             pipe_perf = metrics.get('pipeline', {}).get('efficiency', 1.0)
             drift = metrics.get('analytics', {}).get('drift_score', 0.0)
             return [cpu, mem, disk, pipe_perf, drift]
@@ -256,18 +256,8 @@ class HealthHub:
 
     def _load_performance_data(self, model_name: str) ->pd.DataFrame | dict[str, str]:
         """Load and validate performance data for drift analysis."""
-        try:
-            # Use parameterized query through table_name and filter_params
-            perf_df = self.data_manager.load_data(
-                'model_performance',
-                model_name=model_name,
-                order_by='timestamp DESC'
-            )
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-            # Fallback to query_data if load_data with params fails
-            self.logger.warning(f'Initial performance load failed, attempting fallback: {e}')
-            query = "SELECT win_rate, sharpe_ratio, timestamp FROM model_performance WHERE model_name = ? ORDER BY timestamp DESC"
-            perf_df = self.data_manager.query_data(query, params=[model_name])
+        query = "SELECT * FROM model_performance WHERE model_name = ? ORDER BY timestamp DESC"
+        perf_df = self.data_manager.fetch_df(query, params=[model_name])
 
         if len(perf_df) < 10:
             return {'status': 'insufficient_data', 'message':
