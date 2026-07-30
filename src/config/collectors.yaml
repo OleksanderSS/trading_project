@@ -448,15 +448,26 @@ collectors:
     frequency: daily
     table_name: macro_sdmx_data
     agencies:
-      - WB
-      - ECB
-      - IMF
-      - OECD
-      - BIS
+      # WB_WDI, not WB: у sdmx1 джерело "WB" — це World Bank WITS, у якого є
+      # лише торгові/тарифні dataflow'и (DF_WITS_*), жодного CPI/GDP.
+      - WB_WDI
+      # ECB / IMF / OECD / BIS свідомо вимкнені, а не забуті: їхні індикатори
+      # нижче задані БЕЗ ключа (напр. ECB "ICP"), тобто це запит на весь
+      # dataflow по всіх країнах і серіях. Перевірено: ECB ICP не повернувся
+      # за 8+ хвилин. Щоб їх увімкнути, спершу треба задати конкретний ключ
+      # (як зроблено для WB_WDI: FREQ.SERIES.REF_AREA), інакше один такий
+      # запит блокує всю стадію збору. request_timeout нижче — страховка.
+      # - ECB
+      # - IMF
+      # - OECD
+      # - BIS
+    request_timeout: 90
     indicators:
-      WB:
-        - FP.CPI.TOTL.ZG
-        - NY.GDP.MKTP.KD.ZG
+      # SDMX-коди WDI пишуться з підкресленнями, а не з точками, як у
+      # звичайному REST API World Bank: FP_CPI_TOTL_ZG, не FP.CPI.TOTL.ZG.
+      WB_WDI:
+        - FP_CPI_TOTL_ZG      # інфляція, CPI, % річних
+        - NY_GDP_MKTP_KD_ZG   # зростання реального GDP, %
       ECB:
         - ICP
       IMF:
@@ -466,4 +477,12 @@ collectors:
         - MEI
       BIS:
         - WS_CBPOL_D
+    # Країни для джерел, у яких dataflow має вимір REF_AREA (WB_WDI).
+    ref_areas:
+      - USA
+      - CHN
+      - EMU
+      - JPN
+      - DEU
+      - GBR
     type: sdmx_macro

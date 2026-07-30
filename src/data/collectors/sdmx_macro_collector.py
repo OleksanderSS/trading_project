@@ -52,13 +52,25 @@ class SDMXMacroCollector(BaseCollector):
         self.table_name = self.configs.get("table_name", "macro_sdmx_data")
         self.agencies = self.configs.get("agencies", ["WB", "ECB"])
         
-        # Mapping of indicators per agency. 
-        # Example: WB -> 'FP.CPI.TOTL.ZG' (Inflation), ECB -> 'ICP' (HICP Inflation)
+        # Mapping of indicators per agency.
+        # NOTE for WB_WDI: SDMX series codes use underscores, not the dots used
+        # by the World Bank's plain REST API -- 'FP_CPI_TOTL_ZG', not
+        # 'FP.CPI.TOTL.ZG'. The source id is WB_WDI; plain 'WB' in sdmx1 is
+        # World Bank WITS, which only publishes trade/tariff dataflows
+        # (DF_WITS_Tariff_TRAINS etc.) and has no CPI/GDP indicators at all.
         self.indicators = self.configs.get("indicators", {
-            "WB": ["FP.CPI.TOTL.ZG", "NY.GDP.MKTP.KD.ZG"],
+            "WB_WDI": ["FP_CPI_TOTL_ZG", "NY_GDP_MKTP_KD_ZG"],
             "ECB": ["ICP"]
         })
-        
+        # Reference areas for sources keyed by country (WB_WDI). Ignored by
+        # sources whose dataflow has no REF_AREA dimension.
+        self.ref_areas = self.configs.get(
+            "ref_areas", ["USA", "CHN", "EMU", "JPN", "DEU", "GBR"]
+        )
+        # Hard ceiling per SDMX request, see run(). SDMX services are slow and
+        # an unkeyed request can stream a whole dataflow indefinitely.
+        self.request_timeout = float(self.configs.get("request_timeout", 90))
+
         self.logger.info(f"SDMXMacroCollector initialized for agencies: {self.agencies}")
 
     def _generate_hash(self, row: pd.Series) -> str:
@@ -89,10 +101,24 @@ class SDMXMacroCollector(BaseCollector):
             indicators_to_fetch = self.indicators[agency]
             for ind in indicators_to_fetch:
                 try:
-                    # Run sync SDMX request in background thread
-                    agency_data = await asyncio.to_thread(self._fetch_sdmx_sync, agency, ind)
+                    # Run sync SDMX request in background thread, under a hard
+                    # per-request timeout. Without this, one unbounded request
+                    # (e.g. an unkeyed ECB `ICP` pull, which is the entire HICP
+                    # dataflow for every country) blocks for many minutes and
+                    # starves every collector scheduled after this one in the
+                    # same stage.
+                    agency_data = await asyncio.wait_for(
+                        asyncio.to_thread(self._fetch_sdmx_sync, agency, ind),
+                        timeout=self.request_timeout,
+                    )
                     if agency_data:
                         all_data.extend(agency_data)
+                except TimeoutError:
+                    self.logger.error(
+                        f"Timed out after {self.request_timeout}s fetching {ind} "
+                        f"from {agency}. The request is probably unkeyed and "
+                        f"pulling a whole dataflow -- give it an explicit key."
+                    )
                 except Exception as e:
                     self.logger.error(f"Failed to fetch {ind} from {agency}: {e}")
 
@@ -126,10 +152,17 @@ class SDMXMacroCollector(BaseCollector):
             req = client_cls(agency)
             
             # This is highly dependent on the agency's data structure.
-            # We use a generic approach or specific known parameters for WB/ECB.
-            if agency == "WB":
-                # World Bank SDMX structure typically uses 'INDICATOR'
-                msg = req.data(resource_id='WDI', key={'INDICATOR': indicator}, params={'startPeriod': '2020'})
+            # We use a generic approach or specific known parameters per source.
+            if agency == "WB_WDI":
+                # The WDI dataflow is keyed FREQ.SERIES.REF_AREA. The key MUST
+                # be passed as a string, not a dict: given a dict, sdmx1 first
+                # issues a `?detail=serieskeysonly` validation request, and the
+                # World Bank answers that with 403 Forbidden -- which is what
+                # made every WB fetch fail regardless of the codes used.
+                key = f"A.{indicator}.{'+'.join(self.ref_areas)}"
+                msg = req.data(
+                    resource_id="WDI", key=key, params={"startPeriod": "2000"}
+                )
             elif agency == "ECB":
                 msg = req.data(resource_id=indicator, params={'startPeriod': '2020-01'})
             else:
