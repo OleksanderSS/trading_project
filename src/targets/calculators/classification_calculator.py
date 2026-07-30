@@ -11,6 +11,13 @@ class ClassificationCalculator:
     """
     Calculates binary and multiclass classification targets.
     """
+
+    #: Params this calculator honours — see RegressionCalculator for why this
+    #: is declared rather than introspected.
+    SUPPORTED_PARAMS = frozenset({
+        "base_col", "shift", "threshold", "thresholds",
+        "compare_to", "window", "indicator_col",
+    })
     def calculate_binary(self, df: pd.DataFrame, base_col: str, shift: int, threshold: float, **kwargs) -> pd.Series:
         """Binary target. Three comparison modes, selected by params:
 

@@ -19,6 +19,17 @@ class RegressionCalculator:
     Calculates regression targets based on normalized future returns.
     """
 
+    #: Params this calculator honours, declared explicitly so
+    #: TargetOrchestrator can flag config keys nothing reads. Declared rather
+    #: than introspected: params consumed inside helper methods are invisible
+    #: to a scan of `calculate`'s own source, and that produced false
+    #: positives.
+    SUPPORTED_PARAMS = frozenset({
+        "base_col", "shift",
+        "adjust_for_costs", "transaction_costs",
+        "method", "window",
+    })
+
     def calculate(self, df: pd.DataFrame, base_col: str, shift: int, **kwargs) -> pd.Series:
         """
         Calculates the future percentage return relative to the current timestamp.
@@ -114,17 +125,23 @@ class RegressionCalculator:
                     f"method 'high_low_range' needs columns {missing}, which are absent."
                 )
 
-        def per_ticker(group: pd.DataFrame) -> pd.Series:
-            return self._forward_metric(group, base_col, shift, method, window)
+        if "ticker" not in df.columns:
+            return self._forward_metric(df, base_col, shift, method, window)
 
-        if "ticker" in df.columns:
-            # Select only the columns the metric needs, so the grouping column
-            # is never handed to apply() (pandas 2.2 deprecates that).
-            needed = ["high", "low", "close"] if method == "high_low_range" else [base_col]
-            needed = [c for c in dict.fromkeys(needed) if c in df.columns]
-            out = df.groupby("ticker", group_keys=False)[needed].apply(per_ticker)
-            return out.reindex(df.index)
-        return self._forward_metric(df, base_col, shift, method, window)
+        # Assemble per ticker explicitly rather than via groupby().apply().
+        # apply() is ambiguous here: with several groups it concatenates the
+        # returned Series, but with a SINGLE group it treats the Series as a
+        # row and hands back a 1xN DataFrame, which then reindexes into an NxN
+        # square. That is the real call path -- TargetOrchestrator
+        # ._process_by_ticker_groups already splits by ticker, so this
+        # calculator normally sees one-ticker frames.
+        out = pd.Series(np.nan, index=df.index, dtype=float)
+        for _, idx in df.groupby("ticker", sort=False).groups.items():
+            values = self._forward_metric(
+                df.loc[idx], base_col, shift, method, window
+            )
+            out.loc[idx] = pd.Series(values, index=idx).astype(float)
+        return out
 
     @staticmethod
     def _forward_metric(g: pd.DataFrame, base_col: str, shift: int,

@@ -293,7 +293,10 @@ targets:
     type: "classification_binary"
     params:
       description: "Volatility (ATR) spikes by > 10% in the next 1 hour? (0=No, 1=Yes)"
-      base_col: "ATR_14_1h"
+      # ATR_14_60m, не _1h: feature_orchestrator додає суфікс `_{interval}`,
+      # а годинний інтервал у конвеєрі позначається як 60m. З "_1h" ціль
+      # падала з "Base column 'ATR_14_1h' not found" на кожному прогоні.
+      base_col: "ATR_14_60m"
       shift: -1
       threshold: 0.10
 

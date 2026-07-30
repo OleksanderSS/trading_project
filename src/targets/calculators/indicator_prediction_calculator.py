@@ -9,6 +9,10 @@ class IndicatorPredictionCalculator:
     """
     Calculates targets by shifting existing indicator columns.
     """
+
+    #: Params this calculator honours — see RegressionCalculator for why this
+    #: is declared rather than introspected.
+    SUPPORTED_PARAMS = frozenset({"indicator_col", "shift", "source_timeframe"})
     def calculate(self, df: pd.DataFrame, indicator_col: str, shift: int, **kwargs) -> pd.Series:
         """
         Shifts the specified indicator column to create a future target.
