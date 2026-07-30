@@ -52,4 +52,7 @@ mlflow
 mlflow-skinny
 optuna
 idna>=3.15
-pandasdmx
+# sdmx1 -- NOT pandasdmx. pandasdmx 1.6.0 pins pydantic<2 and would downgrade
+# pydantic to 1.x, which breaks dean_os (built on pydantic v2). sdmx1 is the
+# maintained successor with the same Request/to_pandas API.
+sdmx1

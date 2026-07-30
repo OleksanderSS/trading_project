@@ -88,23 +88,19 @@ class NewsAPICollector(BaseCollector):
         )
         return df
 
-    def _filter_by_cache(self, df: pd.DataFrame) -> pd.DataFrame | None:
-        """Filter DataFrame by cache manager if available."""
-        if self.cache_manager:
-            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
-            df = df[is_new].copy()
-            if df.empty:
-                self.logger.info("[NewsAPI] All fetched articles already exist in active cache.")
-                return None
-        return df
-
     def _update_cache(self, cache_key: str, cache_params: dict, df: pd.DataFrame, new_df: pd.DataFrame | None = None) -> None:
-        """Update cache with hashes from DataFrame."""
+        """Cache the whole run payload.
+
+        The per-article CacheManager dedup markers (`set(h, True, ttl=3600)`
+        in a loop, plus a matching per-article `get(h)` in a now-removed
+        `_filter_by_cache`) were deleted: each `set` is a pickle write plus a
+        single-row DuckDB upsert into `cache_metadata`, and each `get` is its
+        own `SELECT ... WHERE key_hash = ?`. `filter_new_records()` already
+        dedups on the same `hash` column in ONE query, and
+        `upsert(unique_on=['hash'])` enforces it at write time.
+        """
         if not self.cache_manager:
             return
-        hashes = new_df["hash"] if new_df is not None else df["hash"]
-        for h in hashes:
-            self.cache_manager.set(h, True, ttl=3600)
         self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
 
     async def run(
@@ -148,12 +144,7 @@ class NewsAPICollector(BaseCollector):
         # 3. Cryptographic Deduplication Hash
         df = self._create_article_hash(df)
 
-        # 4. Filter against Hash Memory
-        df = self._filter_by_cache(df)
-        if df is None:
-            return None
-
-        # 5. Filter against Historical Database
+        # 4. Filter against Historical Database
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             self.logger.info("[NewsAPI] No novel articles identified against historical database.")

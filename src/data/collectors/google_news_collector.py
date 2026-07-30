@@ -115,23 +115,21 @@ class GoogleNewsCollector(BaseCollector):
         df["hash"] = df["link"].apply(lambda url: hashlib.sha256(str(url).encode()).hexdigest())
         return df
 
-    def _filter_by_cache(self, df: pd.DataFrame) -> pd.DataFrame | None:
-        """Filter DataFrame by cache manager if available."""
-        if self.cache_manager:
-            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
-            df = df[is_new].copy()
-            if df.empty:
-                self.logger.info("[GoogleNews] Duplicative articles verified within local execution limits cache storage.")
-                return None
-        return df
-
     def _update_cache(self, cache_key: str, cache_params: dict, df: pd.DataFrame, new_df: pd.DataFrame | None = None) -> None:
-        """Update cache with hashes from DataFrame."""
+        """Cache the whole run payload.
+
+        The per-article CacheManager dedup markers (`set(h, True, ttl=86400)`
+        in a loop, plus a matching per-article `get(h)` in a now-removed
+        `_filter_by_cache`) were deleted: each `set` is a pickle write plus a
+        single-row DuckDB upsert into `cache_metadata`, and each `get` is its
+        own `SELECT ... WHERE key_hash = ?`. `filter_new_records()` already
+        dedups on the same `hash` column in ONE query, and
+        `upsert(unique_on=['hash'])` enforces it at write time -- so those
+        thousands of tiny writes were duplicated work that could stall the
+        entire collection stage.
+        """
         if not self.cache_manager:
             return
-        hashes = new_df["hash"] if new_df is not None else df["hash"]
-        for h in hashes:
-            self.cache_manager.set(h, True, ttl=86400)
         self.cache_manager.set(cache_key, df.to_dict("records"), cache_params, namespace="collectors")
 
     async def _run_internal(
@@ -176,12 +174,7 @@ class GoogleNewsCollector(BaseCollector):
         # 3. Memory limit boundary limits mappings stream url definitions uniqueness check parameter binding boundaries.
         df = self._deduplicate_articles(all_articles)
 
-        # 4. Hash identity comparison mapped resolution
-        df = self._filter_by_cache(df)
-        if df is None:
-            return None
-
-        # 5. Filter layer constraints evaluation against historical boundary
+        # 4. Filter layer constraints evaluation against historical boundary
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             self.logger.info("[GoogleNews] Historical layer identified zero execution constraint mapped articles matching memory constraint query limits protocol checks payload blocks matrix mappings scope parameter definition limits.")

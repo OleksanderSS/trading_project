@@ -112,12 +112,7 @@ class RSSCollector(BaseCollector):
         """Filter RSS articles by cache and database."""
         df['hash'] = df['link'].apply(lambda url: hashlib.sha256(str(url).encode()).hexdigest())
 
-        if self.cache_manager:
-            df = df[df['hash'].apply(lambda h: self.cache_manager.get(h) is None)].copy()
-            if df.empty:
-                self.logger.info('[RSS] All articles already in active cache.')
-                return None
-
+        # Per-article CacheManager markers were removed here: see _update_cache.
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             self.logger.info('[RSS] No novel articles vs. historical DB.')
@@ -169,11 +164,22 @@ class RSSCollector(BaseCollector):
 
     def _update_cache(self, cache_key: str, cache_params: dict, df: pd.
         DataFrame, new_df: pd.DataFrame | None=None) ->None:
+        """Cache the whole run payload.
+
+        This used to also write one CacheManager entry per article hash
+        (`set(h, True, ttl=86400)`) as a dedup marker. Each such call is a
+        pickle file write plus a single-row DuckDB upsert into
+        `cache_metadata`, so a normal feed sweep issued thousands of them at
+        roughly 4/sec -- and the matching read side issued one
+        `SELECT ... WHERE key_hash = ?` per article. `filter_new_records()`
+        already dedups on the same `hash` column in one query, and
+        `upsert(unique_on=['hash'])` enforces it at write time, so the
+        per-article markers were duplicated work that could stall the whole
+        collection stage. Caching the run payload below is kept -- that is
+        what CacheManager is actually good for.
+        """
         if not self.cache_manager:
             return
-        hashes = new_df['hash'] if new_df is not None else df['hash']
-        for h in hashes:
-            self.cache_manager.set(h, True, ttl=86400)
         self.cache_manager.set(cache_key, df.to_dict('records'),
             cache_params, namespace='collectors')
 

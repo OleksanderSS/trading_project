@@ -166,21 +166,19 @@ class InsiderCollector(BaseCollector):
                 return new_from_cache
         return None
 
-    def _filter_by_cache_manager(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Filter DataFrame by cache manager if available."""
-        if self.cache_manager:
-            is_new = df["hash"].apply(lambda h: self.cache_manager.get(h) is None)
-            df = df[is_new].copy()
-            if df.empty:
-                self.logger.info("[Insider] Primary logical index boundary satisfied in memory store.")
-                return df
-        return df
-
     def _update_cache(self, df: pd.DataFrame) -> None:
-        """Update cache with hashes from DataFrame."""
-        if self.cache_manager:
-            for h in df["hash"]:
-                self.cache_manager.set(h, True, ttl=86400)
+        """No-op retained for call-site compatibility.
+
+        This used to write one CacheManager entry per trade hash
+        (`set(h, True, ttl=86400)`), paired with a per-row `get(h)` in a
+        now-removed `_filter_by_cache_manager`. Each `set` is a pickle write
+        plus a single-row DuckDB upsert into `cache_metadata`; each `get` is
+        its own `SELECT ... WHERE key_hash = ?`. `filter_new_records()`
+        already dedups on the same `hash` column in ONE query and
+        `upsert(unique_on=['hash'])` enforces it at write time, so the
+        markers were duplicated work with no added safety.
+        """
+        return
 
     async def run(
         self,
@@ -226,12 +224,7 @@ class InsiderCollector(BaseCollector):
             axis=1,
         )
 
-        # 4. Filter validation constraint layer
-        df = self._filter_by_cache_manager(df)
-        if df.empty:
-            return None
-
-        # 5. Database logic mapping integration
+        # 4. Database logic mapping integration
         new_df = self.db_manager.filter_new_records(table_name, df)
         if new_df.empty:
             self.logger.info("[Insider] Verification check identified duplicate historical matrix representations.")

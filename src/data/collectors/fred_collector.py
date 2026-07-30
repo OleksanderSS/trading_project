@@ -86,21 +86,25 @@ class FredCollector(BaseCollector):
 
         return api_key, series_ids
 
-    def _filter_by_cache(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Filter DataFrame by cache manager if available."""
-        if self.cache_manager:
-            is_new = df['hash'].apply(lambda h: self.cache_manager.get(h) is None)
-            df = df[is_new].copy()
-            if df.empty:
-                self.logger.info("All collected FRED records are already in cache.")
-                return df
-        return df
-
-    def _update_cache(self, df: pd.DataFrame) -> None:
-        """Update cache with hashes from DataFrame."""
-        if self.cache_manager:
-            for h in df['hash']:
-                self.cache_manager.set(h, True)
+    # NOTE: this collector used to keep a per-record marker in CacheManager
+    # (one `cache_manager.get(hash)` per row on the read side, one
+    # `cache_manager.set(hash, True)` per row on the write side) as a
+    # "fast path" ahead of the database dedup below. That was strictly
+    # slower than the thing it was meant to avoid: every `get` is its own
+    # `SELECT ... WHERE key_hash = ?` against DuckDB and every `set` is a
+    # pickle file write plus a single-row DuckDB upsert, so a normal run
+    # (~7.9k new observations) issued ~7.9k selects and ~7.9k single-row
+    # upserts at roughly 4/sec. Measured: it pushed a 40-second HTTP job
+    # past a 15-minute wall clock and starved every collector scheduled
+    # after FRED in the same stage.
+    #
+    # `db_manager.filter_new_records()` already performs exactly this
+    # dedup, on the same `hash` column (its default), in ONE query -- and
+    # `upsert(unique_on=['hash'])` enforces the same uniqueness at write
+    # time regardless. So the cache layer was pure duplicated work, not a
+    # safety net. CacheManager is still the right tool for caching whole
+    # payloads (see yf_collector / rss_collector), just not for per-row
+    # dedup markers.
 
     async def run(self, **kwargs) -> pd.DataFrame | None:
         """Fetches data from FRED and filters for new records using cache and DB."""
@@ -148,32 +152,22 @@ class FredCollector(BaseCollector):
         df = pd.DataFrame(all_series_data)
         df['hash'] = df.apply(self._generate_hash, axis=1)
 
-        # 1. Filter by CacheManager (if available)
-        df = self._filter_by_cache(df)
-        if df.empty:
-            return None
-
-        # 2. Filter by Database
+        # Dedup against what is already stored -- one bulk query on `hash`.
         table_name = self.configs.get('table_name', 'fred_data')
         new_records_df = self.db_manager.filter_new_records(table_name, df)
 
         if new_records_df.empty:
-            # Update cache for the ones we checked to avoid DB hits next time
-            self._update_cache(df)
             self.logger.info("No new FRED records after DB filtering.")
             return None
 
         self.logger.info(f"Found {len(new_records_df)} new FRED records.")
 
-        # ✅ FIX: save to DB so macro data accumulates and is available for Stage 3
-        table_name = self.configs.get('table_name', 'fred_data')
+        # Save to DB so macro data accumulates and is available for Stage 3.
         try:
             self.db_manager.upsert(table_name, new_records_df, unique_on=['hash'])
             self.logger.info(f"Saved {len(new_records_df)} FRED records to '{table_name}'")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(f"Could not save FRED records to DB: {e}")
-
-        self._update_cache(new_records_df)
 
         return new_records_df
 

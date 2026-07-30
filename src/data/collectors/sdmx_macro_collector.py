@@ -13,10 +13,22 @@ from src.data.management.data_manager import DataManager
 
 from .base_collector import BaseCollector
 
+# `sdmx1` (import name `sdmx`) is the maintained successor to `pandasdmx` and
+# exposes the same `Request` / `to_pandas` API this collector uses.
+#
+# Do NOT "fix" a missing dependency here by installing pandasdmx: its last
+# release (1.6.0) pins pydantic<2, so `pip install pandasdmx` silently
+# DOWNGRADES pydantic to 1.7.4 and breaks all of dean_os, which is built on
+# pydantic v2 (`model_validate`, v2-style validators). `sdmx1` installs with
+# no such conflict. The pandasdmx fallback below is kept only so an
+# already-provisioned legacy environment keeps working.
 try:
-    import pandasdmx as sdmx
+    import sdmx
 except ImportError:
-    sdmx = None
+    try:
+        import pandasdmx as sdmx
+    except ImportError:
+        sdmx = None
 
 
 class SDMXMacroCollector(BaseCollector):
@@ -58,7 +70,11 @@ class SDMXMacroCollector(BaseCollector):
             return None
 
         if sdmx is None:
-            self.logger.error("pandasdmx is not installed. Please run: pip install pandasdmx")
+            self.logger.error(
+                "No SDMX library installed. Please run: pip install sdmx1 "
+                "(do NOT install pandasdmx -- it pins pydantic<2 and would "
+                "downgrade pydantic, breaking dean_os)."
+            )
             return None
 
         self.logger.info("Fetching macroeconomic data via SDMX...")
@@ -103,8 +119,11 @@ class SDMXMacroCollector(BaseCollector):
         """Synchronous fetch using pandasdmx."""
         results = []
         try:
-            # Create request instance for the specific agency
-            req = sdmx.Request(agency)
+            # Create request instance for the specific agency.
+            # sdmx1 renamed Request -> Client and will drop Request in v3.0;
+            # getattr keeps the legacy pandasdmx fallback working.
+            client_cls = getattr(sdmx, "Client", None) or sdmx.Request
+            req = client_cls(agency)
             
             # This is highly dependent on the agency's data structure.
             # We use a generic approach or specific known parameters for WB/ECB.
