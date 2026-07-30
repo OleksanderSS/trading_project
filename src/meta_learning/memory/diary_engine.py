@@ -202,17 +202,81 @@ class DiaryEngine(BaseMetaComponent):
         self.logger.info(f"ExperienceDiary initialized in DuckDB table '{self.table_name}'.")
 
     def _ensure_context_pattern_seq_column(self) -> None:
-        """Migrate older diary tables that were created before pattern sequences."""
+        """Bring an older diary table up to the schema declared in _initialize_database.
+
+        `CREATE TABLE IF NOT EXISTS` cannot migrate a table that already
+        exists, so every change to the DDL above needs a matching step here.
+        Two are known:
+
+        - `context_pattern_seq` was added to the DDL after tables existed.
+        - `id` was changed from INTEGER to VARCHAR (see DecisionRecord.
+          decision_id: "Stable UUID string instead of random 31-bit int").
+          Tables created before that keep INTEGER, so every real
+          `record_decision()` fails with "Could not convert string '<uuid>'
+          to INT32" -- which took down the whole ModelingStage, since
+          training writes to the diary.
+        """
         try:
             schema = self.data_manager.get_table_schema(self.table_name)
+        except Exception as e:
+            self.logger.warning(f"Could not read {self.table_name} schema: {e}", exc_info=True)
+            return
+
+        if not schema:
+            return
+
+        try:
             if 'context_pattern_seq' not in schema:
                 self.data_manager.execute_query(
-                    'ALTER TABLE experience_diary ADD COLUMN context_pattern_seq VARCHAR'
+                    f'ALTER TABLE {self.table_name} ADD COLUMN context_pattern_seq VARCHAR'
                 )
-                self.logger.info("Added context_pattern_seq column to experience_diary.")
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                self.logger.info(f"Added context_pattern_seq column to {self.table_name}.")
+        except Exception as e:
             self.logger.warning(
                 f"Could not ensure context_pattern_seq column: {e}", exc_info=True
+            )
+
+        id_type = str(schema.get('id', '')).upper()
+        if id_type and 'CHAR' not in id_type and 'STRING' not in id_type:
+            self._migrate_id_to_varchar(id_type)
+
+    def _migrate_id_to_varchar(self, id_type: str) -> None:
+        """Rebuild the diary table with `id` as VARCHAR, preserving every row.
+
+        A plain ALTER is rejected -- `id` carries a PRIMARY KEY constraint and
+        DuckDB refuses to retype a constrained column -- so the table is
+        rebuilt through a temporary copy. Widening INTEGER to VARCHAR is
+        lossless: existing integer ids keep their exact value as text.
+        """
+        tmp = f"{self.table_name}__migrating"
+        try:
+            self.logger.warning(
+                f"Migrating {self.table_name}.id from {id_type} to VARCHAR "
+                f"(legacy schema predates UUID decision ids)."
+            )
+            self.data_manager.execute_query(f'DROP TABLE IF EXISTS {tmp}')
+            self.data_manager.execute_query(
+                f'CREATE TABLE {tmp} AS SELECT * FROM {self.table_name}'
+            )
+            copied_cols = list(self.data_manager.get_table_schema(tmp))
+            self.data_manager.execute_query(f'DROP TABLE {self.table_name}')
+            self._initialize_database()
+            # Name the columns explicitly: ALTER ADD COLUMN appends at the end,
+            # so the old table's column ORDER need not match the fresh DDL's.
+            select_list = ', '.join(
+                'CAST(id AS VARCHAR)' if col == 'id' else col for col in copied_cols
+            )
+            self.data_manager.execute_query(
+                f'INSERT INTO {self.table_name} ({", ".join(copied_cols)}) '
+                f'SELECT {select_list} FROM {tmp}'
+            )
+            self.data_manager.execute_query(f'DROP TABLE {tmp}')
+            self.logger.info(f"{self.table_name}.id migrated to VARCHAR.")
+        except Exception as e:
+            self.logger.error(
+                f"Failed to migrate {self.table_name}.id to VARCHAR: {e}. "
+                f"A copy of the original rows may remain in '{tmp}'.",
+                exc_info=True,
             )
 
     def log_event(self, ticker: str, model_name: str, target: str, metrics: float, context_fingerprint: str = 'default', context_pattern_seq: str | None = None):
@@ -265,9 +329,11 @@ class DiaryEngine(BaseMetaComponent):
         try:
             # Store metadata in a separate table or extend existing one
             # For now, we'll log it as a special record
-            import uuid
             df = pd.DataFrame([{
-                "id": uuid.uuid4().int & 0x7FFFFFFF,
+                # Must match DecisionRecord.decision_id's type (UUID string).
+                # This used to emit `uuid.uuid4().int & 0x7FFFFFFF`, so the two
+                # writers of this same table disagreed on the type of `id`.
+                "id": str(uuid.uuid4()),
                 "agent_id": "consensus_engine",
                 "decision_timestamp": int(pd.Timestamp.now().timestamp() * 1000),
                 "ticker": "CONSENSUS",
