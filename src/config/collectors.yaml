@@ -154,13 +154,31 @@ collectors:
       - VIXCLS
       - HOUST
       - PERMIT
-      - TEDRATE
+      # TEDRATE видалено: FRED припинив серію в січні 2022 (відхід від LIBOR),
+      # 0 рядків у fred_data. Кредитний стрес тепер покривають спреди нижче.
       - BAMLH0A0HYM2
       - WALCL
       - DEXUSEU
       - DEXCHUS
       - DCOILWTICO
       - DSPIC96
+      # --- Інфляційні очікування (що ринок ОЧІКУЄ, а не що вже сталося) ---
+      - T5YIE
+      - T10YIE
+      - T5YIFR
+      # --- Спред 10р-3м: передбачає рецесії краще за T10Y2Y (Estrella/Mishkin) ---
+      - T10Y3M
+      # --- Чиста ліквідність = WALCL - TGA - RRP; сам WALCL вводить в оману ---
+      - WTREGEN
+      - RRPONTSYD
+      # --- Фінансові умови та якісний кредитний спред ---
+      # NFCI: тижневий, агрегує 100+ входів. BAMLC0A0CM: investment-grade спред
+      # (був лише high-yield) — разом показують, чи стрес вийшов за межі сміття.
+      - NFCI
+      - BAMLC0A0CM
+      # --- Ринок праці: первинні заявки (тижневі, оперативніші за CCSA) ---
+      - ICSA
+      - SAHMREALTIME
       # --- Галузеві індикатори для Лінз ---
       - CSUSHPINSA
       - WPU01
