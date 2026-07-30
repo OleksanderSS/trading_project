@@ -30,7 +30,12 @@ class NewsContextDatasetBuilder:
         self.calendar = TradingCalendar()
         self.impact_classifier = NewsImpactClassifier(config_manager)
         self.tickers = self._get_tickers()
-        self.timeframes = ['15m', '60m', '1d']
+        # Read the timeframes actually collected instead of hardcoding them.
+        # The old hardcoded list was ['15m', '60m', '1d'], and '60m' is a dead
+        # label: yahoo_finance collects 15m/1h/1d, so `tf not in prices_dict`
+        # skipped every 60m iteration and a third of the per-ticker candle
+        # context columns were silently never produced.
+        self.timeframes = self._get_collected_timeframes()
         self.n_candles_before = 2
         self.n_candles_after = 2
 
@@ -42,6 +47,26 @@ class NewsContextDatasetBuilder:
         logger.info(
             f'NewsDatasetBuilder initialized: {len(self.tickers)} tickers, {len(self.timeframes)} timeframes'
             )
+
+    def _get_collected_timeframes(self) ->list[str]:
+        """Timeframes the market-data collector is actually configured to fetch.
+
+        Falls back to a conservative default only if the config cannot be read.
+        """
+        collectors_config = self.config_manager.get_config('collectors', default={})
+        yahoo = collectors_config.get('yahoo_finance', {})
+        if not yahoo:
+            yahoo = collectors_config.get('collectors', {}).get('yahoo_finance', {})
+        timeframes = yahoo.get('timeframes')
+        if isinstance(timeframes, dict) and timeframes:
+            return sorted(str(tf) for tf in timeframes)
+        if isinstance(timeframes, list) and timeframes:
+            return [str(tf) for tf in timeframes]
+        logger.warning(
+            "Could not read yahoo_finance timeframes from config; "
+            "falling back to ['15m', '1h', '1d']"
+        )
+        return ['15m', '1h', '1d']
 
     def _get_tickers(self) ->list[str]:
         """Отримати список тікерів з конфігурації"""
