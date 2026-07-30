@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
@@ -39,6 +40,10 @@ class RegressionCalculator:
         if shift >= 0:
             raise ValueError(f"shift must be negative for future targets, got {shift}")
 
+        method = kwargs.get('method')
+        if method:
+            return self._calculate_by_method(df, base_col, shift, method, kwargs)
+
         # Standard lookahead return: (Price[T+n] - Price[T]) / Price[T]
         # Shift per-ticker so a multi-ticker frame never leaks the next
         # ticker's price into the previous ticker's future-return target.
@@ -73,3 +78,94 @@ class RegressionCalculator:
                 logger.debug(f"Breakdown: Comm={commission_pct:.4%}, Spread={spread_pct:.4%}, Slip={slippage_pct:.4%}")
 
         return target_series
+
+    # ------------------------------------------------------------------
+    # Forward-window methods
+    #
+    # `method` and `window` used to be accepted and silently dropped, so
+    # target_daily_trend_strength_1d and target_daily_momentum_score_1d both
+    # collapsed to a plain next-bar return -- byte-identical to each other,
+    # and differing from target_return_1d only by its cost constant. Three
+    # configured targets carrying one signal. These implement what the
+    # config always claimed.
+    #
+    # All three look FORWARD from `shift` over `window` bars, so they are
+    # genuine targets, never features. Grouped per ticker so a multi-ticker
+    # frame cannot leak across boundaries.
+    # ------------------------------------------------------------------
+
+    _METHODS = ("slope_strength", "rate_of_change", "high_low_range")
+
+    def _calculate_by_method(self, df: pd.DataFrame, base_col: str, shift: int,
+                            method: str, params: dict) -> pd.Series:
+        if method not in self._METHODS:
+            raise ValueError(
+                f"Unknown regression target method '{method}'. "
+                f"Supported: {', '.join(self._METHODS)}."
+            )
+        window = int(params.get('window', 20))
+        if window < 2:
+            raise ValueError(f"window must be >= 2 for method '{method}', got {window}")
+
+        if method == "high_low_range":
+            missing = [c for c in ("high", "low") if c not in df.columns]
+            if missing:
+                raise ValueError(
+                    f"method 'high_low_range' needs columns {missing}, which are absent."
+                )
+
+        def per_ticker(group: pd.DataFrame) -> pd.Series:
+            return self._forward_metric(group, base_col, shift, method, window)
+
+        if "ticker" in df.columns:
+            # Select only the columns the metric needs, so the grouping column
+            # is never handed to apply() (pandas 2.2 deprecates that).
+            needed = ["high", "low", "close"] if method == "high_low_range" else [base_col]
+            needed = [c for c in dict.fromkeys(needed) if c in df.columns]
+            out = df.groupby("ticker", group_keys=False)[needed].apply(per_ticker)
+            return out.reindex(df.index)
+        return self._forward_metric(df, base_col, shift, method, window)
+
+    @staticmethod
+    def _forward_metric(g: pd.DataFrame, base_col: str, shift: int,
+                        method: str, window: int) -> pd.Series:
+        """Compute the metric over the `window` bars starting at `shift`."""
+        if method == "high_low_range":
+            # Realized volatility proxy: mean bar range relative to close.
+            bar_range = (g["high"] - g["low"]) / g["close"].replace(0, np.nan)
+            # rolling().mean() looks BACKWARD; shifting by -(window-1) turns it
+            # into the forward window, then `shift` moves its start point.
+            forward = bar_range.rolling(window, min_periods=window).mean().shift(
+                -(window - 1)
+            )
+            return forward.shift(shift + 1)
+
+        series = g[base_col].astype(float)
+
+        if method == "rate_of_change":
+            start = series.shift(shift)
+            end = series.shift(shift - (window - 1))
+            return (end - start) / start.replace(0, np.nan)
+
+        # slope_strength: R^2 of an OLS fit of the forward window. Naturally
+        # in [0, 1] -- "how trend-like is the next stretch", which is what the
+        # config's "score (0-1)" describes. Magnitude of the move is already
+        # covered by rate_of_change, so this is deliberately unsigned.
+        x = np.arange(window, dtype=float)
+        x_centered = x - x.mean()
+        denom_x = float((x_centered ** 2).sum())
+
+        def r_squared(values: np.ndarray) -> float:
+            y = np.asarray(values, dtype=float)
+            if np.isnan(y).any():
+                return np.nan
+            y_centered = y - y.mean()
+            ss_tot = float((y_centered ** 2).sum())
+            if ss_tot <= 0.0 or denom_x <= 0.0:
+                return 0.0
+            cov = float((x_centered * y_centered).sum())
+            return float(min(1.0, max(0.0, (cov ** 2) / (denom_x * ss_tot))))
+
+        backward = series.rolling(window, min_periods=window).apply(r_squared, raw=True)
+        forward = backward.shift(-(window - 1))
+        return forward.shift(shift + 1)

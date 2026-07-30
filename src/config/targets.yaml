@@ -160,10 +160,15 @@ targets:
   target_intraday_volatility_15m:
     type: "regression"
     params:
-      description: "Predict volatility in next 15min (via high-low range as proxy)."
+      # Було base_col: "high" без method — рахувалась майбутня дохідність
+      # колонки high, а low не використовувалась узагалі, тобто ніякого
+      # діапазону не було. Тепер method реалізований: середнє (high-low)/close
+      # по наступних `window` барах.
+      description: "Середній діапазон (high-low)/close за наступні 3 бари."
       horizon: "15m"
-      base_col: "high"
+      base_col: "close"
       shift: -1
+      method: "high_low_range"
       window: 3
 
   # ===================================================================
@@ -195,21 +200,32 @@ targets:
   target_hourly_volume_spike_1h:
     type: "classification_binary"
     params:
-      description: "Volume spike > 2x average in next hour? (0=No, 1=Yes)"
+      # compare_to раніше ігнорувався: порівняння йшло з обсягом ПОТОЧНОГО
+      # бару, а поріг 2.0 як відносна зміна означав +200% (потроєння), а не
+      # "2x". Тепер compare_to реалізований, і 2.0 читається як "удвічі більше
+      # за середнє" — саме те, що каже опис.
+      description: "Обсяг > 2x середнього за 20 барів у наступну годину? (0/1)"
       horizon: "1h"
       base_col: "volume"
       shift: -4
       threshold: 2.0
       compare_to: "average"
+      window: 20
 
   target_hourly_breakout_1h:
     type: "classification_binary"
     params:
-      description: "Price breaks Bollinger Bands in next hour? (0=No, 1=Yes)"
+      # indicator_col раніше ігнорувався для classification_binary, тож ціль
+      # була просто "чи ціна взагалі зросла за 4 бари" — 49.3% позитивних,
+      # тобто підкидання монети, яке ще й дублювало target_hourly_up_1h.
+      # Ім'я колонки тепер із суфіксом інтервалу (feature_orchestrator додає
+      # `_{interval}`, а годинний інтервал у конвеєрі позначається як 60m).
+      description: "Close піднімається вище поточної верхньої смуги Боллінджера
+        протягом наступних 4 барів? (0/1)"
       horizon: "1h"
       base_col: "close"
       shift: -4
-      indicator_col: "BB_Upper"
+      indicator_col: "BB_Upper_60m"
       threshold: 0.0
 
   # ===================================================================
@@ -236,10 +252,16 @@ targets:
         spread_pct: 0.0005
         slippage_pct: 0.001
 
+  # УВАГА: method/window до 2026-07-30 не читались калькулятором, тож обидві
+  # ці цілі рахувались як звичайна одноденна дохідність і були БАЙТ-У-БАЙТ
+  # ідентичні одна одній та (з точністю до сталої) target_return_1d. Тепер
+  # method реалізований, і вони справді різні сигнали.
   target_daily_trend_strength_1d:
     type: "regression"
     params:
-      description: "Trend strength score (0-1) for next day."
+      description: "Наскільки трендовими будуть наступні 20 днів: R² лінійної
+        регресії close по forward-вікну. За побудовою в [0, 1], без напрямку —
+        напрямок і величину дає target_daily_momentum_score_1d."
       base_col: "close"
       shift: -1
       method: "slope_strength"
@@ -248,7 +270,8 @@ targets:
   target_daily_momentum_score_1d:
     type: "regression"
     params:
-      description: "Momentum score for next day."
+      description: "Дохідність за наступні 10 днів (rate of change по
+        forward-вікну), на відміну від одноденної target_return_1d."
       base_col: "close"
       shift: -1
       method: "rate_of_change"
