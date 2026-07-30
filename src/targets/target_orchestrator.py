@@ -89,6 +89,59 @@ class TargetOrchestrator:
         logger.info(
             f'TargetOrchestrator initialized with {len(self.targets)} target configurations.'
             )
+        self._warn_about_unread_params()
+
+    # Params consumed by the orchestration/contract layer rather than by a
+    # calculator. `source_timeframe` and `indicator_col` are read by
+    # timeframe_contract._target_source_timeframe.
+    _FRAMEWORK_PARAMS = frozenset({
+        'description', 'horizon', 'source_timeframe', 'indicator_col',
+    })
+
+    def _warn_about_unread_params(self) -> None:
+        """Flag configured target params that no calculator actually reads.
+
+        Calculators take `**kwargs`, so a param nobody implements is swallowed
+        in silence and the target quietly computes something other than what
+        its description promises. Real examples found in targets.yaml:
+        `method: slope_strength` / `window: 20` on a regression target, which
+        RegressionCalculator ignores entirely -- so
+        `target_daily_trend_strength_1d` is a plain next-bar return, identical
+        to `target_daily_momentum_score_1d`; and `compare_to: "average"` on
+        `target_hourly_volume_spike_1h`, which is compared to the current bar
+        instead. This makes that class of mistake loud instead of silent.
+        """
+        import inspect
+
+        for target in self.targets:
+            t_type = target.get('type')
+            calculator_cls = self.CALCULATOR_MAPPING.get(t_type)
+            if calculator_cls is None:
+                continue
+            method_name = self.METHOD_MAPPING.get(t_type, 'calculate')
+            method = getattr(calculator_cls, method_name, None)
+            if method is None:
+                continue
+
+            known = set(inspect.signature(method).parameters) - {'self', 'df', 'kwargs'}
+            try:
+                source = inspect.getsource(method)
+            except (OSError, TypeError):
+                source = ''
+            # Names the method fishes out of **kwargs explicitly.
+            import re
+            known |= set(re.findall(r'kwargs\.get\(\s*[\'"](\w+)[\'"]', source))
+            known |= set(re.findall(r'kwargs\[\s*[\'"](\w+)[\'"]\s*\]', source))
+            known |= self._FRAMEWORK_PARAMS
+
+            unread = sorted(set((target.get('params') or {}).keys()) - known)
+            if unread:
+                logger.warning(
+                    f"⚠️ Target '{target.get('name')}' ({t_type}) declares "
+                    f"param(s) {unread} that {calculator_cls.__name__}."
+                    f"{method_name}() never reads — they are silently ignored, "
+                    f"so this target may not compute what its description says."
+                )
 
     def _is_target_for_timeframe(self, target: dict[str, Any], timeframe: str) -> bool:
         """Check if a target is applicable for the given timeframe."""
