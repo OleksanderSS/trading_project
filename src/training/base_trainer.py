@@ -273,8 +273,17 @@ class BaseTrainer(ABC):
             return self._finalize_ticker_results(results, winner_name, best_score)
 
         except (ValueError, TypeError, Exception) as e:
-            self.logger.error(f"Error during training for {ticker}: {e}", exc_info=True)
-            raise TrainingException(f"Training failed for {ticker}: {e}") from e
+            # Name the target too: without it a failure here says only which
+            # ticker died, which is not enough to tell whether the cause is a
+            # degenerate target, a bad feature set, or a broken model config.
+            target_name = data.get("target_name", "unknown")
+            self.logger.error(
+                f"Error during training for {ticker} target={target_name}: {e}",
+                exc_info=True,
+            )
+            raise TrainingException(
+                f"Training failed for {ticker} target={target_name}: {e}"
+            ) from e
 
     def _prepare_model_training_list(self, ticker: str, data: dict[str, Any]) -> list[str]:
         """Determines the set of model types to train for this ticker."""
@@ -308,8 +317,26 @@ class BaseTrainer(ABC):
                     best_score = score_val
                     winner_name = m_type
                     winner_model = model
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f"Failed to train {m_type} for {ticker}: {e}")
+            except Exception as e:
+                # Deliberately broad. This loop exists precisely so that one
+                # unusable (ticker, target, model) combination is skipped and
+                # the remaining models still train. The previous tuple
+                # (ValueError/TypeError/AttributeError/KeyError/ZeroDivisionError)
+                # missed the most common real failure: CatBoostError inherits
+                # straight from Exception, so "Target contains only one unique
+                # value" -- a degenerate target, e.g. a rare-event class with
+                # no positives in the window -- escaped this guard, hit the
+                # caller's handler, and took down the ticker, the stage, and
+                # the whole pipeline run with it.
+                self.logger.error(
+                    f"Failed to train {m_type} for {ticker} "
+                    f"target={data.get('target_name', 'unknown')}: {e}"
+                )
+                results.setdefault("skipped_models", []).append({
+                    "model": m_type,
+                    "target": data.get("target_name", "unknown"),
+                    "reason": str(e),
+                })
                 continue
 
         if winner_model is not None:
