@@ -186,7 +186,7 @@ class HistoricalAnalogiesAgent(AnalyticalAgent):
             ],
             blind_spots=[
                 "Only regime/sector level dimensions compared, not company-level fundamentals.",
-                "Limited to {len(self.periods)} seed periods in library.",
+                f"Limited to {len(self.periods)} seed periods in library.",
             ],
             evidence=[
                 self.evidence("historical_match", "HISTORICAL_PERIODS_SEED_LIST", "scored_periods", scored[:5]),
