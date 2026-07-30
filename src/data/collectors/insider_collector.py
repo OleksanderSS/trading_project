@@ -128,28 +128,66 @@ class InsiderCollector(BaseCollector):
 
         rows = table.find_all("tr")[1:]  # Pass headers constraint logic block
         parsed_trades = []
-        expected_col_count = len(column_mapping)
+        index_by_field = self._normalized_column_mapping(column_mapping)
+        if not index_by_field:
+            self.logger.error(
+                f"column_mapping for '{self.collector_type}' has no usable "
+                f"field->index entries: {column_mapping!r}"
+            )
+            return []
+
+        # Every mapped index must actually exist in the row.
+        required_width = max(index_by_field.values()) + 1
 
         for row in rows:
             cells = [td.get_text(strip=True) for td in row.find_all("td")]
-            if len(cells) < expected_col_count:
+            if len(cells) < required_width:
                 continue
 
-            # Project mapping logical columns into node definitions
-            trade_data = {}
-            for key, field_name in column_mapping.items():
-                if key.startswith("col_"):
-                    try:
-                        col_idx = int(key.split("_")[1])
-                        if col_idx < len(cells):
-                            trade_data[field_name] = cells[col_idx]
-                    except (ValueError, IndexError) as e:
-                        logger.debug(f"Skipping invalid column index {key}: {e}")
-
+            trade_data = {
+                field_name: cells[col_idx]
+                for field_name, col_idx in index_by_field.items()
+            }
             if trade_data:
                 parsed_trades.append(trade_data)
 
+        if not parsed_trades and rows:
+            self.logger.warning(
+                f"Found {len(rows)} table rows at {url} but mapped zero trades "
+                f"(need >= {required_width} cells per row). column_mapping is "
+                f"probably out of sync with the page layout."
+            )
+
         return parsed_trades
+
+    @staticmethod
+    def _normalized_column_mapping(column_mapping: dict[str, Any]) -> dict[str, int]:
+        """Normalize `column_mapping` to {field_name: column_index}.
+
+        Two shapes exist in the wild and the parser used to accept only the
+        one nobody actually configured:
+
+        - `{field_name: index}` -- what `src/config/collectors.yaml` really
+          uses (`filing_date: 0`, `ticker: 2`, ...). The old code tested
+          `key.startswith("col_")` against these keys, which is never true,
+          so `trade_data` came out empty for every single row and the
+          collector silently returned zero trades on a perfectly good page.
+        - `{"col_<index>": field_name}` -- the shape the old code expected.
+          Still accepted so any config written that way keeps working.
+        """
+        normalized: dict[str, int] = {}
+        for key, value in column_mapping.items():
+            if isinstance(key, str) and key.startswith("col_"):
+                try:
+                    normalized[str(value)] = int(key.split("_", 1)[1])
+                except (ValueError, IndexError):
+                    logger.debug(f"Skipping invalid column index key {key!r}")
+                continue
+            try:
+                normalized[str(key)] = int(value)
+            except (TypeError, ValueError):
+                logger.debug(f"Skipping non-integer column index for {key!r}: {value!r}")
+        return normalized
 
     def _check_cache(self, cache_key: str, cache_params: dict, table_name: str) -> pd.DataFrame | None:
         """Check cache for existing data and filter new records."""

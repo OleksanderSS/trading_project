@@ -268,18 +268,24 @@ collectors:
   insider:
     cache_duration_minutes: 240
     cache_ttl: 14400
+    # Індекси колонок openinsider.com/screener, звірені з реальною сторінкою
+    # 2026-07-30. Заголовки: X | Filing Date | Trade Date | Ticker |
+    # Company Name | Insider Name | Title | Trade Type | Price | Qty | Owned |
+    # ΔOwn | Value | 1d | 1w | 1m | 6m  (усього 17 колонок).
+    # Попередня мапа була зсунута на -1: не враховувала службову колонку "X".
     column_mapping:
-      delta_own: 9
-      filing_date: 0
-      insider_name: 3
-      owned: 8
-      price: 6
-      quantity: 7
-      ticker: 2
-      title: 4
-      trade_date: 1
-      trade_type: 5
-      value: 10
+      filing_date: 1
+      trade_date: 2
+      ticker: 3
+      company_name: 4
+      insider_name: 5
+      title: 6
+      trade_type: 7
+      price: 8
+      quantity: 9
+      owned: 10
+      delta_own: 11
+      value: 12
     critical: false
     enabled: true
     hash_keys:
