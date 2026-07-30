@@ -27,7 +27,39 @@ class CFTCCollector(BaseCollector):
         self.timeout = self.configs.get('timeout', 30)
         self.table_name = self.configs.get('table_name', "cftc_data")
         self.hash_keys = self.configs.get('hash_keys', ["date", "instrument", "net_position"])
-        self.base_url = "https://www.cftc.gov"
+        # CFTC's official open-data (Socrata) endpoint for the Legacy
+        # Commitments of Traders report, futures only.
+        #
+        # This replaces the old fixed-width text files under
+        # https://www.cftc.gov/files/dea/history/. Verified 2026-07-30: EVERY
+        # path on www.cftc.gov now answers automated requests with 403 (and the
+        # specific file the collector used, deacotlf.txt, 404s) -- probed
+        # deacotlf.txt, dea/newcot/{deafut,deacot,FinFutWk,FinComWk}.txt and
+        # four annual archive zips, all blocked. The Socrata API returns 200
+        # with fresh JSON and needs no key.
+        self.api_url = self.configs.get(
+            'api_url', "https://publicreporting.cftc.gov/resource/6dca-aqww.json"
+        )
+        # Exact `market_and_exchange_names` values, confirmed against the live
+        # dataset. The "Consolidated" series combine the full-size and E-mini
+        # contracts, which is what a positioning signal actually wants.
+        #
+        # A value may be a LIST when a contract was renamed: CFTC does not
+        # carry history forward under the new name, so the names have to be
+        # unioned to get a continuous series. Confirmed case: NYMEX WTI was
+        # reported as "CRUDE OIL, LIGHT SWEET" until 2022-02-01 and as
+        # "WTI FINANCIAL CRUDE OIL" from then on.
+        self.markets = self.configs.get('markets', {
+            "S&P": "S&P 500 Consolidated - CHICAGO MERCANTILE EXCHANGE",
+            "NASDAQ": "NASDAQ-100 Consolidated - CHICAGO MERCANTILE EXCHANGE",
+            "DOW": "DJIA Consolidated - CHICAGO BOARD OF TRADE",
+            "GOLD": "GOLD - COMMODITY EXCHANGE INC.",
+            "CRUDE OIL": [
+                "WTI FINANCIAL CRUDE OIL - NEW YORK MERCANTILE EXCHANGE",
+                "CRUDE OIL, LIGHT SWEET - NEW YORK MERCANTILE EXCHANGE",
+            ],
+        })
+        self.history_weeks = int(self.configs.get('history_weeks', 520))
         self.allow_sample_fallback = self.configs.get('allow_sample_fallback', False)
         self.logger.info(f"CFTCCollector initialized. Enabled: {self.enabled}, Allow Sample Fallback: {self.allow_sample_fallback}")
 
@@ -45,8 +77,7 @@ class CFTCCollector(BaseCollector):
         try:
             self.logger.info("Fetching CFTC Commitment of Traders data")
 
-            # Fetch data for major instruments
-            instruments = ['S&P', 'NASDAQ', 'DOW', 'GOLD', 'CRUDE OIL']
+            instruments = list(self.markets.keys())
             all_data = []
 
             for instrument in instruments:
@@ -85,163 +116,153 @@ class CFTCCollector(BaseCollector):
             raise RuntimeError("CFTC collection failed") from e
 
     async def _fetch_cftc_data(self, instrument: str) -> list[dict[str, Any]]:
-        """Fetches CFTC data for a specific instrument - FREE PUBLIC DATA!"""
-        try:
-            # CFTC PUBLIC DATA - NO API KEY REQUIRED!
-            # Using direct CSV downloads from public reports
+        """Fetch one market's Legacy COT history from CFTC's open-data API."""
+        market = self.markets.get(instrument)
+        if not market:
+            self.logger.warning(f"No CFTC market name configured for '{instrument}'")
+            return []
 
-            # Different instruments have different report URLs
-            if instrument.upper() in ['S&P', 'NASDAQ', 'DOW']:
-                # Financial futures - Legacy COT reports
-                url = "https://www.cftc.gov/files/dea/history/deacotlf.txt"
-                report_type = "financial_futures"
-            elif instrument.upper() in ['GOLD']:
-                # Gold futures
-                url = "https://www.cftc.gov/files/dea/history/deacotgs.txt"
-                report_type = "gold_futures"
-            elif instrument.upper() in ['CRUDE OIL']:
-                # Oil futures
-                url = "https://www.cftc.gov/files/dea/history/deacotcl.txt"
-                report_type = "oil_futures"
-            else:
-                self.logger.warning(f"Unknown CFTC instrument: {instrument}")
-                return []
+        names = [market] if isinstance(market, str) else list(market)
+        # Socrata SoQL string literals escape a single quote by doubling it.
+        name_list = ",".join("'" + n.replace("'", "''") + "'" for n in names)
 
-            self.logger.info(f"Fetching FREE CFTC data for {instrument} from {url}")
+        cutoff = (datetime.now() - timedelta(weeks=self.history_weeks)).strftime('%Y-%m-%d')
+        params = {
+            "$select": (
+                "report_date_as_yyyy_mm_dd,market_and_exchange_names,"
+                "noncomm_positions_long_all,noncomm_positions_short_all,"
+                "open_interest_all"
+            ),
+            "$where": (
+                f"market_and_exchange_names in ({name_list}) "
+                f"AND report_date_as_yyyy_mm_dd > '{cutoff}'"
+            ),
+            "$order": "report_date_as_yyyy_mm_dd DESC",
+            "$limit": self.history_weeks * len(names),
+        }
 
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/csv,text/plain,application/csv,*/*"
-            }
-            http_client = await self.http_client_factory.get_http_client(timeout=self.timeout)
-            if hasattr(http_client, 'get') and asyncio.iscoroutinefunction(http_client.get):
-                response = await http_client.get(url, headers=headers)
-            else:
-                response = await asyncio.to_thread(http_client.get, url, headers=headers)
+        self.logger.info(
+            f"Fetching CFTC COT data for {instrument} ({', '.join(names)})"
+        )
+        headers = {"Accept": "application/json"}
 
-            status_code = getattr(response, 'status_code', None)
-            if status_code == 404:
-                self.logger.error(f"CFTC data endpoint not found (404) for {instrument}. URL may have changed: {url}")
-                return []
-            elif status_code is not None and status_code != 200:
-                self.logger.error(f"Failed to fetch CFTC data for {instrument}: HTTP {status_code}")
-                return []
-
-            # Parse CSV content (FREE PUBLIC DATA!)
-            content = getattr(response, 'text', None)
-            if not content:
-                self.logger.warning(f"Empty content for CFTC {instrument}")
-                return []
-
-            # polite delay for public data sources
-            await asyncio.sleep(0.2)
-
-            # Parse the CSV content
-            data = self._parse_cftc_csv(content, instrument, report_type)
-
-            if not data:
-                self.logger.warning(f"No data parsed for CFTC {instrument}")
-                return []
-
-            self.logger.info(f"Successfully fetched {len(data)} CFTC records for {instrument}")
-            return data
-
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
-            self.logger.exception(f"Error fetching CFTC data for {instrument}: {e}")
-            raise RuntimeError(f"Failed to fetch CFTC data for {instrument}") from e
-
-    def _find_data_start(self, lines: list[str]) -> int:
-        """Find the start of data in CFTC CSV."""
-        for i, line in enumerate(lines):
-            if 'Reportable Positions' in line or 'Nonreportable Positions' in line:
-                return i + 2  # Skip header and separator
-        return 0
-
-    def _parse_date(self, date_str: str) -> datetime | None:
-        """Parse date string with multiple format attempts."""
-        try:
-            return datetime.strptime(date_str, '%Y%m%d')
-        except ValueError:
-            try:
-                return datetime.strptime(date_str, '%m/%d/%Y')
-            except ValueError:
-                return None
-
-    def _extract_position_data(self, fields: list[str]) -> tuple[int, int, int]:
-        """Extract long, short, and net positions from fields."""
-        if len(fields) >= 12:
-            long_pos = int(fields[8].replace(',', '')) if fields[8] != '0' else 0
-            short_pos = int(fields[9].replace(',', '')) if fields[9] != '0' else 0
-            net_pos = long_pos - short_pos
+        http_client = await self.http_client_factory.get_http_client(timeout=self.timeout)
+        if hasattr(http_client, 'get') and asyncio.iscoroutinefunction(http_client.get):
+            response = await http_client.get(self.api_url, params=params, headers=headers)
         else:
-            # Fallback to sample data if parsing fails
-            long_pos = 500000
-            short_pos = 350000
-            net_pos = 150000
-        return long_pos, short_pos, net_pos
+            response = await asyncio.to_thread(
+                http_client.get, self.api_url, params=params, headers=headers
+            )
 
-    def _parse_cftc_csv(self, content: str, instrument: str, report_type: str) -> list[dict[str, Any]]:
-        """Parse CFTC CSV content to extract positioning data."""
+        status_code = getattr(response, 'status_code', None)
+        if status_code is not None and status_code != 200:
+            self.logger.error(
+                f"Failed to fetch CFTC data for {instrument}: HTTP {status_code}"
+            )
+            return []
+
         try:
-            data = []
-            lines = content.strip().split('\n')
+            rows = response.json()
+        except (ValueError, TypeError) as e:
+            self.logger.error(f"CFTC response for {instrument} was not JSON: {e}")
+            return []
 
-            # Skip header lines and find data start
-            data_start = self._find_data_start(lines)
+        if not isinstance(rows, list) or not rows:
+            self.logger.warning(f"No CFTC rows returned for {instrument} ({market})")
+            return []
 
-            # Parse data lines
-            for line in lines[data_start:]:
-                if not line.strip() or line.startswith('---'):
-                    continue
+        data = self._rows_to_records(rows, instrument, names)
+        if not data:
+            self.logger.error(f"CFTC rows for {instrument} yielded no usable records")
+            return []
 
-                # Split by whitespace and filter empty strings
-                fields = [field.strip() for field in line.split() if field.strip()]
+        self.logger.info(f"Fetched {len(data)} CFTC records for {instrument}")
+        await asyncio.sleep(0.2)  # polite pacing for a public API
+        return data
 
-                if len(fields) >= 10:  # Ensure we have enough fields
-                    try:
-                        date_str = fields[0]
-                        date_obj = self._parse_date(date_str)
-                        if date_obj is None:
-                            continue
+    def _rows_to_records(
+        self,
+        rows: list[dict[str, Any]],
+        instrument: str,
+        names: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Map Socrata COT rows onto this collector's record shape.
 
-                        long_pos, short_pos, net_pos = self._extract_position_data(fields)
+        Non-commercial (speculative) long/short positions are the positioning
+        signal; commercial positions are largely hedging. A row missing either
+        leg is SKIPPED, never backfilled -- the previous implementation
+        substituted hardcoded values (500000/350000/150000) whenever a line had
+        too few fields, silently writing invented numbers into the same table
+        as real observations and without any `is_synthetic` marker.
 
-                        total_positions = long_pos + short_pos
-                        long_short_ratio = long_pos / short_pos if short_pos > 0 else float('inf')
-                        net_position_pct = (net_pos / total_positions * 100) if total_positions > 0 else 0
+        When `names` holds several market names (a renamed contract), the two
+        series OVERLAP rather than meeting end to end -- NYMEX reported both
+        "CRUDE OIL, LIGHT SWEET" and "WTI FINANCIAL CRUDE OIL" for roughly 150
+        weeks. Emitting both would put two different net positions on the same
+        (date, instrument), and the record hash includes net_position so dedup
+        would keep both. Earlier entries in `names` win per date.
+        """
+        priority = {name: i for i, name in enumerate(names or [])}
+        data: list[dict[str, Any]] = []
+        for row in rows:
+            date_raw = row.get('report_date_as_yyyy_mm_dd')
+            long_raw = row.get('noncomm_positions_long_all')
+            short_raw = row.get('noncomm_positions_short_all')
+            if date_raw is None or long_raw is None or short_raw is None:
+                continue
+            try:
+                date_obj = datetime.fromisoformat(str(date_raw).replace('Z', '+00:00'))
+                long_pos = int(float(long_raw))
+                short_pos = int(float(short_raw))
+            except (ValueError, TypeError):
+                continue
 
-                        data.append({
-                            'date': date_obj.strftime('%Y-%m-%d'),
-                            'instrument': instrument,
-                            'report_type': report_type,
-                            'net_position': net_pos,
-                            'long_position': long_pos,
-                            'short_position': short_pos,
-                            'total_positions': total_positions,
-                            'long_short_ratio': long_short_ratio,
-                            'net_position_pct': net_position_pct,
-                            'timestamp': date_obj
-                        })
-                    except (ValueError, IndexError) as e:
-                        self.logger.warning(f"Error parsing CFTC line: {e}")
-                        continue
+            net_pos = long_pos - short_pos
+            total_positions = long_pos + short_pos
+            long_short_ratio = long_pos / short_pos if short_pos > 0 else float('inf')
+            net_position_pct = (
+                (net_pos / total_positions * 100) if total_positions > 0 else 0
+            )
 
-            # If no data parsed, raise error to prevent silent data contamination
-            if not data:
-                self.logger.error(f"CFTC CSV parsing failed for {instrument}")
-                if self.allow_sample_fallback:
-                    self.logger.warning(f"Using sample data fallback for {instrument}")
-                    return self._create_sample_cftc_data(instrument)
-                raise RuntimeError(f"CFTC data missing and sample fallback disabled for {instrument}")
+            try:
+                open_interest = int(float(row.get('open_interest_all') or 0))
+            except (ValueError, TypeError):
+                open_interest = 0
 
-            return data
+            data.append({
+                'date': date_obj.strftime('%Y-%m-%d'),
+                'instrument': instrument,
+                'report_type': 'legacy_cot_futures_only',
+                'market_and_exchange': row.get('market_and_exchange_names', ''),
+                'net_position': net_pos,
+                'long_position': long_pos,
+                'short_position': short_pos,
+                'total_positions': total_positions,
+                'long_short_ratio': long_short_ratio,
+                'net_position_pct': net_position_pct,
+                'open_interest': open_interest,
+                'timestamp': date_obj.replace(tzinfo=None),
+            })
 
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:  # audit-ignore: EXCEPTION_FALLS_BACK_TO_SAMPLE_DATA
-            self.logger.error(f"Error parsing CFTC CSV: {e}", exc_info=True)
-            if self.allow_sample_fallback:
-                self.logger.warning(f"Using sample data fallback for {instrument} due to error: {e}")
-                return self._create_sample_cftc_data(instrument)
-            raise RuntimeError(f"CFTC data collection failed and sample fallback disabled: {e}") from e
+        if len(priority) > 1:
+            best: dict[str, dict[str, Any]] = {}
+            for rec in data:
+                key = rec['date']
+                rank = priority.get(rec['market_and_exchange'], len(priority))
+                incumbent = best.get(key)
+                if incumbent is None or rank < priority.get(
+                    incumbent['market_and_exchange'], len(priority)
+                ):
+                    best[key] = rec
+            dropped = len(data) - len(best)
+            if dropped:
+                self.logger.info(
+                    f"{instrument}: dropped {dropped} overlapping rows from "
+                    f"superseded contract names, kept one per report date."
+                )
+            data = sorted(best.values(), key=lambda r: r['date'])
+
+        return data
 
     def _create_sample_cftc_data(self, instrument: str) -> list[dict[str, Any]]:
         """Create sample CFTC data for demonstration."""
