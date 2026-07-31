@@ -47,11 +47,46 @@ class PortfolioManager:
             0.1)
         self.max_daily_drawdown_pct = risk_config.get('max_daily_loss_pct',
             0.05)
+        # Regime-aware tightening of the kill switch. AdaptiveParameterManager
+        # has computed per-regime daily-drawdown limits (0.06 trending-up down
+        # to 0.01 dead) since it was written, but only recommendation_engine
+        # ever consulted them -- the component that actually ENFORCES used a
+        # single static number. PipelinePolicyManager composes the two under
+        # one rule: configured value is a ceiling, regime may only tighten it.
+        # `current_regime` is set by whoever knows the regime; until it is,
+        # behaviour is byte-identical to before.
+        self.current_regime: str | None = None
+        self._policy_manager = None
         self.position_sizer = AdaptivePositionSizer(config=risk_config.get(
             'position_sizer', {}))
         self.risk_allocator = RiskParityAllocator(config=risk_config.get(
             'risk_allocator', {}))
         self.kill_switch_active = False
+
+    def _effective_daily_drawdown_limit(self) ->float:
+        """The configured daily limit, tightened by regime when one is known.
+
+        Never looser than `self.max_daily_drawdown_pct`: PipelinePolicyManager
+        treats the configured value as a hard ceiling. Any failure to resolve
+        policy falls back to the configured number rather than widening it.
+        """
+        if self.current_regime is None:
+            return self.max_daily_drawdown_pct
+        try:
+            if self._policy_manager is None:
+                from src.policy import get_policy_manager
+
+                self._policy_manager = get_policy_manager()
+            limit = self._policy_manager.risk_limits(
+                regime=self.current_regime
+            ).max_daily_loss_pct
+            return min(float(limit), self.max_daily_drawdown_pct)
+        except Exception as e:
+            self.logger.warning(
+                f'Regime-aware risk policy unavailable ({e}); '
+                f'using configured limit {self.max_daily_drawdown_pct:.2%}.'
+            )
+            return self.max_daily_drawdown_pct
 
     def is_trading_allowed(self, current_prices: dict[str, float]) ->bool:
         """
@@ -64,11 +99,12 @@ class PortfolioManager:
         if self.kill_switch_active:
             self.logger.critical('Trading blocked: KILL SWITCH IS ACTIVE.')
             return False
+        daily_limit = self._effective_daily_drawdown_limit()
         if hasattr(self.portfolio, 'get_daily_drawdown'
             ) and self.portfolio.get_daily_drawdown(current_prices
-            ) < -self.max_daily_drawdown_pct:
+            ) < -daily_limit:
             self.logger.critical(
-                f'Trading blocked: Max daily drawdown of {self.max_daily_drawdown_pct:.2%} exceeded.'
+                f'Trading blocked: Max daily drawdown of {daily_limit:.2%} exceeded.'
                 )
             self.kill_switch_active = True
             return False
