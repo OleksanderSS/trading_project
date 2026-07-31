@@ -46,6 +46,9 @@ class TradingOrchestrator:
         self.regime_detector = regime_detector
         self.knn_finder = knn_finder
         self.macro_analyzer = macro_analyzer
+        #: ticker -> critic action_id for positions opened on a critic-scored
+        #: signal, so the realised PnL can be attributed back to that verdict.
+        self._open_critic_actions: dict[str, str] = {}
         self.error_handler = None  # Optional; set externally if needed
         self.logger.info(
             'TradingOrchestrator initialized with full Elite-stack support (KNN + Macro).'
@@ -389,6 +392,42 @@ class TradingOrchestrator:
         return self.portfolio_manager.generate_orders_from_signals(
             consensus_signals, current_prices)
 
+    def _remember_critic_action(self, order: TradeOrder) ->None:
+        """Note which critic verdict opened this position, so it can be scored.
+
+        `DeanBootstrapSystem.calculate_reward` keys off the `action_id` the
+        critic produced. Nothing carried that id past the consensus report
+        before, so the reward loop -- the "+1 to the critic if it correctly
+        warned" mechanism -- had no way to attribute a realised PnL to the
+        verdict that allowed the trade, and was therefore never callable.
+        """
+        action_id = getattr(order, 'critic_action_id', None)
+        if action_id:
+            self._open_critic_actions[order.ticker] = action_id
+
+    def _reward_critic_for_closed_position(self, ticker: str,
+        sell_result: dict[str, Any] | None) ->None:
+        """Feed the realised PnL of a closed position back to the critic."""
+        action_id = self._open_critic_actions.pop(ticker, None)
+        if not action_id or not sell_result or not sell_result.get('success'):
+            return
+        pnl = (sell_result.get('transaction') or {}).get('pnl')
+        if pnl is None:
+            return
+        try:
+            from src.models.dean.dean_bootstrap_system import get_dean_system
+
+            reward = get_dean_system().calculate_reward(
+                action_id, {'pnl': float(pnl)})
+            if reward:
+                self.logger.info(
+                    f'[DEAN] Rewarded critic for {ticker}: '
+                    f"actor={reward['actor_reward']:.4f}, "
+                    f"critic={reward['critic_reward']:.4f} (pnl={pnl:.2f})")
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
+            self.logger.warning(
+                f'Could not score critic verdict for {ticker}: {e}')
+
     def _execute_orders(self, orders: list[TradeOrder]):
         """
         Dispatches orders to the trade execution interface and synchronizes the virtual portfolio state.
@@ -405,9 +444,11 @@ class TradingOrchestrator:
                         getattr(order, 'reason', ''), 'confidence': getattr
                         (order, 'confidence', 0.8)}
                     self.portfolio.buy_stock(order_params)
+                    self._remember_critic_action(order)
                 elif order.action == 'SELL':
-                    self.portfolio.sell_stock(order.ticker, order.quantity,
-                        order.price, reason=order.reason)
+                    result = self.portfolio.sell_stock(order.ticker, order.
+                        quantity, order.price, reason=order.reason)
+                    self._reward_critic_for_closed_position(order.ticker, result)
             else:
                 self.logger.error(
                     f'Execution Failure: {order}. Order blocked or rejected by broker interface.'

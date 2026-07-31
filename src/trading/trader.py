@@ -20,6 +20,10 @@ class TradeOrder:
     price: float
     action: str  # 'BUY' or 'SELL'
     reason: str = "Signal-driven trade"
+    #: Id of the DEAN critic verdict that allowed this trade, carried so the
+    #: realised PnL can be attributed back to that verdict via
+    #: DeanBootstrapSystem.calculate_reward. None when no critic scored it.
+    critic_action_id: str | None = None
 
 class Trader:
     """

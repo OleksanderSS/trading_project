@@ -30,6 +30,10 @@ class ConsensusReport:
     knn_adjustment: float
     critic_score: float
     blocked_by_critic: bool
+    #: Id of the DeanAction the critic scored, so the eventual realised PnL can
+    #: be fed back to `DeanBootstrapSystem.calculate_reward` for THIS decision.
+    #: None when no critic ran.
+    critic_action_id: str | None = None
     timestamp: datetime = field(default_factory=datetime.now)
 
 
@@ -143,13 +147,14 @@ class ConsensusEngine:
             signal_threshold)
         critic_context = dict(context_data)
         critic_context.setdefault('confidence', abs(normalized_score))
-        final_signal, critic_score, blocked_by_critic = (self.
-            _apply_critic_filter(initial_signal, critic_context, features))
+        final_signal, critic_score, blocked_by_critic, critic_action_id = (
+            self._apply_critic_filter(initial_signal, critic_context, features))
         report = ConsensusReport(final_signal=final_signal, raw_score=
             raw_score, confidence=abs(normalized_score), market_regime=
             regime, context_fingerprint=fingerprint, model_contributions=
             contributions, knn_adjustment=knn_adjustment, critic_score=
-            critic_score, blocked_by_critic=blocked_by_critic)
+            critic_score, blocked_by_critic=blocked_by_critic,
+            critic_action_id=critic_action_id)
         return report
 
     def _predict_with_meta_model(self, model_predictions: dict[str, float],
@@ -246,7 +251,8 @@ class ConsensusEngine:
         return 'HOLD'
 
     def _apply_critic_filter(self, initial_signal: str, context_data: dict[
-        str, Any], features: pd.DataFrame | None=None) ->tuple[str, float, bool]:
+        str, Any], features: pd.DataFrame | None=None
+        ) ->tuple[str, float, bool, str | None]:
         """Apply DEAN critic and Anomaly hard-block to potentially block risky decisions.
 
         Calls `critique_existing_action`, not `bootstrap_action_critique`: the
@@ -259,9 +265,10 @@ class ConsensusEngine:
         final_signal = initial_signal
         blocked_by_critic = False
         critic_score = 0.0
+        action_id: str | None = None
         try:
             confidence = float(context_data.get('confidence', 0.0) or 0.0)
-            _, critique = self.dean_system.critique_existing_action(
+            action, critique = self.dean_system.critique_existing_action(
                 action_type='buy' if initial_signal == 'BUY' else
                 'sell' if initial_signal == 'SELL' else 'hold',
                 confidence=confidence,
@@ -269,6 +276,7 @@ class ConsensusEngine:
                 features=features,
             )
             critic_score = critique.critique_score
+            action_id = action.action_id
             if critique.critique_score < 0 and initial_signal != 'HOLD':
                 self.logger.warning(
                     f'[CONSENSUS] DEAN Critic blocked {initial_signal}. '
@@ -289,7 +297,7 @@ class ConsensusEngine:
                 )
             final_signal = 'HOLD'
             blocked_by_critic = True
-        return final_signal, critic_score, blocked_by_critic
+        return final_signal, critic_score, blocked_by_critic, action_id
 
     def get_ensemble_summary(self, reports: list[ConsensusReport]) ->dict[
         str, Any]:

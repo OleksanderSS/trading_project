@@ -170,7 +170,8 @@ class PortfolioManager:
         if shares > 0:
             return TradeOrder(ticker=ticker, quantity=shares, price=price,
                 action='BUY', reason=
-                f'Consensus Signal (Conf: {confidence:.2f}, Regime: {regime})')
+                f'Consensus Signal (Conf: {confidence:.2f}, Regime: {regime})',
+                critic_action_id=getattr(report, 'critic_action_id', None))
         return None
 
     def _create_sell_order(self, ticker: str, price: float) ->(TradeOrder |
