@@ -1,5 +1,6 @@
 # src/data/collectors/reddit_sentiment_collector.py
 
+import asyncio
 import hashlib
 import re
 import feedparser
@@ -29,11 +30,53 @@ class RedditSentimentCollector(BaseCollector):
         self.table_name = self.configs.get('table_name', "sociological_sentiment_data") # Змінено цільову таблицю
         self.hash_keys = self.configs.get('hash_keys', ["date", "subreddit", "post_id"])
         self.subreddits = self.configs.get('subreddits', ["wallstreetbets", "stocks", "investing", "economics"])
-        
+        # Reddit rate-limits aggressively; these govern pacing and 429 retries.
+        # 6s ~= Reddit's ~10 requests/minute budget for unauthenticated
+        # clients. Measured: at 2s the first subreddit succeeded and the rest
+        # came back 429 even after three retries. This collector runs daily
+        # over a handful of subreddits, so the extra wall time is irrelevant.
+        self.request_delay = float(self.configs.get('request_delay', 6.0))
+        self.max_retries = int(self.configs.get('max_retries', 3))
+        self.backoff_factor = float(self.configs.get('backoff_factor', 2.0))
+
         self.logger.info(
             f"RedditSentimentCollector (RSS Mode) initialized. "
-            f"Enabled: {self.enabled}; Subreddits: {self.subreddits}"
+            f"Enabled: {self.enabled}; Subreddits: {self.subreddits}; "
+            f"delay={self.request_delay}s, retries={self.max_retries}"
         )
+
+    async def _get_with_backoff(self, client, url: str, headers: dict[str, str]):
+        """GET with retry on 429, honouring Retry-After when the server sends it.
+
+        Without this the collector fired one request per subreddit with no
+        gap, and Reddit answered most of them with 429 Too Many Requests --
+        the source was alive, we were just asking too fast.
+        """
+        delay = self.request_delay
+        for attempt in range(1, self.max_retries + 1):
+            response = await client.get(url, headers=headers, timeout=self.timeout)
+            if response.status_code != 429:
+                return response
+
+            if attempt == self.max_retries:
+                self.logger.warning(
+                    f"Reddit still rate-limiting {url} after {attempt} attempts; giving up."
+                )
+                return response
+
+            retry_after = response.headers.get("Retry-After")
+            try:
+                wait = float(retry_after) if retry_after else delay
+            except (TypeError, ValueError):
+                wait = delay
+            wait = min(wait, 60.0)
+            self.logger.info(
+                f"Reddit returned 429 for {url}; waiting {wait:.1f}s "
+                f"(attempt {attempt}/{self.max_retries})."
+            )
+            await asyncio.sleep(wait)
+            delay *= self.backoff_factor
+        return None
 
     def _generate_hash(self, row: pd.Series) -> str:
         """Generates a stable hash for a record."""
@@ -97,12 +140,20 @@ class RedditSentimentCollector(BaseCollector):
         headers = {"User-Agent": "DEAN_OS_Agent research@example.com"} # SEC style user-agent
         
         async with client:
-            for subreddit in self.subreddits:
+            for index, subreddit in enumerate(self.subreddits):
                 url = f"https://www.reddit.com/r/{subreddit}/.rss"
                 try:
-                    response = await client.get(url, headers=headers, timeout=self.timeout)
+                    # Pace requests. Reddit rate-limits hard and the loop used
+                    # to fire back-to-back with no delay, so runs came back as
+                    # "429 Too Many Requests" for most subreddits.
+                    if index:
+                        await asyncio.sleep(self.request_delay)
+
+                    response = await self._get_with_backoff(client, url, headers)
+                    if response is None:
+                        continue
                     response.raise_for_status()
-                    
+
                     feed = feedparser.parse(response.text)
                     for entry in feed.entries:
                         # Extract basic sentiment from title (дуже базовий аналіз для сумісності)
@@ -140,7 +191,8 @@ class RedditSentimentCollector(BaseCollector):
                         })
                 except Exception as e:
                     self.logger.warning(f"Failed to fetch RSS for r/{subreddit}: {e}")
-                    
+
+
         return all_posts
 
     async def collect_data(self, **kwargs) -> list[dict[str, Any]] | None:
