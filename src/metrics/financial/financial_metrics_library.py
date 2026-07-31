@@ -137,6 +137,81 @@ class FinancialMetricsLibrary:
         return float(sharpe) if np.isfinite(sharpe) else on_error
 
     @staticmethod
+    def calculate_deflated_sharpe_ratio(
+        returns: pd.Series,
+        n_trials: int,
+        trading_days_per_year: int | None = 252,
+        variance_of_trial_sharpes: float | None = None,
+        on_error: float = np.nan,
+    ) -> float:
+        """Probability that an observed Sharpe survives the search that found it.
+
+        Bailey & López de Prado, "The Deflated Sharpe Ratio" (2014). Running
+        K configurations and reporting the best one inflates Sharpe even when
+        no configuration has any edge: the maximum of K noisy estimates is
+        positive by construction. DSR is the probability that the true Sharpe
+        exceeds zero once that selection is accounted for, so it also corrects
+        for the non-normal returns (skew, fat tails) that make a naive Sharpe
+        optimistic.
+
+        This matters here specifically because TuningAgent is designed to run
+        many proposals. Without deflation, "the best config we tried" and "a
+        config that works" are indistinguishable in the reported metric.
+
+        Args:
+            n_trials: how many configurations were tried to produce this one.
+                n_trials=1 means no selection took place.
+            variance_of_trial_sharpes: variance of the (non-annualised) Sharpe
+                across those trials, if known. Falls back to the theoretical
+                1/(N-1) under the null when not supplied.
+
+        Returns:
+            Probability in [0, 1]. Below ~0.95 the result is not distinguishable
+            from selection luck. `on_error` when there is too little data.
+        """
+        from scipy.stats import norm
+
+        clean = pd.Series(returns, dtype=float).replace([np.inf, -np.inf], np.nan).dropna()
+        n_obs = len(clean)
+        if n_obs < 3 or int(n_trials) < 1:
+            return on_error
+
+        std = clean.std()
+        if not np.isfinite(std) or std <= 1e-12:
+            return on_error
+
+        # Work with the PER-PERIOD Sharpe: deflation is defined on the
+        # unannualised statistic, and annualising first would inflate it.
+        sharpe = float(clean.mean() / std)
+        skew = float(clean.skew()) if n_obs > 2 else 0.0
+        kurt = float(clean.kurtosis()) + 3.0 if n_obs > 3 else 3.0  # pandas gives excess
+        if not all(np.isfinite(v) for v in (sharpe, skew, kurt)):
+            return on_error
+
+        trials = int(n_trials)
+        if trials <= 1:
+            expected_max_sharpe = 0.0
+        else:
+            trial_var = (
+                float(variance_of_trial_sharpes)
+                if variance_of_trial_sharpes is not None and variance_of_trial_sharpes > 0
+                else 1.0 / max(n_obs - 1, 1)
+            )
+            euler = 0.5772156649015329
+            expected_max_sharpe = np.sqrt(trial_var) * (
+                (1 - euler) * norm.ppf(1 - 1.0 / trials)
+                + euler * norm.ppf(1 - 1.0 / (trials * np.e))
+            )
+
+        denominator = 1.0 - skew * sharpe + ((kurt - 1.0) / 4.0) * sharpe ** 2
+        if not np.isfinite(denominator) or denominator <= 0:
+            return on_error
+
+        statistic = (sharpe - expected_max_sharpe) * np.sqrt(n_obs - 1) / np.sqrt(denominator)
+        result = float(norm.cdf(statistic))
+        return result if np.isfinite(result) else on_error
+
+    @staticmethod
     def calculate_sortino_ratio(
         returns: pd.Series, risk_free_rate: float = 0.0, trading_days_per_year: int = 252
     ) -> float:
