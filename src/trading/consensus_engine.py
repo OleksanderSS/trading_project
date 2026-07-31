@@ -49,6 +49,7 @@ class ConsensusEngine:
         self.diary = experience_diary
         self.threshold_analyzer = threshold_analyzer
         self.dean_system = get_dean_system()
+        self._ensure_critic_registered()
         self.live_ensemble = live_ensemble
         if meta_model_path is None:
             if self.logger.isEnabledFor(logging.DEBUG):
@@ -71,9 +72,50 @@ class ConsensusEngine:
                 f'Meta-model not found at {meta_model_path}. Falling back to live-adaptive ensembling.'
                 )
 
+    def _ensure_critic_registered(self) ->None:
+        """Register a DeanCritic so the critic filter actually has a critic.
+
+        `register_model()` was never called anywhere in this codebase, so
+        `_apply_critic_filter` always hit the "no critic" path and silently
+        no-opped on every consensus decision since the day it was written.
+
+        The critic is registered UNFITTED on purpose: its rule-based terms
+        (volatility, anomaly score, regime-vs-direction, paradoxical
+        confidence) work immediately, while `DeanCritic.predict` returns zeros
+        until someone trains its meta-model on historical
+        (features, actual, actor-prediction) triples. That term simply
+        contributes nothing until then -- no silent failure either way.
+        """
+        try:
+            from src.meta_learning.dean_trading_models import DeanCritic
+            from src.models.dean.dean_bootstrap_system import ModelRole
+
+            already = any(
+                m.get('role') == ModelRole.CRITIC
+                for m in self.dean_system.models.values()
+            )
+            if already:
+                return
+
+            rules = {
+                'high_vol_threshold': self.config_manager.get(
+                    'strategy.risk_management.high_volatility_threshold', 0.05),
+                'anomaly_threshold': self.config_manager.get(
+                    'strategy.risk_management.anomaly_threshold', 0.8),
+            }
+            self.dean_system.register_model(
+                'dean_critic', ModelRole.CRITIC, DeanCritic(rules_config=rules)
+            )
+            self.logger.info(
+                '[CONSENSUS] DEAN Critic registered (rule-based; meta-model '
+                'inactive until trained).'
+            )
+        except (ImportError, ValueError, TypeError, AttributeError, KeyError) as e:
+            self.logger.warning(f'Could not register DEAN Critic: {e}')
+
     def generate_consensus(self, model_predictions: dict[str, float],
         context_data: dict[str, Any], knn_results: dict[str, Any] | None
-        =None) ->ConsensusReport:
+        =None, features: pd.DataFrame | None=None) ->ConsensusReport:
         """
         Processes predictions from all architectures to reach a single unified trade decision.
         """
@@ -99,8 +141,10 @@ class ConsensusEngine:
             signal_threshold, context_data)
         initial_signal = self._determine_initial_signal(normalized_score,
             signal_threshold)
+        critic_context = dict(context_data)
+        critic_context.setdefault('confidence', abs(normalized_score))
         final_signal, critic_score, blocked_by_critic = (self.
-            _apply_critic_filter(initial_signal, context_data))
+            _apply_critic_filter(initial_signal, critic_context, features))
         report = ConsensusReport(final_signal=final_signal, raw_score=
             raw_score, confidence=abs(normalized_score), market_regime=
             regime, context_fingerprint=fingerprint, model_contributions=
@@ -202,18 +246,34 @@ class ConsensusEngine:
         return 'HOLD'
 
     def _apply_critic_filter(self, initial_signal: str, context_data: dict[
-        str, Any]) ->tuple[str, float, bool]:
-        """Apply DEAN critic and Anomaly hard-block to potentially block risky decisions."""
+        str, Any], features: pd.DataFrame | None=None) ->tuple[str, float, bool]:
+        """Apply DEAN critic and Anomaly hard-block to potentially block risky decisions.
+
+        Calls `critique_existing_action`, not `bootstrap_action_critique`: the
+        signal is already decided by the time we get here, so the consensus is
+        the actor. The old call passed `context_data` (a flat 7-key dict) into
+        a path that generated an action from a registered DeanActor expecting a
+        feature DataFrame, which raised TypeError on every invocation and was
+        swallowed below as "critic unavailable" — the filter had never once run.
+        """
         final_signal = initial_signal
         blocked_by_critic = False
         critic_score = 0.0
         try:
-            _, critique = self.dean_system.bootstrap_action_critique(
-                context_data)
+            confidence = float(context_data.get('confidence', 0.0) or 0.0)
+            _, critique = self.dean_system.critique_existing_action(
+                action_type='buy' if initial_signal == 'BUY' else
+                'sell' if initial_signal == 'SELL' else 'hold',
+                confidence=confidence,
+                context=context_data,
+                features=features,
+            )
             critic_score = critique.critique_score
             if critique.critique_score < 0 and initial_signal != 'HOLD':
                 self.logger.warning(
-                    f'[CONSENSUS] DEAN Critic blocked {initial_signal}. Critique Score: {critique.critique_score}'
+                    f'[CONSENSUS] DEAN Critic blocked {initial_signal}. '
+                    f'Score: {critique.critique_score:.3f}. '
+                    f'Reasons: {"; ".join(critique.critique_points) or "n/a"}'
                     )
                 final_signal = 'HOLD'
                 blocked_by_critic = True

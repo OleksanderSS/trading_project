@@ -123,6 +123,53 @@ class DeanBootstrapSystem:
 
         return action, critique
 
+    def critique_existing_action(
+        self,
+        action_type: str,
+        confidence: float,
+        context: dict[str, Any],
+        features: Any = None,
+    ) -> tuple[DeanAction, DeanCritique]:
+        """Critique a decision that has ALREADY been made elsewhere.
+
+        `bootstrap_action_critique` requires a registered ACTOR model, because
+        it generates the action itself. On the live path that actor does not
+        exist and should not: by the time ConsensusEngine reaches its critic
+        filter the signal is already decided, so the consensus IS the actor.
+        Registering a second, separate DeanActor purely to satisfy that guard
+        would be architecture by accident.
+
+        This wraps the existing decision in a DeanAction so the reward loop
+        (`calculate_reward`) keys off the same `action_id` as the bootstrap
+        path, then runs only the critic.
+        """
+        critic_models = [m for m in self.models.values() if m['role'] == ModelRole.CRITIC]
+        if not critic_models:
+            raise ValueError("No critic model registered")
+
+        action = DeanAction(
+            action_id=f"act_{int(time.time() * 1000)}",
+            action_type=str(action_type).lower(),
+            parameters={'ticker': context.get('ticker')},
+            confidence=float(confidence),
+            timestamp=datetime.now(),
+            context=context,
+        )
+
+        critic = critic_models[0]['instance']
+        critique_data = critic.critique_action(action, context, features)
+        critique = DeanCritique(
+            action_id=action.action_id,
+            critique_score=critique_data['score'],
+            critique_points=critique_data['points'],
+            alternative_suggestions=critique_data['alternatives'],
+            confidence=critique_data['confidence'],
+        )
+
+        self.action_history[action.action_id] = action
+        self.critique_history[action.action_id] = critique
+        return action, critique
+
     def calculate_reward(self, action_id: str, outcome: dict[str, Any], confidence_bonus: bool = True):
         """
         Розрахунок винагороди для Актора та Критика на основі результату

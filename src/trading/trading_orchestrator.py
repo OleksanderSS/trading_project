@@ -226,11 +226,25 @@ class TradingOrchestrator:
                 if self.error_handler:
                     self.error_handler.handle_error(e, context={'ticker': ticker})
                 raise RuntimeError(f"KNN analysis failed for {ticker}: {e}") from e
+        # The DEAN critic needs the engineered feature row for its meta-model
+        # and a volatility reading for its rules. `enriched_data` is already
+        # in hand here; previously nothing was forwarded, so the critic could
+        # only ever see the flat 7-key context dict and never actually ran.
+        critic_features = None
+        if enriched_data is not None and 'ticker' in enriched_data.columns:
+            ticker_rows = enriched_data[enriched_data['ticker'] == ticker]
+            if not ticker_rows.empty:
+                critic_features = ticker_rows.tail(1)
+                context_data.setdefault(
+                    'volatility', self._latest_volatility(critic_features)
+                )
+
         try:
             if self.consensus_engine is not None:
                 report = self.consensus_engine.generate_consensus(
                     model_predictions=model_predictions, context_data=
-                    context_data, knn_results=knn_results)
+                    context_data, knn_results=knn_results,
+                    features=critic_features)
                 if report.final_signal != 'HOLD':
                     return {'ticker': ticker, 'final_signal': report.
                         final_signal, 'confidence': report.confidence,
@@ -272,6 +286,25 @@ class TradingOrchestrator:
         else:
             primary_model = prediction.get('selected_primary_model', 'unknown')
             return {primary_model: pred_value}
+
+    @staticmethod
+    def _latest_volatility(feature_row: pd.DataFrame) -> float | None:
+        """Pull a volatility reading out of the enriched feature row.
+
+        Feature columns carry an interval suffix (feature_orchestrator appends
+        `_{interval}`), so the exact name varies -- match on the prefix the
+        technical enricher uses rather than hardcoding one column.
+        """
+        for col in feature_row.columns:
+            if str(col).upper().startswith('VOLATILITY_'):
+                value = feature_row.iloc[-1][col]
+                try:
+                    value = float(value)
+                except (TypeError, ValueError):
+                    continue
+                if value == value:  # not NaN
+                    return value
+        return None
 
     def _build_context_data(self, prediction: dict[str, Any], ticker: str
         ) ->dict[str, Any]:
