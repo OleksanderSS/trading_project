@@ -64,10 +64,7 @@ class TradingOrchestrator:
         if self.macro_analyzer and enriched_data is not None:
             self.logger.info('Executing Macro Context Analysis...')
             self.macro_analyzer.analyze(enriched_data)
-        regime = 'ranging'
-        if self.regime_detector:
-            self.logger.info(
-                'Detecting market regime for decision optimization...')
+        regime = self._detect_regime(enriched_data)
         predictions_to_process = self._apply_pre_filtering(raw_predictions)
         consensus_signals = self._synthesize_consensus_signals(
             predictions_to_process, regime=regime, enriched_data=enriched_data)
@@ -172,6 +169,67 @@ class TradingOrchestrator:
         except Exception as e:
             self.logger.error(f"AgenticVetoSystem failed: {e}. Falling back to mathematical consensus.", exc_info=True)
             return consensus_signals
+
+    def _detect_regime(self, enriched_data: pd.DataFrame | None) ->str:
+        """Detect the market regime and hand it to the risk layer.
+
+        This used to read:
+
+            regime = 'ranging'
+            if self.regime_detector:
+                self.logger.info('Detecting market regime...')
+
+        -- the detector was injected, the log line was printed, and the
+        detector was never called, so every cycle ran as 'ranging'. The
+        message made the logs look like detection was happening.
+
+        The result is also pushed into PortfolioManager.current_regime so the
+        kill switch can tighten with the regime (PipelinePolicyManager treats
+        the configured limit as a ceiling, so this can only ever tighten).
+        """
+        regime = 'ranging'
+        if self.regime_detector is not None and enriched_data is not None:
+            try:
+                closes = enriched_data['close'].astype(float)
+                returns = closes.pct_change(fill_method=None).replace(
+                    [np.inf, -np.inf], np.nan).dropna().values
+                if len(returns) > 30:
+                    result = self.regime_detector.detect_regime(
+                        returns, data_bundle={'prices': closes.values})
+                    detected = str(result.get('regime', '')).lower()
+                    regime = self._map_detected_regime(detected)
+                    self.logger.info(
+                        f"Market regime detected: '{detected}' -> '{regime}'")
+                else:
+                    self.logger.info(
+                        f'Not enough returns ({len(returns)}) to detect a '
+                        f"regime; defaulting to '{regime}'.")
+            except (KeyError, ValueError, TypeError, AttributeError) as e:
+                self.logger.warning(
+                    f"Regime detection failed ({e}); defaulting to '{regime}'.")
+
+        if self.portfolio_manager is not None:
+            self.portfolio_manager.current_regime = regime
+        return regime
+
+    @staticmethod
+    def _map_detected_regime(detected: str) ->str:
+        """Map the detector's vocabulary onto MarketRegime member names.
+
+        AdaptiveParameterManager knows trending_up / trending_down / ranging /
+        volatile / dead. Anything unrecognised stays 'ranging', and
+        PipelinePolicyManager falls back to the configured ceiling for names
+        it does not know, so a mismatch can never widen a limit.
+        """
+        if 'trend' in detected and 'up' in detected:
+            return 'trending_up'
+        if 'trend' in detected and 'down' in detected:
+            return 'trending_down'
+        if 'crisis' in detected or 'volatil' in detected:
+            return 'volatile'
+        if 'dead' in detected or 'stagnant' in detected:
+            return 'dead'
+        return 'ranging'
 
     def _apply_pre_filtering(self, raw_predictions: list[dict[str, Any]]
         ) ->list[dict[str, Any]]:
