@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -161,7 +162,16 @@ class OutcomeTracker:
         )
         if not checkpoint_intervals:
             raise ValueError("intervals must contain at least one positive horizon")
-        event_id = f"evt_{now.strftime('%Y%m%d_%H%M%S_%f')}"
+        # The timestamp prefix is kept because it makes ids readable and
+        # sortable, but it CANNOT be the whole id: two registrations landing in
+        # the same microsecond produce the same string and the second one dies
+        # on "UNIQUE constraint failed: tracked_events.event_id". That is not
+        # theoretical -- registering several replay tasks in a loop hits it
+        # regularly, and Windows' coarse system-clock resolution makes it the
+        # common case rather than a rare race. Nothing parses this format back
+        # into a timestamp (verified: it is constructed here and nowhere else),
+        # so a random suffix is free.
+        event_id = f"evt_{now.strftime('%Y%m%d_%H%M%S_%f')}_{uuid.uuid4().hex[:8]}"
 
         with sqlite3.connect(str(self.db_path)) as con:
             con.execute(
