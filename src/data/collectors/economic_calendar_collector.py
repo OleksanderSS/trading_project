@@ -6,6 +6,37 @@ from src.data.management.data_manager import DataManager
 
 from .base_collector import BaseCollector
 
+#: ForexFactory tags each event with the CURRENCY it affects (USD, EUR, JPY...),
+#: not an ISO country code. collectors.yaml still lists ISO codes
+#: (us, eu, gb, cn, jp, de) left over from the Investing.com implementation
+#: this collector replaced, so the filter compared 'US' against 'USD' and
+#: matched nothing -- 92 live events in, 0 out, on every single run.
+#: Both spellings are accepted now.
+_ISO_TO_CURRENCY = {
+    'US': 'USD', 'USA': 'USD',
+    'EU': 'EUR', 'EA': 'EUR', 'EMU': 'EUR',
+    # Eurozone members report under EUR on this feed.
+    'DE': 'EUR', 'FR': 'EUR', 'IT': 'EUR', 'ES': 'EUR', 'NL': 'EUR',
+    'GB': 'GBP', 'UK': 'GBP',
+    'JP': 'JPY',
+    'CN': 'CNY',
+    'CA': 'CAD',
+    'AU': 'AUD',
+    'NZ': 'NZD',
+    'CH': 'CHF',
+}
+
+
+def _to_currency_codes(values: Any) -> set[str]:
+    """Normalise configured country/currency codes to ForexFactory currencies."""
+    out: set[str] = set()
+    for raw in values or []:
+        code = str(raw).strip().upper()
+        if not code:
+            continue
+        out.add(_ISO_TO_CURRENCY.get(code, code))
+    return out
+
 
 class EconomicCalendarCollector(BaseCollector):
     """Fetches upcoming economic calendar events from ForexFactory's free
@@ -48,13 +79,18 @@ class EconomicCalendarCollector(BaseCollector):
             
             data = response.json()
             records = []
-            
+            wanted = _to_currency_codes(
+                self.configs.get('countries', ['US', 'EU', 'GB'])
+            )
+            seen_codes: set[str] = set()
+
             for item in data:
-                # Filter by country if configured
-                countries = [c.upper() for c in self.configs.get('countries', ['US', 'EUR', 'GBP'])]
-                if item.get('country') not in countries:
+                code = str(item.get('country') or '').upper()
+                seen_codes.add(code)
+                if wanted and code not in wanted:
                     continue
-                    
+
+
                 records.append({
                     'timestamp': item.get('date'),
                     'country': item.get('country'),
@@ -65,7 +101,18 @@ class EconomicCalendarCollector(BaseCollector):
                     'previous': item.get('previous', '')
                 })
                 
-            self.logger.info(f'[EconCalendar] Fetched {len(records)} events from ForexFactory.')
+            self.logger.info(
+                f'[EconCalendar] Fetched {len(records)} of {len(data)} events '
+                f'from ForexFactory (filter={sorted(wanted)}).'
+            )
+            if data and not records:
+                # Silence here is how this sat broken: 92 events in, 0 out, and
+                # nothing said why.
+                self.logger.warning(
+                    f'[EconCalendar] Every event was filtered out. Feed carries '
+                    f'{sorted(seen_codes)}; configured filter resolves to '
+                    f'{sorted(wanted)}. Check collectors.yaml `countries`.'
+                )
             return records
             
         except Exception as e:
