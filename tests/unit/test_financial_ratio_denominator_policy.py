@@ -17,10 +17,27 @@ def test_risk_reward_sharpe_returns_nan_for_constant_returns():
     assert np.isnan(result)
 
 
-def test_risk_reward_sortino_returns_nan_for_zero_downside_std():
-    result = RiskRewardCalculator.calculate_sortino_ratio(pd.Series([-0.01, -0.01, 0.02]))
+def test_risk_reward_sortino_returns_nan_when_there_is_no_downside():
+    """Undefined only when downside deviation is genuinely zero, i.e. no losses.
+
+    This case used to be `[-0.01, -0.01, 0.02]`, which returned NaN because
+    the old formula divided by the STANDARD DEVIATION OF THE LOSING SUBSET --
+    two identical losses have zero spread, so the denominator vanished. Two
+    equal losses are not zero downside risk, and the correct downside
+    deviation, sqrt(mean(min(0, r)^2)), is non-zero there. That input now
+    yields a finite ratio (see the test below); the NaN policy is preserved
+    for the input where the denominator really is zero.
+    """
+    result = RiskRewardCalculator.calculate_sortino_ratio(pd.Series([0.01, 0.02, 0.03]))
 
     assert np.isnan(result)
+
+
+def test_risk_reward_sortino_is_finite_when_losses_are_identical():
+    """Regression guard for the formula fix: equal losses are still losses."""
+    result = RiskRewardCalculator.calculate_sortino_ratio(pd.Series([-0.01, -0.01, 0.02]))
+
+    assert np.isfinite(result)
 
 
 def test_risk_reward_information_ratio_returns_nan_for_identical_series():

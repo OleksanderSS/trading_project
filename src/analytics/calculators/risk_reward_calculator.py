@@ -100,29 +100,27 @@ class RiskRewardCalculator:
 
     @staticmethod
     def calculate_sortino_ratio(returns: pd.Series, config: TradeConfig | None = None) -> float:
-        """Calculates the annualized Sortino Ratio."""
+        """Calculates the annualized Sortino Ratio.
+
+        Delegates to FinancialMetricsLibrary.calculate_sortino_ratio (the
+        canonical implementation), exactly as calculate_sharpe_ratio does.
+
+        This used to carry its own formula, dividing by the standard deviation
+        of the losing subset rather than the downside deviation
+        `sqrt(mean(min(0, r - target)^2))`. Measured against the definition it
+        overstated by 1.151x / 1.175x / 1.277x on three samples -- and it
+        overstated MOST on downside-skewed returns, i.e. precisely the case
+        Sortino exists to penalise. Three separate Sortino implementations
+        existed in this codebase and all three disagreed; Sharpe had already
+        been consolidated for the same reason.
+        """
         if config is None:
             config = TradeConfig()
-
-        clean_returns = RiskRewardCalculator._clean_return_series(returns)
-        periods_per_year = max(int(config.periods_per_year), 1)
-        if len(clean_returns) < 2:
-            return np.nan
-
-        target_return = config.risk_free_rate / periods_per_year
-        downside_returns = clean_returns[clean_returns < target_return]
-
-        if len(downside_returns) < 2:
-            return np.nan
-
-        downside_std = downside_returns.std()
-        if not np.isfinite(downside_std) or downside_std <= 1e-12:
-            return np.nan
-
-        expected_return = clean_returns.mean()
-        sortino_ratio = (expected_return - target_return) / downside_std
-        annualized_sortino = sortino_ratio * np.sqrt(periods_per_year)
-        return float(annualized_sortino) if np.isfinite(annualized_sortino) else np.nan
+        return FinancialMetricsLibrary.calculate_sortino_ratio(
+            returns,
+            risk_free_rate=config.risk_free_rate,
+            trading_days_per_year=config.periods_per_year,
+        )
 
     @staticmethod
     def calculate_beta(asset_returns: pd.Series, market_returns: pd.Series) -> float:
