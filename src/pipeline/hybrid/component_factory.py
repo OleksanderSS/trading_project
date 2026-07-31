@@ -4,33 +4,20 @@ from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 from src.pipeline.stages.stage_0_data_generation import DataGenerator
 
-from .cache_manager import CacheManager
 from .colab_manager import ColabManager
-from .colab_workflow_manager import ColabWorkflowManager
-from .context_builder import ContextBuilder
-from .data_batch_manager import DataBatchManager
 from .data_cache_manager import DataCacheManager
 
 # Import all specialized components
 from .data_manager import HybridDataManager
-from .data_processor import DataProcessor
 from .data_utils import DataUtils
 from .feature_processor import FeatureProcessor
-from .feature_selection_manager import FeatureSelectionManager
-from .feature_selection_validator import FeatureSelectionValidator
 from .final_stages_orchestrator import FinalStagesOrchestrator
 from .light_models_trainer import LightModelsTrainer
 from .metadata_manager import MetadataManager
-from .model_training_orchestrator import ModelTrainingOrchestrator
-from .orchestrator_interface import OrchestratorInterface
-from .pipeline_executor import PipelineExecutor
 from .pipeline_manager import PipelineManager
-from .pipeline_metadata_manager import PipelineMetadataManager
 from .pipeline_runner import PipelineRunner
 from .results_processor import ResultsProcessor
-from .selected_features_processor import SelectedFeaturesProcessor
 from .storage_manager import StorageManager
-from .test_mode_manager import TestModeManager
 
 logger = ProjectLogger.get_logger('OrchestratorFactory')
 
@@ -52,15 +39,11 @@ class OrchestratorComponentFactory:
             components['data_manager'] = HybridDataManager(output_dir)
             components['db_data_manager'] = DataManager(config_manager)
             components['feature_processor'] = FeatureProcessor()
-            components['cache_manager'] = CacheManager(output_dir, batch_name)
             components['colab_manager'] = ColabManager(output_dir, batch_name)
             components['pipeline_manager'] = PipelineManager(orchestrator)
             components['storage_manager'] = StorageManager(config)
-            components['pipeline_executor'] = PipelineExecutor(config_manager, output_dir, components['feature_processor'])
-            components['feature_selection_manager'] = FeatureSelectionManager(output_dir)
             components['data_utils'] = DataUtils()
             components['metadata_manager'] = MetadataManager(config_manager)
-            components['interface'] = OrchestratorInterface(orchestrator)
             components['pipeline_runner'] = PipelineRunner(config_manager, str(output_dir), batch_name, components['feature_processor'], components['metadata_manager'])
 
             components['light_models_trainer'] = LightModelsTrainer({
@@ -72,21 +55,20 @@ class OrchestratorComponentFactory:
                 'data_manager': components['db_data_manager']
             })
 
-            components['colab_workflow_manager'] = ColabWorkflowManager(output_dir, batch_name, config.light_models)
-            components['data_processor'] = DataProcessor(components['data_utils'])
-            components['data_batch_manager'] = DataBatchManager()
-            components['model_training_orchestrator'] = ModelTrainingOrchestrator(config_manager)
-            components['feature_selection_validator'] = FeatureSelectionValidator()
             components['results_processor'] = ResultsProcessor()
             components['data_cache_manager'] = DataCacheManager()
-            components['test_mode_manager'] = TestModeManager()
-            components['context_builder'] = ContextBuilder(components['test_mode_manager'])
-            components['selected_features_processor'] = SelectedFeaturesProcessor(components['context_builder'], components['feature_selection_validator'])
 
-            components['pipeline_metadata_manager'] = PipelineMetadataManager(
-                output_dir, batch_name, config.light_models, config.heavy_models
-            )
-
+            # NOTE: 13 further components used to be constructed here and
+            # attached to the orchestrator via setattr, but nothing ever called
+            # them -- HybridOrchestrator's public API only touches
+            # pipeline_runner, pipeline_manager, colab_manager and
+            # light_models_trainer. They are archived under
+            # src/archive/pipeline_hybrid_dormant/ (see MANIFEST). Each
+            # duplicated a responsibility a live component already handles;
+            # pipeline_executor's stage methods were literally
+            # "# Implementation would go here" stubs superseded by
+            # pipeline_runner. data_manager.py and data_utils.py stayed put --
+            # they have real behavioural test coverage.
             components['final_stages_orchestrator'] = FinalStagesOrchestrator(config_manager, output_dir, batch_name)
             components['data_generator'] = DataGenerator(config_manager)
 

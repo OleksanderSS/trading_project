@@ -8,32 +8,29 @@ Hybrid Orchestrator Components.
 Modular components for the hybrid pipeline orchestrator.
 """
 
-from .cache_manager import CacheManager
 from .colab_manager import ColabManager
 from .contracts import HybridFinalStagesRequest, HybridPipelineRequest
 from .data_manager import HybridDataManager
 from .data_utils import DataUtils
 from .feature_processor import FeatureProcessor
-from .feature_selection_manager import FeatureSelectionManager
 from .metadata_manager import MetadataManager, MetadataParams, SaveMetadataParams
 from .orchestrator_config import OrchestratorConfigManager, PipelineConfig
-from .orchestrator_interface import OrchestratorInterface
 from .pipeline_config import ColabBatchParams, FinalStagesParams, PipelineParams
-from .pipeline_executor import PipelineExecutor
 from .pipeline_manager import PipelineManager
 from .storage_manager import StorageManager
 
+# CacheManager, FeatureSelectionManager, OrchestratorInterface and
+# PipelineExecutor were re-exported here but are now archived under
+# src/archive/pipeline_hybrid_dormant/ -- they were constructed by
+# component_factory and attached to the orchestrator, yet never called.
 __all__ = [
     'HybridDataManager',
     'FeatureProcessor',
-    'CacheManager',
     'ColabManager',
     'PipelineManager',
     'OrchestratorConfigManager',
     'PipelineConfig',
     'StorageManager',
-    'PipelineExecutor',
-    'FeatureSelectionManager',
     'DataUtils',
     'MetadataManager',
     'PipelineParams',
@@ -41,7 +38,6 @@ __all__ = [
     'ColabBatchParams',
     'HybridFinalStagesRequest',
     'HybridPipelineRequest',
-    'OrchestratorInterface',
     'MetadataParams',
     'SaveMetadataParams'
 ]

@@ -1652,3 +1652,42 @@ now-archived modules by their **old**, pre-archival path (e.g.
 anything here, grep the file's own `from src.` imports and check whether
 each target still exists at the live path or needs an `src.archive.`
 prefix.
+
+## `src/archive/pipeline_hybrid_dormant/` (archived 2026-07-31)
+
+The ~15-component dormant cluster in `src/pipeline/hybrid/` that the earlier
+`src/pipeline/hybrid/` pass identified but deliberately left wired pending a
+decision. The owner greenlit archiving it.
+
+**Re-verified before moving** rather than trusting the earlier survey, and that
+mattered: the earlier note said "zero test coverage for any of the ~15", which
+is no longer true. A pure-Python scan of 1414 files outside `hybrid/` (import
+paths plus class names, excluding names that collide with unrelated live
+classes) found **13 genuinely dormant and 2 that are not**:
+
+- **Kept, NOT archived**: `data_manager.py` (`HybridDataManager`) and
+  `data_utils.py` (`DataUtils`). `tests/unit/test_hybrid_cleaners_missing_policy.py`
+  pins a real behavioural invariant on both — `clean_dataframe` must turn inf
+  into NaN and preserve numeric missing values rather than filling them.
+  Archiving them would have deleted that guarantee.
+
+- **Archived (13)**: `cache_manager.py`, `orchestrator_interface.py`,
+  `feature_selection_manager.py`, `feature_selection_validator.py`,
+  `test_mode_manager.py`, `context_builder.py`, `data_processor.py`,
+  `data_batch_manager.py`, `pipeline_metadata_manager.py`,
+  `pipeline_executor.py`, `colab_workflow_manager.py`,
+  `model_training_orchestrator.py`, `selected_features_processor.py`.
+
+All 13 were constructed by `OrchestratorComponentFactory.initialize_components()`
+and attached to the orchestrator via `setattr`, but never called:
+`HybridOrchestrator`'s public API only touches `pipeline_runner`,
+`pipeline_manager`, `colab_manager` and `light_models_trainer`. Each duplicated
+a responsibility a live component already handles — `colab_workflow_manager` is
+superseded by inline logic in `pipeline_manager.py`, and `pipeline_executor`'s
+stage methods were literally `# Implementation would go here` stubs superseded
+by the working `pipeline_runner.py`.
+
+`component_factory.py` and `hybrid/__init__.py` were trimmed accordingly
+(`__init__` had been re-exporting four of them). Verified after: the package
+and factory import cleanly, `run_hybrid_pipeline.py --help` still works, and
+57 hybrid/orchestrator tests pass with 1 skipped.
