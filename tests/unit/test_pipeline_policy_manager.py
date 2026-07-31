@@ -121,10 +121,8 @@ def test_missing_risk_config_still_yields_conservative_limits():
     "sections,expected,source",
     [
         ({"modeling": {"test_size": 0.25}}, 0.25, "modeling.test_size"),
-        ({"processing": {"data_preparation": {"test_size": 0.3}}}, 0.3,
-         "processing.data_preparation.test_size"),
-        ({"unified_config": {"preparation": {"test_size": 0.15}}}, 0.15,
-         "unified_config.preparation.test_size"),
+        ({"data_preparation": {"test_size": 0.3}}, 0.3,
+         "data_preparation.test_size"),
         ({}, 0.2, "builtin_default"),
     ],
 )
@@ -137,9 +135,9 @@ def test_split_resolution_order_and_provenance(sections, expected, source):
 
 
 def test_split_reports_where_the_number_came_from():
-    """Provenance is the point: today's real answer is the builtin default,
-    even though two config files declare a test_size, because the modeling
-    stage reads a 'modeling' section that does not exist."""
+    """Provenance is the point: a caller must be able to tell a configured
+    value from a fallback, since the modeling stage silently used the builtin
+    constant while two config files declared a test_size."""
     policy = PipelinePolicyManager(FakeConfig({}))
     assert policy.split_policy().source == "builtin_default"
 
@@ -223,3 +221,28 @@ def test_policy_failure_falls_back_to_the_configured_limit():
     pm.current_regime = "dead"
     pm._policy_manager = Exploding()
     assert pm.is_trading_allowed({}) is True     # 2% < configured 3%
+
+
+def test_split_sources_are_top_level_config_keys_not_file_names():
+    """get_config() resolves TOP-LEVEL YAML KEYS across the merged config,
+    not file names -- get_config('processing') is None even though
+    processing.yaml exists, because its top-level keys are `safe_fill` and
+    `data_preparation`. A source table written in file names would resolve
+    nothing while appearing to read config."""
+    from src.policy.pipeline_policy_manager import PipelinePolicyManager as P
+
+    sections = {section for section, _path in P._SPLIT_SOURCES}
+    assert "processing" not in sections
+    assert "unified_config" not in sections
+    assert "data_preparation" in sections
+
+
+def test_real_config_resolves_test_size_from_data_preparation():
+    """Against the project's actual config, not a fake one."""
+    from src.config.unified_config_manager import get_current_config
+
+    policy = PipelinePolicyManager(get_current_config())
+    split = policy.split_policy()
+
+    assert split.source == "data_preparation.test_size"
+    assert 0 < split.test_size < 1

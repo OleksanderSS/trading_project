@@ -44,3 +44,18 @@ data_preparation:
       params:
         indicator_col: "RSI_14"
         shift: -3
+
+# Налаштування стадії моделювання.
+#
+# Ця секція раніше не існувала в жодному конфізі, хоча
+# src/pipeline/stages/modeling/orchestrator.py читає get_config('modeling').
+# Виклик повертав None, тож УСІ чотири налаштування нижче мовчки падали в
+# код-константи — змінити їх через конфіг було неможливо.
+# Значення тут дорівнюють тим самим константам, тож поведінка не змінюється;
+# змінюється лише те, що тепер їх можна налаштувати.
+modeling:
+  strategy: hybrid          # src.training.constants: стратегія тренування
+  batch_size: 10            # BATCH_TRAINER_DEFAULT_BATCH_SIZE
+  max_memory_gb: 12.0       # BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
+  # test_size навмисно НЕ дублюється тут: він живе під data_preparation вище,
+  # і PipelinePolicyManager.split_policy() резолвить його звідти.

@@ -70,6 +70,30 @@ class ModelingStage(BaseStage):
 
         self.training_manager = UnifiedTrainingManager(training_config)
         self.comparison_analyzer = ModelComparisonAnalyzer()
+
+    def _resolve_test_size(self) -> float:
+        """Split ratio from PipelinePolicyManager, so there is one answer.
+
+        `self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)` always
+        returned the constant: `get_config('modeling')` was None because no
+        config file declared that key, while `test_size: 0.2` sat unread under
+        the top-level `data_preparation` key. Routing through the policy
+        manager makes the configured value actually govern -- and it reports
+        which source it came from, so a fallback is visible in the log rather
+        than silent.
+        """
+        try:
+            from src.policy import get_policy_manager
+
+            split = get_policy_manager(self.config_manager).split_policy()
+            logger.info(
+                f'Using test_size={split.test_size} (source: {split.source})')
+            return split.test_size
+        except Exception as e:
+            logger.warning(
+                f'Policy manager unavailable ({e}); '
+                f'falling back to test_size={DEFAULT_TEST_SIZE}.')
+            return self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
         self.models_dir = self.config_manager.get_models_path()
         self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
         self._init_infrastructure()
@@ -238,7 +262,7 @@ class ModelingStage(BaseStage):
                     df=df, ticker=ticker, timeframe=timeframe,
                     target_cols=[target_name],
                     gap_size=10, # Обов'язковий розрив для чесності
-                    test_size=self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
+                    test_size=self._resolve_test_size()
                 )
 
                 if not prepared_data:

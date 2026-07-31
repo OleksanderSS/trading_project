@@ -23,12 +23,17 @@ RISK LIMITS
 SPLIT RATIOS
   - `DEFAULT_TEST_SIZE = 0.2` in `src/training/constants.py` is what actually
     governs training.
-  - `test_size: 0.2` is ALSO declared in `processing.yaml`
-    (`data_preparation`) and `unified_config.yaml` (`preparation`), and
-    neither is read by the modeling orchestrator.
-  - That orchestrator reads `config_manager.get_config('modeling')`, but
-    **there is no `modeling:` section in any config file**, so every
-    `modeling_config.get(...)` in it falls through to a code constant.
+  - `test_size: 0.2` is ALSO declared under the top-level `data_preparation`
+    key (processing.yaml) and under `preparation` inside unified_config.yaml,
+    and neither is read by the modeling orchestrator.
+  - That orchestrator reads `config_manager.get_config('modeling')`, and
+    **there is no `modeling:` key in any config file**, so `get_config`
+    returns None and every `modeling_config.get(...)` in it -- `strategy`,
+    `batch_size`, `max_memory_gb` and `test_size` alike -- falls through to a
+    code constant. Those four settings are simply not configurable today.
+  - `get_config()` resolves TOP-LEVEL YAML KEYS across the merged config, not
+    file names: `get_config('processing')` is None even though
+    processing.yaml exists.
   - Four more independent 0.2 defaults sit in calibration_engine.py,
     data_preparation.py, ml_analytics.py and base_neural.py.
 
@@ -100,10 +105,16 @@ class PipelinePolicyManager:
     """Resolves pipeline policy from config, regime and (later) calibration."""
 
     #: Where a split ratio may legitimately be declared, most specific first.
+    #:
+    #: These are TOP-LEVEL YAML KEYS, not file names. `get_config()` resolves
+    #: top-level keys across the merged config, so `get_config('processing')`
+    #: returns None even though processing.yaml exists -- its top-level keys
+    #: are `safe_fill` and `data_preparation`. An earlier version of this
+    #: table used file names and would have silently resolved nothing,
+    #: falling through to the builtin default while claiming to read config.
     _SPLIT_SOURCES: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("modeling", ("test_size",)),
-        ("processing", ("data_preparation", "test_size")),
-        ("unified_config", ("preparation", "test_size")),
+        ("data_preparation", ("test_size",)),
     )
 
     def __init__(self, config_manager: Any, adaptive_manager: Any | None = None):
@@ -199,9 +210,7 @@ class PipelinePolicyManager:
 
         logger.info(
             "No usable test_size in config; using the built-in default "
-            f"({_FALLBACK_TEST_SIZE}). Note that processing.yaml and "
-            "unified_config.yaml both declare one, but the modeling stage "
-            "reads a 'modeling' section that does not exist."
+            f"({_FALLBACK_TEST_SIZE})."
         )
         return SplitPolicy(_FALLBACK_TEST_SIZE, _FALLBACK_VAL_SIZE, "builtin_default")
 
