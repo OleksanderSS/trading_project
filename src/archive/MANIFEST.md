@@ -1691,3 +1691,12 @@ by the working `pipeline_runner.py`.
 (`__init__` had been re-exporting four of them). Verified after: the package
 and factory import cleanly, `run_hybrid_pipeline.py --help` still works, and
 57 hybrid/orchestrator tests pass with 1 skipped.
+
+## `src/archive/duplicate_scripts/` (archived 2026-07-31)
+
+- `auto_accumulator_scripts_core_copy.py` — was `scripts/core/auto_accumulator.py`,
+  a near-identical second copy of `src/scripts/data/auto_accumulator.py`
+  (same class, same broken calls, differing only in import order and typing
+  style). Zero callers anywhere in code or config; the only references were in
+  this audit's own notes. `src/scripts/data/auto_accumulator.py` is now the
+  single implementation and has been rewritten against real APIs.
