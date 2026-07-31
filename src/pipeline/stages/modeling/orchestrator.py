@@ -71,6 +71,25 @@ class ModelingStage(BaseStage):
         self.training_manager = UnifiedTrainingManager(training_config)
         self.comparison_analyzer = ModelComparisonAnalyzer()
 
+    def _resolve_purge_gap(self, configured: int) -> int:
+        """Purge gap widened to cover the furthest target horizon.
+
+        A fixed 10 was passed here while `target_daily_trend_strength_1d`
+        looks 20 bars forward (shift -1 over a 20-bar window), so the tail of
+        each training split carried targets computed from rows inside the
+        following split.
+        """
+        try:
+            from src.policy import get_policy_manager
+
+            gap = get_policy_manager(self.config_manager).purge_gap(configured)
+            if gap != configured:
+                logger.info(f'Purge gap widened {configured} -> {gap} for target horizon.')
+            return gap
+        except Exception as e:
+            logger.warning(f'Could not resolve purge gap ({e}); using {configured}.')
+            return configured
+
     def _resolve_test_size(self) -> float:
         """Split ratio from PipelinePolicyManager, so there is one answer.
 
@@ -261,7 +280,7 @@ class ModelingStage(BaseStage):
                 prepared_data = prepare_data_for_models(
                     df=df, ticker=ticker, timeframe=timeframe,
                     target_cols=[target_name],
-                    gap_size=10, # Обов'язковий розрив для чесності
+                    gap_size=self._resolve_purge_gap(10),
                     test_size=self._resolve_test_size()
                 )
 

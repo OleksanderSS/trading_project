@@ -214,6 +214,49 @@ class PipelinePolicyManager:
         )
         return SplitPolicy(_FALLBACK_TEST_SIZE, _FALLBACK_VAL_SIZE, "builtin_default")
 
+    def max_target_horizon(self) -> int:
+        """Furthest bar any configured target looks forward.
+
+        The purge gap between train/val/test must be at least this, or the
+        last rows of a split carry targets computed from data inside the next
+        split. The live pipeline passed a fixed `gap_size=10` while
+        `target_daily_trend_strength_1d` looks 20 bars ahead (shift -1 over a
+        20-bar forward window), so the tail of training was contaminated.
+
+        Horizon per target = |shift| + max(window - 1, 0), because the
+        forward-window methods start at `shift` and span `window` bars.
+        """
+        targets = self.config_manager.get_config("targets", {}) or {}
+        horizon = 1
+        for spec in targets.values():
+            if not isinstance(spec, dict):
+                continue
+            params = spec.get("params", {}) or {}
+            try:
+                shift = abs(int(params.get("shift", 1)))
+            except (TypeError, ValueError):
+                shift = 1
+            try:
+                window = int(params.get("window", 1))
+            except (TypeError, ValueError):
+                window = 1
+            horizon = max(horizon, shift + max(window - 1, 0))
+        return horizon
+
+    def purge_gap(self, configured: int | None = None) -> int:
+        """Purge gap to use: never smaller than the furthest target horizon."""
+        required = self.max_target_horizon()
+        if configured is None:
+            return required
+        if configured < required:
+            logger.warning(
+                f"Configured purge gap {configured} is smaller than the "
+                f"furthest target horizon {required}; widening to {required} "
+                f"so training targets cannot peek into the next split."
+            )
+            return required
+        return configured
+
     def _val_size(self, section: str, default: float) -> float:
         node = self.config_manager.get_config(section, {}) or {}
         for key in ("val_size", "validation_size", "validation_split"):

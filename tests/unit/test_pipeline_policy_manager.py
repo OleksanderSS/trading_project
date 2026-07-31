@@ -246,3 +246,53 @@ def test_real_config_resolves_test_size_from_data_preparation():
 
     assert split.source == "data_preparation.test_size"
     assert 0 < split.test_size < 1
+
+
+# ── purge gap vs target horizon ──────────────────────────────────────────
+
+def test_purge_gap_covers_the_furthest_forward_window():
+    """A forward-window target reaches shift + window - 1 bars ahead.
+
+    The live pipeline passed a fixed gap_size=10 while
+    target_daily_trend_strength_1d looks 20 bars forward, so the tail of each
+    training split carried targets computed from the following split.
+    """
+    policy = PipelinePolicyManager(FakeConfig({"targets": {
+        "target_return_1d": {"params": {"shift": -1}},
+        "target_trend": {"params": {"shift": -1, "window": 20}},
+    }}))
+    assert policy.max_target_horizon() == 20
+    assert policy.purge_gap(10) == 20
+
+
+def test_a_generous_configured_gap_is_left_alone():
+    policy = PipelinePolicyManager(FakeConfig({"targets": {
+        "t": {"params": {"shift": -1, "window": 5}},
+    }}))
+    assert policy.purge_gap(30) == 30
+
+
+def test_plain_shift_targets_need_no_window():
+    policy = PipelinePolicyManager(FakeConfig({"targets": {
+        "t": {"params": {"shift": -5}},
+    }}))
+    assert policy.max_target_horizon() == 5
+
+
+def test_malformed_target_params_do_not_shrink_the_gap():
+    policy = PipelinePolicyManager(FakeConfig({"targets": {
+        "bad": {"params": {"shift": "x", "window": None}},
+        "good": {"params": {"shift": -4, "window": 4}},
+    }}))
+    assert policy.max_target_horizon() == 7
+
+
+def test_real_config_horizon_exceeds_the_old_hardcoded_gap():
+    """Against the project's real targets.yaml, not a fake one."""
+    from src.config.unified_config_manager import get_current_config
+
+    policy = PipelinePolicyManager(get_current_config())
+    assert policy.max_target_horizon() > 10, (
+        "the previously hardcoded gap_size=10 was smaller than the real "
+        "target horizon, i.e. training targets leaked into the next split"
+    )
