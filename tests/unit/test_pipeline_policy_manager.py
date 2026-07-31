@@ -296,3 +296,38 @@ def test_real_config_horizon_exceeds_the_old_hardcoded_gap():
         "the previously hardcoded gap_size=10 was smaller than the real "
         "target horizon, i.e. training targets leaked into the next split"
     )
+
+
+def test_per_target_horizon_counts_the_forward_window():
+    """`shift` alone under-purges the forward-window methods.
+
+    target_daily_trend_strength_1d has shift -1 and window 20, so it reaches
+    20 rows ahead. The live walk-forward evaluator computed abs(shift) and
+    got 1, leaving the train/validation purge 19 rows too narrow.
+    """
+    policy = PipelinePolicyManager(FakeConfig({"targets": {
+        "trend": {"params": {"shift": -1, "window": 20}},
+        "plain": {"params": {"shift": -5}},
+    }}))
+    assert policy.target_horizon("trend") == 20
+    assert policy.target_horizon("plain") == 5
+
+
+def test_unknown_target_horizon_is_one_not_zero():
+    policy = PipelinePolicyManager(FakeConfig({"targets": {}}))
+    assert policy.target_horizon("nope") == 1
+
+
+def test_walk_forward_evaluator_uses_the_full_horizon():
+    """The live evaluator must agree with the policy manager."""
+    from src.config.unified_config_manager import get_current_config
+    from src.pipeline.stages.modeling.walk_forward_validation import (
+        _get_target_horizon_rows,
+    )
+
+    policy = PipelinePolicyManager(get_current_config())
+    for name in ("target_daily_trend_strength_1d", "target_up_5d"):
+        assert _get_target_horizon_rows(name) == policy.target_horizon(name)
+
+    # And the window-bearing one must exceed what abs(shift) alone would give.
+    assert _get_target_horizon_rows("target_daily_trend_strength_1d") > 1

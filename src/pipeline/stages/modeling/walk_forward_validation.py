@@ -21,22 +21,26 @@ from src.pipeline.target_column_utils import is_target_like_column
 
 def _get_target_horizon_rows(target_name: str) -> int:
     """
-    Return abs(shift) for a target from targets.yaml.
+    Return how far forward `target_name` looks, in rows.
 
-    Falls back to 1 if the target is unknown, so the purge requirement
-    is at least 1 row (never 0).  Callers that need a strict guarantee
-    should pass an explicit purge_rows ≥ horizon.
+    Delegates to PipelinePolicyManager so this is computed in exactly one
+    place. It used to return `abs(shift)` alone, which is wrong for the
+    forward-window regression methods: `target_daily_trend_strength_1d` has
+    shift -1 and window 20, so it reaches 20 rows ahead while this reported 1
+    -- the purge gap at the train/validation boundary was 19 rows too narrow
+    and validation labels were partly computed from training rows.
+
+    Falls back to 1 if the target is unknown, so the purge requirement is at
+    least 1 row (never 0). Callers that need a strict guarantee should pass an
+    explicit purge_rows ≥ horizon.
     """
     try:
         # Lazy import to avoid circular deps at module level
         from src.config.unified_config_manager import get_current_config
-        config = get_current_config()
-        targets_cfg: dict = config.get("targets", {})
-        target_params = targets_cfg.get(target_name, {}).get("params", {})
-        shift = target_params.get("shift")
-        if shift is not None:
-            return max(1, abs(int(shift)))
-    except (ValueError, TypeError, AttributeError, KeyError) as e:
+        from src.policy import get_policy_manager
+
+        return max(1, get_policy_manager(get_current_config()).target_horizon(target_name))
+    except (ValueError, TypeError, AttributeError, KeyError, ImportError) as e:
         # This computes the purge gap that prevents label leakage at the
         # train/validation boundary - falling back to 1 silently would
         # under-purge for any target with a real horizon > 1, so this

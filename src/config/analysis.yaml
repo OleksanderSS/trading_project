@@ -69,6 +69,16 @@ stage7_analysis_engine: &stage7_analysis_engine
       params:
         fractal_window: 20
         min_pattern_bars: 5
+    # Моніторинг дрейфу ознак (Evidently AI). Адаптер існував, але не був
+    # тут зареєстрований, тож UnifiedAnalyticsEngine його ніколи не будував.
+    # Перший кадр стає еталоном, дрейф рахується з другого.
+    - name: "feature_drift"
+      enabled: true
+      module: "src.analytics.analyzers.drift_analyzer"
+      class: "DriftAnalyzer"
+      data_mapping: ["features_data"]
+      params:
+        threshold: 0.05
     - name: "risk_decomposition"
       enabled: false
       disabled_reason: "Requires explicit portfolio-return/factor/weight input contract"

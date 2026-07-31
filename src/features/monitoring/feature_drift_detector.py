@@ -14,14 +14,24 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("FeatureDriftDetector")
 
-# Try to import Evidently AI
-try:
-    from evidently.metric_preset import DataDriftPreset
-    from evidently.report import Report
+# Evidently AI. See src/monitoring/feature_drift_monitor.py: the 0.7 line
+# moved the classic Report/preset API under `evidently.legacy`, so importing
+# only the pre-0.7 paths reports an installed package as missing.
+try:  # Evidently >= 0.7
+    from evidently.legacy.metric_preset import DataDriftPreset
+    from evidently.legacy.report import Report
     EVIDENTLY_AVAILABLE = True
 except ImportError:
-    EVIDENTLY_AVAILABLE = False
-    logger.warning("⚠️ Evidently AI not installed. Install with: pip install evidently")
+    try:  # Evidently < 0.7
+        from evidently.metric_preset import DataDriftPreset
+        from evidently.report import Report
+        EVIDENTLY_AVAILABLE = True
+    except ImportError:
+        EVIDENTLY_AVAILABLE = False
+        logger.warning(
+            "⚠️ Evidently AI unavailable (neither the >=0.7 `evidently.legacy` "
+            "paths nor the pre-0.7 ones import). Install with: pip install evidently"
+        )
 
 
 class FeatureDriftDetector:

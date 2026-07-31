@@ -214,6 +214,34 @@ class PipelinePolicyManager:
         )
         return SplitPolicy(_FALLBACK_TEST_SIZE, _FALLBACK_VAL_SIZE, "builtin_default")
 
+    @staticmethod
+    def _horizon_of(params: dict[str, Any]) -> int:
+        """|shift| + max(window - 1, 0) for one target's params."""
+        try:
+            shift = abs(int(params.get("shift", 1)))
+        except (TypeError, ValueError):
+            shift = 1
+        try:
+            window = int(params.get("window", 1))
+        except (TypeError, ValueError):
+            window = 1
+        return max(1, shift + max(window - 1, 0))
+
+    def target_horizon(self, target_name: str) -> int:
+        """How far forward ONE named target looks.
+
+        `window` matters as much as `shift`: the forward-window regression
+        methods (slope_strength / rate_of_change / high_low_range) start at
+        `shift` and span `window` bars, so a target with shift -1 and
+        window 20 reaches 20 bars ahead, not 1. Computing the horizon from
+        `shift` alone under-purges those by the whole window.
+        """
+        targets = self.config_manager.get_config("targets", {}) or {}
+        spec = targets.get(target_name) or {}
+        if not isinstance(spec, dict):
+            return 1
+        return self._horizon_of(spec.get("params", {}) or {})
+
     def max_target_horizon(self) -> int:
         """Furthest bar any configured target looks forward.
 
@@ -231,16 +259,7 @@ class PipelinePolicyManager:
         for spec in targets.values():
             if not isinstance(spec, dict):
                 continue
-            params = spec.get("params", {}) or {}
-            try:
-                shift = abs(int(params.get("shift", 1)))
-            except (TypeError, ValueError):
-                shift = 1
-            try:
-                window = int(params.get("window", 1))
-            except (TypeError, ValueError):
-                window = 1
-            horizon = max(horizon, shift + max(window - 1, 0))
+            horizon = max(horizon, self._horizon_of(spec.get("params", {}) or {}))
         return horizon
 
     def purge_gap(self, configured: int | None = None) -> int:

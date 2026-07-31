@@ -124,5 +124,9 @@ def test_stage7_analyzer_suite_has_one_canonical_config_source():
         if analyzer.get("enabled", True)
     )
 
-    assert enabled == ["critical_signals", "market_regime"]
+    # `feature_drift` added deliberately 2026-07-31: the DriftAnalyzer adapter
+    # and FeatureDriftMonitor both existed but the analyzer was never listed
+    # here, so UnifiedAnalyticsEngine never built it. This assertion is a
+    # change-detector -- extend it consciously, do not relax it.
+    assert enabled == ["critical_signals", "feature_drift", "market_regime"]
     assert "engine" not in unified_config["analysis"]

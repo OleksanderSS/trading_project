@@ -15,15 +15,27 @@ from src.core.logging.logger import ProjectLogger
 
 logger = ProjectLogger.get_logger("FeatureDriftMonitor")
 
-# Try to import Evidently AI
-try:
-    from evidently.metric_preset import DataDriftPreset
-    from evidently.metrics import DatasetDriftMetric
-    from evidently.report import Report
+# Evidently AI. The 0.7 line moved the classic Report/preset API under
+# `evidently.legacy`; importing only the pre-0.7 paths made an INSTALLED
+# Evidently look absent and logged "not installed", which is why this monitor
+# was dead on a machine that had the package (0.7.21).
+try:  # Evidently >= 0.7
+    from evidently.legacy.metric_preset import DataDriftPreset
+    from evidently.legacy.metrics import DatasetDriftMetric
+    from evidently.legacy.report import Report
     EVIDENTLY_AVAILABLE = True
 except ImportError:
-    EVIDENTLY_AVAILABLE = False
-    logger.warning("⚠️ Evidently AI not installed. Install with: pip install evidently")
+    try:  # Evidently < 0.7
+        from evidently.metric_preset import DataDriftPreset
+        from evidently.metrics import DatasetDriftMetric
+        from evidently.report import Report
+        EVIDENTLY_AVAILABLE = True
+    except ImportError:
+        EVIDENTLY_AVAILABLE = False
+        logger.warning(
+            "⚠️ Evidently AI unavailable (neither the >=0.7 `evidently.legacy` "
+            "paths nor the pre-0.7 ones import). Install with: pip install evidently"
+        )
 
 
 class FeatureDriftMonitor:
@@ -122,12 +134,31 @@ class FeatureDriftMonitor:
 
             report.run(reference_data=ref_data, current_data=cur_data)
 
-            # Extract results
+            # Extract results.
+            #
+            # Look metrics up BY NAME. This read `report_dict['metrics'][1]`,
+            # but DataDriftPreset expands into several metrics, so index 1 is
+            # DataDriftTable rather than DatasetDriftMetric. DataDriftTable
+            # has no `drift_share` key, so `.get('drift_share', 0.0)` always
+            # returned the default -- the monitor reported "0.0% of features
+            # drifted" on every run, including runs where drift was real.
             report_dict = report.as_dict()
+            metrics_by_name: dict[str, dict] = {}
+            for metric in report_dict.get('metrics', []):
+                metrics_by_name.setdefault(metric.get('metric'), metric.get('result', {}) or {})
 
-            # Get dataset drift score
-            dataset_drift = report_dict['metrics'][1]['result']
-            drift_score = dataset_drift.get('drift_share', 0.0)
+            dataset_drift = (
+                metrics_by_name.get('DatasetDriftMetric')
+                or metrics_by_name.get('DataDriftTable')
+                or {}
+            )
+            # `share_of_drifted_columns` is the OBSERVED share; `drift_share`
+            # is the configured THRESHOLD (0.5 by default) and is constant
+            # whether or not anything drifted -- reporting it as the score
+            # showed "50.0% of features drifted" on clean data too.
+            drift_score = dataset_drift.get(
+                'share_of_drifted_columns', dataset_drift.get('drift_share', 0.0)
+            )
             drift_detected = dataset_drift.get('dataset_drift', False)
 
             self.metrics['last_drift_score'] = drift_score
@@ -135,17 +166,30 @@ class FeatureDriftMonitor:
             if drift_detected:
                 self.metrics['drifts_detected'] = (self.metrics.get('drifts_detected', 0) or 0) + 1  # type: ignore
 
-            # Get per-column drift
+            # Per-column drift lives inside DataDriftTable's `drift_by_columns`.
+            # The old loop looked for standalone 'ColumnDriftMetric' entries,
+            # which DataDriftPreset does not emit at the top level, so
+            # column_drifts was always empty and every report claimed
+            # "Drifted features: 0/0".
             column_drifts = {}
-            for metric in report_dict['metrics']:
-                if metric['metric'] == 'ColumnDriftMetric':
-                    col_name = metric['result']['column_name']
-                    col_drift = metric['result']['drift_detected']
-                    drift_score_col = metric['result'].get('drift_score', 0.0)
-                    column_drifts[col_name] = {
-                        'drift_detected': col_drift,
-                        'drift_score': drift_score_col
-                    }
+            drift_table = metrics_by_name.get('DataDriftTable', {})
+            for col_name, col_result in (drift_table.get('drift_by_columns') or {}).items():
+                if not isinstance(col_result, dict):
+                    continue
+                column_drifts[col_name] = {
+                    'drift_detected': bool(col_result.get('drift_detected', False)),
+                    'drift_score': col_result.get('drift_score', 0.0),
+                }
+            # Older/other layouts may still emit standalone per-column metrics.
+            for metric in report_dict.get('metrics', []):
+                if metric.get('metric') == 'ColumnDriftMetric':
+                    result = metric.get('result', {}) or {}
+                    name = result.get('column_name')
+                    if name and name not in column_drifts:
+                        column_drifts[name] = {
+                            'drift_detected': bool(result.get('drift_detected', False)),
+                            'drift_score': result.get('drift_score', 0.0),
+                        }
 
             # Save report
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
