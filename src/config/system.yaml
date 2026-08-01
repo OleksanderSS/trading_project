@@ -21,3 +21,52 @@ system:
       enabled: false
       project_id: null
       bucket: null
+
+# ---------------------------------------------------------------------------
+# Outbound HTTP: retries, timeouts and rate limiting for every external API.
+#
+# This section did not exist. HttpClientFactory read `http_client` and got {},
+# so every value below was a hardcoded default and none of it was tunable.
+# The default rate limit was 100 requests per second, per factory instance,
+# and up to five instances were created in a single pipeline run.
+# ---------------------------------------------------------------------------
+http_client:
+  timeout: 20.0
+  user_agent: "TradingBot/2.0 (Unified Ecosystem)"
+
+  # Retried by the send wrapper in HttpClientFactory, NOT by httpx: httpx's
+  # own `retries` covers connection establishment only.
+  retries: 3
+  backoff_factor: 0.5
+  status_forcelist: [429, 500, 502, 503, 504]
+
+  rate_limiter:
+    # Applies to any host without a specific entry below.
+    rate_limit: 10
+    per_seconds: 1.0
+
+    # Matched as a substring of the request hostname, first match wins.
+    # Limits are set from each source's published policy where one exists,
+    # and conservatively where it does not.
+    per_host:
+      reddit.com:          # returned 429 during collection runs
+        rate_limit: 1
+        per_seconds: 2.0
+      newsapi.org:         # free tier is quota-based, not rate-based
+        rate_limit: 2
+        per_seconds: 1.0
+      stlouisfed.org:      # FRED: 120 req/min published
+        rate_limit: 2
+        per_seconds: 1.0
+      cftc.gov:
+        rate_limit: 2
+        per_seconds: 1.0
+      wikimedia.org:       # 200 req/s allowed, but be a good citizen
+        rate_limit: 10
+        per_seconds: 1.0
+      cboe.com:            # blocks us at the source (403); do not hammer
+        rate_limit: 1
+        per_seconds: 5.0
+      aaii.com:            # blocks us at the source (403)
+        rate_limit: 1
+        per_seconds: 5.0
