@@ -127,11 +127,19 @@ def test_diary_knn_sequence_weights_can_select_model_by_pattern_similarity():
     manager = _DiaryDataManager()
     manager.con.execute(
         """
+        -- Realized trades, not training rows. This fixture used to be four
+        -- 'training' rows with outcome 'neutral', and the assertion below
+        -- passed because the weight query read model_prediction -- which
+        -- log_training_event fills with a TRAINING METRIC -- as if it were a
+        -- performance score. Averaging an unbounded metric with a 0/1 win
+        -- rate gave `linear` a score of -13,820 on the live diary and a
+        -- NEGATIVE ensemble weight, i.e. its forecast subtracted. Weights now
+        -- come from realized outcomes, so the fixture supplies those.
         INSERT INTO experience_diary VALUES
-        ('catboost', 1, 'AAPL', 'training', 'fp_a', '1|1>>1|0>>0|0', 0.90, 'neutral', 0.20),
-        ('catboost', 2, 'AAPL', 'training', 'fp_a', '1|1>>1|0>>0|0', 0.80, 'neutral', 0.30),
-        ('lightgbm', 3, 'AAPL', 'training', 'fp_b', '-1|-1>>-1|0>>0|0', 0.40, 'neutral', 0.10),
-        ('lightgbm', 4, 'AAPL', 'training', 'fp_b', '-1|-1>>-1|0>>0|0', 0.50, 'neutral', 0.10)
+        ('catboost', 1, 'AAPL', 'sell', 'fp_a', '1|1>>1|0>>0|0', 0.90, 'profitable', 0.20),
+        ('catboost', 2, 'AAPL', 'sell', 'fp_a', '1|1>>1|0>>0|0', 0.80, 'profitable', 0.30),
+        ('lightgbm', 3, 'AAPL', 'sell', 'fp_b', '-1|-1>>-1|0>>0|0', 0.40, 'profitable', 0.10),
+        ('lightgbm', 4, 'AAPL', 'sell', 'fp_b', '-1|-1>>-1|0>>0|0', 0.50, 'unprofitable', -0.10)
         """
     )
     diary = DiaryEngine(data_manager=manager)

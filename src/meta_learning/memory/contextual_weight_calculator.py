@@ -60,16 +60,22 @@ class ContextualWeightCalculator:
         SELECT
             agent_id,
             COUNT(*) as total_decisions,
-            AVG(
-                CASE
-                    WHEN decision_type = 'training' THEN COALESCE(model_prediction, 0.0)
-                    WHEN outcome = 'profitable' THEN 1.0
-                    ELSE 0.0
-                END
-            ) as performance_score,
+            AVG(CASE WHEN outcome = 'profitable' THEN 1.0 ELSE 0.0 END)
+                as performance_score,
             COALESCE(AVG(profit_loss), 0.0) as avg_pnl
         FROM experience_diary
         WHERE context_fingerprint = ?
+          -- Realized outcomes only. Training rows carry no realized result
+          -- (outcome is always 'neutral') and used to contribute
+          -- model_prediction to this average -- which log_training_event
+          -- fills with float(metrics), a TRAINING METRIC, not a prediction.
+          -- Averaging an unbounded metric together with a 0/1 win rate is not
+          -- a quantity, and on the live table it produced a performance_score
+          -- of -13,820 for `linear` (its metrics reach -1,420,512), which
+          -- became a NEGATIVE ensemble weight of -0.25: the model's forecast
+          -- was subtracted rather than ignored, while the weights still
+          -- summed to 1.0 and looked healthy.
+          AND outcome IN ('profitable', 'unprofitable', 'break_even')
         GROUP BY agent_id
         HAVING total_decisions >= 2
         ORDER BY performance_score DESC, avg_pnl DESC
@@ -119,16 +125,13 @@ class ContextualWeightCalculator:
         SELECT
             agent_id,
             COUNT(*) as total_decisions,
-            AVG(
-                CASE
-                    WHEN decision_type = 'training' THEN COALESCE(model_prediction, 0.0)
-                    WHEN outcome = 'profitable' THEN 1.0
-                    ELSE 0.0
-                END
-            ) as performance_score,
+            AVG(CASE WHEN outcome = 'profitable' THEN 1.0 ELSE 0.0 END)
+                as performance_score,
             COALESCE(AVG(profit_loss), 0.0) as avg_pnl
         FROM experience_diary
         WHERE context_pattern_seq = ?
+          -- Realized outcomes only; see the note on the fingerprint query.
+          AND outcome IN ('profitable', 'unprofitable', 'break_even')
         GROUP BY agent_id
         HAVING total_decisions >= 2
         ORDER BY performance_score DESC, avg_pnl DESC
@@ -176,7 +179,13 @@ class ContextualWeightCalculator:
             # Combined metric: win_rate * (1 + normalized_pnl)
             # Normalize avg_pnl to range [0, 1]
             normalized_pnl = max(0, min(1, (avg_pnl + 1) / 2))
-            score = performance_score * (1 + normalized_pnl)
+            # Floor at zero. A negative weight does not mean "ignore this
+            # model", it means "subtract its forecast" -- and normalising by
+            # the SUM hides that, because the weights still add to 1.0. The
+            # inputs are bounded now, so this should never bind; it is here so
+            # that if some future column arrives negative, the ensemble
+            # degrades to ignoring a model rather than inverting it.
+            score = max(0.0, float(performance_score)) * (1 + normalized_pnl)
 
             weights[agent_id] = score
             total_score += score
@@ -184,6 +193,12 @@ class ContextualWeightCalculator:
         # Normalize weights to sum to 1.0
         if total_score > 0:
             weights = {k: v / total_score for k, v in weights.items()}
+        else:
+            # Every model scored zero in this context: that is "no evidence",
+            # not "all models are worthless". Returning the raw zeros would
+            # hand the ensemble a set of zero weights; {} is the documented
+            # signal for equal weighting.
+            return {}
 
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"Calculated weights: {weights}")
