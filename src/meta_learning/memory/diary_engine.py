@@ -543,7 +543,18 @@ class DiaryEngine(BaseMetaComponent):
                 comparison_results[agent_id] = {"error": "No data"}
                 continue
 
-            returns = df['profit_loss'].dropna().values
+            returns = df['profit_loss'].dropna()
+            if 'decision_timestamp' in df.columns:
+                # Index by time so the Sharpe annualisation can be inferred
+                # from the actual cadence. This diary holds 15m, 60m and 1d
+                # decisions; annualising 15-minute P&L as if it were daily
+                # understates the factor by about sqrt(26).
+                stamps = pd.to_datetime(
+                    df.loc[returns.index, 'decision_timestamp'],
+                    unit='s', errors='coerce', utc=True,
+                )
+                if stamps.notna().all():
+                    returns = pd.Series(returns.to_numpy(), index=stamps)
             if len(returns) == 0:
                 comparison_results[agent_id] = {"error": "No valid returns"}
                 continue
@@ -557,10 +568,22 @@ class DiaryEngine(BaseMetaComponent):
 
         return comparison_results
 
-    def _calculate_performance_metrics(self, returns: np.ndarray) -> dict[str, Any]:
-        """Розраховує метрики продуктивності для масиву повернень."""
-        clean_returns = np.asarray(returns, dtype=float)
-        clean_returns = clean_returns[np.isfinite(clean_returns)]
+    def _calculate_performance_metrics(self, returns: Any) -> dict[str, Any]:
+        """Продуктивність за серією P&L.
+
+        Sharpe is delegated to FinancialMetricsLibrary rather than computed
+        here. This was a FOURTH independently-maintained Sharpe: it used
+        np.std (population, ddof=0) where the ratio wants the sample
+        deviation, and hardcoded sqrt(252) although the diary records 15m,
+        60m and 1d decisions -- annualising 15-minute P&L as daily is wrong
+        by about sqrt(26). The library's docstring records that three earlier
+        copies were already consolidated into it for exactly this reason.
+        """
+        series = returns if isinstance(returns, pd.Series) else pd.Series(returns)
+        clean_series = pd.to_numeric(series, errors='coerce').replace(
+            [np.inf, -np.inf], np.nan
+        ).dropna()
+        clean_returns = clean_series.to_numpy(dtype=float)
         if clean_returns.size == 0:
             return {
                 "total_pnl": 0.0,
@@ -571,12 +594,20 @@ class DiaryEngine(BaseMetaComponent):
 
         total_pnl = np.sum(clean_returns)
         win_rate = (clean_returns > 0).mean()
-        return_std = float(np.std(clean_returns))
-        sharpe = (
-            np.mean(clean_returns) / return_std * np.sqrt(252)
-            if np.isfinite(return_std) and return_std > 1e-12
-            else 0.0
+
+        from src.metrics.financial.financial_metrics_library import (
+            FinancialMetricsLibrary,
         )
+
+        # trading_days_per_year=None asks the library to infer the cadence
+        # from the DatetimeIndex, falling back to daily when there is none.
+        sharpe = FinancialMetricsLibrary.calculate_sharpe_ratio(
+            clean_series,
+            trading_days_per_year=None,
+            on_error=0.0,
+        )
+        if not np.isfinite(sharpe):
+            sharpe = 0.0
 
         return {
             "total_pnl": float(total_pnl),
