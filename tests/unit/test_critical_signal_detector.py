@@ -50,14 +50,50 @@ def test_a_calm_series_produces_no_price_shock():
     assert not CriticalSignalDetector().detect_price_shock(_prices()).any()
 
 
-def test_price_shock_is_downside_only():
-    """Recorded rather than changed: the threshold is negative, so a 15% JUMP
-    is not a 'shock' by this definition. That is a defensible reading of the
-    name, but it is a choice, and a caller expecting symmetry would be wrong."""
+def test_a_jump_is_a_shock_too():
+    """It used to be `returns < threshold` with a negative threshold, so a
+    melt-up of the same size was invisible in a column called
+    price_shock_detected."""
     df = _prices()
     df.iloc[60:, df.columns.get_loc("close")] *= 1.15
 
-    assert not CriticalSignalDetector().detect_price_shock(df).any()
+    assert CriticalSignalDetector().detect_price_shock(df).iloc[60:65].any()
+
+
+@pytest.mark.parametrize("threshold", [-0.05, 0.05])
+def test_the_threshold_is_read_as_a_magnitude(threshold):
+    """Configured as -0.07 for years; both spellings must mean the same."""
+    df = _prices()
+    df.iloc[60:, df.columns.get_loc("close")] *= 0.85
+    detector = CriticalSignalDetector({"price_shock": {"window": 5, "threshold": threshold}})
+
+    assert detector.detect_price_shock(df).iloc[60:65].any()
+
+
+def test_direction_separates_a_crash_from_a_spike():
+    """Symmetry must not cost the information the old behaviour carried."""
+    down, up = _prices(), _prices()
+    down.iloc[60:, down.columns.get_loc("close")] *= 0.85
+    up.iloc[60:, up.columns.get_loc("close")] *= 1.15
+    detector = CriticalSignalDetector()
+
+    assert detector.price_shock_direction(down).iloc[60:65].min() == -1
+    assert detector.price_shock_direction(up).iloc[60:65].max() == 1
+    assert (detector.price_shock_direction(_prices()) == 0).all()
+
+
+def test_the_configured_thresholds_actually_reach_the_detector():
+    """They lived in unified_config.yaml, which the engine never reads for
+    this: it passes the analyzer entry's `params`, and there were none, so
+    the detector silently ran on its hardcoded defaults."""
+    from src.analytics.unified_analytics_engine import UnifiedAnalyticsEngine
+    from src.config.unified_config_manager import get_current_config
+
+    detector = UnifiedAnalyticsEngine(get_current_config()).analyzers["critical_signals"]
+
+    assert detector.config["price_shock"]["window"] == 3
+    assert abs(detector.config["price_shock"]["threshold"]) == pytest.approx(0.07)
+    assert detector.config["volume_spike"]["multiplier"] == 4.0
 
 
 def test_a_volume_spike_is_flagged():
@@ -102,6 +138,7 @@ def test_analyze_adds_all_three_columns_without_dropping_data():
 
     for column in (
         "price_shock_detected",
+        "price_shock_direction",
         "volume_spike_detected",
         "volatility_explosion_detected",
     ):

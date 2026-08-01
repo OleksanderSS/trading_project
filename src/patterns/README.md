@@ -4,12 +4,13 @@ The `patterns` module is a specialized intelligence layer dedicated to identifyi
 
 ## Core Components
 
-1. **`pattern_analyzer.py`**: The primary detection engine. It identifies technical patterns including:
+1. **`pattern_analyzer.py`** — ARCHIVED to `src/archive/patterns/`, and
+   disabled in `analysis.yaml`. It was the intended detection engine. It identifies technical patterns including:
     - **Candlestick Formations**: Engulfing, Hammers, Dojis, etc.
     - **Chart Formations**: Geometric structures like Head & Shoulders, Double Tops/Bottoms, and Triangles.
     - **Key Levels**: Support, resistance, and supply/demand zones.
 2. **`pattern_recognition_adjustment.py`**: An integration layer that adjusts model predictions. It modifies the primary ML model outputs or confidence levels when significant patterns are detected, acting as a "sanity check" or a multiplier for trade signals.
-3. **`pattern_tuning.py`**: A utility for optimizing detection parameters (thresholds, sensitivity, and lookback windows) for individual tickers to ensure maximum historical relevance.
+3. **`pattern_tuning.py`** — DOES NOT EXIST in this tree. A utility for optimizing detection parameters (thresholds, sensitivity, and lookback windows) for individual tickers to ensure maximum historical relevance.
 
 ## Pipeline Integration
 

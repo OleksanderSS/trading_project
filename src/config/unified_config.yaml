@@ -221,28 +221,15 @@ data:
 # Analysis Section
 # ---------------------------------
 analysis:
-  # Configuration for the CriticalSignalDetector
-  critical_signal_detector:
-    price_shock:
-      window: 3
-      threshold: -0.07 # 7% drop in 3 periods
-    volume_spike:
-      window: 10
-      multiplier: 4.0 # 4x the average volume
-    volatility_explosion:
-      window: 15
-      multiplier: 3.0 # 3x the average volatility
-    # Sensitive settings for intraday timeframes (e.g., 5m)
-    timeframe_5m:
-      price_shock:
-        window: 3
-        threshold: -0.02 # 2% drop in 3 periods
-      volume_spike:
-        window: 10
-        multiplier: 2.0
-      volatility_explosion:
-        window: 10
-        multiplier: 1.8
+  # CriticalSignalDetector's thresholds moved to analysis.yaml, under that
+  # analyzer's `params` -- the only place UnifiedAnalyticsEngine reads them
+  # from. They sat here being ignored while the detector ran on its hardcoded
+  # defaults.
+  #
+  # The `timeframe_5m` overrides that used to be here are not carried over:
+  # the detector never looked at them (it reads only the top-level keys), and
+  # this project collects 15m, 60m and 1d bars, not 5m. Recover them from git
+  # history if 5m data is ever added, and wire a lookup at the same time.
 
   # Configuration for the NewsImpactAnalyzer
   news_impact:

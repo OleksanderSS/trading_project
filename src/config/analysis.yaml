@@ -60,9 +60,34 @@ stage7_analysis_engine: &stage7_analysis_engine
       module: "src.analytics.detectors.critical_signal_detector"
       class: "CriticalSignalDetector"
       data_mapping: ["price_data"]
+      # These live here because `params` is what UnifiedAnalyticsEngine passes
+      # to the constructor. They used to sit in unified_config.yaml under
+      # analysis.critical_signal_detector, which nothing read: the engine
+      # passes config.get('params', {}), this entry had none, and the detector
+      # therefore ran on its hardcoded defaults (window 5, 0.05, x3.0, x2.5)
+      # while the tuned values sat one file away being ignored.
+      params:
+        price_shock:
+          window: 3
+          # Read as a MAGNITUDE: a 7% move either way over 3 periods.
+          threshold: 0.07
+        volume_spike:
+          window: 10
+          multiplier: 4.0   # 4x the average volume
+        volatility_explosion:
+          window: 15
+          multiplier: 3.0   # 3x the average volatility
     - name: "pattern_analysis"
       enabled: false
-      disabled_reason: "Input and debug-side-effect contracts require repair before Stage 7 use"
+      disabled_reason: >
+        Input and debug-side-effect contracts require repair before Stage 7
+        use. The file has since been archived to
+        src/archive/patterns/pattern_analyzer.py, so `module` below does not
+        resolve; restore it there before flipping enabled. Verified 2026-08-01:
+        it imports and runs on real daily bars but detects nothing, because it
+        reads a `patterns` config section that exists in no file, and because
+        _detect_price_patterns only inspects the LAST bar -- it is a
+        latest-bar verdict, not a per-bar feature generator.
       module: "src.patterns.pattern_analyzer"
       class: "PatternAnalyzer"
       data_mapping: ["price_data"]
@@ -107,6 +132,13 @@ stage7_analysis_engine: &stage7_analysis_engine
 analysis:
   engine: *stage7_analysis_engine
 
+# NOTHING READS THIS BLOCK. Verified 2026-08-01: no Python file references
+# `calculators_config`, and the calculators have no shared interface. The
+# CLASSES are all live -- each has 2 to 4 consumers that import it directly --
+# so this is a dynamic registry that was described and never wired, not a
+# description of how they are loaded. Kept because writing a second loading
+# mechanism alongside the working imports would be worse than leaving it; do
+# not trust it as documentation of the live path.
 calculators_config:
   volatility:
     module: "src.analytics.calculators.volatility_calculator"

@@ -23,19 +23,43 @@ class CriticalSignalDetector(IAnalyzer):
 
     def detect_price_shock(self, price_data: pd.DataFrame) -> pd.Series:
         """
-        Detects significant price drops over a specified window.
-        A price shock is identified if the return over the window is below
-        a negative threshold.
+        Detects a significant price move over a specified window, in either
+        direction.
+
+        This used to be `returns < threshold` with a negative threshold, so it
+        flagged crashes and ignored an equally violent move up. A melt-up is
+        just as much a break from normal conditions, and a caller reading a
+        column called `price_shock_detected` has no way to know only half of
+        them are in it. The threshold is now read as a MAGNITUDE, so the
+        configured -0.07 and a written 0.07 mean the same thing.
+
+        Direction is not discarded: analyze() records it separately, since a
+        crash and a spike call for opposite trading responses.
         """
         params = self.config.get('price_shock', {})
         window = params.get('window', 5)
-        threshold = params.get('threshold', -0.05)
+        threshold = abs(params.get('threshold', -0.05))
 
         if 'close' not in price_data.columns:
             return pd.Series(False, index=price_data.index)
 
         returns = price_data['close'].pct_change(periods=window, fill_method=None)
-        return returns < threshold
+        return returns.abs() > threshold
+
+    def price_shock_direction(self, price_data: pd.DataFrame) -> pd.Series:
+        """-1 for a shock down, +1 for a shock up, 0 where there is none."""
+        params = self.config.get('price_shock', {})
+        window = params.get('window', 5)
+
+        if 'close' not in price_data.columns:
+            return pd.Series(0, index=price_data.index, dtype='int8')
+
+        returns = price_data['close'].pct_change(periods=window, fill_method=None)
+        detected = self.detect_price_shock(price_data)
+        direction = pd.Series(0, index=price_data.index, dtype='int8')
+        direction[detected & (returns < 0)] = -1
+        direction[detected & (returns > 0)] = 1
+        return direction
 
     def detect_volume_spike(self, price_data: pd.DataFrame) -> pd.Series:
         """
@@ -87,6 +111,7 @@ class CriticalSignalDetector(IAnalyzer):
         result_df = data.copy()
 
         result_df['price_shock_detected'] = self.detect_price_shock(result_df)
+        result_df['price_shock_direction'] = self.price_shock_direction(result_df)
         result_df['volume_spike_detected'] = self.detect_volume_spike(result_df)
         result_df['volatility_explosion_detected'] = self.detect_volatility_explosion(result_df)
 
