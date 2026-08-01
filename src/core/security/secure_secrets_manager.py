@@ -96,15 +96,41 @@ def load_dotenv(dotenv_path: str = '.env'):
     try:
         loaded_keys: list[str] = []
         with open(found_path, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
+            for line_number, raw_line in enumerate(f, start=1):
+                line = raw_line.strip()
                 # Skip empty lines, comments, and malformed lines
                 if not line or line.startswith("#") or "=" not in line:
                     continue
 
                 key, value = line.split('=', 1)
                 key = key.strip()
-                value = value.strip().strip('"').strip("'")
+
+                # `export KEY=value` is ordinary in a .env file. Without this
+                # the variable was stored under the name "export KEY" and the
+                # collector looking for KEY saw nothing -- set, and still
+                # missing.
+                if key.startswith("export "):
+                    key = key[len("export "):].strip()
+
+                if not key:
+                    logger.warning(
+                        "Ignoring line %d of %s: no variable name before '='.",
+                        line_number, found_path.name,
+                    )
+                    continue
+
+                value = value.strip()
+
+                # Strip ONE matched pair of quotes, not every quote character:
+                # .strip('"') would also eat quotes that are part of the value.
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                    value = value[1:-1]
+                else:
+                    # An unquoted trailing comment is not part of the secret.
+                    # Only split on " #" so a '#' inside a token survives.
+                    comment = value.find(" #")
+                    if comment != -1:
+                        value = value[:comment].rstrip()
 
                 # Overwrite environment variable with the file value
                 os.environ[key] = value
@@ -112,7 +138,9 @@ def load_dotenv(dotenv_path: str = '.env'):
 
         logger.info(f"Successfully loaded {len(loaded_keys)} variables into the active environment.")
         return loaded_keys
-    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+    except (OSError, ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        # OSError added: a permission or I/O error reading .env used to escape
+        # as itself instead of the SecurityError this promises to raise.
         logger.error(f"Critical failure reading environment file {found_path}: {e}", exc_info=True)
         raise SecurityError(f"Critical failure reading environment file {found_path}") from e
 
@@ -288,12 +316,17 @@ class SecretsManager:
 
         return result
 
+    # Below this length a first-4/last-4 mask reveals most of the value: a
+    # 9-character secret would come out 8 characters exposed. Anything shorter
+    # than this is masked completely.
+    _MASK_MIN_LENGTH: ClassVar[int] = 16
+
     @staticmethod
     def mask_secret(secret: str | None) -> str:
         """Masks sensitive content for safe observability (e.g., 'APIK...XXXX')."""
         if not secret:
             return "None"
-        if len(secret) <= 8:
+        if len(secret) < SecretsManager._MASK_MIN_LENGTH:
             return "****"
         return f"{secret[:4]}...{secret[-4:]}"
 

@@ -57,8 +57,12 @@ class UniversalNotifier:
 
         # Was config_manager.get_config('secrets'), a section that exists in
         # no YAML and should not: tokens belong in the environment.
+        # TELEGRAM_TOKEN, not TELEGRAM_BOT_TOKEN: that is the name
+        # SecretsManager.FORMAT_PATTERNS validates and log_secrets_status
+        # reports on. Two names for one credential is how a key gets set and
+        # still appears missing.
         self.tokens = {
-            'telegram_token': os.getenv('TELEGRAM_BOT_TOKEN'),
+            'telegram_token': os.getenv('TELEGRAM_TOKEN'),
             'telegram_chat_id': os.getenv('TELEGRAM_CHAT_ID'),
             'discord_webhook_url': os.getenv('DISCORD_WEBHOOK_URL'),
         }
@@ -128,7 +132,7 @@ class UniversalNotifier:
 
         if not bot_token or not chat_id:
             logger.warning(
-                "Telegram notifications are enabled but TELEGRAM_BOT_TOKEN / "
+                "Telegram notifications are enabled but TELEGRAM_TOKEN / "
                 "TELEGRAM_CHAT_ID are not set in the environment."
             )
             return

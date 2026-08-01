@@ -39,7 +39,7 @@ from src.core.logging.notifier import UniversalNotifier
 
 @pytest.fixture()
 def notifier(monkeypatch):
-    monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+    monkeypatch.delenv("TELEGRAM_TOKEN", raising=False)
     monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
     monkeypatch.delenv("DISCORD_WEBHOOK_URL", raising=False)
     return UniversalNotifier()
@@ -51,7 +51,7 @@ def test_constructs_with_no_arguments():
 
 
 def test_credentials_come_from_the_environment(monkeypatch):
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "token-from-env")
+    monkeypatch.setenv("TELEGRAM_TOKEN", "token-from-env")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
 
     assert UniversalNotifier().tokens["telegram_token"] == "token-from-env"
@@ -94,7 +94,7 @@ def test_missing_credentials_are_reported_not_silently_skipped(notifier, caplog)
     with caplog.at_level(logging.WARNING):
         asyncio.run(notifier.send_message("hello"))
 
-    assert any("TELEGRAM_BOT_TOKEN" in r.getMessage() for r in caplog.records)
+    assert any("TELEGRAM_TOKEN" in r.getMessage() for r in caplog.records)
 
 
 def test_a_delivery_failure_is_reported(notifier, caplog):
