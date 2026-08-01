@@ -68,8 +68,36 @@ class ModelRegistry:
         return [name for name, cfg in cls.MODELS.items() if cfg.get('type') == model_type]
 
     @classmethod
-    def get_all_model_names(cls) -> list[str]:
-        return list(cls.MODELS.keys())
+    def resolve_model_name(cls, model_name: str) -> str:
+        """Canonical name for a model, following an alias if one is given.
+
+        The two spellings are both live: MODELS calls them 'lgbm' and 'rf',
+        while the models that actually trained are recorded in
+        experience_diary as 'lightgbm' and 'random_forest' -- the aliases.
+        Anything matching stored artifacts against registry names has to
+        canonicalise first.
+        """
+        config = cls.MODELS.get(model_name)
+        if config and 'alias_for' in config:
+            return str(config['alias_for'])
+        return model_name
+
+    @classmethod
+    def get_all_model_names(cls, include_aliases: bool = False) -> list[str]:
+        """Every distinct model, once.
+
+        This used to return MODELS.keys() outright, which counts 'lgbm' and
+        'lightgbm' -- one model -- as two. battle_groups feeds the result
+        straight into BATTLE_GROUPS, so the same model entered a tournament
+        twice and drew twice the battle slots. Latent rather than live: the
+        arena is not constructed anywhere outside its own module.
+
+        It also disagreed with get_models_by_type, which skips aliases
+        because they carry no 'type' -- 18 names one way, 16 the other.
+        """
+        if include_aliases:
+            return list(cls.MODELS.keys())
+        return [name for name, cfg in cls.MODELS.items() if 'alias_for' not in cfg]
 
     def register_model(self, model: Any, model_name: str) -> None:
         """Register model in the registry."""

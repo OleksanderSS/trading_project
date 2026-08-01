@@ -24,6 +24,18 @@ class ConnectionRegistry:
     @classmethod
     def register(cls, name: str, conn: duckdb.DuckDBPyConnection | sqlite3.Connection):
         """Register an active connection."""
+        existing = cls._connections.get(name)
+        if existing is not None and existing is not conn:
+            # The only caller today (DataManager.get_connection with
+            # force_new) closes the old connection before re-registering, so
+            # this is not a live leak. Said out loud anyway: a silent
+            # overwrite here drops the registry's last reference to a
+            # connection, and closing them is this class's entire purpose.
+            logger.warning(
+                "Connection %r replaced while a different one was registered "
+                "under that name; the previous connection will not be closed "
+                "by this registry.", name,
+            )
         cls._connections[name] = conn
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(f"Connection registered: {name}")
