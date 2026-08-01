@@ -104,8 +104,38 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             .replace([float('inf'), float('-inf')], float('nan'))
         )
         self._add_advanced_features(df_enriched, returns)
+        self._add_pattern_features(df_enriched)
         logger.info('Technical analysis enrichment complete.')
         return df_enriched
+
+    def _add_pattern_features(self, df_enriched: pd.DataFrame) -> None:
+        """Candlestick shapes and support/resistance position, per bar.
+
+        The project had no features of this family at all -- of 713 live
+        feature names, zero were candlestick formations, chart figures or
+        levels. Computed here rather than via pandas_ta's cdl_pattern because
+        that needs TA-Lib, which is not installed, and without it it prints a
+        notice and returns the input OHLCV columns UNCHANGED instead of
+        raising -- which would have added five copies of the price columns
+        under pattern names.
+        """
+        from src.features.utils.candlestick_patterns import (
+            has_required_columns,
+            pattern_features,
+        )
+
+        if not has_required_columns(df_enriched):
+            logger.warning(
+                "Skipping candlestick features: OHLC columns are not all "
+                "present (have %s).",
+                [c for c in ('open', 'high', 'low', 'close') if c in df_enriched.columns],
+            )
+            return
+
+        patterns = pattern_features(df_enriched)
+        for column in patterns.columns:
+            df_enriched[column] = patterns[column]
+        logger.info('Added %d candlestick/level features.', patterns.shape[1])
 
     def _validate_input(self, df: pd.DataFrame) ->bool:
         """Validate input DataFrame."""
