@@ -6,6 +6,7 @@ from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
 from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
 from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard
 from src.pipeline.guards.timeframe_alignment_guard import get_timeframe_alignment_guard
+from src.pipeline.timeframe_lineage import normalize_timeframe
 
 logger = ProjectLogger.get_logger('FeatureGuards')
 
@@ -75,10 +76,32 @@ class FeatureGuards:
         return guarded
 
     def _infer_timeframe(self, df: pd.DataFrame) -> str | None:
-        if 'interval' in df.columns and df['interval'].nunique() == 1:
-            return str(df['interval'].iloc[0])
-        if 'timeframe' in df.columns and df['timeframe'].nunique() == 1:
-            return str(df['timeframe'].iloc[0])
+        """The timeframe key handed to the leakage guard.
+
+        Normalised, because the two sides spell the same timeframe
+        differently: market_data_raw stores interval='1h' (9,549 rows) while
+        TemporalLeakageGuard.SAFE_ROLLING_CONFIGS is keyed '60m'. Passing the
+        raw value made that lookup miss, so max_periods silently fell back to
+        100 instead of 168 -- and "rolling window too large" is one of the
+        conditions this stage treats as fatal. price_filter.py already worked
+        around the same split by accepting both spellings locally.
+        """
+        for column in ('interval', 'timeframe'):
+            if column in df.columns and df[column].nunique() == 1:
+                return normalize_timeframe(df[column].iloc[0])
+
+        # More than one timeframe in the frame is the normal case for a
+        # combined feature set, and it means no single rolling-window budget
+        # applies. Said out loud rather than returned as a bare None, because
+        # the guard skips its entire window check when the timeframe is
+        # unknown.
+        present = [c for c in ('interval', 'timeframe') if c in df.columns]
+        if present:
+            self.logger.debug(
+                "Rolling-window leakage check skipped: %s holds %d distinct "
+                "timeframes, so no single window budget applies.",
+                present[0], int(df[present[0]].nunique()),
+            )
         return None
 
 
