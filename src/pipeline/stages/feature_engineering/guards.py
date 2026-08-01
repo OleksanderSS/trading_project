@@ -1,6 +1,7 @@
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.features.validation.feature_leakage_guard import get_leakage_guard
 from src.pipeline.guards.macro_release_timing_guard import get_macro_release_timing_guard
 from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
 from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
@@ -21,6 +22,20 @@ class FeatureGuards:
 
     def _initialize_guards(self):
         """Initialize all safety guards."""
+        # Wired into the main Stage 3 path on 2026-08-01. It was previously
+        # reachable only from the Colab/hybrid branch (colab_manager.py), so
+        # a normal training run got no runtime leakage check at all -- the
+        # pattern-based TemporalLeakageGuard matches 0 of the 713 real feature
+        # names, since its patterns describe a naming convention this project
+        # does not use.
+        #
+        # This one is different: it detects by CORRELATION against the actual
+        # targets, which does not care what anything is called, and by the
+        # project's own is_target_like_column rule. block_on_forbidden matches
+        # the Colab branch rather than inventing a second convention -- and
+        # the blocking condition is unambiguous (a target column sitting among
+        # the features), while the fuzzy half, correlation, only ever warns.
+        self.leakage_guard = get_leakage_guard(block_on_forbidden=self.strict_mode)
         self.timeframe_guard = get_timeframe_alignment_guard(strict_mode=self.strict_mode)
         self.safe_combiner = get_safe_feature_combiner(self.timeframe_guard)
         self.temporal_target_guard = get_temporal_target_guard()
@@ -72,6 +87,13 @@ class FeatureGuards:
                 if actionable_issues:
                     raise ValueError(f"{message}: {' | '.join(actionable_issues)}")
                 self.logger.warning(message)
+
+        # Feature-vs-target leakage. Skips itself when the frame carries no
+        # target columns, so it is a no-op on intermediate frames.
+        ticker = str(guarded['ticker'].iloc[0]) if (
+            'ticker' in guarded.columns and not guarded.empty
+        ) else 'all'
+        self.leakage_guard.check(guarded, ticker=ticker)
 
         return guarded
 

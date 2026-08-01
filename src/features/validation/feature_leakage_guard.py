@@ -36,7 +36,11 @@ class LeakageReport:
         self.forbidden_cols: list[str] = []
         self.high_corr_cols: dict[str, dict[str, float]] = {}
         self.timestamp = datetime.now().isoformat()
-        self.status: str = 'clean'
+        # 'not_checked' until check() decides otherwise. It used to default to
+        # 'clean', so a report from the no-targets early return -- where
+        # nothing is compared at all -- was indistinguishable from one that
+        # looked and found nothing.
+        self.status: str = 'not_checked'
 
     @property
     def has_issues(self) ->bool:
@@ -63,14 +67,20 @@ class FeatureLeakageGuard:
     """
 
     def __init__(self, corr_threshold: float=0.95, block_on_forbidden: bool
-        =True, report_dir: str | None='reports/leakage'):
+        =True, report_dir: str | None='reports/leakage',
+        min_overlap: int=100):
         """
         Args:
             corr_threshold: Correlation threshold above which a feature is suspicious.
             block_on_forbidden: If True — raises ValueError if forbidden column found (stops pipeline).
             report_dir: Where to save leakage_report.json after each check.
+            min_overlap: Minimum rows where a feature and a target both exist
+                before their correlation counts as evidence. Sparse features
+                (news, macro) overlap a target on few rows, and a correlation
+                from a handful of points is noise, not leakage.
         """
         self.corr_threshold = corr_threshold
+        self.min_overlap = min_overlap
         self.block_on_forbidden = block_on_forbidden
         self.report_dir = Path(report_dir) if report_dir else None
         if self.report_dir:
@@ -154,7 +164,15 @@ class FeatureLeakageGuard:
             .api.types.is_numeric_dtype(df[c])]
         if not numeric_features or not numeric_targets:
             return high_corr
-        sample_df = df[numeric_features + numeric_targets].dropna()
+        # No global dropna. It used to be df[...].dropna(), which drops a row
+        # if ANY of the ~700 columns is null there. Measured on a frame shaped
+        # like ours, a SINGLE sparse column -- a news or macro feature present
+        # in 3% of rows, which we have -- cut 5,000 rows to 150. Two such
+        # columns empty the frame outright, and the check then returns "clean"
+        # having compared nothing. corrwith aligns pairwise on its own, so
+        # each feature is scored on every row where it and the target both
+        # exist.
+        sample_df = df[numeric_features + numeric_targets]
         if len(sample_df) > 50000:
             sample_df = sample_df.sample(50000, random_state=42)
         if sample_df.empty:
@@ -166,6 +184,14 @@ class FeatureLeakageGuard:
             suspicious: set[str] = set()
             for tgt in numeric_targets:
                 corr_vec = sample_df[numeric_features].corrwith(sample_df[tgt]).abs()
+                # A correlation computed from a handful of overlapping points
+                # is not evidence of anything. Without this, a feature present
+                # in three rows that happens to track the target there would
+                # be reported as leakage.
+                overlap = sample_df.loc[
+                    sample_df[tgt].notna(), numeric_features
+                ].notna().sum()
+                corr_vec = corr_vec[overlap >= self.min_overlap]
                 suspicious.update(corr_vec[corr_vec >= self.corr_threshold].index.tolist())
 
             for feat in suspicious:

@@ -192,7 +192,11 @@ def test_feature_engineering_initial_columns_never_include_targets():
 def test_feature_guards_do_not_reorder_rows_without_a_temporal_key():
     from src.pipeline.stages.feature_engineering.guards import FeatureGuards
 
-    guards = object.__new__(FeatureGuards)
+    # Constructed properly rather than via object.__new__: apply_guards now
+    # runs FeatureLeakageGuard, which __init__ builds. Bypassing __init__ was
+    # a shortcut that only worked while apply_guards touched nothing the
+    # constructor set up.
+    guards = FeatureGuards(mode='prepare')
     source = pd.DataFrame({
         "ticker": ["NVDA"] * 100,
         "row_identity": list(range(100)),
