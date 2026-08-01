@@ -15,6 +15,7 @@ from src.meta_learning.memory.diary_engine import (
     DecisionRecord,
     DecisionType,
     DiaryEngine,
+    diary_timestamp,
 )
 from src.pipeline.stages.base_stage import BaseStage
 from src.risk.elite_risk_metrics import EliteRiskMetrics
@@ -319,22 +320,43 @@ class TradingExecutionStage(BaseStage):
         return DecisionOutcome.BREAK_EVEN
 
     def _transaction_timestamp(self, value: Any) -> int:
+        """Transaction time as a diary timestamp (UNIX SECONDS).
+
+        This used to return milliseconds while every other writer of
+        experience_diary.decision_timestamp wrote seconds -- see the note on
+        diary_timestamp() in diary_engine. It also substituted "now" for an
+        unparseable or missing value without saying so, which stamps a
+        historical trade with the moment the pipeline happened to run.
+        """
         if isinstance(value, datetime):
             timestamp = value
         elif isinstance(value, (int, float)):
             numeric = float(value)
-            return int(numeric if abs(numeric) > 10_000_000_000 else numeric * 1000)
+            # Accept either unit on the way in: a value past ~2286 in seconds
+            # is really milliseconds.
+            return int(numeric / 1000 if abs(numeric) > 10_000_000_000 else numeric)
         elif isinstance(value, str) and value:
             try:
                 timestamp = datetime.fromisoformat(value.replace('Z', '+00:00'))
             except ValueError:
+                self.logger.warning(
+                    "Transaction timestamp %r could not be parsed; recording "
+                    "this decision at the current time instead, which is not "
+                    "when it happened.", value
+                )
                 timestamp = datetime.now(UTC)
         else:
+            if value is not None:
+                self.logger.warning(
+                    "Transaction timestamp %r is of unusable type %s; "
+                    "recording this decision at the current time instead.",
+                    value, type(value).__name__,
+                )
             timestamp = datetime.now(UTC)
 
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=UTC)
-        return int(timestamp.timestamp() * 1000)
+        return diary_timestamp(timestamp)
 
     def _transaction_prices(
         self,

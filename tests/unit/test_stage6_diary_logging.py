@@ -71,7 +71,12 @@ def test_stage6_records_profitable_sell_with_pattern_context():
     assert record.context_pattern_seq == "1|1>>1|0>>0|1"
     assert record.model_prediction == pytest.approx(0.03)
     assert record.model_confidence == pytest.approx(0.7)
-    assert record.decision_timestamp == int(timestamp.timestamp() * 1000)
+    # Seconds, not milliseconds: this assertion used to pin the very
+    # inconsistency it was meant to guard. Stage 6 was the only writer putting
+    # milliseconds into experience_diary.decision_timestamp, a column every
+    # other writer filled with seconds and which orders the Critic's "recent
+    # decisions" query. See tests/unit/test_diary_timestamp_units.py.
+    assert record.decision_timestamp == int(timestamp.timestamp())
     assert record.market_context["context_pattern_id"] == "pattern-1"
     assert record.market_context["context_velocity"] == pytest.approx(0.42)
 

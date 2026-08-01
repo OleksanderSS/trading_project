@@ -29,6 +29,33 @@ from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.meta_learning.base import BaseMetaComponent
 
+# ---------------------------------------------------------------------------
+# experience_diary.decision_timestamp is UNIX SECONDS.
+#
+# Three writers filled this one BIGINT column in two different units: this
+# module's DecisionRecord default and log_training_event wrote seconds, while
+# the consensus-metadata writer and Stage 6's _transaction_timestamp wrote
+# milliseconds. The column is used for `ORDER BY decision_timestamp DESC`
+# (knn_context_finder, get_recent_decisions) and as part of the upsert key
+# ["agent_id", "decision_timestamp", "ticker"], so mixing units means every
+# millisecond row (~1.7e12) sorts above every second row (~1.7e9) forever,
+# regardless of when either actually happened.
+#
+# Seconds wins because all 19,305 rows already in the table are seconds, so
+# no data migration is needed. Nothing interprets this column as an absolute
+# instant -- there is no fromtimestamp/date filtering anywhere -- so the unit
+# only has to be consistent.
+#
+# Sub-second resolution is deliberately not required: the upsert key would
+# collide only if the same agent logged two decisions for the same ticker
+# within one second, and decisions are made per bar (15m at the finest).
+# ---------------------------------------------------------------------------
+
+
+def diary_timestamp(moment: datetime | None = None) -> int:
+    """The one way to produce a decision_timestamp. UNIX seconds."""
+    return int((moment or datetime.now(UTC)).timestamp())
+
 
 class DecisionType(Enum):
     BUY = "buy"
@@ -71,7 +98,7 @@ class DecisionRecord:
     profit_loss: float | None = None
 
     # Other Metadata
-    decision_timestamp: int = field(default_factory=lambda: int(datetime.now(UTC).timestamp()))
+    decision_timestamp: int = field(default_factory=diary_timestamp)
     decision_id: str = field(default_factory=lambda: str(uuid.uuid4()))  # Stable UUID string instead of random 31-bit int
 
 
@@ -285,7 +312,7 @@ class DiaryEngine(BaseMetaComponent):
         """
         record = DecisionRecord(
             agent_id=model_name,
-            decision_timestamp=int(datetime.now(UTC).timestamp()),
+            decision_timestamp=diary_timestamp(),
             ticker=ticker,
             decision_type=DecisionType.TRAINING,
             reasoning=f"Model training for target {target}",
@@ -335,7 +362,9 @@ class DiaryEngine(BaseMetaComponent):
                 # writers of this same table disagreed on the type of `id`.
                 "id": str(uuid.uuid4()),
                 "agent_id": "consensus_engine",
-                "decision_timestamp": int(pd.Timestamp.now().timestamp() * 1000),
+                # Was `* 1000`: this writer put milliseconds in a column every
+                # other writer filled with seconds.
+                "decision_timestamp": diary_timestamp(),
                 "ticker": "CONSENSUS",
                 "decision_type": "metadata",
                 "reasoning": json.dumps(metadata),
