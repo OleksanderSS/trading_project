@@ -97,12 +97,32 @@ class FileManager:
         try:
             with open(path, encoding='utf-8') as f:
                 data: dict[str, Any] | None = yaml.safe_load(f)
-            self.logger.info(f'Loaded YAML from {path}')
-            return data if isinstance(data, dict) else None
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (yaml.YAMLError, OSError, ValueError, TypeError) as e:
+            # yaml.YAMLError inherits from Exception, NOT from ValueError, so
+            # the project's usual five-tuple missed it and a malformed YAML
+            # escaped as a raw ParserError while malformed JSON -- whose
+            # JSONDecodeError IS a ValueError -- came back as the intended
+            # RuntimeError. Two loaders in the same class behaving differently
+            # on the same class of failure.
             self.logger.error(f'Failed to load YAML from {path}: {e}',
                 exc_info=True)
             raise RuntimeError(f"Failed to load YAML from {path}") from e
+
+        if data is None:
+            self.logger.warning(f'YAML file is empty: {path}')
+            return None
+        if not isinstance(data, dict):
+            # Previously returned None here in silence, which the caller
+            # cannot tell apart from "file not found". A config file that
+            # exists but is shaped wrong was skipped without explanation.
+            self.logger.warning(
+                f'YAML at {path} parsed as {type(data).__name__}, not a '
+                f'mapping; ignoring its contents.'
+            )
+            return None
+
+        self.logger.info(f'Loaded YAML from {path}')
+        return data
 
     def save_json(self, data: dict[str, Any], file_path: (str | Path),
         async_save: bool=False) ->None:
@@ -137,12 +157,23 @@ class FileManager:
         try:
             with open(path, encoding='utf-8') as f:
                 data: dict[str, Any] | Any = json.load(f)
-            self.logger.info(f'Loaded JSON from {path}')
-            return data if isinstance(data, dict) else None
-        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+        except (json.JSONDecodeError, OSError, ValueError, TypeError) as e:
+            # OSError added for symmetry with load_yaml: a permission or disk
+            # error should raise the same contextual RuntimeError as a parse
+            # failure, not a bare OSError from three frames down.
             self.logger.error(f'Failed to load JSON from {path}: {e}',
                 exc_info=True)
             raise RuntimeError(f"Failed to load JSON from {path}") from e
+
+        if not isinstance(data, dict):
+            self.logger.warning(
+                f'JSON at {path} parsed as {type(data).__name__}, not an '
+                f'object; ignoring its contents.'
+            )
+            return None
+
+        self.logger.info(f'Loaded JSON from {path}')
+        return data
 
     def _remove_timezone(self, df: pd.DataFrame) ->pd.DataFrame:
         """Removes timezone information from all datetime columns in a DataFrame."""
