@@ -347,7 +347,19 @@ class DiaryEngine(BaseMetaComponent):
             "outcome": decision.outcome.value,
             "profit_loss": decision.profit_loss
         }])
-        self.data_manager.upsert(self.table_name, df, unique_on=["agent_id", "decision_timestamp", "ticker"])
+        # decision_type belongs in the key. Without it, a SELL and a BUY for
+        # the same ticker by the same model at the same bar -- which Stage 6
+        # produces in one batch when a position is closed and another opened
+        # -- collide, and upsert only inserts keys it has not seen, so the
+        # LATER row is dropped entirely. The one carrying realized P&L can be
+        # the one lost, and realized P&L is what contextual weights are now
+        # computed from. Same defect shape as the OutcomeTracker collision
+        # fixed earlier in this audit: identity derived from a timestamp.
+        self.data_manager.upsert(
+            self.table_name,
+            df,
+            unique_on=["agent_id", "decision_timestamp", "ticker", "decision_type"],
+        )
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"Recorded decision for {decision.ticker} by {decision.agent_id}")
 
@@ -378,7 +390,14 @@ class DiaryEngine(BaseMetaComponent):
                 "outcome": "metadata",
                 "profit_loss": 0.0
             }])
-            self.data_manager.upsert(self.table_name, df, unique_on=["agent_id", "decision_timestamp", "ticker"])
+            # Same key as record_decision, for the same reason: this writer
+            # shares the table, and a metadata row landing on the same
+            # (agent, second, ticker) as a decision row would displace it.
+            self.data_manager.upsert(
+                self.table_name,
+                df,
+                unique_on=["agent_id", "decision_timestamp", "ticker", "decision_type"],
+            )
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug("Recorded consensus metadata")
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
