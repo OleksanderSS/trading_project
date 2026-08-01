@@ -7,7 +7,7 @@ import threading
 from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from src.core.file_management.file_manager import FileManager
 from src.core.logging.logger import ProjectLogger
@@ -565,10 +565,35 @@ class UnifiedConfigManager:
 
         return value
 
+    #: Sections asked for but absent, reported once each (see get_config).
+    _absent_sections_reported: ClassVar[set[str]] = set()
+
     def get_config(self, name: str, default: Any = None) -> Any:
-        """Legacy access interface for direct configuration segments."""
+        """Access a top-level configuration section.
+
+        `name` is a TOP-LEVEL YAML KEY across the merged config, not a file
+        name: `get_config('processing')` is None even though processing.yaml
+        exists, because its top-level keys are `safe_fill` and
+        `data_preparation`.
+
+        A missing section is reported ONCE at warning level. It used to return
+        None in silence, and callers almost always write `or {}` immediately
+        after, so an absent section degrades into code defaults with nothing
+        said. An audit of every `get_config(...)` call in the codebase found
+        10 of 24 requested keys did not exist -- among them `processing`,
+        which left IntelligentDataFilter running unconfigured on every run,
+        and `modeling`, which made four training settings unreachable.
+        """
+        found = name in self.merged_config
         if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f"Direct template access attempt for: '{name}'. Found: {name in self.merged_config}")
+            logger.debug(f"Direct template access attempt for: '{name}'. Found: {found}")
+        if not found and name not in UnifiedConfigManager._absent_sections_reported:
+            UnifiedConfigManager._absent_sections_reported.add(name)
+            logger.warning(
+                f"Config section '{name}' does not exist in any YAML; the "
+                f"caller will fall back to its built-in defaults. Add the "
+                f"section, or drop the lookup if it is obsolete."
+            )
         return self.merged_config.get(name, default)
 
 

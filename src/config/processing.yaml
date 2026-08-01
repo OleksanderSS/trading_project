@@ -59,3 +59,38 @@ modeling:
   max_memory_gb: 12.0       # BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB
   # test_size навмисно НЕ дублюється тут: він живе під data_preparation вище,
   # і PipelinePolicyManager.split_policy() резолвить його звідти.
+
+# Секція, яку читає src/pipeline/stages/processing/orchestrator.py через
+# get_config('processing'). Раніше її не існувало, тож filtering_config
+# дорівнював None і IntelligentDataFilter працював БЕЗ конфігурації на
+# кожному прогоні — а саме він вирішує, які дані взагалі входять у конвеєр.
+# Значення нижче дорівнюють захардкодженим дефолтам у src/processing/filters/,
+# тож поведінка не змінюється; змінюється те, що їх тепер можна налаштувати.
+processing:
+  filtering:
+    # price_filter.py
+    min_candles_per_timeframe: 2
+    min_data_quality_score: 0.6
+    anomaly_std_dev_threshold: 3
+    max_gap_duration_hours: 24
+    min_cadence_match_ratio: 0.60
+    max_extreme_return_ratio: 0.01
+    # news_filter.py
+    news_title_min_len: 10
+    news_content_min_len: 50
+    # social_filter.py
+    reddit_score_threshold: 1
+    reddit_text_min_len: 10
+  normalization: {}
+
+# Читається src/pipeline/stages/prediction/orchestrator.py.
+prediction:
+  # Наскільки знижується впевненість, коли прогноз суперечить чемпіону.
+  champion_contradiction_penalty: 0.7
+
+# Читається src/main/modes/backtest.py.
+backtest:
+  walk_forward_validation: false
+  walk_forward:
+    in_sample_months: 12
+    out_sample_months: 3
