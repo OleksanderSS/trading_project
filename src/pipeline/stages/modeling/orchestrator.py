@@ -300,6 +300,9 @@ class ModelingStage(BaseStage):
                     prepared_data,
                     target_name=target_name,
                     context_fingerprint=context_fingerprint,
+                    context_pattern_seq=self._latest_context_value(
+                        df, ("context_pattern_seq",), default=None
+                    ),
                 )
                 training_results = self.training_manager.execute_unified_training(
                     tickers=[ticker], data_context=training_context
@@ -359,6 +362,7 @@ class ModelingStage(BaseStage):
         *,
         target_name: str,
         context_fingerprint: str,
+        context_pattern_seq: str | None = None,
     ) -> dict[str, Any]:
         """Adapt nested preparation output and reserve the holdout.
 
@@ -385,6 +389,16 @@ class ModelingStage(BaseStage):
             "target_name": target_name,
             "target_type": self._infer_target_type(y_train),
             "context_fingerprint": context_fingerprint,
+            # BaseTrainer already forwards this to the diary
+            # (base_trainer.py: log_event(..., context_pattern_seq=
+            # data.get('context_pattern_seq'))), and ContextMapEnricher
+            # already produces the column, keeping the RAW sequence
+            # specifically so KNN can measure distance between contexts --
+            # its own comment says so. The key was simply never put in this
+            # dict, so data.get() returned None and all 19,305 diary rows
+            # were written with a NULL sequence, leaving the KNN expansion
+            # with nothing to search.
+            "context_pattern_seq": context_pattern_seq,
             "selection_split_role": "validation",
             "prepared_holdout_reserved": True,
         }
