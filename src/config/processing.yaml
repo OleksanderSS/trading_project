@@ -69,8 +69,14 @@ modeling:
 processing:
   filtering:
     # price_filter.py
-    min_candles_per_timeframe: 2
+    # 30, не 2: оцінка якості рахує стандартне відхилення, збіг
+    # каденції та частку дублікатів — з двох барів це не має сенсу,
+    # але такий ряд проходив гейт і оцінювався як достовірний.
+    min_candles_per_timeframe: 30
     min_data_quality_score: 0.6
+    # Поріг застосовується до z-оцінки ДОХІДНОСТЕЙ бар-до-бару.
+    # Раніше рахувалось по рівнях ціни, і збій +30% за бар не
+    # виявлявся на жодному тікері.
     anomaly_std_dev_threshold: 3
     max_gap_duration_hours: 24
     min_cadence_match_ratio: 0.60

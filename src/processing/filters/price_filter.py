@@ -13,7 +13,13 @@ class PriceFilter:
     """Specialized filter for market price data with anomaly and gap detection."""
 
     def __init__(self, config: dict[str, Any]):
-        self.min_candles = config.get('min_candles_per_timeframe', 2)
+        # 2 was meaningless: the quality assessment computes a standard
+        # deviation, a cadence match ratio and a duplicate ratio, none of which
+        # mean anything over two bars -- yet a 2-bar series passed the gate and
+        # was then scored as if the numbers were informative. 30 is a
+        # conservative statistical floor; the smallest series actually stored
+        # here is 322 bars, so no real data is affected.
+        self.min_candles = config.get('min_candles_per_timeframe', 30)
         self.min_quality = config.get('min_data_quality_score', 0.6)
         self.anomaly_threshold = config.get('anomaly_std_dev_threshold', 3)
         self.max_gap_duration = timedelta(hours=config.get('max_gap_duration_hours', 24))
@@ -34,13 +40,13 @@ class PriceFilter:
                 quality_report[timeframe] = {'status': 'empty', 'reason': 'no_data'}
                 continue
 
-            if len(tf_data) < self.min_candles:
-                quality_report[timeframe] = {
-                    'status': 'insufficient_data',
-                    'reason': f'only_{len(tf_data)}_candles'
-                }
-                continue
-
+            # Integrity checks run on EVERY series, regardless of length.
+            # Contamination is contamination on eight bars as much as on eight
+            # hundred, and cross-ticker duplicate OHLCV is exactly the kind of
+            # defect that shows up in a small slice. Only the STATISTICAL
+            # quality score needs a usable sample, so the length gate sits
+            # below these rather than above them -- putting it first meant
+            # raising min_candles silently disabled the contamination guard.
             data_quality = self.assess_price_quality(tf_data)
 
             hard_failures = []
@@ -51,6 +57,22 @@ class PriceFilter:
                 hard_failures.append('timeframe_cadence_mismatch')
             if data_quality.get('extreme_return_ratio', 0.0) > self.max_extreme_return_ratio:
                 hard_failures.append('extreme_return_contamination')
+
+            if hard_failures:
+                quality_report[timeframe] = {
+                    'status': 'low_quality',
+                    'reason': ','.join(hard_failures),
+                    'hard_failures': hard_failures,
+                    **data_quality
+                }
+                continue
+
+            if len(tf_data) < self.min_candles:
+                quality_report[timeframe] = {
+                    'status': 'insufficient_data',
+                    'reason': f'only_{len(tf_data)}_candles'
+                }
+                continue
 
             if data_quality['overall_score'] < self.min_quality or hard_failures:
                 quality_report[timeframe] = {
@@ -198,26 +220,59 @@ class PriceFilter:
         return gaps
 
     def detect_and_classify_anomalies(self, price_data: pd.DataFrame) -> list[dict]:
-        """Detect and classify price anomalies."""
-        if 'close' not in price_data.columns:
+        """Detect anomalous BAR-TO-BAR MOVES, not unusual price levels.
+
+        This used to z-score the close price against the mean of the whole
+        series:
+
+            z = (price - prices.mean()) / prices.std()
+
+        For anything that trends, the series mean is a level the price passed
+        through once, so |z| measures distance from that level rather than
+        whether a bar is anomalous. Measured on real stored data across NVDA,
+        KO, SPY and TSLA, injecting a single bad tick:
+
+            +15% in one bar -> MISSED on all four
+            +30% in one bar -> MISSED on all four
+            +100%           -> caught
+
+        A 30% single-day jump is an unmistakable data error and it went
+        undetected. The same check simultaneously produced false positives:
+        on untouched KO daily data it flagged the two highest closes (89.08
+        and 88.49 in a 58-89 range) as "spikes" -- legitimate trend extremes.
+
+        Scoring the RETURN catches all of the above cases and stops flagging
+        trend extremes, because a normal bar at a new high is still a normal
+        move.
+
+        Anomalies are reported, not acted on -- filter_price_data counts them
+        and drops nothing -- so this changes the quality report rather than
+        what data flows onward.
+        """
+        if 'close' not in price_data.columns or len(price_data) < 3:
             return []
 
-        prices = price_data['close']
-        mean = prices.mean()
-        std = prices.std()
-
-        if std == 0:
+        prices = pd.to_numeric(price_data['close'], errors='coerce')
+        returns = prices.pct_change(fill_method=None).replace([np.inf, -np.inf], np.nan)
+        clean = returns.dropna()
+        if len(clean) < 2:
             return []
 
-        anomalies = []
-        z_scores = (prices - mean) / std
+        std = clean.std()
+        if not np.isfinite(std) or std <= 1e-12:
+            return []
+
+        z_scores = (returns - clean.mean()) / std
         mask = z_scores.abs() > self.anomaly_threshold
 
-        for idx in price_data.index[mask]:
+        anomalies = []
+        for idx in price_data.index[mask.fillna(False)]:
+            z = float(z_scores.loc[idx])
             anomalies.append({
                 'timestamp': idx,
-                'value': float(price_data.loc[idx, 'close']),
-                'z_score': float(z_scores.loc[idx]),
-                'type': 'spike' if z_scores.loc[idx] > 0 else 'dip'
+                'value': float(prices.loc[idx]),
+                'return_pct': float(returns.loc[idx]),
+                'z_score': z,
+                'type': 'spike' if z > 0 else 'dip',
             })
         return anomalies
