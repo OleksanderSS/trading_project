@@ -204,6 +204,9 @@ class UniversalNotifier:
         try:
             running = asyncio.get_running_loop()
         except RuntimeError:
+            # Not a failure: get_running_loop raises when asked outside a
+            # loop, which is the ordinary synchronous case.
+            logger.debug("No running event loop; delivering notification inline.")
             running = None
 
         if running is not None:
