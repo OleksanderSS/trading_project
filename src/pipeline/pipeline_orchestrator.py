@@ -299,10 +299,39 @@ class PipelineOrchestrator:
                     self.logger.info(f"ModelingStage enriched_data target columns: {len(target_cols)}")
             return await stage.run(**stage_outputs)
 
+    # Stages whose output the rest of the pipeline cannot do without. When one
+    # of these produces nothing, that is a failure, not an empty success.
+    #
+    # Deliberately excluded:
+    #   Stage0Setup            - creates directories, has no data output at all
+    #   PredictionStage        - an empty prediction set is a documented,
+    #                            expected outcome (the champion filter can drop
+    #                            every (ticker, target) group)
+    #   TradingExecutionStage  - returns a structured result with an explicit
+    #     EvaluationStage        status even when there is nothing to act on
+    _STAGES_REQUIRING_OUTPUT = frozenset({
+        'CollectionStage',
+        'ProcessingStage',
+        'FeatureEngineeringStage',
+        'ModelingStage',
+    })
+
     def _validate_stage_output(self, stage_name: str, stage_output:
         dict[str, Any] | None) ->dict[str, Any] | None:
         """Validate stage output against schema."""
         if not stage_output:
+            if stage_name in self._STAGES_REQUIRING_OUTPUT:
+                # These stages used to return {} on their own abort paths --
+                # ModelingStage does it after logging "Enriched data not found.
+                # Skipping Modeling Stage." -- and _execute_stage then reported
+                # {'status': 'success'} and carried on with the previous
+                # stage's outputs. A run that trained nothing still ended with
+                # "Pipeline execution completed successfully".
+                raise DataProcessingError(
+                    f"Stage {stage_name} produced no output; the pipeline "
+                    f"cannot continue on the previous stage's data. Check that "
+                    f"stage's log for the reason it aborted."
+                )
             return None
         stage_schema_map = {'CollectionStage': RawDataSchema,
             'ProcessingStage': ProcessedDataSchema,

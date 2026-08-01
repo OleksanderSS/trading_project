@@ -79,7 +79,13 @@ class CollectionStage(BaseStage):
             self.logger.info(f"Using {len(tickers)} tickers from pipeline inputs override.")
         if not tickers:
             self.logger.error(f"No tickers found for preset '{active_preset}'. Aborting collection.")
-            return {'raw_data': {}}
+            # Return the same SHAPE as the success path (fetch_all_data_from_db
+            # returns a flat {data_type: DataFrame} map, which the orchestrator
+            # assigns straight to stage_outputs['raw_data']). The old
+            # {'raw_data': {}} nested one level deeper AND was truthy, so the
+            # abort survived every emptiness check and only surfaced later as a
+            # confusing failure in ProcessingStage.
+            return {}
         self.logger.info(f"Loaded {len(tickers)} tickers from preset '{active_preset}'.")
 
         # --- Keywords: flatten словника категорій ---
