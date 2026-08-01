@@ -70,3 +70,22 @@ http_client:
       aaii.com:            # blocks us at the source (403)
         rate_limit: 1
         per_seconds: 5.0
+
+# ---------------------------------------------------------------------------
+# Notifications. This section did not exist either, so UniversalNotifier fell
+# back to ['log'] and the Telegram/Discord code could never run.
+#
+# CREDENTIALS ARE NOT SET HERE. They are read from the environment
+# (TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, DISCORD_WEBHOOK_URL), loaded from
+# .env by SecureSecretsManager -- the same way every collector reads its API
+# key. Config files are committed to git; tokens must not be.
+#
+# To enable Telegram: put the two variables in .env, then add 'telegram' to
+# enabled_backends below.
+# ---------------------------------------------------------------------------
+notifications:
+  enabled_backends:
+    - log
+  # Minimum severity ErrorHandler will notify about (it already applies a
+  # per-error cooldown before sending).
+  notify_from_severity: error
