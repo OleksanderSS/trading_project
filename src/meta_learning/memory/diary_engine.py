@@ -456,6 +456,12 @@ class DiaryEngine(BaseMetaComponent):
         FROM experience_diary
         WHERE agent_id = ? AND outcome = ?
         GROUP BY context_fingerprint
+        -- Symmetric with get_context_success_analysis, which has always
+        -- required two wins before calling a context a success zone. One
+        -- loss is not a failure PATTERN, and compare_agents shows the two
+        -- results side by side, so different thresholds made them
+        -- incomparable.
+        HAVING loss_count >= 2
         ORDER BY loss_count DESC
         LIMIT 10
         """
@@ -474,7 +480,11 @@ class DiaryEngine(BaseMetaComponent):
             "agent_id": agent_id,
             "total_unprofitable": int(loss_patterns['loss_count'].sum()),
             "top_loss_fingerprints": loss_patterns.to_dict('records'),
-            "component_vulnerabilities": vulnerabilities
+            "component_vulnerabilities": vulnerabilities,
+            # Empty means the fingerprints could not be decomposed, not that
+            # every driver came out clean. Without this the caller cannot
+            # tell the two apart.
+            "components_decoded": bool(vulnerabilities),
         }
 
     def get_context_success_analysis(self, agent_id: str) -> dict[str, Any]:
@@ -501,12 +511,30 @@ class DiaryEngine(BaseMetaComponent):
         return {
             "agent_id": agent_id,
             "top_success_fingerprints": success_patterns.to_dict('records'),
-            "ideal_components": ideal_conditions
+            "ideal_components": ideal_conditions,
+            "components_decoded": bool(ideal_conditions),
         }
 
     def _analyze_fingerprint_components(self, df: pd.DataFrame, col: str = 'loss_count') -> dict[int, dict[str, float]]:
-        """Internal helper to decompose fingerprints into individual tri-state driver stats."""
+        """Decompose fingerprints into per-driver tri-state counts.
+
+        Only fingerprints in the Context Map form ('1|-1|0|1', optionally
+        '__'-suffixed with time) can be decomposed. What the pipeline writes
+        today is a SHA-256 (ModelingStage._build_context_fingerprint) or the
+        literal 'normal', and for those every token falls outside {-1, 0, 1},
+        so this used to return {0: {'-1': 0.0, '0': 0.0, '1': 0.0}} -- a
+        zero-filled structure that reads as "no driver is implicated" when
+        the truth is "this fingerprint cannot be read". Callers now get
+        nothing back, and say why.
+
+        NOTE for whoever revives this: it counts RAW OCCURRENCES, not rates.
+        A driver value present in most trades will top the table whatever its
+        loss rate, because there is no base-rate denominator here. Comparing
+        against the same decomposition over ALL of that agent's trades is
+        what would make it a statistic rather than a frequency table.
+        """
         component_stats: dict[int, dict[str, float]] = {}
+        decoded_any = False
         for _, row in df.iterrows():
             fp = str(row['context_fingerprint'])
             # Context Map 2.0 uses '|' for drivers and '__' for time
@@ -514,11 +542,19 @@ class DiaryEngine(BaseMetaComponent):
             drivers = drivers_part.split('|')
 
             for idx, val in enumerate(drivers):
+                if val not in ('-1', '0', '1'):
+                    continue
                 if idx not in component_stats:
                     component_stats[idx] = {'-1': 0.0, '0': 0.0, '1': 0.0}
-                if val in component_stats[idx]:
-                    component_stats[idx][val] += float(row[col])
+                component_stats[idx][val] += float(row[col])
+                decoded_any = True
 
+        if not decoded_any and not df.empty:
+            self.logger.debug(
+                "Context fingerprints carry no tri-state drivers (%r...); "
+                "component analysis skipped.",
+                str(df['context_fingerprint'].iloc[0])[:16],
+            )
         return component_stats
 
     def export_context_heatmap_data(self, agent_id: str) -> pd.DataFrame:
