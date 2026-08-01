@@ -88,7 +88,17 @@ def safe_execute(func: Callable, *args, **kwargs):
         return func(*args, **kwargs)
     except TradingSystemError:
         raise
-    except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+    except Exception as e:
+        # Deliberately broad: this helper's entire contract is "wrap UNEXPECTED
+        # errors", and it previously caught only
+        # (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError).
+        # That tuple appears 668 times across 238 files in this codebase and
+        # reads as exhaustive while omitting OSError, RuntimeError, IndexError
+        # and every library exception -- so anything from a disk failure to a
+        # DuckDB or CatBoost error escaped the wrapper that exists to contain
+        # it. Two live incidents in this audit came from exactly that gap:
+        # CatBoostError (inherits straight from Exception) took down the whole
+        # ModelingStage, and sqlite3.IntegrityError silently lost events.
         logger.error(f'Unexpected error in {func.__name__}: {e}', exc_info=True
             )
         raise TradingSystemError(
@@ -219,9 +229,18 @@ class ErrorHandler(IErrorHandler):
             return wrapper
         return decorator
 
-    def graceful_degradation(self, fallback_value: Any=None, context: str=''):
-        """
-        Decorator for graceful degradation.
+    def graceful_degradation(self, fallback_value: Any=None, context: str='',
+                             exceptions: tuple=(Exception,)):
+        """Return `fallback_value` instead of propagating a failure.
+
+        Broad by default, and parameterised the way `retry` already is. It
+        caught only (ValueError, TypeError, AttributeError, KeyError,
+        ZeroDivisionError), so a decorator whose whole purpose is "do not let
+        this take the caller down" let OSError, RuntimeError and every library
+        exception straight through -- degradation that does not degrade. The
+        correct-by-default `retry` sits ten lines above it in this same class,
+        which is a good sign the narrow tuple was applied mechanically rather
+        than chosen.
         """
 
         def decorator(func: Callable) ->Callable:
@@ -230,7 +249,7 @@ class ErrorHandler(IErrorHandler):
             def wrapper(*args, **kwargs):
                 try:
                     return func(*args, **kwargs)
-                except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
+                except exceptions as e:
                     self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                     self.handle_error(e, f'{func.__name__} in {context}',
                         'warning')
