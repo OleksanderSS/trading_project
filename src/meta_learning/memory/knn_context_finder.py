@@ -81,10 +81,39 @@ class KnnContextFinder:
 
         return hist_fps
 
+    _reported_unvectorisable: bool = False
+
+    def _report_unvectorisable(self, context_fingerprint: str) -> None:
+        """Say once that KNN cannot run, rather than on every call."""
+        if KnnContextFinder._reported_unvectorisable:
+            return
+        KnnContextFinder._reported_unvectorisable = True
+        self.logger.warning(
+            "KNN contextual weights are unavailable: context_fingerprint %r "
+            "carries no vectorisable structure (it is an identity hash, or a "
+            "plain label). Similarity needs context_pattern_seq, which is not "
+            "being written. Falling back to exact matches only.",
+            str(context_fingerprint)[:24] + "...",
+        )
+
     def _build_knn_vectors(self, context_fingerprint: str, hist_fps: list[str], min_neighbors: int) -> tuple[list, list] | None:
         """Build KNN vectors for similarity search."""
         target_vec = self._fingerprint_to_vec(context_fingerprint)
         if not target_vec:
+            # Silent until now, and it is the normal case rather than an edge
+            # one. What the pipeline writes into context_fingerprint is a
+            # SHA-256 of a JSON payload (ModelingStage._build_context_
+            # fingerprint) -- an identity for exact matching. It has no
+            # geometry, so it cannot be vectorised, and neither can the
+            # literal 'normal' that the other writer uses. On the live diary
+            # that is every one of the 19,305 rows, so this whole KNN
+            # expansion has never run.
+            #
+            # Similarity is supposed to come from context_pattern_seq (the
+            # tri-state token form, '1|1>>1|0'), which is NULL in all 19,305
+            # rows. Inventing a vector from a hash would fabricate
+            # neighbours, so this says so instead.
+            self._report_unvectorisable(context_fingerprint)
             return None
 
         hist_vecs = [(fp, self._fingerprint_to_vec(fp)) for fp in hist_fps]
@@ -126,10 +155,13 @@ class KnnContextFinder:
             return {}
 
         total = sum(agg.values())
-        if total > 0:
-            agg = {k: v / total for k, v in agg.items()}
-
-        return agg
+        if total <= 0:
+            # Same rule as ContextualWeightCalculator: all-zero is "no
+            # evidence", and returning the unnormalised zeros would hand the
+            # ensemble a set of weights that mean nothing. {} is the signal
+            # for equal weighting.
+            return {}
+        return {k: v / total for k, v in agg.items()}
 
     def get_knn_contextual_model_weights(
         self,
