@@ -13,34 +13,20 @@ from src.core.logging.logger import ProjectLogger
 from src.core.logging.notifier import UniversalNotifier
 
 
-class TradingSystemError(Exception):
-    """Base exception class for trading system errors."""
-    pass
-
-
-class PipelineError(TradingSystemError):
-    """Base exception for pipeline-specific failures."""
-    pass
-
-
-class StageError(PipelineError):
-    """Base exception for individual pipeline stage failures."""
-    pass
-
-
-class StageExecutionError(StageError):
-    """Exception raised when a stage fails during execution."""
-    pass
-
-
-class ModelLoadingError(StageError):
-    """Exception raised when loading a model fails."""
-    pass
-
-
-class ConfigurationError(TradingSystemError):
-    """Exception raised when a system or training configuration is invalid."""
-    pass
+# These were DEFINED here as well as in src/core/exceptions.py, and the two
+# PipelineError classes -- and the two ConfigurationError classes -- were
+# unrelated, so `except ConfigurationError` caught only whichever one the
+# catching module happened to import. Re-exported here so that
+# `from src.core.error_handling.error_handler import TradingSystemError`
+# keeps working, but there is now exactly one of each class.
+from src.core.exceptions import (  # noqa: F401  (re-exported for callers)
+    ConfigurationError,
+    ModelLoadingError,
+    PipelineError,
+    StageError,
+    StageExecutionError,
+    TradingSystemError,
+)
 
 
 class IErrorHandler(ABC):

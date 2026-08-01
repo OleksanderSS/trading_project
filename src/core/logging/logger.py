@@ -37,6 +37,16 @@ class ProjectLogger:
     @staticmethod
     def _get_config_path(key: str, default_path: str) ->Path:
         """Retrieves path from UnifiedConfigManager if available."""
+        return Path(ProjectLogger._get_config_setting(key, default_path))
+
+    @staticmethod
+    def _get_config_setting(key: str, default: str) -> str:
+        """Reads `system.<key>` from config, if config can safely be reached.
+
+        Called during logging setup, so it must tolerate the config manager
+        being absent or mid-initialisation -- hence the guards below rather
+        than a plain import.
+        """
         try:
             module = sys.modules.get("src.config.unified_config_manager")
             if module is not None:
@@ -47,23 +57,22 @@ class ProjectLogger:
                     or get_current_config is None
                     or getattr(manager_cls, "_initializing", False)
                 ):
-                    return Path(default_path)
+                    return default
             else:
                 from src.config.unified_config_manager import get_current_config
 
-            config = get_current_config()
-            path_str = config.get(f'system.{key}')
-            if path_str:
-                return Path(path_str)
+            value = get_current_config().get(f'system.{key}')
+            if value:
+                return str(value)
         except (ImportError, TypeError) as e:
             logging.getLogger('ProjectLogger').debug(
-                f"Could not read logging path from config, using default '{default_path}': {e}"
+                f"Could not read logging setting '{key}' from config, using default '{default}': {e}"
             )
         except (ValueError, AttributeError, KeyError, ZeroDivisionError) as e:
             logging.getLogger('ProjectLogger').warning(
-                f"Could not read logging path from config, using default '{default_path}': {e}"
+                f"Could not read logging setting '{key}' from config, using default '{default}': {e}"
             )
-        return Path(default_path)
+        return default
 
     @staticmethod
     def _start_csv_listener():
@@ -87,13 +96,24 @@ class ProjectLogger:
         threading.Thread(target=csv_writer, daemon=True).start()
 
     @staticmethod
-    def setup_logging(level: str='DEBUG', format_string: str | None=None
+    def setup_logging(level: str | None=None, format_string: str | None=None
         ) ->None:
         """
         Configures a clean logging setup with console and rotating file handlers.
+
+        The level defaults to `system.log_level` in config (INFO), not to
+        DEBUG. Every one of the seven callers invokes this with no arguments,
+        so the old DEBUG default was the level the whole project actually ran
+        at: 42.9% of the 36,146 lines in logs/system.log were DEBUG, while the
+        file rotates at 10 MB with 5 backups. Half the retained history was
+        noise, and the 83 CRITICAL and 380 ERROR lines were buried in it.
+        Pass level='DEBUG' explicitly, or set system.log_level, when tracing
+        something.
         """
         if ProjectLogger._is_configured:
             return
+        if level is None:
+            level = ProjectLogger._get_config_setting('log_level', 'INFO')
         ProjectLogger._log_dir = ProjectLogger._get_config_path('logs_path',
             'logs')
         ProjectLogger._system_log_file = ProjectLogger._log_dir / 'system.log'
@@ -103,7 +123,15 @@ class ProjectLogger:
         root_logger = logging.getLogger()
         for handler in root_logger.handlers[:]:
             root_logger.removeHandler(handler)
-        log_level = getattr(logging, level.upper(), logging.INFO)
+        log_level = getattr(logging, level.upper(), None)
+        unknown_level = None if isinstance(log_level, int) else level
+        if unknown_level is not None:
+            # A typo used to fall through to INFO without a word, so a run
+            # configured with level='WARNIGN' looked deliberate. Reported
+            # below, once handlers exist -- warning here would go to stderr
+            # via logging's last resort and never reach system.log, since
+            # every root handler was just removed.
+            log_level = logging.INFO
         root_logger.setLevel(log_level)
         for stream in (sys.stdout, sys.stderr):
             if hasattr(stream, 'reconfigure'):
@@ -128,8 +156,13 @@ class ProjectLogger:
         ProjectLogger._is_configured = True
         ProjectLogger._initialize_market_log()
         ProjectLogger._start_csv_listener()
+        if unknown_level is not None:
+            logging.getLogger('ProjectLogger').warning(
+                "Unknown log level %r; falling back to INFO.", unknown_level
+            )
         logging.getLogger('ProjectLogger').info(
-            f'Logging configured. Level: {level}. Path: {ProjectLogger._log_dir}'
+            f'Logging configured. Level: {logging.getLevelName(log_level)}. '
+            f'Path: {ProjectLogger._log_dir}'
             )
 
     @staticmethod

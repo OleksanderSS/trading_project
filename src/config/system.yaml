@@ -1,4 +1,14 @@
 system:
+  # Logging. setup_logging() used to default to DEBUG and no caller ever
+  # passed a level, so the whole project ran at DEBUG: 42.9% of the lines in
+  # logs/system.log were DEBUG while the file rotates at 10 MB x 5 backups,
+  # so half the retained history was noise and real ERROR/CRITICAL lines were
+  # buried in it. Set this to DEBUG while tracing something specific.
+  log_level: INFO
+  # Read by ProjectLogger._get_config_path; this key did not exist either, so
+  # the lookup always fell through to its 'logs' default.
+  logs_path: logs
+
   storage:
     db_path: data/test_main.duckdb
   
