@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 from itertools import chain
+from typing import ClassVar
 
 import pandas as pd
 from datetime import datetime
@@ -320,6 +321,83 @@ class CollectionStage(BaseStage):
             self.logger.warning(f"Failed to cache data for '{collector.collector_type}': {e}")
 
 
+    # Macro tables whose own event time IS the moment the number became
+    # public, so it can honestly serve as the point-in-time availability
+    # stamp. An economic-calendar entry is published when the event happens;
+    # a news pattern exists from when the news appeared.
+    _MACRO_SELF_TIMED_TABLES: ClassVar[dict[str, str]] = {
+        'economic_calendar': 'timestamp',
+        'news_patterns': 'timestamp',
+    }
+    _MACRO_AVAILABILITY_COLUMNS: ClassVar[tuple[str, ...]] = (
+        'available_at', 'released_at', 'realtime_start',
+    )
+
+    def _ensure_macro_availability(
+        self, df: pd.DataFrame, table_name: str
+    ) -> pd.DataFrame:
+        """Give every macro source a point-in-time availability column.
+
+        The macro sources are concatenated into one frame, and pd.concat
+        fills columns a source lacks with NaN. fred_data carries
+        realtime_start; economic_calendar carries none, so its rows arrived
+        with realtime_start = NaN and ProcessingStage's point-in-time check
+        rejected the whole frame:
+
+            Macro data contains missing or invalid point-in-time values in
+            realtime_start.
+
+        That check is right -- using a macro figure before it was published
+        is look-ahead. It only became reachable once the collection repairs
+        earlier in this audit took economic_calendar from 0 rows to 71.
+
+        Only tables whose own timestamp genuinely IS the publication moment
+        are filled. A source with a real release lag (annual World Bank
+        series dated '1960', say) must not be given an invented one, and is
+        left to fail the check loudly.
+        """
+        if df is None or df.empty:
+            return df
+
+        # Normalise EVERY source onto the same column. Leaving fred with
+        # realtime_start and the calendar with available_at just moves the
+        # problem: the downstream check takes the FIRST of
+        # (available_at, released_at, realtime_start) that exists anywhere in
+        # the concatenated frame, so whichever it picks is null for the other
+        # source's rows.
+        existing = next(
+            (c for c in self._MACRO_AVAILABILITY_COLUMNS if c in df.columns), None
+        )
+        if existing:
+            if existing != 'available_at':
+                df = df.copy()
+                df['available_at'] = pd.to_datetime(
+                    df[existing], errors='coerce', utc=True
+                )
+            return df
+
+        source_column = self._MACRO_SELF_TIMED_TABLES.get(table_name)
+        if source_column is None or source_column not in df.columns:
+            self.logger.warning(
+                "Macro table '%s' carries no availability column and no "
+                "known self-timed source column; its rows will fail the "
+                "point-in-time check downstream. Add the release timestamp "
+                "at collection rather than inventing one here.",
+                table_name,
+            )
+            return df
+
+        df = df.copy()
+        df['available_at'] = pd.to_datetime(
+            df[source_column], errors='coerce', utc=True
+        )
+        self.logger.info(
+            "Macro table '%s': derived available_at from '%s' (its event "
+            "time is its publication time).",
+            table_name, source_column,
+        )
+        return df
+
     def fetch_all_data_from_db(self, tickers: list[str] | None = None) -> dict[str, pd.DataFrame]:
             """Завантажує всі дані з БД для наступного етапу."""
             raw_data = {}
@@ -401,6 +479,7 @@ class CollectionStage(BaseStage):
                     else:
                         self.logger.info(f"No matching records in news table '{table_name}' after filtering.")
                 elif data_type in ('macro_data', 'macro', 'macro_context'):
+                    df = self._ensure_macro_availability(df, table_name)
                     if 'macro_data' in raw_data:
                         raw_data['macro_data'] = pd.concat([raw_data['macro_data'], df], ignore_index=True)
                     else:
