@@ -301,7 +301,8 @@ class ModelingStage(BaseStage):
                     target_name=target_name,
                     context_fingerprint=context_fingerprint,
                     context_pattern_seq=self._latest_context_value(
-                        df, ("context_pattern_seq",), default=None
+                        df, ("context_pattern_seq",), default=None,
+                        timeframe=str(timeframe),
                     ),
                 )
                 training_results = self.training_manager.execute_unified_training(
@@ -439,15 +440,26 @@ class ModelingStage(BaseStage):
                     source="stage4_validation_feature_index",
                 )
             )
+            # Suffixed here as well: the export carries volatility_regime_1d
+            # and volatility_regime_60m. Without the timeframe this artifact
+            # is being written for, the lookup would take whichever came
+            # first in column order and label a 60m model with the daily
+            # regime.
+            #
+            # market_regime/regime exist under no spelling in the exported
+            # features, so this stays "unknown" -- said plainly rather than
+            # papered over: no enricher currently produces it.
             market_regime = self._latest_context_value(
                 df,
                 ("market_regime", "regime"),
                 default="unknown",
+                timeframe=str(timeframe),
             )
             volatility_regime = self._latest_context_value(
                 df,
                 ("volatility_regime",),
                 default="unknown",
+                timeframe=str(timeframe),
             )
             winner = str(ticker_result.get("winner") or "unknown")
             model_candidate = (
@@ -518,8 +530,41 @@ class ModelingStage(BaseStage):
         columns: tuple[str, ...],
         *,
         default: str | None,
+        timeframe: str | None = None,
     ) -> str | None:
+        """Last non-null value of the first matching context column.
+
+        Accepts the timeframe-suffixed forms the enrichers actually emit.
+        ContextMapEnricher runs per timeframe and its output arrives as
+        context_pattern_seq_1d / context_pattern_seq_60m -- checked against
+        the exported features.parquet, where the BARE names
+        (context_pattern_seq, context_fingerprint, context_pattern_id) are
+        absent entirely.
+
+        Looking only for the bare name meant this always returned the
+        default. For context_fingerprint that quietly sent
+        _build_context_fingerprint down its fallback branch, which is why
+        every fingerprint in experience_diary is a SHA-256 rather than the
+        tri-state form the KNN similarity search needs. For
+        context_pattern_seq it meant the sequence never reached the diary at
+        all.
+        """
+        candidates: list[str] = []
         for column in columns:
+            if timeframe:
+                candidates.append(f"{column}_{timeframe}")
+            candidates.append(column)
+            # Any timeframe-suffixed variant, in column order, as a last
+            # resort: better a context from a neighbouring timeframe than a
+            # hash standing in for one.
+            candidates.extend(
+                name for name in frame.columns
+                if isinstance(name, str)
+                and name.startswith(f"{column}_")
+                and name not in candidates
+            )
+
+        for column in candidates:
             if column not in frame.columns:
                 continue
             values = frame[column].dropna()
@@ -543,6 +588,12 @@ class ModelingStage(BaseStage):
                 frame,
                 ("context_fingerprint",),
                 default=None,
+                # Same reason as the sequence: the enricher emits
+                # context_fingerprint_1d / _60m, so the bare lookup never
+                # matched and every fingerprint fell through to the SHA-256
+                # branch below -- which cannot be vectorised, so the KNN
+                # similarity search had nothing to measure.
+                timeframe=str(timeframe),
             )
         )
         if existing:
