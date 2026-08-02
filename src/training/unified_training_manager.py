@@ -159,7 +159,25 @@ class UnifiedTrainingManager:
                     self.logger.info(f"Using all models from categories: {all_category_models}")
                     return all_category_models
 
-        # Only use contextual selection if no categories are configured
+        # Contextual selection. Reached only when models.yaml configures no
+        # categories -- it does configure them (categories.light, line 35), so
+        # in the shipped configuration this is unreachable and the categories
+        # above decide everything. Kept rather than deleted because the
+        # mechanism works: test_contextual_model_selector_can_use_fitted_knn_
+        # similarity_finder proves it picks the right model from a fitted
+        # finder. What is missing is the DATA, not the code -- select_models
+        # needs a 'current_context' Series and a pre-fitted
+        # KnnSimilarityFinder in `data`, and the training context dict built
+        # by ModelingStage carries neither, because building the finder needs
+        # realized per-model outcomes and every one of the 19,305 diary rows
+        # is still a training row. Same blocker as contextual weighting.
+        #
+        # The intersection below matters even so. select_models returns ONE
+        # model name chosen purely on historical performance, with no notion
+        # of light vs heavy -- so the day this does start firing it could hand
+        # back 'lstm' on the local path, where heavy models are Colab's job.
+        # Restricting it to the configured candidates keeps the hybrid split
+        # intact instead of quietly training a neural net on the laptop.
         try:
             select_models = getattr(self.context_selector, 'select_models',
                 None)
@@ -167,8 +185,23 @@ class UnifiedTrainingManager:
                 # Prefer contextual selection when caller provided the required inputs.
                 recommended = select_models(ticker, context_fingerprint, data=data)
                 if recommended:
-                    self.logger.info(f"Using contextual selection for {ticker}: {recommended}")
-                    return recommended
+                    permitted = self._permitted_model_names(models_config)
+                    allowed = (
+                        [m for m in recommended if m in permitted]
+                        if permitted else list(recommended)
+                    )
+                    if allowed:
+                        self.logger.info(f"Using contextual selection for {ticker}: {allowed}")
+                        return allowed
+                    # Falling through, NOT returning `recommended`: every name
+                    # it offered is outside what configuration permits, so
+                    # honouring it would defeat the restriction entirely.
+                    self.logger.warning(
+                        "Contextual selection for %s returned %s, none of "
+                        "which is a configured candidate; using the configured "
+                        "list instead.",
+                        ticker, recommended,
+                    )
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.warning(
                 f'Contextual model selection failed for {ticker}: {e}. Falling back to configured models.'
@@ -182,6 +215,23 @@ class UnifiedTrainingManager:
         available_models = self._get_available_model_names()
         self.logger.info(f"Using all available models: {available_models}")
         return available_models
+
+    @staticmethod
+    def _permitted_model_names(models_config: dict[str, Any]) ->set[str]:
+        """The model names configuration allows, or empty if it constrains none.
+
+        Only `enabled_types` is consulted, deliberately. Contextual selection
+        is reached solely when the category branches above found no usable
+        list, so `categories` has nothing to say by the time we get here --
+        and unioning light+heavy would be actively wrong, since it would
+        readmit exactly the heavy models the split above excluded.
+
+        Empty means "configuration expresses no opinion", and the caller must
+        not filter on it. That is a different thing from "allows nothing",
+        which would silently train zero models.
+        """
+        enabled = models_config.get('enabled_types')
+        return {str(name) for name in enabled} if enabled else set()
 
     def _get_available_model_names(self) ->list[str]:
         from src.factories.model_factory import ModelFactory

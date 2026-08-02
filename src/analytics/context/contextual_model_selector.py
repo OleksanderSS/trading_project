@@ -215,8 +215,17 @@ class ContextualModelSelector(IAnalyzer):
         """Provides a simple fallback model selection if the primary logic fails."""
         logger.error(f"CRITICAL: Falling back to heuristic model selection due to: {reason}")
 
-        # Simple heuristic: prefer 'LSTM' if available, otherwise take the first model
-        best_model = 'LSTM' if 'LSTM' in self.available_models else self.available_models[0]
+        # Prefer LSTM when it is on the table. Matched case-insensitively:
+        # every producer of this list spells model types in lower case
+        # (ModelFactory.get_available_models -> 'lstm', models.yaml
+        # categories -> 'lstm'), so the old `'LSTM' in self.available_models`
+        # could never be true and the "preference" silently degraded to
+        # available_models[0] -- which, for the light category, is catboost.
+        preferred = next(
+            (name for name in self.available_models if str(name).lower() == 'lstm'),
+            None,
+        )
+        best_model = preferred or self.available_models[0]
 
         return {
             "selected_model": best_model,
