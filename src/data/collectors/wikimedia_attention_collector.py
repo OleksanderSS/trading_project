@@ -108,6 +108,24 @@ class WikimediaAttentionCollector(BaseCollector):
         df = pd.DataFrame(all_views)
         df["record_hash"] = df.apply(self._generate_hash, axis=1)
 
+        # Deduplicate WITHIN the batch before comparing against the database.
+        # filter_new_records only asks "is this hash already stored", so two
+        # identical rows in one fetch -- which happens when two tickers map to
+        # the same Wikipedia article -- both pass, and the second insert
+        # violates the unique constraint:
+        #   Constraint Error: Duplicate key "record_hash: 7d6719894d..."
+        # The database stayed consistent (9,135 rows, 9,135 distinct hashes),
+        # but the exception was raised, reported through the notifier, and
+        # showed up as a failure at the end of an otherwise successful run.
+        duplicates = int(df.duplicated(subset=["record_hash"]).sum())
+        if duplicates:
+            self.logger.info(
+                "Wikimedia batch carried %d row(s) duplicated within itself "
+                "(the same article requested more than once); keeping one of "
+                "each.", duplicates,
+            )
+            df = df.drop_duplicates(subset=["record_hash"], keep="first")
+
         new_df = self.db_manager.filter_new_records(self.table_name, df, unique_cols=["record_hash"])
         if new_df.empty:
             self.logger.info("No new Wikimedia data found.")
