@@ -39,6 +39,19 @@ class KnnModelWrapper:
             logger.exception("No numeric, non-null data available for fitting after cleaning.")
             raise ValueError("Cleaned DataFrame has no data to fit.")
 
+        dropped = len(features_df) - len(numeric_df)
+        if dropped:
+            # kneighbors returns POSITIONS into this cleaned array, and a
+            # caller that maps them back through the ORIGINAL index gets a
+            # different row for every neighbour after the first gap --
+            # silently, with plausible-looking ids. Use neighbor_labels()
+            # instead of indexing the input frame.
+            logger.warning(
+                "KnnModelWrapper dropped %d of %d rows while cleaning; "
+                "neighbour positions no longer line up with the input "
+                "frame's index. Map them with neighbor_labels().",
+                dropped, len(features_df),
+            )
         self.fitted_data_index = numeric_df.index
         scaled_features = self.scaler.fit_transform(numeric_df)
         self.model.fit(scaled_features)
@@ -71,3 +84,21 @@ class KnnModelWrapper:
 
         distances, indices = self.model.kneighbors(scaled_target)
         return distances, indices
+
+    def neighbor_labels(self, indices) -> list[list]:
+        """Translate neighbour POSITIONS into the fitted frame's index labels.
+
+        fit() drops non-numeric and null rows, so the positions kneighbors
+        returns address the cleaned array, not the frame the caller passed
+        in. fitted_data_index was already being stored for this and nothing
+        used it; indexing the original frame instead works only as long as
+        nothing was dropped, which is a property of the caller's data rather
+        than of this class.
+        """
+        if not self.is_fitted or self.fitted_data_index is None:
+            raise RuntimeError("Model is not fitted. Call .fit() first.")
+
+        return [
+            [self.fitted_data_index[int(position)] for position in row]
+            for row in indices
+        ]
