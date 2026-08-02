@@ -136,7 +136,30 @@ class EliteRiskMetrics:
         z_cf = z + (z ** 2 - 1) * skewness / 6 + (z ** 3 - 3 * z
             ) * kurtosis / 24 - (2 * z ** 3 - 5 * z) * skewness ** 2 / 36
         var_cf = -(mean + z_cf * std)
-        cvar_cf = var_cf * (1 + abs(kurtosis) / 4)
+
+        # Expected Shortfall: the average loss GIVEN that the VaR threshold
+        # was breached. This used to be
+        #
+        #     cvar_cf = var_cf * (1 + abs(kurtosis) / 4)
+        #
+        # which is not a conditional expectation at all but an ad-hoc
+        # inflation, and abs() made it inflate for THIN tails too: a
+        # platykurtic asset (negative excess kurtosis) should have its CVaR
+        # close to its VaR, not further from it. The returns needed for the
+        # real thing are already in hand.
+        # Averaged over the worst (1 - confidence) FRACTION of observations
+        # rather than over whatever happens to breach the CF threshold. For
+        # thin-tailed data the Cornish-Fisher quantile can sit beyond the
+        # worst observed loss, leaving nothing to average -- and a fallback
+        # of "CVaR = VaR" would then understate the tail precisely where the
+        # estimate is least anchored.
+        tail_size = max(1, int(np.ceil((1 - confidence_level) * len(recent_returns))))
+        worst = np.sort(np.asarray(recent_returns, dtype=float))[:tail_size]
+        cvar_cf = float(-worst.mean())
+
+        # ES >= VaR by definition; keep that true even when the tail sample
+        # is odd.
+        cvar_cf = max(cvar_cf, var_cf)
         return max(0.001, var_cf), max(0.001, cvar_cf)
 
     def compute_garch_var(self, ticker: str, confidence_level: float=0.95
