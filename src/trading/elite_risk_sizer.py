@@ -34,6 +34,9 @@ class EliteRiskSizer:
         self.historical_returns = {}
         self.portfolio_correlation_matrix = None
 
+    # Reported once per process, not once per sized position.
+    _reported_missing_returns: bool = False
+
     def update_returns_data(self, ticker: str, returns: pd.Series):
         """Update historical returns data"""
         self.historical_returns[ticker] = returns
@@ -42,7 +45,7 @@ class EliteRiskSizer:
         float, win_rate: float, avg_win_loss_ratio: float,
         current_positions: dict[str, dict], total_equity: float,
         position_value_limit: float, portfolio_volatility: float,
-        cash_available: float) ->int:
+        cash_available: float, ticker_volatility: float | None=None) ->int:
         """
         Calculate optimal position size
 
@@ -80,7 +83,15 @@ class EliteRiskSizer:
         self.logger.info(
             f'  correlation_factor={correlation_factor:.2f} (adjusted: ${capital_at_risk:.2f})'
             )
-        ticker_volatility = self._estimate_ticker_volatility(ticker)
+        # A supplied figure wins over the internal estimate, because the
+        # estimate has nothing to work with: update_returns_data has zero
+        # callers, so self.historical_returns is always empty and
+        # _estimate_ticker_volatility always returns its 0.2 fallback. With
+        # portfolio_volatility at the caller's hardcoded 0.15 that made
+        # vol_factor a constant 0.75 for every ticker -- NVDA sized exactly
+        # like KO.
+        if ticker_volatility is None:
+            ticker_volatility = self._estimate_ticker_volatility(ticker)
         vol_factor = portfolio_volatility / max(ticker_volatility, 0.01)
         vol_factor = np.clip(vol_factor, 0.5, 1.5)
         capital_at_risk *= vol_factor
@@ -154,11 +165,27 @@ class EliteRiskSizer:
         Estimate annualized volatility for ticker
         """
         if ticker not in self.historical_returns:
+            if not self._reported_missing_returns:
+                type(self)._reported_missing_returns = True
+                self.logger.warning(
+                    "No return history for %s (or any ticker): "
+                    "update_returns_data has no callers, so every volatility "
+                    "estimate falls back to 20%% and position sizing cannot "
+                    "tell one instrument from another. Pass ticker_volatility "
+                    "explicitly, or feed this sizer returns.",
+                    ticker,
+                )
             return 0.2
         try:
             returns = self.historical_returns[ticker]
             if len(returns) < 10:
                 return 0.2
+            # sqrt(252) assumes these are DAILY returns. Nothing enforces
+            # that -- the project stores 15m, 60m and 1d bars -- and a
+            # 15-minute series annualised this way understates volatility by
+            # about sqrt(26), which sizes positions LARGER than intended.
+            # Prefer passing ticker_volatility in, where the caller knows the
+            # cadence.
             daily_vol = returns.std()
             annual_vol = daily_vol * np.sqrt(252)
             return float(annual_vol)
@@ -354,6 +381,9 @@ class EliteRiskSizer:
             position_value_limit=0.15,
             portfolio_volatility=portfolio_volatility,
             cash_available=total_capital,
+            # Was accepted as a parameter and then discarded, so the caller's
+            # per-ticker figure never reached the sizing arithmetic.
+            ticker_volatility=ticker_volatility,
         )
         position_fraction = (shares * entry_price / total_capital
                              if total_capital > 0 else 0)
