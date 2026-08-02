@@ -4,9 +4,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from src.features.utils.technical_indicators_lib import TechnicalIndicators
 from src.metrics.financial.financial_metrics_library import FinancialMetricsLibrary
-
-from .volatility_calculator import VolatilityCalculator
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +53,15 @@ class RiskRewardCalculator:
     @staticmethod
     def _calculate_trade_with_config(trade_params: TradeParameters, config: TradeConfig) -> dict[str, float]:
         """Calculate trade parameters with given configuration."""
-        atr = VolatilityCalculator.calculate_atr(trade_params.df, window=14).iloc[-1]
+        # VolatilityCalculator has no calculate_atr -- this raised
+        # AttributeError on every call, so the stop-loss/take-profit
+        # machinery could not be used at all. The real implementation is in
+        # TechnicalIndicators, with a per-series signature.
+        frame = trade_params.df
+        atr_series = TechnicalIndicators.calculate_atr(
+            frame['high'], frame['low'], frame['close'], period=14
+        )
+        atr = atr_series.iloc[-1] if len(atr_series) else float('nan')
 
         if pd.isna(atr) or atr <= 0:
             atr = trade_params.entry_price * 0.01 # Fallback to 1% of price

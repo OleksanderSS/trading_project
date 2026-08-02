@@ -55,9 +55,16 @@ class TechnicalIndicators:
     @staticmethod
     def calculate_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
         """Calculation of Average True Range (ATR)"""
+        # True Range compares THIS bar's extremes against the PREVIOUS
+        # close: max(H-L, |H - C_prev|, |L - C_prev|). The shift was on the
+        # wrong series -- `high.shift(1) - close` is the previous high
+        # against the current close, which is not a range anyone defines.
+        # On a worked example the two disagree on 3 of 4 bars, in both
+        # directions.
+        previous_close = close.shift(1)
         high_low = high - low
-        high_close = np.abs(high.shift(1) - close)
-        low_close = np.abs(low.shift(1) - close)
+        high_close = np.abs(high - previous_close)
+        low_close = np.abs(low - previous_close)
         true_range = np.maximum(high_low, np.maximum(high_close, low_close))
         atr = true_range.rolling(period, min_periods=period).mean()
         return atr
