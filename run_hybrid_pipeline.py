@@ -58,7 +58,28 @@ async def _save_runtime_params(args, batch_name: str) -> None:
     - Якщо НЕ має test параметрів → НЕ створюється runtime_params.json → повноцінний режим
     """
     # Перевіряємо, чи це тестовий режим
-    has_test_params = args.test_ticker or args.test_target or args.test_model or getattr(args, 'epochs', None) or getattr(args, 'max_iterations', None)
+    #
+    # --max-iterations has a DEFAULT of 100, so `or args.max_iterations` was
+    # always truthy and has_test_params was always True. The entire
+    # "full mode" branch below -- the one that deletes a stale
+    # runtime_params.json so a real run is not silently trained with
+    # leftover test epochs -- was unreachable, and every run wrote the file.
+    # Colab's ConfigLoader only checks that the file EXISTS, so a full run
+    # was being treated as a test run: exactly the failure the branch was
+    # written to prevent.
+    #
+    # It counts as explicitly set only when it differs from the default,
+    # which is the same test main() already applies at `args.max_iterations != 100`.
+    # None means "not supplied at all", which is not an override either.
+    max_iterations = getattr(args, 'max_iterations', None)
+    iterations_overridden = max_iterations is not None and max_iterations != 100
+    has_test_params = bool(
+        args.test_ticker
+        or args.test_target
+        or args.test_model
+        or getattr(args, 'epochs', None) is not None
+        or iterations_overridden
+    )
 
     if not has_test_params:
         # A runtime_params.json left over from an earlier --epochs/--test-*
