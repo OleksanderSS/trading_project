@@ -2,6 +2,7 @@ import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
 from src.features.validation.feature_leakage_guard import get_leakage_guard
+from src.pipeline.target_column_utils import split_model_features_and_targets
 from src.pipeline.guards.macro_release_timing_guard import get_macro_release_timing_guard
 from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
 from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
@@ -93,7 +94,47 @@ class FeatureGuards:
         ticker = str(guarded['ticker'].iloc[0]) if (
             'ticker' in guarded.columns and not guarded.empty
         ) else 'all'
-        self.leakage_guard.check(guarded, ticker=ticker)
+
+        # Check the columns that will ACTUALLY become features, not every
+        # column in the frame. At this point the frame still holds
+        # target-derived columns such as state_TARGET_RETURN_1P, which
+        # split_model_features_and_targets drops before training -- verified
+        # on the 2026-08-02 prepare run: the guard flagged that column 14
+        # times (AAPL 5, AMD 9) while the exported features.parquet contains
+        # ZERO target-derived columns out of 1,189.
+        #
+        # Left as it was, this would have been worse than noise: Stage 3
+        # builds FeatureGuards with mode defaulting to 'full', so
+        # block_on_forbidden is True for every mode except 'prepare', and the
+        # next --mode continue run would have raised ValueError and killed
+        # the stage over a column the pipeline itself removes. A
+        # target-derived column that survives THIS split is a real defect;
+        # one that does not is the pipeline working.
+        feature_columns, target_columns, dropped = split_model_features_and_targets(
+            guarded.columns
+        )
+        if dropped:
+            # The forbidden-column half of the guard becomes tautological once
+            # it is handed the split's output -- both use
+            # is_target_like_column, so nothing forbidden can survive. The
+            # information is not thrown away: what the split had to remove is
+            # worth knowing, because it means an enricher produced a
+            # target-derived column. It is reported rather than raised,
+            # because removing it is the pipeline behaving correctly. The
+            # correlation half, which does not depend on naming at all,
+            # remains the real detector.
+            self.logger.warning(
+                "Dropped %d target-derived column(s) before feature checks: "
+                "%s. These are excluded from training, but an enricher is "
+                "producing them.",
+                len(dropped), [str(column) for column in dropped][:5],
+            )
+        self.leakage_guard.check(
+            guarded,
+            feature_cols=[str(column) for column in feature_columns],
+            target_cols=[str(column) for column in target_columns],
+            ticker=ticker,
+        )
 
         return guarded
 
