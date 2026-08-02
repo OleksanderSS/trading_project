@@ -186,6 +186,17 @@ class MacroFeaturesEnricher(BaseEnricher):
             logger.warning('No date column found in macro_data for pivoting')
             return macro_data
         macro_data[date_col] = pd.to_datetime(macro_data[date_col])
+
+        # aggfunc='last' collapses the duplicates FRED sends -- 8,048
+        # (series, date) pairs in the stored table carry up to 10 rows each
+        # -- but "last" means last in row order, which is arbitrary unless
+        # the vintages are sorted. 60 of those pairs hold genuinely
+        # DIFFERENT values (real revisions), and for those the arbitrary
+        # pick can be a superseded number. Sorting by realtime_start first
+        # makes 'last' mean 'most recently published'.
+        if 'realtime_start' in macro_data.columns:
+            macro_data = macro_data.sort_values('realtime_start')
+
         macro_pivoted = macro_data.pivot_table(index=date_col, columns=
             'series_id', values='value', aggfunc='last')
         macro_pivoted.columns = [f'FRED_{col}' for col in macro_pivoted.columns
