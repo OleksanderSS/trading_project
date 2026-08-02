@@ -238,17 +238,30 @@ class FamaFrenchFactors:
             if f_series.empty:
                 continue
             factor_std = f_series.std()
-            annualized_sharpe = (
-                float((f_series.mean() / factor_std) * np.sqrt(252))
-                if np.isfinite(factor_std) and factor_std > 1e-12
-                else np.nan
+
+            # A SIXTH inline Sharpe -- (mean/std) * sqrt(252) -- assuming
+            # daily factors. The factor frame inherits the returns index, so
+            # the cadence can be read rather than assumed; this project
+            # builds series from 15m, 60m and 1d bars. Delegated to the
+            # canonical implementation, with the same inference used for the
+            # return and volatility figures beside it so all three describe
+            # the same year.
+            from src.metrics.financial.financial_metrics_library import (
+                FinancialMetricsLibrary,
+                infer_periods_per_year,
+            )
+
+            periods = infer_periods_per_year(f_series)
+            annualized_sharpe = FinancialMetricsLibrary.calculate_sharpe_ratio(
+                f_series, trading_days_per_year=None, on_error=np.nan
             )
 
             performance_stats[factor_name] = {
                 'mean_return': float(f_series.mean()),
                 'volatility': float(factor_std),
-                'annualized_sharpe': annualized_sharpe,
-                'annualized_return': float(f_series.mean() * 252),
-                'annualized_vol': float(factor_std * np.sqrt(252))
+                'annualized_sharpe': float(annualized_sharpe),
+                'annualized_return': float(f_series.mean() * periods),
+                'annualized_vol': float(factor_std * np.sqrt(periods)),
+                'periods_per_year': int(periods),
             }
         return performance_stats
