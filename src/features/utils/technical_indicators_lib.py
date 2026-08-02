@@ -53,8 +53,34 @@ class TechnicalIndicators:
         return upper_band, rolling_mean, lower_band
 
     @staticmethod
-    def calculate_atr(high: pd.Series, low: pd.Series, close: pd.Series, period: int = 14) -> pd.Series:
-        """Calculation of Average True Range (ATR)"""
+    def calculate_atr(
+        high: pd.Series,
+        low: pd.Series,
+        close: pd.Series,
+        period: int = 14,
+        smoothing: str = 'wilder',
+    ) -> pd.Series:
+        """Average True Range, Wilder-smoothed by default.
+
+        `smoothing='wilder'` is the definition every charting platform and
+        reference means by "ATR": seed with the mean of the first `period`
+        true ranges, then ATR_t = ((n-1)*ATR_{t-1} + TR_t) / n. It was a
+        plain rolling mean here, which is a legitimate volatility measure but
+        a DIFFERENT indicator wearing a standard name -- so any comparison
+        against an external chart, or a threshold taken from the literature,
+        was quietly measuring something else.
+
+        The practical difference: Wilder's has a much longer memory (an
+        effective span of ~2n-1), so it reacts to a volatility spike more
+        slowly and decays from it more slowly. A rolling mean drops a spike
+        abruptly the moment it leaves the window.
+
+        `smoothing='sma'` keeps the old behaviour for anything that wants it.
+
+        NOTE: this changes the value of ATR_14 and everything derived from
+        it. Features must be regenerated (`--mode prepare`) before the
+        change reaches a model.
+        """
         # True Range compares THIS bar's extremes against the PREVIOUS
         # close: max(H-L, |H - C_prev|, |L - C_prev|). The shift was on the
         # wrong series -- `high.shift(1) - close` is the previous high
@@ -66,8 +92,36 @@ class TechnicalIndicators:
         high_close = np.abs(high - previous_close)
         low_close = np.abs(low - previous_close)
         true_range = np.maximum(high_low, np.maximum(high_close, low_close))
-        atr = true_range.rolling(period, min_periods=period).mean()
-        return atr
+
+        if smoothing == 'sma':
+            return true_range.rolling(period, min_periods=period).mean()
+        if smoothing != 'wilder':
+            raise ValueError(
+                f"Unknown ATR smoothing {smoothing!r}; expected 'wilder' or 'sma'."
+            )
+
+        # Seeded exactly as Wilder specified rather than left to ewm's own
+        # warm-up: an unseeded ewm starts from the first true range alone,
+        # which makes the first several dozen values depend heavily on one
+        # bar. Seeding with the SMA of the first `period` ranges is what
+        # every reference implementation does, and the two only converge
+        # after a few hundred bars.
+        seeded = true_range.rolling(period, min_periods=period).mean()
+        atr = seeded.copy()
+        values = true_range.to_numpy(dtype=float)
+        output = atr.to_numpy(dtype=float).copy()
+        first = int(np.argmax(~np.isnan(output))) if (~np.isnan(output)).any() else -1
+        if first < 0:
+            return atr
+        alpha = 1.0 / float(period)
+        for position in range(first + 1, len(output)):
+            previous = output[position - 1]
+            current = values[position]
+            if np.isnan(previous) or np.isnan(current):
+                output[position] = previous
+                continue
+            output[position] = previous + alpha * (current - previous)
+        return pd.Series(output, index=true_range.index, name=atr.name)
 
     @staticmethod
     def calculate_stochastic(high: pd.Series, low: pd.Series, close: pd.Series, k_period: int = 14, d_period: int = 3) -> tuple[pd.Series, pd.Series]:
