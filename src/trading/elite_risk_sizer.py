@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.metrics.financial.financial_metrics_library import infer_periods_per_year
 
 if TYPE_CHECKING:
     from src.meta_learning.memory.diary_engine import DiaryEngine
@@ -180,14 +181,29 @@ class EliteRiskSizer:
             returns = self.historical_returns[ticker]
             if len(returns) < 10:
                 return 0.2
-            # sqrt(252) assumes these are DAILY returns. Nothing enforces
-            # that -- the project stores 15m, 60m and 1d bars -- and a
-            # 15-minute series annualised this way understates volatility by
-            # about sqrt(26), which sizes positions LARGER than intended.
-            # Prefer passing ticker_volatility in, where the caller knows the
-            # cadence.
-            daily_vol = returns.std()
-            annual_vol = daily_vol * np.sqrt(252)
+            # Cadence-aware. This used to be a flat sqrt(252), which assumes
+            # DAILY bars -- and this project stores 15m, 60m and 1d side by
+            # side. A 15-minute series annualised as daily understates
+            # volatility by about sqrt(26), and since vol_factor is
+            # portfolio_vol / ticker_vol, understating the denominator sizes
+            # the position LARGER. The error runs in the dangerous direction.
+            #
+            # infer_periods_per_year reads the cadence off the series' own
+            # DatetimeIndex and is the project's single implementation of this
+            # (see the note in financial_metrics_library about a fixed 252).
+            # Writing a fourth copy here is the mistake this codebase has
+            # already paid for repeatedly.
+            periods = infer_periods_per_year(returns)
+            if periods == 252 and not isinstance(returns.index, pd.DatetimeIndex):
+                # The fallback, not a measurement. Say so, because a
+                # position sized on an assumed cadence should not look
+                # identical in the log to one sized on a known cadence.
+                self.logger.warning(
+                    "Returns for %s carry no DatetimeIndex; annualising as "
+                    "daily. If these are intraday bars, this understates "
+                    "volatility and oversizes the position.", ticker,
+                )
+            annual_vol = float(returns.std()) * np.sqrt(periods)
             return float(annual_vol)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f'Виникла помилка: {e}', exc_info=True)

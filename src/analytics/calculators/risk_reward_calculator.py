@@ -9,6 +9,12 @@ from src.metrics.financial.financial_metrics_library import FinancialMetricsLibr
 
 logger = logging.getLogger(__name__)
 
+#: Floor for an ATR-derived stop or target, as a fraction of entry price.
+#: 1% of entry, so a stop can imply risking at most ~99% of the position --
+#: still extreme, but a price rather than an impossibility.
+MINIMUM_PRICE_FRACTION = 0.01
+
+
 @dataclass
 class TradeConfig:
     """Configuration for trade parameter calculations."""
@@ -67,23 +73,62 @@ class RiskRewardCalculator:
             atr = trade_params.entry_price * 0.01 # Fallback to 1% of price
 
         risk = atr * config.atr_multiplier
+        entry = trade_params.entry_price
 
         if trade_params.signal_type == 'BUY':
-            sl = trade_params.entry_price - risk
-            tp = trade_params.entry_price + (risk * config.tp_multiplier)
+            sl = entry - risk
+            tp = entry + (risk * config.tp_multiplier)
         elif trade_params.signal_type == 'SELL':
-            sl = trade_params.entry_price + risk
-            tp = trade_params.entry_price - (risk * config.tp_multiplier)
+            sl = entry + risk
+            tp = entry - (risk * config.tp_multiplier)
         else:
             return {'stop_loss': 0.0, 'take_profit': 0.0, 'risk_reward_ratio': 0.0}
 
-        rr_ratio = abs(tp - trade_params.entry_price) / abs(trade_params.entry_price - sl) if abs(trade_params.entry_price - sl) != 0 else 0.0
+        # Nothing kept these above zero. A BUY whose ATR is large relative to
+        # price -- a low-priced or violently moving instrument -- produced a
+        # NEGATIVE stop loss, and a SELL produced a negative take profit.
+        # Neither is a price. Worse, the negative number is not obviously
+        # wrong downstream: it flows into risk sizing as a stop "distance"
+        # wider than the entire position is worth.
+        #
+        # Floored at a small positive fraction of entry rather than at zero:
+        # a stop AT zero implies risking 100% of the position, which is not
+        # meaningfully better than a negative one.
+        floor = entry * MINIMUM_PRICE_FRACTION
+        clamped = False
+        if sl <= floor:
+            sl, clamped = floor, True
+        if tp <= floor:
+            tp, clamped = floor, True
+
+        if clamped:
+            logger.warning(
+                "ATR-derived level fell to or below zero for a %s at %.4f "
+                "(ATR %.4f x %.1f = %.4f risk); clamped to %.4f. The "
+                "volatility estimate is large relative to the price, so the "
+                "reward:risk below is the CLAMPED ratio, not %.1f.",
+                trade_params.signal_type, entry, atr, config.atr_multiplier,
+                risk, floor, config.tp_multiplier,
+            )
+
+        # Derived from the final levels, not from the multipliers. Before the
+        # clamp above this was tautological -- reward is risk*tp_multiplier
+        # and risk is risk, so the ratio was exactly tp_multiplier (3.0) for
+        # every trade ever evaluated, and anything filtering on it was
+        # filtering on a constant. It now differs from tp_multiplier exactly
+        # when a level had to be clamped, which is the case worth seeing.
+        reward_distance = abs(tp - entry)
+        risk_distance = abs(entry - sl)
+        rr_ratio = reward_distance / risk_distance if risk_distance != 0 else 0.0
 
         return {
             'stop_loss': float(sl),
             'take_profit': float(tp),
             'risk_reward_ratio': float(rr_ratio),
-            'risk_amount': float(risk)
+            'risk_amount': float(risk_distance),
+            # The caller cannot otherwise tell a 3.0 that was designed from a
+            # 3.0 that survived a clamp.
+            'levels_clamped': clamped,
         }
 
     @staticmethod
