@@ -3,11 +3,7 @@ import pandas as pd
 from src.core.logging.logger import ProjectLogger
 from src.features.validation.feature_leakage_guard import get_leakage_guard
 from src.pipeline.target_column_utils import split_model_features_and_targets
-from src.pipeline.guards.macro_release_timing_guard import get_macro_release_timing_guard
-from src.pipeline.guards.safe_feature_combiner import get_safe_feature_combiner
 from src.pipeline.guards.temporal_leakage_guard import get_temporal_leakage_guard
-from src.pipeline.guards.temporal_target_guard import get_temporal_target_guard
-from src.pipeline.guards.timeframe_alignment_guard import get_timeframe_alignment_guard
 from src.pipeline.timeframe_lineage import normalize_timeframe
 
 logger = ProjectLogger.get_logger('FeatureGuards')
@@ -36,12 +32,33 @@ class FeatureGuards:
         # the Colab branch rather than inventing a second convention -- and
         # the blocking condition is unambiguous (a target column sitting among
         # the features), while the fuzzy half, correlation, only ever warns.
+        # Four more guards used to be constructed here and never called:
+        # TimeframeAlignmentGuard, SafeFeatureCombiner, TemporalTargetGuard
+        # and MacroReleaseTimingGuard -- 1,543 lines whose methods had zero
+        # call sites anywhere in src/. Moved to src/archive/guards_superseded/
+        # on 2026-08-02 because each had been overtaken by machinery built
+        # later, and in two cases the dormant version was the more dangerous
+        # of the two:
+        #
+        # - SafeFeatureCombiner + TimeframeAlignmentGuard -> superseded by
+        #   BackwardTimeframeContextAssembler, which is wired, produces the
+        #   ctx_1d_* columns in the real export, and additionally tracks
+        #   ctx_<tf>_available_at / _source_datetime per joined column and
+        #   excludes target-like columns. The archived pair only prefixed and
+        #   validated.
+        # - TemporalTargetGuard -> superseded by src/targets/. It generated
+        #   targets under the SAME NAMES the live builder uses
+        #   (target_return_1d, target_return_5d) via a raw shift(-n) in BARS,
+        #   with no timeframe contract and no boundary masking -- so on 60m
+        #   data its "target_return_1d" was a one-HOUR return. The name
+        #   collision is what made it dangerous rather than merely unused.
+        # - MacroReleaseTimingGuard -> its hardcoded release schedule (GDP
+        #   08:30 ET quarter-end, CPI 08:30 monthly, ...) is superseded by
+        #   reading the real publication timestamp at collection. It did
+        #   point at a genuine gap, which is now closed properly in
+        #   CollectionStage._defer_date_only_availability.
         self.leakage_guard = get_leakage_guard(block_on_forbidden=self.strict_mode)
-        self.timeframe_guard = get_timeframe_alignment_guard(strict_mode=self.strict_mode)
-        self.safe_combiner = get_safe_feature_combiner(self.timeframe_guard)
-        self.temporal_target_guard = get_temporal_target_guard()
         self.temporal_leakage_guard = get_temporal_leakage_guard()
-        self.macro_guard = get_macro_release_timing_guard()
         self.logger.info(f'✅ Temporal safety guards initialized (mode: {self.mode}, strict: {self.strict_mode})')
 
     def apply_guards(self, df: pd.DataFrame) -> pd.DataFrame:

@@ -57,7 +57,13 @@ def _fred(rows=3):
 
 def _calendar(rows=3):
     return pd.DataFrame({
-        "timestamp": pd.date_range("2026-08-03", periods=rows, freq="D", tz="UTC"),
+        # 08:30 rather than midnight. The live table stores a real time of
+        # day ('2026-08-03 03:30:00+03:00'), and a midnight fixture now means
+        # something specific -- see _defer_date_only_availability, which reads
+        # exact midnight as "the source gave a date, not a moment".
+        "timestamp": pd.date_range(
+            "2026-08-03 08:30:00", periods=rows, freq="D", tz="UTC"
+        ),
         "country": ["JPY"] * rows,
         "event": ["Final Manufacturing PMI"] * rows,
         "actual": [""] * rows,
@@ -75,7 +81,9 @@ def test_the_calendar_gets_its_event_time(stage):
     result = stage._ensure_macro_availability(_calendar(), "economic_calendar")
 
     assert result["available_at"].notna().all()
-    assert result["available_at"].iloc[0] == pd.Timestamp("2026-08-03", tz="UTC")
+    assert result["available_at"].iloc[0] == pd.Timestamp(
+        "2026-08-03 08:30:00", tz="UTC"
+    )
 
 
 def test_the_concatenated_frame_has_no_gaps(stage):
@@ -151,11 +159,32 @@ def test_an_empty_frame_is_returned_untouched(stage):
 
 def test_a_frame_that_already_uses_available_at_is_left_alone(stage):
     frame = _calendar()
+    frame["available_at"] = pd.Timestamp("2026-01-01 12:00:00", tz="UTC")
+
+    result = stage._ensure_macro_availability(frame, "economic_calendar")
+
+    assert (
+        result["available_at"] == pd.Timestamp("2026-01-01 12:00:00", tz="UTC")
+    ).all()
+
+
+def test_a_midnight_availability_is_deferred_to_the_end_of_its_date(stage):
+    """A stamp of exactly 00:00:00 means the source supplied a DATE.
+
+    fred_data.realtime_start is date-only, so taken literally it claimed a
+    figure published at 08:30 ET was knowable at midnight -- invisible on
+    daily bars, a several-hour look-ahead on the 60m and 15m series this
+    project also trains. Deferral happens here, after the column is
+    normalised, so it covers every macro source at once.
+    """
+    frame = _calendar()
     frame["available_at"] = pd.Timestamp("2026-01-01", tz="UTC")
 
     result = stage._ensure_macro_availability(frame, "economic_calendar")
 
-    assert (result["available_at"] == pd.Timestamp("2026-01-01", tz="UTC")).all()
+    assert (
+        result["available_at"] == pd.Timestamp("2026-01-01 23:59:59", tz="UTC")
+    ).all()
 
 
 def test_the_live_fred_table_is_not_the_source_of_the_nulls():

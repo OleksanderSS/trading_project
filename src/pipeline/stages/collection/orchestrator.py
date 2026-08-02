@@ -374,7 +374,7 @@ class CollectionStage(BaseStage):
                 df['available_at'] = pd.to_datetime(
                     df[existing], errors='coerce', utc=True
                 )
-            return df
+            return self._defer_date_only_availability(df, table_name)
 
         source_column = self._MACRO_SELF_TIMED_TABLES.get(table_name)
         if source_column is None or source_column not in df.columns:
@@ -395,6 +395,59 @@ class CollectionStage(BaseStage):
             "Macro table '%s': derived available_at from '%s' (its event "
             "time is its publication time).",
             table_name, source_column,
+        )
+        return self._defer_date_only_availability(df, table_name)
+
+    def _defer_date_only_availability(
+        self, df: pd.DataFrame, table_name: str
+    ) -> pd.DataFrame:
+        """Push a date-only availability to the END of that date.
+
+        `fred_data.realtime_start` is a DATE with no time -- '2026-06-04',
+        which parses to midnight UTC. Taken literally that says a figure
+        published at 08:30 ET was knowable at 00:00 the same day, so an
+        intraday model gets it roughly eight hours early. On daily bars this
+        is invisible; on the 60m and 15m series this project also trains,
+        it is a straightforward look-ahead.
+
+        Deferring to 23:59:59 of the stated date is deliberately the
+        CONSERVATIVE repair rather than the precise one. The precise version
+        is a table of official release times per indicator -- which is what
+        MacroReleaseTimingGuard holds, unwired, in 501 lines: GDP 08:30 ET
+        quarter-end, CPI 08:30 monthly, and so on. That approach needs every
+        FRED series mapped to an indicator, drifts as schedules change, and
+        fails silently toward being too EARLY, which is the direction that
+        creates a leak. This one can only ever be late, and it is late by at
+        most one day on series that move monthly or quarterly.
+
+        Rows that already carry a real time of day are left alone -- the
+        economic calendar publishes '2026-08-03 03:30:00+03:00' and that is
+        better information than anything inferred here.
+        """
+        if 'available_at' not in df.columns:
+            return df
+
+        available = pd.to_datetime(df['available_at'], errors='coerce', utc=True)
+        # Exactly midnight means the source gave a date, not a moment. A
+        # genuine 00:00:00 publication is possible in principle and would be
+        # deferred by a day; that costs freshness and cannot cause a leak.
+        midnight = available.notna() & (
+            (available.dt.hour == 0)
+            & (available.dt.minute == 0)
+            & (available.dt.second == 0)
+        )
+        if not bool(midnight.any()):
+            return df
+
+        df = df.copy()
+        df.loc[midnight, 'available_at'] = (
+            available[midnight] + pd.Timedelta(hours=23, minutes=59, seconds=59)
+        )
+        self.logger.info(
+            "Macro table '%s': %d row(s) carried a date-only availability; "
+            "deferred to end of day so an intraday model cannot read them "
+            "before publication.",
+            table_name, int(midnight.sum()),
         )
         return df
 
