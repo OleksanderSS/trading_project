@@ -64,15 +64,24 @@ class DynamicRouter:
             day_mult = day_mods.get(day_str, 1.0)
             trend_mult = trend_mods.get(trend_str, 1.0)
             
+            matched_targets = 0
             for mname in weight_multipliers.keys():
-                # Extract target from model name
+                # Extract target from model name. This used to drop the last
+                # underscore-separated part ('_'.join(parts[:-1])), which
+                # strips the horizon: 'x_target_atr_14_f5' became 'atr_14'.
+                # Every key in routing_rules.json carries the full suffix
+                # ('atr_14_f5', 'bb_upper_f1', 'daily_momentum_score_1d'), so
+                # the intersection between what this produced and what the
+                # rules contain was EMPTY -- all 36 target modifiers were
+                # dead while hour/day/trend still applied.
                 target_type = 'unknown'
                 if '_target_' in mname:
-                    parts = mname.split('_target_')[1].split('_')
-                    target_type = '_'.join(parts[:-1])
-                
+                    target_type = mname.split('_target_', 1)[1]
+
                 # Apply model-specific target modifier
                 target_mult = target_mods.get(target_type, 1.0)
+                if target_type in target_mods:
+                    matched_targets += 1
                 
                 # We could also use probabilities if available in context_features
                 # For now, we apply global time/trend and specific target modifiers
@@ -81,6 +90,17 @@ class DynamicRouter:
                 weight_multipliers[mname] *= final_mult
                     
             logger.info(f"Applied 'sharp_drop' routing rules. Base Mults: Hour={hour_mult}, Day={day_mult}")
+            if target_mods and not matched_targets:
+                # Say it rather than apply 1.0 quietly: the caller may be
+                # passing base-model column names ('lgbm', 'catboost') that
+                # carry no '_target_' marker at all, in which case the
+                # per-target half of the rules cannot bind no matter how the
+                # keys are parsed.
+                logger.warning(
+                    "No model name matched any of the %d target modifiers "
+                    "(names seen: %s). Only hour/day/trend modifiers applied.",
+                    len(target_mods), list(weight_multipliers)[:4],
+                )
             
             # Audit log for live verification
             try:
