@@ -77,6 +77,34 @@ def test_another_timeframe_beats_no_context_at_all():
     ) == "INTRADAY"
 
 
+def test_a_longer_feature_name_does_not_answer_for_the_shorter_one():
+    """MARKET_REGIME_ENCODED_1d holds detector confidence, not a regime.
+
+    A plain startswith("MARKET_REGIME_") match accepts it, and 0.72 would
+    be stringified and filed as the market regime for that model.
+    """
+    frame = _frame(MARKET_REGIME_ENCODED_1d=0.72)
+
+    assert ModelingStage._latest_context_value(
+        frame, ("MARKET_REGIME",), default="unknown", timeframe="60m"
+    ) == "unknown"
+
+
+def test_the_regime_column_is_read_under_the_name_its_producer_writes():
+    """technical_analysis_enricher writes MARKET_REGIME, upper case."""
+    frame = _frame(
+        MARKET_REGIME_1d="TRENDING_UP",
+        MARKET_REGIME_ENCODED_1d=0.72,
+    )
+
+    assert ModelingStage._latest_context_value(
+        frame,
+        ("MARKET_REGIME", "market_regime", "regime"),
+        default="unknown",
+        timeframe="1d",
+    ) == "TRENDING_UP"
+
+
 def test_a_frame_without_any_variant_returns_the_default():
     frame = _frame(close=100.0)
 
@@ -130,3 +158,25 @@ def test_the_real_export_now_yields_a_vectorisable_fingerprint():
     assert ContextualWeightCalculator.fingerprint_to_vec(fingerprint), (
         "the fingerprint carries no vector, which is what left KNN starved"
     )
+
+
+@pytest.mark.parametrize("timeframe", ["1d", "60m"])
+def test_the_real_export_yields_a_regime_label_not_a_number(timeframe):
+    """The artifacts recorded market_regime='unknown' with the answer in hand."""
+    from pathlib import Path
+
+    path = Path("data/colab/accumulated/main_database/features.parquet")
+    if not path.exists():
+        pytest.skip("no prepared batch on disk")
+
+    frame = pd.read_parquet(path)
+    regime = ModelingStage._latest_context_value(
+        frame,
+        ("MARKET_REGIME", "market_regime", "regime"),
+        default="unknown",
+        timeframe=timeframe,
+    )
+
+    assert regime != "unknown"
+    # A label, not the confidence float from MARKET_REGIME_ENCODED_*.
+    assert regime.replace("_", "").isalpha(), regime

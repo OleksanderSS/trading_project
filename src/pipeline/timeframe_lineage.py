@@ -35,6 +35,20 @@ def normalize_timeframe(value: Any) -> str | None:
     return _TIMEFRAME_ALIASES.get(text, text)
 
 
+def is_timeframe_token(value: Any) -> bool:
+    """True when ``value`` spells one of the timeframes this project uses.
+
+    normalize_timeframe answers "what is this called canonically" and will
+    happily hand back any string it does not recognise. Callers that need to
+    decide whether a trailing name fragment IS a timeframe -- rather than
+    part of a longer feature name -- need this instead. Without it,
+    ``MARKET_REGIME_ENCODED_1d`` reads as ``MARKET_REGIME`` suffixed with
+    ``ENCODED_1d``, and a confidence float gets mistaken for a regime label.
+    """
+    normalized = normalize_timeframe(value)
+    return bool(normalized) and normalized in _TIMEFRAME_DURATIONS
+
+
 def timeframe_lineage_report(
     frame: pd.DataFrame,
     *,

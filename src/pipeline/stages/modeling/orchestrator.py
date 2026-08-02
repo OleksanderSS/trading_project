@@ -24,6 +24,7 @@ from src.pipeline.stages.prediction.lineage import (
     trusted_context_fingerprint,
 )
 from src.pipeline.target_column_utils import is_direct_target_column
+from src.pipeline.timeframe_lineage import is_timeframe_token
 from src.training.constants import (
     BATCH_TRAINER_DEFAULT_BATCH_SIZE,
     BATCH_TRAINER_DEFAULT_MAX_MEMORY_GB,
@@ -446,12 +447,19 @@ class ModelingStage(BaseStage):
             # first in column order and label a 60m model with the daily
             # regime.
             #
-            # market_regime/regime exist under no spelling in the exported
-            # features, so this stays "unknown" -- said plainly rather than
-            # papered over: no enricher currently produces it.
+            # MARKET_REGIME first, because that is the name the producer
+            # uses: technical_analysis_enricher._add_market_regime_features
+            # writes df_enriched['MARKET_REGIME']. The lookup asked for
+            # lower-case market_regime/regime, which exists under no
+            # spelling, so every artifact recorded "unknown" while
+            # MARKET_REGIME_1d sat right there in the same frame with 7,185
+            # real values (TRENDING_UP, TRENDING_DOWN, MOMENTUM, NORMAL,
+            # RANGING, MEAN_REVERSION, VOLATILE). The lower-case forms are
+            # kept as aliases rather than dropped -- other producers may use
+            # them, and asking costs nothing.
             market_regime = self._latest_context_value(
                 df,
-                ("market_regime", "regime"),
+                ("MARKET_REGIME", "market_regime", "regime"),
                 default="unknown",
                 timeframe=str(timeframe),
             )
@@ -557,10 +565,18 @@ class ModelingStage(BaseStage):
             # Any timeframe-suffixed variant, in column order, as a last
             # resort: better a context from a neighbouring timeframe than a
             # hash standing in for one.
+            #
+            # The suffix must actually BE a timeframe. A bare startswith
+            # would let MARKET_REGIME_ENCODED_1d answer a request for
+            # MARKET_REGIME, and that column holds detector confidence
+            # (0.72, 0.6, 0.9) -- a float would be stringified and filed as
+            # a regime label.
+            prefix = f"{column}_"
             candidates.extend(
                 name for name in frame.columns
                 if isinstance(name, str)
-                and name.startswith(f"{column}_")
+                and name.startswith(prefix)
+                and is_timeframe_token(name[len(prefix):])
                 and name not in candidates
             )
 
