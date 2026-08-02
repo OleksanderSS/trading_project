@@ -492,7 +492,16 @@ class DiaryEngine(BaseMetaComponent):
             "agent_id": agent_id,
             "total_unprofitable": int(loss_patterns['loss_count'].sum()),
             "top_loss_fingerprints": loss_patterns.to_dict('records'),
+            # Raw counts, and honest as counts -- but do NOT rank on them.
+            # A driver value that appears in most of this agent's trades tops
+            # the table whatever its loss rate, purely because it is common.
             "component_vulnerabilities": vulnerabilities,
+            # The same decomposition WITH a denominator: of every resolved
+            # trade whose context carried driver i at value v, what share lost
+            # money. This is the number to rank on.
+            "component_loss_rates": self._component_outcome_rates(
+                agent_id, DecisionOutcome.UNPROFITABLE.value
+            ),
             # Empty means the fingerprints could not be decomposed, not that
             # every driver came out clean. Without this the caller cannot
             # tell the two apart.
@@ -524,8 +533,71 @@ class DiaryEngine(BaseMetaComponent):
             "agent_id": agent_id,
             "top_success_fingerprints": success_patterns.to_dict('records'),
             "ideal_components": ideal_conditions,
+            # Same base-rate correction as the vulnerability side: a driver
+            # present in most trades wins most trades. Rank on the rate.
+            "component_win_rates": self._component_outcome_rates(
+                agent_id, DecisionOutcome.PROFITABLE.value
+            ),
             "components_decoded": bool(ideal_conditions),
         }
+
+    #: Outcomes that represent a trade that actually resolved. PENDING,
+    #: NEUTRAL and NOT_APPLICABLE are excluded from the denominator -- every
+    #: training row carries one of those, and counting them would divide real
+    #: losses by a population that never had the chance to lose.
+    _RESOLVED_OUTCOMES = (
+        DecisionOutcome.PROFITABLE.value,
+        DecisionOutcome.UNPROFITABLE.value,
+        DecisionOutcome.BREAK_EVEN.value,
+    )
+
+    def _component_outcome_rates(
+        self, agent_id: str, outcome: str
+    ) -> dict[int, dict[str, dict[str, float]]]:
+        """Per-driver rate of `outcome`, against all that driver's trades.
+
+        _analyze_fingerprint_components counts occurrences, which cannot
+        distinguish "this driver value is dangerous" from "this driver value
+        is common". This supplies the missing denominator: for driver
+        position i at tri-state value v, how many of that agent's resolved
+        trades had it, and what share of those ended in `outcome`.
+
+        Unlike the callers' top-10 queries this deliberately reads EVERY
+        fingerprint. Restricting the numerator to the ten worst contexts
+        while dividing by all of them would inflate every rate.
+        """
+        query = f"""
+        SELECT context_fingerprint,
+               COUNT(*) AS total_count,
+               SUM(CASE WHEN outcome = ? THEN 1 ELSE 0 END) AS hit_count
+        FROM experience_diary
+        WHERE agent_id = ?
+          AND outcome IN ({','.join('?' * len(self._RESOLVED_OUTCOMES))})
+        GROUP BY context_fingerprint
+        """
+        rows = pd.DataFrame(self.data_manager.fetch_all(
+            query, params=[outcome, agent_id, *self._RESOLVED_OUTCOMES]
+        ))
+        if rows.empty:
+            return {}
+
+        totals = self._analyze_fingerprint_components(rows, col='total_count')
+        hits = self._analyze_fingerprint_components(rows, col='hit_count')
+        if not totals:
+            return {}
+
+        rates: dict[int, dict[str, dict[str, float]]] = {}
+        for index, per_value in totals.items():
+            for value, total in per_value.items():
+                if total <= 0:
+                    continue
+                hit = hits.get(index, {}).get(value, 0.0)
+                rates.setdefault(index, {})[value] = {
+                    'rate': hit / total,
+                    'count': hit,
+                    'total': total,
+                }
+        return rates
 
     def _analyze_fingerprint_components(self, df: pd.DataFrame, col: str = 'loss_count') -> dict[int, dict[str, float]]:
         """Decompose fingerprints into per-driver tri-state counts.

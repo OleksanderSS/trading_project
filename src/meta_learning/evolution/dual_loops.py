@@ -137,11 +137,51 @@ class LearningLoopsEngine(BaseMetaComponent):
         if not top_loss_fingerprints:
              return []
 
-        # This is a temporary compatibility layer.
-        # Ideally, ContextRuleGenerator should be updated to use this rich data.
-        simulated_losing_trades = self._simulate_trades_from_fingerprints(top_loss_fingerprints)
+        # The "temporary compatibility layer" this used to announce was never
+        # built, and the gap is wider than a missing method:
+        #
+        #   - ContextRuleGenerator has no generate_rules_from_context. Its
+        #     methods are run_analysis / _generate_rules /
+        #     _analyze_single_indicator, so this line raises AttributeError.
+        #   - Those methods answer a different question. _generate_rules takes
+        #     price history and measures forward returns after an indicator
+        #     crosses a threshold; the frame built above holds one column,
+        #     context_fingerprint, which is not an indicator and carries no
+        #     prices.
+        #   - Their output is {'indicator', 'condition', 'value',
+        #     'event_count', 'effects_on_target'}, while the loop below reads
+        #     rule_data['description'], ['conditions'] and ['action']. Even a
+        #     method with the right name would KeyError three lines later.
+        #
+        # So this needs a real implementation of "derive rules from losing
+        # contexts", which has never been specified, let alone approved.
+        #
+        # Until then: say so, once, at ERROR, and return nothing. Not raised,
+        # because update() has no handler and this runs inside the evolution
+        # loop -- an unimplemented feature must not take the loop down with
+        # it. Today the early return above always fires (no realized outcomes
+        # in the diary, so no vulnerabilities), which is exactly why this has
+        # gone unnoticed; paper trading is what will start reaching this line.
+        generate_from_context = getattr(
+            self.rule_generator, 'generate_rules_from_context', None
+        )
+        if not callable(generate_from_context):
+            self.logger.error(
+                "Hypothesis generation is NOT IMPLEMENTED: "
+                "%s has no generate_rules_from_context, and its existing "
+                "rule format carries none of the keys this method reads "
+                "(description/conditions/action). %d loss fingerprint(s) for "
+                "agent '%s' were analysed and then discarded. No rules were "
+                "created -- this is a missing feature, not an absence of "
+                "findings.",
+                type(self.rule_generator).__name__,
+                len(top_loss_fingerprints),
+                agent_id,
+            )
+            return []
 
-        generated_rules_data = self.rule_generator.generate_rules_from_context(simulated_losing_trades) # Assumes method exists
+        simulated_losing_trades = self._simulate_trades_from_fingerprints(top_loss_fingerprints)
+        generated_rules_data = generate_from_context(simulated_losing_trades)
 
         new_rules = []
         for i, rule_data in enumerate(generated_rules_data):
