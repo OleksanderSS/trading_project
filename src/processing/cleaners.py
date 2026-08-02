@@ -124,6 +124,12 @@ class DataCleaner:
     def clean_macro_data(df: pd.DataFrame, numeric_columns: list[str], threshold: float = 3.0) -> pd.DataFrame:
         """
         Cleans macro-economic data by clipping outliers instead of dropping them, and interpolating missing values.
+
+        NOTE: this method has no callers as of 2026-08-02. It carried two
+        lookahead defects (a trailing .bfill() and centred rolling windows),
+        both fixed here rather than left waiting for whoever wires it up.
+        Macro data reaches the model through MacroFeaturesEnricher, which
+        does not route through this.
         """
         if df is None or df.empty:
             return df
@@ -134,10 +140,21 @@ class DataCleaner:
                 continue
 
             df_out[col] = pd.to_numeric(df_out[col], errors='coerce')
-            df_out[col] = df_out[col].ffill().bfill()
+            # ffill only. The .bfill() that used to follow filled a LEADING
+            # gap with the first value that came later -- so rows dated
+            # before a series began publishing were handed a number nobody
+            # could have known at the time. A leading NaN is the truth: the
+            # series had no value yet.
+            df_out[col] = df_out[col].ffill()
 
-            rolling_median = df_out[col].rolling(window=20, min_periods=1, center=True).median()
-            rolling_mad = df_out[col].rolling(window=20, min_periods=1, center=True).apply(lambda x: np.median(np.abs(x - np.median(x))))
+            # center=False. A centred window at row i spans i-10..i+9, so the
+            # clipping bounds applied to row i were computed partly from bars
+            # up to nine steps in its future -- and an outlier was therefore
+            # judged against data that had not happened. Trailing windows are
+            # the only causal choice here.
+            window = df_out[col].rolling(window=20, min_periods=1)
+            rolling_median = window.median()
+            rolling_mad = window.apply(lambda x: np.median(np.abs(x - np.median(x))))
             rolling_std = rolling_mad * 1.4826
 
             lower_bound = rolling_median - (threshold * rolling_std)

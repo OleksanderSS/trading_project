@@ -72,13 +72,31 @@ class FeatureGuards:
             )
             if validation.get('status') == 'invalid':
                 issues = validation.get('issues', [])
+                # 'Rolling window too large' was removed from this list, and
+                # from the guard, on 2026-08-02. It is not a leakage
+                # condition: a long trailing window reads only past bars. The
+                # guard's pattern never matched this project's naming, so the
+                # check had never fired -- and repairing the pattern without
+                # this change would have aborted Stage 3 on SMA_200_60m and
+                # EMA_200_60m, four clean columns in the current export whose
+                # only sin is a 200-period lookback against a 168 budget. It
+                # is a warning now.
+                #
+                # 'Negative shift detected' and 'Backfill operation detected'
+                # stay listed but can no longer be produced here: they were
+                # matched against feature NAMES, and a column is never called
+                # "close.shift(-1)". That check moved to a source scanner,
+                # tests/contracts/test_lookahead_operations.py, where the
+                # expression it looks for actually exists. Kept in this tuple
+                # so that a future runtime detector emitting the same wording
+                # is fatal by default, which is the right default for
+                # lookahead.
                 actionable_issues = [
                     issue for issue in issues
                     if any(marker in issue for marker in (
                         'Feature name indicates',
                         'Negative shift detected',
                         'Backfill operation detected',
-                        'Rolling window too large',
                     ))
                 ]
                 message = f"Temporal leakage guard found {len(issues)} issues"

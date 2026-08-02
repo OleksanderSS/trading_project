@@ -55,12 +55,20 @@ class TemporalLeakageGuard:
                 r'high_next',
                 r'low_next'
             ],
-            'lookahead_indicators': [
-                r'.*\.shift\(-\d+\)',  # Negative shifts (lookahead)
-                r'rolling_.*\.shift\(-\d+\)',  # Rolling with negative shift
-                r'.*\.fillna\(.*method=.*bfill.*\)',  # Backfill (lookahead)
-                r'.*\.fillna\(.*method=.*backfill.*\)',  # Backfill (lookahead)
-            ]
+            # NOTE: there used to be a 'lookahead_indicators' group here
+            # holding r'.*\.shift\(-\d+\)', r'.*\.fillna\(.*bfill.*\)' and
+            # friends, matched against FEATURE NAMES. A column is never named
+            # "close.shift(-1)" -- those are Python expressions, and this is a
+            # runtime check on a DataFrame's columns. Measured on the
+            # 2026-08-02 export: 0 of 1,189 names contain "shift(", 0 contain
+            # "bfill". The check could not fire, ever, by construction.
+            #
+            # Detecting a negative shift is a real and valuable check -- it
+            # just belongs to a SOURCE scanner, where the expression actually
+            # exists. It now lives in
+            # tests/contracts/test_lookahead_operations.py, which reads src/
+            # and honours the project's existing
+            # "# audit-ignore: NEGATIVE_SHIFT_*" markers.
         }
 
         # Safe rolling window configurations
@@ -216,25 +224,17 @@ class TemporalLeakageGuard:
         if name_analysis['has_leakage']:
             return name_analysis
 
-        # Check 2: Lookahead patterns in feature values (if it's a calculation result)
-        if series.dtype in ['float64', 'int64']:
-            lookahead_analysis = self._check_lookahead_patterns(series, feature_name)
-            if lookahead_analysis['has_lookahead']:
-                analysis['has_leakage'] = True
-                analysis['leakage_type'] = 'lookahead_indicators'
-                analysis['issues'].extend(lookahead_analysis['issues'])
-
-        # Check 3: Rolling window validation
-        if 'rolling' in feature_name.lower() or 'window' in feature_name.lower():
-            rolling_analysis = self._validate_rolling_window_feature(
-                series, feature_name, timeframe
-            )
-            if rolling_analysis['has_leakage']:
-                analysis['has_leakage'] = True
-                analysis['leakage_type'] = 'rolling_window_leakage'
-                analysis['issues'].extend(rolling_analysis['issues'])
-            elif rolling_analysis['warnings']:
-                analysis['warnings'].extend(rolling_analysis['warnings'])
+        # Check 2: lookback window size. The gate used to be
+        # `if 'rolling' in name or 'window' in name`, and then the size was
+        # read with r'rolling_(\d+)'. This project names windows
+        # NAME_<periods>[_<timeframe>] -- SMA_200_60m, ATR_14_1d, AATR_14_1d.
+        # Measured on the export: 36 of 1,189 names contain "rolling" or
+        # "window", and ZERO match rolling_(\d+), so this never ran either.
+        # 312 names carry a window under the real convention.
+        rolling_analysis = self._validate_rolling_window_feature(
+            series, feature_name, timeframe
+        )
+        analysis['warnings'].extend(rolling_analysis.get('warnings', []))
 
         # Check 4: Future data in series values
         future_data_analysis = self._check_future_data_in_series(
@@ -247,71 +247,56 @@ class TemporalLeakageGuard:
 
         return analysis
 
-    def _check_lookahead_patterns(self,
-                                series: pd.Series,
-                                feature_name: str) -> dict[str, Any]:
-        """Check for lookahead patterns in feature calculations."""
-
-        analysis = {
-            'has_lookahead': False,
-            'issues': []
-        }
-
-        # Check for negative shifts (lookahead)
-        if 'shift(' in feature_name or '.shift(' in feature_name:
-            # Extract shift value
-            shift_match = re.search(r'\.shift\(\s*-\s*(\d+)\s*\)', feature_name)
-            if shift_match:
-                shift_value = int(shift_match.group(1))
-                analysis['has_lookahead'] = True
-                analysis['issues'].append(
-                    f"Negative shift detected: shift(-{shift_value}) indicates lookahead bias"
-                )
-
-        # Check for backfill operations
-        if 'bfill' in feature_name or 'backfill' in feature_name:
-            analysis['has_lookahead'] = True
-            analysis['issues'].append(
-                "Backfill operation detected - uses future data to fill past values"
-            )
-
-        return analysis
+    #: NAME_<periods> with an optional timeframe suffix -- the convention this
+    #: project actually uses (SMA_200_60m, ATR_14_1d, AATR_14_1d).
+    _WINDOW_IN_NAME = re.compile(
+        r'_(\d+)(?:_(?:5m|15m|30m|60m|1h|1d|daily))?$', re.IGNORECASE
+    )
 
     def _validate_rolling_window_feature(self,
                                       series: pd.Series,
                                       feature_name: str,
                                       timeframe: str | None) -> dict[str, Any]:
-        """Validate rolling window feature for proper configuration."""
+        """Flag a lookback longer than this timeframe's budget.
 
-        analysis = {
-            'has_leakage': False,
-            'warnings': []
-        }
+        WARNING ONLY, deliberately, and this is the substantive change.
+
+        A long trailing window is NOT lookahead bias -- SMA_200 on hourly
+        bars reads two hundred bars into the PAST and not one into the
+        future. SAFE_ROLLING_CONFIGS encodes a modelling opinion ("do not
+        look back more than a week on hourly data"), which is a reasonable
+        thing to be told and an unreasonable thing to die for.
+
+        That distinction was about to matter. FeatureGuards treats "Rolling
+        window too large" as fatal and raises. Repairing the pattern without
+        repairing the severity would have made Stage 3 abort on
+        SMA_200_60m / EMA_200_60m -- 200 > the 168 budget -- four columns
+        that are in the current export and contain no leakage whatsoever.
+        """
+        analysis: dict[str, Any] = {'has_leakage': False, 'warnings': []}
 
         if timeframe is None:
             return analysis
 
-        # Extract window size from feature name
-        window_match = re.search(r'rolling_(\d+)', feature_name.lower())
-        if not window_match:
+        match = self._WINDOW_IN_NAME.search(str(feature_name))
+        if not match:
             return analysis
 
-        window_size = int(window_match.group(1))
+        window_size = int(match.group(1))
         config = self.SAFE_ROLLING_CONFIGS.get(timeframe, {})
-        max_periods = config.get('max_periods', 100)
-        common_windows = config.get('common_windows', [])
+        max_periods = config.get('max_periods')
+        if not max_periods:
+            # An unknown timeframe has no budget to exceed. Silence beats a
+            # made-up default of 100, which would flag every 200-period
+            # average on data whose cadence we could not identify.
+            return analysis
 
-        # Check if window is too large
         if window_size > max_periods:
-            analysis['has_leakage'] = True
-            analysis['issues'] = [
-                f"Rolling window too large: {window_size} > max {max_periods} for {timeframe}"
-            ]
-
-        # Check if window is uncommon (warning)
-        elif window_size not in common_windows:
             analysis['warnings'].append(
-                f"Unusual rolling window size: {window_size} (common: {common_windows[:3]})"
+                f"Lookback longer than the {timeframe} budget: {feature_name} "
+                f"spans {window_size} periods, budget {max_periods}. Not "
+                f"leakage -- it reads only past bars -- but it reaches "
+                f"further back than this timeframe is configured to trust."
             )
 
         return analysis

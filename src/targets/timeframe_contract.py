@@ -149,7 +149,7 @@ def mask_targets_across_time_boundaries(
     )
     if temporal_column is not None:
         observed_at = pd.to_datetime(frame[temporal_column], errors="coerce", utc=True)
-        future_at = observed_at.shift(-bars)
+        future_at = observed_at.shift(-bars)  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL target horizon, used to BLANK labels
         elapsed = future_at - observed_at
         valid &= observed_at.notna() & future_at.notna() & elapsed.gt(pd.Timedelta(0))
         if contract.maximum_elapsed is not None:
@@ -157,7 +157,7 @@ def mask_targets_across_time_boundaries(
 
     for column in _PARTITION_COLUMNS:
         if column in frame.columns:
-            future_partition = frame[column].shift(-bars)
+            future_partition = frame[column].shift(-bars)  # audit-ignore: NEGATIVE_SHIFT_INTENTIONAL target horizon, used to BLANK labels
             valid &= frame[column].notna() & frame[column].eq(future_partition)
 
     return target.where(valid)
