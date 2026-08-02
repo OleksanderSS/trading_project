@@ -416,15 +416,44 @@ class TradingModelArena:
             actuals_clean = actuals_arr[valid_mask]
             mse = np.mean((predictions_clean - actuals_clean) ** 2)
             accuracy = np.mean(np.sign(predictions_clean) == np.sign(actuals_clean))
-            prediction_std = float(np.std(predictions_clean))
-            sharpe_ratio = (
-                float(np.mean(predictions_clean) / prediction_std)
-                if np.isfinite(prediction_std) and prediction_std > 1e-12
-                else 0.0
+
+            # The return of acting on each prediction. Everything below is
+            # measured on this rather than on the predictions alone.
+            #
+            # sharpe_ratio used to be mean(predictions) / std(predictions) --
+            # the predictions' own consistency, with the actual outcomes
+            # nowhere in it. A model emitting a constant scored an unbounded
+            # ratio (9899 in a direct test) which, capped at 2 by the scoring
+            # function, handed it the full 0.5 of the weighted score. It beat
+            # a model with 97.2% directional accuracy, 0.958 to 0.698, and
+            # this runs after every training cycle.
+            strategy_returns = np.sign(predictions_clean) * actuals_clean
+
+            from src.metrics.financial.financial_metrics_library import (
+                FinancialMetricsLibrary,
             )
+            sharpe_ratio = FinancialMetricsLibrary.calculate_sharpe_ratio(
+                pd.Series(strategy_returns), on_error=0.0
+            )
+            if not np.isfinite(sharpe_ratio):
+                sharpe_ratio = 0.0
+
+            # win_rate was a second copy of accuracy, so the score counted the
+            # same number twice (0.3 + 0.2) and called it two criteria. It is
+            # now the share of decisions that actually made money -- which
+            # differs from directional accuracy whenever the wins and losses
+            # are of different sizes.
+            win_rate = float((strategy_returns > 0).mean())
+
+            # _calculate_max_drawdown existed and was never called with real
+            # data: 0.0 went in, so the score's (1 - abs(drawdown)) term was
+            # a constant 1.0 and its 0.15 weight measured nothing.
+            max_drawdown = self._calculate_max_drawdown(strategy_returns)
+
             return BattleMetrics(accuracy=accuracy, precision=accuracy,
                 recall=accuracy, f1_score=accuracy, sharpe_ratio=
-                sharpe_ratio, max_drawdown=0.0, win_rate=accuracy,
+                float(sharpe_ratio), max_drawdown=max_drawdown,
+                win_rate=win_rate,
                 execution_time=0.1, confidence_score=0.7, mse=mse)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError):
             logger.exception('[ARENA] Failed to calculate metrics')

@@ -22,6 +22,15 @@ class KnnSimilarityFinder(IAnalyzer):
         self.config = config or {}
         self.n_neighbors = self.config.get('n_neighbors', 5)
         self.min_regime_samples = self.config.get('min_regime_samples', 20)
+        # Missing features are filled with historical medians, which makes a
+        # mostly-unknown context look average -- and therefore a confident
+        # match for every other average row. The only guard used to be
+        # "at least one feature present", so 1 real value out of 20 produced
+        # three neighbours with similarity scores and no warning. They were
+        # the rows nearest the median, not the rows nearest this context.
+        self.min_feature_coverage = float(
+            self.config.get('min_feature_coverage', 0.5)
+        )
         self.knn_model: KnnModelWrapper | None = None
         self.feature_columns: list[str] = []
         self.feature_medians: pd.Series = pd.Series(dtype=float)
@@ -111,10 +120,28 @@ class KnnSimilarityFinder(IAnalyzer):
 
         X_hist = X_hist[common_cols].replace([np.inf, -np.inf], np.nan)
         X_target = X_target[common_cols].replace([np.inf, -np.inf], np.nan)
-        X_hist = X_hist.loc[X_hist.notna().any(axis=1)]
-        X_target = X_target.loc[X_target.notna().any(axis=1)]
+        # Coverage, not mere presence: a row where one value in twenty is
+        # real is imputed into an average-looking row and matches whatever
+        # sits near the median.
+        minimum = max(1, int(round(self.min_feature_coverage * len(common_cols))))
+        hist_kept = X_hist.notna().sum(axis=1) >= minimum
+        target_kept = X_target.notna().sum(axis=1) >= minimum
+        dropped_targets = int((~target_kept).sum())
+        if dropped_targets:
+            logger.warning(
+                "%d target row(s) carry fewer than %d of %d numeric features "
+                "and were excluded from KNN matching; imputing that many "
+                "medians would have matched them to the average row rather "
+                "than to a similar context.",
+                dropped_targets, minimum, len(common_cols),
+            )
+        X_hist = X_hist.loc[hist_kept]
+        X_target = X_target.loc[target_kept]
         if X_hist.empty or X_target.empty:
-            raise DataProcessingError("No non-empty numeric rows for KNN analysis.")
+            raise DataProcessingError(
+                f"No rows with at least {minimum} of {len(common_cols)} "
+                "numeric KNN features."
+            )
 
         medians = X_hist.median()
         valid_cols = medians.dropna().index
@@ -133,8 +160,15 @@ class KnnSimilarityFinder(IAnalyzer):
         target_df = current_context.to_frame().T
         X_target = target_df.reindex(columns=self.feature_columns).apply(pd.to_numeric, errors='coerce')
         X_target = X_target.replace([np.inf, -np.inf], np.nan)
-        if X_target.notna().sum(axis=1).iloc[0] == 0:
-            raise DataProcessingError("Current context has no usable numeric KNN features.")
+        present = int(X_target.notna().sum(axis=1).iloc[0])
+        minimum = max(1, int(round(self.min_feature_coverage * len(self.feature_columns))))
+        if present < minimum:
+            raise DataProcessingError(
+                f"Current context has {present} of {len(self.feature_columns)} "
+                f"numeric KNN features; at least {minimum} are required. "
+                "Filling the rest with medians would match it to the average "
+                "historical row rather than to a similar situation."
+            )
 
         X_target = X_target.fillna(self.feature_medians)
         distances, indices = self.knn_model.find_neighbors(X_target)
