@@ -111,6 +111,11 @@ class DiaryEngine(BaseMetaComponent):
     Note: DataManager is lazy-imported to allow DiaryEngine to work without immediate DB initialization.
     Falls back to in-memory-only mode if DuckDB is not available.
     """
+    # Absolute Sharpe improvement a challenger must show before promotion is
+    # recommended. An absolute floor is needed because a purely relative
+    # margin inverts below zero -- see _check_promotion_criteria.
+    _MIN_PROMOTION_MARGIN: float = 0.15
+
     def __init__(self, data_manager=None, maxsize: int = 10000):
         self.config = get_current_config()
         self.logger = ProjectLogger.get_logger(self.__class__.__name__)
@@ -406,8 +411,15 @@ class DiaryEngine(BaseMetaComponent):
 
     def get_history_by_agent(self, agent_id: str) -> pd.DataFrame:
         """Retrieves the decision history for a specific agent."""
-        # Use parameterized query to prevent SQL injection
-        query = "SELECT * FROM experience_diary WHERE agent_id = ?"
+        # ORDER BY matters: suggest_threshold_adjustments takes .tail(20) of
+        # this and calls it "recent performance", which without an ordering
+        # is whatever the storage engine happened to return. It also lets
+        # _calculate_agent_performance build a monotonic DatetimeIndex, from
+        # which the Sharpe annualisation infers the cadence.
+        query = (
+            "SELECT * FROM experience_diary WHERE agent_id = ? "
+            "ORDER BY decision_timestamp"
+        )
         return pd.DataFrame(self.data_manager.fetch_all(query, params=[agent_id]))
 
     def get_recent_trades(self, window: int = 500) -> pd.DataFrame:
@@ -685,23 +697,49 @@ class DiaryEngine(BaseMetaComponent):
 
     def _check_promotion_criteria(self, agent_ids: list[str], champion_id: str,
                                comparison_results: dict[str, Any]) -> list[dict[str, Any]]:
-        """Перевіряє критерії просування для агентів."""
+        """Перевіряє критерії просування для агентів.
+
+        The test used to be `agent_sharpe > champion_sharpe * 1.15`, which
+        inverts as soon as the champion's Sharpe is negative: multiplying
+        -2.0 by 1.15 gives -2.3, so a challenger at -2.25 -- WORSE than the
+        champion -- cleared the bar and was recommended for promotion. And
+        `.get('sharpe_ratio', 0)` gave an agent with no data a score of 0,
+        which beats any negative champion, so "no evidence" outranked
+        "measured and losing".
+
+        A relative margin only means anything above zero, so it is combined
+        with an absolute one and the stricter of the two applies.
+        """
         recommendations = []
-        champion_sharpe = comparison_results.get(champion_id, {}).get('sharpe_ratio', 0)
+        champion_metrics = comparison_results.get(champion_id, {})
+        if 'sharpe_ratio' not in champion_metrics:
+            return recommendations
+
+        champion_sharpe = float(champion_metrics['sharpe_ratio'])
+        threshold = champion_sharpe + self._MIN_PROMOTION_MARGIN
+        if champion_sharpe > 0:
+            threshold = max(threshold, champion_sharpe * 1.15)
 
         for agent_id in agent_ids:
             if agent_id == champion_id:
                 continue
 
-            agent_sharpe = comparison_results.get(agent_id, {}).get('sharpe_ratio', 0)
+            agent_metrics = comparison_results.get(agent_id, {})
+            if 'sharpe_ratio' not in agent_metrics:
+                # {"error": "No data"} is not a score to compare against.
+                continue
 
-            # Check for regime-specific excellence
-            if agent_sharpe > champion_sharpe * 1.15:
+            agent_sharpe = float(agent_metrics['sharpe_ratio'])
+            if agent_sharpe > threshold:
                 recommendations.append({
                     "type": "PROMOTION",
                     "agent_id": agent_id,
                     "context": "Global (General Performance)",
-                    "reason": "Significantly higher Sharpe ratio"
+                    "reason": (
+                        f"Sharpe {agent_sharpe:.3f} beats champion "
+                        f"{champion_sharpe:.3f} by more than the required "
+                        f"margin ({threshold:.3f})"
+                    ),
                 })
 
         return recommendations
