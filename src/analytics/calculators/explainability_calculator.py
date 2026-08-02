@@ -16,7 +16,12 @@ class ExplainabilityCalculator:
     """A collection of static methods for model explainability."""
 
     @staticmethod
-    def analyze_feature_importance(model: Any, X: pd.DataFrame, feature_names: list[str]) -> dict[str, float]:
+    def analyze_feature_importance(
+        model: Any,
+        X: pd.DataFrame,
+        feature_names: list[str],
+        y_true: pd.Series | np.ndarray | None = None,
+    ) -> dict[str, float]:
         """
         Calculates feature importance using native methods or permutation if not available.
 
@@ -41,17 +46,44 @@ class ExplainabilityCalculator:
             else:
                 # Fallback to Permutation Importance for black-box/heavy models
                 logger.info(f"Using permutation importance for model {type(model).__name__}")
-                base_pred = model.predict(X)
-                base_error = np.mean(np.abs(base_pred))  # Using Mean Absolute Error as the metric
+
+                # Permutation importance is the INCREASE IN ERROR when a
+                # feature is shuffled, and error needs the true values. This
+                # used to compute np.mean(np.abs(predictions)) and call it
+                # "Mean Absolute Error" -- no y anywhere in it. That measures
+                # how much the average prediction MAGNITUDE moves, which a
+                # feature can leave untouched while being essential to
+                # accuracy, and which a feature that merely shifts the level
+                # can dominate without improving anything.
+                if y_true is None:
+                    logger.warning(
+                        "Permutation importance requested without y_true; "
+                        "falling back to the shift in mean absolute "
+                        "prediction, which is NOT an error metric and ranks "
+                        "features by how much they move the output level "
+                        "rather than by how much accuracy they carry."
+                    )
+
+                def _score(predictions):
+                    if y_true is None:
+                        return float(np.mean(np.abs(predictions)))
+                    return float(np.mean(np.abs(np.asarray(y_true) - predictions)))
+
+                base_error = _score(model.predict(X))
 
                 for i, col in enumerate(feature_names):
                     x_permuted = X.copy()
                     # Shuffle a single column
                     x_permuted.iloc[:, i] = rng.permutation(x_permuted.iloc[:, i])
-                    perm_pred = model.predict(x_permuted)
-                    perm_error = np.mean(np.abs(perm_pred))
-                    # The importance is the increase in error
-                    importance[col] = abs(perm_error - base_error)
+                    perm_error = _score(model.predict(x_permuted))
+                    # Only an INCREASE counts. A shuffle that improves the
+                    # score says the feature was not carrying signal, which
+                    # is importance zero, not importance |difference|.
+                    importance[col] = (
+                        max(0.0, perm_error - base_error)
+                        if y_true is not None
+                        else abs(perm_error - base_error)
+                    )
 
             # Normalize importances to sum to 1.0 for comparability
             total_importance = sum(importance.values())
