@@ -49,149 +49,35 @@ CONTENT_DRIVE_PATH = "/content/drive/MyDrive/trading_project"
 RUNTIME_PARAMS_FILE = "runtime_params.json"
 
 # ==============================================================================
-# DTYPE FIX FUNCTIONS
+# NOTE: the DTYPE FIX block that used to sit here has been removed.
+#
+# It monkeypatched .train on BaseNeuralModel/CNNModel/LSTMModel/GRUModel and
+# .fit on TransformerModel. This cell instantiates none of them -- those five
+# names appeared nowhere else in this file. Every model here is built
+# directly: sklearn MLPRegressor/MLPClassifier, tf.keras.Sequential for
+# cnn/lstm/gru/transformer/autoencoder, pytorch_tabnet for tabnet. So the
+# patches applied to classes nothing in this process called, and it printed
+# "ВСІ НЕЙРОННІ МОДЕЛІ ВИПРАВЛЕНО" for work that had no effect.
+#
+# Two reasons to remove it rather than leave it sitting harmless:
+#
+# 1. The BaseNeuralModel patch was broken. It called the original as
+#    original_train(self, x, y, epochs, batch_size, validation_split), but
+#    the signature is train(self, X, y, **kwargs) -- reproduced locally:
+#    "BaseNeuralModel.train() takes 3 positional arguments but 6 were given".
+#    MLPModel does not override train, so anything reaching for the project's
+#    MLP in this process would have died on it. A patch that breaks the thing
+#    it claims to fix is worse than absent.
+# 2. The dtype conversion it added is already in the classes themselves
+#    (base_neural.py: X.values / np.asarray then .astype(np.float32)), so
+#    even the working half was redundant.
+#
+# What is NOT carried over, deliberately: np.nan_to_num(y, nan=0.0). Turning
+# a missing TARGET into 0.0 does not clean data, it invents a label -- "no
+# return" is a perfectly plausible training example, so the model learns from
+# a value nobody measured. Rows with a missing target must be dropped, not
+# filled.
 # ==============================================================================
-
-def _fix_base_neural_model():
-    """Виправити BaseNeuralModel dtype"""
-    from src.models.neural.base_neural import BaseNeuralModel
-
-    original_train = BaseNeuralModel.train
-    def fixed_train(self, x, y, epochs=50, batch_size=32, validation_split=0.2, **kwargs):
-        # Перетворення в numpy з правильними типами даних
-        x_np = x.values if isinstance(x, pd.DataFrame) else np.asarray(x)
-        y_np = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
-
-        # Перетворення в числові типи для Keras
-        x_np = x_np.astype(np.float32)
-        y_np = y_np.astype(np.float32)
-
-        # Заміна NaN/inf для стабільності
-        x_np = np.nan_to_num(x_np, nan=0.0, posinf=0.0, neginf=0.0)
-        y_np = np.nan_to_num(y_np, nan=0.0, posinf=0.0, neginf=0.0)
-
-        # Виклик оригінального методу з виправленими даними
-        return original_train(self, x_np, y_np, epochs, batch_size, validation_split, **kwargs)
-
-    setattr(BaseNeuralModel, 'train', fixed_train)  # type: ignore
-    print("✅ BaseNeuralModel виправлено")
-
-def _fix_cnn_model():
-    """Виправити CNNModel dtype"""
-    from src.models.neural.cnn_model import CNNModel
-
-    original_cnn_train = CNNModel.train
-    def fixed_cnn_train(self, X, y, **kwargs):
-        # Перетворення в numpy з правильними типами
-        x_array = X.values if isinstance(X, pd.DataFrame) else np.asarray(X)
-        y_array = y.values if isinstance(y, (pd.Series, pd.DataFrame)) else np.asarray(y)
-
-        # Перетворення в числові типи для Keras
-        x_array = x_array.astype(np.float32)
-        y_array = y_array.astype(np.float32)
-
-        # Виклик оригінального методу з виправленими даними
-        return original_cnn_train(self, x_array, y_array, **kwargs)
-
-    setattr(CNNModel, 'train', fixed_cnn_train)  # type: ignore
-    print("✅ CNNModel виправлено")
-
-def _fix_lstm_model():
-    """Виправити LSTMModel dtype"""
-    from src.models.neural.lstm_model import LSTMModel
-
-    original_lstm_train = LSTMModel.train
-    def fixed_lstm_train(self, X, y, **kwargs):
-        # Reshape data if it's 2D
-        if len(X.shape) == 2:
-            X = np.reshape(X, (X.shape[0], X.shape[1], 1))
-
-        # Перетворення в числові типи для Keras
-        X = X.astype(np.float32)
-        y = y.astype(np.float32)
-
-        return original_lstm_train(self, X, y, **kwargs)
-
-    setattr(LSTMModel, 'train', fixed_lstm_train)  # type: ignore
-    print("✅ LSTMModel виправлено")
-
-def _fix_gru_model():
-    """Виправити GRUModel dtype"""
-    from src.models.neural.gru_model import GRUModel
-
-    original_gru_train = GRUModel.train
-    def fixed_gru_train(self, X, y, **kwargs):
-        # Reshape data if it's 2D
-        if len(X.shape) == 2:
-            X = np.reshape(X, (X.shape[0], X.shape[1], 1))
-
-        # Перетворення в числові типи для Keras
-        X = X.astype(np.float32)
-        y = y.astype(np.float32)
-
-        return original_gru_train(self, X, y, **kwargs)
-
-    setattr(GRUModel, 'train', fixed_gru_train)  # type: ignore
-    print("✅ GRUModel виправлено")
-
-def _fix_transformer_model():
-    """Виправити TransformerModel dtype"""
-    from src.models.neural.transformer_model import TransformerModel
-
-    original_transformer_fit = TransformerModel.fit
-    def fixed_transformer_fit(self, X, y, seq_len=10, epochs=20, batch_size=32):
-        # Convert to numpy
-        if hasattr(X, 'values'):
-            X = X.values
-        if hasattr(y, 'values'):
-            y = y.values
-
-        X = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
-        y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
-
-        # Перетворення в числові типи для Keras
-        X = X.astype(np.float32)
-        y = y.astype(np.float32)
-
-        # Виклик оригінального методу з виправленими даними
-        return original_transformer_fit(self, X, y, seq_len, epochs, batch_size)
-
-    setattr(TransformerModel, 'fit', fixed_transformer_fit)  # type: ignore
-    print("✅ TransformerModel виправлено")
-
-def fix_neural_models_dtype():
-    """Виправити проблему з dtype в нейронних моделях"""
-
-    print("🔧 ВИПРАВЛЕННЯ DTYPE В НЕЙРОННИХ МОДЕЛЯХ...")
-
-    # Виправити кожну модель окремо
-    try:
-        _fix_base_neural_model()
-    except Exception as e:
-        print(f"❌ Помилка виправлення BaseNeuralModel: {e}")
-
-    try:
-        _fix_cnn_model()
-    except Exception as e:
-        print(f"❌ Помилка виправлення CNNModel: {e}")
-
-    try:
-        _fix_lstm_model()
-    except Exception as e:
-        print(f"❌ Помилка виправлення LSTMModel: {e}")
-
-    try:
-        _fix_gru_model()
-    except Exception as e:
-        print(f"❌ Помилка виправлення GRUModel: {e}")
-
-    try:
-        _fix_transformer_model()
-    except Exception as e:
-        print(f"❌ Помилка виправлення TransformerModel: {e}")
-
-    print("🎯 ВСІ НЕЙРОННІ МОДЕЛІ ВИПРАВЛЕНО!")
-
 # ==============================================================================
 # 1. CONFIGURATION LOADER
 # ==============================================================================
@@ -498,9 +384,6 @@ class ColabTrainingController:
                 import subprocess
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "pytorch-tabnet"])
                 print("✅ pytorch-tabnet встановлено")
-
-        # Виправити проблеми з типами даних
-        fix_neural_models_dtype()
 
         # Очистити кеші перед початком
         self.clear_caches()
@@ -1661,9 +1544,6 @@ if __name__ == "__main__":
 
     # Initialize controller first to setup paths
     controller = ColabTrainingController()
-
-    # ВИПРАВИТИ DTYPE ПРОБЛЕМУ
-    fix_neural_models_dtype()
 
     # ОЧИСТИТИ КЕШ SmartFeatureSelector
     try:
