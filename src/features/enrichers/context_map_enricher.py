@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.features.context_schema import record_schema
 
 from .base import BaseEnricher
 
@@ -200,6 +201,18 @@ class ContextMapEnricher(BaseEnricher):
     def _generate_context_features(self, res_df: pd.DataFrame, state_cols: list[str], temporal_cols: list[str]):
         """Створює фінгерпрінт як конкатенацію станів."""
         all_state_cols = sorted(set(state_cols + temporal_cols))
+        # Position i of every fingerprint below IS all_state_cols[i]. Nothing
+        # recorded that until now, so any analysis of which driver hurts could
+        # only name positions -- and the ordering silently shifts whenever the
+        # feature set changes, which re-points every fingerprint ever written.
+        # Registering it makes fingerprints decodable and, more importantly,
+        # makes a stale decoding detectable.
+        recorded = record_schema(all_state_cols)
+        if recorded:
+            logger.info(
+                "Context driver schema %s recorded (%d drivers).",
+                recorded, len(all_state_cols),
+            )
         res_df['context_fingerprint'] = res_df[all_state_cols].astype(str).agg('|'.join, axis=1)
         if state_cols:
             res_df['context_stability'] = (res_df[state_cols] == 0).sum(axis=1) / len(state_cols)

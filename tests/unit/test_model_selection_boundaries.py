@@ -17,13 +17,25 @@ LIGHT = ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "k
 HEAVY = ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]
 
 
+class _NoHistory:
+    """Stands in for ContextPerformanceHistory without opening a database.
+
+    Returning None is also the honest answer today: the diary holds no
+    resolved outcomes, so a real history has nothing to fit either.
+    """
+
+    def similarity_inputs(self, fingerprint, **kwargs):
+        return None
+
+
 class _Manager:
     """Exercises the selection logic without building trainers or an arena."""
 
-    def __init__(self, models_config, recommendation=None):
+    def __init__(self, models_config, recommendation=None, history=None):
         self._models_config = models_config
         self.logger = __import__("logging").getLogger("test")
         self.context_selector = _StubSelector(recommendation)
+        self._context_history = history or _NoHistory()
 
     class _ConfigManager:
         def __init__(self, models_config):
@@ -41,6 +53,9 @@ class _Manager:
     )
     _select_models_for_ticker = UnifiedTrainingManager._select_models_for_ticker
     _get_available_model_names = UnifiedTrainingManager._get_available_model_names
+    # The real merge logic, not a stub: it decides what select_models sees.
+    _with_similarity_inputs = UnifiedTrainingManager._with_similarity_inputs
+    _performance_history = UnifiedTrainingManager._performance_history
 
 
 class _StubSelector:
@@ -112,6 +127,72 @@ def test_no_configured_opinion_means_no_filtering():
 def test_permitted_names_ignores_categories(models_config, expected):
     """Unioning light+heavy would readmit the models the split excluded."""
     assert UnifiedTrainingManager._permitted_model_names(models_config) == expected
+
+
+def test_the_fitted_finder_is_handed_to_the_selector():
+    """select_models failed its first isinstance check every time, because
+    nothing put current_context or similarity_finder into `data`."""
+    import pandas as pd
+
+    seen = {}
+
+    class _Recording(_StubSelector):
+        def select_models(self, ticker, context_fingerprint, data=None):
+            seen.update(data or {})
+            return ["catboost"]
+
+    class _History:
+        def similarity_inputs(self, fingerprint, **kwargs):
+            return {
+                "current_context": pd.Series([1.0, 0.0]),
+                "similarity_finder": object(),
+                "contexts_considered": 12,
+            }
+
+    manager = _Manager({"enabled_types": LIGHT}, history=_History())
+    manager.context_selector = _Recording(None)
+
+    manager._select_models_for_ticker("AAPL", {"context_fingerprint": "1|0"})
+
+    assert "current_context" in seen
+    assert "similarity_finder" in seen
+
+
+def test_a_caller_that_already_supplied_a_finder_is_not_overridden():
+    import pandas as pd
+
+    supplied = object()
+    seen = {}
+
+    class _Recording(_StubSelector):
+        def select_models(self, ticker, context_fingerprint, data=None):
+            seen.update(data or {})
+            return ["catboost"]
+
+    manager = _Manager({"enabled_types": LIGHT})
+    manager.context_selector = _Recording(None)
+
+    manager._select_models_for_ticker("AAPL", {
+        "context_fingerprint": "1|0",
+        "current_context": pd.Series([9.0]),
+        "similarity_finder": supplied,
+    })
+
+    assert seen["similarity_finder"] is supplied
+
+
+def test_a_memory_layer_failure_does_not_stop_training():
+    """The configured categories are a complete answer on their own."""
+    class _Broken:
+        def similarity_inputs(self, fingerprint, **kwargs):
+            raise AttributeError("no database")
+
+    manager = _Manager({"enabled_types": LIGHT}, recommendation=None,
+                       history=_Broken())
+
+    assert manager._select_models_for_ticker(
+        "AAPL", {"context_fingerprint": "1|0"}
+    ) == LIGHT
 
 
 def test_the_heuristic_preference_matches_the_case_producers_use():

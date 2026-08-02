@@ -183,7 +183,10 @@ class UnifiedTrainingManager:
                 None)
             if callable(select_models):
                 # Prefer contextual selection when caller provided the required inputs.
-                recommended = select_models(ticker, context_fingerprint, data=data)
+                recommended = select_models(
+                    ticker, context_fingerprint,
+                    data=self._with_similarity_inputs(data, context_fingerprint),
+                )
                 if recommended:
                     permitted = self._permitted_model_names(models_config)
                     allowed = (
@@ -215,6 +218,61 @@ class UnifiedTrainingManager:
         available_models = self._get_available_model_names()
         self.logger.info(f"Using all available models: {available_models}")
         return available_models
+
+    def _with_similarity_inputs(
+        self, data: dict[str, Any] | None, context_fingerprint: str
+    ) ->dict[str, Any] | None:
+        """Add the fitted finder and current context select_models needs.
+
+        Without this, select_models failed its very first isinstance check and
+        returned None every time -- the selector was wired up, logged at
+        startup, and could not possibly answer. The inputs it wants are not in
+        the training-context dict because nothing built them: a
+        KnnSimilarityFinder fitted on historical contexts, and an outcomes
+        frame with a target_<model> column per model.
+        ContextPerformanceHistory builds both from experience_diary.
+
+        A caller that already supplied them wins -- this only fills gaps, so a
+        test or a future caller with a better-fitted finder is not overridden.
+        """
+        if not context_fingerprint or context_fingerprint == 'default':
+            return data
+        enriched = dict(data or {})
+        if enriched.get('current_context') is not None and enriched.get('similarity_finder') is not None:
+            return enriched
+        try:
+            inputs = self._performance_history().similarity_inputs(context_fingerprint)
+        except (ValueError, TypeError, AttributeError, KeyError, OSError) as exc:
+            # Never let the memory layer stop a training run. The categories
+            # above are a complete answer on their own.
+            self.logger.warning(
+                "Could not assemble contextual selection inputs: %s", exc
+            )
+            return data
+        if not inputs:
+            return data
+        enriched.setdefault('current_context', inputs['current_context'])
+        enriched.setdefault('similarity_finder', inputs['similarity_finder'])
+        self.logger.info(
+            "Contextual selection has %d comparable historical context(s).",
+            inputs['contexts_considered'],
+        )
+        return enriched
+
+    def _performance_history(self):
+        """Built on first use: it opens a database connection, and the branch
+        that needs it does not run in the shipped configuration."""
+        history = getattr(self, '_context_history', None)
+        if history is None:
+            from src.data.management.data_manager import DataManager
+            from src.meta_learning.memory.context_performance_history import (
+                ContextPerformanceHistory,
+            )
+            history = ContextPerformanceHistory(
+                DataManager(self.config_manager), self.logger
+            )
+            self._context_history = history
+        return history
 
     @staticmethod
     def _permitted_model_names(models_config: dict[str, Any]) ->set[str]:

@@ -551,6 +551,32 @@ class DiaryEngine(BaseMetaComponent):
         DecisionOutcome.BREAK_EVEN.value,
     )
 
+    def agent_outcome_rate(self, agent_id: str, outcome: str) -> float:
+        """Share of this agent's resolved trades ending in `outcome`.
+
+        The baseline every per-driver rate must be read against. An agent that
+        loses 55% of everything loses roughly 55% in most market states too;
+        without subtracting that, every driver looks damning and the analysis
+        describes the agent instead of the state.
+        """
+        query = f"""
+        SELECT
+            COUNT(*) AS total_count,
+            SUM(CASE WHEN outcome = ? THEN 1 ELSE 0 END) AS hit_count
+        FROM experience_diary
+        WHERE agent_id = ?
+          AND outcome IN ({','.join('?' * len(self._RESOLVED_OUTCOMES))})
+        """
+        rows = pd.DataFrame(self.data_manager.fetch_all(
+            query, params=[outcome, agent_id, *self._RESOLVED_OUTCOMES]
+        ))
+        if rows.empty:
+            return 0.0
+        total = float(rows.iloc[0].get('total_count') or 0.0)
+        if total <= 0:
+            return 0.0
+        return float(rows.iloc[0].get('hit_count') or 0.0) / total
+
     def _component_outcome_rates(
         self, agent_id: str, outcome: str
     ) -> dict[int, dict[str, dict[str, float]]]:

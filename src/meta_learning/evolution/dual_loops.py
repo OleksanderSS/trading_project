@@ -25,7 +25,6 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-import pandas as pd
 
 from src.analytics.arena.arena_battle import get_trading_arena
 from src.config.unified_config_manager import UnifiedConfigManager
@@ -33,7 +32,12 @@ from src.core.logging.logger import ProjectLogger
 from src.data.management.data_manager import DataManager
 from src.devtools.rule_generator import ContextRuleGenerator
 from src.meta_learning.base import BaseMetaComponent
-from src.meta_learning.memory.diary_engine import DiaryEngine
+from src.meta_learning.evolution.context_rule_synthesis import (
+    MIN_EXCESS_LOSS_RATE,
+    MIN_TRADES_FOR_RULE,
+    synthesise_context_rules,
+)
+from src.meta_learning.memory.diary_engine import DecisionOutcome, DiaryEngine
 
 
 class RuleStatus(Enum):
@@ -73,6 +77,11 @@ class LearningLoopsEngine(BaseMetaComponent):
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self._initialize_database()
 
+        # ContextRuleGenerator answers a different question from rule
+        # synthesis (forward returns after an indicator crosses a threshold,
+        # from price history) and is driven by its own run_analysis entry
+        # point. Kept constructed because it is part of this engine's declared
+        # surface; hypothesis generation no longer routes through it.
         self.rule_generator = ContextRuleGenerator(config_manager, data_manager)
         self.arena = get_trading_arena()
 
@@ -137,51 +146,42 @@ class LearningLoopsEngine(BaseMetaComponent):
         if not top_loss_fingerprints:
              return []
 
-        # The "temporary compatibility layer" this used to announce was never
-        # built, and the gap is wider than a missing method:
+        # This used to call ContextRuleGenerator.generate_rules_from_context,
+        # a method that does not exist -- and could not simply be added,
+        # because that class answers a different question (forward returns
+        # after an indicator crosses a threshold, given price history) and
+        # returns a different shape (indicator/condition/value/event_count/
+        # effects_on_target, none of which is the description/conditions/
+        # action read below).
         #
-        #   - ContextRuleGenerator has no generate_rules_from_context. Its
-        #     methods are run_analysis / _generate_rules /
-        #     _analyze_single_indicator, so this line raises AttributeError.
-        #   - Those methods answer a different question. _generate_rules takes
-        #     price history and measures forward returns after an indicator
-        #     crosses a threshold; the frame built above holds one column,
-        #     context_fingerprint, which is not an indicator and carries no
-        #     prices.
-        #   - Their output is {'indicator', 'condition', 'value',
-        #     'event_count', 'effects_on_target'}, while the loop below reads
-        #     rule_data['description'], ['conditions'] and ['action']. Even a
-        #     method with the right name would KeyError three lines later.
-        #
-        # So this needs a real implementation of "derive rules from losing
-        # contexts", which has never been specified, let alone approved.
-        #
-        # Until then: say so, once, at ERROR, and return nothing. Not raised,
-        # because update() has no handler and this runs inside the evolution
-        # loop -- an unimplemented feature must not take the loop down with
-        # it. Today the early return above always fires (no realized outcomes
-        # in the diary, so no vulnerabilities), which is exactly why this has
-        # gone unnoticed; paper trading is what will start reaching this line.
-        generate_from_context = getattr(
-            self.rule_generator, 'generate_rules_from_context', None
+        # Rules now come from the diary's own decomposition. Each context
+        # fingerprint is the concatenation of state_<FEATURE> columns at
+        # -1/0/1, so a rule is a checkable statement about the market: "when
+        # state_RSI_14 is +1, this agent loses 78% of the time (39 of 50),
+        # against its own baseline of 52%". The excess over the agent's own
+        # baseline is the part that says something about the STATE rather
+        # than the agent.
+        generated_rules_data = synthesise_context_rules(
+            agent_id,
+            vulnerability_data.get('component_loss_rates') or {},
+            baseline_loss_rate=self.diary.agent_outcome_rate(
+                agent_id, DecisionOutcome.UNPROFITABLE.value
+            ),
         )
-        if not callable(generate_from_context):
-            self.logger.error(
-                "Hypothesis generation is NOT IMPLEMENTED: "
-                "%s has no generate_rules_from_context, and its existing "
-                "rule format carries none of the keys this method reads "
-                "(description/conditions/action). %d loss fingerprint(s) for "
-                "agent '%s' were analysed and then discarded. No rules were "
-                "created -- this is a missing feature, not an absence of "
-                "findings.",
-                type(self.rule_generator).__name__,
-                len(top_loss_fingerprints),
-                agent_id,
+        if not generated_rules_data:
+            # Said out loud rather than returned as a bare []: "no rule
+            # cleared the evidence bar" and "the fingerprints could not be
+            # decoded" look identical from the outside, and only the second
+            # is a defect.
+            self.logger.info(
+                "No context rules for '%s': %d loss fingerprint(s) examined, "
+                "components decoded=%s, none cleared the evidence thresholds "
+                "(>= %d trades and >= %.0f%% above the agent's own loss rate).",
+                agent_id, len(top_loss_fingerprints),
+                vulnerability_data.get('components_decoded'),
+                MIN_TRADES_FOR_RULE, MIN_EXCESS_LOSS_RATE * 100,
             )
             return []
-
-        simulated_losing_trades = self._simulate_trades_from_fingerprints(top_loss_fingerprints)
-        generated_rules_data = generate_from_context(simulated_losing_trades)
 
         new_rules = []
         for i, rule_data in enumerate(generated_rules_data):
@@ -200,18 +200,6 @@ class LearningLoopsEngine(BaseMetaComponent):
             self.logger.info(f"New hypothesis generated and saved from diary analysis: {rule_id}")
 
         return new_rules
-
-    def _simulate_trades_from_fingerprints(self, fingerprints: list[dict[str, Any]]) -> pd.DataFrame:
-        """Creates a mock DataFrame for the legacy Rule Generator."""
-        records = []
-        for fp_data in fingerprints:
-            # Create one record per count to respect frequency
-            for _ in range(fp_data.get('loss_count', 1)):
-                records.append({
-                    'context_fingerprint': fp_data.get('context_fingerprint')
-                    # Add other columns if the rule generator needs them
-                })
-        return pd.DataFrame(records)
 
     def run_performance_review(self) -> dict[str, Any]:
         self.logger.info("Running system-wide performance review using DiaryEngine.")
