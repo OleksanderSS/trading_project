@@ -184,17 +184,31 @@ class CompareLayersExperiment(BaseExperiment):
 
         for _, row in best_configs.iterrows():
             experience = {
+                "event_type": "optimization_result",
+                "regime": row['regime'],
+                "time_frame": row['time_frame'],
                 "layers": row['layers'],
                 "ensemble_method": row['ensemble_method'],
                 "sharpe": row['Sharpe'],
                 "total_return": row['Total Return'],
                 "timestamp": datetime.now().isoformat()
             }
-            self.diary.add_entry(
-                ticker=row['ticker'],
-                regime=row['regime'],
-                event_type="optimization_result",
-                data=experience
+            # DiaryEngine has no add_entry(ticker, regime, event_type, data) --
+            # it never did, so this raised AttributeError at the very end of a
+            # full experiment run, after all the work was done. The real API is
+            # record_decision (a trade) or record_decision_metadata (a
+            # measurement). These are measurements, so they go to the latter:
+            # its rows carry outcome='metadata', which every rate and weight
+            # query excludes, so an optimisation Sharpe cannot be mistaken for
+            # a realised result.
+            #
+            # Deliberately NOT passed as model_prediction/raw_score. Averaging
+            # an unbounded metric together with predictions is the defect that
+            # once produced a performance score of -13,820 for `linear`.
+            self.diary.record_decision_metadata(
+                experience,
+                agent_id=f"layer_experiment:{row['ensemble_method']}",
+                ticker=str(row['ticker']),
             )
         logger.info(f"Saved {len(best_configs)} best configurations to ExperienceDiary.")
 

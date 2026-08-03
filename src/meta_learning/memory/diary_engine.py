@@ -368,8 +368,28 @@ class DiaryEngine(BaseMetaComponent):
         if self.logger.isEnabledFor(logging.DEBUG):
             self.logger.debug(f"Recorded decision for {decision.ticker} by {decision.agent_id}")
 
-    def record_decision_metadata(self, metadata: dict[str, Any]):
-        """Records consensus decision metadata for analysis."""
+    def record_decision_metadata(
+        self,
+        metadata: dict[str, Any],
+        *,
+        agent_id: str = "consensus_engine",
+        ticker: str = "CONSENSUS",
+    ):
+        """Records non-decision metadata for analysis.
+
+        `agent_id` and `ticker` were hardcoded, which made this usable only
+        by the consensus engine -- anything else writing here would have its
+        subject silently replaced by "CONSENSUS". They are now parameters,
+        defaulted to the original values.
+
+        Rows land with outcome='metadata', which every rate and weight query
+        excludes (they take outcome IN ('profitable','unprofitable',
+        'break_even')). That is what makes this the right home for results
+        that are measurements rather than trades: an optimisation Sharpe
+        recorded here cannot contaminate a win rate. Do NOT put such a figure
+        in model_prediction -- averaging an unbounded metric with predictions
+        is the defect that produced a -13,820 performance score for `linear`.
+        """
         try:
             # Store metadata in a separate table or extend existing one
             # For now, we'll log it as a special record
@@ -378,11 +398,11 @@ class DiaryEngine(BaseMetaComponent):
                 # This used to emit `uuid.uuid4().int & 0x7FFFFFFF`, so the two
                 # writers of this same table disagreed on the type of `id`.
                 "id": str(uuid.uuid4()),
-                "agent_id": "consensus_engine",
+                "agent_id": agent_id,
                 # Was `* 1000`: this writer put milliseconds in a column every
                 # other writer filled with seconds.
                 "decision_timestamp": diary_timestamp(),
-                "ticker": "CONSENSUS",
+                "ticker": ticker,
                 "decision_type": "metadata",
                 "reasoning": json.dumps(metadata),
                 "market_context": json.dumps(metadata),
@@ -404,7 +424,7 @@ class DiaryEngine(BaseMetaComponent):
                 unique_on=["agent_id", "decision_timestamp", "ticker", "decision_type"],
             )
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug("Recorded consensus metadata")
+                self.logger.debug("Recorded %s metadata for %s", agent_id, ticker)
         except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
             self.logger.error(f"Failed to record decision metadata: {e}",
                 exc_info=True)

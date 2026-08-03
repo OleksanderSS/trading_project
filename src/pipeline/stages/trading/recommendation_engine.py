@@ -7,6 +7,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from src.config.target_type_registry import (
+    CLASSIFICATION_TARGET_TYPES,
+    load_target_types,
+)
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
 from src.core.utils.prediction_utils import normalize_prediction
@@ -118,21 +122,77 @@ class TradingRecommendationEngine:
             ticker = meta.get('ticker', '')
             target = meta.get('target', '')
             metrics = meta.get('metrics') or {}
-            is_regression = isinstance(metrics, dict) and ('r2' in metrics or
-                'mse' in metrics)
-            if is_regression:
-                accuracy = metrics.get('r2', metrics.get('score', 0.0))
-            else:
-                accuracy = metrics.get('accuracy', metrics.get('score', 0.0))
+            # The metric a model is RANKED on must be decided by the target,
+            # not by which keys a particular model happened to report.
+            #
+            # This used to infer `is_regression` per model from whether its
+            # metrics dict contained r2/mse, then store R2 for some and
+            # accuracy for others under one key named 'accuracy' -- and
+            # _get_champion_model_for_target takes max() over that key. R2
+            # ranges (-inf, 1] and sits near zero on financial returns;
+            # accuracy ranges [0, 1] and a coin flip scores 0.50. Comparing
+            # them ranks a useless classifier above a genuinely useful
+            # regressor every time. A model that simply reported a different
+            # metric set from its peers on the SAME target was enough to
+            # trigger it.
+            score, score_metric = self._ranking_score(target, metrics)
             model_info = {'context_id': context_id, 'model_type':
                 model_type, 'ticker': ticker, 'target': target, 'accuracy':
-                accuracy, 'metrics': metrics}
+                score, 'score_metric': score_metric, 'metrics': metrics}
             key = f'{ticker}_{target}'
             if any(heavy in model_type for heavy in heavy_model_types):
                 heavy_models.setdefault(key, []).append(model_info)
             else:
                 light_models.setdefault(key, []).append(model_info)
         return heavy_models, light_models
+
+    def _ranking_score(
+        self, target: str, metrics: dict[str, Any]
+    ) -> tuple[float, str]:
+        """The comparable score for a model, and which metric it came from.
+
+        Keyed on the TARGET's declared type, so every candidate for one
+        target is read on the same scale. A model missing that metric scores
+        -inf rather than 0.0: zero is a real R2 (a model no better than the
+        mean) and a real accuracy (never right), so defaulting to it lets a
+        model with no measurement outrank one that was measured and was bad.
+        """
+        if not isinstance(metrics, dict):
+            return float('-inf'), 'missing'
+
+        target_type = self._target_type(target)
+        preferred = (
+            ('accuracy', 'auc')
+            if target_type in CLASSIFICATION_TARGET_TYPES
+            else ('r2',)
+        )
+        for name in preferred:
+            value = metrics.get(name)
+            if isinstance(value, (int, float)):
+                return float(value), name
+
+        # 'score' is the project's own selection score and is at least
+        # consistent across models, so it is a usable fallback -- but only
+        # after the type-appropriate metric is missing, and it is reported so
+        # a mixed ranking is visible rather than silent.
+        value = metrics.get('score')
+        if isinstance(value, (int, float)):
+            return float(value), 'score'
+        return float('-inf'), 'missing'
+
+    def _target_type(self, target: str) -> str:
+        types = getattr(self, '_target_types_cache', None)
+        if types is None:
+            try:
+                types = load_target_types()
+            except (OSError, ValueError, TypeError, KeyError) as exc:
+                self.logger.warning(
+                    "Could not load target types (%s); ranking will fall back "
+                    "to regression metrics.", exc,
+                )
+                types = {}
+            self._target_types_cache = types
+        return str(types.get(str(target), ''))
 
     def _get_champion_model_for_target(self, target_key: str, heavy_models:
         dict[str, list[dict[str, Any]]], light_models: dict[str, list[dict[
@@ -141,7 +201,26 @@ class TradingRecommendationEngine:
             target_key, [])
         if not combined_group:
             return None
-        return max(combined_group, key=lambda x: x['accuracy'])
+
+        # Candidates scored on different metrics are not comparable, and
+        # picking a max over them silently favours whichever metric has the
+        # friendlier range. Say so rather than pretend the winner is one.
+        metrics_used = {model.get('score_metric') for model in combined_group}
+        if len(metrics_used) > 1:
+            self.logger.warning(
+                "Champion selection for %s compares models scored on "
+                "different metrics (%s); the ranking is not on one scale.",
+                target_key, sorted(str(name) for name in metrics_used),
+            )
+
+        champion = max(combined_group, key=lambda x: x['accuracy'])
+        if champion['accuracy'] == float('-inf'):
+            self.logger.warning(
+                "No candidate for %s reported a usable metric; no champion.",
+                target_key,
+            )
+            return None
+        return champion
 
     def _populate_champion_by_target(self, recommendations: dict[str, Any],
         heavy_models: dict[str, list[dict[str, Any]]], light_models: dict[

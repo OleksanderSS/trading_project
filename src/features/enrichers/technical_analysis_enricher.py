@@ -42,7 +42,14 @@ class TechnicalAnalysisEnricher(BaseEnricher):
             from src.analytics.calculators.volatility_calculator import VolatilityCalculator
             from src.analytics.detectors.regime_detector import MarketRegimeDetector
             self.VolatilityCalculator = VolatilityCalculator()
-            self.MarketRegimeCalculator = MarketRegimeDetector()
+            # Named for what it holds. It was `self.MarketRegimeCalculator`,
+            # which is the name of a DIFFERENT class -- one that existed in
+            # src/analytics/calculators until 2026-08-02 and computed regimes
+            # by comparing each bar against a quantile of the WHOLE series,
+            # i.e. with lookahead. Two things under one name, where one of
+            # them leaks, is a mistake waiting to be made by whoever reads
+            # this next.
+            self.regime_detector = MarketRegimeDetector()
             self.FamaFrenchFactors = FamaFrenchFactors()
             self.DrawdownCalculator = DrawdownCalculator()
             self.EconometricsCalculator = EconometricsCalculator()
@@ -311,7 +318,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                 float('nan'),
             )
             clustering_floor = int(
-                getattr(self.MarketRegimeCalculator, 'min_samples_for_clustering', 252)
+                getattr(self.regime_detector, 'min_samples_for_clustering', 252)
             )
             trailing_window = max(30, clustering_floor - 1)
             regimes = []
@@ -323,7 +330,7 @@ class TechnicalAnalysisEnricher(BaseEnricher):
                     confidence.append(float('nan'))
                     continue
                 try:
-                    regime_result = self.MarketRegimeCalculator.detect_regime(
+                    regime_result = self.regime_detector.detect_regime(
                         history.to_numpy(dtype=float)
                     )
                 except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, DataProcessingError) as e:

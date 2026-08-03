@@ -88,7 +88,7 @@ def test_market_regime_features_are_prefix_invariant():
     full = pd.DataFrame({"close": 100.0 * (1.0 + returns).cumprod()})
     prefix = full.iloc[:60].copy()
     enricher = object.__new__(TechnicalAnalysisEnricher)
-    enricher.MarketRegimeCalculator = DeterministicRegimeDetector()
+    enricher.regime_detector = DeterministicRegimeDetector()
 
     enricher._add_market_regime_features(full, returns=returns)
     enricher._add_market_regime_features(prefix, returns=returns.iloc[:60])
