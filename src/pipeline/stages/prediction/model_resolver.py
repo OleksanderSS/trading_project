@@ -404,25 +404,57 @@ class ModelResolver:
                 self.logger.error(f'Виникла помилка: {e}', exc_info=True)
                 self.logger.warning(f'Error loading light models: {e}')
 
+    #: What Colab actually writes, and the names earlier revisions used.
+    #: colab_clean_cell.py._save_results_summary produces colab_results.json;
+    #: NOTHING produces colab_results_summary.json. This resolver looked only
+    #: for that second name, and when it was absent did nothing at all --
+    #: silently. Every heavy model Colab trained was therefore invisible to
+    #: Stage 5, which then ran on light models alone while reporting success.
+    #: Kept as an ordered list rather than a single name because
+    #: hybrid/results_processor._find_results_file already tries exactly these
+    #: three; two readers of one artifact disagreeing about its filename is
+    #: how this happened.
+    _COLAB_RESULT_FILENAMES = (
+        'colab_results_summary.json',
+        'colab_results.json',
+        'results.json',
+    )
+
     def _load_heavy_models_from_disk(self, batch_dir: Path, models_metadata:
         dict[str, Any]) ->None:
-        colab_summary_file = batch_dir / 'colab_results_summary.json'
-        if colab_summary_file.exists():
-            try:
-                with open(colab_summary_file) as f:
-                    colab_results = json.load(f)
-                    if 'models_metadata' in colab_results:
-                        heavy_meta = colab_results['models_metadata']
-                        models_metadata.update(heavy_meta)
-                        self.logger.info(
-                            f'Loaded {len(heavy_meta)} heavy models from {colab_summary_file.name}'
-                            )
-                    else:
-                        self._process_ticker_results_from_colab(colab_results,
-                            models_metadata)
-            except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError) as e:
-                self.logger.error(f'Виникла помилка: {e}', exc_info=True)
-                self.logger.warning(f'Error loading colab models: {e}')
+        colab_summary_file = next(
+            (
+                batch_dir / name
+                for name in self._COLAB_RESULT_FILENAMES
+                if (batch_dir / name).exists()
+            ),
+            None,
+        )
+        if colab_summary_file is None:
+            # Said out loud. "Colab produced nothing" and "Colab's output is
+            # under a name nobody looked for" are indistinguishable from the
+            # outside, and only the second is a defect.
+            self.logger.warning(
+                "No Colab results file in %s (looked for %s); Stage 5 will "
+                "resolve light models only.",
+                batch_dir, ', '.join(self._COLAB_RESULT_FILENAMES),
+            )
+            return
+        try:
+            with open(colab_summary_file, encoding='utf-8') as f:
+                colab_results = json.load(f)
+                if 'models_metadata' in colab_results:
+                    heavy_meta = colab_results['models_metadata']
+                    models_metadata.update(heavy_meta)
+                    self.logger.info(
+                        f'Loaded {len(heavy_meta)} heavy models from {colab_summary_file.name}'
+                        )
+                else:
+                    self._process_ticker_results_from_colab(colab_results,
+                        models_metadata)
+        except (ValueError, TypeError, AttributeError, KeyError, ZeroDivisionError, OSError) as e:
+            self.logger.error(f'Виникла помилка: {e}', exc_info=True)
+            self.logger.warning(f'Error loading colab models: {e}')
 
     def _process_ticker_results_from_colab(self, colab_results: dict[str,
         Any], models_metadata: dict[str, Any]) ->None:
