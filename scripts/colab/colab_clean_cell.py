@@ -95,6 +95,49 @@ class ConfigLoader:
         self.MAX_ITERATIONS: int = 100
         self._load_runtime_params()
         self.target_types: dict[str, str] = self._load_target_types()
+        self.heavy_models: list[str] = self._load_heavy_models()
+
+    #: Last resort only. Kept in sync with models.yaml by
+    #: tests/contracts/test_hybrid_split_single_source.py, which fails if the
+    #: two drift -- a fallback that silently disagrees with the config is
+    #: worse than no fallback, because it looks like it worked.
+    _HEAVY_MODELS_FALLBACK = [
+        'mlp', 'cnn', 'lstm', 'gru', 'transformer', 'tabnet', 'autoencoder',
+    ]
+
+    def _load_heavy_models(self) -> list[str]:
+        """Read the heavy-model list from src/config/models.yaml.
+
+        This list used to be a literal inside run_training_pipeline, which
+        made it a second hand-maintained copy of models.yaml's
+        `models.categories.heavy`. They agreed, but nothing kept them
+        agreeing -- and the local side had already been annotated to say
+        models.yaml is the source. One copy is now the source and this reads
+        it, the same way _load_target_types reads targets.yaml.
+
+        Falls back rather than raising: this runs in Colab with booked GPU
+        time, and an incompletely synced repo should not cost a session. The
+        warning is loud because a silent fallback is how the two drifted
+        apart in the first place.
+        """
+        models_path = self.project_path / "src" / "config" / "models.yaml"
+        if not models_path.exists():
+            print(f"⚠️ {models_path} не знайдено — використовую вбудований список важких моделей")
+            return list(self._HEAVY_MODELS_FALLBACK)
+        try:
+            import yaml
+            with open(models_path, encoding="utf-8") as handle:
+                config = yaml.safe_load(handle) or {}
+            heavy = (
+                (config.get("models") or {}).get("categories", {}) or {}
+            ).get("heavy")
+            if not isinstance(heavy, list) or not heavy:
+                print(f"⚠️ У {models_path} немає models.categories.heavy — використовую вбудований список")
+                return list(self._HEAVY_MODELS_FALLBACK)
+            return [str(name) for name in heavy]
+        except (OSError, yaml.YAMLError, AttributeError, TypeError) as exc:
+            print(f"⚠️ Не вдалося прочитати {models_path} ({exc}) — використовую вбудований список")
+            return list(self._HEAVY_MODELS_FALLBACK)
 
     def _load_target_types(self) -> dict[str, str]:
         """Read each target's declared `type:` from src/config/targets.yaml
@@ -427,8 +470,10 @@ class ColabTrainingController:
             # Filter tickers
             tickers = self._filter_tickers(targets_df)
 
-            # Get heavy models
-            heavy_models = ['mlp', 'cnn', 'lstm', 'gru', 'transformer', 'tabnet', 'autoencoder']
+            # From src/config/models.yaml (models.categories.heavy), not a
+            # literal: this was a second hand-maintained copy of the config
+            # the local side already treats as the source of the split.
+            heavy_models = self.config_loader.heavy_models
             print(f"📊 Важкі моделі для тренування: {heavy_models}")
 
             # Process each ticker
