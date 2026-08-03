@@ -9,7 +9,9 @@ files_to_patch = [
     "src/main/modes/training_data_pipeline.py",
     "src/features/feature_orchestrator.py",
     "src/monitoring/feature_drift_monitor.py",
-    "src/colab/config/config_loader.py",
+    # src/colab/config/config_loader.py was here until 2026-08-02, when the
+    # whole src/colab/ package was archived. It skips missing paths anyway,
+    # so leaving it would only have printed "File not found" forever.
     "src/core/security/secure_secrets_manager.py",
     "src/core/system/version_manager.py"
 ]
