@@ -56,20 +56,57 @@ class PipelineExecutor:
         'src/pipeline/stages',
         'src/features',
         'src/analytics/calculators',
+        # Added 2026-08-02. Both were holes in exactly the guarantee this
+        # mechanism exists to provide:
+        #
+        # src/targets — stages/feature_engineering/targets.py is covered, but
+        #   it only delegates: TargetOrchestrator and timeframe_contract, which
+        #   decide every value in the cached targets.parquet, live here. A fix
+        #   to target horizons or boundary masking was silently skipped by a
+        #   stale cache.
+        # src/processing — Stage 2 cleaning and filtering produce the frame
+        #   Stage 3 enriches, so its logic determines the cached features just
+        #   as directly as an enricher does.
+        'src/targets',
+        'src/processing',
     )
 
+    #: Config decides WHICH enrichers, analyzers and targets run at all, so a
+    #: YAML edit changes the cached output as surely as a code edit. Only .py
+    #: was hashed before.
+    _CONFIG_FINGERPRINT_DIR = 'src/config'
+
+    #: Written BY the pipeline (ContextRuleGenerator._save_rules_to_yaml).
+    #: Hashing a file the run itself produces would move the fingerprint on
+    #: every run and turn the cache into a permanent miss.
+    _GENERATED_CONFIG_PREFIXES = ('generated_',)
+
     @staticmethod
-    def _compute_code_fingerprint() -> str:
-        """SHA-256 over every .py file's path + content under
-        _CODE_FINGERPRINT_DIRS, in sorted (deterministic) order."""
-        project_root = Path(__file__).resolve().parent.parent.parent
-        hasher = hashlib.sha256()
-        file_paths: list[Path] = []
+    def _fingerprint_files(project_root: Path) -> list[Path]:
+        """Every file whose content determines what stages 0-3 compute."""
+        paths: list[Path] = []
         for rel_dir in PipelineExecutor._CODE_FINGERPRINT_DIRS:
             dir_path = project_root / rel_dir
             if dir_path.exists():
-                file_paths.extend(dir_path.rglob('*.py'))
-        for path in sorted(file_paths):
+                paths.extend(dir_path.rglob('*.py'))
+
+        config_dir = project_root / PipelineExecutor._CONFIG_FINGERPRINT_DIR
+        if config_dir.exists():
+            paths.extend(
+                path for path in config_dir.rglob('*.yaml')
+                if not path.name.startswith(
+                    PipelineExecutor._GENERATED_CONFIG_PREFIXES
+                )
+            )
+        return paths
+
+    @staticmethod
+    def _compute_code_fingerprint() -> str:
+        """SHA-256 over every relevant file's path + content, in sorted
+        (deterministic) order."""
+        project_root = Path(__file__).resolve().parent.parent.parent
+        hasher = hashlib.sha256()
+        for path in sorted(PipelineExecutor._fingerprint_files(project_root)):
             try:
                 hasher.update(str(path.relative_to(project_root)).replace('\\', '/').encode('utf-8'))
                 hasher.update(path.read_bytes())
