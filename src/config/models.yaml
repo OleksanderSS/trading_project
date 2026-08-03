@@ -31,6 +31,16 @@ models:
     BTC_LSTM_v2: "data/trained_models/BTC_LSTM_v2.joblib"
     consensus_meta_model: "data/trained_models/consensus_meta_model.pkl"
 
+  # The hybrid split. `light` is trained locally by UnifiedTrainingManager;
+  # `heavy` is trained in Colab, where scripts/colab/colab_clean_cell.py
+  # builds each one directly (sklearn MLPRegressor, tf.keras.Sequential,
+  # pytorch_tabnet). Since 2026-08-02 the local ModelFactory has no class for
+  # the heavy names and says so explicitly if asked for one -- so this list
+  # documents what goes to Colab, it does not enable anything locally.
+  #
+  # `heavy` and colab_clean_cell.py's own heavy_models list are two
+  # hand-maintained copies of one thing. They currently agree; if they ever
+  # diverge, this file is the intended source.
   categories:
     light: ["catboost", "lightgbm", "xgboost", "random_forest", "linear", "svm", "knn"]
     heavy: ["mlp", "cnn", "lstm", "gru", "transformer", "tabnet", "autoencoder"]

@@ -30,16 +30,37 @@ class ModelFactory:
     # tools and tests that never build a neural model. Tree models were
     # already lazy (their entries below are plain strings delegated to
     # TreeModelFactory); this gives the neural ones the same treatment.
-    _lazy_class_paths: ClassVar[dict[str, str]] = {
-        'LSTM': 'src.models.neural.lstm_model:LSTMModel',
-        'GRU': 'src.models.neural.gru_model:GRUModel',
-        'CNN': 'src.models.neural.cnn_model:CNNModel',
-        'Transformer': 'src.models.neural.transformer_model:TransformerModel',
-        'TabNet': 'src.models.neural.tabnet_model:TabNetModel',
-        'MLP': 'src.models.neural.mlp_model:MLPModel',
-        'Autoencoder': 'src.models.neural.autoencoder_model:AutoencoderModel',
-    }
+    #
+    # The seven neural entries were REMOVED on 2026-08-02 and their classes
+    # archived to src/archive/models_neural_unreachable/. They were
+    # unreachable from both training paths and had been for some time:
+    #
+    #   - Locally, _select_models_for_ticker returns models.yaml's `light`
+    #     category, which contains none of them.
+    #   - In Colab, colab_clean_cell.py builds every model directly with
+    #     sklearn MLPRegressor, tf.keras.Sequential and pytorch_tabnet; it
+    #     imports none of these classes.
+    #   - Prediction does not revive them either: src/models/loader.py loads
+    #     saved artifacts with joblib.load and keras load_model on file
+    #     paths, not by reconstructing project classes. There were zero
+    #     saved .pkl/.keras files at the time of removal, so no artifact
+    #     depended on the class definitions.
+    #
+    # get_available_models() therefore listed 16 model types when 9 could
+    # actually be built -- a list consulted by DEFAULT_ENABLED_MODEL_TYPES
+    # and handed to ContextualModelSelector as its universe of candidates.
+    #
+    # src/models/neural/sequence_builder.py is deliberately NOT archived:
+    # loader.py uses SequenceBuilder to shape inputs for Colab-trained
+    # sequence models at prediction time.
+    _lazy_class_paths: ClassVar[dict[str, str]] = {}
     _resolved_classes: ClassVar[dict[str, Any]] = {}
+
+    #: Trained in Colab, never locally. Named here so asking for one gets an
+    #: explanation instead of a bare "unknown model".
+    _COLAB_ONLY_MODELS: ClassVar[frozenset[str]] = frozenset({
+        'lstm', 'gru', 'cnn', 'transformer', 'tabnet', 'mlp', 'autoencoder',
+    })
 
     # Mapping to actual classes
     _class_map: ClassVar[dict[str, Any]] = {
@@ -115,6 +136,25 @@ class ModelFactory:
                 raise ValueError(f"Unsupported model name: {original_name}") from e
             ModelFactory._resolved_classes[canonical_name] = resolved
             return resolved
+
+        if str(original_name).strip().lower() in ModelFactory._COLAB_ONLY_MODELS:
+            # Distinguishable from a typo. models.yaml still declares these
+            # under categories.heavy -- correctly, since that is the list of
+            # what Colab trains -- so a caller can reach here holding a
+            # perfectly valid model name that simply is not built on this
+            # side of the hybrid split.
+            logger.error(
+                "Model '%s' is trained in Colab, not locally: it is in "
+                "models.yaml categories.heavy and is built inside "
+                "scripts/colab/colab_clean_cell.py. The local factory has no "
+                "class for it.",
+                original_name,
+            )
+            raise ValueError(
+                f"Model '{original_name}' is a Colab-side model and cannot be "
+                f"built locally. Local training uses models.yaml "
+                f"categories.light."
+            )
 
         logger.error(f"Model '{original_name}' not found in factory.")
         raise ValueError(f'Unsupported model name: {original_name}')
@@ -195,10 +235,24 @@ class ModelFactory:
 
     @staticmethod
     def get_available_models() ->list[str]:
+        """Model names this factory can actually build.
+
+        ModelRegistry describes every model the SYSTEM knows about, which
+        includes the seven trained in Colab. This returned that full list,
+        and its callers read it as "what can be trained here":
+        DEFAULT_ENABLED_MODEL_TYPES, UnifiedTrainingManager's fallback when
+        no category is configured, and ContextualModelSelector's universe of
+        candidates -- so the selector could rank, and recommend, a model no
+        local code path can construct.
+
+        The registry is still the source; this only removes what this side of
+        the hybrid split cannot build. Use ModelRegistry.get_all_model_names()
+        directly when the question really is "what models exist".
         """
-        Returns a list of all available model names from ModelRegistry.
-        """
-        return ModelRegistry.get_all_model_names()
+        return [
+            name for name in ModelRegistry.get_all_model_names()
+            if str(name).strip().lower() not in ModelFactory._COLAB_ONLY_MODELS
+        ]
 
     @staticmethod
     def get_model(model_name: str, **kwargs) ->BaseModel | None:
