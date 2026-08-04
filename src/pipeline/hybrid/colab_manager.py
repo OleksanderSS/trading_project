@@ -18,6 +18,7 @@ from src.core.logging.logger import ProjectLogger
 from src.features.utils.datetime_utils import ensure_datetime_column
 from src.features.validation.feature_leakage_guard import FeatureLeakageGuard
 from src.pipeline.target_column_utils import is_direct_target_column, is_target_like_column
+from src.pipeline.timeframe_lineage import normalize_timeframe
 from src.pipeline.timeframe_lineage import (
     normalize_timeframe,
     partition_market_frame_by_timeframe,
@@ -328,15 +329,62 @@ class ColabManager:
             logger.debug("📊 Full mode: config.json NOT created (all data will be processed)")
         return None
 
+    @staticmethod
+    def _delivered_timeframes(f_df: pd.DataFrame) -> set[str]:
+        """Timeframes actually present in the exported features."""
+        column = next(
+            (c for c in ('interval', 'timeframe') if c in f_df.columns), None
+        )
+        if column is None:
+            return set()
+        return {
+            tf for tf in (
+                normalize_timeframe(value) for value in f_df[column].dropna().unique()
+            ) if tf
+        }
+
+    @staticmethod
+    def _missing_timeframes(requested: list[str], delivered: set[str]) -> list[str]:
+        """Requested timeframes with no rows, compared on normalised names.
+
+        '1h' and '60m' are the same timeframe under two spellings -- the
+        request says 1h, the data says 60m -- so a raw set difference reports
+        a phantom gap and hides the real one.
+        """
+        return sorted(
+            original for original in requested
+            if normalize_timeframe(original) not in delivered
+        )
+
     def _create_batch_metadata(self, name: str, timestamp: str, config: BatchPreparationConfig,
                               f_df: pd.DataFrame, t_df: pd.DataFrame,
                               f_path: Path, t_path: Path, c_path: Path | None) -> dict[str, Any]:
         """Creates the batch metadata dictionary."""
+        delivered = self._delivered_timeframes(f_df)
+        requested = [str(tf) for tf in (config.timeframes or [])]
+        missing = self._missing_timeframes(requested, delivered)
+        if missing:
+            # A requested timeframe that produced no rows is a third of the
+            # run silently absent. The 2026-08-04 batch recorded
+            # timeframes: ['15m', '1d', '1h'] while features.parquet held
+            # only 1d and 60m, and targets.parquet carried no 15m target at
+            # all -- nothing said so, and every downstream stage reported
+            # success on two thirds of the requested scope.
+            logger.error(
+                "Batch '%s' was asked for timeframe(s) %s and produced NONE. "
+                "Delivered: %s. Nothing downstream will mention this again -- "
+                "no features, no targets, no champions for them.",
+                name, missing, sorted(delivered) or '(none)',
+            )
         return {
             'batch_name': name,
             'timestamp': timestamp,
             'tickers': config.tickers,
-            'timeframes': config.timeframes,
+            'timeframes': requested,
+            # Requested and delivered, side by side, because they are not the
+            # same question and the metadata answered only the first.
+            'timeframes_delivered': sorted(delivered),
+            'timeframes_missing': missing,
             'features_shape': f_df.shape,
             'targets_shape': t_df.shape,
             'accumulated': config.accumulate,
