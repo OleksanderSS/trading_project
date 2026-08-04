@@ -469,7 +469,6 @@ class TechnicalAnalysisEnricher(BaseEnricher):
         except Exception as e:
             logger.warning(f"Error calculating Hurst exponent: {e}")
             return 0.5
-        return 0.5
 
     def _add_adaptive_indicator_features(self, df_enriched: pd.DataFrame) -> None:
         """

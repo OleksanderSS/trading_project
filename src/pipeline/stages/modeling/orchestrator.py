@@ -71,6 +71,13 @@ class ModelingStage(BaseStage):
 
         self.training_manager = UnifiedTrainingManager(training_config)
         self.comparison_analyzer = ModelComparisonAnalyzer()
+        # These three were the tail of __init__ until a4ca9176 inserted
+        # _resolve_test_size above them; they ended up AFTER that method's
+        # `return` and became unreachable, so models_dir and diary_path were
+        # never assigned and _init_infrastructure never ran. Restored here.
+        self.models_dir = self.config_manager.get_models_path()
+        self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
+        self._init_infrastructure()
 
     def _resolve_purge_gap(self, configured: int) -> int:
         """Purge gap widened to cover the furthest target horizon.
@@ -114,9 +121,6 @@ class ModelingStage(BaseStage):
                 f'Policy manager unavailable ({e}); '
                 f'falling back to test_size={DEFAULT_TEST_SIZE}.')
             return self.modeling_config.get('test_size', DEFAULT_TEST_SIZE)
-        self.models_dir = self.config_manager.get_models_path()
-        self.diary_path = Path(self.system_config.get('diary_path', 'logs/experience_diary.csv'))
-        self._init_infrastructure()
 
     def _init_infrastructure(self):
         """Initializes the environment."""
