@@ -345,7 +345,15 @@ class ModelingStage(BaseStage):
                         'pattern_id': current_pattern,
                         'winner': winner_name,
                         'model_type': winner_name,
-                        'model_category': 'unified',
+                        # 'light', not 'unified'. Stage 5 counts categories
+                        # with m.get('model_category') == 'light', so every
+                        # model this stage produced was reported as neither
+                        # light nor heavy: the 2026-08-04 run logged
+                        # "Models: 0 light, 0 heavy, 506 total". The models
+                        # were there; the label was not the one the counter
+                        # looks for. These ARE the light half of the hybrid
+                        # split -- models.yaml categories.light.
+                        'model_category': 'light',
                         'metrics': metrics,
                         'model_path': ticker_result.get('model_path'),
                         'selected_features': list(

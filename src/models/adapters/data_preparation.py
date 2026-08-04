@@ -10,7 +10,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 
 from src.core.exceptions import DataProcessingError
 from src.core.logging.logger import ProjectLogger
-from src.pipeline.target_column_utils import is_target_like_column
+from src.pipeline.target_column_utils import is_identity_column, is_target_like_column
 
 logger = ProjectLogger.get_logger("DataPreparationAdapter")
 
@@ -81,9 +81,10 @@ def prepare_data_for_models(
         df_processed, categorical_info = handle_categorical_features(filtered_df, target_cols)
 
         # 4. Feature selection
-        # Переконуємось, що context_pattern_id включено, якщо він є
         feature_cols = [c for c in df_processed.select_dtypes(include=[np.number]).columns
-                        if not is_target_like_column(c) and c not in ['datetime', 'date']]
+                        if not is_target_like_column(c)
+                        and c not in ['datetime', 'date']
+                        and not is_identity_column(c)]
         feature_cols = [
             column
             for column in feature_cols
@@ -177,8 +178,13 @@ def prepare_data_for_models(
 def handle_categorical_features(df: pd.DataFrame, exclude_cols: list[str]) -> tuple[pd.DataFrame, dict]:
     """Кодує категоріальні колонки."""
     df_out = df.copy()
+    # Identity and context columns are excluded here, not only at feature
+    # selection: label-encoding them first would turn a row hash into a
+    # plausible integer that survives every downstream numeric check.
     cat_cols = [c for c in df_out.select_dtypes(include=['object', 'category']).columns
-                if c not in exclude_cols and 'ticker' not in c.lower() and 'timeframe' not in c.lower()]
+                if c not in exclude_cols
+                and not is_identity_column(c)
+                and 'ticker' not in c.lower() and 'timeframe' not in c.lower()]
 
     info = {}
     for col in cat_cols:

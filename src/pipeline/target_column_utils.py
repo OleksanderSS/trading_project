@@ -7,9 +7,56 @@ from collections.abc import Iterable
 _DIRECT_TARGET_PREFIXES = ("target_", "target.", "target:", "target-", "target ")
 _DERIVED_TARGET_MARKERS = ("_target_", "_target.", "_target:", "_target-", "_target ")
 
+#: Columns that identify a row or describe its context, rather than
+#: describing the market. They must never become model features -- see
+#: is_identity_column for what happens when they do.
+_IDENTITY_STEMS = (
+    "hash",
+    "record_hash",
+    "context_fingerprint",
+    "context_pattern_seq",
+    "context_pattern_id",
+    "context_schema_id",
+    "symbol",
+    "ticker",
+    "interval",
+    "timeframe",
+)
+
 
 def _normalize_column_name(column: object) -> str:
     return str(column).strip().lower()
+
+
+def is_identity_column(column: object) -> bool:
+    """True for row identifiers and context keys, with or without a suffix.
+
+    These are strings, so `handle_categorical_features` label-encodes any
+    with more than five distinct values before feature selection sees them --
+    turning them into perfectly ordinary-looking integers. Three consequences,
+    all observed on the 2026-08-04 run:
+
+    - `hash` is unique per row. Label-encoded it becomes a dense row index,
+      and a tree model can split on it to memorise the training set. An
+      identifier is the purest form of leakage there is.
+    - `context_fingerprint` and `context_pattern_seq` carry tri-state
+      structure ('0|1|-1|...'). Label encoding maps them to an arbitrary
+      integer ordered alphabetically, which is meaningless as a magnitude and
+      destroys the structure the KNN context search depends on.
+    - The LabelEncoder is local to that function and never persisted, so no
+      unseen string can be mapped back at prediction time. Models trained on
+      these columns cannot be scored on new data even in principle.
+
+    Matched by stem so suffixed forms are covered: the enrichers emit
+    context_fingerprint_1d and context_pattern_seq_60m, and a check against
+    the bare names alone would miss every one of them -- the same
+    one-thing-two-names trap this project has hit repeatedly.
+    """
+    text = _normalize_column_name(column)
+    for stem in _IDENTITY_STEMS:
+        if text == stem or text.startswith(f"{stem}_"):
+            return True
+    return False
 
 
 def is_direct_target_column(column: object) -> bool:
