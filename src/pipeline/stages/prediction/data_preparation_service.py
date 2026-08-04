@@ -5,12 +5,14 @@ Handles data preparation, validation, and ticker-specific data processing.
 Extracted from stage_5_prediction.py to reduce coupling and improve testability.
 """
 import logging
+from collections import Counter
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.timeframe_lineage import is_timeframe_token, normalize_timeframe
 from src.pipeline.stages.prediction.lineage import (
     apply_lineage_attrs,
     source_lineage_attrs,
@@ -96,7 +98,8 @@ class DataPreparationService:
     def prepare_ticker_data(
         self,
         features_df: pd.DataFrame,
-        ticker: str
+        ticker: str,
+        timeframe: str | None = None,
     ) -> pd.DataFrame | None:
         """
         Prepare ticker-specific data for prediction.
@@ -104,11 +107,28 @@ class DataPreparationService:
         Args:
             features_df: Full features DataFrame
             ticker: Ticker symbol to extract
+            timeframe: The model's timeframe. Required in practice, optional
+                in the signature only so existing callers keep working.
 
         Returns:
             Prepared DataFrame for the ticker, or None if no data
+
+        The timeframe filter is the whole point. features.parquet stacks
+        every timeframe in one frame -- AAPL is 325 rows of 1d and 372 of
+        60m -- and each timeframe's features carry a suffix, so SMA_5_1d is
+        NaN on every 60m row by construction. Taking `.tail(50)` blind
+        therefore handed a 1d model fifty 60m rows in which all 120 of its
+        selected features were null.
+
+        Measured on the 2026-08-04 run: 310 contexts (tabnet 240, mlp 24,
+        and 33 more) reported "no data after dropping incomplete rows", and
+        Stage 5 finished with 0 predictions from 330 resolved models while
+        the pipeline reported success.
         """
-        ticker_df = features_df[features_df['ticker'] == ticker].tail(50)
+        ticker_rows = features_df[features_df['ticker'] == ticker]
+        if timeframe:
+            ticker_rows = self._rows_for_timeframe(ticker_rows, ticker, timeframe)
+        ticker_df = ticker_rows.tail(50)
         if ticker_df.empty:
             self.logger.warning(f'⚠️ No data for ticker {ticker}')
             return None
@@ -180,7 +200,9 @@ class DataPreparationService:
 
         self.logger.info(f'🔍 Processing context: {context_id}')
 
-        ticker_df_clean = self.prepare_ticker_data(features_df, ticker)
+        ticker_df_clean = self.prepare_ticker_data(
+            features_df, ticker, self._model_timeframe(meta, context_id)
+        )
         if ticker_df_clean is None:
             return None
         lineage_attrs = dict(ticker_df_clean.attrs)
@@ -239,6 +261,66 @@ class DataPreparationService:
             ),
             selected_features,
         )
+
+    def _model_timeframe(self, meta: dict[str, Any], context_id: str) -> str | None:
+        """Which timeframe's rows this model was trained on.
+
+        Declared metadata wins. Where it is absent -- Colab writes
+        selected_features_*.json without one -- the features themselves say
+        it: every column carries a timeframe suffix, so a model whose
+        features are SMA_5_1d, EMA_20_1d ... is a 1d model. Inferred from the
+        majority so one stray unsuffixed name cannot flip the answer.
+        """
+        declared = normalize_timeframe(meta.get('timeframe'))
+        if declared and is_timeframe_token(declared):
+            return declared
+
+        suffixes: Counter[str] = Counter()
+        for name in meta.get('selected_features') or []:
+            _, separator, tail = str(name).rpartition('_')
+            if separator and is_timeframe_token(tail):
+                suffixes[normalize_timeframe(tail)] += 1
+
+        if not suffixes:
+            # Not an error: a frame with a single timeframe needs no filter.
+            # Said at debug so a silent full-frame tail stays traceable.
+            self.logger.debug(
+                'Context %s declares no timeframe and its features carry no '
+                'suffix; using every row for the ticker.', context_id,
+            )
+            return None
+
+        winner, count = suffixes.most_common(1)[0]
+        if len(suffixes) > 1:
+            self.logger.warning(
+                'Context %s mixes feature timeframes %s; using %s (%d of %d '
+                'features). A model trained across timeframes cannot be '
+                'sliced to one.',
+                context_id, dict(suffixes), winner, count, sum(suffixes.values()),
+            )
+        return winner
+
+    def _rows_for_timeframe(
+        self, ticker_rows: pd.DataFrame, ticker: str, timeframe: str
+    ) -> pd.DataFrame:
+        """Rows of `ticker_rows` belonging to `timeframe`, or all of them."""
+        column = next(
+            (c for c in ('interval', 'timeframe') if c in ticker_rows.columns), None
+        )
+        if column is None:
+            return ticker_rows
+
+        normalized = ticker_rows[column].map(normalize_timeframe)
+        matching = ticker_rows[normalized == timeframe]
+        if matching.empty:
+            # Falling through to the unfiltered frame would reproduce the
+            # exact bug this method exists to prevent, so it does not.
+            self.logger.error(
+                'No %s rows for %s (available: %s); skipping rather than '
+                'predicting from another timeframe.',
+                timeframe, ticker, sorted(set(normalized.dropna())),
+            )
+        return matching
 
     def _drop_incomplete_model_rows(
         self,
