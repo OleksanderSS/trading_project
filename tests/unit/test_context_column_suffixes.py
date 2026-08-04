@@ -180,3 +180,33 @@ def test_the_real_export_yields_a_regime_label_not_a_number(timeframe):
     assert regime != "unknown"
     # A label, not the confidence float from MARKET_REGIME_ENCODED_*.
     assert regime.replace("_", "").isalpha(), regime
+
+
+def test_the_training_pattern_is_read_with_its_timeframe_suffix():
+    """The axis the "Regime-Aware Training Arena" is built on never varied.
+
+    ModelingStage.run set
+
+        current_pattern = df['context_pattern_id'].iloc[-1]
+                          if 'context_pattern_id' in df.columns else 'normal'
+
+    against the BARE name, while ContextMapEnricher emits
+    context_pattern_id_1d / _60m. The condition was never true, so every
+    champion was filed under the literal 'normal' -- confirmed on the
+    2026-08-04 run: all 506 of them. Reading it with the timeframe yields 44
+    distinct (timeframe, pattern) pairs on the same export.
+    """
+    import inspect
+    import textwrap
+
+    from tests.contracts._lookahead_scan import _code_only
+
+    source = textwrap.dedent(inspect.getsource(ModelingStage.run))
+    # Comments and docstrings stripped: the replacement QUOTES the old
+    # expression to explain itself, and this assertion failed on that
+    # comment the first time it ran. Prose is not code -- the same
+    # distinction the lookahead scanner had to learn.
+    code = "\n".join(_code_only(source).values())
+
+    assert "_latest_context_value(" in code
+    assert "df['context_pattern_id'].iloc[-1]" not in code

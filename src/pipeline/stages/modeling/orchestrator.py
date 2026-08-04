@@ -155,8 +155,25 @@ class ModelingStage(BaseStage):
         logger.info('--- [Modeling Stage] Starting Regime-Aware Training Arena ---')
 
         for ticker, timeframe, df in self._iter_model_contexts(enriched_data):
-            # ✅ ELITE FIX: Визначаємо домінуючий патерн для цього тікера у вибірці
-            current_pattern = df['context_pattern_id'].iloc[-1] if 'context_pattern_id' in df.columns else 'normal'
+            # The dominant pattern for this ticker's window.
+            #
+            # This was `df['context_pattern_id'].iloc[-1] if
+            # 'context_pattern_id' in df.columns else 'normal'` -- the BARE
+            # column name. ContextMapEnricher runs per timeframe and emits
+            # context_pattern_id_1d / _60m, so the condition was never true
+            # and current_pattern was the literal 'normal' on every pass.
+            # Confirmed on the 2026-08-04 run: all 506 champions carry
+            # pattern_id='normal'. The pattern is the axis this entire
+            # "Regime-Aware Training Arena" is built around, and it had never
+            # varied once.
+            #
+            # Same defect as the context lookup fixed in ce566d0f; this call
+            # site was missed because it tests a column directly instead of
+            # going through _latest_context_value.
+            current_pattern = self._latest_context_value(
+                df, ("context_pattern_id",), default='normal',
+                timeframe=str(timeframe),
+            ) or 'normal'
             logger.info(
                 "Ticker %s/%s is currently in pattern: %s",
                 ticker,
