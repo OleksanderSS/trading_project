@@ -42,6 +42,13 @@ def _fingerprinted() -> set[str]:
     "src/processing/data_filter.py",
     # Decides which enrichers and analyzers run at all.
     "src/config/analysis.yaml",
+    # Decides what data ARRIVES, which decides the features built from it.
+    # Omitting these closed a circle: the cache gates all of stages 0-3 on
+    # whether the database grew, the database only grows if collection runs,
+    # so a broken collector could never be fixed -- the fix would not
+    # invalidate the cache, and collection would be skipped again.
+    "src/data/collectors/yf_collector.py",
+    "src/data/validation/price_source_gate.py",
 ])
 def test_a_file_that_changes_the_cached_output_is_fingerprinted(path):
     assert path in _fingerprinted(), (

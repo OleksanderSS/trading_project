@@ -69,6 +69,25 @@ class PipelineExecutor:
         #   as directly as an enricher does.
         'src/targets',
         'src/processing',
+        # Added 2026-08-05, and this one closes a CIRCLE rather than a gap.
+        #
+        # The cache check gates ALL of stages 0-3, collection included, on
+        # whether the database grew. But the database only grows if
+        # collection runs. So a broken collector produces no new data, the
+        # fingerprint stays put, the cache reports "no new data", collection
+        # is skipped -- and a fix to the collector can never take effect,
+        # because the thing it fixes is the thing being skipped.
+        #
+        # Observed exactly that: 7395f88c fixed a delisted ticker discarding
+        # every other ticker's download, and the next prepare run finished in
+        # 102 seconds without collecting anything, reporting success. The
+        # database had not gained a row since 2026-07-30.
+        #
+        # A collector change alters what data arrives, which alters the
+        # features built from it, so it belongs in the fingerprint on the
+        # same grounds as everything above.
+        'src/data/collectors',
+        'src/data/validation',
     )
 
     #: Config decides WHICH enrichers, analyzers and targets run at all, so a
