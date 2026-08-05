@@ -112,6 +112,12 @@ def price_source_issues(frame: pd.DataFrame) -> list[str]:
                 f"cross_identity_ohlcv_rows={contaminated_rows}"
             )
 
+    cross_interval = _cross_interval_duplicate_mask(frame)
+    if cross_interval.any():
+        issues.append(
+            f"cross_interval_ohlcv_rows={int(cross_interval.sum())}"
+        )
+
     for interval, interval_frame in frame.groupby(
         "interval",
         dropna=False,
@@ -170,6 +176,71 @@ def price_source_issues(frame: pd.DataFrame) -> list[str]:
     return sorted(set(issues))
 
 
+def _cross_interval_duplicate_mask(frame: pd.DataFrame) -> "pd.Series[bool]":
+    """One ticker's bar appearing under two different intervals.
+
+    The existing cross-identity check compares rows sharing a TIMESTAMP, so
+    it catches a daily bar written into the hourly series at the daily bar's
+    own time. It does not catch the same bar copied to a different hour --
+    and both shapes were present: AAPL's 2026-03-16 daily bar appeared at
+    02:00 as `1h` (same timestamp, caught) AND at 06:00 (different timestamp,
+    missed). 80 such rows sat in the hourly series, each carrying a full
+    day's range and volume under an hourly label.
+
+    Matching on open/high/low/close/volume without the timestamp is safe at
+    this precision: five floats at full double precision plus an exact share
+    count do not coincide between two genuinely different bars.
+
+    The copy in the FINER series is the one flagged, and the direction
+    matters: the daily bar is a genuine independent observation, while an
+    hourly row carrying the whole day's range AND the whole day's share count
+    is that daily bar wearing an hourly label. A real hour cannot contain a
+    full day's volume unless it was the day's only hour of trading.
+
+    (The first version of this had it backwards -- it kept the finer series
+    and dropped the daily bar, which would have deleted the real observation
+    and left the intruder in place.)
+    """
+    ohlcv = ["open", "high", "low", "close", "volume"]
+    mask = pd.Series(False, index=frame.index)
+    intervals = frame["interval"].astype(str).str.lower()
+    if intervals.nunique() < 2:
+        return mask
+
+    # Rows per interval decides which side is the coarser series.
+    order = intervals.value_counts()
+    for ticker, group in frame.groupby(frame["ticker"].astype(str), sort=False):
+        group_intervals = intervals.loc[group.index]
+        if group_intervals.nunique() < 2:
+            continue
+        duplicated = group.duplicated(ohlcv, keep=False)
+        if not duplicated.any():
+            continue
+        candidates = group.loc[duplicated]
+        candidate_intervals = group_intervals.loc[candidates.index]
+        spanning = (
+            candidates.groupby(ohlcv, dropna=False).apply(
+                lambda block: candidate_intervals.loc[block.index].nunique() > 1,
+                include_groups=False,
+            )
+        )
+        if spanning.empty or not spanning.any():
+            continue
+        for key, is_spanning in spanning.items():
+            if not is_spanning:
+                continue
+            block = candidates[
+                (candidates[ohlcv] == pd.Series(key, index=ohlcv)).all(axis=1)
+            ]
+            block_intervals = candidate_intervals.loc[block.index]
+            # Keep the COARSER series' row -- it is the genuine bar -- and
+            # drop its copy from the finer series, where a full day's volume
+            # cannot belong.
+            coarsest = min(block_intervals.unique(), key=lambda i: order.get(i, 0))
+            mask.loc[block.index[block_intervals != coarsest]] = True
+    return mask
+
+
 #: Issues that describe the FRAME, not particular rows. Nothing can be
 #: quarantined away from these, so they stay fatal.
 FRAME_LEVEL_PREFIXES = (
@@ -222,6 +293,10 @@ def quarantine_bad_rows(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame
     bad = timestamps.isna()
 
     bad |= frame.duplicated(["ticker", "datetime", "interval"], keep="first")
+
+    # A daily bar copied into the hourly series -- see
+    # _cross_interval_duplicate_mask. The coarser bar is kept.
+    bad |= _cross_interval_duplicate_mask(frame)
 
     price_columns = ["datetime", "open", "high", "low", "close", "volume"]
     identity = (

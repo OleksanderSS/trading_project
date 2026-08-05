@@ -68,7 +68,19 @@ assets:
       assets: [BABA, BIDU, JD, PDD, NIO, XPEV, LI, BILI]
     crypto:
       description: Auto-imported category crypto
-      assets: [COIN, MARA, RIOT, SQ, PYPL, BLOCK, GBTC, EBAY]
+      # SQ and BLOCK removed 2026-08-05: neither resolves on Yahoo any more
+      # ("possibly delisted; no timezone found"). Both were Block Inc. --
+      # SQ the original symbol, BLOCK a later one -- and each cost three
+      # retry rounds per interval on every collection run before failing.
+      #
+      # Until 7395f88c a failure here discarded every OTHER ticker's data
+      # for that whole interval, so these two silently cost the pipeline
+      # five days of collection.
+      #
+      # Block Inc.'s current symbol is NOT added back automatically: adding
+      # a ticker changes what the whole pipeline collects and models, which
+      # is a decision rather than a repair.
+      assets: [COIN, MARA, RIOT, PYPL, GBTC, EBAY]
   details:
     TSLA: {cik: 1318605}
     NVDA: {cik: 1045810}

@@ -212,3 +212,62 @@ def test_the_collector_quarantines_instead_of_raising():
     source = inspect.getsource(YFCollector.run)
 
     assert "quarantine_bad_rows(df_to_check)" in source
+
+
+# --- a daily bar wearing an hourly label -----------------------------------
+
+def _series(ticker, interval, rows, close, start, freq, volume=32074200.0):
+    return pd.DataFrame({
+        "datetime": pd.date_range(start, periods=rows, freq=freq, tz="UTC"),
+        "ticker": [ticker] * rows,
+        "interval": [interval] * rows,
+        "open": [close] * rows, "high": [close] * rows,
+        "low": [close] * rows, "close": [close] * rows,
+        "volume": [volume] * rows,
+    })
+
+
+def test_a_daily_bar_copied_into_the_hourly_series_is_caught():
+    """Found in the live database: AAPL's 2026-03-16 daily bar appeared in
+    the 1h series at 02:00 (same timestamp) AND at 06:00 (different one).
+    The existing cross-identity check compares rows sharing a timestamp, so
+    it saw the first and missed the second. 80 such rows were present."""
+    frame = pd.concat([
+        _series("AAPL", "1h", 6, 100.0, "2026-03-16 16:00", "1h"),
+        _series("AAPL", "1d", 1, 100.0, "2026-03-16 02:00", "1d"),
+    ], ignore_index=True)
+
+    assert any("cross_interval_ohlcv_rows" in i for i in price_source_issues(frame))
+
+
+def test_the_hourly_copy_is_dropped_and_the_daily_bar_kept():
+    """Direction matters. The daily bar is a genuine observation; an hourly
+    row carrying a full day's volume is that bar mislabelled. Dropping the
+    daily one would delete the real data and leave the intruder."""
+    frame = pd.concat([
+        _series("AAPL", "1h", 6, 100.0, "2026-03-16 16:00", "1h"),
+        _series("AAPL", "1d", 1, 100.0, "2026-03-16 02:00", "1d"),
+    ], ignore_index=True)
+
+    clean, rejected, _ = _quarantine(frame)
+
+    assert set(rejected["interval"]) == {"1h"}
+    assert set(clean["interval"]) == {"1d"}
+
+
+def test_different_prices_across_intervals_are_left_alone():
+    """The normal case: an hour and a day simply do not match."""
+    frame = pd.concat([
+        _series("AAPL", "1h", 6, 100.0, "2026-03-16 16:00", "1h"),
+        _series("AAPL", "1d", 1, 250.0, "2026-03-16 02:00", "1d"),
+    ], ignore_index=True)
+
+    clean, rejected, _ = _quarantine(frame)
+
+    assert rejected.empty and len(clean) == len(frame)
+
+
+def test_one_interval_alone_is_never_flagged():
+    frame = _series("AAPL", "1h", 6, 100.0, "2026-03-16 16:00", "1h")
+
+    assert not any("cross_interval" in i for i in price_source_issues(frame))
