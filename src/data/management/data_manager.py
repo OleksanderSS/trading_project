@@ -10,7 +10,8 @@ import pandas as pd
 
 from src.config.unified_config_manager import UnifiedConfigManager
 from src.core.error_handling.error_handler import ErrorHandler, IErrorHandler
-from src.core.exceptions import DataLoadError
+from src.core.exceptions import DataLoadError, DataProcessingError
+from src.data.validation.price_source_gate import price_source_issues
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +249,46 @@ class DataManager(IDatabaseManager):
             self.error_handler.handle_error(e, context={'tickers': tickers, 'operation': 'load_data_for_tickers'})
             raise DataLoadError(f"Failed to load data for tickers {tickers}: {e}") from e
 
+    #: Tables holding OHLCV bars. Anything written here passes the price
+    #: source gate first, whichever collector or import script is doing the
+    #: writing.
+    PRICE_TABLES: ClassVar[frozenset[str]] = frozenset({'market_data_raw'})
+
+    def _gate_price_source(self, table_name: str, df: pd.DataFrame) -> None:
+        """Refuse contaminated OHLCV at the door.
+
+        The gate itself already existed -- as a PRIVATE METHOD on the Yahoo
+        collector, one of 22. BaseCollector has no validation hook, so any
+        second price source (a Kaggle dump, another API, a CSV import) would
+        have written into market_data_raw with nothing in between.
+
+        The cost of not having it here is measured. A yfinance shared-cache
+        race filed one instrument's bars under another ticker; 63,038 rows
+        sat in the database for four months, 4,668 of them at impossible
+        prices (KO above 900, INTC above 900), until Stage 2's PriceFilter --
+        three stages downstream -- rejected the entire 15m timeframe. The
+        collector-side gate, once added, stopped it dead: zero contaminated
+        rows after 2026-07-22.
+
+        Raised rather than logged. A price table is the foundation every
+        later stage stands on, and a bad row there is not recoverable by
+        anything downstream -- it can only be discovered later and undone by
+        hand, which is exactly what this cost.
+        """
+        if table_name not in self.PRICE_TABLES:
+            return
+        issues = price_source_issues(df)
+        if not issues:
+            return
+        logger.error(
+            "Refused %d row(s) for '%s': the price source gate found %s.",
+            len(df), table_name, '; '.join(issues),
+        )
+        raise DataProcessingError(
+            f"Price data for '{table_name}' failed the source gate: "
+            + '; '.join(issues)
+        )
+
     def upsert(self, table_name: str, df: pd.DataFrame, unique_on: list[str] | None = None):
         """Insert rows from `df` whose `unique_on` key does not already
         exist in `table_name`. Despite the name, this is INSERT-IF-ABSENT,
@@ -272,6 +313,8 @@ class DataManager(IDatabaseManager):
         """
         if df.empty:
             return
+
+        self._gate_price_source(table_name, df)
 
         unique_on = unique_on or self._detect_unique_columns(df)
         df = self._clean_numeric_data(df, table_name)
