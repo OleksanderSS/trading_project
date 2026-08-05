@@ -13,7 +13,10 @@ import yfinance as yf
 
 from src.core.clients.http_client_factory import HttpClientFactory
 from src.data.management.data_manager import DataManager
-from src.data.validation.price_source_gate import price_source_issues
+from src.data.validation.price_source_gate import (
+    price_source_issues,
+    quarantine_bad_rows,
+)
 
 from .base_collector import BaseCollector
 
@@ -176,12 +179,38 @@ class YFCollector(BaseCollector):
         self.logger.info(f"Collected {len(all_price_data)} total data points from API.")
 
         df_to_check = pd.DataFrame(all_price_data)
-        issues = self._validate_collected_price_data(df_to_check)
-        if issues:
+        # Quarantine the bad rows; do not bin the batch for them.
+        #
+        # This raised on ANY issue, and on 2026-08-05 that meant refusing all
+        # 202,713 collected rows over cross_identity_ohlcv_rows=102 -- 0.05%
+        # of the download. The database had already gone six days without a
+        # new row and the refusal made it seven, with nothing in the log but
+        # "failed source gate". The 102 were genuinely bad and are still
+        # kept out; the other 202,611 are not.
+        #
+        # A frame-level defect -- absent columns, an empty frame, timestamps
+        # with no timezone -- still fails everything, because there is
+        # nothing to separate the good rows from.
+        df_to_check, rejected, fatal = quarantine_bad_rows(df_to_check)
+        if fatal:
             raise RuntimeError(
-                "Yahoo Finance data failed source gate: "
-                + "; ".join(issues)
+                "Yahoo Finance data failed source gate: " + "; ".join(fatal)
             )
+        if not rejected.empty:
+            self.logger.error(
+                "Source gate quarantined %d of %d collected row(s) (%s); the "
+                "remaining %d are kept.",
+                len(rejected), len(rejected) + len(df_to_check),
+                "; ".join(price_source_issues(rejected)) or "row-level defects",
+                len(df_to_check),
+            )
+        if df_to_check.empty:
+            self.logger.error(
+                "Every collected row was quarantined; nothing to persist."
+            )
+            return []
+        all_price_data = df_to_check.to_dict("records")
+
         if not persist:
             return all_price_data
 

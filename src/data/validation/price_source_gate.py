@@ -168,3 +168,81 @@ def price_source_issues(frame: pd.DataFrame) -> list[str]:
             )
 
     return sorted(set(issues))
+
+
+#: Issues that describe the FRAME, not particular rows. Nothing can be
+#: quarantined away from these, so they stay fatal.
+FRAME_LEVEL_PREFIXES = (
+    "missing_columns",
+    "empty_market_data",
+    "datetime_timezone_unresolved",
+)
+
+
+def quarantine_bad_rows(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Split a price frame into (clean, rejected, frame_level_issues).
+
+    Rejecting a whole download because a fraction of it is bad is the wrong
+    trade, and this project has now paid for it twice over. On 2026-08-05 the
+    Yahoo collector gathered 202,713 rows and the gate refused every one of
+    them over `cross_identity_ohlcv_rows=102` -- 0.05% of the batch. The
+    database had already gone six days without a new row; that refusal made
+    it seven, and the log said only that a source gate had failed.
+
+    Those 102 were real, and worth keeping out: the same instrument's daily
+    bar appearing in its hourly series, identical OHLCV and a full day's
+    volume under a 1h label. But 202,611 sound rows should not follow them
+    into the bin.
+
+    Row-level defects are dropped by row:
+
+      duplicate identity      the same (ticker, datetime, interval) twice
+      cross-identity OHLCV    identical open/high/low/close/volume under a
+                              different (ticker, interval) -- one series'
+                              bars filed under another's name
+      unparseable datetime    a row that cannot be placed in time
+
+    Frame-level defects still fail everything, because there is nothing to
+    quarantine them away from: absent columns, an empty frame, or timestamps
+    with no timezone at all.
+
+    Cadence is deliberately NOT enforced here. It describes a SERIES rather
+    than a row, so acting on it means dropping a whole ticker/interval, and
+    that decision belongs to the caller with the collection context in hand.
+    `price_source_issues` still reports it.
+    """
+    frame_issues = [
+        issue for issue in price_source_issues(frame)
+        if issue.startswith(FRAME_LEVEL_PREFIXES)
+    ]
+    if frame_issues or frame.empty:
+        return frame.iloc[0:0], frame, frame_issues
+
+    timestamps = pd.to_datetime(frame["datetime"], errors="coerce")
+    bad = timestamps.isna()
+
+    bad |= frame.duplicated(["ticker", "datetime", "interval"], keep="first")
+
+    price_columns = ["datetime", "open", "high", "low", "close", "volume"]
+    identity = (
+        frame["ticker"].astype(str).str.upper()
+        + "|"
+        + frame["interval"].astype(str).str.lower()
+    )
+    working = frame.assign(_identity=identity, _datetime=timestamps)
+    duplicated_prices = working.duplicated(price_columns, keep=False)
+    if duplicated_prices.any():
+        distinct_identities = (
+            working.loc[duplicated_prices]
+            .groupby(price_columns, dropna=False)["_identity"]
+            .transform("nunique")
+        )
+        # Keep the FIRST identity's copy rather than discarding every side:
+        # one of them is the genuine bar, and dropping both loses real data
+        # to punish the duplicate.
+        cross = distinct_identities > 1
+        offenders = working.loc[duplicated_prices].loc[cross]
+        losers = offenders.duplicated(price_columns, keep="first")
+        bad.loc[offenders.index[losers]] = True
+
+    return frame.loc[~bad].copy(), frame.loc[bad].copy(), []
