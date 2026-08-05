@@ -150,6 +150,24 @@ class FeatureEngineeringStage(BaseStage):
             validated = {}
             for raw_timeframe, frame in market_data_raw.items():
                 if not isinstance(frame, pd.DataFrame) or frame.empty:
+                    # An entire requested timeframe leaving here without a
+                    # word is how 15m disappeared from the 2026-08-04 batch:
+                    # batch_metadata recorded timeframes ['15m','1d','1h'],
+                    # features.parquet held only 1d and 60m, targets.parquet
+                    # carried no 15m column, and 0 of 506 champions were 15m.
+                    # Every later stage then reported success on two thirds
+                    # of the requested scope.
+                    if stage_logger is not None:
+                        stage_logger.error(
+                            "Timeframe '%s' reached feature engineering with "
+                            "%s and is being dropped. No features, no targets "
+                            "and no models will exist for it, and nothing "
+                            "downstream will mention it again.",
+                            raw_timeframe,
+                            "no DataFrame"
+                            if not isinstance(frame, pd.DataFrame)
+                            else "0 rows",
+                        )
                     continue
                 declared = normalize_timeframe(raw_timeframe)
                 report = timeframe_lineage_report(
@@ -188,8 +206,25 @@ class FeatureEngineeringStage(BaseStage):
         filtered_data = {}
         for tf, df in enriched_data.items():
             if 'interval' in df.columns:
-                filtered_df = df[df['interval'] == tf].copy()
+                # Compared on NORMALISED names. A raw `df['interval'] == tf`
+                # is one spelling away from selecting nothing: this project
+                # writes '1h' in config and '60m' in data, and the same pair
+                # has already cost it a rolling-window budget lookup and a
+                # macro availability column. partition_market_frame_by_timeframe
+                # normalises both sides today, so this is defence rather than
+                # a live bug -- but it costs nothing and the failure mode is
+                # an entire timeframe silently emptying.
+                normalized_tf = normalize_timeframe(tf)
+                matches = df['interval'].map(normalize_timeframe) == normalized_tf
+                filtered_df = df[matches].copy()
                 self.logger.info(f"Filtered {tf} timeframe: {len(df)} -> {len(filtered_df)} rows")
+                if filtered_df.empty and not df.empty:
+                    self.logger.error(
+                        "Timeframe '%s' had %d row(s) but none whose interval "
+                        "matches it (present: %s); it will contribute nothing "
+                        "to the combined features.",
+                        tf, len(df), sorted(set(df['interval'].dropna().astype(str)))[:5],
+                    )
                 filtered_data[tf] = filtered_df
             else:
                 filtered_data[tf] = df

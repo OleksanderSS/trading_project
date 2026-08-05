@@ -35,9 +35,21 @@ class PriceFilter:
         filtered_prices = {}
         quality_report = {}
 
+        # Every `continue` below removes an ENTIRE TIMEFRAME from the
+        # pipeline. Each one recorded its reason in quality_report and said
+        # nothing else, and nobody downstream reads that report -- so a
+        # timeframe could be requested, collected, and then dropped here in
+        # silence. That is the shape of the 2026-08-04 batch, which recorded
+        # timeframes ['15m','1d','1h'] and delivered two: no 15m features, no
+        # 15m targets, and 0 of 506 champions on 15m, with nothing in any log
+        # to say why. The reasons are now logged where they are decided.
         for timeframe, tf_data in price_data.items():
             if not isinstance(tf_data, pd.DataFrame) or tf_data.empty:
                 quality_report[timeframe] = {'status': 'empty', 'reason': 'no_data'}
+                self.logger.error(
+                    "Timeframe '%s' DROPPED: arrived empty. Nothing "
+                    "downstream will exist for it.", timeframe,
+                )
                 continue
 
             # Integrity checks run on EVERY series, regardless of length.
@@ -65,6 +77,15 @@ class PriceFilter:
                     'hard_failures': hard_failures,
                     **data_quality
                 }
+                self.logger.error(
+                    "Timeframe '%s' DROPPED on %s (%d rows). cadence_match=%s, "
+                    "extreme_return_ratio=%s. Thresholds: cadence>=%.2f, "
+                    "extreme<=%.3f.",
+                    timeframe, ','.join(hard_failures), len(tf_data),
+                    data_quality.get('cadence_match_ratio'),
+                    data_quality.get('extreme_return_ratio'),
+                    self.min_cadence_match_ratio, self.max_extreme_return_ratio,
+                )
                 continue
 
             if len(tf_data) < self.min_candles:
@@ -72,6 +93,10 @@ class PriceFilter:
                     'status': 'insufficient_data',
                     'reason': f'only_{len(tf_data)}_candles'
                 }
+                self.logger.error(
+                    "Timeframe '%s' DROPPED: %d candle(s), minimum is %d.",
+                    timeframe, len(tf_data), self.min_candles,
+                )
                 continue
 
             if data_quality['overall_score'] < self.min_quality or hard_failures:
@@ -85,6 +110,12 @@ class PriceFilter:
                     'hard_failures': hard_failures,
                     **data_quality
                 }
+                self.logger.error(
+                    "Timeframe '%s' DROPPED: quality score %.2f below the "
+                    "%.2f minimum (%d rows).",
+                    timeframe, data_quality['overall_score'],
+                    self.min_quality, len(tf_data),
+                )
                 continue
 
             gaps = self.detect_and_classify_gaps(tf_data)
