@@ -19,6 +19,7 @@ class PriceFilter:
         # was then scored as if the numbers were informative. 30 is a
         # conservative statistical floor; the smallest series actually stored
         # here is 322 bars, so no real data is affected.
+        self.logger = logger
         self.min_candles = config.get('min_candles_per_timeframe', 30)
         self.min_quality = config.get('min_data_quality_score', 0.6)
         self.anomaly_threshold = config.get('anomaly_std_dev_threshold', 3)
