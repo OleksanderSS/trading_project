@@ -236,18 +236,53 @@ class YFCollector(BaseCollector):
         all_ticker_data = []
         retries = max(1, int(self.configs.get("max_retries", 3)))
         delay = max(0, int(self.configs.get("retry_delay", 5)))
+        failed: list[str] = []
         for ticker in tickers:
-            df = self._single_ticker_download_with_retry(
-                ticker,
-                interval,
-                start_date,
-                end_date,
-                retries=retries,
-                delay=delay,
-            )
+            try:
+                df = self._single_ticker_download_with_retry(
+                    ticker,
+                    interval,
+                    start_date,
+                    end_date,
+                    retries=retries,
+                    delay=delay,
+                )
+            except RuntimeError as exc:
+                # One dead symbol must not discard the whole interval.
+                #
+                # _single_ticker_download_with_retry RAISES after its
+                # retries, and this loop had no handler -- so the exception
+                # unwound past every ticker already downloaded and
+                # all_ticker_data, complete up to that point, was thrown
+                # away with it. The caller only sees "[YF] Download task
+                # failed", one line per interval, and the database silently
+                # gains nothing.
+                #
+                # Observed on the 2026-08-05 run: 'BLOCK' is no longer a
+                # valid Yahoo symbol ("possibly delisted; no timezone
+                # found"), and its failure discarded 15m, 1h AND 1d for all
+                # 114 tickers. The database had not gained a row since
+                # 2026-07-30 -- five days of collection lost to one renamed
+                # instrument, with no error that named the consequence.
+                failed.append(str(ticker))
+                self.logger.warning(
+                    "Skipping %s/%s: %s. The remaining %d ticker(s) continue.",
+                    ticker, interval, exc, len(tickers) - len(failed),
+                )
+                continue
             if not df.empty:
                 processed_data = self._process_single_ticker_dataframe(df, ticker, interval)
                 all_ticker_data.extend(processed_data)
+
+        if failed:
+            # Said once, with the count, because a per-ticker warning in a
+            # 30,000-line log is not a summary.
+            self.logger.error(
+                "Interval %s: %d of %d ticker(s) could not be downloaded (%s). "
+                "%d row(s) collected from the rest.",
+                interval, len(failed), len(tickers),
+                ", ".join(failed[:10]), len(all_ticker_data),
+            )
         return all_ticker_data
 
     def _single_ticker_download_with_retry(self, ticker: str, interval: str, start_date: datetime, end_date: datetime, retries: int = 3, delay: int = 5) -> pd.DataFrame:
