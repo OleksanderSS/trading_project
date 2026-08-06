@@ -269,19 +269,68 @@ class PathManager:
         # Falls back to the in-project location, which is where --mode
         # prepare writes it.
         override = os.environ.get("COLAB_BATCH_DIR")
+        self.batch_dir = self._resolve_batch_dir(override)
+
+    @staticmethod
+    def _holds_batch(path) -> bool:
+        path = Path(path)
+        return (path / "features.parquet").exists() and (path / "targets.parquet").exists()
+
+    def _resolve_batch_dir(self, override: str | None) -> Path:
+        """Where the batch actually is: checked, then searched, then guessed.
+
+        An override used to be taken on faith. A run then failed several
+        screens later with
+
+            FileNotFoundError: Файли відсутні в
+            /content/drive/MyDrive/.../main_database
+
+        -- literal ellipsis, because the placeholder in a copied instruction
+        looked like a path. Trusting an override that points at nothing and
+        discovering it in the data loader is the worst of both: the value is
+        wrong AND the message arrives far from where it was set.
+
+        An override that holds no batch is now REJECTED at the point it is
+        read, and the search continues rather than the run failing outright.
+        """
+        default = Path(self.PROJECT_PATH) / "data" / "colab" / "accumulated" / "main_database"
+
         if override:
-            self.batch_dir = Path(override)
-            print(f"📦 BATCH_DIR (from COLAB_BATCH_DIR): {self.batch_dir}")
-        else:
-            self.batch_dir = Path(self.PROJECT_PATH) / "data" / "colab" / "accumulated" / "main_database"
-            print(f"📦 BATCH_DIR: {self.batch_dir}")
-        if not (self.batch_dir / "features.parquet").exists():
-            # Said here, where the path is still in hand, rather than as a
-            # FileNotFoundError several screens later.
+            candidate = Path(override)
+            if self._holds_batch(candidate):
+                print(f"📦 BATCH_DIR (from COLAB_BATCH_DIR): {candidate}")
+                return candidate
             print(
-                f"⚠️ features.parquet not found in {self.batch_dir}. "
-                "Set COLAB_BATCH_DIR to where the batch actually is."
+                f"⚠️ COLAB_BATCH_DIR points at {candidate}, which holds no "
+                "features.parquet/targets.parquet — ignoring it and looking "
+                "elsewhere."
             )
+
+        if self._holds_batch(default):
+            print(f"📦 BATCH_DIR: {default}")
+            return default
+
+        # Any other batch under the project's accumulated directory, newest
+        # first: a batch is identifiable by what it contains, so there is no
+        # need to make anyone type a path.
+        root = Path(self.PROJECT_PATH) / "data" / "colab" / "accumulated"
+        if root.exists():
+            found = sorted(
+                (p for p in root.iterdir() if p.is_dir() and self._holds_batch(p)),
+                key=lambda p: (p / "features.parquet").stat().st_mtime,
+                reverse=True,
+            )
+            if found:
+                print(f"📦 BATCH_DIR (found): {found[0]}")
+                if len(found) > 1:
+                    print(f"   ({len(found)} batches present; took the newest)")
+                return found[0]
+
+        print(f"❌ No batch found. Looked in {default}" +
+              (f", and under {root}" if root.exists() else "") +
+              (f", and at COLAB_BATCH_DIR={override}" if override else "") + ".")
+        print("   A batch is a directory holding features.parquet and targets.parquet.")
+        return default
 
 # ==============================================================================
 # 3. MEMORY MONITOR
