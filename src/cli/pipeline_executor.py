@@ -972,8 +972,63 @@ class PipelineExecutor:
             return args.tickers
 
         assets_config = config_manager.get_config('assets') or {}
+
+        # active_preset decides, when one is set.
+        #
+        # assets.yaml has declared `active_preset: default_volatile` with an
+        # 18-ticker list all along, and nothing read it -- this took every
+        # ticker from every sector instead. It made no visible difference
+        # while the database held 24 tickers, because Stage 3 can only
+        # enrich what was collected.
+        #
+        # Collection starting to work changed that. The 2026-08-06 run put
+        # 112 tickers in the database, so the next prepare enriched 110 and
+        # produced a 128,033-row export where the previous one had 15,433.
+        # Stage 4 would then train roughly five times the models: the last
+        # continue run built 506 in two hours.
+        preset_tickers = PipelineExecutor._active_preset_tickers(assets_config)
+        if preset_tickers:
+            logger.info(
+                "Using preset '%s': %d ticker(s). Every sector holds %d; set "
+                "active_preset to null to model all of them.",
+                assets_config.get('active_preset'), len(preset_tickers),
+                len(PipelineExecutor._load_tickers_from_sectors(
+                    assets_config.get('sectors', {})
+                )),
+            )
+            return preset_tickers
+
         sectors = assets_config.get('sectors', {})
         return PipelineExecutor._load_tickers_from_sectors(sectors)
+
+    @staticmethod
+    def _active_preset_tickers(assets_config: dict) -> list:
+        """Tickers of the preset named by `active_preset`, or [].
+
+        Returns empty -- meaning "no opinion, use every sector" -- when no
+        preset is named, the name does not resolve, or the preset lists no
+        tickers. An unresolvable name is reported rather than silently
+        widening the run to every instrument in the file.
+        """
+        name = assets_config.get('active_preset')
+        if not name:
+            return []
+        presets = assets_config.get('presets') or {}
+        preset = presets.get(name)
+        if not isinstance(preset, dict):
+            logger.warning(
+                "active_preset is '%s' but no such preset exists (known: %s); "
+                "falling back to every sector.",
+                name, sorted(presets) or 'none',
+            )
+            return []
+        tickers = [str(t) for t in (preset.get('tickers') or [])]
+        if not tickers:
+            logger.warning(
+                "Preset '%s' lists no tickers; falling back to every sector.",
+                name,
+            )
+        return tickers
 
     @staticmethod
     def _apply_test_ticker_if_needed(args, tickers):

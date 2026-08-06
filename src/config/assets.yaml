@@ -5,8 +5,15 @@ assets:
         sectors, as per user specification.
       sectors: [ai_big_tech, semiconductors, market_etfs, consumer_staples, energy,
         finance]
+      # The four XL* sector ETFs were added 2026-08-06. They were already
+      # being modelled -- every export up to that date carried 22 tickers,
+      # these four among them -- because they arrive as the Yahoo
+      # collector's `benchmark_tickers` and nothing then narrowed the set.
+      # Now that active_preset actually governs, a preset listing only 18
+      # would silently drop them. This list is the modelling scope, so it
+      # states all of it.
       tickers: [TSLA, NVDA, SPY, QQQ, AMD, KO, WMT, XOM, JPM, GS, AAPL, MSFT, GOOGL,
-        AMZN, INTC, TSM, IWM, BAC]
+        AMZN, INTC, TSM, IWM, BAC, XLE, XLF, XLK, XLV]
   active_preset: default_volatile
   sectors:
     ai_big_tech:
