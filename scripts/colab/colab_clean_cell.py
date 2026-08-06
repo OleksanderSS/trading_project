@@ -644,8 +644,43 @@ class ColabTrainingController:
         model_path = self.path_manager.batch_dir / model_filename
         
         if model_path.exists():
-            print(f"    ⏭️  {model_type:<14} | Вже існує, пропускаю.")
-            
+            # A skipped model used to be recorded with
+            # metrics={'info': 'already_exists'} and status='success'. The
+            # numbers from the run that actually trained it were gone, so on
+            # every re-run the whole heavy branch reported no measured
+            # quality at all: 1,405 of 1,638 contexts in the 2026-05-10
+            # results carry that placeholder and nothing else.
+            #
+            # That is not a cosmetic loss. Stage 5 ranks candidates on r2 or
+            # accuracy and scores a model with no usable metric at -inf, so a
+            # skipped heavy model can never become a champion -- the skip
+            # silently disqualifies it.
+            sidecar = self._load_sidecar(model_filename)
+            if sidecar:
+                print(f"    ⏭️  {model_type:<14} | Вже існує, метрики з кешу.")
+                model_result = {
+                    'status': 'success',
+                    'model_path': model_filename,
+                    'metrics': sidecar.get('metrics', {}),
+                    'selected_features': sidecar.get('selected_features', []),
+                }
+                self.results.setdefault('ticker_results', {}).setdefault(
+                    ticker, {'timeframes': {'all': {'results': {}}}}
+                )['timeframes']['all']['results'].setdefault(
+                    target_col, {'models': {}}
+                )['models'][model_type] = model_result
+                self.results.setdefault('models_metadata', {})[
+                    f"{ticker}_{target_col}_{model_type}"
+                ] = {
+                    'ticker': ticker, 'target': target_col,
+                    'model_type': model_type, 'model_path': model_filename,
+                    'metrics': sidecar.get('metrics', {}),
+                    'selected_features': sidecar.get('selected_features', []),
+                }
+                return model_result
+
+            print(f"    ⏭️  {model_type:<14} | Вже існує, метрик немає — пропускаю.")
+
             # Record result for skipped model
             try:
                 max_features = self._get_model_max_features(model_type)
@@ -726,7 +761,13 @@ class ColabTrainingController:
                 'metrics': metrics,
                 'selected_features': selected_features
             }
-            
+
+            # Persist the metrics beside the model. Without this the numbers
+            # exist only in THIS run's results file, and the next run --
+            # which skips the model because its file is on disk -- has
+            # nothing to report but "already_exists". See _load_sidecar.
+            self._save_sidecar(model_filename, metrics, selected_features)
+
             self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = model_result
             
             # Add to models_metadata for easier access. 'model_path', not
@@ -1587,6 +1628,49 @@ class ColabTrainingController:
 
         print(f"    🎯 Autoencoder - {metrics} - збережено: {model_path.name}")
         return metrics
+
+    def _sidecar_path(self, model_filename: str) -> Path:
+        return self.path_manager.batch_dir / f"{model_filename}.metrics.json"
+
+    def _save_sidecar(self, model_filename: str, metrics: dict, selected_features: list) -> None:
+        """Write a model's metrics next to the model itself.
+
+        A trained model's numbers otherwise live only in the results file of
+        the run that produced them. The next run finds the model file on
+        disk, skips training, and has nothing left to report -- which is how
+        1,405 heavy models came to carry {"info": "already_exists"} and no
+        measured quality whatsoever.
+        """
+        try:
+            payload = {
+                "metrics": metrics,
+                "selected_features": list(selected_features or []),
+                "saved_at": datetime.now().isoformat(),
+            }
+            self._sidecar_path(model_filename).write_text(
+                json.dumps(payload, ensure_ascii=False), encoding="utf-8"
+            )
+        except Exception as exc:
+            # Never fail a completed training run over its bookkeeping.
+            self.logger.warning("Could not save metrics sidecar for %s: %s",
+                                model_filename, exc)
+
+    def _load_sidecar(self, model_filename: str) -> dict | None:
+        """The saved metrics for a model, or None when there are none.
+
+        None means "this model predates the sidecar, or its file was lost" --
+        the caller then falls back to the old behaviour rather than inventing
+        numbers for a model it did not measure.
+        """
+        path = self._sidecar_path(model_filename)
+        if not path.exists():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            self.logger.warning("Unreadable metrics sidecar %s: %s", path, exc)
+            return None
+        return payload if isinstance(payload, dict) and payload.get("metrics") else None
 
     def _get_model_max_features(self, model_type):
         """Отримати максимальну кількість фіч для моделі"""
