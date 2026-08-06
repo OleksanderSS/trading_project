@@ -151,6 +151,59 @@ class FeatureLeakageGuard:
                     f"[{ticker}] ⛔ Forbidden pattern found in column: '{col}'")
         return forbidden
 
+    def _check_correlation_per_ticker(
+        self,
+        working: pd.DataFrame,
+        numeric_features: list[str],
+        numeric_targets: list[str],
+        ticker: str,
+    ) -> dict[str, dict[str, float]]:
+        """Highest within-ticker correlation for each feature/target pair.
+
+        Leakage is a property of one instrument's own history, so it is
+        measured there and the worst instrument decides. Averaging would let
+        a feature that leaks badly in one ticker hide behind a hundred where
+        it does not.
+
+        A ticker whose rows are too few to say anything is skipped rather
+        than counted as clean -- min_overlap applies per ticker for the same
+        reason it applied to the pooled frame.
+        """
+        high_corr: dict[str, dict[str, float]] = {}
+        worst: dict[tuple[str, str], float] = {}
+
+        for name, group in working.groupby('ticker', sort=False):
+            if len(group) < self.min_overlap:
+                continue
+            for tgt in numeric_targets:
+                target_values = group[tgt]
+                if target_values.notna().sum() < self.min_overlap:
+                    continue
+                # nunique() <= 1: a constant series has no correlation with
+                # anything, and pandas returns NaN rather than 0.
+                if target_values.nunique(dropna=True) <= 1:
+                    continue
+                corr_vec = group[numeric_features].corrwith(target_values).abs()
+                overlap = group.loc[
+                    target_values.notna(), numeric_features
+                ].notna().sum()
+                corr_vec = corr_vec[overlap >= self.min_overlap].dropna()
+                for feat, value in corr_vec.items():
+                    key = (str(feat), str(tgt))
+                    if value > worst.get(key, 0.0):
+                        worst[key] = float(value)
+
+        for (feat, tgt), value in worst.items():
+            if value < self.corr_threshold:
+                continue
+            high_corr.setdefault(feat, {})[tgt] = round(value, 4)
+            logger.warning(
+                f"[{ticker}] ⚠️ HIGH CORRELATION within a single ticker: "
+                f"'{feat}' ↔ '{tgt}' = {value:.3f} "
+                f"(threshold={self.corr_threshold}) — possible data leakage!"
+            )
+        return high_corr
+
     def _check_correlation(self, df: pd.DataFrame, feature_cols: list[str],
         target_cols: list[str], ticker: str) ->dict[str, dict[str, float]]:
         """
@@ -172,11 +225,45 @@ class FeatureLeakageGuard:
         # having compared nothing. corrwith aligns pairwise on its own, so
         # each feature is scored on every row where it and the target both
         # exist.
-        sample_df = df[numeric_features + numeric_targets]
-        if len(sample_df) > 50000:
-            sample_df = sample_df.sample(50000, random_state=42)
-        if sample_df.empty:
+        # Correlate WITHIN a ticker, not across the panel.
+        #
+        # Pooling every ticker's rows makes any two price-level series
+        # correlate at ~0.95, because both are "the price level of this
+        # instrument" and the instruments differ. Measured on the
+        # 2026-08-05 export, 110 tickers with median prices from $5 to $955,
+        # against target_ema_20_f1:
+        #
+        #     pooled          within-ticker median
+        #     close        0.9394        0.0000
+        #     EMA_100_1d   0.9521       -0.0008
+        #     EMA_200_1d   0.9588        0.0012
+        #
+        # The guard reported EMA_100_1d and EMA_200_1d as possible leakage on
+        # that run. `close` scores the same, which is the giveaway: if the
+        # 100-day average leaks, so does the price, and then the warning
+        # means nothing.
+        #
+        # It fails in the other direction too. A feature that genuinely leaks
+        # WITHIN a ticker can be diluted below the threshold once 109 other
+        # instruments are mixed in, so pooling both invents leakage and hides
+        # it. Neither had been visible before because the panel was 22
+        # tickers of similar price; growing it to 110 exposed both.
+        #
+        # The maximum across tickers is the number that matters: leakage in
+        # one instrument is leakage.
+        working = df[numeric_features + numeric_targets + (
+            ['ticker'] if 'ticker' in df.columns else []
+        )]
+        if len(working) > 50000:
+            working = working.sample(50000, random_state=42)
+        if working.empty:
             return high_corr
+
+        if 'ticker' in working.columns and working['ticker'].nunique() > 1:
+            return self._check_correlation_per_ticker(
+                working, numeric_features, numeric_targets, ticker
+            )
+        sample_df = working[numeric_features + numeric_targets]
         try:
             # Build suspicious set against ALL numeric targets, not just [0].
             # A feature that leaks target_weekly_return_1w but not target_up_1d
