@@ -90,6 +90,32 @@ class PipelineExecutor:
         'src/data/validation',
     )
 
+    #: Stage subtrees that CANNOT affect the cached artifact, because the
+    #: cache gates stages 0-3 only. Everything under 'src/pipeline/stages'
+    #: is hashed except these.
+    #:
+    #: Added 2026-08-06. Hashing them made every Stage 4/5 fix look like a
+    #: features change: bb7faa06 touched stages/modeling and
+    #: stages/prediction and moved the fingerprint, so the next prepare would
+    #: have re-collected and re-enriched for hours without altering a single
+    #: feature value. A cache invalidation that fires when nothing it
+    #: protects has changed is the kind people learn to work around, and the
+    #: workaround is what this mechanism exists to prevent.
+    #:
+    #: Stated as an EXCLUSION on purpose. A new stage subdirectory is then
+    #: covered by default: the failure mode of over-hashing is wasted time,
+    #: and the failure mode of under-hashing is a stale cache serving
+    #: features built by code that has since been fixed -- which this project
+    #: has already lived through (see the collector note above).
+    _STAGES_ROOT = 'src/pipeline/stages'
+    _NON_CACHED_STAGE_DIRS = (
+        'modeling',      # stage 4
+        'prediction',    # stage 5
+        'trading',       # stage 6
+        'evaluation',    # stage 7
+        'monitoring',    # runs alongside, reads results
+    )
+
     #: Config decides WHICH enrichers, analyzers and targets run at all, so a
     #: YAML edit changes the cached output as surely as a code edit. Only .py
     #: was hashed before.
@@ -101,13 +127,28 @@ class PipelineExecutor:
     _GENERATED_CONFIG_PREFIXES = ('generated_',)
 
     @staticmethod
+    def _is_non_cached_stage(path: Path, project_root: Path) -> bool:
+        """True for files under a stage that runs after the cached artifact."""
+        stages_root = project_root / PipelineExecutor._STAGES_ROOT
+        try:
+            relative = path.relative_to(stages_root)
+        except ValueError:
+            return False
+        return relative.parts[0] in PipelineExecutor._NON_CACHED_STAGE_DIRS
+
+    @staticmethod
     def _fingerprint_files(project_root: Path) -> list[Path]:
         """Every file whose content determines what stages 0-3 compute."""
         paths: list[Path] = []
         for rel_dir in PipelineExecutor._CODE_FINGERPRINT_DIRS:
             dir_path = project_root / rel_dir
             if dir_path.exists():
-                paths.extend(dir_path.rglob('*.py'))
+                paths.extend(
+                    path for path in dir_path.rglob('*.py')
+                    if not PipelineExecutor._is_non_cached_stage(
+                        path, project_root
+                    )
+                )
 
         config_dir = project_root / PipelineExecutor._CONFIG_FINGERPRINT_DIR
         if config_dir.exists():
