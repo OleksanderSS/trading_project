@@ -359,6 +359,7 @@ class ModelingStage(BaseStage):
                         df, ("context_pattern_seq",), default=None,
                         timeframe=str(timeframe),
                     ),
+                    timeframe=str(timeframe),
                 )
                 training_results = self.training_manager.execute_unified_training(
                     tickers=[ticker], data_context=training_context
@@ -427,6 +428,7 @@ class ModelingStage(BaseStage):
         target_name: str,
         context_fingerprint: str,
         context_pattern_seq: str | None = None,
+        timeframe: str = "",
     ) -> dict[str, Any]:
         """Adapt nested preparation output and reserve the holdout.
 
@@ -451,6 +453,10 @@ class ModelingStage(BaseStage):
             "y_test": light["y_val"],
             "feature_names": list(light.get("feature_names") or []),
             "target_name": target_name,
+            # Reaches BaseTrainer, which names the model file with it. Without
+            # it the three timeframes' candidates and champions collapse onto
+            # one filename each -- see base_trainer._save_model_candidate.
+            "timeframe": timeframe,
             "target_type": self._infer_target_type(y_train),
             "context_fingerprint": context_fingerprint,
             # BaseTrainer already forwards this to the diary

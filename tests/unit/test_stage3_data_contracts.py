@@ -3,7 +3,12 @@ import asyncio
 import logging
 
 from src.features.enrichers.sentiment_features_enricher import SentimentFeaturesEnricher
-from src.pipeline.guards.temporal_target_guard import TemporalTargetGuard
+# TemporalTargetGuard was superseded by src/targets/ and moved to
+# src/archive/guards_superseded/. The module keeps its tests -- they still
+# describe behaviour the replacement has to preserve -- and this import was
+# left pointing at the old location, so the whole file failed to collect and
+# took its other 20-odd contract tests with it, silently.
+from src.archive.guards_superseded.temporal_target_guard import TemporalTargetGuard
 from src.pipeline.stages.feature_engineering.orchestrator import FeatureEngineeringStage
 from src.archive.pipeline.stages.stage_3_improvements import validate_and_align_features_targets
 

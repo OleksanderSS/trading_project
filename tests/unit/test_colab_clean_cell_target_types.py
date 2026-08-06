@@ -372,6 +372,7 @@ class TestMlpTrainerEndToEnd:
         y = pd.Series(np.random.RandomState(1).randint(0, 2, len(x)).astype(np.float32))
         metrics = controller._train_mlp_model(
             x, y, "T", "target_up_1d", is_classification=True, y_scaler=None, context_windows=None,
+            model_path=tmp_path / "model_T_1d_target_up_1d_mlp.pkl",
         )
         assert "accuracy" in metrics
         assert "mse" not in metrics
@@ -382,6 +383,7 @@ class TestMlpTrainerEndToEnd:
         y = pd.Series(np.random.RandomState(2).randint(0, 3, len(x)).astype(np.float32))
         metrics = controller._train_mlp_model(
             x, y, "T", "target_multi_1d", is_classification=True, y_scaler=None, context_windows=None,
+            model_path=tmp_path / "model_T_1d_target_multi_1d_mlp.pkl",
         )
         assert "accuracy" in metrics
 
@@ -394,6 +396,7 @@ class TestMlpTrainerEndToEnd:
         metrics = controller._train_mlp_model(
             x, y_scaled, "T", "target_sma_20_f1", is_classification=False, y_scaler=scaler,
             context_windows=None,
+            model_path=tmp_path / "model_T_1d_target_sma_20_f1_mlp.pkl",
         )
         assert "mse" in metrics
         # Real-unit MSE for a ~5000-std-dev price-level target must land in
@@ -406,8 +409,13 @@ class TestMlpTrainerEndToEnd:
         y = pd.Series(np.random.RandomState(4).randn(len(x)).astype(np.float32))
         controller._train_mlp_model(
             x, y, "TICKER", "target_return_1d", is_classification=False, y_scaler=None, context_windows=None,
+            model_path=tmp_path / "model_TICKER_1d_target_return_1d_mlp.pkl",
         )
-        assert (tmp_path / "model_TICKER_target_return_1d_mlp.pkl").exists()
+        # The trainer writes where it is TOLD to. It used to compose the
+        # name itself, in a second copy of the caller's expression -- so
+        # this assertion was checking that two copies still agreed rather
+        # than that the model landed somewhere findable.
+        assert (tmp_path / "model_TICKER_1d_target_return_1d_mlp.pkl").exists()
 
     def test_validation_windows_report_present_and_context_windows_passthrough(self, tmp_path):
         """The windowed report is new plumbing (multiple metrics/windows
@@ -421,6 +429,7 @@ class TestMlpTrainerEndToEnd:
         metrics = controller._train_mlp_model(
             x, y, "T", "target_up_1d", is_classification=True, y_scaler=None,
             context_windows=sentinel_context,
+            model_path=tmp_path / "model_T_1d_target_up_1d_mlp.pkl",
         )
         assert metrics["context_windows"] is sentinel_context
         assert isinstance(metrics["validation_windows"], list)

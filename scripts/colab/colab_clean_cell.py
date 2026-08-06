@@ -588,39 +588,87 @@ class ColabTrainingController:
             print("  ⚠️ Даних немає, пропускаю.")
             return
 
-        # Merge data
+        # Merge data.
+        #
+        # The key is (ticker, datetime, interval). It used to omit interval,
+        # and the export stacks all three timeframes into one file -- so a
+        # 15m bar at 15:30 and a 60m bar at 15:30 are two rows sharing a
+        # key. Measured on the 2026-08-06 batch: 2,550 of 26,989 rows
+        # duplicate on (ticker, datetime), and zero duplicate once interval
+        # joins the key. validate='one_to_one' caught it, which is what it
+        # is there for; the crash was the diagnosis, not the disease.
         common_cols = ['ticker']
-        if 'datetime' in t_feat.columns and 'datetime' in t_targ.columns:
-            common_cols.append('datetime')
+        for key in ('datetime', 'interval'):
+            if key in t_feat.columns and key in t_targ.columns:
+                common_cols.append(key)
 
         merged = pd.merge(t_feat, t_targ, on=common_cols, how='inner', validate='one_to_one')
-        if 'datetime' in merged.columns:
-            # Sequence models need genuine chronological order to build
-            # real historical windows -- merge's output row order isn't a
-            # documented guarantee, so this must be explicit, not assumed.
-            merged = merged.sort_values('datetime').reset_index(drop=True)
-        print(f"  ✅ Merged: {merged.shape}")
+        print(f"  ✅ Merged: {merged.shape} on {common_cols}")
 
-        # Get target columns
         target_cols = [c for c in merged.columns if c.startswith('target_')]
         if self.config_loader.TEST_TARGET:
             if self.config_loader.TEST_TARGET in target_cols:
                 target_cols = [self.config_loader.TEST_TARGET]
 
-        # Process each target
-        for target_col in target_cols:
-            self._process_target(ticker, target_col, merged, heavy_models)
+        # One model per timeframe, not one model over all of them.
+        #
+        # Measured on the 2026-08-06 export, the targets are almost perfectly
+        # partitioned by timeframe: target_return_1d exists only on 1d rows,
+        # target_intraday_return_15m only on 15m. So the old pooled fit was
+        # mostly self-selecting -- mask = notna() left one timeframe's rows
+        # standing anyway. Two things were still wrong, and neither was
+        # visible:
+        #
+        # - target_hourly_return_1h, _up_1h and _volume_spike_1h are
+        #   populated on BOTH 15m and 60m rows (10,234 and 3,054). Those
+        #   three genuinely mixed two bar sizes into one fit, with `interval`
+        #   dropped as a string column so the model could not tell them
+        #   apart.
+        # - Every model was recorded under the timeframe 'all'. Stage 5
+        #   selects prediction rows by the model's timeframe, so a label that
+        #   names no timeframe cannot be matched to the rows it should score.
+        #
+        # The local light branch has always keyed champions by
+        # {ticker}_{timeframe}_{target}_{pattern}. This makes the heavy
+        # branch agree with it.
+        for timeframe, tf_rows in self._by_timeframe(merged):
+            if 'datetime' in tf_rows.columns:
+                # Sequence models need genuine chronological order to build
+                # real historical windows -- merge's output row order isn't a
+                # documented guarantee, so this must be explicit, not assumed.
+                tf_rows = tf_rows.sort_values('datetime')
+            tf_rows = tf_rows.reset_index(drop=True)
+            print(f"\n  ⏱️  Таймфрейм {timeframe}: {tf_rows.shape}")
+            for target_col in target_cols:
+                self._process_target(ticker, timeframe, target_col, tf_rows, heavy_models)
 
-    def _process_target(self, ticker, target_col, merged, heavy_models):
+    @staticmethod
+    def _by_timeframe(merged):
+        """(timeframe, rows) pairs -- one pair when the column is absent.
+
+        An export without `interval` still trains, under the label 'all',
+        rather than being silently skipped. That is the honest name for a
+        frame whose timeframe is unknown, and it is what the results file
+        used to record for every model regardless.
+        """
+        if 'interval' not in merged.columns:
+            return [('all', merged)]
+        return [(str(tf), rows) for tf, rows in merged.groupby('interval', sort=True)]
+
+    def _results_slot(self, ticker, timeframe, target_col):
+        """The dict this (ticker, timeframe, target) writes its models into."""
+        return (
+            self.results['ticker_results']
+            .setdefault(ticker, {'timeframes': {}})['timeframes']
+            .setdefault(timeframe, {'results': {}})['results']
+            .setdefault(target_col, {'models': {}})['models']
+        )
+
+    def _process_target(self, ticker, timeframe, target_col, merged, heavy_models):
         """Обробка одного цільового стовпця"""
-        print(f"\n  🎯 Таргет: {target_col}")
-        
-        # Initialize results structure for this ticker/target
-        if ticker not in self.results['ticker_results']:
-            self.results['ticker_results'][ticker] = {'timeframes': {'all': {'results': {}}}}
-        
-        if target_col not in self.results['ticker_results'][ticker]['timeframes']['all']['results']:
-            self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col] = {'models': {}}
+        print(f"\n  🎯 Таргет: {target_col} [{timeframe}]")
+
+        self._results_slot(ticker, timeframe, target_col)
 
         # Filter data
         mask = merged[target_col].notna()
@@ -630,8 +678,15 @@ class ColabTrainingController:
 
         print(f"    📊 Data size: {mask.sum()} samples, {len(merged.columns)} columns")
 
-        # Prepare training data
-        x_df = merged.loc[mask].drop(columns=['ticker', 'datetime'] + [c for c in merged.columns if c.startswith('target_')], errors='ignore')
+        # Prepare training data. `interval` goes with the identity columns:
+        # within this call it is a constant, so it carries no signal, and
+        # leaving it to be dropped later by dtype is an accident waiting to
+        # be undone by an encoder.
+        x_df = merged.loc[mask].drop(
+            columns=['ticker', 'datetime', 'interval']
+            + [c for c in merged.columns if c.startswith('target_')],
+            errors='ignore',
+        )
         y_ser = merged.loc[mask, target_col]
 
         # Process data types
@@ -681,15 +736,33 @@ class ColabTrainingController:
 
         # Train models
         for model_type in heavy_models:
-            self._train_model(ticker, target_col, model_type, x_df, y_ser, target_type, is_classification, y_scaler)
+            self._train_model(ticker, timeframe, target_col, model_type, x_df, y_ser, target_type, is_classification, y_scaler)
 
-    def _train_model(self, ticker, target_col, model_type, x_df, y_ser, target_type, is_classification, y_scaler):
+    @staticmethod
+    def _context_id(ticker, timeframe, target_col, model_type):
+        """The name this model is known by, everywhere.
+
+        The timeframe used to be absent from both the filename and the
+        metadata key, which was survivable only while one model covered all
+        three timeframes. Split by timeframe and the old key names three
+        different models identically -- and model_resolver assigns into
+        models_metadata[key], so two of the three would be overwritten and
+        lost without a word.
+
+        Field order matches the light branch's champion key,
+        {ticker}_{timeframe}_{target}_{...}, so both halves of the hybrid
+        read the same way.
+        """
+        return f"{ticker}_{timeframe}_{target_col}_{model_type}"
+
+    def _train_model(self, ticker, timeframe, target_col, model_type, x_df, y_ser, target_type, is_classification, y_scaler):
         """Тренування однієї моделі"""
         # Check if model already exists to skip re-training
         ext = ".keras" if model_type in ['cnn', 'lstm', 'gru', 'transformer', 'autoencoder'] else ".pkl"
         if model_type == 'tabnet': ext = ".zip"
-        
-        model_filename = f"model_{ticker}_{target_col}_{model_type}{ext}"
+
+        context_id = self._context_id(ticker, timeframe, target_col, model_type)
+        model_filename = f"model_{context_id}{ext}"
         model_path = self.path_manager.batch_dir / model_filename
         
         if model_path.exists():
@@ -732,15 +805,10 @@ class ColabTrainingController:
                     'metrics': sidecar.get('metrics', {}),
                     'selected_features': sidecar.get('selected_features', []),
                 }
-                self.results.setdefault('ticker_results', {}).setdefault(
-                    ticker, {'timeframes': {'all': {'results': {}}}}
-                )['timeframes']['all']['results'].setdefault(
-                    target_col, {'models': {}}
-                )['models'][model_type] = model_result
-                self.results.setdefault('models_metadata', {})[
-                    f"{ticker}_{target_col}_{model_type}"
-                ] = {
+                self._results_slot(ticker, timeframe, target_col)[model_type] = model_result
+                self.results.setdefault('models_metadata', {})[context_id] = {
                     'ticker': ticker, 'target': target_col,
+                    'timeframe': timeframe,
                     'model_type': model_type, 'model_path': model_filename,
                     'metrics': sidecar.get('metrics', {}),
                     'selected_features': sidecar.get('selected_features', []),
@@ -753,7 +821,7 @@ class ColabTrainingController:
             try:
                 max_features = self._get_model_max_features(model_type)
                 selected_features = self.feature_selector.select_features(
-                    X=x_df, y=y_ser, context_id=f"{ticker}_{target_col}_{model_type}",
+                    X=x_df, y=y_ser, context_id=context_id,
                     is_classification=is_classification, max_features=max_features
                 )
             except Exception as e:
@@ -767,13 +835,8 @@ class ColabTrainingController:
                 'selected_features': selected_features
             }
             
-            if ticker not in self.results['ticker_results']:
-                self.results['ticker_results'][ticker] = {'timeframes': {'all': {'results': {}}}}
-            if target_col not in self.results['ticker_results'][ticker]['timeframes']['all']['results']:
-                self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col] = {'models': {}}
-            
-            self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = model_result
-            
+            self._results_slot(ticker, timeframe, target_col)[model_type] = model_result
+
             # Add to models_metadata. Key is 'model_path', not 'path' --
             # every downstream consumer (model_resolver.py, prediction/
             # orchestrator.py, scaler_service.py, data_preparer.py,
@@ -782,10 +845,10 @@ class ColabTrainingController:
             # onto its slower filename-glob fallback instead of the direct
             # path, and skipping ResultsProcessor._convert_model_paths'
             # localization step entirely.
-            meta_key = f"{ticker}_{target_col}_{model_type}"
-            self.results['models_metadata'][meta_key] = {
+            self.results['models_metadata'][context_id] = {
                 'ticker': ticker,
                 'target': target_col,
+                'timeframe': timeframe,
                 'model_type': model_type,
                 'model_path': model_filename,
                 'metrics': {'info': 'already_exists'},
@@ -801,7 +864,7 @@ class ColabTrainingController:
             selected_features = self.feature_selector.select_features(
                 X=x_df,
                 y=y_ser,
-                context_id=f"{ticker}_{target_col}_{model_type}",
+                context_id=context_id,
                 is_classification=is_classification,
                 max_features=max_features
             )
@@ -815,14 +878,14 @@ class ColabTrainingController:
             # Train the model
             metrics = self._train_model_with_features(
                 ticker, target_col, model_type, x_df, y_ser, selected_features,
-                target_type, is_classification, y_scaler,
+                target_type, is_classification, y_scaler, model_path,
             )
-            
-            # Record result
-            ext = ".keras" if model_type in ['cnn', 'lstm', 'gru', 'transformer', 'autoencoder'] else ".pkl"
-            if model_type == 'tabnet': ext = ".zip"
-            model_filename = f"model_{ticker}_{target_col}_{model_type}{ext}"
-            
+
+            # model_filename was recomputed here, by a second copy of the
+            # extension table and the naming expression. Two copies of a name
+            # is one copy too many -- the value from the top of this method
+            # is the one the skip check and _save_sidecar already use.
+
             model_result = {
                 'status': 'success',
                 'model_path': model_filename,
@@ -836,15 +899,15 @@ class ColabTrainingController:
             # nothing to report but "already_exists". See _load_sidecar.
             self._save_sidecar(model_filename, metrics, selected_features)
 
-            self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = model_result
-            
+            self._results_slot(ticker, timeframe, target_col)[model_type] = model_result
+
             # Add to models_metadata for easier access. 'model_path', not
             # 'path' -- see the matching comment in the skipped-model branch
             # above for why this key name matters.
-            meta_key = f"{ticker}_{target_col}_{model_type}"
-            self.results['models_metadata'][meta_key] = {
+            self.results['models_metadata'][context_id] = {
                 'ticker': ticker,
                 'target': target_col,
+                'timeframe': timeframe,
                 'model_type': model_type,
                 'model_path': model_filename,
                 'metrics': metrics,
@@ -853,18 +916,32 @@ class ColabTrainingController:
 
         except Exception as e:
             print(f"❌ Помилка: {str(e)[:100]}")
-            # Record error
-            if ticker in self.results['ticker_results'] and target_col in self.results['ticker_results'][ticker]['timeframes']['all']['results']:
-                self.results['ticker_results'][ticker]['timeframes']['all']['results'][target_col]['models'][model_type] = {
-                    'status': 'error',
-                    'message': str(e)[:100]
-                }
+            # Record error. This used to be guarded by two membership tests
+            # that silently dropped the record when either was false -- so a
+            # failure during the very first target of a ticker went unlogged,
+            # which is exactly the failure worth having in the report.
+            self._results_slot(ticker, timeframe, target_col)[model_type] = {
+                'status': 'error',
+                'message': str(e)[:100]
+            }
 
     def _train_model_with_features(
         self, ticker, target_col, model_type, x_df, y_ser, selected_features,
-        target_type, is_classification, y_scaler,
+        target_type, is_classification, y_scaler, model_path,
     ):
-        """Тренування моделі з вибраними фічами"""
+        """Тренування моделі з вибраними фічами.
+
+        `model_path` is passed in rather than rebuilt. Each of the seven
+        trainers used to compose its own filename from ticker and target,
+        which was a second (and third, and eighth) definition of a name the
+        caller had already decided. The skip check, _save_sidecar and the
+        results file all use the caller's version; a trainer that composed
+        it even slightly differently would write a model nobody could find
+        again, and be retrained on every run forever.
+
+        It stopped being hypothetical the moment the timeframe joined the
+        name: nine call sites would have had to change together.
+        """
         try:
             # Prepare data with selected features
             x_train = x_df[selected_features]
@@ -873,7 +950,8 @@ class ColabTrainingController:
             # trainer reports the same context regardless of its own
             # feature subset or data shape -- see _context_windows.
             context_windows = self._context_windows(x_df)
-            kwargs = dict(is_classification=is_classification, y_scaler=y_scaler, context_windows=context_windows)
+            kwargs = dict(is_classification=is_classification, y_scaler=y_scaler,
+                          context_windows=context_windows, model_path=model_path)
 
             if model_type in self._SEQUENCE_MODEL_TYPES:
                 x_seq, y_seq = self._build_sequences(x_train, y_ser, self._SEQUENCE_WINDOW)
@@ -931,17 +1009,25 @@ class ColabTrainingController:
                 ticker = meta['ticker']
                 target = meta['target']
                 model = meta['model_type']
-                
+                timeframe = meta.get('timeframe', '')
+
                 # Format required by HybridOrchestrator
                 fs_data = {
                     'ticker': ticker,
+                    'timeframe': timeframe,
                     'targets': [target],
                     'model_name': model,
                     'selected_features': meta['selected_features'],
                     'timestamp': datetime.now().isoformat()
                 }
                 
-                fs_filename = f"selected_features_{ticker}_{target}_{model}.json"
+                # Named for the model it belongs to, which now includes the
+                # timeframe. Built from ticker/target/model alone, the three
+                # timeframes' feature sets were three writes to one path --
+                # the same collision as the model files themselves, and just
+                # as silent, since the readers match on the file's CONTENT
+                # and would happily accept whichever copy survived.
+                fs_filename = f"selected_features_{meta_key}.json"
                 fs_path = self.path_manager.batch_dir / fs_filename
                 
                 try:
@@ -1239,7 +1325,7 @@ class ColabTrainingController:
             return float(mse_scaled)
         return float(mse_scaled * (y_scaler.scale_[0] ** 2))
 
-    def _train_mlp_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+    def _train_mlp_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows, model_path):
         """Тренування MLP моделі"""
         import joblib
         from sklearn.metrics import accuracy_score, mean_squared_error, roc_auc_score
@@ -1260,7 +1346,6 @@ class ColabTrainingController:
         model.fit(x_train_split, y_train_split.astype(int) if is_classification else y_train_split)
 
         # Save model
-        model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_mlp.pkl"
         joblib.dump(model, model_path)
 
         if is_classification:
@@ -1296,7 +1381,7 @@ class ColabTrainingController:
         )
         return metrics
 
-    def _train_cnn_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+    def _train_cnn_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows, model_path):
         """Тренування CNN моделі. x_train: (n, window, n_features) real
         chronological sequences (see _build_sequences) -- Conv1D applies
         genuine temporal kernels across `window` consecutive trading days,
@@ -1338,7 +1423,6 @@ class ColabTrainingController:
         )
 
         # Save model
-        model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_cnn.keras"
         model.save(model_path)
 
         metrics = self._keras_val_metrics(history, is_classification)
@@ -1362,7 +1446,7 @@ class ColabTrainingController:
         print(f"    🎯 CNN - {metrics} - збережено: {model_path.name}")
         return metrics
 
-    def _train_lstm_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+    def _train_lstm_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows, model_path):
         """Тренування LSTM моделі. x_train: (n, window, n_features) real
         chronological sequences -- LSTM recurrence now runs across `window`
         real trading days instead of a fake sequence length of 1."""
@@ -1399,7 +1483,6 @@ class ColabTrainingController:
         )
 
         # Save model
-        model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_lstm.keras"
         model.save(model_path)
 
         metrics = self._keras_val_metrics(history, is_classification)
@@ -1423,7 +1506,7 @@ class ColabTrainingController:
         print(f"    🎯 LSTM - {metrics} - збережено: {model_path.name}")
         return metrics
 
-    def _train_gru_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+    def _train_gru_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows, model_path):
         """Тренування GRU моделі. x_train: (n, window, n_features) real
         chronological sequences."""
         import tensorflow as tf
@@ -1459,7 +1542,6 @@ class ColabTrainingController:
         )
 
         # Save model
-        model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_gru.keras"
         model.save(model_path)
 
         metrics = self._keras_val_metrics(history, is_classification)
@@ -1483,7 +1565,7 @@ class ColabTrainingController:
         print(f"    🎯 GRU - {metrics} - збережено: {model_path.name}")
         return metrics
 
-    def _train_transformer_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+    def _train_transformer_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows, model_path):
         """Тренування Transformer моделі. x_train: (n, window, n_features)
         real chronological sequences -- MultiHeadAttention now has `window`
         real trading days to attend over instead of a single timestep,
@@ -1522,7 +1604,6 @@ class ColabTrainingController:
         )
 
         # Save model
-        model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_transformer.keras"
         model.save(model_path)
 
         metrics = self._keras_val_metrics(history, is_classification)
@@ -1546,7 +1627,23 @@ class ColabTrainingController:
         print(f"    🎯 Transformer - {metrics} - збережено: {model_path.name}")
         return metrics
 
-    def _train_tabnet_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+    @staticmethod
+    def _save_tabnet(model, model_path):
+        """TabNet appends the extension itself; hand it the stem.
+
+        pytorch_tabnet's save_model calls shutil.make_archive(path, "zip"),
+        which writes path + ".zip". Given a path already ending in .zip it
+        produces model_..._tabnet.zip.zip -- and the skip check, the sidecar
+        and Stage 5 all look for the single-suffix name. So every TabNet
+        model was written where nothing would look for it, retrained on
+        every run, and its metrics filed against a file that did not exist.
+        """
+        stem = str(model_path)
+        if stem.endswith(".zip"):
+            stem = stem[: -len(".zip")]
+        model.save_model(stem)
+
+    def _train_tabnet_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows, model_path):
         """Тренування TabNet моделі"""
         try:
             import torch
@@ -1586,8 +1683,7 @@ class ColabTrainingController:
                     num_workers=0,
                     drop_last=False
                 )
-                model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_tabnet.zip"
-                model.save_model(str(model_path))
+                self._save_tabnet(model, model_path)
 
                 y_pred = model.predict(x_val.values)
                 accuracy = accuracy_score(y_val_labels, y_pred)
@@ -1614,8 +1710,7 @@ class ColabTrainingController:
                     num_workers=0,
                     drop_last=False
                 )
-                model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_tabnet.zip"
-                model.save_model(str(model_path))
+                self._save_tabnet(model, model_path)
 
                 y_pred = model.predict(x_val.values).reshape(-1)
                 mse = self._unscale_mse(mean_squared_error(y_val, y_pred), y_scaler)
@@ -1634,7 +1729,7 @@ class ColabTrainingController:
             print("    ⚠️ TabNet не встановлено, пропускаємо")
             return {'error': 'pytorch_tabnet not installed'}
 
-    def _train_autoencoder_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows):
+    def _train_autoencoder_model(self, x_train, y_train, ticker, target_col, *, is_classification, y_scaler, context_windows, model_path):
         """Тренування Autoencoder моделі (encoder + supervised head, not a
         reconstruction autoencoder despite the name -- kept as-is)."""
         import tensorflow as tf
@@ -1681,7 +1776,6 @@ class ColabTrainingController:
         )
 
         # Save model
-        model_path = self.path_manager.batch_dir / f"model_{ticker}_{target_col}_autoencoder.keras"
         model.save(model_path)
 
         metrics = self._keras_val_metrics(history, is_classification)

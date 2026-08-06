@@ -19,6 +19,8 @@ from pathlib import Path
 
 import pytest
 
+from src.pipeline.constants import heavy_model_key
+
 from src.pipeline.stages.prediction.model_resolver import ModelResolver
 
 
@@ -83,8 +85,15 @@ def test_the_ticker_results_shape_still_routes_to_its_handler(tmp_path, resolver
 
     resolver._load_heavy_models_from_disk(tmp_path, found)
 
-    assert "AAPL_target_up_1d_lstm" in found
-    assert found["AAPL_target_up_1d_lstm"]["model_category"] == "heavy"
+    # The timeframe is part of the key. Colab trains one heavy model per
+    # timeframe, and the old key named all three identically -- into a dict
+    # assigned by key, so two of the three were overwritten on the way in.
+    # See test_heavy_model_key_carries_timeframe.py.
+    key = heavy_model_key("AAPL", "1d", "target_up_1d", "lstm")
+
+    assert key in found
+    assert found[key]["model_category"] == "heavy"
+    assert found[key]["timeframe"] == "1d"
 
 
 def test_a_corrupt_file_does_not_take_down_the_stage(tmp_path, resolver, caplog):

@@ -11,6 +11,7 @@ from typing import Any
 
 from src.config.target_type_registry import load_target_types
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.constants import heavy_model_key
 from src.pipeline.hybrid.champion_selector import filter_to_champions
 
 
@@ -155,20 +156,26 @@ class ResultsProcessor:
             return
         ticker_results = colab_results['ticker_results']
         for ticker, ticker_data in ticker_results.items():
-            for _timeframe, timeframe_data in ticker_data.get('timeframes', {}
+            for timeframe, timeframe_data in ticker_data.get('timeframes', {}
                 ).items():
                 for target, target_data in timeframe_data.get('results', {}
                     ).items():
                     for model, model_data in target_data.get('models', {}
                         ).items():
                         self._update_model_selected_features(models_metadata,
-                            ticker, target, model, model_data)
+                            ticker, timeframe, target, model, model_data)
 
     def _update_model_selected_features(self, models_metadata: dict[str,
-        Any], ticker: str, target: str, model: str, model_data: dict[str, Any]
-        ) ->None:
-        """Update selected features for a specific model."""
-        key = f'{ticker}_{target}_{model}'
+        Any], ticker: str, timeframe: str, target: str, model: str,
+        model_data: dict[str, Any]) ->None:
+        """Update selected features for a specific model.
+
+        The key must be built the same way model_resolver builds it, or this
+        silently updates nothing: the lookup is guarded by `if key in`, so a
+        near-miss is indistinguishable from a model that simply was not
+        there. Both now go through heavy_model_key.
+        """
+        key = heavy_model_key(ticker, timeframe, target, model)
         if key in models_metadata:
             models_metadata[key]['selected_features'] = model_data.get(
                 'selected_features', [])

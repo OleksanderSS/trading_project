@@ -17,6 +17,7 @@ from typing import Any
 
 import numpy as np
 
+from src.pipeline.constants import champion_filename, model_candidate_filename
 from src.config.unified_config_manager import get_current_config
 from src.core.logging.logger import ProjectLogger
 from src.factories.model_factory import ModelFactory
@@ -250,6 +251,7 @@ class BaseTrainer(ABC):
             "models": [],
             "metrics": {},
             "ticker": ticker,
+            "timeframe": data.get("timeframe", ""),
             "target_name": data.get("target_name", "unknown"),
             "selected_features": list(data.get("feature_names") or []),
         }
@@ -384,6 +386,7 @@ class BaseTrainer(ABC):
         model_path = self._save_model_candidate(
             model,
             ticker=ticker,
+            timeframe=data.get("timeframe", ""),
             target=data.get("target_name", "unknown"),
             model_type=m_type,
         )
@@ -440,6 +443,7 @@ class BaseTrainer(ABC):
             champion_path = self._promote_champion_file(
                 winner_path,
                 ticker=str(results.get("ticker") or "unknown"),
+                timeframe=str(results.get("timeframe") or ""),
                 target=str(results.get("target_name") or "unknown"),
             )
             results["winner_model_path"] = str(winner_path)
@@ -451,11 +455,24 @@ class BaseTrainer(ABC):
         model: Any,
         *,
         ticker: str,
+        timeframe: str,
         target: str,
         model_type: str,
     ) -> Path:
-        """Persist one trained candidate without overwriting other models."""
-        filename = f"model_{ticker}_{target}_{model_type}.joblib"
+        """Persist one trained candidate without overwriting other models.
+
+        "Other models" has to include the same model type fitted to a
+        different timeframe. Stage 4 runs this suite once per (ticker,
+        timeframe) and every run wrote to one directory under a name built
+        from ticker and target alone -- so the 15m fit, the 60m fit and the
+        1d fit were three writes to one path, and only the last survived.
+
+        The champion metadata has always been keyed by
+        {ticker}_{timeframe}_{target}_{pattern}, so it listed three distinct
+        champions while the files behind them were one file. Whichever
+        timeframe Stage 4 happened to process last answered for all three.
+        """
+        filename = model_candidate_filename(ticker, timeframe, target, model_type)
         path = self.output_dir / filename
         if not self.artifact_store.save_joblib(model, path):
             raise TrainingException(f"Failed to save model candidate {filename}")
@@ -470,14 +487,17 @@ class BaseTrainer(ABC):
         *,
         ticker: str,
         target: str,
+        timeframe: str = "",
     ) -> Path:
         """Copy the selected winner to the stable champion path.
 
-        Always writes to the same fixed CHAMP_{ticker}_{target}.joblib name,
-        so the ModelPool entry keyed by that stem must be invalidated after
-        overwriting — see _invalidate_model_pool_entry().
+        Writes to a fixed name per (ticker, timeframe, target), so the
+        ModelPool entry keyed by that stem must be invalidated after
+        overwriting — see _invalidate_model_pool_entry(). The timeframe is
+        part of the name for the same reason it is part of the candidate
+        name: without it the three timeframes' champions are one file.
         """
-        champion_path = self.output_dir / f"CHAMP_{ticker}_{target}.joblib"
+        champion_path = self.output_dir / champion_filename(ticker, timeframe, target)
         shutil.copy2(winner_path, champion_path)
         self._invalidate_model_pool_entry(champion_path.stem)
         return champion_path
@@ -501,9 +521,9 @@ class BaseTrainer(ABC):
                 f"Could not invalidate model pool cache for {model_stem}: {e}"
             )
 
-    def _save_champion(self, model: Any, ticker: str, target: str):
+    def _save_champion(self, model: Any, ticker: str, target: str, timeframe: str = ""):
         """Compatibility helper for callers that already selected a winner."""
-        path = self.output_dir / f"CHAMP_{ticker}_{target}.joblib"
+        path = self.output_dir / champion_filename(ticker, timeframe, target)
         if not self.artifact_store.save_joblib(model, path):
             raise TrainingException(f"Failed to save champion {path.name}")
         return path

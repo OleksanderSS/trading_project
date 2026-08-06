@@ -9,6 +9,11 @@ from pathlib import Path
 from typing import Any, ClassVar, cast
 
 from src.core.logging.logger import ProjectLogger
+from src.pipeline.constants import heavy_model_key
+from src.pipeline.timeframe_lineage import (
+    is_timeframe_token,
+    normalize_timeframe,
+)
 
 
 class ModelResolver:
@@ -117,12 +122,19 @@ class ModelResolver:
         'mlp', 'linear', 'ensemble', 'knn', 'svm',
     ]
 
-    def _parse_model_stem(self, stem: str) -> tuple[str, str, str] | None:
+    def _parse_model_stem(self, stem: str) -> tuple[str, str, str, str] | None:
         """
-        Parse a model filename stem into (ticker, target, model_type).
+        Parse a model filename stem into (ticker, timeframe, target, model_type).
 
-        Expected format: model_<TICKER>_<TARGET>_<MODEL_TYPE>
+        Expected format: model_<TICKER>_<TIMEFRAME>_<TARGET>_<MODEL_TYPE>
         where MODEL_TYPE can be multi-word (e.g. random_forest).
+
+        The timeframe segment is recognised, not counted: it is present when
+        the second field spells one of the project's timeframes and absent
+        otherwise, in which case it comes back empty. Models trained before
+        the heavy branch split by timeframe carry the shorter name and still
+        parse -- a file already on disk should not become unreadable because
+        the naming convention grew a field.
 
         Returns None if the stem cannot be parsed.
         """
@@ -135,16 +147,29 @@ class ModelResolver:
         for mt in self._KNOWN_MODEL_TYPES:
             if s.endswith('_' + mt):
                 rest = s[: -(len(mt) + 1)]  # everything before _<model_type>
-                # rest = <ticker>_<target>
-                parts = rest.split('_', 1)
-                if len(parts) == 2:
-                    return parts[0], parts[1], mt
+                # rest = <ticker>[_<timeframe>]_<target>
+                parts = rest.split('_', 2)
+                if len(parts) == 3 and is_timeframe_token(parts[1]):
+                    return parts[0], parts[1], parts[2], mt
+                head = rest.split('_', 1)
+                if len(head) == 2:
+                    return head[0], '', head[1], mt
         return None
 
-    def _match_model_file(self, ticker: str, target: str, model_type: str,
+    def _match_model_file(self, ticker: str, timeframe: str, target: str,
+                          model_type: str,
                           available_files: dict[str, Path]) -> Path | None:
-        """Match a model file based on ticker, target, and model type."""
+        """Match a model file based on ticker, timeframe, target and model type.
+
+        The timeframe has to take part in the match. Colab trains one heavy
+        model per timeframe, so a batch holds model_AAPL_15m_<target>_mlp
+        alongside model_AAPL_1d_<target>_mlp -- and a comparison that ignores
+        the timeframe returns whichever the directory listed first, feeding
+        Stage 5 a model fitted to a different bar size than the rows it is
+        about to score.
+        """
         expected_ticker = ticker.lower()
+        expected_tf = normalize_timeframe(timeframe) or ''
         expected_target = target.lower().replace('-', '_')
         expected_model  = model_type.lower().replace('-', '_')
 
@@ -152,14 +177,24 @@ class ModelResolver:
             parsed = self._parse_model_stem(stem)
             if parsed is None:
                 continue
-            file_ticker, file_target, file_model_type = parsed
+            file_ticker, file_tf, file_target, file_model_type = parsed
+            # An unlabelled file (pre-split naming) matches any timeframe --
+            # it is the only candidate there is. Two labelled names must
+            # agree.
+            tf_ok = not file_tf or not expected_tf or (
+                normalize_timeframe(file_tf) == expected_tf)
             if (file_ticker == expected_ticker
                     and file_model_type == expected_model
-                    and file_target == expected_target):
+                    and file_target == expected_target
+                    and tf_ok):
                 return fpath
 
-        # Fallback: loose substring match for flexibility
-        needle = f"{expected_ticker}_{expected_target}_{expected_model}"
+        # Fallback: loose substring match for flexibility.
+        needle = '_'.join(
+            part for part in
+            (expected_ticker, expected_tf, expected_target, expected_model)
+            if part
+        )
         for stem, fpath in available_files.items():
             if needle in stem.lower():
                 return fpath
@@ -180,13 +215,15 @@ class ModelResolver:
         has_local_models = False
         for context_id, meta in models_meta.items():
             ticker = meta.get('ticker', '')
+            timeframe = meta.get('timeframe', '')
             target = meta.get('target', '')
             model_type = meta.get('model_type', '')
 
             if not ticker or not model_type:
                 continue
 
-            matched = self._match_model_file(ticker, target, model_type, available_files)
+            matched = self._match_model_file(ticker, timeframe, target,
+                model_type, available_files)
 
             if matched:
                 meta['model_path'] = str(matched)
@@ -466,7 +503,8 @@ class ModelResolver:
                 for target, target_data in results.items():
                     models = target_data.get('models', {})
                     for model_type, model_data in models.items():
-                        context_key = f'{ticker}_{target}_{model_type}'
+                        context_key = heavy_model_key(ticker, _tf, target,
+                            model_type)
                         models_metadata[context_key] = {'ticker': ticker,
                             'target': target, 'winner': model_type,
                             'model_type': model_type, 'timeframe': _tf,

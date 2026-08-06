@@ -319,12 +319,14 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
     first = trainer._save_model_candidate(
         {"name": "first"},
         ticker="NVDA",
+        timeframe="1d",
         target="target_up",
         model_type="linear",
     )
     winner = trainer._save_model_candidate(
         {"name": "winner"},
         ticker="NVDA",
+        timeframe="1d",
         target="target_up",
         model_type="random_forest",
     )
@@ -332,6 +334,7 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
     result = trainer._finalize_ticker_results(
         {
             "ticker": "NVDA",
+            "timeframe": "1d",
             "target_name": "target_up",
             "models": [
                 {"model_type": "linear", "model_path": str(first)},
@@ -354,7 +357,11 @@ def test_base_trainer_persists_candidates_and_promotes_actual_winner(tmp_path):
     assert first != winner
     assert result["winner_model_path"] == str(winner)
     champion_path = Path(result["model_path"])
-    assert champion_path.name == "CHAMP_NVDA_target_up.joblib"
+    # The timeframe is part of the champion filename. Stage 4 runs this
+    # suite once per (ticker, timeframe) into one output directory, so
+    # without it the 15m, 60m and 1d champions were three writes to one
+    # path -- see test_light_model_files_are_per_timeframe.py.
+    assert champion_path.name == "CHAMP_NVDA_1d_target_up.joblib"
     assert joblib.load(champion_path) == {"name": "winner"}
 
 

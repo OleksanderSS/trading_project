@@ -29,16 +29,19 @@ def test_config_referenced_classes_are_importable(module_path, class_name):
 
 
 def test_yaml_config_paths_match_real_classes():
-    analysis = _load_yaml("src/config/analysis.yaml")
     enrichment = _load_yaml("src/config/enrichment.yaml")
     data_sources = _load_yaml("src/config/data_sources.yaml")
     transformers = _load_yaml("src/config/transformers.yaml")
 
-    # MarketRegimeDetector was deliberately removed from calculators_config
-    # (it's a detector, not a calculator, per analysis.yaml's own comment) --
-    # covered separately by test_config_referenced_classes_are_importable.
+    # calculators_config itself is gone from analysis.yaml (950b46a4): it
+    # described a dynamic registry nothing ever wired, and every class it
+    # named is live through direct imports. This test kept reading it and
+    # died on a KeyError, taking the checks below it with it -- the
+    # enrichment, data-source and transformer references went unverified for
+    # as long as that line stood. The volatility calculator is still covered
+    # by its own consumers' tests; what this test is for is config entries
+    # that name a class by string, and there is no longer one here.
     refs = [
-        analysis["calculators_config"]["volatility"],
         enrichment["enrichment"]["significance_features"],
         data_sources["data_sources"][0],
         *transformers["transformers"],
